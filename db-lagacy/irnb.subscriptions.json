@@ -1,0 +1,209 @@
+[{
+  "_id": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "name": "الإشتراك السنوي لفئة الاكابر 2025",
+  "amount": {
+    "student": 1500,
+    "worker": 2000
+  },
+  "year": 2025,
+  "details": "الإشتراك السنوي لفئة الاكابر 2025",
+  "isMandatory": true,
+  "isActive": true,
+  "categoryPlayer": [
+    {
+      "$oid": "68456dcf1b20adaabce34667"
+    },
+    {
+      "$oid": "68456dcf1b20adaabce34668"
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:25.638Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:33:25.638Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68471def9c4d8c600680780e"
+  },
+  "name": "إشتراكات الجوارب",
+  "amount": {
+    "student": 500,
+    "worker": 500
+  },
+  "year": 2024,
+  "details": "",
+  "isMandatory": false,
+  "isActive": true,
+  "categoryPlayer": [
+    {
+      "$oid": "68456dcf1b20adaabce34667"
+    },
+    {
+      "$oid": "68456dcf1b20adaabce34668"
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-06-09T17:46:23.941Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T17:46:23.941Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68471e159c4d8c6006807815"
+  },
+  "name": "إشتراكات القميص الابيض",
+  "amount": {
+    "student": 2500,
+    "worker": 2500
+  },
+  "year": 2024,
+  "details": "إشتراكات القميص الابيض",
+  "isMandatory": false,
+  "isActive": true,
+  "categoryPlayer": [
+    {
+      "$oid": "68456dcf1b20adaabce34667"
+    },
+    {
+      "$oid": "68456dcf1b20adaabce34668"
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-06-09T17:47:01.011Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T17:47:01.011Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68471e4a9c4d8c600680781c"
+  },
+  "name": "إشتراك البدلة الزرقاء",
+  "amount": {
+    "student": 3500,
+    "worker": 3500
+  },
+  "year": 2024,
+  "details": "",
+  "isMandatory": false,
+  "isActive": true,
+  "categoryPlayer": [
+    {
+      "$oid": "68456dcf1b20adaabce34667"
+    },
+    {
+      "$oid": "68456dcf1b20adaabce34668"
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-06-09T17:47:54.041Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T17:47:54.041Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68755e67d8da068fdea53a48"
+  },
+  "name": "الاشتراك السنوي لفئة الاواسط 2025",
+  "amount": {
+    "student": 1000,
+    "worker": 1000
+  },
+  "year": 2025,
+  "details": "",
+  "isMandatory": true,
+  "isActive": true,
+  "categoryPlayer": [
+    {
+      "$oid": "68456dcf1b20adaabce3466a"
+    },
+    {
+      "$oid": "68456dcf1b20adaabce34669"
+    },
+    {
+      "$oid": "68456dcf1b20adaabce3466b"
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-07-14T19:45:43.843Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-14T19:45:43.843Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68e1742a2c2456d095cb0e4e"
+  },
+  "name": "اشتراك القميص الابيض 2025",
+  "amount": {
+    "student": 2000,
+    "worker": 2000
+  },
+  "year": 2025,
+  "details": "",
+  "isMandatory": false,
+  "isActive": true,
+  "categoryPlayer": [
+    {
+      "$oid": "68456dcf1b20adaabce34667"
+    },
+    {
+      "$oid": "68456dcf1b20adaabce34668"
+    },
+    {
+      "$oid": "68456dcf1b20adaabce34669"
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-10-04T19:23:22.279Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-04T19:23:22.279Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "name": "الإشتراك السنوي لموسم 2025-2026",
+  "amount": {
+    "student": 1500,
+    "worker": 2000
+  },
+  "year": 2026,
+  "details": "",
+  "isMandatory": true,
+  "isActive": true,
+  "categoryPlayer": [
+    {
+      "$oid": "68456dcf1b20adaabce34667"
+    },
+    {
+      "$oid": "68456dcf1b20adaabce34668"
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-10-30T05:40:18.613Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:58:41.760Z"
+  },
+  "__v": 0
+}]

@@ -1,0 +1,103 @@
+[{
+  "_id": {
+    "$oid": "69037e0e44347a4af4a4fb22"
+  },
+  "basicInfo": {
+    "clubName": {
+      "ar": "النادي الرياضي النوري البنوري",
+      "fr": "Club Sportif",
+      "en": "Sports Club"
+    },
+    "clubShortName": "IRNB",
+    "tagline": {
+      "ar": "التميز في الرياضة",
+      "fr": "Excellence en sport",
+      "en": "Excellence in Sports"
+    },
+    "description": {
+      "ar": "",
+      "fr": "",
+      "en": ""
+    },
+    "foundingDate": {
+      "$date": "1994-01-01T00:00:00.000Z"
+    },
+    "founder": "",
+    "motto": {
+      "ar": "",
+      "fr": "",
+      "en": ""
+    }
+  },
+  "contactInfo": {
+    "address": {
+      "country": "Algeria"
+    }
+  },
+  "legalInfo": {
+    "legalForm": "Association"
+  },
+  "branding": {
+    "colors": {
+      "primary": "#0025b8",
+      "secondary": "#02345f",
+      "accent": "#ffffff",
+      "success": "#28a745",
+      "warning": "#ffc107",
+      "danger": "#dc3545",
+      "info": "#17a2b8"
+    },
+    "fonts": {
+      "primary": "Arial, sans-serif",
+      "secondary": "Georgia, serif",
+      "arabic": "Cairo, sans-serif"
+    },
+    "heroImages": []
+  },
+  "settings": {
+    "currency": "DZD",
+    "currencySymbol": "دج",
+    "timezone": "Africa/Algiers",
+    "dateFormat": "DD/MM/YYYY",
+    "defaultLanguage": "ar",
+    "fiscalYearStart": "01-01",
+    "enableRegistration": true,
+    "enableDonations": true,
+    "maintenanceMode": false
+  },
+  "seo": {
+    "metaTitle": {
+      "ar": "",
+      "fr": "",
+      "en": ""
+    },
+    "metaDescription": {
+      "ar": "",
+      "fr": "",
+      "en": ""
+    },
+    "keywords": []
+  },
+  "documents": {
+    "headerText": {
+      "ar": "",
+      "fr": "",
+      "en": ""
+    },
+    "footerText": {
+      "ar": "",
+      "fr": "",
+      "en": ""
+    }
+  },
+  "createdAt": {
+    "$date": "2025-10-30T15:02:38.614Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-30T15:10:06.388Z"
+  },
+  "__v": 0,
+  "lastModifiedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  }
+}]

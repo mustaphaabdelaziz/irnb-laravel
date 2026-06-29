@@ -1,0 +1,5565 @@
+[{
+  "_id": {
+    "$oid": "6845751789e80927a3771df1"
+  },
+  "firstname": "رستـم",
+  "lastname": "أبي اسـماعيل",
+  "father": "قاسم",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1994-05-31T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467d"
+  },
+  "joinYear": 2011,
+  "archived": false,
+  "membershipID": "2025283589",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845751789e80927a3771df4"
+    },
+    {
+      "$oid": "694c34ab78bf9eceac589d77"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce3466f"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:43.846Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 3,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845751889e80927a3771df8"
+  },
+  "firstname": "عبد الرحمان",
+  "lastname": "أبي اسـماعيل",
+  "father": "محمد",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1993-03-03T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "warning",
+    "value": "معتزل"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "joinYear": 2012,
+  "archived": false,
+  "membershipID": "2025641984",
+  "playerSubscriptions": [
+    {
+      "$oid": "694d761ec6ca3b49d162b741"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce3466c"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:44.185Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.375Z"
+  },
+  "__v": 2,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845751889e80927a3771dff"
+  },
+  "firstname": "مصطفى",
+  "lastname": "أبي اسـماعيل",
+  "father": "",
+  "grandfather": "",
+  "birthdate": null,
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "danger",
+    "value": "غادر الفريق"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467d"
+  },
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025555392",
+  "playerSubscriptions": [
+    {
+      "$oid": "694d761ec6ca3b49d162b73f"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:44.579Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.371Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": [],
+    "medicalConditions": "healthy"
+  }
+},
+{
+  "_id": {
+    "$oid": "6845751889e80927a3771e06"
+  },
+  "firstname": "باسعيد",
+  "lastname": "أبي اسـماعيل",
+  "father": "ابراهيم",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1999-05-11T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "joinYear": 2016,
+  "archived": false,
+  "membershipID": "2025305307",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845751889e80927a3771e09"
+    },
+    {
+      "$oid": "694d761ec6ca3b49d162b73d"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce34673"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:45.007Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.381Z"
+  },
+  "__v": 1,
+  "health": {
+    "medicalConditions": "recovering",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845751989e80927a3771e0d"
+  },
+  "firstname": "عبد الوهاب",
+  "lastname": "اسبع",
+  "father": "عبد المجيد",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1988-04-06T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "joinYear": 2007,
+  "archived": false,
+  "membershipID": "2025825582",
+  "playerSubscriptions": [
+    {
+      "$oid": "68471d219c4d8c600680776e"
+    },
+    {
+      "$oid": "694d761ec6ca3b49d162b73b"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce34675"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:45.348Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.349Z"
+  },
+  "__v": 8,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845751989e80927a3771e14"
+  },
+  "firstname": "عيسى",
+  "lastname": "اسبع",
+  "father": "",
+  "grandfather": "",
+  "birthdate": null,
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025999285",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845751989e80927a3771e17"
+    },
+    {
+      "$oid": "68471e839c4d8c600680783b"
+    },
+    {
+      "$oid": "694d761ec6ca3b49d162b743"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:45.681Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.389Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845751989e80927a3771e1b"
+  },
+  "firstname": "الياس",
+  "lastname": "الحاج حامد",
+  "father": "حمو",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "2002-10-27T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "joinYear": 2018,
+  "archived": false,
+  "membershipID": "2025773350",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845751989e80927a3771e1e"
+    },
+    {
+      "$oid": "694c37ec78bf9eceac589e3a"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce34672"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:46.011Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 1,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845751a89e80927a3771e22"
+  },
+  "firstname": "عــمـر",
+  "lastname": "الحاج حامد",
+  "father": "حمو",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1990-06-24T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "warning",
+    "value": "معتزل"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "joinYear": 2008,
+  "archived": false,
+  "membershipID": "2025849721",
+  "playerSubscriptions": [
+    {
+      "$oid": "694c34ab78bf9eceac589d6d"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce34673"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:46.342Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 2,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845751a89e80927a3771e29"
+  },
+  "firstname": "يوسف",
+  "lastname": "الحاج حامد",
+  "father": "",
+  "grandfather": "",
+  "birthdate": null,
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025853100",
+  "playerSubscriptions": [
+    {
+      "$oid": "694d761ec6ca3b49d162b747"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:46.677Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.399Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845751a89e80927a3771e30"
+  },
+  "firstname": "يوسف",
+  "lastname": "الشيخ دحمان",
+  "father": "محمد",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1994-10-23T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": true,
+  "job": null,
+  "joinYear": 2017,
+  "archived": false,
+  "membershipID": "2025820932",
+  "playerSubscriptions": [
+    {
+      "$oid": "687178dc62e77d0f37dced5a"
+    },
+    {
+      "$oid": "6871791b62e77d0f37dced82"
+    },
+    {
+      "$oid": "694c34ab78bf9eceac589d75"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce3466f"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:47.033Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 8,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845751b89e80927a3771e37"
+  },
+  "firstname": "عبد العزيز",
+  "lastname": "باحماني",
+  "father": "عيسى",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1994-09-26T23:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025195080",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845751b89e80927a3771e3a"
+    },
+    {
+      "$oid": "694d761ec6ca3b49d162b745"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:47.362Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.395Z"
+  },
+  "__v": 1,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845751b89e80927a3771e3e"
+  },
+  "firstname": "فاروق",
+  "lastname": "باحماني",
+  "father": "",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1990-02-12T23:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025101305",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845751b89e80927a3771e41"
+    },
+    {
+      "$oid": "694d761fc6ca3b49d162b78b"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:47.694Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.711Z"
+  },
+  "__v": 1,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845751b89e80927a3771e45"
+  },
+  "firstname": "باحمد",
+  "lastname": "بافلح",
+  "father": "",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "2002-02-07T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "joinYear": 2016,
+  "archived": false,
+  "membershipID": "2025486088",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845751b89e80927a3771e48"
+    },
+    {
+      "$oid": "694d761fc6ca3b49d162b799"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce3466d"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:48.034Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.773Z"
+  },
+  "__v": 1,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845751c89e80927a3771e4c"
+  },
+  "firstname": "بايوب",
+  "lastname": "بن الناصر",
+  "father": "عمر",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1998-06-15T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "joinYear": 2015,
+  "archived": false,
+  "membershipID": "2025131795",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845751c89e80927a3771e4f"
+    },
+    {
+      "$oid": "694d761ec6ca3b49d162b749"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce3466d"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:48.366Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.421Z"
+  },
+  "__v": 1,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845751c89e80927a3771e53"
+  },
+  "firstname": "سليمان",
+  "lastname": "بن الناصر",
+  "father": "ابراهيم",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "2003-09-08T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce34685"
+  },
+  "joinYear": 2016,
+  "archived": false,
+  "membershipID": "2025255149",
+  "playerSubscriptions": [
+    {
+      "$oid": "694d761ec6ca3b49d162b74b"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce3466f"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:48.694Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.440Z"
+  },
+  "__v": 4,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": [],
+    "medicalConditions": "healthy"
+  },
+  "nickname": "بابي"
+},
+{
+  "_id": {
+    "$oid": "6845751c89e80927a3771e5a"
+  },
+  "firstname": "مهدي",
+  "lastname": "بن الناصر",
+  "father": "عبد الله",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "2003-04-05T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": true,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "joinYear": 2017,
+  "archived": false,
+  "membershipID": "2025413509",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845751d89e80927a3771e5d"
+    },
+    {
+      "$oid": "694c34ab78bf9eceac589d6f"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce3466e"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:49.184Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 1,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845751d89e80927a3771e61"
+  },
+  "firstname": "عبد النور",
+  "lastname": "بن زايط",
+  "father": "عبد الرحمان",
+  "grandfather": "أحمد",
+  "birthdate": {
+    "$date": "2005-03-01T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "joinYear": 2017,
+  "archived": false,
+  "membershipID": "2025138609",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845751d89e80927a3771e64"
+    },
+    {
+      "$oid": "684720b69c4d8c60068079e5"
+    },
+    {
+      "$oid": "694c34ab78bf9eceac589d73"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce34671"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:49.582Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 4,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845751d89e80927a3771e68"
+  },
+  "firstname": "عبد الوهاب",
+  "lastname": "بن زايط",
+  "father": "صالح",
+  "grandfather": "أحمد",
+  "birthdate": {
+    "$date": "2000-05-04T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025862788",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845751d89e80927a3771e6b"
+    },
+    {
+      "$oid": "68474942adc1446d20af76b2"
+    },
+    {
+      "$oid": "694d761fc6ca3b49d162b785"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:49.973Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.679Z"
+  },
+  "__v": 2,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845751e89e80927a3771e6f"
+  },
+  "firstname": "ربيع",
+  "lastname": "بنورة",
+  "father": "ابراهبم",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "2002-06-10T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467d"
+  },
+  "joinYear": 2016,
+  "archived": false,
+  "membershipID": "2025982851",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845751e89e80927a3771e72"
+    },
+    {
+      "$oid": "6847210a9c4d8c6006807a18"
+    },
+    {
+      "$oid": "694d761ec6ca3b49d162b74f"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:50.304Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.455Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": [],
+    "medicalConditions": "healthy"
+  }
+},
+{
+  "_id": {
+    "$oid": "6845751e89e80927a3771e76"
+  },
+  "firstname": "ربيع",
+  "lastname": "بهون",
+  "father": "فريد",
+  "grandfather": "",
+  "birthdate": null,
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": true,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025162292",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845751e89e80927a3771e79"
+    },
+    {
+      "$oid": "694d761ec6ca3b49d162b74d"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:50.633Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.445Z"
+  },
+  "__v": 1,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845751e89e80927a3771e7d"
+  },
+  "firstname": "سليمان",
+  "lastname": "بهون",
+  "father": "محمد",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "2003-11-21T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "joinYear": 2018,
+  "archived": false,
+  "membershipID": "2025334330",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845751e89e80927a3771e80"
+    },
+    {
+      "$oid": "68e174402c2456d095cb0e66"
+    },
+    {
+      "$oid": "694c34ab78bf9eceac589d7d"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce3466e"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:51.025Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 2,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845751f89e80927a3771e84"
+  },
+  "firstname": "عبد الرحمان",
+  "lastname": "بهون",
+  "father": "عمر",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1988-05-30T23:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025589849",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845751f89e80927a3771e87"
+    },
+    {
+      "$oid": "694d761ec6ca3b49d162b751"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:51.443Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.462Z"
+  },
+  "__v": 1,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845751f89e80927a3771e8b"
+  },
+  "firstname": "علي",
+  "lastname": "بهون",
+  "father": "",
+  "grandfather": "",
+  "birthdate": null,
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025545974",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845751f89e80927a3771e8e"
+    },
+    {
+      "$oid": "684721ca9c4d8c6006807af5"
+    },
+    {
+      "$oid": "694d761ec6ca3b49d162b757"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:51.804Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.484Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845751f89e80927a3771e92"
+  },
+  "firstname": "إلياس",
+  "lastname": "حني",
+  "father": "نور الدين",
+  "grandfather": "",
+  "birthdate": null,
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025200908",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845752089e80927a3771e95"
+    },
+    {
+      "$oid": "694d761ec6ca3b49d162b753"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:52.197Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.474Z"
+  },
+  "__v": 1,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845752089e80927a3771e99"
+  },
+  "firstname": "داود",
+  "lastname": "حني",
+  "father": "نور الدين",
+  "grandfather": "",
+  "birthdate": null,
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025926758",
+  "playerSubscriptions": [
+    {
+      "$oid": "694d761ec6ca3b49d162b75d"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:52.827Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.537Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845752389e80927a3771ea0"
+  },
+  "firstname": "يحيى",
+  "lastname": "حني",
+  "father": "محمد",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1995-08-03T23:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025597340",
+  "playerSubscriptions": [
+    {
+      "$oid": "694d761ec6ca3b49d162b755"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:55.922Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.470Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845752489e80927a3771ea7"
+  },
+  "firstname": "عبد السلام",
+  "lastname": "حني",
+  "father": "نور الدين",
+  "grandfather": "",
+  "birthdate": null,
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "warning",
+    "value": "معتزل"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "joinYear": 2013,
+  "archived": false,
+  "membershipID": "2025940868",
+  "playerSubscriptions": [
+    {
+      "$oid": "694d761ec6ca3b49d162b75b"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce34675"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:56.392Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.513Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": [],
+    "medicalConditions": "healthy"
+  }
+},
+{
+  "_id": {
+    "$oid": "6845752489e80927a3771eae"
+  },
+  "firstname": "قاسم",
+  "lastname": "حني",
+  "father": "محمد",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1995-12-31T23:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "غير واضح"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025313923",
+  "playerSubscriptions": [
+    {
+      "$oid": "694d761ec6ca3b49d162b759"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:56.745Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.500Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845752489e80927a3771eb5"
+  },
+  "firstname": "يحيى",
+  "lastname": "حني",
+  "father": "يوسف",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1989-07-27T23:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025572684",
+  "playerSubscriptions": [
+    {
+      "$oid": "694d761ec6ca3b49d162b75f"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:57.096Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.555Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845752589e80927a3771ebc"
+  },
+  "firstname": "يحيى",
+  "lastname": "حني",
+  "father": "يوسف",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "2003-10-27T23:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025676494",
+  "playerSubscriptions": [
+    {
+      "$oid": "694d761ec6ca3b49d162b761"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:57.586Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.546Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845752589e80927a3771ec3"
+  },
+  "firstname": "إدريس",
+  "lastname": "داودي",
+  "father": "",
+  "grandfather": "",
+  "birthdate": null,
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025811975",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845752689e80927a3771ec6"
+    },
+    {
+      "$oid": "6847498eadc1446d20af771b"
+    },
+    {
+      "$oid": "694d761ec6ca3b49d162b763"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:58.296Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.562Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845752689e80927a3771eca"
+  },
+  "firstname": "إلياس",
+  "lastname": "داودي",
+  "father": "نور الدين بن علي",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1999-02-21T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467d"
+  },
+  "joinYear": 2015,
+  "archived": false,
+  "membershipID": "2025712900",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845752689e80927a3771ecd"
+    },
+    {
+      "$oid": "684722269c4d8c6006807b27"
+    },
+    {
+      "$oid": "694c34ab78bf9eceac589d79"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce34672"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:58.816Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 2,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845752789e80927a3771ed1"
+  },
+  "firstname": "إسلام",
+  "lastname": "داودي",
+  "father": "مصطفى",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "2003-09-24T23:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025241613",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845752789e80927a3771ed4"
+    },
+    {
+      "$oid": "694d761ec6ca3b49d162b765"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:59.413Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.557Z"
+  },
+  "__v": 1,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845752789e80927a3771ed8"
+  },
+  "firstname": "الحاج بكير",
+  "lastname": "داودي",
+  "father": "",
+  "grandfather": "",
+  "birthdate": null,
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": true,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467d"
+  },
+  "joinYear": 2017,
+  "archived": false,
+  "membershipID": "2025554497",
+  "playerSubscriptions": [
+    {
+      "$oid": "68474abbadc1446d20af7808"
+    },
+    {
+      "$oid": "6871784062e77d0f37dcec9f"
+    },
+    {
+      "$oid": "694c34ab78bf9eceac589d7b"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce3466f"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:33:59.756Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 6,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845752789e80927a3771edf"
+  },
+  "firstname": "الصادق",
+  "lastname": "داودي",
+  "father": "",
+  "grandfather": "",
+  "birthdate": null,
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": true,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467d"
+  },
+  "joinYear": 2020,
+  "archived": false,
+  "membershipID": "2025935239",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845752889e80927a3771ee2"
+    },
+    {
+      "$oid": "694c34ac78bf9eceac589dc2"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce3466d"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:00.099Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 1,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845752889e80927a3771ee6"
+  },
+  "firstname": "باحمد",
+  "lastname": "داودي",
+  "father": "محمد",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1992-12-20T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "joinYear": 2008,
+  "archived": false,
+  "membershipID": "2025269823",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845752889e80927a3771ee9"
+    },
+    {
+      "$oid": "68474adeadc1446d20af782c"
+    },
+    {
+      "$oid": "68474aeeadc1446d20af783e"
+    },
+    {
+      "$oid": "694c34ac78bf9eceac589dc0"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce34673"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:00.430Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 3,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  },
+  "nickname": "بزاز"
+},
+{
+  "_id": {
+    "$oid": "6845752889e80927a3771eed"
+  },
+  "firstname": "بكير",
+  "lastname": "داودي",
+  "father": "ابراهيم",
+  "grandfather": "علي",
+  "birthdate": {
+    "$date": "1983-12-31T23:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025748933",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845752889e80927a3771ef0"
+    },
+    {
+      "$oid": "694d761ec6ca3b49d162b769"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:00.771Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.582Z"
+  },
+  "__v": 1,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845752889e80927a3771ef4"
+  },
+  "firstname": "بيوب",
+  "lastname": "داودي",
+  "father": "باسعيد",
+  "grandfather": "",
+  "birthdate": null,
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "danger",
+    "value": "غادر الفريق"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467d"
+  },
+  "joinYear": 2017,
+  "archived": false,
+  "membershipID": "2025728298",
+  "playerSubscriptions": [
+    {
+      "$oid": "694d761ec6ca3b49d162b767"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:01.107Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.571Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": [],
+    "medicalConditions": "healthy"
+  }
+},
+{
+  "_id": {
+    "$oid": "6845752989e80927a3771efb"
+  },
+  "firstname": "حسين",
+  "lastname": "داودي",
+  "father": "ابراهيم",
+  "grandfather": "علي",
+  "birthdate": {
+    "$date": "1992-11-09T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "joinYear": 2010,
+  "archived": false,
+  "membershipID": "2025248069",
+  "playerSubscriptions": [
+    {
+      "$oid": "694d761ec6ca3b49d162b76b"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:01.456Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.590Z"
+  },
+  "__v": 2,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845752989e80927a3771f02"
+  },
+  "firstname": "حمو",
+  "lastname": "داودي",
+  "father": "",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1993-03-11T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "joinYear": 2013,
+  "archived": false,
+  "membershipID": "2025642462",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845752989e80927a3771f05"
+    },
+    {
+      "$oid": "694c34ab78bf9eceac589d81"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce34672"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:01.787Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 1,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  },
+  "nickname": "الحشوة"
+},
+{
+  "_id": {
+    "$oid": "6845752989e80927a3771f09"
+  },
+  "firstname": "خالد",
+  "lastname": "داودي",
+  "father": "الهادي",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1996-02-13T23:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025984993",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845752a89e80927a3771f0c"
+    },
+    {
+      "$oid": "694d761ec6ca3b49d162b76d"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:02.124Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.603Z"
+  },
+  "__v": 1,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845752a89e80927a3771f10"
+  },
+  "firstname": "عبد الوهاب",
+  "lastname": "داودي",
+  "father": "ابراهيم",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1996-08-23T23:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025197290",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845752a89e80927a3771f13"
+    },
+    {
+      "$oid": "684723389c4d8c6006807c1f"
+    },
+    {
+      "$oid": "694d761ec6ca3b49d162b76f"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:02.453Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.612Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845752a89e80927a3771f17"
+  },
+  "firstname": "عمر",
+  "lastname": "داودي",
+  "father": "محمد",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "2003-06-30T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": true,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467d"
+  },
+  "joinYear": 2017,
+  "archived": false,
+  "membershipID": "2025682209",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845752a89e80927a3771f1a"
+    },
+    {
+      "$oid": "694c34ab78bf9eceac589d7f"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce34670"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:02.785Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 1,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845752b89e80927a3771f1e"
+  },
+  "firstname": "لمين",
+  "lastname": "داودي",
+  "father": "افلح",
+  "grandfather": "",
+  "birthdate": null,
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025197389",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845752b89e80927a3771f21"
+    },
+    {
+      "$oid": "684739509c4d8c6006808175"
+    },
+    {
+      "$oid": "694d761ec6ca3b49d162b771"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:03.829Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.616Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845752c89e80927a3771f25"
+  },
+  "firstname": "محمد الهادي",
+  "lastname": "داودي",
+  "father": "الحاج محمد",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1994-06-20T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "joinYear": 2017,
+  "archived": false,
+  "membershipID": "2025889837",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845752c89e80927a3771f28"
+    },
+    {
+      "$oid": "694c34ab78bf9eceac589d85"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce3466f"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:04.217Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 1,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845752c89e80927a3771f2c"
+  },
+  "firstname": "محمد",
+  "lastname": "داودي",
+  "father": "الهادي",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "2006-07-21T23:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "غير واضح"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025769014",
+  "playerSubscriptions": [
+    {
+      "$oid": "694d761fc6ca3b49d162b773"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:04.581Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:32.026Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845752c89e80927a3771f33"
+  },
+  "firstname": "محمد",
+  "lastname": "داودي",
+  "father": "باحمد",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1997-10-11T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "joinYear": 2015,
+  "archived": false,
+  "membershipID": "2025958974",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845752c89e80927a3771f36"
+    },
+    {
+      "$oid": "694c34ab78bf9eceac589d83"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce3466c"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:04.924Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 1,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845752d89e80927a3771f3a"
+  },
+  "firstname": "مصطفى",
+  "lastname": "داودي",
+  "father": "داود",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1995-01-27T23:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025218357",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845752d89e80927a3771f3d"
+    },
+    {
+      "$oid": "694d761fc6ca3b49d162b775"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:05.263Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.620Z"
+  },
+  "__v": 1,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845752d89e80927a3771f41"
+  },
+  "firstname": "نصر الدين",
+  "lastname": "داودي",
+  "father": "ابراهيم",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1995-07-31T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467d"
+  },
+  "joinYear": 2024,
+  "archived": false,
+  "membershipID": "2025139873",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845752d89e80927a3771f44"
+    },
+    {
+      "$oid": "694c34ab78bf9eceac589d87"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce3466e"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:05.597Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 1,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845752d89e80927a3771f48"
+  },
+  "firstname": "ياسين",
+  "lastname": "داودي",
+  "father": "مصطفى",
+  "grandfather": "",
+  "birthdate": null,
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "warning",
+    "value": "معتزل"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce34679"
+  },
+  "joinYear": 2015,
+  "archived": false,
+  "membershipID": "2025941151",
+  "playerSubscriptions": [
+    {
+      "$oid": "694c34ac78bf9eceac589d8d"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce34670"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:05.940Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": [],
+    "medicalConditions": "healthy"
+  }
+},
+{
+  "_id": {
+    "$oid": "6845752e89e80927a3771f4f"
+  },
+  "firstname": "يحيى",
+  "lastname": "داودي",
+  "father": "ابراهيم",
+  "grandfather": "",
+  "birthdate": null,
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025751331",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845752e89e80927a3771f52"
+    },
+    {
+      "$oid": "68474b59adc1446d20af78a5"
+    },
+    {
+      "$oid": "694d761fc6ca3b49d162b779"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:06.352Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.638Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845752e89e80927a3771f56"
+  },
+  "firstname": "إبراهيم",
+  "lastname": "دودو",
+  "father": "اسليمان",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1983-04-14T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "warning",
+    "value": "معتزل"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "joinYear": 2008,
+  "archived": false,
+  "membershipID": "2025845378",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845752e89e80927a3771f59"
+    },
+    {
+      "$oid": "684725659c4d8c6006807d8c"
+    },
+    {
+      "$oid": "694d761fc6ca3b49d162b777"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce3466c"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:07.032Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.640Z"
+  },
+  "__v": 2,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845752f89e80927a3771f5d"
+  },
+  "firstname": "ابراهيم",
+  "lastname": "دودو",
+  "father": "يحي",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1993-09-03T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "joinYear": 2018,
+  "archived": false,
+  "membershipID": "2025240648",
+  "playerSubscriptions": [
+    {
+      "$oid": "686196f627b421f62a48a6f2"
+    },
+    {
+      "$oid": "6861970827b421f62a48a707"
+    },
+    {
+      "$oid": "694c34ac78bf9eceac589d89"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce3466d"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:07.613Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 10,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845753089e80927a3771f64"
+  },
+  "firstname": "بايوب تشوبة",
+  "lastname": "دودو",
+  "father": "",
+  "grandfather": "",
+  "birthdate": null,
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025698344",
+  "playerSubscriptions": [
+    {
+      "$oid": "68474ba3adc1446d20af78d6"
+    },
+    {
+      "$oid": "694d761fc6ca3b49d162b77d"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:08.644Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:32.139Z"
+  },
+  "__v": 3,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845753089e80927a3771f6b"
+  },
+  "firstname": "صالح",
+  "lastname": "دودو",
+  "father": "محمد",
+  "grandfather": "بكير",
+  "birthdate": {
+    "$date": "1990-05-04T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "warning",
+    "value": "معتزل"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "joinYear": 2007,
+  "archived": false,
+  "membershipID": "2025854371",
+  "playerSubscriptions": [
+    {
+      "$oid": "694c34ac78bf9eceac589d8b"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce3466f"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:09.369Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 4,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": [],
+    "medicalConditions": "healthy"
+  },
+  "nickname": "بوكر"
+},
+{
+  "_id": {
+    "$oid": "6845753189e80927a3771f72"
+  },
+  "firstname": "صالح",
+  "lastname": "دودو",
+  "father": "يحي",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1990-09-19T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025123731",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845753189e80927a3771f75"
+    },
+    {
+      "$oid": "694d761fc6ca3b49d162b77b"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:10.187Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.649Z"
+  },
+  "__v": 1,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  },
+  "nickname": "ناي ناي"
+},
+{
+  "_id": {
+    "$oid": "6845753289e80927a3771f79"
+  },
+  "firstname": "عبد الرحمان",
+  "lastname": "دودو",
+  "father": "محمد",
+  "grandfather": "داود",
+  "birthdate": {
+    "$date": "1987-02-02T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467d"
+  },
+  "joinYear": 2013,
+  "archived": false,
+  "membershipID": "2025478146",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845753289e80927a3771f7c"
+    },
+    {
+      "$oid": "684725c99c4d8c6006807dd1"
+    },
+    {
+      "$oid": "694c34ac78bf9eceac589d8f"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce3466d"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:10.893Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 2,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845753389e80927a3771f80"
+  },
+  "firstname": "لمين",
+  "lastname": "دودو",
+  "father": "سليمان",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1990-04-09T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "warning",
+    "value": "معتزل"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "joinYear": 2008,
+  "archived": false,
+  "membershipID": "2025448835",
+  "playerSubscriptions": [
+    {
+      "$oid": "694c34ac78bf9eceac589d91"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:11.431Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": [],
+    "medicalConditions": "healthy"
+  }
+},
+{
+  "_id": {
+    "$oid": "6845753389e80927a3771f87"
+  },
+  "firstname": "لمين",
+  "lastname": "دودو",
+  "father": "محمد",
+  "grandfather": "",
+  "birthdate": null,
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "danger",
+    "value": "غادر الفريق"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467d"
+  },
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025508499",
+  "playerSubscriptions": [
+    {
+      "$oid": "694d761fc6ca3b49d162b7c2"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:12.124Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:32.031Z"
+  },
+  "__v": 4,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": [],
+    "medicalConditions": "healthy"
+  },
+  "nickname": "طاهر"
+},
+{
+  "_id": {
+    "$oid": "6845753489e80927a3771f8e"
+  },
+  "firstname": "محمد الهادي",
+  "lastname": "دودو",
+  "father": "سليمان",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "2002-10-30T23:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025284918",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845753489e80927a3771f91"
+    },
+    {
+      "$oid": "694d761fc6ca3b49d162b781"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:12.724Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:32.023Z"
+  },
+  "__v": 1,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845753589e80927a3771f95"
+  },
+  "firstname": "محمد",
+  "lastname": "دودو",
+  "father": "",
+  "grandfather": "",
+  "birthdate": null,
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "joinYear": 2017,
+  "archived": false,
+  "membershipID": "2025734119",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845753589e80927a3771f98"
+    },
+    {
+      "$oid": "68474c76adc1446d20af79a3"
+    },
+    {
+      "$oid": "694d761fc6ca3b49d162b77f"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce34675"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:13.274Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.657Z"
+  },
+  "__v": 2,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  },
+  "nickname": "علوض"
+},
+{
+  "_id": {
+    "$oid": "6845753589e80927a3771f9c"
+  },
+  "firstname": "محمد لمين",
+  "lastname": "دودو",
+  "father": "محفوظ",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1995-05-08T23:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025486568",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845753589e80927a3771f9f"
+    },
+    {
+      "$oid": "694d761fc6ca3b49d162b783"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:13.967Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.685Z"
+  },
+  "__v": 1,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845753689e80927a3771fa3"
+  },
+  "firstname": "يوسف",
+  "lastname": "دودو",
+  "father": "يحيى",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "2002-06-20T23:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025195445",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845753689e80927a3771fa6"
+    },
+    {
+      "$oid": "694d761fc6ca3b49d162b787"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:14.484Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.690Z"
+  },
+  "__v": 1,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845753689e80927a3771faa"
+  },
+  "firstname": "يونس",
+  "lastname": "دودو",
+  "father": "",
+  "grandfather": "",
+  "birthdate": null,
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025269172",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845753789e80927a3771fad"
+    },
+    {
+      "$oid": "68474cc6adc1446d20af79de"
+    },
+    {
+      "$oid": "694d761fc6ca3b49d162b789"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:17.300Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.702Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845753a89e80927a3771fb1"
+  },
+  "firstname": "محمد",
+  "lastname": "زكــريا",
+  "father": "بكير",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1991-09-24T23:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025391277",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845753d89e80927a3771fb4"
+    },
+    {
+      "$oid": "684726429c4d8c6006807e48"
+    },
+    {
+      "$oid": "694d7620c6ca3b49d162b7f5"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:22.775Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:32.843Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845754189e80927a3771fb8"
+  },
+  "firstname": "عبد الحفيظ",
+  "lastname": "سعيد",
+  "father": "عمر",
+  "grandfather": "",
+  "birthdate": null,
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "danger",
+    "value": "غادر الفريق"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467d"
+  },
+  "joinYear": 2015,
+  "archived": false,
+  "membershipID": "2025726105",
+  "playerSubscriptions": [
+    {
+      "$oid": "694d761fc6ca3b49d162b78d"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:25.925Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.716Z"
+  },
+  "__v": 4,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": [],
+    "medicalConditions": "healthy"
+  }
+},
+{
+  "_id": {
+    "$oid": "6845754289e80927a3771fbf"
+  },
+  "firstname": "نصر الدين",
+  "lastname": "سعيد",
+  "father": "موسى",
+  "grandfather": "",
+  "birthdate": null,
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025409188",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845754289e80927a3771fc2"
+    },
+    {
+      "$oid": "68474d0eadc1446d20af7a36"
+    },
+    {
+      "$oid": "694d761fc6ca3b49d162b791"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:26.359Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.727Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845754289e80927a3771fc6"
+  },
+  "firstname": "إبراهيم",
+  "lastname": "عاشور",
+  "father": "داود",
+  "grandfather": "",
+  "birthdate": null,
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025398256",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845754289e80927a3771fc9"
+    },
+    {
+      "$oid": "694d761fc6ca3b49d162b78f"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:26.898Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.722Z"
+  },
+  "__v": 1,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845754389e80927a3771fcd"
+  },
+  "firstname": "حمو",
+  "lastname": "عاشور",
+  "father": "بابا عيسى",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1985-11-01T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467d"
+  },
+  "joinYear": 2012,
+  "archived": false,
+  "membershipID": "2025479064",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845754389e80927a3771fd0"
+    },
+    {
+      "$oid": "684726d19c4d8c6006807ec5"
+    },
+    {
+      "$oid": "684726d19c4d8c6006807ec9"
+    },
+    {
+      "$oid": "694d761fc6ca3b49d162b7c4"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce34671"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:27.482Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:32.035Z"
+  },
+  "__v": 2,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845754389e80927a3771fd4"
+  },
+  "firstname": "صالح",
+  "lastname": "عاشور",
+  "father": "بكير",
+  "grandfather": "",
+  "birthdate": null,
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025934799",
+  "playerSubscriptions": [
+    {
+      "$oid": "687ab785b754eb5aef0b1dcc"
+    },
+    {
+      "$oid": "694d761fc6ca3b49d162b793"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:28.135Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.768Z"
+  },
+  "__v": 5,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845754489e80927a3771fdb"
+  },
+  "firstname": "محمد",
+  "lastname": "عاشور",
+  "father": "بكير",
+  "grandfather": "",
+  "birthdate": null,
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025523585",
+  "playerSubscriptions": [
+    {
+      "$oid": "694d761fc6ca3b49d162b795"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:28.751Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.761Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845754589e80927a3771fe2"
+  },
+  "firstname": "محمد",
+  "lastname": "عاشور",
+  "father": "حمو",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "2005-10-31T23:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "غير واضح"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025987500",
+  "playerSubscriptions": [
+    {
+      "$oid": "694d761fc6ca3b49d162b7d5"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:29.429Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:32.142Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845754589e80927a3771fe9"
+  },
+  "firstname": "محمد",
+  "lastname": "عاشور",
+  "father": "يوسف",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "2006-04-01T23:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "غير واضح"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025106794",
+  "playerSubscriptions": [
+    {
+      "$oid": "694d761fc6ca3b49d162b79b"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:30.144Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.792Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845754689e80927a3771ff0"
+  },
+  "firstname": "محمد",
+  "lastname": "عاشور",
+  "father": "بابا",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "2003-06-01T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "danger",
+    "value": "غادر الفريق"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467d"
+  },
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025210937",
+  "playerSubscriptions": [
+    {
+      "$oid": "694d761fc6ca3b49d162b797"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:30.681Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.756Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": [],
+    "medicalConditions": "healthy"
+  }
+},
+{
+  "_id": {
+    "$oid": "6845754789e80927a3771ff8"
+  },
+  "firstname": "مختار",
+  "lastname": "عاشور",
+  "father": "يوسف",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "2005-01-29T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "joinYear": 2015,
+  "archived": false,
+  "membershipID": "2025292763",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845754789e80927a3771ffb"
+    },
+    {
+      "$oid": "694c34ac78bf9eceac589d95"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce34672"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:31.363Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 1,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845754789e80927a3771fff"
+  },
+  "firstname": "محمد",
+  "lastname": "عباس",
+  "father": "باعيسى",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "2002-04-08T23:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025996928",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845754789e80927a3772002"
+    },
+    {
+      "$oid": "694d761fc6ca3b49d162b79d"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:31.879Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.788Z"
+  },
+  "__v": 1,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845754889e80927a3772006"
+  },
+  "firstname": "محمد",
+  "lastname": "عباس",
+  "father": "عبدالرحمان",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1986-07-04T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "joinYear": 2017,
+  "archived": false,
+  "membershipID": "2025970270",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845754889e80927a3772009"
+    },
+    {
+      "$oid": "694c34ac78bf9eceac589d93"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:32.400Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 1,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  },
+  "nickname": "خريقة"
+},
+{
+  "_id": {
+    "$oid": "6845754889e80927a377200d"
+  },
+  "firstname": "عبد النور",
+  "lastname": "عبد العزيز",
+  "father": "عبد الناصر",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1998-08-27T23:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025520602",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845754889e80927a3772010"
+    },
+    {
+      "$oid": "694d761fc6ca3b49d162b79f"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:33.012Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.804Z"
+  },
+  "__v": 1,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845754989e80927a3772014"
+  },
+  "firstname": "مصطفى",
+  "lastname": "عبد العزيز",
+  "father": "محمد",
+  "grandfather": "يوسف",
+  "birthdate": {
+    "$date": "1993-08-16T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467e"
+  },
+  "joinYear": 2009,
+  "archived": false,
+  "membershipID": "2025805787",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845754989e80927a3772017"
+    },
+    {
+      "$oid": "694c34ac78bf9eceac589d9f"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:33.653Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 1,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": "A+"
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845754a89e80927a377201b"
+  },
+  "firstname": "مصطفى",
+  "lastname": "علواني",
+  "father": "مسعود",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1996-07-30T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "danger",
+    "value": "غادر الفريق"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467d"
+  },
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025989780",
+  "playerSubscriptions": [
+    {
+      "$oid": "694d761fc6ca3b49d162b7a1"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:34.384Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.818Z"
+  },
+  "__v": 4,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": [],
+    "medicalConditions": "healthy"
+  }
+},
+{
+  "_id": {
+    "$oid": "6845754a89e80927a3772022"
+  },
+  "firstname": "بعمور",
+  "lastname": "عيسى",
+  "father": "ابراهيم",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "2003-05-07T23:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025248373",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845754a89e80927a3772025"
+    },
+    {
+      "$oid": "684728949c4d8c6006807ff9"
+    },
+    {
+      "$oid": "694d761fc6ca3b49d162b7a5"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:35.060Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.832Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845754b89e80927a3772029"
+  },
+  "firstname": "حمو المهدي",
+  "lastname": "عيسى بن يحي",
+  "father": "",
+  "grandfather": "",
+  "birthdate": null,
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025675133",
+  "playerSubscriptions": [
+    {
+      "$oid": "694d761fc6ca3b49d162b7a3"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:35.679Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.823Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845754b89e80927a3772030"
+  },
+  "firstname": "عبد العزيز",
+  "lastname": "عيسى بن يحي",
+  "father": "يحيى",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1988-08-16T23:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025535565",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845754c89e80927a3772033"
+    },
+    {
+      "$oid": "694d761fc6ca3b49d162b7ab"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:36.486Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.853Z"
+  },
+  "__v": 1,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845754c89e80927a3772037"
+  },
+  "firstname": "عمر بابا داود",
+  "lastname": "عيسى بن يحي",
+  "father": "",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1990-07-26T23:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025575884",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845754c89e80927a377203a"
+    },
+    {
+      "$oid": "694d761fc6ca3b49d162b7a7"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:36.884Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.838Z"
+  },
+  "__v": 1,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845754d89e80927a377203e"
+  },
+  "firstname": "عمر",
+  "lastname": "عيسى بن يحي",
+  "father": "بكير",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1998-03-03T23:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025594712",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845754d89e80927a3772041"
+    },
+    {
+      "$oid": "694d761fc6ca3b49d162b7a9"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:37.466Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.845Z"
+  },
+  "__v": 1,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845754d89e80927a3772045"
+  },
+  "firstname": "محمد بابا داود",
+  "lastname": "عيسى بن يحي",
+  "father": "",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1986-11-30T23:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025515609",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845754d89e80927a3772048"
+    },
+    {
+      "$oid": "6847389d9c4d8c60068080c5"
+    },
+    {
+      "$oid": "684738b39c4d8c60068080d8"
+    },
+    {
+      "$oid": "694d761fc6ca3b49d162b7ad"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:37.959Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.869Z"
+  },
+  "__v": 5,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845754e89e80927a377204c"
+  },
+  "firstname": "الشيخ بلحاج",
+  "lastname": "قشار",
+  "father": "عمر",
+  "grandfather": "بلحاج",
+  "birthdate": {
+    "$date": "1999-06-16T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce34688"
+  },
+  "joinYear": 2015,
+  "archived": false,
+  "membershipID": "2025604459",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845754e89e80927a377204f"
+    },
+    {
+      "$oid": "694c34ac78bf9eceac589d9b"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce34676"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:38.329Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 1,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845754e89e80927a3772053"
+  },
+  "firstname": "محمد",
+  "lastname": "محمدي",
+  "father": "",
+  "grandfather": "",
+  "birthdate": null,
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": null,
+  "joinYear": 1970,
+  "archived": false,
+  "membershipID": "2025895025",
+  "playerSubscriptions": [
+    {
+      "$oid": "68474e36adc1446d20af7b5c"
+    },
+    {
+      "$oid": "694d761fc6ca3b49d162b7af"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "67cacda4844306231b59e9bd"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:38.660Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.873Z"
+  },
+  "__v": 5,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": []
+  }
+},
+{
+  "_id": {
+    "$oid": "6845754e89e80927a377205a"
+  },
+  "firstname": "حمزة",
+  "lastname": "ميوريغ",
+  "father": "",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1994-07-27T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "joinYear": 2025,
+  "archived": false,
+  "membershipID": "2025875121",
+  "playerSubscriptions": [
+    {
+      "$oid": "6845754e89e80927a377205d"
+    },
+    {
+      "$oid": "684739019c4d8c6006808131"
+    },
+    {
+      "$oid": "694c34ac78bf9eceac589d99"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce3466e"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:34:38.993Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 2,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "emergencyContact": [],
+    "medicalConditions": "healthy"
+  }
+},
+{
+  "_id": {
+    "$oid": "684727be9c4d8c6006807eff"
+  },
+  "firstname": "محمد",
+  "lastname": "عاشور",
+  "father": "دحمان",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "2025-06-09T17:40:45.031Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "joinYear": 2018,
+  "archived": false,
+  "membershipID": "2025962497",
+  "playerSubscriptions": [
+    {
+      "$oid": "684727e59c4d8c6006807f2b"
+    },
+    {
+      "$oid": "684727f29c4d8c6006807f40"
+    },
+    {
+      "$oid": "694c34ac78bf9eceac589d97"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce3466d"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "health": {
+    "medicalConditions": "healthy",
+    "blood": {
+      "groupRhesus": "A+"
+    },
+    "emergencyContact": []
+  },
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-09T18:28:14.164Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 3
+},
+{
+  "_id": {
+    "$oid": "68474a83adc1446d20af77cf"
+  },
+  "firstname": "محمد",
+  "lastname": "حني",
+  "father": "عمر",
+  "grandfather": "داود",
+  "birthdate": {
+    "$date": "1989-07-28T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "joinYear": 2025,
+  "archived": false,
+  "membershipID": "2025639366",
+  "playerSubscriptions": [
+    {
+      "$oid": "68474a9dadc1446d20af77e4"
+    },
+    {
+      "$oid": "694c34ac78bf9eceac589da1"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce3466d"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "health": {
+    "medicalConditions": "healthy",
+    "emergencyContact": [],
+    "blood": {
+      "groupRhesus": ""
+    }
+  },
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-09T20:56:35.740Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 3,
+  "nickname": "عماري"
+},
+{
+  "_id": {
+    "$oid": "68474d65adc1446d20af7a50"
+  },
+  "firstname": "نصرالدين",
+  "lastname": "عاشور",
+  "father": "",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1988-01-01T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "warning",
+    "value": "معتزل"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "joinYear": 2008,
+  "archived": false,
+  "membershipID": "2025560395",
+  "playerSubscriptions": [
+    {
+      "$oid": "68474da1adc1446d20af7a9b"
+    },
+    {
+      "$oid": "694c34ac78bf9eceac589d9d"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce34676"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "health": {
+    "medicalConditions": "healthy",
+    "emergencyContact": [],
+    "blood": {
+      "groupRhesus": ""
+    }
+  },
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-09T21:08:53.918Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 3
+},
+{
+  "_id": {
+    "$oid": "687410dd3025376444142153"
+  },
+  "firstname": "يوسف",
+  "lastname": "أبي اسماعيل",
+  "nickname": "",
+  "father": "بكير",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "2025-07-13T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": true,
+  "joinYear": 2020,
+  "archived": false,
+  "membershipID": "2025228422",
+  "playerSubscriptions": [
+    {
+      "$oid": "687ab4e8b754eb5aef0b1c49"
+    },
+    {
+      "$oid": "694c37ec78bf9eceac589e3c"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce3466f"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "health": {
+    "medicalConditions": "healthy",
+    "emergencyContact": [],
+    "blood": {
+      "groupRhesus": ""
+    }
+  },
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-07-13T20:02:37.207Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 5,
+  "job": null
+},
+{
+  "_id": {
+    "$oid": "687b5912b754eb5aef0b231b"
+  },
+  "firstname": "عبد السلام",
+  "lastname": "حني",
+  "nickname": "",
+  "father": "موسى",
+  "grandfather": "",
+  "birthdate": {
+    "$date": "1995-04-08T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [],
+  "email": "",
+  "status": {
+    "class": "success",
+    "value": "منخرط"
+  },
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce34682"
+  },
+  "joinYear": 2012,
+  "archived": false,
+  "membershipID": "2025924403",
+  "playerSubscriptions": [
+    {
+      "$oid": "694c34ac78bf9eceac589da3"
+    }
+  ],
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "position": {
+    "$oid": "68456dcf1b20adaabce34670"
+  },
+  "team": "الإتحاد الرياضي النوري البنوري IRNB",
+  "skillLevel": 5,
+  "health": {
+    "medicalConditions": "healthy",
+    "emergencyContact": [],
+    "blood": {
+      "groupRhesus": ""
+    }
+  },
+  "outstandingDebt": 0,
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-07-19T08:36:34.856Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:33:42.762Z"
+  },
+  "__v": 1
+}]

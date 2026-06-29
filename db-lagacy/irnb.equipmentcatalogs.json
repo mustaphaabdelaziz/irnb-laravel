@@ -1,0 +1,17 @@
+[{
+  "_id": {
+    "$oid": "69083ce8d8bd37693f844439"
+  },
+  "name": "test",
+  "category": "Soccer Balls",
+  "brand": "SORS0",
+  "description": "GOOD",
+  "itemCount": 0,
+  "createdAt": {
+    "$date": "2025-11-03T05:26:00.311Z"
+  },
+  "updatedAt": {
+    "$date": "2025-11-03T05:26:00.311Z"
+  },
+  "__v": 0
+}]

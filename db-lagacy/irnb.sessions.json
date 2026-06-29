@@ -1,0 +1,10 @@
+[{
+  "_id": "DbrY7iPcvVOUPpy9LRna5S6bJ3xptlxM",
+  "expires": {
+    "$date": "2026-04-12T19:11:03.837Z"
+  },
+  "lastModified": {
+    "$date": "2026-04-05T19:11:03.838Z"
+  },
+  "session": "{\"cookie\":{\"originalMaxAge\":604800000,\"expires\":\"2026-04-12T19:11:03.837Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"strict\"},\"passport\":{\"user\":\"68457232d1598af960d42d6b\"},\"flash\":{}}"
+}]

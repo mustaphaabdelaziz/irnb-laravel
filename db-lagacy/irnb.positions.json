@@ -1,0 +1,154 @@
+[{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce3466c"
+  },
+  "name": "حارس مرمى",
+  "abbreviation": "GK",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.146Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.146Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce3466d"
+  },
+  "name": "مدافع",
+  "abbreviation": "DF",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.146Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.146Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce3466e"
+  },
+  "name": "لاعب وسط",
+  "abbreviation": "MF",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.146Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.146Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce3466f"
+  },
+  "name": "مهاجم",
+  "abbreviation": "FW",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.146Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.146Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce34670"
+  },
+  "name": "جناح",
+  "abbreviation": "WG",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.146Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.146Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce34671"
+  },
+  "name": "ظهير أيمن",
+  "abbreviation": "RB",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.146Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.146Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce34672"
+  },
+  "name": "ظهير أيسر",
+  "abbreviation": "LB",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.146Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.146Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce34673"
+  },
+  "name": "قلب دفاع",
+  "abbreviation": "CB",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce34674"
+  },
+  "name": "لاعب وسط دفاعي",
+  "abbreviation": "DM",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce34675"
+  },
+  "name": "لاعب وسط هجومي",
+  "abbreviation": "AM",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce34676"
+  },
+  "name": "مهاجم وسط",
+  "abbreviation": "CF",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  }
+}]

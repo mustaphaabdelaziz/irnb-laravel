@@ -1,0 +1,5190 @@
+[{
+  "_id": {
+    "$oid": "6845751789e80927a3771df4"
+  },
+  "player": {
+    "$oid": "6845751789e80927a3771df1"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845751789e80927a3771df2"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:33:43.760Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:33:43.760Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751889e80927a3771e09"
+  },
+  "player": {
+    "$oid": "6845751889e80927a3771e06"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845751889e80927a3771e07"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:33:44.917Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:33:44.917Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751989e80927a3771e17"
+  },
+  "player": {
+    "$oid": "6845751989e80927a3771e14"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845751989e80927a3771e15"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:33:45.599Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T17:45:06.039Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751989e80927a3771e1e"
+  },
+  "player": {
+    "$oid": "6845751989e80927a3771e1b"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845751989e80927a3771e1c"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:33:45.929Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T17:49:36.110Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751b89e80927a3771e3a"
+  },
+  "player": {
+    "$oid": "6845751b89e80927a3771e37"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845751b89e80927a3771e38"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:33:47.280Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:33:47.280Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751b89e80927a3771e41"
+  },
+  "player": {
+    "$oid": "6845751b89e80927a3771e3e"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845751b89e80927a3771e3f"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:33:47.612Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:33:47.612Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751b89e80927a3771e48"
+  },
+  "player": {
+    "$oid": "6845751b89e80927a3771e45"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845751b89e80927a3771e46"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:33:47.953Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:33:47.953Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751c89e80927a3771e4f"
+  },
+  "player": {
+    "$oid": "6845751c89e80927a3771e4c"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845751c89e80927a3771e4d"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:33:48.284Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-09T18:14:41.470Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751d89e80927a3771e5d"
+  },
+  "player": {
+    "$oid": "6845751c89e80927a3771e5a"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "student",
+  "amountOwed": 1500,
+  "amountPaid": 1500,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845751c89e80927a3771e5b"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:33:49.082Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T17:54:41.472Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751d89e80927a3771e64"
+  },
+  "player": {
+    "$oid": "6845751d89e80927a3771e61"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845751d89e80927a3771e62"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:33:49.492Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T17:56:35.944Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751d89e80927a3771e6b"
+  },
+  "player": {
+    "$oid": "6845751d89e80927a3771e68"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845751d89e80927a3771e69"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:33:49.887Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:33:49.887Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751e89e80927a3771e72"
+  },
+  "player": {
+    "$oid": "6845751e89e80927a3771e6f"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845751e89e80927a3771e70"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:33:50.222Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T17:59:52.876Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751e89e80927a3771e79"
+  },
+  "player": {
+    "$oid": "6845751e89e80927a3771e76"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "student",
+  "amountOwed": 1500,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845751e89e80927a3771e77"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:33:50.550Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:33:50.550Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751e89e80927a3771e80"
+  },
+  "player": {
+    "$oid": "6845751e89e80927a3771e7d"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845751e89e80927a3771e7e"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:33:50.942Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:00:18.591Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751f89e80927a3771e87"
+  },
+  "player": {
+    "$oid": "6845751f89e80927a3771e84"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845751f89e80927a3771e85"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:33:51.344Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:01:29.437Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751f89e80927a3771e8e"
+  },
+  "player": {
+    "$oid": "6845751f89e80927a3771e8b"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845751f89e80927a3771e8c"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:33:51.713Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:02:18.950Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752089e80927a3771e95"
+  },
+  "player": {
+    "$oid": "6845751f89e80927a3771e92"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845751f89e80927a3771e93"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:33:52.103Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:33:52.103Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752689e80927a3771ec6"
+  },
+  "player": {
+    "$oid": "6845752589e80927a3771ec3"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845752589e80927a3771ec4"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:33:58.103Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:33:58.103Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752689e80927a3771ecd"
+  },
+  "player": {
+    "$oid": "6845752689e80927a3771eca"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845752689e80927a3771ecb"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:33:58.710Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:04:47.495Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752789e80927a3771ed4"
+  },
+  "player": {
+    "$oid": "6845752789e80927a3771ed1"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845752789e80927a3771ed2"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:33:59.322Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:05:35.885Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752889e80927a3771ee2"
+  },
+  "player": {
+    "$oid": "6845752789e80927a3771edf"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "student",
+  "amountOwed": 1500,
+  "amountPaid": 1500,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845752789e80927a3771ee0"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:00.015Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:06:32.034Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752889e80927a3771ee9"
+  },
+  "player": {
+    "$oid": "6845752889e80927a3771ee6"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845752889e80927a3771ee7"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:00.344Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:34:00.344Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752889e80927a3771ef0"
+  },
+  "player": {
+    "$oid": "6845752889e80927a3771eed"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845752889e80927a3771eee"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:00.686Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:34:00.686Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752989e80927a3771f05"
+  },
+  "player": {
+    "$oid": "6845752989e80927a3771f02"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845752989e80927a3771f03"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:01.703Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:34:01.703Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752a89e80927a3771f0c"
+  },
+  "player": {
+    "$oid": "6845752989e80927a3771f09"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845752989e80927a3771f0a"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:02.040Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:08:14.670Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752a89e80927a3771f13"
+  },
+  "player": {
+    "$oid": "6845752a89e80927a3771f10"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845752a89e80927a3771f11"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:02.370Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:09:23.452Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752a89e80927a3771f1a"
+  },
+  "player": {
+    "$oid": "6845752a89e80927a3771f17"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "student",
+  "amountOwed": 1500,
+  "amountPaid": 1500,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845752a89e80927a3771f18"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:02.702Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:12:05.125Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752b89e80927a3771f21"
+  },
+  "player": {
+    "$oid": "6845752b89e80927a3771f1e"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845752b89e80927a3771f1f"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:03.701Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T19:43:18.609Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752c89e80927a3771f28"
+  },
+  "player": {
+    "$oid": "6845752c89e80927a3771f25"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845752c89e80927a3771f26"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:04.122Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:12:45.146Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752c89e80927a3771f36"
+  },
+  "player": {
+    "$oid": "6845752c89e80927a3771f33"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845752c89e80927a3771f34"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:04.842Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:14:56.855Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752d89e80927a3771f3d"
+  },
+  "player": {
+    "$oid": "6845752d89e80927a3771f3a"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845752d89e80927a3771f3b"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:05.180Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:34:05.180Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752d89e80927a3771f44"
+  },
+  "player": {
+    "$oid": "6845752d89e80927a3771f41"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845752d89e80927a3771f42"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:05.515Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:15:35.661Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752e89e80927a3771f52"
+  },
+  "player": {
+    "$oid": "6845752e89e80927a3771f4f"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845752e89e80927a3771f50"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:06.263Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-19T08:59:40.148Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752e89e80927a3771f59"
+  },
+  "player": {
+    "$oid": "6845752e89e80927a3771f56"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845752e89e80927a3771f57"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:06.900Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:16:35.851Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845753189e80927a3771f75"
+  },
+  "player": {
+    "$oid": "6845753189e80927a3771f72"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845753189e80927a3771f73"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:10.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T20:04:55.689Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845753289e80927a3771f7c"
+  },
+  "player": {
+    "$oid": "6845753289e80927a3771f79"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845753289e80927a3771f7a"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:10.695Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:19:33.628Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845753489e80927a3771f91"
+  },
+  "player": {
+    "$oid": "6845753489e80927a3771f8e"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845753489e80927a3771f8f"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:12.535Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:20:35.706Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845753589e80927a3771f98"
+  },
+  "player": {
+    "$oid": "6845753589e80927a3771f95"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845753589e80927a3771f96"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:13.149Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:34:13.149Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845753589e80927a3771f9f"
+  },
+  "player": {
+    "$oid": "6845753589e80927a3771f9c"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845753589e80927a3771f9d"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:13.769Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:34:13.769Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845753689e80927a3771fa6"
+  },
+  "player": {
+    "$oid": "6845753689e80927a3771fa3"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845753689e80927a3771fa4"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:14.299Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-29T19:39:06.209Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845753789e80927a3771fad"
+  },
+  "player": {
+    "$oid": "6845753689e80927a3771faa"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845753689e80927a3771fab"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:15.952Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:34:15.952Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845753d89e80927a3771fb4"
+  },
+  "player": {
+    "$oid": "6845753a89e80927a3771fb1"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2500,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845753a89e80927a3771fb2"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:21.276Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:21:54.509Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754289e80927a3771fc2"
+  },
+  "player": {
+    "$oid": "6845754289e80927a3771fbf"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845754289e80927a3771fc0"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:26.217Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:34:26.217Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754289e80927a3771fc9"
+  },
+  "player": {
+    "$oid": "6845754289e80927a3771fc6"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845754289e80927a3771fc7"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:26.765Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:22:49.791Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754389e80927a3771fd0"
+  },
+  "player": {
+    "$oid": "6845754389e80927a3771fcd"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845754389e80927a3771fce"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:27.302Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:23:54.591Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754789e80927a3771ffb"
+  },
+  "player": {
+    "$oid": "6845754789e80927a3771ff8"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845754789e80927a3771ff9"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:31.271Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:34:31.271Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754789e80927a3772002"
+  },
+  "player": {
+    "$oid": "6845754789e80927a3771fff"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845754789e80927a3772000"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:31.783Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:34:31.783Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754889e80927a3772009"
+  },
+  "player": {
+    "$oid": "6845754889e80927a3772006"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845754889e80927a3772007"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:32.218Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:29:54.240Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754889e80927a3772010"
+  },
+  "player": {
+    "$oid": "6845754889e80927a377200d"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845754889e80927a377200e"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:32.910Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:30:50.846Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754989e80927a3772017"
+  },
+  "player": {
+    "$oid": "6845754989e80927a3772014"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845754989e80927a3772015"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:33.446Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:35:41.271Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754a89e80927a3772025"
+  },
+  "player": {
+    "$oid": "6845754a89e80927a3772022"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845754a89e80927a3772023"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:34.959Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:31:33.472Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754c89e80927a3772033"
+  },
+  "player": {
+    "$oid": "6845754b89e80927a3772030"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845754b89e80927a3772031"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:36.314Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:34:36.314Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754c89e80927a377203a"
+  },
+  "player": {
+    "$oid": "6845754c89e80927a3772037"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845754c89e80927a3772038"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:36.783Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T19:37:38.286Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754d89e80927a3772041"
+  },
+  "player": {
+    "$oid": "6845754d89e80927a377203e"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845754d89e80927a377203f"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:37.313Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T19:38:31.320Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754d89e80927a3772048"
+  },
+  "player": {
+    "$oid": "6845754d89e80927a3772045"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845754d89e80927a3772046"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:37.871Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T19:39:12.117Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754e89e80927a377204f"
+  },
+  "player": {
+    "$oid": "6845754e89e80927a377204c"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845754e89e80927a377204d"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:38.246Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T19:40:59.250Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754e89e80927a377205d"
+  },
+  "player": {
+    "$oid": "6845754e89e80927a377205a"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "6845754e89e80927a377205b"
+  },
+  "createdAt": {
+    "$date": "2025-06-08T11:34:38.910Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T19:42:01.160Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68471d219c4d8c600680776e"
+  },
+  "player": {
+    "$oid": "6845751989e80927a3771e0d"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "dueDate": null,
+  "transaction": {
+    "$oid": "68471d209c4d8c600680776c"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T17:42:57.055Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T17:42:57.055Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68471e839c4d8c600680783b"
+  },
+  "player": {
+    "$oid": "6845751989e80927a3771e14"
+  },
+  "subscription": {
+    "$oid": "68471def9c4d8c600680780e"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 500,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "dueDate": null,
+  "transaction": {
+    "$oid": "68471e839c4d8c6006807839"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T17:48:51.891Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T17:49:03.276Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684720b69c4d8c60068079e5"
+  },
+  "player": {
+    "$oid": "6845751d89e80927a3771e61"
+  },
+  "subscription": {
+    "$oid": "68471e159c4d8c6006807815"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2500,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "dueDate": null,
+  "transaction": {
+    "$oid": "684720b69c4d8c60068079e3"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T17:58:14.954Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T17:58:14.954Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6847210a9c4d8c6006807a18"
+  },
+  "player": {
+    "$oid": "6845751e89e80927a3771e6f"
+  },
+  "subscription": {
+    "$oid": "68471def9c4d8c600680780e"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 500,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "dueDate": null,
+  "transaction": {
+    "$oid": "6847210a9c4d8c6006807a16"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T17:59:38.690Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T17:59:38.690Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684721ca9c4d8c6006807af5"
+  },
+  "player": {
+    "$oid": "6845751f89e80927a3771e8b"
+  },
+  "subscription": null,
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 0,
+  "amountPaid": 28000,
+  "isLegacy": false,
+  "dueDate": null,
+  "transaction": {
+    "$oid": "684721ca9c4d8c6006807af3"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T18:02:50.840Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:02:50.840Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684722269c4d8c6006807b27"
+  },
+  "player": {
+    "$oid": "6845752689e80927a3771eca"
+  },
+  "subscription": {
+    "$oid": "68471e159c4d8c6006807815"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2500,
+  "amountPaid": 2500,
+  "isLegacy": false,
+  "dueDate": null,
+  "transaction": {
+    "$oid": "684722269c4d8c6006807b25"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T18:04:22.436Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:04:22.436Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684723389c4d8c6006807c1f"
+  },
+  "player": {
+    "$oid": "6845752a89e80927a3771f10"
+  },
+  "subscription": null,
+  "year": 2025,
+  "statusAtTime": "unknown",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": true,
+  "dueDate": {
+    "$date": "2024-01-01T00:00:00.000Z"
+  },
+  "transaction": {
+    "$oid": "684723379c4d8c6006807c1d"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T18:08:56.060Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:08:56.060Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684725659c4d8c6006807d8c"
+  },
+  "player": {
+    "$oid": "6845752e89e80927a3771f56"
+  },
+  "subscription": null,
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 0,
+  "amountPaid": 13000,
+  "isLegacy": false,
+  "dueDate": null,
+  "transaction": {
+    "$oid": "684725659c4d8c6006807d8a"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T18:18:13.303Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:18:13.303Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684725c99c4d8c6006807dd1"
+  },
+  "player": {
+    "$oid": "6845753289e80927a3771f79"
+  },
+  "subscription": null,
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 0,
+  "amountPaid": 48000,
+  "isLegacy": false,
+  "dueDate": null,
+  "transaction": {
+    "$oid": "684725c99c4d8c6006807dcf"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T18:19:53.633Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:19:53.633Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684726429c4d8c6006807e48"
+  },
+  "player": {
+    "$oid": "6845753a89e80927a3771fb1"
+  },
+  "subscription": null,
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 0,
+  "amountPaid": 500,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "684726429c4d8c6006807e46"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T18:21:54.701Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:21:54.701Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684726d19c4d8c6006807ec5"
+  },
+  "player": {
+    "$oid": "6845754389e80927a3771fcd"
+  },
+  "subscription": {
+    "$oid": "68471e159c4d8c6006807815"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2500,
+  "amountPaid": 3000,
+  "isLegacy": false,
+  "dueDate": null,
+  "transaction": {
+    "$oid": "684726d19c4d8c6006807ec3"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T18:24:17.407Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:24:17.407Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684726d19c4d8c6006807ec9"
+  },
+  "player": {
+    "$oid": "6845754389e80927a3771fcd"
+  },
+  "subscription": null,
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 0,
+  "amountPaid": 500,
+  "isLegacy": false,
+  "dueDate": null,
+  "transaction": {
+    "$oid": "684726d19c4d8c6006807ec7"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T18:24:17.592Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:24:17.592Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684727be9c4d8c6006807f03"
+  },
+  "player": {
+    "$oid": "684727be9c4d8c6006807eff"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "684727be9c4d8c6006807f01"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T18:28:14.374Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:28:31.712Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684727e59c4d8c6006807f2b"
+  },
+  "player": {
+    "$oid": "684727be9c4d8c6006807eff"
+  },
+  "subscription": {
+    "$oid": "68471def9c4d8c600680780e"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 500,
+  "amountPaid": 500,
+  "isLegacy": false,
+  "dueDate": null,
+  "transaction": {
+    "$oid": "684727e59c4d8c6006807f29"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T18:28:53.988Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:28:53.988Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684727f29c4d8c6006807f40"
+  },
+  "player": {
+    "$oid": "684727be9c4d8c6006807eff"
+  },
+  "subscription": {
+    "$oid": "68471e4a9c4d8c600680781c"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 3500,
+  "amountPaid": 3500,
+  "isLegacy": false,
+  "dueDate": null,
+  "transaction": {
+    "$oid": "684727f29c4d8c6006807f3e"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T18:29:06.966Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:29:06.966Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684728949c4d8c6006807ff9"
+  },
+  "player": {
+    "$oid": "6845754a89e80927a3772022"
+  },
+  "subscription": {
+    "$oid": "68471def9c4d8c600680780e"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 500,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "dueDate": null,
+  "transaction": {
+    "$oid": "684728949c4d8c6006807ff7"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T18:31:48.836Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:31:48.836Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6847389d9c4d8c60068080c5"
+  },
+  "player": {
+    "$oid": "6845754d89e80927a3772045"
+  },
+  "subscription": null,
+  "year": 2025,
+  "statusAtTime": "unknown",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": true,
+  "dueDate": {
+    "$date": "2024-01-01T00:00:00.000Z"
+  },
+  "transaction": {
+    "$oid": "6847389d9c4d8c60068080c3"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T19:40:13.903Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T19:40:13.903Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684738b39c4d8c60068080d8"
+  },
+  "player": {
+    "$oid": "6845754d89e80927a3772045"
+  },
+  "subscription": null,
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 0,
+  "amountPaid": 6000,
+  "isLegacy": false,
+  "dueDate": null,
+  "transaction": {
+    "$oid": "684738b29c4d8c60068080d6"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T19:40:35.076Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T19:40:35.076Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684739019c4d8c6006808131"
+  },
+  "player": {
+    "$oid": "6845754e89e80927a377205a"
+  },
+  "subscription": {
+    "$oid": "68471e159c4d8c6006807815"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2500,
+  "amountPaid": 1000,
+  "isLegacy": false,
+  "dueDate": null,
+  "transaction": {
+    "$oid": "684739019c4d8c600680812f"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T19:41:53.199Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T19:41:53.199Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684739509c4d8c6006808175"
+  },
+  "player": {
+    "$oid": "6845752b89e80927a3771f1e"
+  },
+  "subscription": null,
+  "year": 2025,
+  "statusAtTime": "unknown",
+  "amountOwed": 1900,
+  "amountPaid": 0,
+  "isLegacy": true,
+  "dueDate": {
+    "$date": "2024-01-01T00:00:00.000Z"
+  },
+  "transaction": {
+    "$oid": "684739509c4d8c6006808173"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T19:43:12.548Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T19:43:12.548Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68474942adc1446d20af76b2"
+  },
+  "player": {
+    "$oid": "6845751d89e80927a3771e68"
+  },
+  "subscription": null,
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": true,
+  "dueDate": null,
+  "transaction": {
+    "$oid": "68474942adc1446d20af76b0"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T20:51:14.726Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-18T19:38:41.162Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6847498eadc1446d20af771b"
+  },
+  "player": {
+    "$oid": "6845752589e80927a3771ec3"
+  },
+  "subscription": null,
+  "year": 2025,
+  "statusAtTime": "unknown",
+  "amountOwed": 250,
+  "amountPaid": 0,
+  "isLegacy": true,
+  "dueDate": {
+    "$date": "2024-01-01T00:00:00.000Z"
+  },
+  "transaction": {
+    "$oid": "6847498eadc1446d20af7719"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T20:52:30.832Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T20:52:30.832Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68474a9dadc1446d20af77e4"
+  },
+  "player": {
+    "$oid": "68474a83adc1446d20af77cf"
+  },
+  "subscription": null,
+  "year": 2025,
+  "statusAtTime": "unknown",
+  "amountOwed": 500,
+  "amountPaid": 0,
+  "isLegacy": true,
+  "dueDate": {
+    "$date": "2024-01-01T00:00:00.000Z"
+  },
+  "transaction": {
+    "$oid": "68474a9dadc1446d20af77e2"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T20:57:01.140Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T20:57:01.140Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68474abbadc1446d20af7808"
+  },
+  "player": {
+    "$oid": "6845752789e80927a3771ed8"
+  },
+  "subscription": null,
+  "year": 2025,
+  "statusAtTime": "student",
+  "amountOwed": 250,
+  "amountPaid": 250,
+  "isLegacy": true,
+  "dueDate": {
+    "$date": "2024-01-01T00:00:00.000Z"
+  },
+  "transaction": {
+    "$oid": "68474abbadc1446d20af7806"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T20:57:31.515Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-11T20:47:01.749Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68474adeadc1446d20af782c"
+  },
+  "player": {
+    "$oid": "6845752889e80927a3771ee6"
+  },
+  "subscription": {
+    "$oid": "68471e159c4d8c6006807815"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2500,
+  "amountPaid": 1000,
+  "isLegacy": false,
+  "dueDate": null,
+  "transaction": {
+    "$oid": "68474adeadc1446d20af782a"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T20:58:06.936Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T20:58:58.423Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68474aeeadc1446d20af783e"
+  },
+  "player": {
+    "$oid": "6845752889e80927a3771ee6"
+  },
+  "subscription": {
+    "$oid": "68471e4a9c4d8c600680781c"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 3500,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "dueDate": null,
+  "transaction": {
+    "$oid": "68474aeeadc1446d20af783c"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T20:58:22.425Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T20:58:22.425Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68474b59adc1446d20af78a5"
+  },
+  "player": {
+    "$oid": "6845752e89e80927a3771f4f"
+  },
+  "subscription": null,
+  "year": 2025,
+  "statusAtTime": "unknown",
+  "amountOwed": 1500,
+  "amountPaid": 0,
+  "isLegacy": true,
+  "dueDate": {
+    "$date": "2024-01-01T00:00:00.000Z"
+  },
+  "transaction": {
+    "$oid": "68474b59adc1446d20af78a3"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T21:00:09.492Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T21:00:09.492Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68474ba3adc1446d20af78d6"
+  },
+  "player": {
+    "$oid": "6845753089e80927a3771f64"
+  },
+  "subscription": null,
+  "year": 2025,
+  "statusAtTime": "unknown",
+  "amountOwed": 1500,
+  "amountPaid": 0,
+  "isLegacy": true,
+  "dueDate": {
+    "$date": "2024-01-01T00:00:00.000Z"
+  },
+  "transaction": {
+    "$oid": "68474ba3adc1446d20af78d4"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T21:01:23.516Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T21:01:23.516Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68474c76adc1446d20af79a3"
+  },
+  "player": {
+    "$oid": "6845753589e80927a3771f95"
+  },
+  "subscription": null,
+  "year": 2025,
+  "statusAtTime": "unknown",
+  "amountOwed": 1500,
+  "amountPaid": 0,
+  "isLegacy": true,
+  "dueDate": {
+    "$date": "2024-01-01T00:00:00.000Z"
+  },
+  "transaction": {
+    "$oid": "68474c76adc1446d20af79a1"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T21:04:54.491Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T21:04:54.491Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68474cc6adc1446d20af79de"
+  },
+  "player": {
+    "$oid": "6845753689e80927a3771faa"
+  },
+  "subscription": null,
+  "year": 2025,
+  "statusAtTime": "unknown",
+  "amountOwed": 3400,
+  "amountPaid": 0,
+  "isLegacy": true,
+  "dueDate": {
+    "$date": "2024-01-01T00:00:00.000Z"
+  },
+  "transaction": {
+    "$oid": "68474cc6adc1446d20af79dc"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T21:06:14.487Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T21:06:14.487Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68474d0eadc1446d20af7a36"
+  },
+  "player": {
+    "$oid": "6845754289e80927a3771fbf"
+  },
+  "subscription": null,
+  "year": 2025,
+  "statusAtTime": "unknown",
+  "amountOwed": 1500,
+  "amountPaid": 0,
+  "isLegacy": true,
+  "dueDate": {
+    "$date": "2024-01-01T00:00:00.000Z"
+  },
+  "transaction": {
+    "$oid": "68474d0eadc1446d20af7a34"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T21:07:26.545Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T21:07:26.545Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68474da1adc1446d20af7a9b"
+  },
+  "player": {
+    "$oid": "68474d65adc1446d20af7a50"
+  },
+  "subscription": {
+    "$oid": "68471e4a9c4d8c600680781c"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 3500,
+  "amountPaid": 3500,
+  "isLegacy": false,
+  "dueDate": null,
+  "transaction": {
+    "$oid": "68474da1adc1446d20af7a99"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T21:09:53.879Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T21:09:53.879Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68474e36adc1446d20af7b5c"
+  },
+  "player": {
+    "$oid": "6845754e89e80927a3772053"
+  },
+  "subscription": null,
+  "year": 2025,
+  "statusAtTime": "unknown",
+  "amountOwed": 400,
+  "amountPaid": 0,
+  "isLegacy": true,
+  "dueDate": {
+    "$date": "2024-01-01T00:00:00.000Z"
+  },
+  "transaction": {
+    "$oid": "68474e36adc1446d20af7b5a"
+  },
+  "createdAt": {
+    "$date": "2025-06-09T21:12:22.500Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T21:12:22.500Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684b1d60ada98233e5f3a156"
+  },
+  "player": null,
+  "subscription": null,
+  "year": 2024,
+  "amountOwed": 68000,
+  "amountPaid": 68000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "684b1d60ada98233e5f3a154"
+  },
+  "createdAt": {
+    "$date": "2025-06-12T18:33:04.452Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-12T18:33:04.452Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684b1d9aada98233e5f3a160"
+  },
+  "player": null,
+  "subscription": null,
+  "year": 2025,
+  "amountOwed": 9450,
+  "amountPaid": 9450,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "684b1d9aada98233e5f3a15e"
+  },
+  "createdAt": {
+    "$date": "2025-06-12T18:34:02.880Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-12T18:34:02.880Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "686196f627b421f62a48a6f2"
+  },
+  "player": {
+    "$oid": "6845752f89e80927a3771f5d"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 1500,
+  "isLegacy": false,
+  "dueDate": null,
+  "transaction": {
+    "$oid": "686196f627b421f62a48a6f0"
+  },
+  "createdAt": {
+    "$date": "2025-06-29T19:41:42.117Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-29T19:41:42.117Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6861970827b421f62a48a707"
+  },
+  "player": {
+    "$oid": "6845752f89e80927a3771f5d"
+  },
+  "subscription": {
+    "$oid": "68471def9c4d8c600680780e"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 500,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "dueDate": null,
+  "transaction": {
+    "$oid": "6861970827b421f62a48a705"
+  },
+  "createdAt": {
+    "$date": "2025-06-29T19:42:00.929Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-29T19:42:00.929Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68619b3a27b421f62a48a874"
+  },
+  "player": null,
+  "subscription": null,
+  "year": 2025,
+  "amountOwed": 18000,
+  "amountPaid": 18000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "68619b3927b421f62a48a872"
+  },
+  "createdAt": {
+    "$date": "2025-06-29T19:59:54.053Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-29T19:59:54.053Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6871784062e77d0f37dcec9f"
+  },
+  "player": {
+    "$oid": "6845752789e80927a3771ed8"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "student",
+  "amountOwed": 1500,
+  "amountPaid": 1500,
+  "isLegacy": false,
+  "dueDate": null,
+  "transaction": {
+    "$oid": "6871783f62e77d0f37dcec9d"
+  },
+  "createdAt": {
+    "$date": "2025-07-11T20:46:56.060Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-11T20:46:56.060Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "687178dc62e77d0f37dced5a"
+  },
+  "player": {
+    "$oid": "6845751a89e80927a3771e30"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "student",
+  "amountOwed": 1500,
+  "amountPaid": 1500,
+  "isLegacy": false,
+  "dueDate": null,
+  "transaction": {
+    "$oid": "687178dc62e77d0f37dced58"
+  },
+  "createdAt": {
+    "$date": "2025-07-11T20:49:32.446Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-11T20:49:32.446Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6871791b62e77d0f37dced82"
+  },
+  "player": {
+    "$oid": "6845751a89e80927a3771e30"
+  },
+  "subscription": null,
+  "year": 2025,
+  "statusAtTime": "student",
+  "amountOwed": 1400,
+  "amountPaid": 1400,
+  "isLegacy": true,
+  "dueDate": {
+    "$date": "2023-01-01T00:00:00.000Z"
+  },
+  "transaction": {
+    "$oid": "6871791a62e77d0f37dced80"
+  },
+  "createdAt": {
+    "$date": "2025-07-11T20:50:35.041Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-13T19:53:20.947Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "687ab4e8b754eb5aef0b1c49"
+  },
+  "player": {
+    "$oid": "687410dd3025376444142153"
+  },
+  "subscription": {
+    "$oid": "68755e67d8da068fdea53a48"
+  },
+  "year": 2025,
+  "statusAtTime": "student",
+  "amountOwed": 1000,
+  "amountPaid": 1000,
+  "isLegacy": false,
+  "dueDate": null,
+  "transaction": {
+    "$oid": "687ab4e8b754eb5aef0b1c47"
+  },
+  "createdAt": {
+    "$date": "2025-07-18T20:56:08.624Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-18T20:56:08.624Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "687ab785b754eb5aef0b1dcc"
+  },
+  "player": {
+    "$oid": "6845754389e80927a3771fd4"
+  },
+  "subscription": null,
+  "year": 2025,
+  "statusAtTime": "unknown",
+  "amountOwed": 250,
+  "amountPaid": 0,
+  "isLegacy": true,
+  "dueDate": {
+    "$date": "2024-01-01T00:00:00.000Z"
+  },
+  "transaction": {
+    "$oid": "687ab785b754eb5aef0b1dca"
+  },
+  "createdAt": {
+    "$date": "2025-07-18T21:07:17.733Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-18T21:07:17.733Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "687b5913b754eb5aef0b231f"
+  },
+  "player": {
+    "$oid": "687b5912b754eb5aef0b231b"
+  },
+  "subscription": {
+    "$oid": "6845750589e80927a3771de2"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "687b5912b754eb5aef0b231d"
+  },
+  "createdAt": {
+    "$date": "2025-07-19T08:36:35.046Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-19T08:36:35.046Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68e174402c2456d095cb0e66"
+  },
+  "player": {
+    "$oid": "6845751e89e80927a3771e7d"
+  },
+  "subscription": {
+    "$oid": "68e1742a2c2456d095cb0e4e"
+  },
+  "year": 2025,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "dueDate": null,
+  "transaction": {
+    "$oid": "68e174402c2456d095cb0e64"
+  },
+  "createdAt": {
+    "$date": "2025-10-04T19:23:44.507Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-04T19:23:44.507Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68e174a02c2456d095cb0e8a"
+  },
+  "player": null,
+  "subscription": null,
+  "year": 2025,
+  "amountOwed": 11000,
+  "amountPaid": 11000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "68e174a02c2456d095cb0e88"
+  },
+  "createdAt": {
+    "$date": "2025-10-04T19:25:20.506Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-04T19:25:20.506Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68e1750a2c2456d095cb0ea5"
+  },
+  "player": null,
+  "subscription": null,
+  "year": 2025,
+  "amountOwed": 18000,
+  "amountPaid": 18000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "68e175092c2456d095cb0ea3"
+  },
+  "createdAt": {
+    "$date": "2025-10-04T19:27:06.070Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-04T19:27:06.070Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68e1752a2c2456d095cb0eaf"
+  },
+  "player": null,
+  "subscription": null,
+  "year": 2024,
+  "amountOwed": 22000,
+  "amountPaid": 22000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "68e1752a2c2456d095cb0ead"
+  },
+  "createdAt": {
+    "$date": "2025-10-04T19:27:38.268Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-04T19:27:38.268Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68e175662c2456d095cb0ec5"
+  },
+  "player": null,
+  "subscription": null,
+  "year": 2025,
+  "amountOwed": 20000,
+  "amountPaid": 20000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "68e175662c2456d095cb0ec3"
+  },
+  "createdAt": {
+    "$date": "2025-10-04T19:28:38.894Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-04T19:28:38.894Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d6d"
+  },
+  "player": {
+    "$oid": "6845751a89e80927a3771e22"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d33"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.917Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.917Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d6f"
+  },
+  "player": {
+    "$oid": "6845751c89e80927a3771e5a"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "student",
+  "amountOwed": 1500,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d35"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.919Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.919Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d73"
+  },
+  "player": {
+    "$oid": "6845751d89e80927a3771e61"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d36"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.927Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.927Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d75"
+  },
+  "player": {
+    "$oid": "6845751a89e80927a3771e30"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "student",
+  "amountOwed": 1500,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d34"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.931Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.931Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d79"
+  },
+  "player": {
+    "$oid": "6845752689e80927a3771eca"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d38"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.936Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.936Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d77"
+  },
+  "player": {
+    "$oid": "6845751789e80927a3771df1"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d31"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.934Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.934Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d7d"
+  },
+  "player": {
+    "$oid": "6845751e89e80927a3771e7d"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d37"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.946Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.946Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d7b"
+  },
+  "player": {
+    "$oid": "6845752789e80927a3771ed8"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "student",
+  "amountOwed": 1500,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d39"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.942Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.942Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d7f"
+  },
+  "player": {
+    "$oid": "6845752a89e80927a3771f17"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "student",
+  "amountOwed": 1500,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d3d"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.980Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.980Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d81"
+  },
+  "player": {
+    "$oid": "6845752989e80927a3771f02"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d3c"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.983Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.983Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d83"
+  },
+  "player": {
+    "$oid": "6845752c89e80927a3771f33"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d3f"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.992Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.992Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d85"
+  },
+  "player": {
+    "$oid": "6845752c89e80927a3771f25"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d3e"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.995Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.995Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d87"
+  },
+  "player": {
+    "$oid": "6845752d89e80927a3771f41"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d40"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.998Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.998Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ac78bf9eceac589d89"
+  },
+  "player": {
+    "$oid": "6845752f89e80927a3771f5d"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d42"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:45:00.004Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:45:00.004Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ac78bf9eceac589d8b"
+  },
+  "player": {
+    "$oid": "6845753089e80927a3771f6b"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d43"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:45:00.009Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:45:00.009Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ac78bf9eceac589d8d"
+  },
+  "player": {
+    "$oid": "6845752d89e80927a3771f48"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d41"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:45:00.015Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:45:00.015Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ac78bf9eceac589d8f"
+  },
+  "player": {
+    "$oid": "6845753289e80927a3771f79"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d44"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:45:00.020Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:45:00.020Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ac78bf9eceac589d91"
+  },
+  "player": {
+    "$oid": "6845753389e80927a3771f80"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d45"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:45:00.058Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:45:00.058Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ac78bf9eceac589d93"
+  },
+  "player": {
+    "$oid": "6845754889e80927a3772006"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d47"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:45:00.075Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:45:00.075Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ac78bf9eceac589d95"
+  },
+  "player": {
+    "$oid": "6845754789e80927a3771ff8"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d46"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:45:00.082Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:45:00.082Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ac78bf9eceac589d97"
+  },
+  "player": {
+    "$oid": "684727be9c4d8c6006807eff"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d4b"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:45:00.102Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:45:00.102Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ac78bf9eceac589d99"
+  },
+  "player": {
+    "$oid": "6845754e89e80927a377205a"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d4a"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:45:00.105Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:45:00.105Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ac78bf9eceac589d9b"
+  },
+  "player": {
+    "$oid": "6845754e89e80927a377204c"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d49"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:45:00.107Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:45:00.107Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ac78bf9eceac589d9d"
+  },
+  "player": {
+    "$oid": "68474d65adc1446d20af7a50"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d4d"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:45:00.119Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:45:00.119Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ac78bf9eceac589d9f"
+  },
+  "player": {
+    "$oid": "6845754989e80927a3772014"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d48"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:45:00.121Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:45:00.121Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ac78bf9eceac589da3"
+  },
+  "player": {
+    "$oid": "687b5912b754eb5aef0b231b"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d4e"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:45:00.130Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:45:00.130Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ac78bf9eceac589dc2"
+  },
+  "player": {
+    "$oid": "6845752789e80927a3771edf"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "student",
+  "amountOwed": 1500,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d3a"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:45:00.448Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:45:00.448Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ac78bf9eceac589da1"
+  },
+  "player": {
+    "$oid": "68474a83adc1446d20af77cf"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d4c"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:45:00.124Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:45:00.124Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ac78bf9eceac589dc0"
+  },
+  "player": {
+    "$oid": "6845752889e80927a3771ee6"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c34ab78bf9eceac589d3b"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:45:00.442Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:45:00.442Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c37ec78bf9eceac589e3a"
+  },
+  "player": {
+    "$oid": "6845751989e80927a3771e1b"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c37ec78bf9eceac589e36"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:58:52.295Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:58:52.295Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c37ec78bf9eceac589e3c"
+  },
+  "player": {
+    "$oid": "687410dd3025376444142153"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "student",
+  "amountOwed": 1500,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694c37ec78bf9eceac589e37"
+  },
+  "createdAt": {
+    "$date": "2025-12-24T18:58:52.300Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:58:52.300Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b73b"
+  },
+  "player": {
+    "$oid": "6845751989e80927a3771e0d"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6c0"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.649Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.649Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b73f"
+  },
+  "player": {
+    "$oid": "6845751889e80927a3771dff"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6be"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.678Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.678Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b73d"
+  },
+  "player": {
+    "$oid": "6845751889e80927a3771e06"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6bf"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.657Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.657Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b741"
+  },
+  "player": {
+    "$oid": "6845751889e80927a3771df8"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6bd"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.688Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.688Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b743"
+  },
+  "player": {
+    "$oid": "6845751989e80927a3771e14"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6c1"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.691Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.691Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b745"
+  },
+  "player": {
+    "$oid": "6845751b89e80927a3771e37"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6c3"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.698Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.698Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b747"
+  },
+  "player": {
+    "$oid": "6845751a89e80927a3771e29"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6c2"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.728Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.728Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b749"
+  },
+  "player": {
+    "$oid": "6845751c89e80927a3771e4c"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6c6"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.740Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.740Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b74b"
+  },
+  "player": {
+    "$oid": "6845751c89e80927a3771e53"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6c7"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.747Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.747Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b74d"
+  },
+  "player": {
+    "$oid": "6845751e89e80927a3771e76"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "student",
+  "amountOwed": 1500,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6ca"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.756Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.756Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b74f"
+  },
+  "player": {
+    "$oid": "6845751e89e80927a3771e6f"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6c9"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.758Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.758Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b751"
+  },
+  "player": {
+    "$oid": "6845751f89e80927a3771e84"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6cb"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.764Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.764Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b755"
+  },
+  "player": {
+    "$oid": "6845752389e80927a3771ea0"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6cf"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.834Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.834Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b753"
+  },
+  "player": {
+    "$oid": "6845751f89e80927a3771e92"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6cd"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.831Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.831Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b757"
+  },
+  "player": {
+    "$oid": "6845751f89e80927a3771e8b"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6cc"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.851Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.851Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b759"
+  },
+  "player": {
+    "$oid": "6845752489e80927a3771eae"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6d1"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.857Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.857Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b75b"
+  },
+  "player": {
+    "$oid": "6845752489e80927a3771ea7"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6d0"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.863Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.863Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b75d"
+  },
+  "player": {
+    "$oid": "6845752089e80927a3771e99"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6ce"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.867Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.867Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b761"
+  },
+  "player": {
+    "$oid": "6845752589e80927a3771ebc"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6d3"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.902Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.902Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b75f"
+  },
+  "player": {
+    "$oid": "6845752489e80927a3771eb5"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6d2"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.898Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.898Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b765"
+  },
+  "player": {
+    "$oid": "6845752789e80927a3771ed1"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6d5"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.930Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.930Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b763"
+  },
+  "player": {
+    "$oid": "6845752589e80927a3771ec3"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6d4"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.923Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.923Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b767"
+  },
+  "player": {
+    "$oid": "6845752889e80927a3771ef4"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6d7"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.940Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.940Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b769"
+  },
+  "player": {
+    "$oid": "6845752889e80927a3771eed"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6d6"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.947Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.947Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b76b"
+  },
+  "player": {
+    "$oid": "6845752989e80927a3771efb"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6d8"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.964Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.964Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b76d"
+  },
+  "player": {
+    "$oid": "6845752989e80927a3771f09"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6d9"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.967Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.967Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b76f"
+  },
+  "player": {
+    "$oid": "6845752a89e80927a3771f10"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6da"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.994Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.994Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b771"
+  },
+  "player": {
+    "$oid": "6845752b89e80927a3771f1e"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6db"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.999Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.999Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b775"
+  },
+  "player": {
+    "$oid": "6845752d89e80927a3771f3a"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6dd"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.021Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.021Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b779"
+  },
+  "player": {
+    "$oid": "6845752e89e80927a3771f4f"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6de"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.034Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.034Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b777"
+  },
+  "player": {
+    "$oid": "6845752e89e80927a3771f56"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6df"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.029Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.029Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b77b"
+  },
+  "player": {
+    "$oid": "6845753189e80927a3771f72"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6e1"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.062Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.062Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b77f"
+  },
+  "player": {
+    "$oid": "6845753589e80927a3771f95"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6e4"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.091Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.091Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b785"
+  },
+  "player": {
+    "$oid": "6845751d89e80927a3771e68"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6c8"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.121Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.121Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b783"
+  },
+  "player": {
+    "$oid": "6845753589e80927a3771f9c"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6e5"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.102Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.102Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b787"
+  },
+  "player": {
+    "$oid": "6845753689e80927a3771fa3"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6e6"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.128Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.128Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b789"
+  },
+  "player": {
+    "$oid": "6845753689e80927a3771faa"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6e7"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.138Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.138Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b78b"
+  },
+  "player": {
+    "$oid": "6845751b89e80927a3771e3e"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6c4"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.152Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.152Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b78d"
+  },
+  "player": {
+    "$oid": "6845754189e80927a3771fb8"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6e9"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.155Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.155Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b78f"
+  },
+  "player": {
+    "$oid": "6845754289e80927a3771fc6"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6eb"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.167Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.167Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b791"
+  },
+  "player": {
+    "$oid": "6845754289e80927a3771fbf"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6ea"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.170Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.170Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b795"
+  },
+  "player": {
+    "$oid": "6845754489e80927a3771fdb"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6ee"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.206Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.206Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b793"
+  },
+  "player": {
+    "$oid": "6845754389e80927a3771fd4"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6ed"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.189Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.189Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b797"
+  },
+  "player": {
+    "$oid": "6845754689e80927a3771ff0"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6f1"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.217Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.217Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b799"
+  },
+  "player": {
+    "$oid": "6845751b89e80927a3771e45"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6c5"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.221Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.221Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b79b"
+  },
+  "player": {
+    "$oid": "6845754589e80927a3771fe9"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6f0"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.223Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.223Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b79d"
+  },
+  "player": {
+    "$oid": "6845754789e80927a3771fff"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6f2"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.230Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.230Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b79f"
+  },
+  "player": {
+    "$oid": "6845754889e80927a377200d"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6f3"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.240Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.240Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b7a1"
+  },
+  "player": {
+    "$oid": "6845754a89e80927a377201b"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6f4"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.253Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.253Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b7a3"
+  },
+  "player": {
+    "$oid": "6845754b89e80927a3772029"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6f6"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.284Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.284Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b7a5"
+  },
+  "player": {
+    "$oid": "6845754a89e80927a3772022"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6f5"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.288Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.288Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b7a7"
+  },
+  "player": {
+    "$oid": "6845754c89e80927a3772037"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 2000,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6f8"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.289Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:40:23.899Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b7a9"
+  },
+  "player": {
+    "$oid": "6845754d89e80927a377203e"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6f9"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.294Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.294Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b7ab"
+  },
+  "player": {
+    "$oid": "6845754b89e80927a3772030"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6f7"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.297Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.297Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b7af"
+  },
+  "player": {
+    "$oid": "6845754e89e80927a3772053"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6fb"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.320Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.320Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b7ad"
+  },
+  "player": {
+    "$oid": "6845754d89e80927a3772045"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6fa"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.313Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.313Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b773"
+  },
+  "player": {
+    "$oid": "6845752c89e80927a3771f2c"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6dc"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.007Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.007Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b781"
+  },
+  "player": {
+    "$oid": "6845753489e80927a3771f8e"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6e3"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.097Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.097Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b7c4"
+  },
+  "player": {
+    "$oid": "6845754389e80927a3771fcd"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6ec"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.526Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.526Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b7c2"
+  },
+  "player": {
+    "$oid": "6845753389e80927a3771f87"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6e2"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.522Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.522Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b77d"
+  },
+  "player": {
+    "$oid": "6845753089e80927a3771f64"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6e0"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.069Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.069Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761fc6ca3b49d162b7d5"
+  },
+  "player": {
+    "$oid": "6845754589e80927a3771fe2"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6ef"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:31.655Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:31.655Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d7620c6ca3b49d162b7f5"
+  },
+  "player": {
+    "$oid": "6845753a89e80927a3771fb1"
+  },
+  "subscription": {
+    "$oid": "6902fa42ade6060b44a48c8d"
+  },
+  "year": 2026,
+  "statusAtTime": "worker",
+  "amountOwed": 2000,
+  "amountPaid": 0,
+  "isLegacy": false,
+  "transaction": {
+    "$oid": "694d761ec6ca3b49d162b6e8"
+  },
+  "createdAt": {
+    "$date": "2025-12-25T17:36:32.771Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:32.771Z"
+  },
+  "__v": 0
+}]

@@ -1,0 +1,308 @@
+[{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce34677"
+  },
+  "name": "Médecin",
+  "description": "Professionnel de la santé qui diagnostique et traite les maladies.",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce34678"
+  },
+  "name": "Ingénieur",
+  "description": "Spécialiste de la conception et du développement de solutions techniques.",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce34679"
+  },
+  "name": "Enseignant",
+  "description": "Personne qui enseigne dans une école ou une université.",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce3467a"
+  },
+  "name": "Commerçant",
+  "description": "Personne qui vend des biens ou des services.",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce3467b"
+  },
+  "name": "Étudiant",
+  "description": "Personne qui suit une formation académique ou professionnelle.",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce3467c"
+  },
+  "name": "Avocat",
+  "description": "Professionnel du droit qui défend les intérêts de ses clients devant les juridictions.",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce3467d"
+  },
+  "name": "Architecte",
+  "description": "Spécialiste de la conception et de la planification de bâtiments et d'infrastructures.",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce3467e"
+  },
+  "name": "Informaticien",
+  "description": "Personne qui crée et maintient des applications logicielles.",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce3467f"
+  },
+  "name": "Comptable",
+  "description": "Professionnel qui gère les finances, les comptes et les déclarations fiscales d'une entreprise.",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce34680"
+  },
+  "name": "Chef de projet",
+  "description": "Personne responsable de la gestion de projets de manière efficace et dans les délais.",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce34681"
+  },
+  "name": "Designer",
+  "description": "Spécialiste de la création visuelle et graphique pour les produits, services ou marques.",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce34682"
+  },
+  "name": "Plombier",
+  "description": "Technicien chargé de l'installation et de la réparation des systèmes de plomberie.",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce34683"
+  },
+  "name": "Electricien",
+  "description": "Technicien spécialisé dans les installations électriques et la réparation des équipements électriques.",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce34684"
+  },
+  "name": "Cuisinier",
+  "description": "Professionnel de la préparation des repas dans des restaurants ou d'autres établissements alimentaires.",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce34685"
+  },
+  "name": "Jardinier",
+  "description": "Personne qui s'occupe de l'entretien des espaces extérieurs et des jardins.",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce34686"
+  },
+  "name": "Photographe",
+  "description": "Personne qui prend des photos à des fins artistiques ou commerciales.",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce34687"
+  },
+  "name": "Journaliste",
+  "description": "Professionnel chargé de la collecte, de la rédaction et de la diffusion de l'information.",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.147Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce34688"
+  },
+  "name": "Infirmier",
+  "description": "Professionnel de la santé qui prodigue des soins aux patients sous la direction d'un médecin.",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.148Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.148Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce34689"
+  },
+  "name": "Vétérinaire",
+  "description": "Médecin spécialisé dans la santé animale, notamment les soins aux animaux domestiques.",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.148Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.148Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce3468a"
+  },
+  "name": "Bibliothécaire",
+  "description": "Professionnel chargé de la gestion et de l'organisation des bibliothèques.",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.148Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.148Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce3468b"
+  },
+  "name": "Directeur",
+  "description": "Personne en charge de la gestion et de la direction d'une organisation ou d'une entreprise.",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.148Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.148Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce3468c"
+  },
+  "name": "Pharmacien",
+  "description": "Spécialiste des médicaments qui conseille les patients et les prescripteurs sur les traitements.",
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.148Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.148Z"
+  }
+}]

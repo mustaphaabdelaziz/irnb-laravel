@@ -1,0 +1,75 @@
+[{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "name": "Senior",
+  "description": "For senior members of the club",
+  "subscriptions": [],
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.145Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.145Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce34668"
+  },
+  "name": "Junior",
+  "description": "For junior members of the club",
+  "subscriptions": [],
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.145Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.145Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce34669"
+  },
+  "name": "Cadet",
+  "description": "For cadet members of the club",
+  "subscriptions": [],
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.145Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.145Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce3466a"
+  },
+  "name": "Minime",
+  "description": "For minime members of the club",
+  "subscriptions": [],
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.145Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.145Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68456dcf1b20adaabce3466b"
+  },
+  "name": "Ecole",
+  "description": "For school-level members of the club",
+  "subscriptions": [],
+  "__v": 0,
+  "createdAt": {
+    "$date": "2025-06-08T11:02:39.146Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:02:39.146Z"
+  }
+}]

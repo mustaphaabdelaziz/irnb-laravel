@@ -1,0 +1,95 @@
+[{
+  "_id": {
+    "$oid": "68456dce1b20adaabce34662"
+  },
+  "firstname": "Admin",
+  "lastname": "Super",
+  "gender": "Male",
+  "phones": [],
+  "email": "admin@irnb.com",
+  "isUser": false,
+  "isActive": false,
+  "approved": false,
+  "state": "Unknown",
+  "city": "Unknown",
+  "isStudent": true,
+  "skillLevel": 5,
+  "health": {
+    "blood": {
+      "groupRhesus": ""
+    },
+    "medicalConditions": [],
+    "emergencyContact": []
+  },
+  "privileges": [
+    "superadmin",
+    "admin"
+  ],
+  "hash": "$2b$10$rF98rApB5uclR3XdrgB8T.vQr1ildoM2FBwscCUUTRYhqyjk4uWVa",
+  "preferedLng": "ar",
+  "membershipID": "5445047534",
+  "subscriptionsPayment": [],
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:02:38.739Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-25T19:53:46.298Z"
+  },
+  "salt": "$2b$10$rF98rApB5uclR3XdrgB8T.",
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "firstname": "Mustapha",
+  "lastname": "Abdelaziz",
+  "birthdate": {
+    "$date": "1993-08-16T00:00:00.000Z"
+  },
+  "gender": "Male",
+  "phones": [
+    "0559453948"
+  ],
+  "email": "aziz.mus.19@gmail.com",
+  "isUser": true,
+  "isActive": true,
+  "approved": true,
+  "state": "GHARDAIA",
+  "city": "Bounoura",
+  "isStudent": false,
+  "job": {
+    "$oid": "68456dcf1b20adaabce3467e"
+  },
+  "membershipID": "2025261127",
+  "category": {
+    "$oid": "68456dcf1b20adaabce34667"
+  },
+  "skillLevel": 5,
+  "health": {
+    "blood": {
+      "groupRhesus": "A+"
+    },
+    "medicalConditions": [],
+    "emergencyContact": []
+  },
+  "privileges": [
+    "admin",
+    "user"
+  ],
+  "hash": "$2b$10$DuwajpY109Ub0.VOxMWlNu8bVmhRvD2agyx3Yeh.eZY0NhxpF/0zK",
+  "preferedLng": "ar",
+  "subscriptionsPayment": [],
+  "achievements": [],
+  "equipmentIssued": [],
+  "createdAt": {
+    "$date": "2025-06-08T11:21:22.156Z"
+  },
+  "updatedAt": {
+    "$date": "2026-04-05T19:11:03.540Z"
+  },
+  "salt": "$2b$10$DuwajpY109Ub0.VOxMWlNu",
+  "__v": 0
+}]

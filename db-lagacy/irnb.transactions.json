@@ -1,0 +1,6552 @@
+[{
+  "_id": {
+    "$oid": "6845751789e80927a3771df2"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751789e80927a3771df1"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:33:43.661Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:33:43.661Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751889e80927a3771e07"
+  },
+  "amount": 0,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751889e80927a3771e06"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Exempt",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:33:44.830Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T20:49:05.048Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751989e80927a3771e15"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751989e80927a3771e14"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:33:45.514Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T17:45:06.039Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751989e80927a3771e1c"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751989e80927a3771e1b"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:33:45.846Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T17:49:36.110Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751b89e80927a3771e38"
+  },
+  "amount": 0,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751b89e80927a3771e37"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Exempt",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:33:47.199Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-18T21:03:59.900Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751b89e80927a3771e3f"
+  },
+  "amount": 0,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751b89e80927a3771e3e"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Exempt",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:33:47.530Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T20:50:13.827Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751b89e80927a3771e46"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751b89e80927a3771e45"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:33:47.870Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:33:47.870Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751c89e80927a3771e4d"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751c89e80927a3771e4c"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:33:48.202Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-09T18:14:41.471Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751c89e80927a3771e5b"
+  },
+  "amount": 1500,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751c89e80927a3771e5a"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:33:48.980Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T17:54:41.472Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751d89e80927a3771e62"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751d89e80927a3771e61"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:33:49.380Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T17:56:35.945Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751d89e80927a3771e69"
+  },
+  "amount": 0,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751d89e80927a3771e68"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Exempt",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:33:49.802Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T20:50:55.095Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751e89e80927a3771e70"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751e89e80927a3771e6f"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:33:50.137Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T17:59:52.877Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751e89e80927a3771e77"
+  },
+  "amount": 0,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751e89e80927a3771e76"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Exempt",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:33:50.468Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T20:51:40.567Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751e89e80927a3771e7e"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751e89e80927a3771e7d"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:33:50.856Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:00:18.592Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751f89e80927a3771e85"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751f89e80927a3771e84"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:33:51.236Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:01:29.437Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751f89e80927a3771e8c"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751f89e80927a3771e8b"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:33:51.626Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:02:18.950Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845751f89e80927a3771e93"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751f89e80927a3771e92"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:33:51.993Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:33:51.993Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752589e80927a3771ec4"
+  },
+  "amount": 0,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752589e80927a3771ec3"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Exempt",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:33:57.980Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T20:52:07.096Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752689e80927a3771ecb"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752689e80927a3771eca"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:33:58.510Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:04:47.495Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752789e80927a3771ed2"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752789e80927a3771ed1"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:33:59.123Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:05:35.885Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752789e80927a3771ee0"
+  },
+  "amount": 1500,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752789e80927a3771edf"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:33:59.924Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:06:32.034Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752889e80927a3771ee7"
+  },
+  "amount": 0,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752889e80927a3771ee6"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Exempt",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:00.262Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T20:58:32.198Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752889e80927a3771eee"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752889e80927a3771eed"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:00.601Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:34:00.601Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752989e80927a3771f03"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752989e80927a3771f02"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:01.621Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:34:01.621Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752989e80927a3771f0a"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752989e80927a3771f09"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:01.955Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:08:14.670Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752a89e80927a3771f11"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752a89e80927a3771f10"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:02.286Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:09:23.452Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752a89e80927a3771f18"
+  },
+  "amount": 1500,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752a89e80927a3771f17"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:02.621Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:12:05.125Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752b89e80927a3771f1f"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752b89e80927a3771f1e"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:03.319Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T19:43:18.609Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752c89e80927a3771f26"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752c89e80927a3771f25"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:04.035Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:12:45.146Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752c89e80927a3771f34"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752c89e80927a3771f33"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:04.754Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:14:56.855Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752d89e80927a3771f3b"
+  },
+  "amount": 0,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752d89e80927a3771f3a"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Exempt",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:05.094Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T20:52:59.733Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752d89e80927a3771f42"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752d89e80927a3771f41"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:05.432Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:15:35.661Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752e89e80927a3771f50"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752e89e80927a3771f4f"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:06.145Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-19T08:59:40.148Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845752e89e80927a3771f57"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752e89e80927a3771f56"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:06.736Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:16:35.851Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845753189e80927a3771f73"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845753189e80927a3771f72"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:09.772Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T20:04:55.689Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845753289e80927a3771f7a"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845753289e80927a3771f79"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:10.590Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:19:33.628Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845753489e80927a3771f8f"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845753489e80927a3771f8e"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:12.418Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:20:35.706Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845753589e80927a3771f96"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845753589e80927a3771f95"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:13.045Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:34:13.045Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845753589e80927a3771f9d"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845753589e80927a3771f9c"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:13.661Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:34:13.661Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845753689e80927a3771fa4"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845753689e80927a3771fa3"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:14.172Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-29T19:39:06.210Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845753689e80927a3771fab"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845753689e80927a3771faa"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:14.957Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:34:14.957Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845753a89e80927a3771fb2"
+  },
+  "amount": 2500,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845753a89e80927a3771fb1"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:18.763Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:21:54.509Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754289e80927a3771fc0"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754289e80927a3771fbf"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:26.114Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:34:26.114Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754289e80927a3771fc7"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754289e80927a3771fc6"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:26.652Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:22:49.791Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754389e80927a3771fce"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754389e80927a3771fcd"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:27.179Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:23:54.591Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754789e80927a3771ff9"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754789e80927a3771ff8"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:31.169Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:34:31.169Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754789e80927a3772000"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754789e80927a3771fff"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:31.619Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:34:31.619Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754889e80927a3772007"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754889e80927a3772006"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:32.090Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:29:54.240Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754889e80927a377200e"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754889e80927a377200d"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:32.732Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:30:50.847Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754989e80927a3772015"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754989e80927a3772014"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:33.257Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-08T11:35:41.271Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754a89e80927a3772023"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754a89e80927a3772022"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:34.722Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:31:33.472Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754b89e80927a3772031"
+  },
+  "amount": 0,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754b89e80927a3772030"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Exempt",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:35.986Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-18T21:12:06.847Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754c89e80927a3772038"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754c89e80927a3772037"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:36.691Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T19:37:38.286Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754d89e80927a377203f"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754d89e80927a377203e"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:37.212Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T19:38:31.321Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754d89e80927a3772046"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754d89e80927a3772045"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:37.751Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T19:39:12.118Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754e89e80927a377204d"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754e89e80927a377204c"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:38.150Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T19:40:59.250Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6845754e89e80927a377205b"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "1970-01-01T00:00:02.025Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754e89e80927a377205a"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-08T11:34:38.828Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T19:42:01.161Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68471d209c4d8c600680776c"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-06-09T17:42:56.926Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751989e80927a3771e0d"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T17:42:56.942Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T17:42:56.942Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68471e839c4d8c6006807839"
+  },
+  "amount": 0,
+  "transactionDate": {
+    "$date": "2025-06-09T17:48:51.777Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751989e80927a3771e14"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T17:48:51.790Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T17:49:03.276Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684720b69c4d8c60068079e3"
+  },
+  "amount": 0,
+  "transactionDate": {
+    "$date": "2025-06-09T17:58:14.860Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751d89e80927a3771e61"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T17:58:14.865Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T17:58:14.865Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6847210a9c4d8c6006807a16"
+  },
+  "amount": 0,
+  "transactionDate": {
+    "$date": "2025-06-09T17:59:38.583Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751e89e80927a3771e6f"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T17:59:38.588Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T17:59:38.588Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684721ca9c4d8c6006807af3"
+  },
+  "amount": 28000,
+  "transactionDate": {
+    "$date": "2025-06-09T18:02:50.740Z"
+  },
+  "transactionType": "income",
+  "category": "donation",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751f89e80927a3771e8b"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T18:02:50.746Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:02:50.746Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684722269c4d8c6006807b25"
+  },
+  "amount": 2500,
+  "transactionDate": {
+    "$date": "2025-06-09T18:04:22.340Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752689e80927a3771eca"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T18:04:22.344Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:04:22.344Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684723379c4d8c6006807c1d"
+  },
+  "amount": 0,
+  "transactionDate": {
+    "$date": "2025-06-09T18:08:55.949Z"
+  },
+  "transactionType": "income",
+  "category": "debts",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752a89e80927a3771f10"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T18:08:55.960Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:08:55.960Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684725659c4d8c6006807d8a"
+  },
+  "amount": 13000,
+  "transactionDate": {
+    "$date": "2025-06-09T18:18:13.206Z"
+  },
+  "transactionType": "income",
+  "category": "donation",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752e89e80927a3771f56"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T18:18:13.211Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:18:13.211Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684725c99c4d8c6006807dcf"
+  },
+  "amount": 48000,
+  "transactionDate": {
+    "$date": "2025-06-09T18:19:53.539Z"
+  },
+  "transactionType": "income",
+  "category": "donation",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845753289e80927a3771f79"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T18:19:53.544Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:19:53.544Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684726429c4d8c6006807e46"
+  },
+  "amount": 500,
+  "transactionDate": {
+    "$date": "2025-06-09T18:21:54.604Z"
+  },
+  "transactionType": "income",
+  "category": "donation",
+  "payment": {
+    "method": "cash",
+    "account": null
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845753a89e80927a3771fb1"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T18:21:54.608Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:21:54.608Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684726d19c4d8c6006807ec3"
+  },
+  "amount": 2500,
+  "transactionDate": {
+    "$date": "2025-06-09T18:24:17.291Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754389e80927a3771fcd"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T18:24:17.295Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:24:17.295Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684726d19c4d8c6006807ec7"
+  },
+  "amount": 500,
+  "transactionDate": {
+    "$date": "2025-06-09T18:24:17.501Z"
+  },
+  "transactionType": "income",
+  "category": "donation",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754389e80927a3771fcd"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T18:24:17.504Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:24:17.504Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684727be9c4d8c6006807f01"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-06-09T18:28:14.267Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "684727be9c4d8c6006807eff"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T18:28:14.275Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:28:31.712Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684727e59c4d8c6006807f29"
+  },
+  "amount": 500,
+  "transactionDate": {
+    "$date": "2025-06-09T18:28:53.869Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "684727be9c4d8c6006807eff"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T18:28:53.872Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:28:53.872Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684727f29c4d8c6006807f3e"
+  },
+  "amount": 3500,
+  "transactionDate": {
+    "$date": "2025-06-09T18:29:06.862Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "684727be9c4d8c6006807eff"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T18:29:06.867Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:29:06.867Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684728949c4d8c6006807ff7"
+  },
+  "amount": 0,
+  "transactionDate": {
+    "$date": "2025-06-09T18:31:48.733Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754a89e80927a3772022"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T18:31:48.738Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T18:31:48.738Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6847389d9c4d8c60068080c3"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-06-09T19:40:13.818Z"
+  },
+  "transactionType": "income",
+  "category": "debts",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754d89e80927a3772045"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T19:40:13.819Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T19:40:13.819Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684738b29c4d8c60068080d6"
+  },
+  "amount": 6000,
+  "transactionDate": {
+    "$date": "2025-06-09T19:40:34.861Z"
+  },
+  "transactionType": "income",
+  "category": "donation",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754d89e80927a3772045"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T19:40:34.869Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T19:40:34.869Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684739019c4d8c600680812f"
+  },
+  "amount": 1000,
+  "transactionDate": {
+    "$date": "2025-06-09T19:41:53.099Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754e89e80927a377205a"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Partial",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T19:41:53.105Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T19:41:53.105Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684739509c4d8c6006808173"
+  },
+  "amount": 0,
+  "transactionDate": {
+    "$date": "2025-06-09T19:43:12.450Z"
+  },
+  "transactionType": "income",
+  "category": "debts",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752b89e80927a3771f1e"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T19:43:12.456Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T19:43:12.456Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68474942adc1446d20af76b0"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-06-09T20:51:14.610Z"
+  },
+  "transactionType": "income",
+  "category": "debts",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751d89e80927a3771e68"
+    }
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T20:51:14.616Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-18T19:38:41.162Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6847498eadc1446d20af7719"
+  },
+  "amount": 0,
+  "transactionDate": {
+    "$date": "2025-06-09T20:52:30.722Z"
+  },
+  "transactionType": "income",
+  "category": "debts",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752589e80927a3771ec3"
+    }
+  },
+  "status": "Exempt",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T20:52:30.725Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T20:52:30.725Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68474a9dadc1446d20af77e2"
+  },
+  "amount": 0,
+  "transactionDate": {
+    "$date": "2025-06-09T20:57:01.032Z"
+  },
+  "transactionType": "income",
+  "category": "debts",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "68474a83adc1446d20af77cf"
+    }
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T20:57:01.036Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T20:57:01.036Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68474abbadc1446d20af7806"
+  },
+  "amount": 250,
+  "transactionDate": {
+    "$date": "2025-06-09T20:57:31.409Z"
+  },
+  "transactionType": "income",
+  "category": "debts",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752789e80927a3771ed8"
+    }
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T20:57:31.410Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-11T20:47:01.750Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68474adeadc1446d20af782a"
+  },
+  "amount": 1000,
+  "transactionDate": {
+    "$date": "2025-06-09T20:58:06.832Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752889e80927a3771ee6"
+    }
+  },
+  "status": "Partial",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T20:58:06.833Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T20:58:58.423Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68474aeeadc1446d20af783c"
+  },
+  "amount": 0,
+  "transactionDate": {
+    "$date": "2025-06-09T20:58:22.319Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752889e80927a3771ee6"
+    }
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T20:58:22.323Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T20:58:22.323Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68474b59adc1446d20af78a3"
+  },
+  "amount": 0,
+  "transactionDate": {
+    "$date": "2025-06-09T21:00:09.384Z"
+  },
+  "transactionType": "income",
+  "category": "debts",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752e89e80927a3771f4f"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T21:00:09.387Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T21:00:09.387Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68474ba3adc1446d20af78d4"
+  },
+  "amount": 0,
+  "transactionDate": {
+    "$date": "2025-06-09T21:01:23.401Z"
+  },
+  "transactionType": "income",
+  "category": "debts",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845753089e80927a3771f64"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T21:01:23.406Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T21:01:23.406Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68474c76adc1446d20af79a1"
+  },
+  "amount": 0,
+  "transactionDate": {
+    "$date": "2025-06-09T21:04:54.379Z"
+  },
+  "transactionType": "income",
+  "category": "debts",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845753589e80927a3771f95"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T21:04:54.384Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T21:04:54.384Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68474cc6adc1446d20af79dc"
+  },
+  "amount": 0,
+  "transactionDate": {
+    "$date": "2025-06-09T21:06:14.373Z"
+  },
+  "transactionType": "income",
+  "category": "debts",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845753689e80927a3771faa"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T21:06:14.378Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T21:06:14.378Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68474d0eadc1446d20af7a34"
+  },
+  "amount": 0,
+  "transactionDate": {
+    "$date": "2025-06-09T21:07:26.442Z"
+  },
+  "transactionType": "income",
+  "category": "debts",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754289e80927a3771fbf"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T21:07:26.444Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T21:07:26.444Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68474da1adc1446d20af7a99"
+  },
+  "amount": 3500,
+  "transactionDate": {
+    "$date": "2025-06-09T21:09:53.548Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "68474d65adc1446d20af7a50"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T21:09:53.549Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T21:09:53.549Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68474e36adc1446d20af7b5a"
+  },
+  "amount": 0,
+  "transactionDate": {
+    "$date": "2025-06-09T21:12:22.398Z"
+  },
+  "transactionType": "income",
+  "category": "debts",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754e89e80927a3772053"
+    }
+  },
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-09T21:12:22.401Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-09T21:12:22.401Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684b1d60ada98233e5f3a154"
+  },
+  "amount": 68000,
+  "transactionType": "expense",
+  "category": "works",
+  "payment": {
+    "method": "cash",
+    "account": ""
+  },
+  "description": "مصاريف اشغال المقر بلاكو",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "transactionDate": {
+    "$date": "2025-06-12T18:33:04.320Z"
+  },
+  "createdAt": {
+    "$date": "2025-06-12T18:33:04.336Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-12T18:33:04.336Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "684b1d9aada98233e5f3a15e"
+  },
+  "amount": 9450,
+  "transactionType": "expense",
+  "category": "equipment_purchase",
+  "payment": {
+    "method": "cash",
+    "account": ""
+  },
+  "description": "لوازم مكتبية",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "transactionDate": {
+    "$date": "2025-06-12T18:34:02.786Z"
+  },
+  "createdAt": {
+    "$date": "2025-06-12T18:34:02.790Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-12T18:34:02.790Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "686196f627b421f62a48a6f0"
+  },
+  "amount": 1500,
+  "transactionDate": {
+    "$date": "2025-06-29T19:41:42.027Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752f89e80927a3771f5d"
+    }
+  },
+  "description": "",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Partial",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-29T19:41:42.041Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-29T19:41:42.041Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6861970827b421f62a48a705"
+  },
+  "amount": 0,
+  "transactionDate": {
+    "$date": "2025-06-29T19:42:00.849Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752f89e80927a3771f5d"
+    }
+  },
+  "description": "",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-06-29T19:42:00.852Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-29T19:42:00.852Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68619b3927b421f62a48a872"
+  },
+  "amount": 18000,
+  "transactionType": "expense",
+  "category": "supplies",
+  "payment": {
+    "method": "cash",
+    "account": ""
+  },
+  "description": "مقدم من طرف عبد العزيز مصطفى الى زكريا محمد",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "transactionDate": {
+    "$date": "2025-06-29T19:59:53.974Z"
+  },
+  "createdAt": {
+    "$date": "2025-06-29T19:59:53.976Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-29T19:59:53.976Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6871783f62e77d0f37dcec9d"
+  },
+  "amount": 1500,
+  "transactionDate": {
+    "$date": "2025-07-11T20:46:55.963Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752789e80927a3771ed8"
+    }
+  },
+  "description": "",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-07-11T20:46:55.967Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-11T20:46:55.967Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "687178dc62e77d0f37dced58"
+  },
+  "amount": 1500,
+  "transactionDate": {
+    "$date": "2025-07-11T20:49:32.346Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751a89e80927a3771e30"
+    }
+  },
+  "description": "",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-07-11T20:49:32.352Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-11T20:49:32.352Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6871791a62e77d0f37dced80"
+  },
+  "amount": 1400,
+  "transactionDate": {
+    "$date": "2025-07-11T20:50:34.944Z"
+  },
+  "transactionType": "income",
+  "category": "debts",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751a89e80927a3771e30"
+    }
+  },
+  "description": "Previous debt payment",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-07-11T20:50:34.948Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-13T19:53:20.948Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "687ab4e8b754eb5aef0b1c47"
+  },
+  "amount": 1000,
+  "transactionDate": {
+    "$date": "2025-07-18T20:56:08.498Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "687410dd3025376444142153"
+    }
+  },
+  "description": "",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-07-18T20:56:08.505Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-18T20:56:08.505Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "687ab785b754eb5aef0b1dca"
+  },
+  "amount": 0,
+  "transactionDate": {
+    "$date": "2025-07-18T21:07:17.631Z"
+  },
+  "transactionType": "income",
+  "category": "debts",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754389e80927a3771fd4"
+    }
+  },
+  "description": "Previous debt payment",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-07-18T21:07:17.632Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-18T21:07:17.632Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "687b5912b754eb5aef0b231d"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-07-19T08:36:34.958Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "687b5912b754eb5aef0b231b"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لفئة الاكابر 2025",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-07-19T08:36:34.960Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-19T08:36:34.960Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68e174402c2456d095cb0e64"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-10-04T19:23:44.393Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751e89e80927a3771e7d"
+    }
+  },
+  "description": "",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-10-04T19:23:44.410Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-04T19:23:44.410Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68e174a02c2456d095cb0e88"
+  },
+  "amount": 11000,
+  "transactionType": "income",
+  "category": "membership_fee",
+  "payment": {
+    "method": "cash",
+    "account": ""
+  },
+  "description": "اشتراكات الاشبال",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "transactionDate": {
+    "$date": "2025-10-04T19:25:20.422Z"
+  },
+  "createdAt": {
+    "$date": "2025-10-04T19:25:20.426Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-04T19:25:20.426Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68e175092c2456d095cb0ea3"
+  },
+  "amount": 18000,
+  "transactionType": "income",
+  "category": "membership_fee",
+  "payment": {
+    "method": "cash",
+    "account": ""
+  },
+  "description": "اشتراكات 2012 فريق الصادق",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "transactionDate": {
+    "$date": "2025-10-04T19:27:05.988Z"
+  },
+  "createdAt": {
+    "$date": "2025-10-04T19:27:05.991Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-04T19:27:05.991Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68e1752a2c2456d095cb0ead"
+  },
+  "amount": 22000,
+  "transactionType": "income",
+  "category": "membership_fee",
+  "payment": {
+    "method": "cash",
+    "account": ""
+  },
+  "description": "اشتراكات 2013/2014 فريق الصادق",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "transactionDate": {
+    "$date": "2025-10-04T19:27:38.188Z"
+  },
+  "createdAt": {
+    "$date": "2025-10-04T19:27:38.190Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-04T19:27:38.190Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68e175662c2456d095cb0ec3"
+  },
+  "amount": 20000,
+  "transactionType": "income",
+  "category": "membership_fee",
+  "payment": {
+    "method": "cash",
+    "account": ""
+  },
+  "description": "اشتراكات فريق مهدي",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "transactionDate": {
+    "$date": "2025-10-04T19:28:38.810Z"
+  },
+  "createdAt": {
+    "$date": "2025-10-04T19:28:38.812Z"
+  },
+  "updatedAt": {
+    "$date": "2025-10-04T19:28:38.812Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d33"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.780Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751a89e80927a3771e22"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d35"
+  },
+  "amount": 1500,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.784Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751c89e80927a3771e5a"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d34"
+  },
+  "amount": 1500,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.781Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751a89e80927a3771e30"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d31"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.775Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751789e80927a3771df1"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.823Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.823Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d36"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.785Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751d89e80927a3771e61"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d38"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.787Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752689e80927a3771eca"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d39"
+  },
+  "amount": 1500,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.787Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752789e80927a3771ed8"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d37"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.786Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751e89e80927a3771e7d"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d3c"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.789Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752989e80927a3771f02"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d3d"
+  },
+  "amount": 1500,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.790Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752a89e80927a3771f17"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d3f"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.791Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752c89e80927a3771f33"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d3e"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.790Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752c89e80927a3771f25"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d40"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.792Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752d89e80927a3771f41"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d42"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.794Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752f89e80927a3771f5d"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d43"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.797Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845753089e80927a3771f6b"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d41"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.792Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752d89e80927a3771f48"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d44"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.798Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845753289e80927a3771f79"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d45"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.800Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845753389e80927a3771f80"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d47"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.803Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754889e80927a3772006"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d46"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.802Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754789e80927a3771ff8"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d49"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.804Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754e89e80927a377204c"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d4b"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.805Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "684727be9c4d8c6006807eff"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d48"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.803Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754989e80927a3772014"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d4c"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.806Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "68474a83adc1446d20af77cf"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d4a"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.804Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754e89e80927a377205a"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d4d"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.808Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "68474d65adc1446d20af7a50"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d4e"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.815Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "687b5912b754eb5aef0b231b"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.825Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.825Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d3b"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.788Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752889e80927a3771ee6"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c34ab78bf9eceac589d3a"
+  },
+  "amount": 1500,
+  "transactionDate": {
+    "$date": "2025-12-24T18:44:59.787Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752789e80927a3771edf"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:44:59.824Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c37ec78bf9eceac589e36"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-24T18:58:52.228Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751989e80927a3771e1b"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:58:52.233Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:58:52.233Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694c37ec78bf9eceac589e37"
+  },
+  "amount": 1500,
+  "transactionDate": {
+    "$date": "2025-12-24T18:58:52.230Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "687410dd3025376444142153"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-24T18:58:52.234Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-24T18:58:52.234Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6c0"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.118Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751989e80927a3771e0d"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.347Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.347Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6bf"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.115Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751889e80927a3771e06"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.347Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.347Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6be"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.111Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751889e80927a3771dff"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.347Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.347Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6bd"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.089Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751889e80927a3771df8"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.345Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.345Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6c1"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.121Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751989e80927a3771e14"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.347Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.347Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6c3"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.123Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751b89e80927a3771e37"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.348Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.348Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6c2"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.122Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751a89e80927a3771e29"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.348Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.348Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6c6"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.126Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751c89e80927a3771e4c"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.348Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.348Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6c7"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.131Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751c89e80927a3771e53"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.348Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.348Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6ca"
+  },
+  "amount": 1500,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.142Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751e89e80927a3771e76"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.348Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.348Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6c9"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.137Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751e89e80927a3771e6f"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.348Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.348Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6cb"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.145Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751f89e80927a3771e84"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.348Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.348Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6cd"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.150Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751f89e80927a3771e92"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.348Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.348Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6d1"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.154Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752489e80927a3771eae"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6cc"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.148Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751f89e80927a3771e8b"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.348Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.348Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6cf"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.152Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752389e80927a3771ea0"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6ce"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.151Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752089e80927a3771e99"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6d0"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.153Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752489e80927a3771ea7"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6d3"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.157Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752589e80927a3771ebc"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6d2"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.155Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752489e80927a3771eb5"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6d5"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.159Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752789e80927a3771ed1"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6d4"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.158Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752589e80927a3771ec3"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6d7"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.161Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752889e80927a3771ef4"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6d6"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.160Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752889e80927a3771eed"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6d8"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.162Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752989e80927a3771efb"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6d9"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.162Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752989e80927a3771f09"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6da"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.165Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752a89e80927a3771f10"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6db"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.171Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752b89e80927a3771f1e"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6dc"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.176Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752c89e80927a3771f2c"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6dd"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.180Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752d89e80927a3771f3a"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6df"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.190Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752e89e80927a3771f56"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6de"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.188Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845752e89e80927a3771f4f"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6e1"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.199Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845753189e80927a3771f72"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6e0"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.197Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845753089e80927a3771f64"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.349Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6e4"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.207Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845753589e80927a3771f95"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6e3"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.206Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845753489e80927a3771f8e"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6e5"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.208Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845753589e80927a3771f9c"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6c8"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.136Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751d89e80927a3771e68"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.348Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.348Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6e6"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.216Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845753689e80927a3771fa3"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6e7"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.221Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845753689e80927a3771faa"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6c4"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.124Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751b89e80927a3771e3e"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.348Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.348Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6e9"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.222Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754189e80927a3771fb8"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6eb"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.223Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754289e80927a3771fc6"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6ea"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.223Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754289e80927a3771fbf"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6ed"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.233Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754389e80927a3771fd4"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6ee"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.235Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754489e80927a3771fdb"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6c5"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.125Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845751b89e80927a3771e45"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.348Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.348Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6f0"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.239Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754589e80927a3771fe9"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6f1"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.240Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754689e80927a3771ff0"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6f2"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.246Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754789e80927a3771fff"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6f3"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.250Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754889e80927a377200d"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6f4"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.254Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754a89e80927a377201b"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6f5"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.254Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754a89e80927a3772022"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6f6"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.255Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754b89e80927a3772029"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6f8"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.257Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754c89e80927a3772037"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Paid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.351Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:40:23.901Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6f7"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.256Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754b89e80927a3772030"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.351Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.351Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6f9"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.261Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754d89e80927a377203e"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.351Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.351Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6fa"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.267Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754d89e80927a3772045"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.351Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.351Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6fb"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.270Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754e89e80927a3772053"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.351Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.351Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6e2"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.202Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845753389e80927a3771f87"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6ec"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.231Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754389e80927a3771fcd"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6ef"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.237Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845754589e80927a3771fe2"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "694d761ec6ca3b49d162b6e8"
+  },
+  "amount": 2000,
+  "transactionDate": {
+    "$date": "2025-12-25T17:36:30.221Z"
+  },
+  "transactionType": "income",
+  "category": "subscription",
+  "payment": {
+    "method": "cash",
+    "account": "/"
+  },
+  "relatedTo": {
+    "entityType": "Player",
+    "entityId": {
+      "$oid": "6845753a89e80927a3771fb1"
+    }
+  },
+  "description": "Subscription for الإشتراك السنوي لموسم 2025-2026",
+  "recordedBy": {
+    "$oid": "68457232d1598af960d42d6b"
+  },
+  "status": "Unpaid",
+  "archived": false,
+  "createdAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-25T17:36:30.350Z"
+  },
+  "__v": 0
+}]

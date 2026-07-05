@@ -72,6 +72,7 @@ function submit() {
                         <option value="income">{{ t('income') }}</option>
                         <option value="expense">{{ t('expense') }}</option>
                     </select>
+                    <InputError :message="form.errors.transaction_type" class="mt-1" />
                 </div>
                 <div>
                     <InputLabel :value="t('category')" />
@@ -115,6 +116,7 @@ function submit() {
                         <option value="Unpaid">{{ t('unpaid') }}</option>
                         <option value="Exempt">{{ t('exempt') }}</option>
                     </select>
+                    <InputError :message="form.errors.status" class="mt-1" />
                 </div>
             </div>
 
@@ -150,6 +152,7 @@ function submit() {
             <div>
                 <InputLabel :value="t('description')" />
                 <textarea v-model="form.description" rows="3" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm" />
+                <InputError :message="form.errors.description" class="mt-1" />
             </div>
 
             <div>

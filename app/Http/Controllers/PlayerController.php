@@ -9,6 +9,7 @@ use App\Models\MemberJob;
 use App\Models\Player;
 use App\Models\PlayerEmergencyContact;
 use App\Models\Position;
+use App\Services\Player\MembershipNumber;
 use App\Services\Player\RegisterPlayerService;
 use App\Services\Storage\FileStorageService;
 use Illuminate\Http\RedirectResponse;
@@ -161,20 +162,52 @@ class PlayerController extends Controller
         ]);
     }
 
-    private function getAlgeriaStates(): array
+    /**
+     * Algeria wilayas (bilingual) + communes keyed by wilaya id, from the seed json.
+     *
+     * @return array{wilayas: array<int, array{id:int,name:string,ar_name:string}>, communes: array<int|string, array<int,string>>}
+     */
+    private function algeriaGeo(): array
     {
         $data = json_decode(File::get(database_path('seeders/algeria_wilayas.json')), true);
 
-        return collect($data['states'])->pluck('name')->toArray();
+        $wilayas = collect($data['states'] ?? [])
+            ->map(fn ($s) => ['id' => (int) $s['id'], 'name' => $s['name'], 'ar_name' => $s['ar_name']])
+            ->values()->all();
+
+        return ['wilayas' => $wilayas, 'communes' => $data['communes'] ?? []];
+    }
+
+    /**
+     * Next membership sequence per join year (years present in players + current year).
+     *
+     * @return array<int, int>
+     */
+    private function nextSequenceByYear(): array
+    {
+        $years = Player::query()->whereNotNull('join_year')->distinct()->pluck('join_year')
+            ->push((int) now()->year)->unique();
+
+        $map = [];
+        foreach ($years as $year) {
+            $map[(int) $year] = MembershipNumber::nextSequence((int) $year);
+        }
+
+        return $map;
     }
 
     public function create(): Response
     {
+        $geo = $this->algeriaGeo();
+
         return Inertia::render('Players/Create', [
             'categories' => Category::orderBy('name')->get(),
             'positions' => Position::orderBy('name')->get(),
             'jobs' => MemberJob::orderBy('name')->get(),
-            'states' => $this->getAlgeriaStates(),
+            'wilayas' => $geo['wilayas'],
+            'communes' => $geo['communes'],
+            'nextSequenceByYear' => $this->nextSequenceByYear(),
+            'defaultJoinYear' => (int) now()->year,
         ]);
     }
 
@@ -203,13 +236,17 @@ class PlayerController extends Controller
     public function edit(Player $player): Response
     {
         $player->load(['emergencyContacts']);
+        $geo = $this->algeriaGeo();
 
         return Inertia::render('Players/Edit', [
             'player' => $player,
             'categories' => Category::orderBy('name')->get(),
             'positions' => Position::orderBy('name')->get(),
             'jobs' => MemberJob::orderBy('name')->get(),
-            'states' => $this->getAlgeriaStates(),
+            'wilayas' => $geo['wilayas'],
+            'communes' => $geo['communes'],
+            'nextSequenceByYear' => $this->nextSequenceByYear(),
+            'defaultJoinYear' => (int) now()->year,
         ]);
     }
 

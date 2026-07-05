@@ -7,6 +7,7 @@ use App\Models\Player;
 use App\Models\PlayerSubscription;
 use App\Models\Subscription;
 use App\Models\Transaction;
+use App\Models\User;
 use App\Services\Finance\RecalculatePlayerDebtService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -141,6 +142,46 @@ class SubscriptionBillingTest extends TestCase
         $payment->delete();
 
         $this->assertSame(0.0, (float) $sub->fresh()->amount_paid);
+        $this->assertSame(2000.0, (float) $player->fresh()->outstanding_debt);
+    }
+
+    #[Test]
+    public function assigning_optional_subscription_does_not_add_debt_or_income(): void
+    {
+        $admin = User::factory()->create(['privileges' => ['admin'], 'is_active' => true, 'email_verified_at' => now()]);
+        $player = $this->makePlayer();
+        $optional = Subscription::create([
+            'name' => 'Camp', 'year' => (int) now()->year,
+            'amount_student' => 1500, 'amount_worker' => 1500,
+            'is_mandatory' => false, 'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('subscriptions.assignOne', $optional), ['player_id' => $player->id])
+            ->assertRedirect();
+
+        $this->assertDatabaseCount('transactions', 0);
+        $this->assertDatabaseCount('player_subscriptions', 1);
+        $this->assertFalse((bool) PlayerSubscription::first()->is_mandatory);
+        $this->assertSame(0.0, (float) $player->fresh()->outstanding_debt);
+    }
+
+    #[Test]
+    public function assigning_mandatory_subscription_adds_debt_without_income(): void
+    {
+        $admin = User::factory()->create(['privileges' => ['admin'], 'is_active' => true, 'email_verified_at' => now()]);
+        $player = $this->makePlayer();
+        $mandatory = Subscription::create([
+            'name' => 'Annual', 'year' => (int) now()->year,
+            'amount_student' => 2000, 'amount_worker' => 3000,
+            'is_mandatory' => true, 'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('subscriptions.assignOne', $mandatory), ['player_id' => $player->id])
+            ->assertRedirect();
+
+        $this->assertDatabaseCount('transactions', 0);
         $this->assertSame(2000.0, (float) $player->fresh()->outstanding_debt);
     }
 }

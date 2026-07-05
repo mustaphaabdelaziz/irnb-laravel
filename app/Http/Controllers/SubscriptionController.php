@@ -7,7 +7,6 @@ use App\Models\Category;
 use App\Models\Player;
 use App\Models\PlayerSubscription;
 use App\Models\Subscription;
-use App\Models\Transaction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
@@ -163,7 +162,7 @@ class SubscriptionController extends Controller
 
         $newPlayerIds = $playerIds->diff($existingPlayerIds);
 
-        DB::transaction(function () use ($newPlayerIds, $subscription, $request) {
+        DB::transaction(function () use ($newPlayerIds, $subscription) {
             foreach ($newPlayerIds as $playerId) {
                 $player = Player::find($playerId);
                 if (! $player) {
@@ -174,29 +173,17 @@ class SubscriptionController extends Controller
                     ? (float) $subscription->amount_student
                     : (float) $subscription->amount_worker;
 
-                $transaction = Transaction::create([
-                    'amount' => $amountOwed,
-                    'transaction_date' => now(),
-                    'transaction_type' => 'income',
-                    'category' => 'subscription',
-                    'description' => 'Subscription: '.$subscription->designation,
-                    'payment_method' => 'cash',
-                    'related_entity_type' => 'Player',
-                    'related_entity_id' => $player->id,
-                    'recorded_by_user_id' => $request->user()?->id,
-                    'status' => 'Unpaid',
-                    'fiscal_year' => $subscription->year,
-                ]);
-
                 PlayerSubscription::create([
                     'player_id' => $player->id,
                     'subscription_id' => $subscription->id,
-                    'transaction_id' => $transaction->id,
+                    'transaction_id' => null,
                     'year' => $subscription->year,
                     'status_at_time' => $player->is_student ? 'student' : 'worker',
+                    'is_mandatory' => (bool) $subscription->is_mandatory,
                     'amount_owed' => $amountOwed,
                     'amount_paid' => 0,
                 ]);
+                app(\App\Services\Finance\RecalculatePlayerDebtService::class)->forPlayer($player);
             }
         });
 
@@ -226,30 +213,18 @@ class SubscriptionController extends Controller
             ? (float) $subscription->amount_student
             : (float) $subscription->amount_worker;
 
-        DB::transaction(function () use ($player, $subscription, $amountOwed, $request) {
-            $transaction = Transaction::create([
-                'amount' => $amountOwed,
-                'transaction_date' => now(),
-                'transaction_type' => 'income',
-                'category' => 'subscription',
-                'description' => 'Subscription: '.$subscription->designation,
-                'payment_method' => 'cash',
-                'related_entity_type' => 'Player',
-                'related_entity_id' => $player->id,
-                'recorded_by_user_id' => $request->user()?->id,
-                'status' => 'Unpaid',
-                'fiscal_year' => $subscription->year,
-            ]);
-
+        DB::transaction(function () use ($player, $subscription, $amountOwed) {
             PlayerSubscription::create([
                 'player_id' => $player->id,
                 'subscription_id' => $subscription->id,
-                'transaction_id' => $transaction->id,
+                'transaction_id' => null,
                 'year' => $subscription->year,
                 'status_at_time' => $player->is_student ? 'student' : 'worker',
+                'is_mandatory' => (bool) $subscription->is_mandatory,
                 'amount_owed' => $amountOwed,
                 'amount_paid' => 0,
             ]);
+            app(\App\Services\Finance\RecalculatePlayerDebtService::class)->forPlayer($player);
         });
 
         return redirect()->route('subscriptions.show', $subscription)

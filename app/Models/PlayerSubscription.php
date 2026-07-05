@@ -61,9 +61,14 @@ class PlayerSubscription extends Model
         return $this->hasMany(Transaction::class, 'player_subscription_id');
     }
 
+    public function isExempt(): bool
+    {
+        return $this->payments->firstWhere(fn ($t) => ! $t->archived && $t->category === 'donation') !== null;
+    }
+
     public function getRemainingAmountAttribute(): float
     {
-        if ($this->transaction?->category === 'donation') {
+        if ($this->isExempt()) {
             return 0.0;
         }
 
@@ -72,11 +77,10 @@ class PlayerSubscription extends Model
 
     public function getPaymentStatusAttribute(): string
     {
-        if ($this->transaction?->category === 'donation') {
+        if ($this->isExempt()) {
             return 'exempt';
         }
-        $remaining = $this->getRemainingAmountAttribute();
-        if ($remaining <= 0) {
+        if ($this->getRemainingAmountAttribute() <= 0 && (float) $this->amount_paid > 0) {
             return 'paid';
         }
         if ((float) $this->amount_paid > 0) {

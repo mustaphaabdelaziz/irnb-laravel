@@ -125,8 +125,9 @@ class Player extends Model
     public function calculateTotalDebt(): float
     {
         return (float) $this->playerSubscriptions()
-            ->whereHas('transaction', fn ($q) => $q->where('category', '!=', 'donation'))
-            ->selectRaw('COALESCE(SUM(CASE WHEN amount_owed - amount_paid > 0 THEN amount_owed - amount_paid ELSE 0 END), 0) as total')
-            ->value('total');
+            ->where('is_mandatory', true)
+            ->with('payments')
+            ->get()
+            ->sum(fn (PlayerSubscription $sub) => $sub->remaining_amount);
     }
 }

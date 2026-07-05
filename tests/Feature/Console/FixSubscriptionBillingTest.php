@@ -119,4 +119,27 @@ class FixSubscriptionBillingTest extends TestCase
         $this->assertSame(1200.0, (float) $sub->fresh()->amount_paid); // corrected from 999
         $this->assertSame(800.0, (float) $player->fresh()->outstanding_debt);
     }
+
+    #[Test]
+    public function unrelated_player_income_is_not_linked_to_a_subscription(): void
+    {
+        $player = $this->makePlayer();
+        $sub = PlayerSubscription::create([
+            'player_id' => $player->id, 'subscription_id' => null, 'transaction_id' => null,
+            'year' => 2025, 'status_at_time' => 'student', 'is_mandatory' => true,
+            'amount_owed' => 2000, 'amount_paid' => 0,
+        ]);
+        // an equipment income for the SAME player+year — must NOT be swept into the subscription
+        $equip = Transaction::create([
+            'amount' => 700, 'transaction_date' => now(), 'transaction_type' => 'income',
+            'category' => 'equipment', 'status' => 'Paid',
+            'related_entity_type' => 'Player', 'related_entity_id' => $player->id, 'fiscal_year' => 2025,
+        ]);
+
+        $this->artisan('finance:fix-subscription-billing --force')->assertSuccessful();
+
+        $this->assertNull($equip->fresh()->player_subscription_id);
+        $this->assertSame(0.0, (float) $sub->fresh()->amount_paid);
+        $this->assertSame(2000.0, (float) $player->fresh()->outstanding_debt); // debt intact, not over-credited
+    }
 }

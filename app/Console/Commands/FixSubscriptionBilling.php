@@ -13,10 +13,12 @@ class FixSubscriptionBilling extends Command
 {
     protected $signature = 'finance:fix-subscription-billing {--force : Actually delete bill transactions}';
 
-    protected $description = 'Cash-basis cleanup: drop subscription bills, link payments, recompute debts.';
+    protected $description = 'Cash-basis cleanup: snapshot is_mandatory, link payments, and recompute debts (always run); pass --force to also delete legacy Unpaid subscription bills.';
 
     public function handle(RecalculatePlayerDebtService $debt): int
     {
+        $this->info('Snapshot, link, and recompute steps always run; only legacy-bill deletion is gated behind --force.');
+
         // 1. Snapshot is_mandatory from the parent subscription (nulls default true).
         $updated = DB::table('player_subscriptions')
             ->whereIn('subscription_id', function ($q) {
@@ -33,6 +35,11 @@ class FixSubscriptionBilling extends Command
             ->where('status', '!=', 'Unpaid')
             ->whereNull('player_subscription_id')
             ->where('related_entity_type', 'Player')
+            // Only subscription/debt_payment income reduces a subscription balance; donations and other
+            // income are intentionally left unlinked so the year-match heuristic can't over-credit or
+            // wrongly exempt a subscription. (Donations recorded against a subscription in the live app
+            // already carry player_subscription_id from creation and are unaffected.)
+            ->whereIn('category', ['subscription', 'debt_payment'])
             ->chunkById(200, function ($payments) use (&$linked) {
                 foreach ($payments as $payment) {
                     $sub = PlayerSubscription::query()

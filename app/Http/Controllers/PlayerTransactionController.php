@@ -15,13 +15,25 @@ class PlayerTransactionController extends Controller
     public function store(Request $request, Player $player): RedirectResponse
     {
         $validated = $request->validate([
-            'player_subscription_id' => ['required', 'integer', 'exists:player_subscriptions,id'],
+            'player_subscription_id' => ['required_if:category,subscription', 'nullable', 'integer', 'exists:player_subscriptions,id'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'payment_method' => ['nullable', 'string', 'max:255'],
             'category' => ['required', 'string', 'in:subscription,donation,debt_payment'],
             'description' => ['nullable', 'string'],
         ]);
 
+        if ($validated['category'] === 'subscription') {
+            $this->recordSubscriptionPayment($request, $player, $validated);
+        } else {
+            $this->recordPlayerLevelPayment($request, $player, $validated);
+        }
+
+        return redirect()->route('players.show', $player)
+            ->with('success', 'Payment recorded successfully.');
+    }
+
+    private function recordSubscriptionPayment(Request $request, Player $player, array $validated): void
+    {
         $playerSub = PlayerSubscription::findOrFail($validated['player_subscription_id']);
 
         if ((int) $playerSub->player_id !== (int) $player->id) {
@@ -53,9 +65,26 @@ class PlayerTransactionController extends Controller
                 'transaction_id' => $transaction->id,
             ]);
         });
+    }
 
-        return redirect()->route('players.show', $player)
-            ->with('success', 'Payment recorded successfully.');
+    private function recordPlayerLevelPayment(Request $request, Player $player, array $validated): void
+    {
+        DB::transaction(function () use ($validated, $player, $request) {
+            Transaction::create([
+                'amount' => $validated['amount'],
+                'transaction_date' => now(),
+                'transaction_type' => 'income',
+                'category' => $validated['category'],
+                'description' => $validated['description'] ?? null,
+                'payment_method' => $validated['payment_method'] ?? 'cash',
+                'related_entity_type' => 'Player',
+                'related_entity_id' => $player->id,
+                'player_subscription_id' => null,
+                'recorded_by_user_id' => $request->user()?->id,
+                'status' => 'Paid',
+                'fiscal_year' => (int) now()->year,
+            ]);
+        });
     }
 
     public function update(Request $request, Player $player, Transaction $transaction): RedirectResponse

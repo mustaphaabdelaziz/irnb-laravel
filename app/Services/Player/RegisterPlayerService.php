@@ -5,7 +5,6 @@ namespace App\Services\Player;
 use App\Models\Player;
 use App\Models\PlayerSubscription;
 use App\Models\Subscription;
-use App\Models\Transaction;
 use Illuminate\Support\Facades\DB;
 
 class RegisterPlayerService
@@ -45,31 +44,19 @@ class RegisterPlayerService
             foreach ($subscriptions as $subscription) {
                 $amountOwed = $isStudent ? (float) $subscription->amount_student : (float) $subscription->amount_worker;
 
-                $transaction = Transaction::query()->create([
-                    'amount' => $amountOwed,
-                    'transaction_date' => now(),
-                    'transaction_type' => 'income',
-                    'category' => 'subscription',
-                    'description' => 'Subscription for '.$subscription->name,
-                    'payment_method' => 'cash',
-                    'payment_account' => '/',
-                    'related_entity_type' => 'Player',
-                    'related_entity_id' => $player->id,
-                    'recorded_by_user_id' => $recordedByUserId,
-                    'status' => 'Unpaid',
-                    'fiscal_year' => $subscription->year,
-                ]);
-
                 PlayerSubscription::query()->create([
                     'player_id' => $player->id,
                     'subscription_id' => $subscription->id,
-                    'transaction_id' => $transaction->id,
+                    'transaction_id' => null,
                     'year' => (int) $subscription->year,
                     'status_at_time' => $isStudent ? 'student' : 'worker',
+                    'is_mandatory' => true,
                     'amount_owed' => $amountOwed,
                     'amount_paid' => 0,
                 ]);
             }
+
+            app(\App\Services\Finance\RecalculatePlayerDebtService::class)->forPlayer($player);
 
             return $player->load(['playerSubscriptions.subscription', 'playerSubscriptions.transaction']);
         });

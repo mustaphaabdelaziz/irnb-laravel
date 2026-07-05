@@ -6,7 +6,6 @@ use App\Models\Category;
 use App\Models\Player;
 use App\Models\PlayerSubscription;
 use App\Models\Subscription;
-use App\Models\Transaction;
 use App\Services\Player\RegisterPlayerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -46,13 +45,12 @@ class RegisterPlayerServiceTest extends TestCase
         $this->assertInstanceOf(Player::class, $player);
         $this->assertDatabaseCount('players', 1);
         $this->assertDatabaseCount('player_subscriptions', 1);
-        $this->assertDatabaseCount('transactions', 1);
+        $this->assertDatabaseCount('transactions', 0);
 
         $playerSubscription = PlayerSubscription::query()->firstOrFail();
-        $transaction = Transaction::query()->firstOrFail();
 
         $this->assertSame((float) $subscription->amount_student, (float) $playerSubscription->amount_owed);
-        $this->assertSame('subscription', $transaction->category);
-        $this->assertSame('Unpaid', $transaction->status);
+        $this->assertTrue((bool) $playerSubscription->is_mandatory);
+        $this->assertSame(2000.0, (float) $player->fresh()->outstanding_debt);
     }
 }

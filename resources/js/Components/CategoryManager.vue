@@ -1,6 +1,6 @@
 <script setup>
 import Modal from '@/Components/Modal.vue';
-import { router } from '@inertiajs/vue3';
+import { router, usePage } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref } from 'vue';
 
@@ -12,6 +12,7 @@ const props = defineProps({
 defineEmits(['close']);
 
 const draft = ref({ income: { name: '', color: '#10b981' }, expense: { name: '', color: '#ef4444' } });
+const error = ref('');
 
 function byType(type) {
     return props.categories.filter((c) => c.type === type);
@@ -20,14 +21,25 @@ function add(type) {
     if (!draft.value[type].name.trim()) return;
     router.post(route('finance.categories.store'), { type, name: draft.value[type].name, color: draft.value[type].color }, {
         preserveScroll: true,
-        onSuccess: () => { draft.value[type] = { name: '', color: type === 'income' ? '#10b981' : '#ef4444' }; },
+        onSuccess: () => {
+            draft.value[type] = { name: '', color: type === 'income' ? '#10b981' : '#ef4444' };
+            error.value = '';
+        },
+        onError: (errors) => { error.value = Object.values(errors)[0] || 'Save failed.'; },
     });
 }
 function save(cat) {
-    router.put(route('finance.categories.update', cat.id), { type: cat.type, name: cat.name, color: cat.color, is_active: cat.is_active }, { preserveScroll: true });
+    router.put(route('finance.categories.update', cat.id), { type: cat.type, name: cat.name, color: cat.color, is_active: cat.is_active }, {
+        preserveScroll: true,
+        onSuccess: () => { error.value = ''; },
+        onError: (errors) => { error.value = Object.values(errors)[0] || 'Save failed.'; },
+    });
 }
 function remove(cat) {
-    router.delete(route('finance.categories.destroy', cat.id), { preserveScroll: true });
+    router.delete(route('finance.categories.destroy', cat.id), {
+        preserveScroll: true,
+        onSuccess: () => { error.value = usePage().props.flash?.error || ''; },
+    });
 }
 </script>
 
@@ -35,6 +47,7 @@ function remove(cat) {
     <Modal :show="show" max-width="2xl" @close="$emit('close')">
         <div class="p-6">
             <h2 class="mb-4 text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('manage_categories') }}</h2>
+            <p v-if="error" class="mb-3 rounded-lg bg-rose-50 dark:bg-rose-900/30 px-3 py-2 text-sm text-rose-700 dark:text-rose-300">{{ error }}</p>
             <div class="grid gap-6 sm:grid-cols-2">
                 <div v-for="type in ['income', 'expense']" :key="type">
                     <h3 class="mb-2 text-sm font-semibold uppercase text-slate-500">{{ t(type) }}</h3>

@@ -60,11 +60,18 @@ function deletePlayer() {
 }
 
 function paymentStatus(sub) {
+    if (sub.is_exempt) return 'exempt';
     const remaining = parseFloat(sub.remaining_amount ?? 0);
     const paid = parseFloat(sub.amount_paid ?? 0);
     if (remaining <= 0) return 'paid';
     if (paid > 0) return 'partial';
     return 'unpaid';
+}
+
+function toggleExempt(sub) {
+    router.patch(route('players.subscriptions.exempt', [props.player.id, sub.id]), {}, {
+        preserveScroll: true,
+    });
 }
 
 const statusColor = (s) => {
@@ -177,6 +184,7 @@ function formatDate(val) {
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('amount_paid') }}</th>
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('remaining') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('status') }}</th>
+                                <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400"></th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
@@ -190,6 +198,20 @@ function formatDate(val) {
                                 </td>
                                 <td class="px-4 py-3">
                                     <Badge :label="paymentStatus(sub)" :color="statusColor(paymentStatus(sub))" />
+                                </td>
+                                <td class="px-4 py-3 text-end">
+                                    <button
+                                        type="button"
+                                        @click="toggleExempt(sub)"
+                                        class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset"
+                                        :class="sub.is_exempt
+                                            ? 'bg-slate-100 text-slate-700 ring-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:ring-slate-600'
+                                            : 'text-slate-500 ring-slate-300 hover:bg-slate-50 dark:text-slate-400 dark:ring-slate-600 dark:hover:bg-slate-800'"
+                                        :title="sub.is_exempt ? t('exempt_remove') : t('exempt')"
+                                    >
+                                        <span v-if="sub.is_exempt">✓</span>
+                                        {{ t('exempt') }}
+                                    </button>
                                 </td>
                             </tr>
                         </tbody>

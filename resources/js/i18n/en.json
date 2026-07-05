@@ -179,6 +179,7 @@
     "equipments": "Equipments",
     "excused": "Excused",
     "exempt": "Exempt",
+    "exempt_remove": "Remove exemption",
     "exempt_from_payment": "Exempt From Payment",
     "expected": "Expected",
     "expense": "Expense",

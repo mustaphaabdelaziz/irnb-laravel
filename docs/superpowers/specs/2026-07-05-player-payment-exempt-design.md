@@ -125,6 +125,55 @@ Add keys: `debt_payment`, `payment_category`, `exempt`, `unexempt`
   new `debt_payment` category flowing through the existing observer/report paths.
 - No multi-row "pay several subscriptions at once" form (single payment per submit).
 
+## Revision (2026-07-05, post-implementation feedback)
+
+The exemption UX and payment math were refined after the first pass:
+
+- **Exempt is a checkbox inside the payment form**, not a per-row table button. Flow:
+  pick a subscription → tick **Exempt** → submit. The system sets that subscription's
+  `is_exempt = true` and records **no** payment (the amount field is ignored/hidden while
+  Exempt is ticked). The standalone exempt endpoint / `PlayerSubscriptionController` /
+  per-row button are removed; exemption is handled inside `store`.
+- **Un-exempt** uses the same checkbox: the payment form's subscription dropdown includes
+  subscriptions that are payable (`remaining_amount > 0`) **or** exempt, so an exempt sub
+  can be selected with the box pre-ticked; unticking + submit clears the flag.
+- **Overpayment auto-splits into a donation.** When a subscription payment exceeds the
+  subscription's current remaining balance, the balance is paid in full (one `subscription`
+  transaction for the remaining) and the excess becomes a separate player-level `donation`
+  transaction. Underpayment stays `partial`, remainder counts as debt (unchanged).
+- **Payment rows are editable and removable** in the transaction history:
+  - **Remove** = archive (`archived = true`); the row leaves the table, debt/income
+    recompute via the observer, the record is kept for audit.
+  - **Edit** = cancel + recreate: the original transaction is archived and a new one is
+    created from the edited values (re-running the subscription split or player-level path
+    per the original category).
+
+### Revised backend (`PlayerTransactionController`)
+
+- `store` validation: `is_exempt` (`nullable|boolean`); `player_subscription_id`
+  `required_if:category,subscription`; `amount`
+  `required_if:category,donation` + `required_if:category,debt_payment` + `nullable|numeric|min:0.01`
+  (subscription amount is enforced client-side unless Exempt).
+  - category = subscription: set `sub.is_exempt` from the checkbox; if not exempt and an
+    amount is present, record the payment with overpay→donation split; recompute the
+    player's debt.
+  - category = donation | debt_payment: player-level income (unchanged from first pass).
+- `update(player, transaction)`: guard ownership; archive the original; recreate from the
+  edited amount/method/description using the original transaction's category and
+  `player_subscription_id`.
+- `destroy(player, transaction)`: guard ownership; set `archived = true`.
+- Routes: `DELETE /players/{player}/transactions/{transaction}` →
+  `players.transactions.destroy`. The `players.subscriptions.exempt` route is removed.
+
+### Revised frontend (`Players/Show.vue`)
+
+- Payment modal: **Exempt** checkbox (shown for the subscription category); amount hidden
+  while Exempt is ticked; subscription dropdown includes payable + exempt subs; `is_exempt`
+  in the form, initialised from the selected sub.
+- Subscriptions table: per-row Exempt button removed (status badge still shows `exempt`).
+- Transaction history table: per-row **Edit** (opens a prefilled modal → `PUT` update) and
+  **Remove** (confirms → `DELETE` destroy).
+
 ## Files touched
 
 - `app/Http/Controllers/PlayerTransactionController.php` — conditional validation + branch.

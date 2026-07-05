@@ -22,7 +22,6 @@ use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\MemberJobController;
 use App\Http\Controllers\PlayerController;
 use App\Http\Controllers\PlayerImportController;
-use App\Http\Controllers\PlayerSubscriptionController;
 use App\Http\Controllers\PlayerTransactionController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProfileController;
@@ -77,9 +76,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     // Player transactions (nested)
     Route::post('/players/{player}/transactions', [PlayerTransactionController::class, 'store'])->name('players.transactions.store');
     Route::put('/players/{player}/transactions/{transaction}', [PlayerTransactionController::class, 'update'])->name('players.transactions.update');
-
-    // Player subscription exemption (nested)
-    Route::patch('/players/{player}/subscriptions/{subscription}/exempt', [PlayerSubscriptionController::class, 'exempt'])->name('players.subscriptions.exempt');
+    Route::delete('/players/{player}/transactions/{transaction}', [PlayerTransactionController::class, 'destroy'])->name('players.transactions.destroy');
 
     // Subscriptions
     Route::resource('subscriptions', SubscriptionController::class);

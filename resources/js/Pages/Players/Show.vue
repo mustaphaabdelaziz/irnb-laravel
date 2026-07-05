@@ -25,9 +25,10 @@ const props = defineProps({
 const subscriptions = computed(() => props.player?.player_subscriptions ?? []);
 const transactions = computed(() => props.transactions ?? []);
 
-// Subscriptions that still owe something: hides fully-paid and exempt (remaining 0) subs.
+// Selectable in the payment form: subs that still owe (remaining > 0) or are exempt
+// (so an exempt sub can be picked to un-exempt it). Fully-paid subs are hidden.
 const payableSubscriptions = computed(() =>
-    subscriptions.value.filter(s => parseFloat(s.remaining_amount ?? 0) > 0)
+    subscriptions.value.filter(s => parseFloat(s.remaining_amount ?? 0) > 0 || s.is_exempt)
 );
 
 const showDeleteModal = ref(false);
@@ -39,12 +40,25 @@ const paymentForm = useForm({
     payment_method: 'cash',
     category: 'subscription',
     description: '',
+    is_exempt: false,
 });
+
+// Hide the amount while Exempt is ticked — exemption records no payment.
+const showAmountField = computed(() =>
+    !(paymentForm.category === 'subscription' && paymentForm.is_exempt)
+);
 
 watch(() => paymentForm.category, (category) => {
     if (category !== 'subscription') {
         paymentForm.player_subscription_id = '';
+        paymentForm.is_exempt = false;
     }
+});
+
+// When a subscription is picked, mirror its current exempt state into the checkbox.
+watch(() => paymentForm.player_subscription_id, (id) => {
+    const sub = subscriptions.value.find(s => s.id === id);
+    paymentForm.is_exempt = sub ? !!sub.is_exempt : false;
 });
 
 function submitPayment() {
@@ -69,9 +83,46 @@ function paymentStatus(sub) {
     return 'unpaid';
 }
 
-function toggleExempt(sub) {
-    router.patch(route('players.subscriptions.exempt', [props.player.id, sub.id]), {}, {
+// Edit a payment = archive the original + record a new one (handled server-side).
+const showEditModal = ref(false);
+const editingId = ref(null);
+const editForm = useForm({ amount: '', payment_method: 'cash', description: '' });
+
+function openEdit(tx) {
+    editingId.value = tx.id;
+    editForm.amount = tx.amount;
+    editForm.payment_method = tx.payment_method || 'cash';
+    editForm.description = tx.description || '';
+    editForm.clearErrors();
+    showEditModal.value = true;
+}
+
+function submitEdit() {
+    editForm.put(route('players.transactions.update', [props.player.id, editingId.value]), {
         preserveScroll: true,
+        onSuccess: () => {
+            showEditModal.value = false;
+            editForm.reset();
+            editingId.value = null;
+        },
+    });
+}
+
+const showRemoveModal = ref(false);
+const removingId = ref(null);
+
+function askRemove(tx) {
+    removingId.value = tx.id;
+    showRemoveModal.value = true;
+}
+
+function confirmRemove() {
+    router.delete(route('players.transactions.destroy', [props.player.id, removingId.value]), {
+        preserveScroll: true,
+        onSuccess: () => {
+            showRemoveModal.value = false;
+            removingId.value = null;
+        },
     });
 }
 
@@ -185,7 +236,6 @@ function formatDate(val) {
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('amount_paid') }}</th>
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('remaining') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('status') }}</th>
-                                <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400"></th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
@@ -199,20 +249,6 @@ function formatDate(val) {
                                 </td>
                                 <td class="px-4 py-3">
                                     <Badge :label="paymentStatus(sub)" :color="statusColor(paymentStatus(sub))" />
-                                </td>
-                                <td class="px-4 py-3 text-end">
-                                    <button
-                                        type="button"
-                                        @click="toggleExempt(sub)"
-                                        class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset"
-                                        :class="sub.is_exempt
-                                            ? 'bg-slate-100 text-slate-700 ring-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:ring-slate-600'
-                                            : 'text-slate-500 ring-slate-300 hover:bg-slate-50 dark:text-slate-400 dark:ring-slate-600 dark:hover:bg-slate-800'"
-                                        :title="sub.is_exempt ? t('exempt_remove') : t('exempt')"
-                                    >
-                                        <span v-if="sub.is_exempt">✓</span>
-                                        {{ t('exempt') }}
-                                    </button>
                                 </td>
                             </tr>
                         </tbody>
@@ -234,6 +270,7 @@ function formatDate(val) {
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('category') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('payment_method') }}</th>
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('amount') }}</th>
+                                <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400"></th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
@@ -244,6 +281,14 @@ function formatDate(val) {
                                 <td class="px-4 py-3 text-end text-sm font-semibold"
                                     :class="tx.transaction_type === 'income' ? 'text-emerald-700' : 'text-rose-700'">
                                     {{ tx.transaction_type === 'income' ? '+' : '-' }}{{ formatMoney(tx.amount) }}
+                                </td>
+                                <td class="px-4 py-3 text-end whitespace-nowrap">
+                                    <button type="button" @click="openEdit(tx)" class="rounded-md px-2 py-1 text-xs font-medium text-primary-700 ring-1 ring-inset ring-primary-300 hover:bg-primary-50 dark:text-primary-300 dark:ring-primary-700 dark:hover:bg-primary-900/30">
+                                        {{ t('edit') }}
+                                    </button>
+                                    <button type="button" @click="askRemove(tx)" class="ms-2 rounded-md px-2 py-1 text-xs font-medium text-rose-700 ring-1 ring-inset ring-rose-300 hover:bg-rose-50 dark:text-rose-300 dark:ring-rose-800 dark:hover:bg-rose-900/30">
+                                        {{ t('remove') }}
+                                    </button>
                                 </td>
                             </tr>
                         </tbody>
@@ -275,9 +320,13 @@ function formatDate(val) {
                         </select>
                         <InputError :message="paymentForm.errors.player_subscription_id" class="mt-1" />
                     </div>
-                    <div>
+                    <label v-if="paymentForm.category === 'subscription' && paymentForm.player_subscription_id" class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                        <input type="checkbox" v-model="paymentForm.is_exempt" class="rounded border-slate-300 text-primary-600 shadow-sm focus:ring-primary-500" />
+                        {{ t('exempt') }} — {{ t('exempt_hint') }}
+                    </label>
+                    <div v-if="showAmountField">
                         <InputLabel :value="t('amount')" />
-                        <TextInput v-model="paymentForm.amount" type="number" step="0.01" min="0" class="mt-1 w-full" required />
+                        <TextInput v-model="paymentForm.amount" type="number" step="0.01" min="0" class="mt-1 w-full" :required="showAmountField" />
                         <InputError :message="paymentForm.errors.amount" class="mt-1" />
                     </div>
                     <div>
@@ -299,6 +348,45 @@ function formatDate(val) {
                 </div>
             </form>
         </Modal>
+
+        <!-- Edit payment modal -->
+        <Modal :show="showEditModal" @close="showEditModal = false" max-width="md">
+            <form @submit.prevent="submitEdit" class="p-6">
+                <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('edit_payment') }}</h3>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('edit_payment_hint') }}</p>
+                <div class="mt-4 space-y-4">
+                    <div>
+                        <InputLabel :value="t('amount')" />
+                        <TextInput v-model="editForm.amount" type="number" step="0.01" min="0" class="mt-1 w-full" required />
+                        <InputError :message="editForm.errors.amount" class="mt-1" />
+                    </div>
+                    <div>
+                        <InputLabel :value="t('payment_method')" />
+                        <select v-model="editForm.payment_method" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                            <option value="cash">{{ t('cash') }}</option>
+                            <option value="ccp">{{ t('ccp') }}</option>
+                            <option value="baridimob">{{ t('baridimob') }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <InputLabel :value="t('description')" />
+                        <textarea v-model="editForm.description" rows="2" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500" />
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <SecondaryButton type="button" @click="showEditModal = false">{{ t('cancel') }}</SecondaryButton>
+                    <PrimaryButton :disabled="editForm.processing">{{ t('save') }}</PrimaryButton>
+                </div>
+            </form>
+        </Modal>
+
+        <ConfirmModal
+            :show="showRemoveModal"
+            :title="t('remove')"
+            :message="t('remove_payment_warning')"
+            @confirm="confirmRemove"
+            @cancel="showRemoveModal = false"
+        />
 
         <ConfirmModal
             :show="showDeleteModal"

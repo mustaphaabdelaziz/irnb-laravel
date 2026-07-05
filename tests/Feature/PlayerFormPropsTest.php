@@ -31,4 +31,25 @@ class PlayerFormPropsTest extends TestCase
                 ->where('defaultJoinYear', (int) now()->year)
                 ->where('nextSequenceByYear.'.now()->year, 1));
     }
+
+    #[Test]
+    public function storing_a_player_persists_geo_and_club_fields(): void
+    {
+        $this->actingAs($this->admin())
+            ->post(route('players.store'), [
+                'firstname' => 'Yacine',
+                'state' => 'Adrar',
+                'city' => 'Reggane',
+                'is_student' => false,
+                'join_year' => 2026,
+                'team' => 'A',
+                'skill_level' => 7,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('players', [
+            'firstname' => 'Yacine', 'state' => 'Adrar', 'city' => 'Reggane',
+            'join_year' => 2026, 'team' => 'A', 'skill_level' => 7, 'is_student' => false,
+        ]);
+    }
 }

@@ -18,6 +18,7 @@ class PlayerSubscription extends Model
         'year',
         'status_at_time',
         'is_mandatory',
+        'is_exempt',
         'amount_owed',
         'amount_paid',
         'is_legacy',
@@ -37,6 +38,7 @@ class PlayerSubscription extends Model
             'amount_paid' => 'decimal:2',
             'is_legacy' => 'boolean',
             'is_mandatory' => 'boolean',
+            'is_exempt' => 'boolean',
             'due_date' => 'date',
         ];
     }
@@ -63,7 +65,7 @@ class PlayerSubscription extends Model
 
     public function isExempt(): bool
     {
-        return $this->payments->firstWhere(fn ($t) => ! $t->archived && $t->category === 'donation') !== null;
+        return (bool) $this->is_exempt;
     }
 
     public function getRemainingAmountAttribute(): float

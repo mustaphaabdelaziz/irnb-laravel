@@ -5,6 +5,7 @@ namespace App\Services\Player;
 use App\Models\Player;
 use App\Models\PlayerSubscription;
 use App\Models\Subscription;
+use App\Services\Player\MembershipNumber;
 use Illuminate\Support\Facades\DB;
 
 class RegisterPlayerService
@@ -64,10 +65,8 @@ class RegisterPlayerService
 
     private function generateMembershipId(int $joinYear): string
     {
-        $prefix = str_pad((string) max(1900, min(9999, $joinYear)), 4, '0', STR_PAD_LEFT);
-
         do {
-            $candidate = $prefix.str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            $candidate = MembershipNumber::format($joinYear, MembershipNumber::nextSequence($joinYear));
         } while (Player::query()->where('membership_id', $candidate)->exists());
 
         return $candidate;

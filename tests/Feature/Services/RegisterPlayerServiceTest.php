@@ -43,6 +43,11 @@ class RegisterPlayerServiceTest extends TestCase
         ]);
 
         $this->assertInstanceOf(Player::class, $player);
+        $this->assertSame(
+            (int) now()->year.'00001',
+            $player->membership_id,
+            'first player of the year gets sequence 00001',
+        );
         $this->assertDatabaseCount('players', 1);
         $this->assertDatabaseCount('player_subscriptions', 1);
         $this->assertDatabaseCount('transactions', 0);

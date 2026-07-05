@@ -128,4 +128,19 @@ class SubscriptionBillingTest extends TestCase
         $this->assertSame(0.0, (float) $sub->fresh()->amount_paid);
         $this->assertSame(2000.0, (float) $player->fresh()->outstanding_debt);
     }
+
+    #[Test]
+    public function deleting_a_payment_lowers_amount_paid_and_raises_debt(): void
+    {
+        $player = $this->makePlayer();
+        $sub = $this->makeSub($player, 2000);
+        $payment = $this->pay($sub, 1200);
+
+        $this->assertSame(800.0, (float) $player->fresh()->outstanding_debt);
+
+        $payment->delete();
+
+        $this->assertSame(0.0, (float) $sub->fresh()->amount_paid);
+        $this->assertSame(2000.0, (float) $player->fresh()->outstanding_debt);
+    }
 }

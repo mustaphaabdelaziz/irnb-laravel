@@ -49,4 +49,15 @@ class MembershipNumberTest extends TestCase
         Player::create(['membership_id' => '2026000123', 'firstname' => 'L']); // legacy year+6-digit id
         $this->assertSame(124, MembershipNumber::nextSequence(2026));
     }
+
+    #[Test]
+    public function next_sequence_clamps_the_year_the_same_way_format_does(): void
+    {
+        // format() clamps 99999 -> 9999, so the id is stored under prefix "9999".
+        Player::create(['membership_id' => MembershipNumber::format(99999, 1), 'firstname' => 'C']);
+
+        // nextSequence must clamp identically to find that row; otherwise it returns 1
+        // forever and generateMembershipId's retry loop spins on a duplicate candidate.
+        $this->assertSame(2, MembershipNumber::nextSequence(99999));
+    }
 }

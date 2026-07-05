@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 const props = defineProps({
     modelValue: { type: [String, Number], default: '' },
@@ -21,6 +21,8 @@ const filtered = computed(() => {
     if (!q) return props.options;
     return props.options.filter((o) => o.label.toLowerCase().includes(q));
 });
+
+watch([queryText, open], () => { active.value = 0; });
 
 function choose(option) {
     emit('update:modelValue', option ? option.value : '');

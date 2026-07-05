@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Transaction\StoreTransactionRequest;
+use App\Models\FinanceCategory;
 use App\Models\FiscalYear;
 use App\Models\Player;
 use App\Models\Transaction;
+use App\Models\WebsiteConfig;
 use App\Services\Storage\FileStorageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -111,11 +114,7 @@ class TransactionController extends Controller
 
     public function create(): Response
     {
-        return Inertia::render('Transactions/Create', [
-            'players' => Player::where('archived', false)
-                ->orderBy('lastname')->orderBy('firstname')
-                ->get(['id', 'firstname', 'lastname']),
-        ]);
+        return Inertia::render('Transactions/Create', $this->formOptions());
     }
 
     public function store(StoreTransactionRequest $request, FileStorageService $files): RedirectResponse
@@ -123,6 +122,9 @@ class TransactionController extends Controller
         $validated = $request->validated();
         unset($validated['receipt']);
         $validated['recorded_by_user_id'] = $request->user()?->id;
+
+        $financeCategory = FinanceCategory::find($validated['finance_category_id']);
+        $validated['category'] = Str::slug($financeCategory->name, '_');
 
         if (empty($validated['fiscal_year'])) {
             $validated['fiscal_year'] = now()->year;
@@ -148,9 +150,7 @@ class TransactionController extends Controller
     {
         return Inertia::render('Transactions/Edit', [
             'transaction' => $transaction,
-            'players' => Player::where('archived', false)
-                ->orderBy('lastname')->orderBy('firstname')
-                ->get(['id', 'firstname', 'lastname']),
+            ...$this->formOptions(),
         ]);
     }
 
@@ -162,6 +162,9 @@ class TransactionController extends Controller
 
         $validated = $request->validated();
         unset($validated['receipt']);
+
+        $financeCategory = FinanceCategory::find($validated['finance_category_id']);
+        $validated['category'] = Str::slug($financeCategory->name, '_');
 
         if ($request->hasFile('receipt')) {
             $files->delete($transaction->receipt_filename);
@@ -196,6 +199,20 @@ class TransactionController extends Controller
         }
 
         return FiscalYear::where('year', $year)->where('status', 'closed')->exists();
+    }
+
+    /** Shared Create/Edit form props: active finance categories, the club's own CCP details, and active players. */
+    private function formOptions(): array
+    {
+        return [
+            'financeCategories' => FinanceCategory::where('is_active', true)
+                ->orderBy('type')->orderBy('sort_order')->orderBy('name')
+                ->get(['id', 'type', 'name', 'color']),
+            'clubCcp' => WebsiteConfig::query()->first()?->banking_info['ccp'] ?? null,
+            'players' => Player::where('archived', false)
+                ->orderBy('lastname')->orderBy('firstname')
+                ->get(['id', 'firstname', 'lastname']),
+        ];
     }
 }
 

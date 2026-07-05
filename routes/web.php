@@ -76,6 +76,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     // Player transactions (nested)
     Route::post('/players/{player}/transactions', [PlayerTransactionController::class, 'store'])->name('players.transactions.store');
     Route::put('/players/{player}/transactions/{transaction}', [PlayerTransactionController::class, 'update'])->name('players.transactions.update');
+    Route::delete('/players/{player}/transactions/{transaction}', [PlayerTransactionController::class, 'destroy'])->name('players.transactions.destroy');
 
     // Subscriptions
     Route::resource('subscriptions', SubscriptionController::class);

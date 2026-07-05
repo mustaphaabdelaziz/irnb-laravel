@@ -41,6 +41,7 @@ class PlayerFormPropsTest extends TestCase
                 'state' => 'Adrar',
                 'city' => 'Reggane',
                 'is_student' => false,
+                'status_value' => 'منخرط',
                 'join_year' => 2026,
                 'team' => 'A',
                 'skill_level' => 7,
@@ -50,6 +51,7 @@ class PlayerFormPropsTest extends TestCase
         $this->assertDatabaseHas('players', [
             'firstname' => 'Yacine', 'state' => 'Adrar', 'city' => 'Reggane',
             'join_year' => 2026, 'team' => 'A', 'skill_level' => 7, 'is_student' => false,
+            'status_value' => 'منخرط',
         ]);
     }
 }

@@ -88,7 +88,24 @@ class SubscriptionBillingTest extends TestCase
     }
 
     #[Test]
-    public function a_donation_payment_exempts_the_subscription(): void
+    public function an_exempt_subscription_is_excluded_from_debt(): void
+    {
+        $player = $this->makePlayer();
+        $sub = $this->makeSub($player, 2000);
+        app(RecalculatePlayerDebtService::class)->forPlayer($player->fresh());
+        $this->assertSame(2000.0, (float) $player->fresh()->outstanding_debt);
+
+        $sub->update(['is_exempt' => true]);
+        app(RecalculatePlayerDebtService::class)->forPlayer($player->fresh());
+
+        $this->assertTrue($sub->fresh()->isExempt());
+        $this->assertSame('exempt', $sub->fresh()->payment_status);
+        $this->assertSame(0.0, (float) $sub->fresh()->remaining_amount);
+        $this->assertSame(0.0, (float) $player->fresh()->outstanding_debt);
+    }
+
+    #[Test]
+    public function a_donation_payment_no_longer_exempts_the_subscription(): void
     {
         $player = $this->makePlayer();
         $sub = $this->makeSub($player, 2000);
@@ -96,8 +113,31 @@ class SubscriptionBillingTest extends TestCase
 
         app(RecalculatePlayerDebtService::class)->forSubscription($sub->fresh());
 
+        // Donation is now player-level income; it does not waive the subscription.
+        $this->assertFalse($sub->fresh()->isExempt());
+    }
+
+    #[Test]
+    public function existing_donation_exemptions_are_backfilled(): void
+    {
+        $player = $this->makePlayer();
+        $sub = $this->makeSub($player, 2000);
+        // Simulate a pre-migration donation-based exemption: a donation payment
+        // exists but is_exempt was reset to its default so we can prove the
+        // backfill logic re-flags it.
+        $this->pay($sub, 100, 'donation');
+        $sub->forceFill(['is_exempt' => false])->saveQuietly();
+
+        // Re-run the backfill query the migration performs.
+        \Illuminate\Support\Facades\DB::table('player_subscriptions')
+            ->whereIn('id', function ($q) {
+                $q->select('player_subscription_id')->from('transactions')
+                    ->where('category', 'donation')->where('archived', false)
+                    ->whereNotNull('player_subscription_id');
+            })
+            ->update(['is_exempt' => true]);
+
         $this->assertTrue($sub->fresh()->isExempt());
-        $this->assertSame(0.0, (float) $player->fresh()->outstanding_debt);
     }
 
     #[Test]

@@ -38,6 +38,7 @@ const form = useForm({
     state: p.state || '',
     city: p.city || '',
     is_student: p.is_student ?? true,
+    status_value: p.status_value || '',
     category_id: p.category_id || '',
     position_id: p.position_id || '',
     member_job_id: p.member_job_id || '',
@@ -109,6 +110,7 @@ function submit() {
         state: data.state || null,
         city: data.city || null,
         is_student: data.is_student,
+        status_value: data.status_value || null,
         category_id: data.category_id || null,
         position_id: data.position_id || null,
         member_job_id: data.member_job_id || null,
@@ -245,6 +247,19 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                         <option value="student">{{ t('student') }}</option>
                         <option value="worker">{{ t('worker') }}</option>
                     </select>
+                </div>
+                <div>
+                    <InputLabel :value="t('membership_status')" />
+                    <select v-model="form.status_value" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                        <option value="">-</option>
+                        <option value="منخرط">{{ t('status_enrolled') }}</option>
+                        <option value="معتزل">{{ t('status_retired') }}</option>
+                        <option value="متوقف">{{ t('status_stopped') }}</option>
+                        <option value="غادر الفريق">{{ t('status_left_team') }}</option>
+                        <option value="غير واضح">{{ t('status_unclear') }}</option>
+                        <option value="معاقب">{{ t('status_sanctioned') }}</option>
+                    </select>
+                    <InputError :message="form.errors.status_value" class="mt-1" />
                 </div>
                 <div v-if="!form.is_student">
                     <InputLabel :value="t('job')" />

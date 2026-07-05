@@ -11,7 +11,7 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 
 const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
@@ -24,6 +24,11 @@ const props = defineProps({
 const subscriptions = computed(() => props.player?.player_subscriptions ?? []);
 const transactions = computed(() => subscriptions.value.map(s => s.transaction).filter(Boolean));
 
+// Subscriptions that still owe something: hides fully-paid and exempt (remaining 0) subs.
+const payableSubscriptions = computed(() =>
+    subscriptions.value.filter(s => parseFloat(s.remaining_amount ?? 0) > 0)
+);
+
 const showDeleteModal = ref(false);
 const showPaymentModal = ref(false);
 
@@ -33,6 +38,12 @@ const paymentForm = useForm({
     payment_method: 'cash',
     category: 'subscription',
     description: '',
+});
+
+watch(() => paymentForm.category, (category) => {
+    if (category !== 'subscription') {
+        paymentForm.player_subscription_id = '';
+    }
 });
 
 function submitPayment() {
@@ -224,13 +235,22 @@ function formatDate(val) {
                 <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('add_payment') }}</h3>
                 <div class="mt-4 space-y-4">
                     <div>
+                        <InputLabel :value="t('payment_category')" />
+                        <select v-model="paymentForm.category" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                            <option value="subscription">{{ t('subscription') }}</option>
+                            <option value="donation">{{ t('donation') }}</option>
+                            <option value="debt_payment">{{ t('debt_payment') }}</option>
+                        </select>
+                    </div>
+                    <div v-if="paymentForm.category === 'subscription'">
                         <InputLabel :value="t('subscription')" />
                         <select v-model="paymentForm.player_subscription_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                             <option value="">{{ t('select_subscription') }}</option>
-                            <option v-for="sub in subscriptions" :key="sub.id" :value="sub.id">
-                                {{ sub.subscription?.name }} ({{ sub.subscription?.year }}) — {{ t('remaining') }}: {{ formatMoney(sub.remaining_amount) }}
+                            <option v-for="sub in payableSubscriptions" :key="sub.id" :value="sub.id">
+                                {{ sub.subscription?.name }} ({{ sub.subscription?.year }}){{ sub.is_mandatory ? '' : ' — ' + t('optional') }} — {{ t('remaining') }}: {{ formatMoney(sub.remaining_amount) }}
                             </option>
                         </select>
+                        <InputError :message="paymentForm.errors.player_subscription_id" class="mt-1" />
                     </div>
                     <div>
                         <InputLabel :value="t('amount')" />

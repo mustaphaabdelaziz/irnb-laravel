@@ -184,4 +184,27 @@ class SubscriptionBillingTest extends TestCase
         $this->assertDatabaseCount('transactions', 0);
         $this->assertSame(2000.0, (float) $player->fresh()->outstanding_debt);
     }
+
+    #[Test]
+    public function recording_a_payment_links_it_and_lowers_debt(): void
+    {
+        $admin = User::factory()->create(['privileges' => ['admin'], 'is_active' => true, 'email_verified_at' => now()]);
+        $player = $this->makePlayer();
+        $sub = $this->makeSub($player, 2000);
+        app(RecalculatePlayerDebtService::class)->forPlayer($player->fresh());
+
+        $this->actingAs($admin)
+            ->post(route('players.transactions.store', $player), [
+                'player_subscription_id' => $sub->id,
+                'amount' => 800,
+                'category' => 'subscription',
+                'payment_method' => 'cash',
+            ])
+            ->assertRedirect();
+
+        $payment = Transaction::firstOrFail();
+        $this->assertSame($sub->id, $payment->player_subscription_id);
+        $this->assertSame(800.0, (float) $sub->fresh()->amount_paid);
+        $this->assertSame(1200.0, (float) $player->fresh()->outstanding_debt);
+    }
 }

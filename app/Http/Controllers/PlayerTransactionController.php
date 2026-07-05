@@ -43,13 +43,13 @@ class PlayerTransactionController extends Controller
                 'payment_method' => $validated['payment_method'] ?? 'cash',
                 'related_entity_type' => 'Player',
                 'related_entity_id' => $player->id,
+                'player_subscription_id' => $playerSub->id,
                 'recorded_by_user_id' => $request->user()?->id,
                 'status' => $status,
                 'fiscal_year' => $playerSub->year,
             ]);
 
             $playerSub->update([
-                'amount_paid' => $newPaid,
                 'transaction_id' => $transaction->id,
             ]);
         });

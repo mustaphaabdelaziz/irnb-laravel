@@ -17,6 +17,7 @@ use App\Models\Subscription;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Models\WebsiteConfig;
+use App\Services\Player\MembershipNumber;
 use Carbon\Carbon;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -1325,10 +1326,8 @@ class ImportMongoJsonData extends Command
 
     private function generateMembershipId(int $year): string
     {
-        $prefix = str_pad((string) max(1900, min(9999, $year)), 4, '0', STR_PAD_LEFT);
-
         do {
-            $candidate = $prefix.str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            $candidate = MembershipNumber::format($year, MembershipNumber::nextSequence($year));
         } while (Player::query()->where('membership_id', $candidate)->exists());
 
         return $candidate;

@@ -34,4 +34,19 @@ class MembershipNumberTest extends TestCase
         $this->assertSame(3, MembershipNumber::nextSequence(2026));
         $this->assertSame(1, MembershipNumber::nextSequence(2027));
     }
+
+    #[Test]
+    public function format_clamps_out_of_range_years_to_fit_the_column(): void
+    {
+        $id = MembershipNumber::format(99999, 1);
+        $this->assertSame('999900001', $id);
+        $this->assertLessThanOrEqual(10, strlen($id));
+    }
+
+    #[Test]
+    public function next_sequence_handles_legacy_wider_suffixes(): void
+    {
+        Player::create(['membership_id' => '2026000123', 'firstname' => 'L']); // legacy year+6-digit id
+        $this->assertSame(124, MembershipNumber::nextSequence(2026));
+    }
 }

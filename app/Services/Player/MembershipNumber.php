@@ -11,17 +11,20 @@ class MembershipNumber
     {
         $prefix = sprintf('%04d', $year);
 
-        $max = (int) Player::query()
+        $max = Player::query()
             ->where('membership_id', 'like', $prefix.'%')
-            ->selectRaw('MAX(CAST(SUBSTR(membership_id, 5) AS INTEGER)) as m')
-            ->value('m');
+            ->pluck('membership_id')
+            ->map(fn ($id) => (int) substr((string) $id, 4))
+            ->max();
 
-        return $max + 1;
+        return (int) $max + 1;
     }
 
     /** Format a membership id as YYYYNNNNN (4-digit year + 5-digit zero-padded sequence). */
     public static function format(int $year, int $seq): string
     {
+        $year = max(1900, min(9999, $year));
+
         return sprintf('%04d%05d', $year, $seq);
     }
 }

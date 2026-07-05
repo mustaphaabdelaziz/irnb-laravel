@@ -62,4 +62,26 @@ class TransactionFinanceCategoryTest extends TestCase
         $this->assertSame('55', $tx->payment_ccp_key);
         $this->assertSame('donations', $tx->category); // legacy string derived from the category name
     }
+
+    #[Test]
+    public function index_exposes_filtered_stats(): void
+    {
+        // firstOrCreate: 'Donations' income category is already seeded by the
+        // finance_tables migration (unique on type+name), so a plain create()
+        // here would collide with that seed data under RefreshDatabase.
+        $inc = FinanceCategory::firstOrCreate(['type' => 'income', 'name' => 'Donations'], ['is_active' => true]);
+        $exp = FinanceCategory::create(['type' => 'expense', 'name' => 'Rent', 'is_active' => true]);
+        Transaction::create(['amount' => 900, 'transaction_type' => 'income', 'category' => 'donations', 'finance_category_id' => $inc->id, 'status' => 'Paid', 'transaction_date' => now(), 'fiscal_year' => now()->year]);
+        Transaction::create(['amount' => 400, 'transaction_type' => 'expense', 'category' => 'rent', 'finance_category_id' => $exp->id, 'status' => 'Paid', 'transaction_date' => now(), 'fiscal_year' => now()->year]);
+
+        $this->actingAs($this->admin())
+            ->get(route('transactions.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Transactions/Index')
+                ->where('stats.income', 900)
+                ->where('stats.expense', 400)
+                ->where('stats.net', 500)
+                ->has('stats.debts'));
+    }
 }

@@ -55,13 +55,30 @@ class TransactionController extends Controller
             $query->where('transaction_date', '<=', $request->input('date_to'));
         }
 
-        $transactions = $query->latest('transaction_date')
+        if ($request->filled('finance_category_id')) {
+            $query->where('finance_category_id', $request->input('finance_category_id'));
+        }
+
+        $statsBase = clone $query;
+        $income = (float) (clone $statsBase)->where('transaction_type', 'income')->sum('amount');
+        $expense = (float) (clone $statsBase)->where('transaction_type', 'expense')->sum('amount');
+
+        $transactions = $query->with(['recordedBy', 'receivedBy', 'financeCategory'])
+            ->latest('transaction_date')
             ->paginate(25)
             ->withQueryString();
 
         return Inertia::render('Transactions/Index', [
             'transactions' => $transactions,
-            'filters' => $request->only(['search', 'type', 'category', 'fiscal_year', 'status', 'date_from', 'date_to']),
+            'filters' => $request->only(['search', 'type', 'category', 'finance_category_id', 'fiscal_year', 'status', 'date_from', 'date_to']),
+            'financeCategories' => FinanceCategory::where('is_active', true)
+                ->orderBy('type')->orderBy('sort_order')->orderBy('name')->get(['id', 'type', 'name', 'color']),
+            'stats' => [
+                'income' => $income,
+                'expense' => $expense,
+                'net' => $income - $expense,
+                'debts' => (float) Player::where('archived', false)->sum('outstanding_debt'),
+            ],
         ]);
     }
 

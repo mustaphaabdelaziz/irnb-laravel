@@ -17,33 +17,10 @@ class DashboardController extends Controller
         $startOfMonth = Carbon::now()->startOfMonth();
         $endOfMonth = Carbon::now()->endOfMonth();
 
-        $debtExpression = "CASE
-            WHEN transactions.category = 'donation' THEN 0
-            WHEN player_subscriptions.amount_owed > player_subscriptions.amount_paid THEN player_subscriptions.amount_owed - player_subscriptions.amount_paid
-            ELSE 0
-        END";
-
-        $playerDebtSubquery = DB::table('player_subscriptions')
-            ->join('players', 'players.id', '=', 'player_subscriptions.player_id')
-            ->leftJoin('transactions', 'transactions.id', '=', 'player_subscriptions.transaction_id')
-            ->where('players.archived', false)
-            ->selectRaw('player_subscriptions.player_id, SUM('.$debtExpression.') as outstanding')
-            ->groupBy('player_subscriptions.player_id')
-            ->havingRaw('SUM('.$debtExpression.') > 0');
-
         $totalPlayers = Player::query()->where('archived', false)->count();
-        $unpaidPlayers = (int) DB::query()
-            ->fromSub($playerDebtSubquery, 'player_debts')
-            ->count();
-
+        $unpaidPlayers = Player::query()->where('archived', false)->where('outstanding_debt', '>', 0)->count();
         $paidPlayers = max(0, $totalPlayers - $unpaidPlayers);
-
-        $outstandingDebt = (float) (DB::table('player_subscriptions')
-            ->join('players', 'players.id', '=', 'player_subscriptions.player_id')
-            ->leftJoin('transactions', 'transactions.id', '=', 'player_subscriptions.transaction_id')
-            ->where('players.archived', false)
-            ->selectRaw('COALESCE(SUM('.$debtExpression.'), 0) as total')
-            ->value('total') ?? 0);
+        $outstandingDebt = (float) Player::query()->where('archived', false)->sum('outstanding_debt');
 
         $monthlyIncome = (float) Transaction::query()
             ->where('transaction_type', 'income')
@@ -126,21 +103,17 @@ class DashboardController extends Controller
             ])
             ->values();
 
-        $topDebtors = DB::table('players')
-            ->leftJoin('player_subscriptions', 'player_subscriptions.player_id', '=', 'players.id')
-            ->leftJoin('transactions', 'transactions.id', '=', 'player_subscriptions.transaction_id')
-            ->where('players.archived', false)
-            ->groupBy('players.id', 'players.firstname', 'players.lastname', 'players.membership_id')
-            ->selectRaw('players.id, players.firstname, players.lastname, players.membership_id, SUM('.$debtExpression.') as outstanding')
-            ->havingRaw('SUM('.$debtExpression.') > 0')
-            ->orderByDesc('outstanding')
+        $topDebtors = Player::query()
+            ->where('archived', false)
+            ->where('outstanding_debt', '>', 0)
+            ->orderByDesc('outstanding_debt')
             ->limit(6)
-            ->get()
-            ->map(fn ($row): array => [
-                'id' => (int) $row->id,
-                'name' => trim(($row->firstname ?? '').' '.($row->lastname ?? '')),
-                'membership_id' => $row->membership_id,
-                'outstanding' => (float) $row->outstanding,
+            ->get(['id', 'firstname', 'lastname', 'membership_id', 'outstanding_debt'])
+            ->map(fn (Player $player): array => [
+                'id' => $player->id,
+                'name' => trim(($player->firstname ?? '').' '.($player->lastname ?? '')),
+                'membership_id' => $player->membership_id,
+                'outstanding' => (float) $player->outstanding_debt,
             ])
             ->values();
 

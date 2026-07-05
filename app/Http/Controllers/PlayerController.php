@@ -21,23 +21,9 @@ class PlayerController extends Controller
 {
     public function index(Request $request): Response
     {
-        // Outstanding debt per player as a correlated subquery (avoids N+1 / per-row accessors).
-        $debtSubquery = <<<'SQL'
-            (SELECT COALESCE(SUM(
-                CASE
-                    WHEN t.category = 'donation' THEN 0
-                    WHEN ps.amount_owed > ps.amount_paid THEN ps.amount_owed - ps.amount_paid
-                    ELSE 0
-                END
-            ), 0)
-            FROM player_subscriptions ps
-            LEFT JOIN transactions t ON t.id = ps.transaction_id
-            WHERE ps.player_id = players.id)
-        SQL;
-
         $query = Player::query()
             ->select('players.*')
-            ->selectRaw("$debtSubquery as total_debt")
+            ->selectRaw('players.outstanding_debt as total_debt')
             ->with(['category', 'position', 'memberJob']);
 
         if ($request->filled('search')) {
@@ -165,6 +151,7 @@ class PlayerController extends Controller
             'achievements',
             'playerSubscriptions.subscription',
             'playerSubscriptions.transaction',
+            'playerSubscriptions.payments',
             'equipmentRentals.equipmentItem.catalog',
         ]);
 

@@ -9,6 +9,7 @@ use App\Models\MemberJob;
 use App\Models\Player;
 use App\Models\PlayerEmergencyContact;
 use App\Models\Position;
+use App\Models\Transaction;
 use App\Services\Player\MembershipNumber;
 use App\Services\Player\RegisterPlayerService;
 use App\Services\Storage\FileStorageService;
@@ -156,8 +157,16 @@ class PlayerController extends Controller
             'equipmentRentals.equipmentItem.catalog',
         ]);
 
+        $transactions = Transaction::query()
+            ->where('related_entity_type', 'Player')
+            ->where('related_entity_id', $player->id)
+            ->where('archived', false)
+            ->orderByDesc('transaction_date')
+            ->get();
+
         return Inertia::render('Players/Show', [
             'player' => $player,
+            'transactions' => $transactions,
             'totalDebt' => $player->calculateTotalDebt(),
         ]);
     }

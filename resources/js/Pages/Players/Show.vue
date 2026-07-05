@@ -19,10 +19,11 @@ const { formatMoney } = useFormatMoney();
 const props = defineProps({
     player: Object,
     totalDebt: Number,
+    transactions: { type: Array, default: () => [] },
 });
 
 const subscriptions = computed(() => props.player?.player_subscriptions ?? []);
-const transactions = computed(() => subscriptions.value.map(s => s.transaction).filter(Boolean));
+const transactions = computed(() => props.transactions ?? []);
 
 // Subscriptions that still owe something: hides fully-paid and exempt (remaining 0) subs.
 const payableSubscriptions = computed(() =>

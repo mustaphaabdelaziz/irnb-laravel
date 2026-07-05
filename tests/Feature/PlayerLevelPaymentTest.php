@@ -93,4 +93,22 @@ class PlayerLevelPaymentTest extends TestCase
 
         $this->assertDatabaseCount('transactions', 0);
     }
+
+    #[Test]
+    public function player_profile_receives_player_level_transactions(): void
+    {
+        $player = $this->makePlayer();
+
+        $this->actingAs($this->admin())
+            ->post(route('players.transactions.store', $player), [
+                'amount' => 500, 'category' => 'donation', 'payment_method' => 'cash',
+            ])->assertRedirect();
+
+        $this->actingAs($this->admin())
+            ->get(route('players.show', $player))
+            ->assertInertia(fn ($page) => $page
+                ->component('Players/Show')
+                ->has('transactions', 1)
+                ->where('transactions.0.category', 'donation'));
+    }
 }

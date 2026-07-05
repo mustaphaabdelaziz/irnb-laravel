@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\Media;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -41,6 +43,12 @@ class Player extends Model
         'health_blood_group_rhesus',
         'outstanding_debt',
     ];
+
+    /** Normalise the stored photo URL to a host-relative /media path (web + desktop). */
+    protected function pictureUrl(): Attribute
+    {
+        return Attribute::make(get: fn ($value) => Media::path($value));
+    }
 
     protected function casts(): array
     {

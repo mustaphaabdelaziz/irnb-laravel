@@ -1,5 +1,10 @@
+<script>
+// Module scope: survives layout remounts across Inertia navigations.
+let sidebarScrollTop = 0;
+</script>
+
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { Link, usePage, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import SidebarLink from '@/Components/SidebarLink.vue';
@@ -13,6 +18,18 @@ const { t, locale: i18nLocale } = useI18n();
 const page = usePage();
 
 const mobileMenuOpen = ref(false);
+
+// The layout remounts on every Inertia visit, which resets the sidebar's
+// scroll position to the top — annoying when clicking items near the bottom.
+// Persist scrollTop in module scope (survives remounts within the SPA session)
+// and restore it before paint.
+const navEl = ref(null);
+function rememberNavScroll() {
+    sidebarScrollTop = navEl.value?.scrollTop ?? 0;
+}
+onMounted(() => {
+    if (navEl.value) navEl.value.scrollTop = sidebarScrollTop;
+});
 
 const user = computed(() => page.props.auth.user);
 const isAdmin = computed(() => page.props.auth?.isAdmin ?? false);
@@ -30,25 +47,56 @@ const currentUrl = computed(() => page.url);
 const userInitial = computed(() => (user.value?.firstname || user.value?.name || '?').charAt(0).toUpperCase());
 const userRole = computed(() => (isAdmin.value ? t('administrator') : t('member')));
 
-function isActive(prefix) {
-    return currentUrl.value?.startsWith(prefix) ?? false;
+function isActive(item) {
+    const url = currentUrl.value ?? '';
+    // `exact` items (e.g. the Board hub) must not stay highlighted on their
+    // own sub-pages, which have their own menu entries.
+    return item.exact ? url === item.prefix || url.startsWith(item.prefix + '?') : url.startsWith(item.prefix);
 }
 
-const navItems = computed(() => [
-    { label: t('dashboard'), href: '/dashboard', icon: 'dashboard', prefix: '/dashboard' },
-    { label: t('players'), href: '/players', icon: 'players', prefix: '/players' },
-    { label: t('subscriptions'), href: '/subscriptions', icon: 'subscriptions', prefix: '/subscriptions' },
-    { label: t('transactions'), href: '/transactions', icon: 'transactions', prefix: '/transactions' },
-    { label: t('equipments'), href: '/equipment/catalogs', icon: 'equipment', prefix: '/equipment' },
-]);
+// Menu grouped by functionality. Each section is either public (all approved
+// members) or admin-only; admin sections are appended when isAdmin.
+const sections = computed(() => {
+    const list = [
+        { label: t('nav_overview'), items: [
+            { label: t('dashboard'), href: '/dashboard', icon: 'dashboard', prefix: '/dashboard' },
+        ] },
+        { label: t('nav_members'), items: [
+            { label: t('players'), href: '/players', icon: 'players', prefix: '/players' },
+            { label: t('subscriptions'), href: '/subscriptions', icon: 'subscriptions', prefix: '/subscriptions' },
+        ] },
+        { label: t('nav_finance'), items: [
+            { label: t('transactions'), href: '/transactions', icon: 'transactions', prefix: '/transactions' },
+            { label: t('finance'), href: '/finance', icon: 'money', prefix: '/finance' },
+        ] },
+        { label: t('nav_equipment'), items: [
+            { label: t('equipments'), href: '/equipment/catalogs', icon: 'equipment', prefix: '/equipment/catalogs' },
+            { label: t('inventory'), href: '/equipment/stocktake', icon: 'clipboard', prefix: '/equipment/stocktake' },
+        ] },
+    ];
 
-const adminItems = computed(() => [
-    { label: t('members'), href: '/users', icon: 'members', prefix: '/users', badge: pendingApprovals.value },
-    { label: t('categories'), href: '/categories', icon: 'categories', prefix: '/categories' },
-    { label: t('jobs'), href: '/jobs', icon: 'jobs', prefix: '/jobs' },
-    { label: t('positions'), href: '/positions', icon: 'positions', prefix: '/positions' },
-    { label: t('settings'), href: '/settings', icon: 'settings', prefix: '/settings' },
-]);
+    if (isAdmin.value) {
+        list.push(
+            { label: t('nav_governance'), items: [
+                { label: t('board'), href: '/board', icon: 'board', prefix: '/board', exact: true },
+                { label: t('calendar'), href: '/board/calendar', icon: 'calendar', prefix: '/board/calendar' },
+                { label: t('meetings'), href: '/board/meetings', icon: 'clipboard', prefix: '/board/meetings' },
+                { label: t('tasks'), href: '/board/tasks', icon: 'task', prefix: '/board/tasks' },
+            ] },
+            { label: t('administration'), items: [
+                { label: t('members'), href: '/users', icon: 'members', prefix: '/users', badge: pendingApprovals.value },
+                { label: t('categories'), href: '/categories', icon: 'categories', prefix: '/categories' },
+                { label: t('equipment_categories'), href: '/equipment-categories', icon: 'equipment', prefix: '/equipment-categories' },
+                { label: t('board_roles'), href: '/board-roles', icon: 'board', prefix: '/board-roles' },
+                { label: t('jobs'), href: '/jobs', icon: 'jobs', prefix: '/jobs' },
+                { label: t('positions'), href: '/positions', icon: 'positions', prefix: '/positions' },
+                { label: t('settings'), href: '/settings', icon: 'settings', prefix: '/settings' },
+            ] },
+        );
+    }
+
+    return list;
+});
 
 const locales = [
     { code: 'ar', label: 'ع' },
@@ -98,26 +146,17 @@ function switchLocale(code) {
             </div>
 
             <!-- Navigation -->
-            <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-                <SidebarLink
-                    v-for="item in navItems"
-                    :key="item.href"
-                    :href="item.href"
-                    :active="isActive(item.prefix)"
-                    :icon="item.icon"
-                >{{ item.label }}</SidebarLink>
-
-                <template v-if="isAdmin">
-                    <div class="flex items-center gap-2 px-3 pb-1 pt-5">
-                        <span class="h-px flex-1 bg-slate-200 dark:bg-slate-800"></span>
-                        <p class="eyebrow !text-[0.65rem] text-slate-400">{{ t('administration') }}</p>
+            <nav ref="navEl" @scroll.passive="rememberNavScroll" class="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+                <template v-for="(section, si) in sections" :key="section.label">
+                    <div class="flex items-center gap-2 px-3 pb-1" :class="si === 0 ? 'pt-0' : 'pt-5'">
+                        <p class="eyebrow !text-[0.65rem] text-slate-400">{{ section.label }}</p>
                         <span class="h-px flex-1 bg-slate-200 dark:bg-slate-800"></span>
                     </div>
                     <SidebarLink
-                        v-for="item in adminItems"
+                        v-for="item in section.items"
                         :key="item.href"
                         :href="item.href"
-                        :active="isActive(item.prefix)"
+                        :active="isActive(item)"
                         :icon="item.icon"
                         :badge="item.badge"
                     >{{ item.label }}</SidebarLink>

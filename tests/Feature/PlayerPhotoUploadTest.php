@@ -39,7 +39,9 @@ class PlayerPhotoUploadTest extends TestCase
 
         $this->assertNotNull($player->picture_filename);
         $this->assertStringStartsWith('players/', $player->picture_filename);
-        $this->assertStringContainsString('/storage/players/', (string) $player->picture_url);
+        // Host-relative /media path so the asset resolves on both the web dev
+        // server and the desktop app's dynamic-port window.
+        $this->assertStringContainsString('/media/players/', (string) $player->picture_url);
         Storage::disk('public')->assertExists($player->picture_filename);
     }
 

@@ -82,7 +82,9 @@ class FileStorageService
         return [
             'path' => $path,
             'filename' => $path,
-            'url' => Storage::disk($this->disk)->url($path),
+            // Host-relative /media path: resolves on the web dev server AND the
+            // desktop app's dynamic-port window (served by the /media/{path} route).
+            'url' => '/media/'.ltrim($path, '/'),
         ];
     }
 

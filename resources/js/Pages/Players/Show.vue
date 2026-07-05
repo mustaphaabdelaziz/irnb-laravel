@@ -92,6 +92,16 @@ function formatDate(val) {
                         <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('basic_info') }}</h2>
                         <Link :href="route('players.edit', player.id)" class="text-sm text-primary-600 hover:text-primary-800">{{ t('edit') }}</Link>
                     </div>
+                    <div class="mt-4 flex items-center gap-4">
+                        <img v-if="player.picture_url" :src="player.picture_url" :alt="player.fullname || player.firstname" class="h-20 w-20 shrink-0 rounded-xl object-cover ring-1 ring-slate-200 dark:ring-slate-700" />
+                        <div v-else class="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-2xl font-bold text-primary-600 ring-1 ring-primary-100 dark:bg-primary-500/10 dark:text-primary-300">
+                            {{ (player.firstname || player.fullname || '?').charAt(0).toUpperCase() }}
+                        </div>
+                        <div class="min-w-0">
+                            <p class="truncate text-lg font-bold text-slate-900 dark:text-slate-100">{{ player.fullname || `${player.firstname} ${player.lastname}` }}</p>
+                            <p class="font-mono text-sm text-slate-500 dark:text-slate-400">{{ player.membership_id }}</p>
+                        </div>
+                    </div>
                     <dl class="mt-4 grid gap-3 sm:grid-cols-2">
                         <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('membership_id') }}</dt><dd class="font-mono text-sm">{{ player.membership_id }}</dd></div>
                         <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('date_of_birth') }}</dt><dd class="text-sm">{{ formatDate(player.birthdate) }}</dd></div>

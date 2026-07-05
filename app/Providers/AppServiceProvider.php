@@ -21,5 +21,12 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Vite::prefetch(concurrency: 3);
+
+        // Inside the NativePHP desktop app the server runs on a dynamic
+        // localhost port, so public-disk URLs must be relative to resolve
+        // against whatever host/port the window is using.
+        if (config('nativephp-internal.running')) {
+            config(['filesystems.disks.public.url' => '/media']);
+        }
     }
 }

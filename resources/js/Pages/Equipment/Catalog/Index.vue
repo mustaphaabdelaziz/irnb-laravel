@@ -15,6 +15,8 @@ const { formatMoney } = useFormatMoney();
 const props = defineProps({
     catalogs: Object,
     filters: Object,
+    // Managed in Settings > Equipment Categories.
+    equipmentCategories: { type: Array, default: () => [] },
 });
 
 const search = ref(props.filters?.search || '');
@@ -37,10 +39,6 @@ function destroy() {
     });
 }
 
-const equipmentCategories = [
-    'Balls', 'Goals & Nets', 'Training Equipment', 'Apparel',
-    'Protective Gear', 'Accessories', 'Maintenance', 'Other',
-];
 </script>
 
 <template>

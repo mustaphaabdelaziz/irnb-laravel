@@ -53,6 +53,27 @@ class PlayerController extends Controller
             $query->where('category_id', $request->input('category_id'));
         }
 
+        if ($request->filled('status')) {
+            $query->where('status_value', $request->input('status'));
+        }
+
+        if ($request->filled('position_id')) {
+            $query->where('position_id', $request->input('position_id'));
+        }
+
+        if ($request->filled('age')) {
+            $today = \Carbon\Carbon::today();
+            match ($request->input('age')) {
+                'unknown' => $query->whereNull('birthdate'),
+                'u10' => $query->where('birthdate', '>', $today->copy()->subYears(10)),
+                '10-19' => $query->where('birthdate', '<=', $today->copy()->subYears(10))->where('birthdate', '>', $today->copy()->subYears(20)),
+                '20-29' => $query->where('birthdate', '<=', $today->copy()->subYears(20))->where('birthdate', '>', $today->copy()->subYears(30)),
+                '30-39' => $query->where('birthdate', '<=', $today->copy()->subYears(30))->where('birthdate', '>', $today->copy()->subYears(40)),
+                '40+' => $query->where('birthdate', '<=', $today->copy()->subYears(40)),
+                default => null,
+            };
+        }
+
         if ($request->has('archived')) {
             $query->where('archived', $request->boolean('archived'));
         } else {
@@ -63,10 +84,74 @@ class PlayerController extends Controller
             ->paginate(25)
             ->withQueryString();
 
+        // Category distribution over active players (stat chips above the list).
+        $categoryStats = \Illuminate\Support\Facades\DB::table('players')
+            ->leftJoin('categories', 'categories.id', '=', 'players.category_id')
+            ->where('players.archived', false)
+            ->groupBy('players.category_id', 'categories.name')
+            ->selectRaw('players.category_id, categories.name, COUNT(*) as total')
+            ->orderByDesc('total')
+            ->get()
+            ->map(fn ($row) => [
+                'category_id' => $row->category_id,
+                'name' => $row->name,
+                'count' => (int) $row->total,
+            ])
+            ->values();
+
+        // Status distribution (status_value, e.g. منخرط / معتزل) over active players.
+        $statusStats = \Illuminate\Support\Facades\DB::table('players')
+            ->where('archived', false)
+            ->groupBy('status_value')
+            ->selectRaw('status_value, COUNT(*) as total')
+            ->orderByDesc('total')
+            ->get()
+            ->map(fn ($row) => [
+                'status' => $row->status_value,
+                'count' => (int) $row->total,
+            ])
+            ->values();
+
+        // Position distribution over active players.
+        $positionStats = \Illuminate\Support\Facades\DB::table('players')
+            ->leftJoin('positions', 'positions.id', '=', 'players.position_id')
+            ->where('players.archived', false)
+            ->groupBy('players.position_id', 'positions.name')
+            ->selectRaw('players.position_id, positions.name, COUNT(*) as total')
+            ->orderByDesc('total')
+            ->get()
+            ->map(fn ($row) => [
+                'position_id' => $row->position_id,
+                'name' => $row->name,
+                'count' => (int) $row->total,
+            ])
+            ->values();
+
+        // Age distribution bucketed by decade (bucket keys mirror the `age` filter).
+        $ageBuckets = ['u10' => 0, '10-19' => 0, '20-29' => 0, '30-39' => 0, '40+' => 0, 'unknown' => 0];
+        Player::where('archived', false)->get(['birthdate'])->each(function (Player $p) use (&$ageBuckets) {
+            if (! $p->birthdate) {
+                $ageBuckets['unknown']++;
+
+                return;
+            }
+            $age = $p->birthdate->age;
+            $key = $age < 10 ? 'u10' : ($age < 20 ? '10-19' : ($age < 30 ? '20-29' : ($age < 40 ? '30-39' : '40+')));
+            $ageBuckets[$key]++;
+        });
+        $ageStats = collect($ageBuckets)
+            ->filter(fn ($count) => $count > 0)
+            ->map(fn ($count, $bucket) => ['bucket' => $bucket, 'count' => $count])
+            ->values();
+
         return Inertia::render('Players/Index', [
             'players' => $players,
             'categories' => Category::orderBy('name')->get(['id', 'name']),
-            'filters' => $request->only(['search', 'category_id', 'archived']),
+            'categoryStats' => $categoryStats,
+            'statusStats' => $statusStats,
+            'positionStats' => $positionStats,
+            'ageStats' => $ageStats,
+            'filters' => $request->only(['search', 'category_id', 'status', 'position_id', 'age', 'archived']),
         ]);
     }
 

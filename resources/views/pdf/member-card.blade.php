@@ -21,8 +21,8 @@
         <table style="width:100%;">
             <tr>
                 <td style="width:100px; vertical-align:top;">
-                    @if ($player->picture_url)
-                        <img class="photo" src="{{ $player->picture_url }}">
+                    @if (!empty($photo))
+                        <img class="photo" src="{{ $photo }}">
                     @endif
                 </td>
                 <td style="vertical-align:top;">

@@ -7,7 +7,6 @@ use App\Models\WebsiteConfig;
 use App\Support\Theme;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -43,7 +42,9 @@ class WebsiteConfigController extends Controller
         foreach (['logo', 'favicon'] as $field) {
             if ($request->hasFile($field)) {
                 $path = $request->file($field)->store('branding', 'public');
-                $branding[$field] = Storage::disk('public')->url($path);
+                // Store a host-relative /media path so the asset resolves on both
+                // the web dev server and the desktop app's dynamic-port window.
+                $branding[$field] = '/media/'.$path;
                 $changed = true;
             }
         }

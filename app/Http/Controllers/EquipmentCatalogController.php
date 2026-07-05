@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Equipment\StoreEquipmentCatalogRequest;
 use App\Models\EquipmentCatalog;
+use App\Models\EquipmentCategory;
 use App\Services\Storage\FileStorageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -36,6 +37,7 @@ class EquipmentCatalogController extends Controller
         return Inertia::render('Equipment/Catalog/Index', [
             'catalogs' => $catalogs,
             'filters' => $request->only(['search', 'category']),
+            'equipmentCategories' => EquipmentCategory::orderBy('name')->pluck('name'),
         ]);
     }
 
@@ -54,7 +56,9 @@ class EquipmentCatalogController extends Controller
 
     public function create(): Response
     {
-        return Inertia::render('Equipment/Catalog/Create');
+        return Inertia::render('Equipment/Catalog/Create', [
+            'equipmentCategories' => EquipmentCategory::orderBy('name')->pluck('name'),
+        ]);
     }
 
     public function store(StoreEquipmentCatalogRequest $request, FileStorageService $files): RedirectResponse
@@ -78,6 +82,7 @@ class EquipmentCatalogController extends Controller
     {
         return Inertia::render('Equipment/Catalog/Edit', [
             'catalog' => $catalog,
+            'equipmentCategories' => EquipmentCategory::orderBy('name')->pluck('name'),
         ]);
     }
 

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PlayerSubscription extends Model
 {
@@ -16,6 +17,7 @@ class PlayerSubscription extends Model
         'transaction_id',
         'year',
         'status_at_time',
+        'is_mandatory',
         'amount_owed',
         'amount_paid',
         'is_legacy',
@@ -34,6 +36,7 @@ class PlayerSubscription extends Model
             'amount_owed' => 'decimal:2',
             'amount_paid' => 'decimal:2',
             'is_legacy' => 'boolean',
+            'is_mandatory' => 'boolean',
             'due_date' => 'date',
         ];
     }
@@ -51,6 +54,11 @@ class PlayerSubscription extends Model
     public function transaction(): BelongsTo
     {
         return $this->belongsTo(Transaction::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Transaction::class, 'player_subscription_id');
     }
 
     public function getRemainingAmountAttribute(): float

@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Support\Media;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -15,6 +17,12 @@ class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    /** Normalise the stored photo URL to a host-relative /media path (web + desktop). */
+    protected function pictureUrl(): Attribute
+    {
+        return Attribute::make(get: fn ($value) => Media::path($value));
+    }
 
     /**
      * The attributes that are mass assignable.

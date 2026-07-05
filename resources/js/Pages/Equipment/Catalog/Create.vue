@@ -10,10 +10,8 @@ import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 
-const equipmentCategories = [
-    'Balls', 'Goals & Nets', 'Training Equipment', 'Apparel',
-    'Protective Gear', 'Accessories', 'Maintenance', 'Other',
-];
+// Managed in Settings > Equipment Categories.
+defineProps({ equipmentCategories: { type: Array, default: () => [] } });
 
 const form = useForm({
     name: '',

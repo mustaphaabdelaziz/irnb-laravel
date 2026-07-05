@@ -4,10 +4,11 @@ import Pagination from '@/Components/Pagination.vue';
 import SearchInput from '@/Components/SearchInput.vue';
 import Badge from '@/Components/Badge.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
+import Icon from '@/Components/Icon.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 
 const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
@@ -20,6 +21,25 @@ const props = defineProps({
 const search = ref(props.filters?.search || '');
 const typeFilter = ref(props.filters?.type || '');
 const categoryFilter = ref(props.filters?.category || '');
+
+// Export the current view (respects the active filters).
+const exportUrl = computed(() => route('transactions.export', {
+    search: search.value || undefined,
+    type: typeFilter.value || undefined,
+    category: categoryFilter.value || undefined,
+    fiscal_year: props.filters?.fiscal_year || undefined,
+    status: props.filters?.status || undefined,
+}));
+
+const importInput = ref(null);
+function onImport(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    router.post(route('transactions.import.store'), { file }, {
+        forceFormData: true,
+        onFinish: () => { if (importInput.value) importInput.value.value = ''; },
+    });
+}
 
 function applyFilters() {
     router.get(route('transactions.index'), {
@@ -45,12 +65,17 @@ function destroy() {
 
     <AuthenticatedLayout>
         <template #header>
-            <div class="flex items-center justify-between">
+            <div class="flex flex-wrap items-center justify-between gap-2">
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('transactions') }}</h1>
-                <Link :href="route('transactions.create')" class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 transition-colors">
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    {{ t('add_transaction') }}
-                </Link>
+                <div class="flex flex-wrap items-center gap-2">
+                    <a :href="route('transactions.import.template')" class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-500 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-400 dark:ring-slate-800" :title="t('template') ? t('template') : 'Template'"><Icon name="document" /></a>
+                    <button @click="importInput?.click()" class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800"><Icon name="upload" /> {{ t('import') }}</button>
+                    <input ref="importInput" type="file" accept=".xlsx,.xls,.csv" class="hidden" @change="onImport" />
+                    <a :href="exportUrl" class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800"><Icon name="download" /> {{ t('export') }}</a>
+                    <Link :href="route('transactions.create')" class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 transition-colors">
+                        <Icon name="plus" /> {{ t('add_transaction') }}
+                    </Link>
+                </div>
             </div>
         </template>
 

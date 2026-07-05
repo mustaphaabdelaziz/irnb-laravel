@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BoardMeeting;
+use App\Models\InventorySession;
 use App\Models\Player;
 use App\Models\Transaction;
 use App\Models\WebsiteConfig;
@@ -43,6 +45,7 @@ class ReportController extends Controller
         $html = view('pdf.member-card', [
             'club' => $this->club(),
             'player' => $player,
+            'photo' => $this->resolveMediaFile($player->picture_url),
         ])->render();
 
         return $this->pdf->stream($html, "member-card-{$player->membership_id}.pdf");
@@ -79,6 +82,30 @@ class ReportController extends Controller
         return $this->pdf->stream($html, "financial-summary-{$year}.pdf");
     }
 
+    public function boardMinutes(BoardMeeting $meeting): Response
+    {
+        $meeting->load(['attendances.member', 'tasks.member', 'createdBy:id,name']);
+
+        $html = view('pdf.meeting-minutes', [
+            'club' => $this->club(),
+            'meeting' => $meeting,
+        ])->render();
+
+        return $this->pdf->stream($html, "minutes-{$meeting->id}.pdf");
+    }
+
+    public function inventoryReport(InventorySession $session): Response
+    {
+        $session->load(['items.item.catalog:id,name', 'conductedBy:id,name']);
+
+        $html = view('pdf.inventory-report', [
+            'club' => $this->club(),
+            'session' => $session,
+        ])->render();
+
+        return $this->pdf->stream($html, "inventory-{$session->reference}.pdf");
+    }
+
     /**
      * Localised club header data for document templates.
      *
@@ -99,20 +126,36 @@ class ReportController extends Controller
 
         $branding = $config->branding ?? [];
 
-        // mPDF needs a filesystem path (or http URL) for images — map local /storage URLs.
-        $logo = $branding['logo'] ?? null;
-        if ($logo && Str::startsWith($logo, '/storage/')) {
-            $candidate = public_path(ltrim($logo, '/'));
-            $logo = File::exists($candidate) ? $candidate : null;
-        }
-
         return [
             'name' => $pick($config->club_name),
-            'logo' => $logo,
+            'logo' => $this->resolveMediaFile($branding['logo'] ?? null),
             'address' => $config->full_address ?: null,
             'phone' => $config->contact_phone,
             'email' => $config->contact_email,
             'currency' => $config->settings['currencySymbol'] ?? $config->settings['currency'] ?? 'DZD',
         ];
+    }
+
+    /**
+     * mPDF needs a filesystem path for images, not a URL. Our stored media URLs
+     * are host-relative (/media/... or /storage/...) or legacy absolute URLs;
+     * resolve any of them to the public-disk file, which works in both the web
+     * app and the packaged desktop app. Returns null if the file is missing.
+     */
+    private function resolveMediaFile(?string $url): ?string
+    {
+        if (! $url) {
+            return null;
+        }
+
+        $rel = preg_replace('#^https?://[^/]+#', '', $url);
+        $rel = preg_replace('#^/?(?:media|storage)/#', '', $rel);
+
+        $candidate = storage_path('app/public/'.$rel);
+        if (! File::exists($candidate)) {
+            $candidate = public_path('storage/'.$rel);
+        }
+
+        return File::exists($candidate) ? $candidate : null;
     }
 }

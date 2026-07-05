@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Transaction\StoreTransactionRequest;
+use App\Models\FiscalYear;
 use App\Models\Player;
 use App\Models\Transaction;
 use App\Services\Storage\FileStorageService;
@@ -61,6 +62,42 @@ class TransactionController extends Controller
         ]);
     }
 
+    public function export(Request $request, \App\Services\Export\ExcelExporter $exporter)
+    {
+        $query = Transaction::query()->with(['recordedBy', 'financeCategory'])->where('archived', false);
+
+        if ($request->filled('search')) {
+            $s = $request->input('search');
+            $query->where(fn ($q) => $q->where('description', 'like', "%{$s}%")->orWhere('category', 'like', "%{$s}%"));
+        }
+        foreach (['type' => 'transaction_type', 'category' => 'category', 'fiscal_year' => 'fiscal_year', 'status' => 'status'] as $param => $col) {
+            if ($request->filled($param)) {
+                $query->where($col, $request->input($param));
+            }
+        }
+        if ($request->filled('date_from')) {
+            $query->where('transaction_date', '>=', $request->input('date_from'));
+        }
+        if ($request->filled('date_to')) {
+            $query->where('transaction_date', '<=', $request->input('date_to'));
+        }
+
+        $rows = $query->latest('transaction_date')->get()->map(fn (Transaction $t) => [
+            $t->transaction_date?->format('Y-m-d'),
+            ucfirst($t->transaction_type),
+            $t->financeCategory?->name ?? $t->category,
+            (float) $t->amount,
+            $t->status,
+            $t->payment_method,
+            $t->description,
+            $t->recordedBy?->name,
+        ])->all();
+
+        $headers = ['Date', 'Type', 'Category', 'Amount', 'Status', 'Payment', 'Description', 'Recorded By'];
+
+        return $exporter->download('Transactions', $headers, $rows, 'transactions-'.now()->format('Y-m-d').'.xlsx');
+    }
+
     public function show(Transaction $transaction): Response
     {
         // Eager-load the transaction relation too: PlayerSubscription appends
@@ -91,6 +128,10 @@ class TransactionController extends Controller
             $validated['fiscal_year'] = now()->year;
         }
 
+        if ($this->yearClosed((int) $validated['fiscal_year'])) {
+            return back()->withInput()->with('error', "Fiscal year {$validated['fiscal_year']} is closed. Reopen it to add transactions.");
+        }
+
         if ($request->hasFile('receipt')) {
             $stored = $files->storeFile($request->file('receipt'), 'receipts');
             $validated['receipt_url'] = $stored['url'];
@@ -115,6 +156,10 @@ class TransactionController extends Controller
 
     public function update(StoreTransactionRequest $request, Transaction $transaction, FileStorageService $files): RedirectResponse
     {
+        if ($this->yearClosed((int) $transaction->fiscal_year)) {
+            return back()->with('error', "This transaction is in closed fiscal year {$transaction->fiscal_year} and cannot be edited.");
+        }
+
         $validated = $request->validated();
         unset($validated['receipt']);
 
@@ -133,9 +178,24 @@ class TransactionController extends Controller
 
     public function destroy(Transaction $transaction): RedirectResponse
     {
+        if ($this->yearClosed((int) $transaction->fiscal_year)) {
+            return back()->with('error', "This transaction is in closed fiscal year {$transaction->fiscal_year} and cannot be removed.");
+        }
+
         $transaction->update(['archived' => true]);
 
         return redirect()->route('transactions.index')
             ->with('success', 'Transaction archived successfully.');
     }
+
+    /** Whether the given fiscal year exists and is closed (locked). */
+    private function yearClosed(?int $year): bool
+    {
+        if (! $year) {
+            return false;
+        }
+
+        return FiscalYear::where('year', $year)->where('status', 'closed')->exists();
+    }
 }
+

@@ -15,7 +15,7 @@ class StoreEquipmentCatalogRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'category' => ['required', 'string', 'max:255'],
+            'category' => ['required', 'string', 'max:255', 'exists:equipment_categories,name'],
             'brand' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'specifications' => ['nullable', 'array'],

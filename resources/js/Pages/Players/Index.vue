@@ -5,8 +5,9 @@ import SearchInput from '@/Components/SearchInput.vue';
 import Badge from '@/Components/Badge.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
+import StatDoughnut from '@/Components/StatDoughnut.vue';
 
 const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
@@ -14,21 +15,54 @@ const { formatMoney } = useFormatMoney();
 const props = defineProps({
     players: Object,
     categories: Array,
+    categoryStats: { type: Array, default: () => [] },
+    statusStats: { type: Array, default: () => [] },
+    positionStats: { type: Array, default: () => [] },
+    ageStats: { type: Array, default: () => [] },
     filters: Object,
 });
 
 const search = ref(props.filters?.search || '');
-const categoryFilter = ref(props.filters?.category || '');
+// The backend filters on `category_id` — the param must match or the filter is a no-op.
+const categoryFilter = ref(props.filters?.category_id || '');
+
+const statusFilter = ref(props.filters?.status || '');
+const positionFilter = ref(props.filters?.position_id || '');
+const ageFilter = ref(props.filters?.age || '');
 
 function applyFilters() {
     router.get(route('players.index'), {
         search: search.value || undefined,
-        category: categoryFilter.value || undefined,
+        category_id: categoryFilter.value || undefined,
+        status: statusFilter.value || undefined,
+        position_id: positionFilter.value || undefined,
+        age: ageFilter.value || undefined,
     }, { preserveState: true, replace: true });
 }
 
-watch(search, applyFilters);
-watch(categoryFilter, applyFilters);
+watch([search, categoryFilter, statusFilter, positionFilter, ageFilter], applyFilters);
+
+// Distribution panels: map each stat source to StatDoughnut's {key, label, count}.
+const categoryChips = computed(() => props.categoryStats.map((s) => ({
+    key: s.category_id ?? '', label: s.name || t('uncategorized'), count: s.count,
+})));
+const statusChips = computed(() => props.statusStats.map((s) => ({
+    key: s.status ?? '', label: s.status || t('uncategorized'), count: s.count,
+})));
+const positionChips = computed(() => props.positionStats.map((s) => ({
+    key: s.position_id ?? '', label: s.name || t('unassigned'), count: s.count,
+})));
+const ageLabel = (bucket) => (bucket === 'u10' ? '< 10' : bucket === 'unknown' ? t('unknown') : bucket);
+const ageChips = computed(() => props.ageStats.map((s) => ({
+    key: s.bucket, label: ageLabel(s.bucket), count: s.count,
+})));
+
+const statusPalette = ['#0284c7', '#d97706', '#e11d48', '#64748b', '#7c3aed', '#02a85c'];
+const agePalette = ['#7c3aed', '#0284c7', '#02a85c', '#d97706', '#e11d48', '#64748b'];
+
+// List/grid view toggle, remembered across visits.
+const view = ref(localStorage.getItem('players.view') || 'list');
+watch(view, (v) => localStorage.setItem('players.view', v));
 
 const showImport = ref(false);
 const importForm = useForm({ file: null });
@@ -66,7 +100,15 @@ function submitImport() {
         </template>
 
         <div class="space-y-4">
-            <!-- Filters -->
+            <!-- Distribution doughnuts (count + % of active players); click a slice or chip to filter -->
+            <div class="grid gap-4 lg:grid-cols-2">
+                <StatDoughnut v-if="categoryChips.length" v-model="categoryFilter" :title="t('by_category')" :stats="categoryChips" />
+                <StatDoughnut v-if="statusChips.length" v-model="statusFilter" :title="t('by_status')" :stats="statusChips" :palette="statusPalette" />
+                <StatDoughnut v-if="positionChips.length" v-model="positionFilter" :title="t('by_position')" :stats="positionChips" />
+                <StatDoughnut v-if="ageChips.length" v-model="ageFilter" :title="t('by_age')" :stats="ageChips" :palette="agePalette" />
+            </div>
+
+            <!-- Filters + view toggle -->
             <div class="flex flex-wrap items-center gap-3">
                 <div class="w-full sm:w-64">
                     <SearchInput v-model="search" :placeholder="t('search_for_member')" />
@@ -78,10 +120,43 @@ function submitImport() {
                     <option value="">{{ t('all_categories') }}</option>
                     <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
                 </select>
+                <div class="ms-auto inline-flex rounded-xl bg-slate-100 p-0.5 dark:bg-slate-800">
+                    <button @click="view = 'list'" :title="t('list_view')" class="rounded-lg px-3 py-1.5 text-xs font-bold transition-colors"
+                        :class="view === 'list' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">☰ {{ t('list_view') }}</button>
+                    <button @click="view = 'grid'" :title="t('grid_view')" class="rounded-lg px-3 py-1.5 text-xs font-bold transition-colors"
+                        :class="view === 'grid' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">▦ {{ t('grid_view') }}</button>
+                </div>
+            </div>
+
+            <!-- Grid view -->
+            <div v-if="view === 'grid'" class="space-y-4">
+                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    <Link v-for="player in players.data" :key="player.id" :href="route('players.show', player.id)"
+                        class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 transition-shadow hover:shadow-md dark:bg-slate-900 dark:ring-slate-800">
+                        <div class="flex items-center gap-3">
+                            <img v-if="player.picture_url" :src="player.picture_url" :alt="player.firstname" class="h-14 w-14 shrink-0 rounded-xl object-cover ring-1 ring-slate-200 dark:ring-slate-700" />
+                            <div v-else class="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-xl font-bold text-primary-600 ring-1 ring-primary-100 dark:bg-primary-500/10 dark:text-primary-300">
+                                {{ (player.firstname || '?').charAt(0).toUpperCase() }}
+                            </div>
+                            <div class="min-w-0">
+                                <p class="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{{ player.fullname || `${player.lastname} ${player.firstname}` }}</p>
+                                <p class="truncate font-mono text-xs text-slate-400">{{ player.membership_id }}</p>
+                                <p class="truncate text-xs text-slate-500 dark:text-slate-400">{{ player.category?.name || '-' }}</p>
+                            </div>
+                        </div>
+                        <div class="mt-3 flex items-center justify-between border-t border-slate-100 pt-2 text-xs dark:border-slate-800">
+                            <Badge v-if="player.archived" :label="t('archived')" color="slate" />
+                            <Badge v-else :label="t('active')" color="emerald" />
+                            <span class="font-semibold" :class="player.total_debt > 0 ? 'text-rose-700' : 'text-emerald-700'">{{ formatMoney(player.total_debt || 0) }}</span>
+                        </div>
+                    </Link>
+                </div>
+                <p v-if="!players.data.length" class="py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</p>
+                <Pagination :links="players" />
             </div>
 
             <!-- Table -->
-            <div class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+            <div v-if="view === 'list'" class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
                         <thead class="bg-slate-50 dark:bg-slate-950">

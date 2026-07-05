@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -50,7 +51,6 @@ class WebsiteConfig extends Model
             'banking_info' => 'array',
             'legal_info' => 'array',
             'leadership' => 'array',
-            'branding' => 'array',
             'facilities' => 'array',
             'settings' => 'array',
             'seo' => 'array',
@@ -93,6 +93,55 @@ class WebsiteConfig extends Model
                 ],
             ]
         );
+    }
+
+    /**
+     * Branding JSON, with logo/favicon/hero image URLs normalised to relative
+     * `/media/...` paths on read. Absolute or `/storage/...` URLs stored by an
+     * older upload (or a different host/port) would 404 on the web dev server
+     * and never resolve inside the desktop app's dynamic-port window. The
+     * `/media/{path}` route serves straight from the public disk on BOTH, and a
+     * host-relative path resolves against whatever origin is serving the page.
+     */
+    protected function branding(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => $this->normaliseBranding(
+                is_array($value) ? $value : (json_decode($value ?? 'null', true) ?: null)
+            ),
+            set: fn ($value) => is_array($value) ? json_encode($value) : $value,
+        );
+    }
+
+    protected function normaliseBranding(?array $branding): ?array
+    {
+        if (! $branding) {
+            return $branding;
+        }
+
+        foreach (['logo', 'favicon'] as $key) {
+            if (! empty($branding[$key])) {
+                $branding[$key] = static::toMediaPath($branding[$key]);
+            }
+        }
+
+        if (! empty($branding['heroImages']) && is_array($branding['heroImages'])) {
+            $branding['heroImages'] = array_map(
+                fn ($url) => static::toMediaPath($url),
+                $branding['heroImages']
+            );
+        }
+
+        return $branding;
+    }
+
+    /**
+     * Rewrite a stored public-disk URL to a host-relative `/media/<path>`.
+     * Leaves genuinely external URLs (no media/storage segment) untouched.
+     */
+    public static function toMediaPath(?string $url): ?string
+    {
+        return \App\Support\Media::path($url);
     }
 
     public function getIsConfiguredAttribute(): bool

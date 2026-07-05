@@ -81,4 +81,42 @@ class FixSubscriptionBillingTest extends TestCase
         $this->assertSame(1200.0, (float) $ps->fresh()->amount_paid);
         $this->assertSame(800.0, (float) $player->fresh()->outstanding_debt);
     }
+
+    #[Test]
+    public function an_unresolved_payment_is_left_unlinked(): void
+    {
+        $player = $this->makePlayer();
+        // real payment, but NO subscription exists for this player/year
+        $payment = Transaction::create([
+            'amount' => 500, 'transaction_date' => now(), 'transaction_type' => 'income',
+            'category' => 'subscription', 'status' => 'Partial',
+            'related_entity_type' => 'Player', 'related_entity_id' => $player->id, 'fiscal_year' => 2025,
+        ]);
+
+        $this->artisan('finance:fix-subscription-billing --force')->assertSuccessful();
+
+        $this->assertNull($payment->fresh()->player_subscription_id);
+    }
+
+    #[Test]
+    public function reconciliation_corrects_a_wrong_stored_amount_paid(): void
+    {
+        $player = $this->makePlayer();
+        $sub = PlayerSubscription::create([
+            'player_id' => $player->id, 'subscription_id' => null, 'transaction_id' => null,
+            'year' => 2025, 'status_at_time' => 'student', 'is_mandatory' => true,
+            'amount_owed' => 2000, 'amount_paid' => 999, // deliberately wrong stored value
+        ]);
+        // a real payment of 1200 for the same player/year, not yet linked
+        Transaction::create([
+            'amount' => 1200, 'transaction_date' => now(), 'transaction_type' => 'income',
+            'category' => 'subscription', 'status' => 'Partial',
+            'related_entity_type' => 'Player', 'related_entity_id' => $player->id, 'fiscal_year' => 2025,
+        ]);
+
+        $this->artisan('finance:fix-subscription-billing --force')->assertSuccessful();
+
+        $this->assertSame(1200.0, (float) $sub->fresh()->amount_paid); // corrected from 999
+        $this->assertSame(800.0, (float) $player->fresh()->outstanding_debt);
+    }
 }

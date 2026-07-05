@@ -27,29 +27,29 @@ class FixSubscriptionBilling extends Command
 
         // 2. Link real payments (income, not Unpaid) to a subscription by player+year.
         $linked = 0;
-        $payments = Transaction::query()
+        Transaction::query()
             ->where('transaction_type', 'income')
             ->where('archived', false)
             ->where('status', '!=', 'Unpaid')
             ->whereNull('player_subscription_id')
             ->where('related_entity_type', 'Player')
-            ->get();
+            ->chunkById(200, function ($payments) use (&$linked) {
+                foreach ($payments as $payment) {
+                    $sub = PlayerSubscription::query()
+                        ->where('player_id', $payment->related_entity_id)
+                        ->where('year', $payment->fiscal_year)
+                        ->orderByDesc('is_mandatory')
+                        ->first()
+                        ?? PlayerSubscription::query()->where('transaction_id', $payment->id)->first();
 
-        foreach ($payments as $payment) {
-            $sub = PlayerSubscription::query()
-                ->where('player_id', $payment->related_entity_id)
-                ->where('year', $payment->fiscal_year)
-                ->orderByDesc('is_mandatory')
-                ->first()
-                ?? PlayerSubscription::query()->where('transaction_id', $payment->id)->first();
-
-            if ($sub) {
-                $payment->forceFill(['player_subscription_id' => $sub->id])->saveQuietly();
-                $linked++;
-            } else {
-                $this->warn("Unresolved payment #{$payment->id} (player {$payment->related_entity_id}, year {$payment->fiscal_year}).");
-            }
-        }
+                    if ($sub) {
+                        $payment->forceFill(['player_subscription_id' => $sub->id])->saveQuietly();
+                        $linked++;
+                    } else {
+                        $this->warn("Unresolved payment #{$payment->id} (player {$payment->related_entity_id}, year {$payment->fiscal_year}).");
+                    }
+                }
+            });
         $this->info("Linked {$linked} payment(s) to subscriptions.");
 
         // 3. Identify bills (income + subscription + Unpaid).

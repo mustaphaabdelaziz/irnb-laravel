@@ -98,4 +98,34 @@ class SubscriptionBillingTest extends TestCase
         $this->assertTrue($sub->fresh()->isExempt());
         $this->assertSame(0.0, (float) $player->fresh()->outstanding_debt);
     }
+
+    #[Test]
+    public function editing_a_payment_amount_resyncs_debt(): void
+    {
+        $player = $this->makePlayer();
+        $sub = $this->makeSub($player, 2000);
+        $payment = $this->pay($sub, 1000);
+
+        $this->assertSame(1000.0, (float) $player->fresh()->outstanding_debt);
+
+        $payment->update(['amount' => 500]);
+
+        $this->assertSame(500.0, (float) $sub->fresh()->amount_paid);
+        $this->assertSame(1500.0, (float) $player->fresh()->outstanding_debt);
+    }
+
+    #[Test]
+    public function archiving_a_payment_raises_debt_again(): void
+    {
+        $player = $this->makePlayer();
+        $sub = $this->makeSub($player, 2000);
+        $payment = $this->pay($sub, 2000);
+
+        $this->assertSame(0.0, (float) $player->fresh()->outstanding_debt);
+
+        $payment->update(['archived' => true]);
+
+        $this->assertSame(0.0, (float) $sub->fresh()->amount_paid);
+        $this->assertSame(2000.0, (float) $player->fresh()->outstanding_debt);
+    }
 }

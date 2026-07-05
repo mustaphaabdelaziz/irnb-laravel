@@ -5,7 +5,9 @@ namespace App\Observers;
 use App\Models\FinanceAccount;
 use App\Models\FinanceCategory;
 use App\Models\FiscalYear;
+use App\Models\PlayerSubscription;
 use App\Models\Transaction;
+use App\Services\Finance\RecalculatePlayerDebtService;
 use App\Services\FinanceService;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
@@ -45,11 +47,13 @@ class TransactionObserver
     public function saved(Transaction $transaction): void
     {
         $this->recompute($transaction);
+        $this->recomputeSubscription($transaction);
     }
 
     public function deleted(Transaction $transaction): void
     {
         $this->recompute($transaction);
+        $this->recomputeSubscription($transaction);
     }
 
     private function recompute(Transaction $transaction): void
@@ -58,6 +62,18 @@ class TransactionObserver
         $finance->recomputeAccountBalances();
         if ($transaction->fiscalYear) {
             $finance->recomputeYear($transaction->fiscalYear);
+        }
+    }
+
+    private function recomputeSubscription(Transaction $transaction): void
+    {
+        if (! $transaction->player_subscription_id) {
+            return;
+        }
+
+        $sub = PlayerSubscription::find($transaction->player_subscription_id);
+        if ($sub) {
+            app(RecalculatePlayerDebtService::class)->forSubscription($sub);
         }
     }
 }

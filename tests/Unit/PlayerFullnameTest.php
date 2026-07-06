@@ -43,4 +43,20 @@ class PlayerFullnameTest extends TestCase
 
         $this->assertSame('زيدان يوسف', $player->fullname);
     }
+
+    #[Test]
+    public function fullname_is_serialized_so_the_frontend_receives_it(): void
+    {
+        $player = new Player([
+            'lastname' => 'زيدان',
+            'firstname' => 'يوسف',
+            'father' => 'أحمد',
+            'grandfather' => 'علي',
+        ]);
+
+        $array = $player->toArray();
+
+        $this->assertArrayHasKey('fullname', $array);
+        $this->assertSame('زيدان يوسف بن أحمد علي', $array['fullname']);
+    }
 }

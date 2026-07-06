@@ -44,6 +44,11 @@ class Player extends Model
         'outstanding_debt',
     ];
 
+    /** Expose the computed Arabic full name to the frontend (tables, profile). */
+    protected $appends = [
+        'fullname',
+    ];
+
     /** Normalise the stored photo URL to a host-relative /media path (web + desktop). */
     protected function pictureUrl(): Attribute
     {

@@ -22,6 +22,7 @@ const form = useForm({
     year: props.subscription?.year || new Date().getFullYear(),
     amount_student: props.subscription?.amount_student || '',
     amount_worker: props.subscription?.amount_worker || '',
+    is_mandatory: props.subscription?.is_mandatory ?? true,
     category_ids: props.subscription?.categories?.map(c => c.id) || [],
 });
 
@@ -72,6 +73,10 @@ function submit() {
                             <InputError :message="form.errors.amount_worker" class="mt-1" />
                         </div>
                     </div>
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" v-model="form.is_mandatory" class="rounded border-gray-300 text-primary-600 shadow-sm focus:ring-primary-500" />
+                        <span class="text-sm text-slate-700 dark:text-slate-200">{{ t('mandatory') }}</span>
+                    </label>
                     <div>
                         <InputLabel :value="t('categories')" />
                         <p class="mb-2 text-xs text-slate-500 dark:text-slate-400">{{ t('select_category') }} ({{ t('all') }})</p>

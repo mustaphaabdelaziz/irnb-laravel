@@ -155,6 +155,7 @@
     "debt_payment": "دفع دين",
     "payment_category": "نوع الدفع",
     "optional": "اختياري",
+    "mandatory": "إلزامي لجميع اللاعبين",
     "donations": "التبرعات",
     "download_template": "تحميل النموذج",
     "drop_here": "أفلت هنا",

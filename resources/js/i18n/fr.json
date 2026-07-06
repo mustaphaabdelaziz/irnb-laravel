@@ -155,6 +155,7 @@
     "debt_payment": "Paiement de dette",
     "payment_category": "Type de paiement",
     "optional": "facultatif",
+    "mandatory": "Obligatoire pour tous les joueurs",
     "donations": "Dons",
     "download_template": "Télécharger le modèle",
     "drop_here": "Déposer ici",

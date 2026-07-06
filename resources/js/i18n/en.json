@@ -155,6 +155,7 @@
     "debt_payment": "Debt payment",
     "payment_category": "Payment category",
     "optional": "optional",
+    "mandatory": "Mandatory for all players",
     "donations": "Donations",
     "download_template": "Download template",
     "drop_here": "Drop here",

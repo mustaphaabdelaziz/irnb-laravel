@@ -43,7 +43,6 @@ const form = useForm({
     position_id: p.position_id || '',
     member_job_id: p.member_job_id || '',
     join_year: p.join_year || props.defaultJoinYear,
-    team: p.team || '',
     skill_level: p.skill_level || '',
     picture: null,
     health_medical_conditions: p.health_medical_conditions || '',
@@ -115,7 +114,6 @@ function submit() {
         position_id: data.position_id || null,
         member_job_id: data.member_job_id || null,
         join_year: data.join_year || null,
-        team: data.team || null,
         skill_level: data.skill_level || null,
         picture: data.picture,
         health_medical_conditions: data.health_medical_conditions || null,
@@ -231,21 +229,10 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                     </select>
                 </div>
                 <div>
-                    <InputLabel :value="t('team')" />
-                    <TextInput v-model="form.team" class="mt-1 w-full" />
-                </div>
-                <div>
                     <InputLabel :value="t('skill_level')" />
                     <select v-model="form.skill_level" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                         <option value="">-</option>
                         <option v-for="n in 10" :key="n" :value="n">{{ n }}</option>
-                    </select>
-                </div>
-                <div>
-                    <InputLabel :value="t('status')" />
-                    <select :value="form.is_student ? 'student' : 'worker'" @change="form.is_student = $event.target.value === 'student'" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                        <option value="student">{{ t('student') }}</option>
-                        <option value="worker">{{ t('worker') }}</option>
                     </select>
                 </div>
                 <div>
@@ -260,6 +247,13 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                         <option value="معاقب">{{ t('status_sanctioned') }}</option>
                     </select>
                     <InputError :message="form.errors.status_value" class="mt-1" />
+                </div>
+                <div>
+                    <InputLabel :value="t('status')" />
+                    <select :value="form.is_student ? 'student' : 'worker'" @change="form.is_student = $event.target.value === 'student'" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                        <option value="student">{{ t('student') }}</option>
+                        <option value="worker">{{ t('worker') }}</option>
+                    </select>
                 </div>
                 <div v-if="!form.is_student">
                     <InputLabel :value="t('job')" />

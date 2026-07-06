@@ -115,7 +115,7 @@ class Player extends Model
             $full .= ' بن '.$this->father;
 
             if ($this->grandfather) {
-                $full .= ' بن '.$this->grandfather;
+                $full .= ' '.$this->grandfather;
             }
         }
 

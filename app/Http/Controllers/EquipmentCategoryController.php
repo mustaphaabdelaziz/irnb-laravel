@@ -24,8 +24,11 @@ class EquipmentCategoryController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:equipment_categories,name'],
+            'code' => ['nullable', 'string', 'max:10', 'alpha_num'],
             'description' => ['nullable', 'string', 'max:255'],
         ]);
+
+        $validated['code'] = $this->normaliseCode($validated['code'] ?? null, $validated['name']);
 
         EquipmentCategory::create($validated);
 
@@ -36,8 +39,11 @@ class EquipmentCategoryController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:equipment_categories,name,'.$equipmentCategory->id],
+            'code' => ['nullable', 'string', 'max:10', 'alpha_num'],
             'description' => ['nullable', 'string', 'max:255'],
         ]);
+
+        $validated['code'] = $this->normaliseCode($validated['code'] ?? null, $validated['name']);
 
         // Catalogs reference the category by name, so a rename must cascade.
         if ($validated['name'] !== $equipmentCategory->name) {
@@ -47,6 +53,11 @@ class EquipmentCategoryController extends Controller
         $equipmentCategory->update($validated);
 
         return back()->with('success', 'Category updated successfully.');
+    }
+
+    private function normaliseCode(?string $code, string $name): string
+    {
+        return $code ? strtoupper($code) : EquipmentCategory::deriveCode($name);
     }
 
     public function destroy(EquipmentCategory $equipmentCategory): RedirectResponse

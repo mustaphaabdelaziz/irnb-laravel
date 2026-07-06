@@ -17,8 +17,8 @@ const props = defineProps({
 const editingId = ref(null);
 const deleteId = ref(null);
 
-const form = useForm({ name: '', description: '' });
-const editForm = useForm({ name: '', description: '' });
+const form = useForm({ name: '', code: '', description: '' });
+const editForm = useForm({ name: '', code: '', description: '' });
 
 function addCategory() {
     form.post(route('equipment-categories.store'), {
@@ -29,6 +29,7 @@ function addCategory() {
 function startEdit(cat) {
     editingId.value = cat.id;
     editForm.name = cat.name;
+    editForm.code = cat.code || '';
     editForm.description = cat.description || '';
 }
 
@@ -61,6 +62,11 @@ function destroy() {
                     <TextInput v-model="form.name" class="mt-1 w-full" :placeholder="t('name')" required />
                     <InputError :message="form.errors.name" class="mt-1" />
                 </div>
+                <div class="w-28">
+                    <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('code') }}</label>
+                    <TextInput v-model="form.code" class="mt-1 w-full uppercase" placeholder="BALL" />
+                    <InputError :message="form.errors.code" class="mt-1" />
+                </div>
                 <div class="flex-1">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('description') }}</label>
                     <TextInput v-model="form.description" class="mt-1 w-full" :placeholder="t('description')" />
@@ -74,6 +80,7 @@ function destroy() {
                     <thead class="bg-slate-50 dark:bg-slate-950">
                         <tr>
                             <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('name') }}</th>
+                            <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('code') }}</th>
                             <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('description') }}</th>
                             <th class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('equipments') }}</th>
                             <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('actions') }}</th>
@@ -84,6 +91,10 @@ function destroy() {
                             <td class="px-4 py-3">
                                 <TextInput v-if="editingId === cat.id" v-model="editForm.name" class="w-full" />
                                 <span v-else class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ cat.name }}</span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <TextInput v-if="editingId === cat.id" v-model="editForm.code" class="w-24 uppercase" />
+                                <span v-else class="font-mono text-sm text-slate-700 dark:text-slate-200">{{ cat.code || '-' }}</span>
                             </td>
                             <td class="px-4 py-3">
                                 <TextInput v-if="editingId === cat.id" v-model="editForm.description" class="w-full" />
@@ -105,7 +116,7 @@ function destroy() {
                             </td>
                         </tr>
                         <tr v-if="!categories?.length">
-                            <td colspan="4" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
+                            <td colspan="5" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
                         </tr>
                     </tbody>
                 </table>

@@ -17,7 +17,6 @@ use App\Http\Controllers\FinanceCategoryController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\FiscalYearController;
 use App\Http\Controllers\InventoryController;
-use App\Http\Controllers\TransactionImportController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\MemberJobController;
 use App\Http\Controllers\PlayerController;
@@ -29,6 +28,7 @@ use App\Http\Controllers\PublicController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\TransactionImportController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WebsiteConfigController;
 use Illuminate\Support\Facades\Route;
@@ -101,6 +101,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     // Equipment
     Route::resource('equipment/catalogs', EquipmentCatalogController::class)->names('equipment.catalogs');
     Route::post('/equipment/items', [EquipmentItemController::class, 'store'])->name('equipment.items.store');
+    Route::get('/equipment/items/preview-serial', [EquipmentItemController::class, 'previewSerial'])->name('equipment.items.preview-serial');
     Route::post('/equipment/items/rent', [EquipmentItemController::class, 'rent'])->name('equipment.items.rent');
     Route::post('/equipment/rentals/{rental}/return', [EquipmentItemController::class, 'returnItem'])->name('equipment.rentals.return');
     Route::post('/equipment/items/{item}/repair', [EquipmentItemController::class, 'repair'])->name('equipment.items.repair');

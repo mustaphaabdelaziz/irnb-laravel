@@ -10,6 +10,8 @@ use App\Models\Player;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\Equipment\EquipmentLifecycleService;
+use App\Services\Equipment\SerialNumberService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,13 +22,13 @@ class EquipmentItemController extends Controller
 {
     public function __construct(
         private EquipmentLifecycleService $lifecycle,
+        private SerialNumberService $serials,
     ) {}
 
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'catalog_id' => ['required', 'integer', 'exists:equipment_catalogs,id'],
-            'unique_identifier' => ['required', 'string', 'max:255', 'unique:equipment_items,unique_identifier'],
             'purchase_date' => ['required', 'date'],
             'condition' => ['nullable', 'string', 'in:New,Good,Fair,Poor,Damaged'],
             'location' => ['nullable', 'string', 'max:255'],
@@ -35,7 +37,16 @@ class EquipmentItemController extends Controller
         ]);
 
         DB::transaction(function () use ($validated, $request) {
-            $purchaseTransaction = null;
+            $item = new EquipmentItem([
+                'catalog_id' => $validated['catalog_id'],
+                'purchase_date' => $validated['purchase_date'],
+                'condition' => $validated['condition'] ?? 'New',
+                'location' => $validated['location'] ?? null,
+                'notes' => $validated['notes'] ?? null,
+            ]);
+
+            // Assigns unique_identifier and saves (with collision retry).
+            $this->serials->assign($item);
 
             if (! empty($validated['purchase_price'])) {
                 $purchaseTransaction = Transaction::create([
@@ -43,21 +54,31 @@ class EquipmentItemController extends Controller
                     'transaction_date' => $validated['purchase_date'],
                     'transaction_type' => 'expense',
                     'category' => 'equipment',
-                    'description' => 'Equipment purchase: '.$validated['unique_identifier'],
+                    'description' => 'Equipment purchase: '.$item->unique_identifier,
                     'recorded_by_user_id' => $request->user()?->id,
                     'status' => 'Paid',
                     'fiscal_year' => now()->year,
                 ]);
+
+                $item->purchase_transaction_id = $purchaseTransaction->id;
+                $item->save();
             }
-
-            unset($validated['purchase_price']);
-            $validated['purchase_transaction_id'] = $purchaseTransaction?->id;
-
-            EquipmentItem::create($validated);
         });
 
         return redirect()->route('equipment.catalogs.show', $validated['catalog_id'])
             ->with('success', 'Equipment item added successfully.');
+    }
+
+    public function previewSerial(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'catalog_id' => ['required', 'integer', 'exists:equipment_catalogs,id'],
+            'purchase_date' => ['required', 'date'],
+        ]);
+
+        return response()->json([
+            'serial' => $this->serials->previewNext($validated['catalog_id'], $validated['purchase_date']),
+        ]);
     }
 
     public function rent(RentEquipmentRequest $request): RedirectResponse

@@ -9,6 +9,7 @@ use App\Models\MemberJob;
 use App\Models\Player;
 use App\Models\PlayerEmergencyContact;
 use App\Models\Position;
+use App\Models\Subscription;
 use App\Models\Transaction;
 use App\Services\Player\MembershipNumber;
 use App\Services\Player\RegisterPlayerService;
@@ -167,8 +168,43 @@ class PlayerController extends Controller
         return Inertia::render('Players/Show', [
             'player' => $player,
             'transactions' => $transactions,
+            'availableSubscriptions' => $this->availableSubscriptions($player),
             'totalDebt' => $player->calculateTotalDebt(),
         ]);
+    }
+
+    /**
+     * The full subscription catalog with this player's status for each, so the
+     * add-payment form can list every subscription (mandatory and optional),
+     * whether or not the player is already assigned to it.
+     *
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    private function availableSubscriptions(Player $player): \Illuminate\Support\Collection
+    {
+        $assigned = $player->playerSubscriptions->keyBy('subscription_id');
+
+        return Subscription::query()
+            ->orderByDesc('year')
+            ->orderBy('name')
+            ->get()
+            ->map(function (Subscription $s) use ($player, $assigned) {
+                $ps = $assigned->get($s->id);
+                $owed = $player->is_student ? (float) $s->amount_student : (float) $s->amount_worker;
+
+                return [
+                    'subscription_id' => $s->id,
+                    'player_subscription_id' => $ps?->id,
+                    'name' => $s->name,
+                    'year' => $s->year,
+                    'is_mandatory' => (bool) $s->is_mandatory,
+                    'is_exempt' => (bool) ($ps?->is_exempt ?? false),
+                    'amount_owed' => $ps ? (float) $ps->amount_owed : $owed,
+                    'amount_paid' => $ps ? (float) $ps->amount_paid : 0.0,
+                    'remaining_amount' => $ps ? (float) $ps->remaining_amount : $owed,
+                ];
+            })
+            ->values();
     }
 
     /**

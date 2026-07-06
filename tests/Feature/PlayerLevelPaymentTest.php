@@ -89,7 +89,7 @@ class PlayerLevelPaymentTest extends TestCase
                 'category' => 'subscription',
                 'payment_method' => 'cash',
             ])
-            ->assertSessionHasErrors('player_subscription_id');
+            ->assertSessionHasErrors('subscription_id');
 
         $this->assertDatabaseCount('transactions', 0);
     }

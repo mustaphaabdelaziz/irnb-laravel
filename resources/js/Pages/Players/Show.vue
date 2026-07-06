@@ -20,15 +20,16 @@ const props = defineProps({
     player: Object,
     totalDebt: Number,
     transactions: { type: Array, default: () => [] },
+    availableSubscriptions: { type: Array, default: () => [] },
 });
 
 const subscriptions = computed(() => props.player?.player_subscriptions ?? []);
 const transactions = computed(() => props.transactions ?? []);
 
-// Selectable in the payment form: subs that still owe (remaining > 0) or are exempt
-// (so an exempt sub can be picked to un-exempt it). Fully-paid subs are hidden.
+// Selectable in the payment form: the whole catalog (mandatory + optional, assigned
+// or not) minus fully-paid ones. Exempt subs stay so they can be un-exempted.
 const payableSubscriptions = computed(() =>
-    subscriptions.value.filter(s => parseFloat(s.remaining_amount ?? 0) > 0 || s.is_exempt)
+    props.availableSubscriptions.filter(s => parseFloat(s.remaining_amount ?? 0) > 0 || s.is_exempt)
 );
 
 const showDeleteModal = ref(false);
@@ -36,7 +37,7 @@ const showPaymentModal = ref(false);
 
 const paymentForm = useForm({
     amount: '',
-    player_subscription_id: '',
+    subscription_id: '',
     payment_method: 'cash',
     category: 'subscription',
     description: '',
@@ -50,14 +51,14 @@ const showAmountField = computed(() =>
 
 watch(() => paymentForm.category, (category) => {
     if (category !== 'subscription') {
-        paymentForm.player_subscription_id = '';
+        paymentForm.subscription_id = '';
         paymentForm.is_exempt = false;
     }
 });
 
 // When a subscription is picked, mirror its current exempt state into the checkbox.
-watch(() => paymentForm.player_subscription_id, (id) => {
-    const sub = subscriptions.value.find(s => s.id === id);
+watch(() => paymentForm.subscription_id, (id) => {
+    const sub = props.availableSubscriptions.find(s => s.subscription_id === id);
     paymentForm.is_exempt = sub ? !!sub.is_exempt : false;
 });
 
@@ -312,15 +313,15 @@ function formatDate(val) {
                     </div>
                     <div v-if="paymentForm.category === 'subscription'">
                         <InputLabel :value="t('subscription')" />
-                        <select v-model="paymentForm.player_subscription_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                        <select v-model="paymentForm.subscription_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                             <option value="">{{ t('select_subscription') }}</option>
-                            <option v-for="sub in payableSubscriptions" :key="sub.id" :value="sub.id">
-                                {{ sub.subscription?.name }} ({{ sub.subscription?.year }}){{ sub.is_mandatory ? '' : ' — ' + t('optional') }} — {{ t('remaining') }}: {{ formatMoney(sub.remaining_amount) }}
+                            <option v-for="sub in payableSubscriptions" :key="sub.subscription_id" :value="sub.subscription_id">
+                                {{ sub.name }} ({{ sub.year }}){{ sub.is_mandatory ? '' : ' — ' + t('optional') }} — {{ t('remaining') }}: {{ formatMoney(sub.remaining_amount) }}
                             </option>
                         </select>
-                        <InputError :message="paymentForm.errors.player_subscription_id" class="mt-1" />
+                        <InputError :message="paymentForm.errors.subscription_id" class="mt-1" />
                     </div>
-                    <label v-if="paymentForm.category === 'subscription' && paymentForm.player_subscription_id" class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                    <label v-if="paymentForm.category === 'subscription' && paymentForm.subscription_id" class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
                         <input type="checkbox" v-model="paymentForm.is_exempt" class="rounded border-slate-300 text-primary-600 shadow-sm focus:ring-primary-500" />
                         {{ t('exempt') }} — {{ t('exempt_hint') }}
                     </label>

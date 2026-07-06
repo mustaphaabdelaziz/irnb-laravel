@@ -4,19 +4,22 @@ namespace App\Http\Controllers;
 
 use App\Models\Player;
 use App\Models\PlayerSubscription;
+use App\Models\Subscription;
 use App\Models\Transaction;
 use App\Services\Finance\RecalculatePlayerDebtService;
 use App\Services\Finance\ResolvePaymentStatusService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class PlayerTransactionController extends Controller
 {
     public function store(Request $request, Player $player): RedirectResponse
     {
         $validated = $request->validate([
-            'player_subscription_id' => ['required_if:category,subscription', 'nullable', 'integer', 'exists:player_subscriptions,id'],
+            'player_subscription_id' => ['nullable', 'integer', 'exists:player_subscriptions,id'],
+            'subscription_id' => ['nullable', 'integer', 'exists:subscriptions,id'],
             'amount' => ['required_if:category,donation', 'required_if:category,debt_payment', 'nullable', 'numeric', 'min:0.01'],
             'payment_method' => ['nullable', 'string', 'max:255'],
             'category' => ['required', 'string', 'in:subscription,donation,debt_payment'],
@@ -29,8 +32,9 @@ class PlayerTransactionController extends Controller
         $description = $validated['description'] ?? null;
 
         if ($validated['category'] === 'subscription') {
-            $sub = PlayerSubscription::findOrFail($validated['player_subscription_id']);
-            $this->assertSubBelongsToPlayer($sub, $player);
+            // The selectable list is the whole catalog, so a chosen subscription may
+            // not be assigned to this player yet — assign it on demand.
+            $sub = $this->resolvePlayerSubscription($player, $validated);
 
             // The Exempt checkbox is the single control for the flag (set or clear).
             $exempt = (bool) ($validated['is_exempt'] ?? false);
@@ -141,6 +145,41 @@ class PlayerTransactionController extends Controller
                 $this->createPlayerLevelPayment($player, 'donation', $donationPortion, $method, $description, $userId);
             }
         });
+    }
+
+    /**
+     * Resolve the PlayerSubscription for a subscription payment. Accepts either an
+     * existing player_subscription_id, or a catalog subscription_id which is assigned
+     * to the player on demand (first payment against a not-yet-assigned subscription).
+     */
+    private function resolvePlayerSubscription(Player $player, array $validated): PlayerSubscription
+    {
+        if (! empty($validated['player_subscription_id'])) {
+            $sub = PlayerSubscription::findOrFail($validated['player_subscription_id']);
+            $this->assertSubBelongsToPlayer($sub, $player);
+
+            return $sub;
+        }
+
+        if (! empty($validated['subscription_id'])) {
+            $catalog = Subscription::findOrFail($validated['subscription_id']);
+
+            return PlayerSubscription::firstOrCreate(
+                ['player_id' => $player->id, 'subscription_id' => $catalog->id],
+                [
+                    'transaction_id' => null,
+                    'year' => $catalog->year,
+                    'status_at_time' => $player->is_student ? 'student' : 'worker',
+                    'is_mandatory' => (bool) $catalog->is_mandatory,
+                    'amount_owed' => $player->is_student ? (float) $catalog->amount_student : (float) $catalog->amount_worker,
+                    'amount_paid' => 0,
+                ]
+            );
+        }
+
+        throw ValidationException::withMessages([
+            'subscription_id' => 'A subscription is required.',
+        ]);
     }
 
     private function createPlayerLevelPayment(Player $player, string $category, float $amount, ?string $method, ?string $description, ?int $userId): void

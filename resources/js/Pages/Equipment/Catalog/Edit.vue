@@ -26,10 +26,8 @@ const form = useForm({
 });
 
 function submit() {
-    form.post(route('equipment.catalogs.update', props.catalog.id), {
-        forceFormData: true,
-        _method: 'put',
-    });
+    form.transform((data) => ({ ...data, _method: 'put' }))
+        .post(route('equipment.catalogs.update', props.catalog.id), { forceFormData: true });
 }
 </script>
 

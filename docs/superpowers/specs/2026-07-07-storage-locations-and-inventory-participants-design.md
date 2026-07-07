@@ -104,9 +104,10 @@ Two inventory-facing enhancements:
   `SearchableSelect` of that type's people, an "add" button building a local
   list, removable chips, and a save that POSTs the list to
   `inventory.participants`. When completed, show participants read-only.
-- Participants appear on the session page and are added to the Excel export
-  (`InventoryController::export`) and the PDF report
-  (`reports/inventory-report` blade) as a comma-separated names line.
+- Participants appear on the session page and are added to the PDF report
+  (`pdf/inventory-report` blade) as a comma-separated names line under the
+  session sub-header. The Excel export (a per-item count sheet) is left
+  unchanged — session-level participants don't fit its row model.
 
 ---
 
@@ -133,3 +134,4 @@ Add to `en.json`, `fr.json`, `ar.json` (skip any that already exist):
 - A foreign key from `equipment_items` to `storage_locations`.
 - Editing participants after a session is completed.
 - Per-location capacity, addresses, or nesting.
+- Participants in the Excel export (per-item count sheet — unchanged).

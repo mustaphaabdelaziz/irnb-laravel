@@ -491,5 +491,13 @@
     "year": "Année",
     "year_closed_locked": "Cette année est clôturée et verrouillée.",
     "yearly": "Annuel",
-    "yes": "Oui"
+    "yes": "Oui",
+    "advanced_overrides": "Dérogations avancées",
+    "hide_advanced": "Masquer avancé",
+    "module": "Module",
+    "no_role": "Aucun rôle",
+    "overrides_hint": "Les cases cochées s'ajoutent au rôle.",
+    "reports": "Rapports",
+    "roles": "Rôles",
+    "system": "Système"
 }

@@ -491,5 +491,13 @@
     "year": "Year",
     "year_closed_locked": "This year is closed and locked.",
     "yearly": "Yearly",
-    "yes": "Yes"
+    "yes": "Yes",
+    "advanced_overrides": "Advanced overrides",
+    "hide_advanced": "Hide advanced",
+    "module": "Module",
+    "no_role": "No role",
+    "overrides_hint": "Checked cells are granted on top of the role.",
+    "reports": "Reports",
+    "roles": "Roles",
+    "system": "System"
 }

@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\EquipmentItem;
 use App\Models\InventorySession;
 use App\Models\InventorySessionItem;
+use App\Models\Player;
+use App\Models\StorageLocation;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -68,11 +71,14 @@ class InventoryController extends Controller
 
     public function show(InventorySession $session): Response
     {
-        $session->load(['items.item.catalog:id,name,category', 'conductedBy:id,name']);
+        $session->load(['items.item.catalog:id,name,category', 'conductedBy:id,name', 'participants.participant']);
 
         return Inertia::render('Inventory/Session', [
             'session' => $session,
             'conditions' => self::CONDITIONS,
+            'storageLocations' => StorageLocation::orderBy('name')->pluck('name'),
+            'users' => User::where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'players' => Player::orderBy('lastname')->orderBy('firstname')->get(['id', 'firstname', 'lastname']),
         ]);
     }
 
@@ -101,6 +107,37 @@ class InventoryController extends Controller
         }
 
         return back()->with('success', 'Counts saved.');
+    }
+
+    public function participants(Request $request, InventorySession $session): RedirectResponse
+    {
+        abort_if($session->status !== 'in_progress', 403, 'This inventory is already closed.');
+
+        $data = $request->validate([
+            'participants' => ['present', 'array'],
+            'participants.*.type' => ['required', Rule::in(['User', 'Player'])],
+            'participants.*.id' => ['required', 'integer'],
+        ]);
+
+        DB::transaction(function () use ($session, $data) {
+            $session->participants()->delete();
+
+            $seen = [];
+            foreach ($data['participants'] as $p) {
+                $class = $p['type'] === 'User' ? User::class : Player::class;
+                $key = $class.':'.$p['id'];
+                if (isset($seen[$key]) || ! $class::whereKey($p['id'])->exists()) {
+                    continue;
+                }
+                $seen[$key] = true;
+                $session->participants()->create([
+                    'participant_type' => $class,
+                    'participant_id' => $p['id'],
+                ]);
+            }
+        });
+
+        return back()->with('success', 'Participants updated.');
     }
 
     /**

@@ -30,4 +30,9 @@ class InventorySession extends Model
     {
         return $this->belongsTo(User::class, 'conducted_by_user_id');
     }
+
+    public function participants(): HasMany
+    {
+        return $this->hasMany(InventorySessionParticipant::class);
+    }
 }

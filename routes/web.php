@@ -121,6 +121,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::get('/equipment/stocktake/{session}', [InventoryController::class, 'show'])->name('inventory.show');
     Route::put('/equipment/stocktake/{session}/counts', [InventoryController::class, 'counts'])->name('inventory.counts');
     Route::post('/equipment/stocktake/{session}/complete', [InventoryController::class, 'complete'])->name('inventory.complete');
+    Route::post('/equipment/stocktake/{session}/participants', [InventoryController::class, 'participants'])->name('inventory.participants');
     Route::delete('/equipment/stocktake/{session}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
 
     // Admin-only routes

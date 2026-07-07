@@ -6,10 +6,12 @@ use App\Models\EquipmentCatalog;
 use App\Models\EquipmentHistory;
 use App\Models\EquipmentItem;
 use App\Models\EquipmentRental;
+use App\Models\StorageLocation;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Inertia\Testing\AssertableInertia;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -182,5 +184,19 @@ class EquipmentItemManagementTest extends TestCase
         $this->actingAs($this->user())->delete(route('equipment.items.destroy', $item))->assertRedirect();
 
         $this->assertDatabaseMissing('inventory_session_items', ['equipment_item_id' => $item->id]);
+    }
+
+    #[Test]
+    public function the_catalog_page_exposes_storage_locations(): void
+    {
+        StorageLocation::create(['name' => 'Storage 01']);
+        StorageLocation::create(['name' => 'Storage 02']);
+        $catalog = $this->catalog();
+
+        $this->actingAs($this->user())
+            ->get(route('equipment.catalogs.show', $catalog))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Equipment/Catalog/Show')
+                ->where('storageLocations', ['Storage 01', 'Storage 02']));
     }
 }

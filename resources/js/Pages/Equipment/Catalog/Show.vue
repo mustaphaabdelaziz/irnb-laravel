@@ -9,7 +9,7 @@ import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 
 const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
@@ -17,6 +17,7 @@ const { formatMoney } = useFormatMoney();
 const props = defineProps({
     catalog: Object,
     availableCount: Number,
+    storageLocations: { type: Array, default: () => [] },
 });
 
 const showAddItemModal = ref(false);
@@ -81,6 +82,13 @@ const editItemForm = useForm({
     condition: 'Good',
     location: '',
     notes: '',
+});
+
+const editLocationOptions = computed(() => {
+    const opts = [...props.storageLocations];
+    const current = editItemForm.location;
+    if (current && !opts.includes(current)) opts.unshift(current);
+    return opts;
 });
 
 function openEdit(item) {
@@ -302,6 +310,13 @@ const statusColor = (s) => {
                             <InputLabel :value="t('notes')" />
                             <textarea v-model="addItemForm.notes" rows="2" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500" />
                         </div>
+                        <div>
+                            <InputLabel :value="t('location')" />
+                            <select v-model="addItemForm.location" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                                <option value="">—</option>
+                                <option v-for="loc in storageLocations" :key="loc" :value="loc">{{ loc }}</option>
+                            </select>
+                        </div>
                         <div class="flex justify-end gap-3 pt-2">
                             <button type="button" @click="showAddItemModal = false" class="rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">{{ t('cancel') }}</button>
                             <PrimaryButton :disabled="addItemForm.processing">{{ t('add') }}</PrimaryButton>
@@ -335,7 +350,10 @@ const statusColor = (s) => {
                         </div>
                         <div>
                             <InputLabel :value="t('location')" />
-                            <TextInput v-model="editItemForm.location" class="mt-1 w-full" />
+                            <select v-model="editItemForm.location" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                                <option value="">—</option>
+                                <option v-for="loc in editLocationOptions" :key="loc" :value="loc">{{ loc }}</option>
+                            </select>
                         </div>
                         <div>
                             <InputLabel :value="t('notes')" />

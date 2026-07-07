@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Equipment\StoreEquipmentCatalogRequest;
 use App\Models\EquipmentCatalog;
 use App\Models\EquipmentCategory;
+use App\Models\StorageLocation;
 use App\Services\Storage\FileStorageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -51,6 +52,7 @@ class EquipmentCatalogController extends Controller
             'catalog' => $catalog,
             // Count from the already-loaded collection (avoids an extra COUNT query).
             'availableCount' => $catalog->items->where('status', 'Available')->count(),
+            'storageLocations' => StorageLocation::orderBy('name')->pluck('name'),
         ]);
     }
 

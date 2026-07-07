@@ -83,6 +83,42 @@ class EquipmentItemController extends Controller
         ]);
     }
 
+    public function update(Request $request, EquipmentItem $item): RedirectResponse
+    {
+        $validated = $request->validate([
+            'designation' => ['nullable', 'string', 'max:255'],
+            'purchase_date' => ['required', 'date'],
+            'condition' => ['nullable', 'string', 'in:New,Good,Fair,Poor,Damaged'],
+            'location' => ['nullable', 'string', 'max:255'],
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        // Serial (unique_identifier) is immutable identity — never touched here.
+        $item->update($validated);
+
+        return back()->with('success', 'Equipment item updated successfully.');
+    }
+
+    public function destroy(EquipmentItem $item): RedirectResponse
+    {
+        if ($item->status === 'Rented' || $item->activeRental) {
+            return back()->with('error', 'Cannot delete a rented item. Return it first.');
+        }
+
+        $catalogId = $item->catalog_id;
+
+        // Remove the item and its audit/rental rows explicitly (env-independent,
+        // does not rely on DB cascade). The purchase Transaction is left intact.
+        DB::transaction(function () use ($item) {
+            $item->rentals()->delete();
+            $item->histories()->delete();
+            $item->delete();
+        });
+
+        return redirect()->route('equipment.catalogs.show', $catalogId)
+            ->with('success', 'Equipment item deleted successfully.');
+    }
+
     public function rent(RentEquipmentRequest $request): RedirectResponse
     {
         $validated = $request->validated();
@@ -227,6 +263,7 @@ class EquipmentItemController extends Controller
             'item' => [
                 'id' => $item->id,
                 'unique_identifier' => $item->unique_identifier,
+                'designation' => $item->designation,
                 'status' => $item->status,
                 'condition' => $item->condition,
                 'location' => $item->location,

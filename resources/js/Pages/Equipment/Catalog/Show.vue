@@ -9,7 +9,7 @@ import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 
 const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
@@ -26,9 +26,31 @@ const selectedItem = ref(null);
 const lostItemId = ref(null);
 const repairItemId = ref(null);
 
+const serialPreview = ref('');
+
+async function fetchSerialPreview() {
+    serialPreview.value = '…';
+    try {
+        const params = new URLSearchParams({
+            catalog_id: props.catalog.id,
+            purchase_date: addItemForm.purchase_date,
+        });
+        const res = await fetch(`/equipment/items/preview-serial?${params.toString()}`, {
+            headers: { Accept: 'application/json' },
+        });
+        serialPreview.value = res.ok ? (await res.json()).serial : '';
+    } catch {
+        serialPreview.value = '';
+    }
+}
+
+function openAddItem() {
+    showAddItemModal.value = true;
+    fetchSerialPreview();
+}
+
 const addItemForm = useForm({
     catalog_id: props.catalog.id,
-    unique_identifier: '',
     purchase_date: new Date().toISOString().slice(0, 10),
     condition: 'New',
     location: '',
@@ -53,7 +75,7 @@ function addItem() {
     addItemForm.post(route('equipment.items.store'), {
         onSuccess: () => {
             showAddItemModal.value = false;
-            addItemForm.reset('unique_identifier', 'notes');
+            addItemForm.reset('notes');
         },
     });
 }
@@ -102,6 +124,10 @@ function markAsLost(itemId) {
     });
 }
 
+watch(() => addItemForm.purchase_date, () => {
+    if (showAddItemModal.value) fetchSerialPreview();
+});
+
 const statusColor = (s) => {
     const map = { Available: 'emerald', Rented: 'amber', 'Under Repair': 'slate', Lost: 'rose', Retired: 'slate' };
     return map[s] || 'slate';
@@ -121,7 +147,7 @@ const statusColor = (s) => {
                     <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ catalog.name }}</h1>
                 </div>
                 <div class="flex gap-2">
-                    <button @click="showAddItemModal = true" class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 transition-colors">
+                    <button @click="openAddItem" class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 transition-colors">
                         + {{ t('add') }}
                     </button>
                     <Link :href="route('equipment.catalogs.edit', catalog.id)" class="inline-flex items-center rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
@@ -207,8 +233,10 @@ const statusColor = (s) => {
                     <form @submit.prevent="addItem" class="mt-4 space-y-3">
                         <div>
                             <InputLabel value="ID / Serial" />
-                            <TextInput v-model="addItemForm.unique_identifier" class="mt-1 w-full" required placeholder="e.g. BALL-001" />
-                            <InputError :message="addItemForm.errors.unique_identifier" class="mt-1" />
+                            <div class="mt-1 flex items-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2 font-mono text-sm text-slate-700 dark:text-slate-200">
+                                {{ serialPreview || '—' }}
+                            </div>
+                            <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">{{ t('assigned_on_save') }}</p>
                         </div>
                         <div class="grid gap-3 sm:grid-cols-2">
                             <div>

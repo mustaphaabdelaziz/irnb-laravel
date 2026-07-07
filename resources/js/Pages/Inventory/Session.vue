@@ -1,14 +1,18 @@
 <script setup>
-import { reactive, computed } from 'vue';
+import { reactive, computed, ref } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import StatCard from '@/Components/StatCard.vue';
 import Icon from '@/Components/Icon.vue';
+import SearchableSelect from '@/Components/SearchableSelect.vue';
 
 const props = defineProps({
     session: { type: Object, required: true },
     conditions: { type: Array, default: () => [] },
+    storageLocations: { type: Array, default: () => [] },
+    users: { type: Array, default: () => [] },
+    players: { type: Array, default: () => [] },
 });
 const { t, locale } = useI18n();
 
@@ -25,14 +29,57 @@ props.session.items.forEach((line) => {
     };
 });
 
-// Group by catalog name.
+const participantType = ref('User');
+const participantPick = ref('');
+const participants = ref(
+    (props.session.participants || []).map((p) => ({
+        type: p.participant_type?.includes('Player') ? 'Player' : 'User',
+        id: p.participant_id,
+        label: p.participant_type?.includes('Player')
+            ? `${p.participant?.firstname ?? ''} ${p.participant?.lastname ?? ''}`.trim()
+            : (p.participant?.name ?? `#${p.participant_id}`),
+    }))
+);
+
+const participantOptions = computed(() => {
+    const list = participantType.value === 'User'
+        ? props.users.map((u) => ({ value: u.id, label: u.name }))
+        : props.players.map((pl) => ({ value: pl.id, label: `${pl.firstname} ${pl.lastname ?? ''}`.trim() }));
+    const taken = new Set(participants.value.filter((p) => p.type === participantType.value).map((p) => p.id));
+    return list.filter((o) => !taken.has(o.value));
+});
+
+function addParticipant() {
+    if (!participantPick.value) return;
+    const opt = participantOptions.value.find((o) => String(o.value) === String(participantPick.value));
+    if (!opt) return;
+    participants.value.push({ type: participantType.value, id: opt.value, label: opt.label });
+    participantPick.value = '';
+}
+function removeParticipant(idx) {
+    participants.value.splice(idx, 1);
+}
+function saveParticipants() {
+    router.post(route('inventory.participants', props.session.id), {
+        participants: participants.value.map((p) => ({ type: p.type, id: p.id })),
+    }, { preserveScroll: true });
+}
+
+// Group by expected location.
 const groups = computed(() => {
     const map = {};
     for (const line of props.session.items) {
-        const key = line.item?.catalog?.name || t('item');
+        const key = line.expected_location || t('unassigned');
         (map[key] ||= []).push(line);
     }
-    return map;
+    // Sort location keys alphabetically, keeping "Unassigned" last.
+    return Object.fromEntries(
+        Object.entries(map).sort(([a], [b]) => {
+            if (a === t('unassigned')) return 1;
+            if (b === t('unassigned')) return -1;
+            return a.localeCompare(b);
+        })
+    );
 });
 
 const countedCount = computed(() => props.session.items.length);
@@ -90,6 +137,29 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
         </template>
 
         <div class="space-y-6">
+            <!-- Participants -->
+            <div class="card p-5">
+                <p class="mb-3 text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('participants') }}</p>
+                <div class="flex flex-wrap gap-2">
+                    <span v-for="(p, idx) in participants" :key="p.type + p.id" class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                        {{ p.label }}
+                        <button v-if="isOpen" @click="removeParticipant(idx)" class="text-slate-400 hover:text-rose-500">×</button>
+                    </span>
+                    <span v-if="!participants.length" class="text-sm text-slate-400">{{ t('no_results') }}</span>
+                </div>
+                <div v-if="isOpen" class="mt-4 flex flex-wrap items-end gap-2">
+                    <select v-model="participantType" class="rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800">
+                        <option value="User">{{ t('staff') }}</option>
+                        <option value="Player">{{ t('member') }}</option>
+                    </select>
+                    <div class="min-w-[12rem] flex-1">
+                        <SearchableSelect v-model="participantPick" :options="participantOptions" :placeholder="t('add_participant')" />
+                    </div>
+                    <button @click="addParticipant" class="rounded-xl bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800">{{ t('add') }}</button>
+                    <button @click="saveParticipants" class="rounded-xl bg-slate-900 px-3 py-1.5 text-sm font-bold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900">{{ t('save') }}</button>
+                </div>
+            </div>
+
             <!-- Summary -->
             <div class="grid grid-cols-3 gap-4">
                 <StatCard :label="t('total_expected')" :value="session.total_expected" icon="clipboard" color="slate" />
@@ -110,13 +180,13 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
 
                 <div v-if="!session.items.length" class="card py-10 text-center text-sm text-slate-400">{{ t('no_data') }}</div>
 
-                <section v-for="(lines, catalog) in groups" :key="catalog" class="card overflow-hidden">
-                    <p class="border-b border-slate-100 px-5 py-2.5 text-sm font-bold text-slate-700 dark:border-slate-800 dark:text-slate-200">{{ catalog }}</p>
+                <section v-for="(lines, location) in groups" :key="location" class="card overflow-hidden">
+                    <p class="border-b border-slate-100 px-5 py-2.5 text-sm font-bold text-slate-700 dark:border-slate-800 dark:text-slate-200">{{ location }} <span class="font-normal text-slate-400">({{ lines.length }})</span></p>
                     <div class="divide-y divide-slate-50 dark:divide-slate-800/50">
                         <div v-for="line in lines" :key="line.id" class="flex flex-wrap items-center gap-3 px-5 py-3">
                             <div class="min-w-0 flex-1">
                                 <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ line.item?.unique_identifier }}</p>
-                                <p class="text-xs text-slate-400">{{ t('expected') }}: {{ line.expected_condition }}<span v-if="line.expected_location"> · {{ line.expected_location }}</span></p>
+                                <p class="text-xs text-slate-400">{{ line.item?.catalog?.name }} · {{ t('expected') }}: {{ line.expected_condition }}<span v-if="line.expected_location"> · {{ line.expected_location }}</span></p>
                             </div>
                             <div class="flex gap-1">
                                 <button @click="state[line.id].found = true" class="rounded-lg px-2.5 py-1 text-xs font-bold" :class="state[line.id].found ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'">{{ t('found') }}</button>
@@ -125,7 +195,10 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
                             <select v-model="state[line.id].actual_condition" :disabled="!state[line.id].found" class="rounded-lg border-slate-200 bg-white py-1 text-xs disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800">
                                 <option v-for="c in conditions" :key="c" :value="c">{{ c }}</option>
                             </select>
-                            <input v-model="state[line.id].actual_location" :disabled="!state[line.id].found" :placeholder="t('location')" class="w-32 rounded-lg border-slate-200 bg-white py-1 text-xs disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800" />
+                            <select v-model="state[line.id].actual_location" :disabled="!state[line.id].found" class="w-32 rounded-lg border-slate-200 bg-white py-1 text-xs disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800">
+                                <option value="">{{ t('location') }}</option>
+                                <option v-for="loc in storageLocations" :key="loc" :value="loc">{{ loc }}</option>
+                            </select>
                         </div>
                     </div>
                 </section>

@@ -37,6 +37,17 @@
         @if ($session->conductedBy) &middot; {{ $session->conductedBy->name }} @endif
     </div>
 
+    @if ($session->participants->isNotEmpty())
+        <div class="sub">
+            {{ __('Participants') }}:
+            @foreach ($session->participants as $p)
+                {{ $p->participant instanceof \App\Models\Player
+                    ? trim(($p->participant->firstname ?? '').' '.($p->participant->lastname ?? ''))
+                    : ($p->participant->name ?? '') }}@if (! $loop->last), @endif
+            @endforeach
+        </div>
+    @endif
+
     <table class="cards">
         <tr>
             <td><div class="k">{{ __('Expected') }}</div><div class="v">{{ $session->total_expected }}</div></td>

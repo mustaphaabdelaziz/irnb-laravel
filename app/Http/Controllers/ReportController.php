@@ -96,7 +96,7 @@ class ReportController extends Controller
 
     public function inventoryReport(InventorySession $session): Response
     {
-        $session->load(['items.item.catalog:id,name', 'conductedBy:id,name']);
+        $session->load(['items.item.catalog:id,name', 'conductedBy:id,name', 'participants.participant']);
 
         $html = view('pdf.inventory-report', [
             'club' => $this->club(),

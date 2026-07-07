@@ -26,6 +26,7 @@ use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\StorageLocationController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\TransactionController;
@@ -195,6 +196,14 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         Route::put('/settings', [WebsiteConfigController::class, 'update'])->name('settings.update');
         // Lightweight, flash-free endpoint so picking a club color auto-saves instantly.
         Route::put('/settings/theme', [WebsiteConfigController::class, 'updateTheme'])->name('settings.theme');
+    });
+
+    // Role & access management — superadmin only (not module-mapped).
+    Route::middleware('superadmin')->group(function () {
+        Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
+        Route::post('/roles', [RoleController::class, 'store'])->name('roles.store');
+        Route::put('/roles/{role}', [RoleController::class, 'update'])->name('roles.update');
+        Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
     });
 });
 

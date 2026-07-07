@@ -51,6 +51,7 @@ function openAddItem() {
 
 const addItemForm = useForm({
     catalog_id: props.catalog.id,
+    designation: '',
     purchase_date: new Date().toISOString().slice(0, 10),
     condition: 'New',
     location: '',
@@ -71,11 +72,45 @@ const returnForm = useForm({
     notes: '',
 });
 
+const showEditModal = ref(false);
+const deleteItemId = ref(null);
+
+const editItemForm = useForm({
+    designation: '',
+    purchase_date: '',
+    condition: 'Good',
+    location: '',
+    notes: '',
+});
+
+function openEdit(item) {
+    selectedItem.value = item;
+    editItemForm.designation = item.designation || '';
+    editItemForm.purchase_date = item.purchase_date ? String(item.purchase_date).slice(0, 10) : '';
+    editItemForm.condition = item.condition || 'Good';
+    editItemForm.location = item.location || '';
+    editItemForm.notes = item.notes || '';
+    editItemForm.clearErrors();
+    showEditModal.value = true;
+}
+
+function submitEdit() {
+    editItemForm.put(route('equipment.items.update', selectedItem.value.id), {
+        onSuccess: () => { showEditModal.value = false; },
+    });
+}
+
+function deleteItem() {
+    const id = deleteItemId.value;
+    deleteItemId.value = null;
+    router.delete(route('equipment.items.destroy', id), { preserveState: false });
+}
+
 function addItem() {
     addItemForm.post(route('equipment.items.store'), {
         onSuccess: () => {
             showAddItemModal.value = false;
-            addItemForm.reset('notes');
+            addItemForm.reset('notes', 'designation');
         },
     });
 }
@@ -192,6 +227,7 @@ const statusColor = (s) => {
                         <thead class="bg-slate-50 dark:bg-slate-950">
                             <tr>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('identifier') }}</th>
+                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('designation') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('status') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('condition') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('rented_to') }}</th>
@@ -201,6 +237,7 @@ const statusColor = (s) => {
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                             <tr v-for="item in catalog.items" :key="item.id">
                                 <td class="px-4 py-3 font-mono text-sm text-slate-700 dark:text-slate-200">{{ item.unique_identifier }}</td>
+                                <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">{{ item.designation || '—' }}</td>
                                 <td class="px-4 py-3"><Badge :label="item.status" :color="statusColor(item.status)" /></td>
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ item.condition }}</td>
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
@@ -216,6 +253,8 @@ const statusColor = (s) => {
                                         <button v-if="item.status === 'Available'" @click="repairItemId = item.id" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">🔧</button>
                                         <button v-if="['Available','Rented'].includes(item.status)" @click="lostItemId = item.id" class="text-sm text-rose-500 hover:text-rose-700">{{ t('lost') }}</button>
                                         <Link :href="route('equipment.items.history', item.id)" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200" :title="t('history')">🕘</Link>
+                                        <button @click="openEdit(item)" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200" :title="t('edit')">✏️</button>
+                                        <button @click="deleteItemId = item.id" class="text-sm text-rose-500 hover:text-rose-700" :title="t('delete')">🗑️</button>
                                     </div>
                                 </td>
                             </tr>
@@ -237,6 +276,11 @@ const statusColor = (s) => {
                                 {{ serialPreview || '—' }}
                             </div>
                             <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">{{ t('assigned_on_save') }}</p>
+                        </div>
+                        <div>
+                            <InputLabel :value="t('designation')" />
+                            <TextInput v-model="addItemForm.designation" class="mt-1 w-full" placeholder="e.g. T-shirt n° 10" />
+                            <InputError :message="addItemForm.errors.designation" class="mt-1" />
                         </div>
                         <div class="grid gap-3 sm:grid-cols-2">
                             <div>
@@ -261,6 +305,45 @@ const statusColor = (s) => {
                         <div class="flex justify-end gap-3 pt-2">
                             <button type="button" @click="showAddItemModal = false" class="rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">{{ t('cancel') }}</button>
                             <PrimaryButton :disabled="addItemForm.processing">{{ t('add') }}</PrimaryButton>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Edit Item Modal -->
+            <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50" @click.self="showEditModal = false">
+                <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
+                    <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('edit') }} — {{ selectedItem?.unique_identifier }}</h3>
+                    <form @submit.prevent="submitEdit" class="mt-4 space-y-3">
+                        <div>
+                            <InputLabel :value="t('designation')" />
+                            <TextInput v-model="editItemForm.designation" class="mt-1 w-full" />
+                            <InputError :message="editItemForm.errors.designation" class="mt-1" />
+                        </div>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <div>
+                                <InputLabel :value="t('purchase_date')" />
+                                <TextInput v-model="editItemForm.purchase_date" type="date" class="mt-1 w-full" />
+                                <InputError :message="editItemForm.errors.purchase_date" class="mt-1" />
+                            </div>
+                            <div>
+                                <InputLabel :value="t('condition')" />
+                                <select v-model="editItemForm.condition" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                                    <option v-for="c in ['New','Good','Fair','Poor','Damaged']" :key="c" :value="c">{{ c }}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <InputLabel :value="t('location')" />
+                            <TextInput v-model="editItemForm.location" class="mt-1 w-full" />
+                        </div>
+                        <div>
+                            <InputLabel :value="t('notes')" />
+                            <textarea v-model="editItemForm.notes" rows="2" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500" />
+                        </div>
+                        <div class="flex justify-end gap-3 pt-2">
+                            <button type="button" @click="showEditModal = false" class="rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">{{ t('cancel') }}</button>
+                            <PrimaryButton :disabled="editItemForm.processing">{{ t('save') }}</PrimaryButton>
                         </div>
                     </form>
                 </div>
@@ -321,5 +404,6 @@ const statusColor = (s) => {
 
         <ConfirmModal :show="!!repairItemId" :message="t('send_to_repair') + '?'" @confirm="sendToRepair(repairItemId)" @cancel="repairItemId = null" />
         <ConfirmModal :show="!!lostItemId" :message="t('mark_as_lost') + '?'" @confirm="markAsLost(lostItemId)" @cancel="lostItemId = null" />
+        <ConfirmModal :show="!!deleteItemId" :message="t('are_you_sure')" @confirm="deleteItem" @cancel="deleteItemId = null" />
     </AuthenticatedLayout>
 </template>

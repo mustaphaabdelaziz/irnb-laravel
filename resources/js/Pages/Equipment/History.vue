@@ -59,6 +59,10 @@ const eventIcon = (type) => {
                         <p class="mt-1 font-mono text-sm text-slate-900 dark:text-slate-100">{{ item.unique_identifier }}</p>
                     </div>
                     <div>
+                        <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('designation') }}</p>
+                        <p class="mt-1 text-sm text-slate-900 dark:text-slate-100">{{ item.designation || '-' }}</p>
+                    </div>
+                    <div>
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('status') }}</p>
                         <div class="mt-1"><Badge :label="item.status" :color="item.status === 'Available' ? 'emerald' : item.status === 'Rented' ? 'amber' : 'rose'" /></div>
                     </div>

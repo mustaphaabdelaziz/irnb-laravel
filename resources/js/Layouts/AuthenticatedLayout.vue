@@ -87,6 +87,7 @@ const sections = computed(() => {
                 { label: t('members'), href: '/users', icon: 'members', prefix: '/users', badge: pendingApprovals.value },
                 { label: t('categories'), href: '/categories', icon: 'categories', prefix: '/categories' },
                 { label: t('equipment_categories'), href: '/equipment-categories', icon: 'equipment', prefix: '/equipment-categories' },
+                { label: t('storage_locations'), href: '/storage-locations', icon: 'equipment', prefix: '/storage-locations' },
                 { label: t('board_roles'), href: '/board-roles', icon: 'board', prefix: '/board-roles' },
                 { label: t('jobs'), href: '/jobs', icon: 'jobs', prefix: '/jobs' },
                 { label: t('positions'), href: '/positions', icon: 'positions', prefix: '/positions' },

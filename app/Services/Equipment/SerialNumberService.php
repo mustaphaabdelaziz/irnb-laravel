@@ -33,6 +33,9 @@ class SerialNumberService
     /**
      * Assign a freshly generated serial and save. Retries on the rare
      * unique-constraint collision (concurrent insert on the web path).
+     * Relies on SQLite/MySQL doing a statement-level rollback on the unique
+     * violation rather than aborting the whole transaction; revisit if this
+     * ever runs under PostgreSQL, which aborts the transaction on error.
      */
     public function assign(EquipmentItem $item): void
     {
@@ -79,8 +82,9 @@ class SerialNumberService
         }
 
         $code = EquipmentCategory::where('name', $categoryName)->value('code');
+        $code = $code ?: EquipmentCategory::deriveCode($categoryName);
 
-        return strtoupper($code ?: EquipmentCategory::deriveCode($categoryName));
+        return strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $code) ?: 'CAT');
     }
 
     private function nextSequence(string $prefix): int

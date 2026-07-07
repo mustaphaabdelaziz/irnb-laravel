@@ -24,7 +24,7 @@ class EquipmentCategoryController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:equipment_categories,name'],
-            'code' => ['nullable', 'string', 'max:10', 'alpha_num'],
+            'code' => ['nullable', 'string', 'max:10', 'alpha_num:ascii'],
             'description' => ['nullable', 'string', 'max:255'],
         ]);
 
@@ -39,7 +39,7 @@ class EquipmentCategoryController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:equipment_categories,name,'.$equipmentCategory->id],
-            'code' => ['nullable', 'string', 'max:10', 'alpha_num'],
+            'code' => ['nullable', 'string', 'max:10', 'alpha_num:ascii'],
             'description' => ['nullable', 'string', 'max:255'],
         ]);
 

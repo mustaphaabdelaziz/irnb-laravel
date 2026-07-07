@@ -56,4 +56,17 @@ class EquipmentCategoryCodeTest extends TestCase
 
         $this->assertDatabaseHas('equipment_categories', ['name' => 'Whistles', 'code' => 'WHIS']);
     }
+
+    #[Test]
+    public function creating_a_category_with_a_non_ascii_code_fails_validation(): void
+    {
+        $user = User::factory()->create(['privileges' => ['admin'], 'is_active' => true, 'email_verified_at' => now()]);
+
+        $this->actingAs($user)->post(route('equipment-categories.store'), [
+            'name' => 'Shields',
+            'code' => 'كرة',
+        ])->assertSessionHasErrors('code');
+
+        $this->assertDatabaseMissing('equipment_categories', ['name' => 'Shields']);
+    }
 }

@@ -48,7 +48,7 @@ class AccountApprovalTest extends TestCase
     #[Test]
     public function a_player_payment_cannot_be_updated_via_a_different_players_path(): void
     {
-        $admin = User::factory()->create();
+        $admin = User::factory()->admin()->create();
 
         $playerA = Player::create(['membership_id' => '2024000001', 'firstname' => 'A']);
         $playerB = Player::create(['membership_id' => '2024000002', 'firstname' => 'B']);

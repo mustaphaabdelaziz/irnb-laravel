@@ -16,7 +16,7 @@ class ReportPdfTest extends TestCase
 
     private function admin(): User
     {
-        return User::factory()->create(['email_verified_at' => now()]);
+        return User::factory()->admin()->create(['email_verified_at' => now()]);
     }
 
     #[Test]

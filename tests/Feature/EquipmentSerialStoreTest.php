@@ -32,7 +32,7 @@ class EquipmentSerialStoreTest extends TestCase
     #[Test]
     public function storing_an_item_generates_the_serial_and_ignores_any_client_identifier(): void
     {
-        $user = User::factory()->create(['email_verified_at' => now()]);
+        $user = User::factory()->admin()->create(['email_verified_at' => now()]);
         $catalog = $this->seedCatalog();
 
         $this->actingAs($user)
@@ -51,7 +51,7 @@ class EquipmentSerialStoreTest extends TestCase
     #[Test]
     public function storing_a_second_item_increments_the_counter(): void
     {
-        $user = User::factory()->create(['email_verified_at' => now()]);
+        $user = User::factory()->admin()->create(['email_verified_at' => now()]);
         $catalog = $this->seedCatalog();
 
         foreach (['2026-05-01', '2026-06-01'] as $date) {
@@ -71,7 +71,7 @@ class EquipmentSerialStoreTest extends TestCase
     #[Test]
     public function the_preview_endpoint_returns_the_next_serial(): void
     {
-        $user = User::factory()->create(['email_verified_at' => now()]);
+        $user = User::factory()->admin()->create(['email_verified_at' => now()]);
         $catalog = $this->seedCatalog();
 
         $this->actingAs($user)

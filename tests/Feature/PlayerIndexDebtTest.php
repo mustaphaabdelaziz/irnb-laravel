@@ -18,7 +18,7 @@ class PlayerIndexDebtTest extends TestCase
     #[Test]
     public function the_index_computes_outstanding_debt_per_player(): void
     {
-        $admin = User::factory()->create(['email_verified_at' => now()]);
+        $admin = User::factory()->admin()->create(['email_verified_at' => now()]);
 
         $category = Category::create(['name' => 'Senior']);
         $subscription = Subscription::create([

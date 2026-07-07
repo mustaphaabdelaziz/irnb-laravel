@@ -18,7 +18,7 @@ class EquipmentHistoryTest extends TestCase
     #[Test]
     public function it_renders_the_equipment_item_history_page(): void
     {
-        $user = User::factory()->create(['email_verified_at' => now()]);
+        $user = User::factory()->admin()->create(['email_verified_at' => now()]);
 
         $catalog = EquipmentCatalog::create(['name' => 'Match Ball', 'category' => 'Balls']);
         $item = EquipmentItem::create([

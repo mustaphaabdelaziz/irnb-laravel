@@ -45,4 +45,15 @@ class UserFactory extends Factory
             'email_verified_at' => null,
         ]);
     }
+
+    /**
+     * A staff/admin actor. The legacy `admin` privilege grants full access via
+     * the god short-circuit, so no role assignment is needed.
+     */
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'privileges' => ['admin'],
+        ]);
+    }
 }

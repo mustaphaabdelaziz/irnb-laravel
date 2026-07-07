@@ -57,7 +57,9 @@ Route::middleware('auth')->get('/account/pending', fn () => Inertia::render('Aut
     ->name('account.pending');
 
 // Authenticated routes — require a verified email AND an approved, active account.
-Route::middleware(['auth', 'verified', 'approved'])->group(function () {
+// The `permission` middleware enforces per-module (view/add/edit/delete) access
+// derived from each route name via config/permissions.php.
+Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(function () {
 
     // Dashboard
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
@@ -124,8 +126,9 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::post('/equipment/stocktake/{session}/participants', [InventoryController::class, 'participants'])->name('inventory.participants');
     Route::delete('/equipment/stocktake/{session}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
 
-    // Admin-only routes
-    Route::middleware('admin')->group(function () {
+    // Management routes — each is governed by the `permission` middleware on the
+    // parent group (module derived from the route name). No blanket admin gate.
+    Route::group([], function () {
         // User / member management
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');

@@ -21,7 +21,7 @@ class EquipmentItemManagementTest extends TestCase
 
     private function user(): User
     {
-        return User::factory()->create(['email_verified_at' => now()]);
+        return User::factory()->admin()->create(['email_verified_at' => now()]);
     }
 
     private function catalog(): EquipmentCatalog

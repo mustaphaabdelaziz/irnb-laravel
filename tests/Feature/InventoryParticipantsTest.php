@@ -16,7 +16,7 @@ class InventoryParticipantsTest extends TestCase
 
     private function user(): User
     {
-        return User::factory()->create(['email_verified_at' => now()]);
+        return User::factory()->admin()->create(['email_verified_at' => now()]);
     }
 
     private function makeSession(string $status = 'in_progress'): InventorySession

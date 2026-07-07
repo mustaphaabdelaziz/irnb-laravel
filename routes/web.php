@@ -26,6 +26,7 @@ use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\StorageLocationController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\TransactionImportController;
@@ -134,6 +135,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         // Settings - lookup tables
         Route::resource('categories', CategoryController::class)->except(['show', 'create', 'edit']);
         Route::resource('equipment-categories', EquipmentCategoryController::class)->except(['show', 'create', 'edit']);
+        Route::resource('storage-locations', StorageLocationController::class)->except(['show', 'create', 'edit']);
         Route::resource('jobs', MemberJobController::class)->except(['show', 'create', 'edit']);
         Route::resource('positions', PositionController::class)->except(['show', 'create', 'edit']);
 

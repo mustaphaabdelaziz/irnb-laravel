@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Native\Desktop\Contracts\ProvidesPhpIni;
 use Native\Desktop\Facades\Window;
@@ -23,8 +24,14 @@ class NativeAppServiceProvider implements ProvidesPhpIni
      * On the very first launch, populate the user's data directory from the
      * bundle: copy the seed database over the empty one NativePHP creates, and
      * copy the bundled public media (logos, uploads) into the user's storage so
-     * it can be served. A marker file ensures this runs once only, so later
+     * it can be served. A marker file ensures the copy runs once only, so later
      * user changes are never overwritten on subsequent launches.
+     *
+     * On EVERY launch we then run pending migrations against the runtime DB.
+     * Migrations are idempotent (only unrun ones apply), so this is a no-op
+     * after the first boot of each version — but it lets a user who updates the
+     * app over an existing install pick up new tables/columns (e.g. the roles /
+     * permissions schema) without losing their data.
      */
     protected function firstRunSetup(): void
     {
@@ -38,25 +45,32 @@ class NativeAppServiceProvider implements ProvidesPhpIni
         }
 
         $marker = dirname($dbPath).DIRECTORY_SEPARATOR.'.seeded';
-        if (file_exists($marker)) {
-            return;
+
+        if (! file_exists($marker)) {
+            // 1. Seed the database. The seed ships inside the app bundle
+            //    (base_path), not the user's redirected storage_path.
+            $seed = base_path('storage/app/seed/database.sqlite');
+            if (file_exists($seed)) {
+                // Release the SQLite handle so the file can be replaced on Windows.
+                DB::disconnect();
+                @unlink($dbPath.'-wal');
+                @unlink($dbPath.'-shm');
+                @copy($seed, $dbPath);
+            }
+
+            // 2. Seed public media so logos/uploads are present and servable.
+            $this->copyDirectory(base_path('storage/app/public'), storage_path('app/public'));
+
+            @file_put_contents($marker, (string) time());
         }
 
-        // 1. Seed the database. The seed ships inside the app bundle (base_path),
-        //    not the user's redirected storage_path.
-        $seed = base_path('storage/app/seed/database.sqlite');
-        if (file_exists($seed)) {
-            // Release the SQLite handle so the file can be replaced on Windows.
-            DB::disconnect();
-            @unlink($dbPath.'-wal');
-            @unlink($dbPath.'-shm');
-            @copy($seed, $dbPath);
+        // 3. Keep the runtime schema current across app updates. Wrapped so a
+        //    migration hiccup can never block the app from opening.
+        try {
+            Artisan::call('migrate', ['--force' => true]);
+        } catch (\Throwable $e) {
+            report($e);
         }
-
-        // 2. Seed public media so logos/uploads are present and servable.
-        $this->copyDirectory(base_path('storage/app/public'), storage_path('app/public'));
-
-        @file_put_contents($marker, (string) time());
     }
 
     /**

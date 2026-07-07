@@ -72,6 +72,11 @@ const sections = computed(() => {
         { label: t('nav_equipment'), items: [
             { label: t('equipments'), href: '/equipment/catalogs', icon: 'equipment', prefix: '/equipment/catalogs' },
             { label: t('inventory'), href: '/equipment/stocktake', icon: 'clipboard', prefix: '/equipment/stocktake' },
+            // Equipment lookups are admin-gated routes, so only surface them for admins.
+            ...(isAdmin.value ? [
+                { label: t('equipment_categories'), href: '/equipment-categories', icon: 'equipment', prefix: '/equipment-categories' },
+                { label: t('storage_locations'), href: '/storage-locations', icon: 'equipment', prefix: '/storage-locations' },
+            ] : []),
         ] },
     ];
 
@@ -86,8 +91,6 @@ const sections = computed(() => {
             { label: t('administration'), items: [
                 { label: t('members'), href: '/users', icon: 'members', prefix: '/users', badge: pendingApprovals.value },
                 { label: t('categories'), href: '/categories', icon: 'categories', prefix: '/categories' },
-                { label: t('equipment_categories'), href: '/equipment-categories', icon: 'equipment', prefix: '/equipment-categories' },
-                { label: t('storage_locations'), href: '/storage-locations', icon: 'equipment', prefix: '/storage-locations' },
                 { label: t('board_roles'), href: '/board-roles', icon: 'board', prefix: '/board-roles' },
                 { label: t('jobs'), href: '/jobs', icon: 'jobs', prefix: '/jobs' },
                 { label: t('positions'), href: '/positions', icon: 'positions', prefix: '/positions' },

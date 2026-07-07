@@ -107,11 +107,15 @@ class EquipmentItemController extends Controller
 
         $catalogId = $item->catalog_id;
 
-        // Remove the item and its audit/rental rows explicitly (env-independent,
-        // does not rely on DB cascade). The purchase Transaction is left intact.
+        // Explicitly remove all cascade-child rows (rentals, histories, inventory
+        // session lines) so deletion is deterministic regardless of DB FK
+        // enforcement. The purchase Transaction is intentionally kept. Note: a
+        // past inventory session's stored `total_expected` count is not
+        // retroactively decremented.
         DB::transaction(function () use ($item) {
             $item->rentals()->delete();
             $item->histories()->delete();
+            DB::table('inventory_session_items')->where('equipment_item_id', $item->id)->delete();
             $item->delete();
         });
 

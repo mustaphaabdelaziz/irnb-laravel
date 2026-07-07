@@ -9,6 +9,7 @@ use App\Models\EquipmentRental;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -93,6 +94,27 @@ class EquipmentItemManagementTest extends TestCase
     }
 
     #[Test]
+    public function updating_an_item_ignores_injected_immutable_fields(): void
+    {
+        $item = $this->item($this->catalog());
+
+        $this->actingAs($this->user())->put(route('equipment.items.update', $item), [
+            'designation' => 'T-shirt n° 9',
+            'purchase_date' => '2026-06-15',
+            'condition' => 'Good',
+            'location' => 'Locker A',
+            'notes' => 'hem repaired',
+            'unique_identifier' => 'HACKED-999',
+            'status' => 'Retired',
+        ])->assertRedirect();
+
+        $item->refresh();
+        $this->assertSame('IRNB-2026-BALL-00001', $item->unique_identifier);
+        $this->assertSame('Available', $item->status);
+        $this->assertSame('T-shirt n° 9', $item->designation);
+    }
+
+    #[Test]
     public function deleting_an_item_removes_it_and_its_history_but_keeps_the_purchase_transaction(): void
     {
         $catalog = $this->catalog();
@@ -135,5 +157,30 @@ class EquipmentItemManagementTest extends TestCase
         $this->actingAs($this->user())->delete(route('equipment.items.destroy', $item))->assertRedirect();
 
         $this->assertDatabaseHas('equipment_items', ['id' => $item->id]);
+    }
+
+    #[Test]
+    public function deleting_an_item_removes_its_inventory_session_line(): void
+    {
+        $item = $this->item($this->catalog());
+        $sessionId = DB::table('inventory_sessions')->insertGetId([
+            'reference' => 'INV-2026-0001',
+            'session_date' => '2026-05-01',
+            'status' => 'in_progress',
+            'total_expected' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('inventory_session_items')->insert([
+            'inventory_session_id' => $sessionId,
+            'equipment_item_id' => $item->id,
+            'expected_status' => 'Available',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($this->user())->delete(route('equipment.items.destroy', $item))->assertRedirect();
+
+        $this->assertDatabaseMissing('inventory_session_items', ['equipment_item_id' => $item->id]);
     }
 }

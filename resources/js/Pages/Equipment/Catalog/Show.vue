@@ -254,7 +254,7 @@ const statusColor = (s) => {
                                         <button v-if="['Available','Rented'].includes(item.status)" @click="lostItemId = item.id" class="text-sm text-rose-500 hover:text-rose-700">{{ t('lost') }}</button>
                                         <Link :href="route('equipment.items.history', item.id)" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200" :title="t('history')">🕘</Link>
                                         <button @click="openEdit(item)" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200" :title="t('edit')">✏️</button>
-                                        <button @click="deleteItemId = item.id" class="text-sm text-rose-500 hover:text-rose-700" :title="t('delete')">🗑️</button>
+                                        <button v-if="item.status !== 'Rented'" @click="deleteItemId = item.id" class="text-sm text-rose-500 hover:text-rose-700" :title="t('delete')">🗑️</button>
                                     </div>
                                 </td>
                             </tr>

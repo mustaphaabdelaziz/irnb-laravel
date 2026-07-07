@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             PositionSeeder::class,
             MemberJobSeeder::class,
             WebsiteConfigSeeder::class,
+            RoleSeeder::class,
             AdminUserSeeder::class,
         ]);
     }

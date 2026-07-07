@@ -12,6 +12,16 @@ class UpdateUserRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        // The edit form posts overrides as a JSON string (multipart form-data).
+        if (is_string($this->permission_overrides)) {
+            $this->merge([
+                'permission_overrides' => json_decode($this->permission_overrides, true) ?: [],
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         $userId = $this->route('user')?->id;
@@ -26,6 +36,10 @@ class UpdateUserRequest extends FormRequest
             'gender' => ['nullable', 'string', 'in:Male,Female'],
             'privileges' => ['nullable', 'array'],
             'privileges.*' => ['string', 'in:user,admin'],
+            'role_id' => ['nullable', 'integer', 'exists:roles,id'],
+            'permission_overrides' => ['nullable', 'array'],
+            'permission_overrides.grant' => ['nullable', 'array'],
+            'permission_overrides.revoke' => ['nullable', 'array'],
             'approved' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
             'is_user' => ['nullable', 'boolean'],

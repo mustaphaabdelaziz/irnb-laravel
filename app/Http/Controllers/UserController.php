@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\User\UpdateUserRequest;
+use App\Models\Role;
 use App\Models\User;
 use App\Services\Storage\FileStorageService;
 use Illuminate\Http\RedirectResponse;
@@ -64,7 +65,7 @@ class UserController extends Controller
         ]);
     }
 
-    public function edit(User $user): Response
+    public function edit(Request $request, User $user): Response
     {
         return Inertia::render('Users/Edit', [
             'user' => [
@@ -78,12 +79,18 @@ class UserController extends Controller
                 'picture_url' => $user->picture_url,
                 'membership_id' => $user->membership_id,
                 'privileges' => $user->privileges ?? [],
+                'role_id' => $user->role_id,
+                'permission_overrides' => $user->permission_overrides ?? ['grant' => [], 'revoke' => []],
                 'approved' => $user->approved,
                 'is_active' => $user->is_active,
                 'is_user' => $user->is_user,
                 'preferred_lng' => $user->preferred_lng,
                 'is_superadmin' => in_array('superadmin', $user->privileges ?? [], true),
             ],
+            'roles' => Role::orderByDesc('is_system')->orderBy('key')->get(['id', 'key', 'name', 'permissions']),
+            'modules' => Role::MODULES,
+            'actions' => Role::ACTIONS,
+            'canManageAccess' => $request->user()->isSuperadmin(),
         ]);
     }
 
@@ -93,6 +100,11 @@ class UserController extends Controller
 
         $validated = $request->validated();
         unset($validated['picture']);
+
+        // Only a superadmin may (re)assign roles and per-user overrides.
+        if (! $request->user()->isSuperadmin()) {
+            unset($validated['role_id'], $validated['permission_overrides']);
+        }
 
         // Preserve a superadmin's elevated privilege even if the form omits it.
         if (in_array('superadmin', $user->privileges ?? [], true)) {

@@ -7,12 +7,20 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { Head, useForm, Link } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
+import { ref } from 'vue';
 
 const { t } = useI18n();
 
 const props = defineProps({
     user: Object,
+    roles: { type: Array, default: () => [] },
+    modules: { type: Array, default: () => [] },
+    actions: { type: Array, default: () => [] },
+    canManageAccess: { type: Boolean, default: false },
 });
+
+const preferredLng = props.user.preferred_lng || 'ar';
+const showAdvanced = ref(false);
 
 const form = useForm({
     name: props.user.name || '',
@@ -21,23 +29,38 @@ const form = useForm({
     email: props.user.email || '',
     phone: props.user.phones?.[0] || '',
     gender: props.user.gender || 'Male',
-    privileges: [...(props.user.privileges || []).filter((p) => p !== 'superadmin')],
+    role_id: props.user.role_id ?? null,
+    permission_overrides: {
+        grant: props.user.permission_overrides?.grant ?? {},
+        revoke: props.user.permission_overrides?.revoke ?? {},
+    },
     approved: props.user.approved ?? false,
     is_active: props.user.is_active ?? true,
-    preferred_lng: props.user.preferred_lng || 'ar',
+    preferred_lng: preferredLng,
     picture: null,
 });
 
-function toggleRole(role) {
-    const i = form.privileges.indexOf(role);
-    if (i === -1) form.privileges.push(role);
-    else form.privileges.splice(i, 1);
+function roleLabel(role) {
+    return role.name?.[preferredLng] || role.name?.en || role.key;
+}
+
+function toggleOverride(bucket, module, action) {
+    const set = form.permission_overrides[bucket];
+    const list = new Set(set[module] ?? []);
+    list.has(action) ? list.delete(action) : list.add(action);
+    if (list.size) set[module] = [...list];
+    else delete set[module];
+}
+
+function hasOverride(bucket, module, action) {
+    return (form.permission_overrides[bucket][module] ?? []).includes(action);
 }
 
 function submit() {
     form.transform((data) => ({
         ...data,
         phones: data.phone ? [data.phone] : [],
+        permission_overrides: JSON.stringify(data.permission_overrides),
         _method: 'put',
     })).post(route('users.update', props.user.id), { forceFormData: true });
 }
@@ -102,19 +125,36 @@ function submit() {
                 </div>
 
                 <div class="grid gap-4 sm:grid-cols-2">
-                    <div>
+                    <div v-if="canManageAccess">
                         <InputLabel :value="t('role')" />
-                        <div class="mt-2 space-y-2">
-                            <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
-                                <input type="checkbox" :checked="form.privileges.includes('user')" @change="toggleRole('user')" class="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
-                                {{ t('user') }}
-                            </label>
-                            <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
-                                <input type="checkbox" :checked="form.privileges.includes('admin')" @change="toggleRole('admin')" class="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
-                                {{ t('administrator') }}
-                            </label>
+                        <select v-model="form.role_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                            <option :value="null">{{ t('no_role') }}</option>
+                            <option v-for="r in roles" :key="r.id" :value="r.id">{{ roleLabel(r) }}</option>
+                        </select>
+                        <InputError :message="form.errors.role_id" class="mt-1" />
+                        <button type="button" class="mt-2 text-sm font-medium text-primary-600 hover:text-primary-700" @click="showAdvanced = !showAdvanced">
+                            {{ showAdvanced ? t('hide_advanced') : t('advanced_overrides') }}
+                        </button>
+
+                        <div v-if="showAdvanced" class="mt-3 overflow-x-auto rounded-lg ring-1 ring-slate-200 dark:ring-slate-800">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="text-left text-slate-500">
+                                        <th class="p-2">{{ t('module') }}</th>
+                                        <th v-for="a in actions" :key="a" class="p-2 text-center">{{ t(a) }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="m in modules" :key="m" class="border-t border-slate-100 dark:border-slate-800">
+                                        <td class="p-2 font-medium">{{ t(m) }}</td>
+                                        <td v-for="a in actions" :key="a" class="p-2 text-center">
+                                            <input type="checkbox" :checked="hasOverride('grant', m, a)" @change="toggleOverride('grant', m, a)" class="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <p class="p-2 text-xs text-slate-400">{{ t('overrides_hint') }}</p>
                         </div>
-                        <InputError :message="form.errors.privileges" class="mt-1" />
                     </div>
 
                     <div class="space-y-3">

@@ -6,6 +6,7 @@ use App\Models\InventorySession;
 use App\Models\Player;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -72,6 +73,39 @@ class InventoryParticipantsTest extends TestCase
             'participants' => [['type' => 'User', 'id' => $a->id]],
         ]);
         $this->assertSame(1, $session->fresh()->participants()->count());
+        $this->assertDatabaseHas('inventory_session_participants', [
+            'inventory_session_id' => $session->id,
+            'participant_type' => User::class,
+            'participant_id' => $a->id,
+        ]);
+        $this->assertDatabaseMissing('inventory_session_participants', [
+            'inventory_session_id' => $session->id,
+            'participant_type' => User::class,
+            'participant_id' => $b->id,
+        ]);
+    }
+
+    #[Test]
+    public function nonexistent_and_duplicate_participants_are_skipped_and_deduped(): void
+    {
+        $session = $this->makeSession();
+        $valid = User::factory()->create();
+
+        $this->actingAs($this->user())
+            ->post(route('inventory.participants', $session), [
+                'participants' => [
+                    ['type' => 'User', 'id' => $valid->id],
+                    ['type' => 'User', 'id' => $valid->id],
+                    ['type' => 'User', 'id' => 999999],
+                ],
+            ])->assertRedirect();
+
+        $this->assertSame(1, $session->fresh()->participants()->count());
+        $this->assertDatabaseHas('inventory_session_participants', [
+            'inventory_session_id' => $session->id,
+            'participant_type' => User::class,
+            'participant_id' => $valid->id,
+        ]);
     }
 
     #[Test]
@@ -86,5 +120,20 @@ class InventoryParticipantsTest extends TestCase
             ])->assertForbidden();
 
         $this->assertSame(0, $session->participants()->count());
+    }
+
+    #[Test]
+    public function show_page_exposes_users_players_and_storage_locations(): void
+    {
+        $session = $this->makeSession();
+
+        $this->actingAs($this->user())
+            ->get(route('inventory.show', $session))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Inventory/Session')
+                ->has('users')
+                ->has('players')
+                ->has('storageLocations')
+            );
     }
 }

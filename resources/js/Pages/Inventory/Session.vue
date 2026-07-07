@@ -73,13 +73,13 @@ const groups = computed(() => {
         (map[key] ||= []).push(line);
     }
     // Sort location keys alphabetically, keeping "Unassigned" last.
-    return Object.fromEntries(
-        Object.entries(map).sort(([a], [b]) => {
-            if (a === t('unassigned')) return 1;
-            if (b === t('unassigned')) return -1;
-            return a.localeCompare(b);
-        })
-    );
+    return Object.entries(map)
+        .map(([location, lines]) => ({ location, lines }))
+        .sort((a, b) => {
+            if (a.location === t('unassigned')) return 1;
+            if (b.location === t('unassigned')) return -1;
+            return a.location.localeCompare(b.location);
+        });
 });
 
 const countedCount = computed(() => props.session.items.length);
@@ -180,10 +180,10 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
 
                 <div v-if="!session.items.length" class="card py-10 text-center text-sm text-slate-400">{{ t('no_data') }}</div>
 
-                <section v-for="(lines, location) in groups" :key="location" class="card overflow-hidden">
-                    <p class="border-b border-slate-100 px-5 py-2.5 text-sm font-bold text-slate-700 dark:border-slate-800 dark:text-slate-200">{{ location }} <span class="font-normal text-slate-400">({{ lines.length }})</span></p>
+                <section v-for="grp in groups" :key="grp.location" class="card overflow-hidden">
+                    <p class="border-b border-slate-100 px-5 py-2.5 text-sm font-bold text-slate-700 dark:border-slate-800 dark:text-slate-200">{{ grp.location }} <span class="font-normal text-slate-400">({{ grp.lines.length }})</span></p>
                     <div class="divide-y divide-slate-50 dark:divide-slate-800/50">
-                        <div v-for="line in lines" :key="line.id" class="flex flex-wrap items-center gap-3 px-5 py-3">
+                        <div v-for="line in grp.lines" :key="line.id" class="flex flex-wrap items-center gap-3 px-5 py-3">
                             <div class="min-w-0 flex-1">
                                 <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ line.item?.unique_identifier }}</p>
                                 <p class="text-xs text-slate-400">{{ line.item?.catalog?.name }} · {{ t('expected') }}: {{ line.expected_condition }}<span v-if="line.expected_location"> · {{ line.expected_location }}</span></p>

@@ -85,13 +85,15 @@ const sections = computed(() => {
             { label: t('meetings'), href: '/board/meetings', icon: 'clipboard', prefix: '/board/meetings', module: 'board' },
             { label: t('tasks'), href: '/board/tasks', icon: 'task', prefix: '/board/tasks', module: 'board' },
         ] },
-        { label: t('administration'), items: [
+        { label: t('nav_access'), items: [
             { label: t('members'), href: '/users', icon: 'members', prefix: '/users', badge: pendingApprovals.value, module: 'users' },
+            { label: t('roles'), href: '/roles', icon: 'flag', prefix: '/roles', superadminOnly: true },
+        ] },
+        { label: t('administration'), items: [
             { label: t('categories'), href: '/categories', icon: 'categories', prefix: '/categories', module: 'categories' },
             { label: t('board_roles'), href: '/board-roles', icon: 'board', prefix: '/board-roles', module: 'board' },
             { label: t('jobs'), href: '/jobs', icon: 'jobs', prefix: '/jobs', module: 'categories' },
             { label: t('positions'), href: '/positions', icon: 'positions', prefix: '/positions', module: 'categories' },
-            { label: t('roles'), href: '/roles', icon: 'members', prefix: '/roles', superadminOnly: true },
             { label: t('settings'), href: '/settings', icon: 'settings', prefix: '/settings', module: 'settings' },
         ] },
     ];

@@ -8,6 +8,7 @@ import { ref, computed, onMounted } from 'vue';
 import { Link, usePage, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import SidebarLink from '@/Components/SidebarLink.vue';
+import { useCan } from '@/Composables/useCan.js';
 import FlashMessages from '@/Components/FlashMessages.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
@@ -16,6 +17,7 @@ import ThemeToggle from '@/Components/ThemeToggle.vue';
 
 const { t, locale: i18nLocale } = useI18n();
 const page = usePage();
+const { can, isSuperadmin } = useCan();
 
 const mobileMenuOpen = ref(false);
 
@@ -54,52 +56,53 @@ function isActive(item) {
     return item.exact ? url === item.prefix || url.startsWith(item.prefix + '?') : url.startsWith(item.prefix);
 }
 
-// Menu grouped by functionality. Each section is either public (all approved
-// members) or admin-only; admin sections are appended when isAdmin.
+// Menu grouped by functionality. Every item declares the `module` it belongs to;
+// items are shown only when the user can view that module (superadmin sees all).
+// `always` items (dashboard) are ungated; `superadminOnly` items (roles) need the
+// god flag. Empty sections are dropped.
 const sections = computed(() => {
-    const list = [
+    const raw = [
         { label: t('nav_overview'), items: [
-            { label: t('dashboard'), href: '/dashboard', icon: 'dashboard', prefix: '/dashboard' },
+            { label: t('dashboard'), href: '/dashboard', icon: 'dashboard', prefix: '/dashboard', always: true },
         ] },
         { label: t('nav_members'), items: [
-            { label: t('players'), href: '/players', icon: 'players', prefix: '/players' },
-            { label: t('subscriptions'), href: '/subscriptions', icon: 'subscriptions', prefix: '/subscriptions' },
+            { label: t('players'), href: '/players', icon: 'players', prefix: '/players', module: 'players' },
+            { label: t('subscriptions'), href: '/subscriptions', icon: 'subscriptions', prefix: '/subscriptions', module: 'subscriptions' },
         ] },
         { label: t('nav_finance'), items: [
-            { label: t('transactions'), href: '/transactions', icon: 'transactions', prefix: '/transactions' },
-            { label: t('finance'), href: '/finance', icon: 'money', prefix: '/finance' },
+            { label: t('transactions'), href: '/transactions', icon: 'transactions', prefix: '/transactions', module: 'transactions' },
+            { label: t('finance'), href: '/finance', icon: 'money', prefix: '/finance', module: 'finance' },
         ] },
         { label: t('nav_equipment'), items: [
-            { label: t('equipments'), href: '/equipment/catalogs', icon: 'equipment', prefix: '/equipment/catalogs' },
-            { label: t('inventory'), href: '/equipment/stocktake', icon: 'clipboard', prefix: '/equipment/stocktake' },
-            // Equipment lookups are admin-gated routes, so only surface them for admins.
-            ...(isAdmin.value ? [
-                { label: t('equipment_categories'), href: '/equipment-categories', icon: 'equipment', prefix: '/equipment-categories' },
-                { label: t('storage_locations'), href: '/storage-locations', icon: 'equipment', prefix: '/storage-locations' },
-            ] : []),
+            { label: t('equipments'), href: '/equipment/catalogs', icon: 'equipment', prefix: '/equipment/catalogs', module: 'equipment' },
+            { label: t('inventory'), href: '/equipment/stocktake', icon: 'clipboard', prefix: '/equipment/stocktake', module: 'inventory' },
+            { label: t('equipment_categories'), href: '/equipment-categories', icon: 'equipment', prefix: '/equipment-categories', module: 'categories' },
+            { label: t('storage_locations'), href: '/storage-locations', icon: 'equipment', prefix: '/storage-locations', module: 'categories' },
+        ] },
+        { label: t('nav_governance'), items: [
+            { label: t('board'), href: '/board', icon: 'board', prefix: '/board', exact: true, module: 'board' },
+            { label: t('calendar'), href: '/board/calendar', icon: 'calendar', prefix: '/board/calendar', module: 'board' },
+            { label: t('meetings'), href: '/board/meetings', icon: 'clipboard', prefix: '/board/meetings', module: 'board' },
+            { label: t('tasks'), href: '/board/tasks', icon: 'task', prefix: '/board/tasks', module: 'board' },
+        ] },
+        { label: t('administration'), items: [
+            { label: t('members'), href: '/users', icon: 'members', prefix: '/users', badge: pendingApprovals.value, module: 'users' },
+            { label: t('categories'), href: '/categories', icon: 'categories', prefix: '/categories', module: 'categories' },
+            { label: t('board_roles'), href: '/board-roles', icon: 'board', prefix: '/board-roles', module: 'board' },
+            { label: t('jobs'), href: '/jobs', icon: 'jobs', prefix: '/jobs', module: 'categories' },
+            { label: t('positions'), href: '/positions', icon: 'positions', prefix: '/positions', module: 'categories' },
+            { label: t('roles'), href: '/roles', icon: 'members', prefix: '/roles', superadminOnly: true },
+            { label: t('settings'), href: '/settings', icon: 'settings', prefix: '/settings', module: 'settings' },
         ] },
     ];
 
-    if (isAdmin.value) {
-        list.push(
-            { label: t('nav_governance'), items: [
-                { label: t('board'), href: '/board', icon: 'board', prefix: '/board', exact: true },
-                { label: t('calendar'), href: '/board/calendar', icon: 'calendar', prefix: '/board/calendar' },
-                { label: t('meetings'), href: '/board/meetings', icon: 'clipboard', prefix: '/board/meetings' },
-                { label: t('tasks'), href: '/board/tasks', icon: 'task', prefix: '/board/tasks' },
-            ] },
-            { label: t('administration'), items: [
-                { label: t('members'), href: '/users', icon: 'members', prefix: '/users', badge: pendingApprovals.value },
-                { label: t('categories'), href: '/categories', icon: 'categories', prefix: '/categories' },
-                { label: t('board_roles'), href: '/board-roles', icon: 'board', prefix: '/board-roles' },
-                { label: t('jobs'), href: '/jobs', icon: 'jobs', prefix: '/jobs' },
-                { label: t('positions'), href: '/positions', icon: 'positions', prefix: '/positions' },
-                { label: t('settings'), href: '/settings', icon: 'settings', prefix: '/settings' },
-            ] },
-        );
-    }
-
-    return list;
+    return raw
+        .map((section) => ({
+            ...section,
+            items: section.items.filter((i) =>
+                i.always || (i.superadminOnly ? isSuperadmin.value : can(i.module, 'view'))),
+        }))
+        .filter((section) => section.items.length > 0);
 });
 
 const locales = [

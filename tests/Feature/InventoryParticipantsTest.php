@@ -123,7 +123,7 @@ class InventoryParticipantsTest extends TestCase
     }
 
     #[Test]
-    public function show_page_exposes_users_players_and_storage_locations(): void
+    public function show_page_exposes_players_and_storage_locations(): void
     {
         $session = $this->makeSession();
 
@@ -131,7 +131,7 @@ class InventoryParticipantsTest extends TestCase
             ->get(route('inventory.show', $session))
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('Inventory/Session')
-                ->has('users')
+                ->missing('users')
                 ->has('players')
                 ->has('storageLocations')
             );

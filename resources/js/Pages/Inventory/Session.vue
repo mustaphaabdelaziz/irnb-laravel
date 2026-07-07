@@ -11,7 +11,6 @@ const props = defineProps({
     session: { type: Object, required: true },
     conditions: { type: Array, default: () => [] },
     storageLocations: { type: Array, default: () => [] },
-    users: { type: Array, default: () => [] },
     players: { type: Array, default: () => [] },
 });
 const { t, locale } = useI18n();
@@ -29,31 +28,27 @@ props.session.items.forEach((line) => {
     };
 });
 
-const participantType = ref('User');
 const participantPick = ref('');
 const participants = ref(
     (props.session.participants || []).map((p) => ({
-        type: p.participant_type?.includes('Player') ? 'Player' : 'User',
+        type: 'Player',
         id: p.participant_id,
-        label: p.participant_type?.includes('Player')
-            ? `${p.participant?.firstname ?? ''} ${p.participant?.lastname ?? ''}`.trim()
-            : (p.participant?.name ?? `#${p.participant_id}`),
+        label: `${p.participant?.firstname ?? ''} ${p.participant?.lastname ?? ''}`.trim() || `#${p.participant_id}`,
     }))
 );
 
 const participantOptions = computed(() => {
-    const list = participantType.value === 'User'
-        ? props.users.map((u) => ({ value: u.id, label: u.name }))
-        : props.players.map((pl) => ({ value: pl.id, label: `${pl.firstname} ${pl.lastname ?? ''}`.trim() }));
-    const taken = new Set(participants.value.filter((p) => p.type === participantType.value).map((p) => p.id));
-    return list.filter((o) => !taken.has(o.value));
+    const taken = new Set(participants.value.map((p) => p.id));
+    return props.players
+        .map((pl) => ({ value: pl.id, label: `${pl.firstname} ${pl.lastname ?? ''}`.trim() }))
+        .filter((o) => !taken.has(o.value));
 });
 
 function addParticipant() {
     if (!participantPick.value) return;
     const opt = participantOptions.value.find((o) => String(o.value) === String(participantPick.value));
     if (!opt) return;
-    participants.value.push({ type: participantType.value, id: opt.value, label: opt.label });
+    participants.value.push({ type: 'Player', id: opt.value, label: opt.label });
     participantPick.value = '';
 }
 function removeParticipant(idx) {
@@ -148,10 +143,6 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
                     <span v-if="!participants.length" class="text-sm text-slate-400">{{ t('no_results') }}</span>
                 </div>
                 <div v-if="isOpen" class="mt-4 flex flex-wrap items-end gap-2">
-                    <select v-model="participantType" class="rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800">
-                        <option value="User">{{ t('staff') }}</option>
-                        <option value="Player">{{ t('member') }}</option>
-                    </select>
                     <div class="min-w-[12rem] flex-1">
                         <SearchableSelect v-model="participantPick" :options="participantOptions" :placeholder="t('add_participant')" />
                     </div>

@@ -77,7 +77,6 @@ class InventoryController extends Controller
             'session' => $session,
             'conditions' => self::CONDITIONS,
             'storageLocations' => StorageLocation::orderBy('name')->pluck('name'),
-            'users' => User::where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'players' => Player::orderBy('lastname')->orderBy('firstname')->get(['id', 'firstname', 'lastname']),
         ]);
     }

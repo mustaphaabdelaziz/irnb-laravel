@@ -20,13 +20,19 @@ class HandleInertiaRequests extends Middleware
     {
         $config = WebsiteConfig::singleton();
         $user = $request->user();
-        $isAdmin = $user && array_intersect(['admin', 'superadmin'], $user->privileges ?? []) !== [];
+        $permissions = $user ? $user->effectivePermissions() : [];
+        $isSuperadmin = $user?->isSuperadmin() ?? false;
+        // Anyone who can view the members module counts as an "admin" for legacy
+        // UI checks (pending-approval badge, header role label, etc.).
+        $isAdmin = $isSuperadmin || ($user && $user->hasPermission('users', 'view'));
 
         return [
             ...parent::share($request),
             'auth' => [
                 'user' => $user,
                 'isAdmin' => $isAdmin,
+                'isSuperadmin' => $isSuperadmin,
+                'permissions' => $permissions,
             ],
             'locale' => app()->getLocale(),
             'appName' => $config->club_name ?? ['ar' => 'Sports Club', 'fr' => 'Club Sportif', 'en' => 'Sports Club'],

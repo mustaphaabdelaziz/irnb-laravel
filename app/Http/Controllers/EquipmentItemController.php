@@ -29,6 +29,7 @@ class EquipmentItemController extends Controller
     {
         $validated = $request->validate([
             'catalog_id' => ['required', 'integer', 'exists:equipment_catalogs,id'],
+            'designation' => ['nullable', 'string', 'max:255'],
             'purchase_date' => ['required', 'date'],
             'condition' => ['nullable', 'string', 'in:New,Good,Fair,Poor,Damaged'],
             'location' => ['nullable', 'string', 'max:255'],
@@ -39,6 +40,7 @@ class EquipmentItemController extends Controller
         DB::transaction(function () use ($validated, $request) {
             $item = new EquipmentItem([
                 'catalog_id' => $validated['catalog_id'],
+                'designation' => $validated['designation'] ?? null,
                 'purchase_date' => $validated['purchase_date'],
                 'condition' => $validated['condition'] ?? 'New',
                 'location' => $validated['location'] ?? null,

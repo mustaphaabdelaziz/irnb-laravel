@@ -15,6 +15,7 @@ class EquipmentItem extends Model
     protected $fillable = [
         'catalog_id',
         'unique_identifier',
+        'designation',
         'purchase_date',
         'status',
         'condition',

@@ -84,6 +84,7 @@ class PlayerImportTest extends TestCase
         $this->assertSame($category->id, $player->category_id);
         $this->assertSame(6, $player->skill_level);
         $this->assertTrue($player->is_student);
+        $this->assertSame('منخرط', $player->status_value);
         $this->assertDatabaseCount('player_subscriptions', 1);
     }
 

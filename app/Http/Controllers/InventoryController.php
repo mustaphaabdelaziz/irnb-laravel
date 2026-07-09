@@ -77,7 +77,12 @@ class InventoryController extends Controller
             'session' => $session,
             'conditions' => self::CONDITIONS,
             'storageLocations' => StorageLocation::orderBy('name')->pluck('name'),
-            'players' => Player::orderBy('lastname')->orderBy('firstname')->get(['id', 'firstname', 'lastname']),
+            'players' => Player::orderBy('lastname')->orderBy('firstname')->get()
+                ->map(fn (Player $p) => [
+                    'id' => $p->id,
+                    'fullname' => $p->fullname,
+                    'membership_id' => $p->membership_id,
+                ]),
         ]);
     }
 
@@ -201,7 +206,7 @@ class InventoryController extends Controller
 
         $headers = ['Item', 'Catalog', 'Expected Status', 'Expected Condition', 'Expected Location', 'Result', 'Actual Condition', 'Actual Location', 'Note'];
 
-        return $exporter->download('Inventory '.$session->reference, $headers, $rows, 'inventory-'.$session->reference.'.xlsx');
+        return $exporter->download('Inventory '.$session->reference, $headers, $rows, 'inventory-'.$session->reference.'.csv');
     }
 
     public function destroy(InventorySession $session): RedirectResponse

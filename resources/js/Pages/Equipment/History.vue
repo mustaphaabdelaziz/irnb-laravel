@@ -27,13 +27,31 @@ const eventColor = (type) => {
 const eventIcon = (type) => {
     const map = {
         purchase: 'money',
+        checkout: 'upload',
         rental: 'upload',
         return: 'download',
         repair: 'wrench',
+        repair_complete: 'wrench',
         lost: 'xcircle',
+        found: 'download',
+        retired: 'xcircle',
         condition_update: 'document',
     };
     return map[type] || 'document';
+};
+
+// Translate an enum value (status/condition) via its lowercased, underscored key.
+const stateLabel = (v) => {
+    if (!v) return '—';
+    const key = String(v).toLowerCase().replaceAll(' ', '_');
+    const translated = t(key);
+    return translated === key ? v : translated;
+};
+
+// Translate a normalized event type (checkout/return/repair/…); fall back to readable text.
+const eventLabel = (type) => {
+    const translated = t('event_' + type);
+    return translated === 'event_' + type ? type.replaceAll('_', ' ') : translated;
 };
 </script>
 
@@ -64,11 +82,11 @@ const eventIcon = (type) => {
                     </div>
                     <div>
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('status') }}</p>
-                        <div class="mt-1"><Badge :label="item.status" :color="item.status === 'Available' ? 'emerald' : item.status === 'Rented' ? 'amber' : 'rose'" /></div>
+                        <div class="mt-1"><Badge :label="stateLabel(item.status)" :color="item.status === 'Available' ? 'emerald' : item.status === 'Rented' ? 'amber' : 'rose'" /></div>
                     </div>
                     <div>
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('condition') }}</p>
-                        <p class="mt-1 text-sm text-slate-900 dark:text-slate-100">{{ item.condition }}</p>
+                        <p class="mt-1 text-sm text-slate-900 dark:text-slate-100">{{ stateLabel(item.condition) }}</p>
                     </div>
                     <div>
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('location') }}</p>
@@ -102,14 +120,14 @@ const eventIcon = (type) => {
                         </div>
                         <div class="min-w-0 flex-1">
                             <div class="flex items-center gap-2">
-                                <Badge :label="event.event_type" :color="eventColor(event.event_type)" />
+                                <Badge :label="eventLabel(event.event_type)" :color="eventColor(event.event_type)" />
                                 <span class="text-xs text-slate-500 dark:text-slate-400">{{ event.created_at }}</span>
                             </div>
                             <div v-if="event.details" class="mt-1 text-sm text-slate-600 dark:text-slate-300">
                                 <p v-if="event.details.vendor">Vendor: {{ event.details.vendor }}</p>
                                 <p v-if="event.details.price">{{ t('price') }}: {{ event.details.price }}</p>
                                 <p v-if="event.details.player">{{ t('player') }}: {{ event.details.player }}</p>
-                                <p v-if="event.details.condition">{{ t('condition') }}: {{ event.details.condition }}</p>
+                                <p v-if="event.details.condition">{{ t('condition') }}: {{ stateLabel(event.details.condition) }}</p>
                                 <p v-if="event.details.notes">{{ event.details.notes }}</p>
                             </div>
                         </div>

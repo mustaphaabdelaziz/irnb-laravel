@@ -6,6 +6,7 @@ import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
+import SearchableSelect from '@/Components/SearchableSelect.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
@@ -18,7 +19,14 @@ const props = defineProps({
     catalog: Object,
     availableCount: Number,
     storageLocations: { type: Array, default: () => [] },
+    players: { type: Array, default: () => [] },
 });
+
+// Rent dropdown: show full name + membership id (and birthdate) instead of a raw id.
+const playerOptions = computed(() => props.players.map((p) => ({
+    value: p.id,
+    label: `${p.fullname || ''} — ${p.membership_id || ''}${p.birthdate ? ' (' + p.birthdate + ')' : ''}`.trim(),
+})));
 
 const showAddItemModal = ref(false);
 const showRentModal = ref(false);
@@ -27,6 +35,7 @@ const selectedItem = ref(null);
 const lostItemId = ref(null);
 const foundItemId = ref(null);
 const repairItemId = ref(null);
+const fixedItemId = ref(null);
 
 const serialPreview = ref('');
 
@@ -161,6 +170,13 @@ function sendToRepair(itemId) {
     });
 }
 
+function completeRepair(itemId) {
+    fixedItemId.value = null;
+    router.post(route('equipment.items.complete-repair', itemId), {}, {
+        preserveState: false,
+    });
+}
+
 function markAsLost(itemId) {
     lostItemId.value = null;
     router.post(route('equipment.items.mark-lost', itemId), {}, {
@@ -275,7 +291,8 @@ const stateLabel = (v) => {
                                     <div class="flex items-center justify-end gap-2">
                                         <button v-if="item.status === 'Available'" @click="openRent(item)" class="text-sm text-amber-600 hover:text-amber-800">{{ t('rent') }}</button>
                                         <button v-if="item.status === 'Rented'" @click="openReturn(item)" class="text-sm text-emerald-600 hover:text-emerald-800">{{ t('return') }}</button>
-                                        <button v-if="item.status === 'Available'" @click="repairItemId = item.id" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">🔧</button>
+                                        <button v-if="item.status === 'Available'" @click="repairItemId = item.id" :title="t('send_to_repair')" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">🔧</button>
+                                        <button v-if="item.status === 'Under Repair'" @click="fixedItemId = item.id" class="text-sm text-emerald-600 hover:text-emerald-800">{{ t('mark_fixed') }}</button>
                                         <button v-if="['Available','Rented'].includes(item.status)" @click="lostItemId = item.id" class="text-sm text-rose-500 hover:text-rose-700">{{ t('lost') }}</button>
                                         <button v-if="item.status === 'Lost'" @click="foundItemId = item.id" class="text-sm text-emerald-600 hover:text-emerald-800">{{ t('restore') }}</button>
                                         <Link :href="route('equipment.items.history', item.id)" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200" :title="t('history')">🕘</Link>
@@ -391,8 +408,8 @@ const stateLabel = (v) => {
                     <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('rent') }} — {{ selectedItem?.unique_identifier }}</h3>
                     <form @submit.prevent="doRent" class="mt-4 space-y-3">
                         <div>
-                            <InputLabel :value="t('player') + ' ID'" />
-                            <TextInput v-model="rentForm.rentable_id" type="number" class="mt-1 w-full" required placeholder="Player ID" />
+                            <InputLabel :value="t('player')" />
+                            <SearchableSelect v-model="rentForm.rentable_id" :options="playerOptions" :placeholder="t('select_player')" />
                             <InputError :message="rentForm.errors.rentable_id" class="mt-1" />
                         </div>
                         <div>
@@ -439,6 +456,7 @@ const stateLabel = (v) => {
         </Teleport>
 
         <ConfirmModal :show="!!repairItemId" :message="t('send_to_repair') + '?'" @confirm="sendToRepair(repairItemId)" @cancel="repairItemId = null" />
+        <ConfirmModal :show="!!fixedItemId" :message="t('mark_fixed_confirm')" @confirm="completeRepair(fixedItemId)" @cancel="fixedItemId = null" />
         <ConfirmModal :show="!!lostItemId" :message="t('mark_as_lost') + '?'" @confirm="markAsLost(lostItemId)" @cancel="lostItemId = null" />
         <ConfirmModal :show="!!foundItemId" :message="t('restore_item') + '?'" @confirm="markAsFound(foundItemId)" @cancel="foundItemId = null" />
         <ConfirmModal :show="!!deleteItemId" :message="t('are_you_sure')" @confirm="deleteItem" @cancel="deleteItemId = null" />

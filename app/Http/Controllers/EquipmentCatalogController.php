@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Equipment\StoreEquipmentCatalogRequest;
 use App\Models\EquipmentCatalog;
 use App\Models\EquipmentCategory;
+use App\Models\Player;
 use App\Models\StorageLocation;
 use App\Services\Storage\FileStorageService;
 use Illuminate\Http\RedirectResponse;
@@ -53,6 +54,14 @@ class EquipmentCatalogController extends Controller
             // Count from the already-loaded collection (avoids an extra COUNT query).
             'availableCount' => $catalog->items->where('status', 'Available')->count(),
             'storageLocations' => StorageLocation::orderBy('name')->pluck('name'),
+            // For the rent dropdown: identify players by name + membership id, not a raw id.
+            'players' => Player::where('archived', false)->orderBy('lastname')->orderBy('firstname')->get()
+                ->map(fn (Player $p) => [
+                    'id' => $p->id,
+                    'fullname' => $p->fullname,
+                    'membership_id' => $p->membership_id,
+                    'birthdate' => $p->birthdate?->toDateString(),
+                ]),
         ]);
     }
 

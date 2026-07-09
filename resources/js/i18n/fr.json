@@ -225,6 +225,8 @@
     "import": "Importer",
     "import_players": "Importer des joueurs",
     "import_players_hint": "Téléversez un fichier Excel ou CSV au format du modèle.",
+    "converting_excel": "Conversion du fichier Excel…",
+    "excel_parse_failed": "Impossible de lire ce fichier Excel. Utilisez le format du modèle ou un CSV.",
     "in_progress": "En cours",
     "inactive": "Inactif",
     "income": "Revenus",

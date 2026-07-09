@@ -80,6 +80,34 @@ watch(view, (v) => localStorage.setItem('players.view', v));
 
 const showImport = ref(false);
 const importForm = useForm({ file: null });
+const importConverting = ref(false);
+
+// CSV uploads pass straight through. Excel (.xlsx/.xls) can't be parsed by the
+// desktop build's PHP (no xmlreader), so convert it to CSV in the browser and
+// feed the existing CSV import pipeline — works identically on web and desktop.
+async function onImportFile(e) {
+    const file = e.target.files?.[0];
+    importForm.clearErrors();
+    if (!file) { importForm.file = null; return; }
+    if (!/\.(xlsx|xls)$/i.test(file.name)) {
+        importForm.file = file;
+        return;
+    }
+    importConverting.value = true;
+    try {
+        const XLSX = await import('xlsx');
+        const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const csv = XLSX.utils.sheet_to_csv(sheet);
+        const name = file.name.replace(/\.(xlsx|xls)$/i, '.csv');
+        importForm.file = new File([csv], name, { type: 'text/csv' });
+    } catch (err) {
+        importForm.file = null;
+        importForm.setError('file', t('excel_parse_failed'));
+    } finally {
+        importConverting.value = false;
+    }
+}
 
 function submitImport() {
     importForm.post(route('players.import.store'), {
@@ -310,17 +338,18 @@ function runBulk() {
                     <form @submit.prevent="submitImport" class="mt-4 space-y-4">
                         <input
                             type="file"
-                            accept=".csv,text/csv"
-                            @change="importForm.file = $event.target.files[0]"
+                            accept=".csv,.xlsx,.xls,text/csv"
+                            @change="onImportFile"
                             required
                             class="w-full text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 hover:file:bg-primary-100"
                         />
+                        <p v-if="importConverting" class="text-sm text-slate-500 dark:text-slate-400">{{ t('converting_excel') }}</p>
                         <p v-if="importForm.errors.file" class="text-sm text-rose-600">{{ importForm.errors.file }}</p>
                         <div class="flex items-center justify-between gap-3 pt-2">
                             <a :href="route('players.import.template')" class="text-sm font-medium text-primary-600 hover:underline">{{ t('download_template') }}</a>
                             <div class="flex gap-2">
                                 <button type="button" @click="showImport = false" class="rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">{{ t('cancel') }}</button>
-                                <button type="submit" :disabled="importForm.processing || !importForm.file" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">{{ t('import') }}</button>
+                                <button type="submit" :disabled="importForm.processing || importConverting || !importForm.file" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">{{ t('import') }}</button>
                             </div>
                         </div>
                     </form>

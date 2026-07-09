@@ -225,6 +225,8 @@
     "import": "استيراد",
     "import_players": "استيراد اللاعبين",
     "import_players_hint": "قم برفع ملف Excel أو CSV وفق صيغة النموذج.",
+    "converting_excel": "جارٍ تحويل ملف Excel…",
+    "excel_parse_failed": "تعذّرت قراءة ملف Excel. استخدم صيغة النموذج أو ارفع ملف CSV.",
     "in_progress": "قيد التنفيذ",
     "inactive": "غير نشط",
     "income": "مداخيل",

@@ -38,7 +38,8 @@ const form = useForm({
     email: p.email || '',
     state: p.state || '',
     city: p.city || '',
-    is_student: p.is_student ?? true,
+    // New players default to "worker"; edits keep the stored value.
+    is_student: isEdit ? (p.is_student ?? true) : false,
     // New players default to "enrolled" (منخرط); edits keep the stored value.
     status_value: isEdit ? (p.status_value || '') : 'منخرط',
     category_id: p.category_id || '',

@@ -21,7 +21,7 @@ class RegisterPlayerService
             $categoryId = $attributes['category_id'] ?? null;
 
             if (empty($attributes['membership_id'])) {
-                $attributes['membership_id'] = $this->generateMembershipId($joinYear);
+                $attributes['membership_id'] = MembershipNumber::generateUnique($joinYear);
             }
 
             /** @var Player $player */
@@ -61,14 +61,5 @@ class RegisterPlayerService
 
             return $player->load(['playerSubscriptions.subscription', 'playerSubscriptions.transaction']);
         });
-    }
-
-    private function generateMembershipId(int $joinYear): string
-    {
-        do {
-            $candidate = MembershipNumber::format($joinYear, MembershipNumber::nextSequence($joinYear));
-        } while (Player::query()->where('membership_id', $candidate)->exists());
-
-        return $candidate;
     }
 }

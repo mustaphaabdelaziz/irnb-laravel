@@ -187,6 +187,33 @@ class EquipmentItemManagementTest extends TestCase
     }
 
     #[Test]
+    public function a_lost_item_can_be_restored_to_available(): void
+    {
+        $item = $this->item($this->catalog(), ['status' => 'Lost']);
+
+        $this->actingAs($this->user())
+            ->post(route('equipment.items.mark-found', $item))
+            ->assertRedirect();
+
+        $item->refresh();
+        $this->assertSame('Available', $item->status);
+        $this->assertSame(1, EquipmentHistory::where('item_id', $item->id)->where('event_type', 'Found')->count());
+    }
+
+    #[Test]
+    public function restoring_a_non_lost_item_is_refused(): void
+    {
+        $item = $this->item($this->catalog(), ['status' => 'Available']);
+
+        $this->actingAs($this->user())
+            ->post(route('equipment.items.mark-found', $item));
+
+        $item->refresh();
+        $this->assertSame('Available', $item->status);
+        $this->assertSame(0, EquipmentHistory::where('item_id', $item->id)->where('event_type', 'Found')->count());
+    }
+
+    #[Test]
     public function the_catalog_page_exposes_storage_locations(): void
     {
         StorageLocation::create(['name' => 'Storage 01']);

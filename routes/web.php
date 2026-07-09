@@ -6,6 +6,7 @@ use App\Http\Controllers\BoardMemberController;
 use App\Http\Controllers\BoardRoleController;
 use App\Http\Controllers\BoardTaskController;
 use App\Http\Controllers\BoardTermController;
+use App\Http\Controllers\BranchController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
@@ -21,6 +22,7 @@ use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\MemberJobController;
 use App\Http\Controllers\PlayerController;
 use App\Http\Controllers\PlayerImportController;
+use App\Http\Controllers\PlayerSubscriptionController;
 use App\Http\Controllers\PlayerTransactionController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProfileController;
@@ -70,17 +72,27 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Player bulk import (declared before the resource so the static paths win)
+    // Player bulk import + export + bulk actions (declared before the resource so the static paths win)
     Route::get('/players/import/template', [PlayerImportController::class, 'template'])->name('players.import.template');
     Route::post('/players/import', [PlayerImportController::class, 'store'])->name('players.import.store');
+    Route::get('/players/export', [PlayerController::class, 'export'])->name('players.export');
+    Route::post('/players/bulk-archive', [PlayerController::class, 'bulkArchive'])->name('players.bulkArchive');
+    Route::post('/players/bulk-restore', [PlayerController::class, 'bulkRestore'])->name('players.bulkRestore');
+    Route::post('/players/bulk-force-delete', [PlayerController::class, 'bulkForceDelete'])->name('players.bulkForceDelete');
 
     // Players
     Route::resource('players', PlayerController::class);
+    Route::put('/players/{player}/restore', [PlayerController::class, 'restore'])->name('players.restore');
+    Route::delete('/players/{player}/force', [PlayerController::class, 'forceDelete'])->name('players.forceDelete');
 
     // Player transactions (nested)
     Route::post('/players/{player}/transactions', [PlayerTransactionController::class, 'store'])->name('players.transactions.store');
     Route::put('/players/{player}/transactions/{transaction}', [PlayerTransactionController::class, 'update'])->name('players.transactions.update');
     Route::delete('/players/{player}/transactions/{transaction}', [PlayerTransactionController::class, 'destroy'])->name('players.transactions.destroy');
+
+    // Player subscription obligation lines (edit amount/exempt, remove assignment)
+    Route::put('/players/{player}/subscriptions/{playerSubscription}', [PlayerSubscriptionController::class, 'update'])->name('players.subscriptions.update');
+    Route::delete('/players/{player}/subscriptions/{playerSubscription}', [PlayerSubscriptionController::class, 'destroy'])->name('players.subscriptions.destroy');
 
     // Subscriptions
     Route::resource('subscriptions', SubscriptionController::class);
@@ -113,6 +125,7 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
     Route::post('/equipment/items/{item}/repair', [EquipmentItemController::class, 'repair'])->name('equipment.items.repair');
     Route::post('/equipment/items/{item}/complete-repair', [EquipmentItemController::class, 'completeRepair'])->name('equipment.items.complete-repair');
     Route::post('/equipment/items/{item}/mark-lost', [EquipmentItemController::class, 'markLost'])->name('equipment.items.mark-lost');
+    Route::post('/equipment/items/{item}/mark-found', [EquipmentItemController::class, 'markFound'])->name('equipment.items.mark-found');
     Route::get('/equipment/inventory', [EquipmentItemController::class, 'inventory'])->name('equipment.inventory');
     Route::get('/equipment/items/{item}/history', [EquipmentItemController::class, 'history'])->name('equipment.items.history');
 
@@ -139,6 +152,7 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
 
         // Settings - lookup tables
         Route::resource('categories', CategoryController::class)->except(['show', 'create', 'edit']);
+        Route::resource('branches', BranchController::class)->except(['show', 'create', 'edit']);
         Route::resource('equipment-categories', EquipmentCategoryController::class)->except(['show', 'create', 'edit']);
         Route::resource('storage-locations', StorageLocationController::class)->except(['show', 'create', 'edit']);
         Route::resource('jobs', MemberJobController::class)->except(['show', 'create', 'edit']);

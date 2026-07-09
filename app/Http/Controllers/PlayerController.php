@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Player\StorePlayerRequest;
 use App\Http\Requests\Player\UpdatePlayerRequest;
+use App\Models\Branch;
 use App\Models\Category;
 use App\Models\MemberJob;
 use App\Models\Player;
@@ -11,6 +12,7 @@ use App\Models\PlayerEmergencyContact;
 use App\Models\Position;
 use App\Models\Subscription;
 use App\Models\Transaction;
+use App\Services\Export\ExcelExporter;
 use App\Services\Player\MembershipNumber;
 use App\Services\Player\RegisterPlayerService;
 use App\Services\Storage\FileStorageService;
@@ -19,6 +21,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PlayerController extends Controller
 {
@@ -29,56 +32,21 @@ class PlayerController extends Controller
             ->selectRaw('players.outstanding_debt as total_debt')
             ->with(['category', 'position', 'memberJob']);
 
-        if ($request->filled('search')) {
-            $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('firstname', 'like', "%{$search}%")
-                    ->orWhere('lastname', 'like', "%{$search}%")
-                    ->orWhere('membership_id', 'like', "%{$search}%");
-            });
-        }
-
-        if ($request->filled('category_id')) {
-            $query->where('category_id', $request->input('category_id'));
-        }
-
-        if ($request->filled('status')) {
-            $query->where('status_value', $request->input('status'));
-        }
-
-        if ($request->filled('position_id')) {
-            $query->where('position_id', $request->input('position_id'));
-        }
-
-        if ($request->filled('age')) {
-            $today = \Carbon\Carbon::today();
-            match ($request->input('age')) {
-                'unknown' => $query->whereNull('birthdate'),
-                'u10' => $query->where('birthdate', '>', $today->copy()->subYears(10)),
-                '10-19' => $query->where('birthdate', '<=', $today->copy()->subYears(10))->where('birthdate', '>', $today->copy()->subYears(20)),
-                '20-29' => $query->where('birthdate', '<=', $today->copy()->subYears(20))->where('birthdate', '>', $today->copy()->subYears(30)),
-                '30-39' => $query->where('birthdate', '<=', $today->copy()->subYears(30))->where('birthdate', '>', $today->copy()->subYears(40)),
-                '40+' => $query->where('birthdate', '<=', $today->copy()->subYears(40)),
-                default => null,
-            };
-        }
-
-        if ($request->has('archived')) {
-            $query->where('archived', $request->boolean('archived'));
-        } else {
-            $query->where('archived', false);
-        }
+        $this->applyPlayerFilters($query, $request);
 
         $players = $query->orderBy('lastname')->orderBy('firstname')
             ->paginate(25)
             ->withQueryString();
 
         // Category distribution over active players (stat chips above the list).
+        // Prefer the current-locale name, falling back to the base name.
+        $locale = in_array(app()->getLocale(), ['ar', 'fr', 'en'], true) ? app()->getLocale() : 'en';
+        $localeCol = 'categories.name_'.$locale;
         $categoryStats = \Illuminate\Support\Facades\DB::table('players')
             ->leftJoin('categories', 'categories.id', '=', 'players.category_id')
             ->where('players.archived', false)
-            ->groupBy('players.category_id', 'categories.name')
-            ->selectRaw('players.category_id, categories.name, COUNT(*) as total')
+            ->groupBy('players.category_id', 'categories.name', $localeCol)
+            ->selectRaw("players.category_id, COALESCE(NULLIF({$localeCol}, ''), categories.name) as name, COUNT(*) as total")
             ->orderByDesc('total')
             ->get()
             ->map(fn ($row) => [
@@ -135,12 +103,13 @@ class PlayerController extends Controller
 
         return Inertia::render('Players/Index', [
             'players' => $players,
-            'categories' => Category::orderBy('name')->get(['id', 'name']),
+            'categories' => Category::orderBy('name')->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
+            'branches' => Branch::orderBy('name')->get(),
             'categoryStats' => $categoryStats,
             'statusStats' => $statusStats,
             'positionStats' => $positionStats,
             'ageStats' => $ageStats,
-            'filters' => $request->only(['search', 'category_id', 'status', 'position_id', 'age', 'archived']),
+            'filters' => $request->only(['search', 'category_id', 'status', 'position_id', 'branch_id', 'age', 'archived']),
         ]);
     }
 
@@ -150,6 +119,7 @@ class PlayerController extends Controller
             'category',
             'position',
             'memberJob',
+            'branches',
             'emergencyContacts',
             'achievements',
             'playerSubscriptions.subscription',
@@ -249,6 +219,7 @@ class PlayerController extends Controller
             'categories' => Category::orderBy('name')->get(),
             'positions' => Position::orderBy('name')->get(),
             'jobs' => MemberJob::orderBy('name')->get(),
+            'branches' => Branch::orderBy('name')->get(),
             'wilayas' => $geo['wilayas'],
             'communes' => $geo['communes'],
             'nextSequenceByYear' => $this->nextSequenceByYear(),
@@ -260,7 +231,8 @@ class PlayerController extends Controller
     {
         $attributes = $request->validated();
         $emergencyContacts = $attributes['emergency_contacts'] ?? [];
-        unset($attributes['emergency_contacts'], $attributes['picture']);
+        $branchIds = $attributes['branch_ids'] ?? [];
+        unset($attributes['emergency_contacts'], $attributes['picture'], $attributes['branch_ids']);
 
         if ($request->hasFile('picture')) {
             $stored = $files->storeImage($request->file('picture'), 'players', 512);
@@ -269,6 +241,8 @@ class PlayerController extends Controller
         }
 
         $player = $service->handle($attributes, $request->user()?->id);
+
+        $player->branches()->sync($branchIds);
 
         foreach ($emergencyContacts as $contact) {
             $player->emergencyContacts()->create($contact);
@@ -280,7 +254,7 @@ class PlayerController extends Controller
 
     public function edit(Player $player): Response
     {
-        $player->load(['emergencyContacts']);
+        $player->load(['emergencyContacts', 'branches']);
         $geo = $this->algeriaGeo();
 
         return Inertia::render('Players/Edit', [
@@ -288,6 +262,7 @@ class PlayerController extends Controller
             'categories' => Category::orderBy('name')->get(),
             'positions' => Position::orderBy('name')->get(),
             'jobs' => MemberJob::orderBy('name')->get(),
+            'branches' => Branch::orderBy('name')->get(),
             'wilayas' => $geo['wilayas'],
             'communes' => $geo['communes'],
             'nextSequenceByYear' => $this->nextSequenceByYear(),
@@ -300,7 +275,8 @@ class PlayerController extends Controller
         $validated = $request->validated();
 
         $emergencyContacts = $validated['emergency_contacts'] ?? null;
-        unset($validated['emergency_contacts'], $validated['picture']);
+        $branchIds = $validated['branch_ids'] ?? null;
+        unset($validated['emergency_contacts'], $validated['picture'], $validated['branch_ids']);
 
         if ($request->hasFile('picture')) {
             $files->delete($player->picture_filename);
@@ -309,7 +285,18 @@ class PlayerController extends Controller
             $validated['picture_filename'] = $stored['filename'];
         }
 
+        // Membership id encodes the enrollment year (YYYYNNNNN). If the year changes,
+        // regenerate the id for the new year so the two stay consistent.
+        if (array_key_exists('join_year', $validated)
+            && (int) $validated['join_year'] !== (int) $player->join_year) {
+            $validated['membership_id'] = MembershipNumber::generateUnique((int) $validated['join_year']);
+        }
+
         $player->update($validated);
+
+        if ($branchIds !== null) {
+            $player->branches()->sync($branchIds);
+        }
 
         if ($emergencyContacts !== null) {
             $player->emergencyContacts()->delete();
@@ -331,5 +318,148 @@ class PlayerController extends Controller
 
         return redirect()->route('players.index')
             ->with('success', 'Player archived successfully.');
+    }
+
+    public function restore(Player $player): RedirectResponse
+    {
+        $player->update(['archived' => false]);
+
+        return back()->with('success', 'Player restored successfully.');
+    }
+
+    public function forceDelete(Player $player, FileStorageService $files): RedirectResponse
+    {
+        $this->permanentlyDelete($player, $files);
+
+        return redirect()->route('players.index', ['archived' => 1])
+            ->with('success', 'Player permanently deleted.');
+    }
+
+    public function bulkArchive(Request $request): RedirectResponse
+    {
+        $ids = $this->validatedIds($request);
+        Player::whereIn('id', $ids)->update(['archived' => true]);
+
+        return back()->with('success', count($ids).' players archived.');
+    }
+
+    public function bulkRestore(Request $request): RedirectResponse
+    {
+        $ids = $this->validatedIds($request);
+        Player::whereIn('id', $ids)->update(['archived' => false]);
+
+        return back()->with('success', count($ids).' players restored.');
+    }
+
+    public function bulkForceDelete(Request $request, FileStorageService $files): RedirectResponse
+    {
+        $ids = $this->validatedIds($request);
+        Player::whereIn('id', $ids)->get()->each(fn (Player $p) => $this->permanentlyDelete($p, $files));
+
+        return back()->with('success', count($ids).' players permanently deleted.');
+    }
+
+    public function export(Request $request, ExcelExporter $exporter): StreamedResponse
+    {
+        $query = Player::query()->with(['category', 'position', 'branches']);
+        $this->applyPlayerFilters($query, $request);
+
+        $rows = $query->orderBy('lastname')->orderBy('firstname')->get()->map(fn (Player $p) => [
+            $p->membership_id,
+            $p->fullname,
+            $p->category?->localized_name,
+            $p->status_value,
+            $p->is_student ? 'student' : 'worker',
+            $p->join_year,
+            (string) $p->outstanding_debt,
+            collect($p->phones ?? [])->implode(' / '),
+            $p->branches->map(fn (Branch $b) => $b->localized_name)->implode(' / '),
+        ]);
+
+        $headers = ['membership_id', 'name', 'category', 'status', 'type', 'join_year', 'debt', 'phones', 'branches'];
+
+        return $exporter->download('Players', $headers, $rows->all(), 'players-'.now()->format('Y-m-d').'.csv');
+    }
+
+    /**
+     * Apply the shared list filters (used by index + export).
+     */
+    private function applyPlayerFilters($query, Request $request): void
+    {
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('firstname', 'like', "%{$search}%")
+                    ->orWhere('lastname', 'like', "%{$search}%")
+                    ->orWhere('membership_id', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->input('category_id'));
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status_value', $request->input('status'));
+        }
+
+        if ($request->filled('position_id')) {
+            $query->where('position_id', $request->input('position_id'));
+        }
+
+        if ($request->filled('branch_id')) {
+            $query->whereHas('branches', fn ($q) => $q->where('branches.id', $request->input('branch_id')));
+        }
+
+        if ($request->filled('age')) {
+            $today = \Carbon\Carbon::today();
+            match ($request->input('age')) {
+                'unknown' => $query->whereNull('birthdate'),
+                'u10' => $query->where('birthdate', '>', $today->copy()->subYears(10)),
+                '10-19' => $query->where('birthdate', '<=', $today->copy()->subYears(10))->where('birthdate', '>', $today->copy()->subYears(20)),
+                '20-29' => $query->where('birthdate', '<=', $today->copy()->subYears(20))->where('birthdate', '>', $today->copy()->subYears(30)),
+                '30-39' => $query->where('birthdate', '<=', $today->copy()->subYears(30))->where('birthdate', '>', $today->copy()->subYears(40)),
+                '40+' => $query->where('birthdate', '<=', $today->copy()->subYears(40)),
+                default => null,
+            };
+        }
+
+        if ($request->has('archived')) {
+            $query->where('archived', $request->boolean('archived'));
+        } else {
+            $query->where('archived', false);
+        }
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function validatedIds(Request $request): array
+    {
+        return $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer', 'exists:players,id'],
+        ])['ids'];
+    }
+
+    /**
+     * Permanently remove a player and its owned records. Finance transactions are
+     * archived (kept for audit), not deleted.
+     */
+    private function permanentlyDelete(Player $player, FileStorageService $files): void
+    {
+        \Illuminate\Support\Facades\DB::transaction(function () use ($player) {
+            Transaction::where('related_entity_type', 'Player')
+                ->where('related_entity_id', $player->id)
+                ->update(['archived' => true]);
+
+            $player->emergencyContacts()->delete();
+            $player->achievements()->delete();
+            $player->playerSubscriptions()->delete();
+            $player->equipmentRentals()->delete();
+            $player->delete();
+        });
+
+        $files->delete($player->picture_filename);
     }
 }

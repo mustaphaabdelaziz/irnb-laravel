@@ -25,6 +25,7 @@ const showRentModal = ref(false);
 const showReturnModal = ref(false);
 const selectedItem = ref(null);
 const lostItemId = ref(null);
+const foundItemId = ref(null);
 const repairItemId = ref(null);
 
 const serialPreview = ref('');
@@ -167,6 +168,13 @@ function markAsLost(itemId) {
     });
 }
 
+function markAsFound(itemId) {
+    foundItemId.value = null;
+    router.post(route('equipment.items.mark-found', itemId), {}, {
+        preserveState: false,
+    });
+}
+
 watch(() => addItemForm.purchase_date, () => {
     if (showAddItemModal.value) fetchSerialPreview();
 });
@@ -174,6 +182,15 @@ watch(() => addItemForm.purchase_date, () => {
 const statusColor = (s) => {
     const map = { Available: 'emerald', Rented: 'amber', 'Under Repair': 'slate', Lost: 'rose', Retired: 'slate' };
     return map[s] || 'slate';
+};
+
+// Translate an enum value (status/condition) via its lowercased, underscored i18n key,
+// falling back to the raw value if no key exists.
+const stateLabel = (v) => {
+    if (!v) return '—';
+    const key = String(v).toLowerCase().replaceAll(' ', '_');
+    const translated = t(key);
+    return translated === key ? v : translated;
 };
 </script>
 
@@ -246,8 +263,8 @@ const statusColor = (s) => {
                             <tr v-for="item in catalog.items" :key="item.id">
                                 <td class="px-4 py-3 font-mono text-sm text-slate-700 dark:text-slate-200">{{ item.unique_identifier }}</td>
                                 <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">{{ item.designation || '—' }}</td>
-                                <td class="px-4 py-3"><Badge :label="item.status" :color="statusColor(item.status)" /></td>
-                                <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ item.condition }}</td>
+                                <td class="px-4 py-3"><Badge :label="stateLabel(item.status)" :color="statusColor(item.status)" /></td>
+                                <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ stateLabel(item.condition) }}</td>
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
                                     <span v-if="item.status === 'Rented' && item.active_rental">
                                         {{ item.active_rental.rentable?.firstname }} {{ item.active_rental.rentable?.lastname }}
@@ -260,6 +277,7 @@ const statusColor = (s) => {
                                         <button v-if="item.status === 'Rented'" @click="openReturn(item)" class="text-sm text-emerald-600 hover:text-emerald-800">{{ t('return') }}</button>
                                         <button v-if="item.status === 'Available'" @click="repairItemId = item.id" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">🔧</button>
                                         <button v-if="['Available','Rented'].includes(item.status)" @click="lostItemId = item.id" class="text-sm text-rose-500 hover:text-rose-700">{{ t('lost') }}</button>
+                                        <button v-if="item.status === 'Lost'" @click="foundItemId = item.id" class="text-sm text-emerald-600 hover:text-emerald-800">{{ t('restore') }}</button>
                                         <Link :href="route('equipment.items.history', item.id)" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200" :title="t('history')">🕘</Link>
                                         <button @click="openEdit(item)" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200" :title="t('edit')">✏️</button>
                                         <button v-if="item.status !== 'Rented'" @click="deleteItemId = item.id" class="text-sm text-rose-500 hover:text-rose-700" :title="t('delete')">🗑️</button>
@@ -422,6 +440,7 @@ const statusColor = (s) => {
 
         <ConfirmModal :show="!!repairItemId" :message="t('send_to_repair') + '?'" @confirm="sendToRepair(repairItemId)" @cancel="repairItemId = null" />
         <ConfirmModal :show="!!lostItemId" :message="t('mark_as_lost') + '?'" @confirm="markAsLost(lostItemId)" @cancel="lostItemId = null" />
+        <ConfirmModal :show="!!foundItemId" :message="t('restore_item') + '?'" @confirm="markAsFound(foundItemId)" @cancel="foundItemId = null" />
         <ConfirmModal :show="!!deleteItemId" :message="t('are_you_sure')" @confirm="deleteItem" @cancel="deleteItemId = null" />
     </AuthenticatedLayout>
 </template>

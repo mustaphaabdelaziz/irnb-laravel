@@ -31,4 +31,14 @@ class MembershipNumber
     {
         return sprintf('%04d%05d', self::clampYear($year), $seq);
     }
+
+    /** Generate the next unique membership id for a year, skipping any collision. */
+    public static function generateUnique(int $year): string
+    {
+        do {
+            $candidate = self::format($year, self::nextSequence($year));
+        } while (Player::query()->where('membership_id', $candidate)->exists());
+
+        return $candidate;
+    }
 }

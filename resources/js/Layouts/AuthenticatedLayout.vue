@@ -91,6 +91,7 @@ const sections = computed(() => {
         ] },
         { label: t('administration'), items: [
             { label: t('categories'), href: '/categories', icon: 'categories', prefix: '/categories', module: 'categories' },
+            { label: t('branches'), href: '/branches', icon: 'categories', prefix: '/branches', module: 'categories' },
             { label: t('board_roles'), href: '/board-roles', icon: 'board', prefix: '/board-roles', module: 'board' },
             { label: t('jobs'), href: '/jobs', icon: 'jobs', prefix: '/jobs', module: 'categories' },
             { label: t('positions'), href: '/positions', icon: 'positions', prefix: '/positions', module: 'categories' },

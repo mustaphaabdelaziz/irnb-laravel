@@ -116,6 +116,22 @@ class EquipmentLifecycleService
         });
     }
 
+    public function markAsFound(EquipmentItem $item, ?int $userId = null, ?string $notes = null): void
+    {
+        if ($item->status !== 'Lost') {
+            throw new \InvalidArgumentException("Item #{$item->unique_identifier} is not lost (current status: {$item->status}).");
+        }
+
+        DB::transaction(function () use ($item, $userId, $notes) {
+            $item->update(['status' => 'Available']);
+
+            $this->logHistory($item, $userId, 'Found', [
+                'previous_status' => 'Lost',
+                'notes' => $notes,
+            ]);
+        });
+    }
+
     public function retire(EquipmentItem $item, ?int $userId = null, ?string $notes = null): void
     {
         DB::transaction(function () use ($item, $userId, $notes) {

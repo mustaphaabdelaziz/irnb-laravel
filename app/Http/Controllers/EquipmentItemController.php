@@ -191,6 +191,15 @@ class EquipmentItemController extends Controller
         return back()->with('success', 'Equipment marked as lost.');
     }
 
+    public function markFound(Request $request, EquipmentItem $item): RedirectResponse
+    {
+        $request->validate(['notes' => ['nullable', 'string']]);
+
+        $this->lifecycle->markAsFound($item, $request->user()?->id, $request->input('notes'));
+
+        return back()->with('success', 'Equipment restored to available.');
+    }
+
     public function inventory(): Response
     {
         $statusCounts = EquipmentItem::query()

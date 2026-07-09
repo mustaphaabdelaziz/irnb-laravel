@@ -15,6 +15,7 @@ return [
         'board-roles' => 'board',
         'users' => 'users',
         'categories' => 'categories',
+        'branches' => 'categories',
         'jobs' => 'categories',
         'positions' => 'categories',
         'equipment-categories' => 'categories',

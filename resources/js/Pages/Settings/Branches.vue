@@ -11,7 +11,7 @@ import { ref } from 'vue';
 const { t } = useI18n();
 
 const props = defineProps({
-    categories: Array,
+    branches: Array,
 });
 
 const editingId = ref(null);
@@ -20,45 +20,45 @@ const deleteId = ref(null);
 const form = useForm({ name: '', name_ar: '', name_fr: '', name_en: '', description: '' });
 const editForm = useForm({ name: '', name_ar: '', name_fr: '', name_en: '', description: '' });
 
-function addCategory() {
-    form.post(route('categories.store'), {
+function addBranch() {
+    form.post(route('branches.store'), {
         onSuccess: () => form.reset(),
     });
 }
 
-function startEdit(cat) {
-    editingId.value = cat.id;
-    editForm.name = cat.name;
-    editForm.name_ar = cat.name_ar || '';
-    editForm.name_fr = cat.name_fr || '';
-    editForm.name_en = cat.name_en || '';
-    editForm.description = cat.description || '';
+function startEdit(branch) {
+    editingId.value = branch.id;
+    editForm.name = branch.name;
+    editForm.name_ar = branch.name_ar || '';
+    editForm.name_fr = branch.name_fr || '';
+    editForm.name_en = branch.name_en || '';
+    editForm.description = branch.description || '';
 }
 
 function saveEdit(id) {
-    editForm.put(route('categories.update', id), {
+    editForm.put(route('branches.update', id), {
         onSuccess: () => { editingId.value = null; },
     });
 }
 
 function destroy() {
-    router.delete(route('categories.destroy', deleteId.value), {
+    router.delete(route('branches.destroy', deleteId.value), {
         onSuccess: () => { deleteId.value = null; },
     });
 }
 </script>
 
 <template>
-    <Head :title="t('categories')" />
+    <Head :title="t('branches')" />
 
     <AuthenticatedLayout>
         <template #header>
-            <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('categories') }}</h1>
+            <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('branches') }}</h1>
         </template>
 
         <div class="mx-auto max-w-2xl space-y-6">
             <!-- Add form -->
-            <form @submit.prevent="addCategory" class="space-y-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+            <form @submit.prevent="addBranch" class="space-y-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div class="grid gap-3 sm:grid-cols-2">
                     <div>
                         <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('name') }} <span class="text-xs text-slate-400">({{ t('default') }})</span></label>
@@ -93,38 +93,35 @@ function destroy() {
                     <thead class="bg-slate-50 dark:bg-slate-950">
                         <tr>
                             <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('name') }}</th>
-                            <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('description') }}</th>
+                            <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('members') }}</th>
                             <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('actions') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                        <tr v-for="cat in categories" :key="cat.id">
+                        <tr v-for="branch in branches" :key="branch.id">
                             <td class="px-4 py-3">
-                                <div v-if="editingId === cat.id" class="space-y-1.5">
+                                <div v-if="editingId === branch.id" class="space-y-1.5">
                                     <TextInput v-model="editForm.name" class="w-full" :placeholder="t('name')" />
                                     <TextInput v-model="editForm.name_ar" class="w-full" placeholder="العربية" />
                                     <TextInput v-model="editForm.name_fr" class="w-full" placeholder="Français" />
                                     <TextInput v-model="editForm.name_en" class="w-full" placeholder="English" />
                                     <InputError :message="editForm.errors.name" class="mt-1" />
                                 </div>
-                                <span v-else class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ cat.localized_name || cat.name }}</span>
+                                <span v-else class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ branch.localized_name || branch.name }}</span>
                             </td>
-                            <td class="px-4 py-3">
-                                <TextInput v-if="editingId === cat.id" v-model="editForm.description" class="w-full" />
-                                <span v-else class="text-sm text-slate-600 dark:text-slate-300">{{ cat.description || '-' }}</span>
-                            </td>
+                            <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ branch.players_count }}</td>
                             <td class="px-4 py-3 text-end">
-                                <div v-if="editingId === cat.id" class="flex justify-end gap-2">
-                                    <button @click="saveEdit(cat.id)" class="text-sm text-primary-600 hover:text-primary-800">{{ t('save') }}</button>
+                                <div v-if="editingId === branch.id" class="flex justify-end gap-2">
+                                    <button @click="saveEdit(branch.id)" class="text-sm text-primary-600 hover:text-primary-800">{{ t('save') }}</button>
                                     <button @click="editingId = null" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">{{ t('cancel') }}</button>
                                 </div>
                                 <div v-else class="flex justify-end gap-2">
-                                    <button @click="startEdit(cat)" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">{{ t('edit') }}</button>
-                                    <button @click="deleteId = cat.id" class="text-sm text-rose-500 hover:text-rose-700">{{ t('delete') }}</button>
+                                    <button @click="startEdit(branch)" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">{{ t('edit') }}</button>
+                                    <button @click="deleteId = branch.id" class="text-sm text-rose-500 hover:text-rose-700">{{ t('delete') }}</button>
                                 </div>
                             </td>
                         </tr>
-                        <tr v-if="!categories?.length">
+                        <tr v-if="!branches?.length">
                             <td colspan="3" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
                         </tr>
                     </tbody>

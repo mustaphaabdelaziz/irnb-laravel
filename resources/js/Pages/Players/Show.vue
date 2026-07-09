@@ -134,6 +134,49 @@ const statusColor = (s) => {
     return 'rose';
 };
 
+// --- Edit / remove a subscription obligation line ---
+const showSubEditModal = ref(false);
+const editingSubId = ref(null);
+const subForm = useForm({ amount_owed: '', is_exempt: false, due_date: '' });
+
+function openSubEdit(sub) {
+    editingSubId.value = sub.id;
+    subForm.amount_owed = sub.amount_owed;
+    subForm.is_exempt = !!sub.is_exempt;
+    subForm.due_date = sub.due_date ? String(sub.due_date).slice(0, 10) : '';
+    subForm.clearErrors();
+    showSubEditModal.value = true;
+}
+
+function submitSubEdit() {
+    subForm.put(route('players.subscriptions.update', [props.player.id, editingSubId.value]), {
+        preserveScroll: true,
+        onSuccess: () => {
+            showSubEditModal.value = false;
+            subForm.reset();
+            editingSubId.value = null;
+        },
+    });
+}
+
+const showSubRemoveModal = ref(false);
+const removingSubId = ref(null);
+
+function askRemoveSub(sub) {
+    removingSubId.value = sub.id;
+    showSubRemoveModal.value = true;
+}
+
+function confirmRemoveSub() {
+    router.delete(route('players.subscriptions.destroy', [props.player.id, removingSubId.value]), {
+        preserveScroll: true,
+        onSuccess: () => {
+            showSubRemoveModal.value = false;
+            removingSubId.value = null;
+        },
+    });
+}
+
 function formatDate(val) {
     if (!val) return '-';
     return new Date(val).toLocaleDateString();
@@ -181,9 +224,16 @@ function formatDate(val) {
                         <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('phone') }}</dt><dd class="text-sm">{{ player.phones?.[0] || '-' }}</dd></div>
                         <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('email') }}</dt><dd class="text-sm">{{ player.email || '-' }}</dd></div>
                         <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('city') }}, {{ t('state') }}</dt><dd class="text-sm">{{ [player.city, player.state].filter(Boolean).join(', ') || '-' }}</dd></div>
-                        <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('category') }}</dt><dd class="text-sm">{{ player.category?.name || '-' }}</dd></div>
+                        <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('category') }}</dt><dd class="text-sm">{{ player.category?.localized_name || player.category?.name || '-' }}</dd></div>
                         <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('position') }}</dt><dd class="text-sm">{{ player.position?.abbreviation || '-' }} {{ player.position?.name || '' }}</dd></div>
                         <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('status') }}</dt><dd class="text-sm">{{ player.is_student ? t('student') : t('worker') }}</dd></div>
+                        <div class="sm:col-span-2">
+                            <dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('branches') }}</dt>
+                            <dd class="mt-1 flex flex-wrap gap-1.5">
+                                <span v-for="b in (player.branches || [])" :key="b.id" class="rounded-md bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-200">{{ b.localized_name || b.name }}</span>
+                                <span v-if="!player.branches?.length" class="text-sm text-slate-400">-</span>
+                            </dd>
+                        </div>
                     </dl>
                 </div>
 
@@ -237,6 +287,7 @@ function formatDate(val) {
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('amount_paid') }}</th>
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('remaining') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('status') }}</th>
+                                <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400"></th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
@@ -250,6 +301,14 @@ function formatDate(val) {
                                 </td>
                                 <td class="px-4 py-3">
                                     <Badge :label="paymentStatus(sub)" :color="statusColor(paymentStatus(sub))" />
+                                </td>
+                                <td class="px-4 py-3 text-end whitespace-nowrap">
+                                    <button type="button" @click="openSubEdit(sub)" class="rounded-md px-2 py-1 text-xs font-medium text-primary-700 ring-1 ring-inset ring-primary-300 hover:bg-primary-50 dark:text-primary-300 dark:ring-primary-700 dark:hover:bg-primary-900/30">
+                                        {{ t('edit') }}
+                                    </button>
+                                    <button type="button" @click="askRemoveSub(sub)" class="ms-2 rounded-md px-2 py-1 text-xs font-medium text-rose-700 ring-1 ring-inset ring-rose-300 hover:bg-rose-50 dark:text-rose-300 dark:ring-rose-800 dark:hover:bg-rose-900/30">
+                                        {{ t('remove') }}
+                                    </button>
                                 </td>
                             </tr>
                         </tbody>
@@ -387,6 +446,41 @@ function formatDate(val) {
             :message="t('remove_payment_warning')"
             @confirm="confirmRemove"
             @cancel="showRemoveModal = false"
+        />
+
+        <!-- Edit subscription obligation modal -->
+        <Modal :show="showSubEditModal" @close="showSubEditModal = false" max-width="md">
+            <form @submit.prevent="submitSubEdit" class="p-6">
+                <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('edit_subscription') }}</h3>
+                <div class="mt-4 space-y-4">
+                    <div>
+                        <InputLabel :value="t('amount_owed')" />
+                        <TextInput v-model="subForm.amount_owed" type="number" step="0.01" min="0" class="mt-1 w-full" required />
+                        <InputError :message="subForm.errors.amount_owed" class="mt-1" />
+                    </div>
+                    <div>
+                        <InputLabel :value="t('due_date')" />
+                        <TextInput v-model="subForm.due_date" type="date" class="mt-1 w-full" />
+                        <InputError :message="subForm.errors.due_date" class="mt-1" />
+                    </div>
+                    <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                        <input type="checkbox" v-model="subForm.is_exempt" class="rounded border-slate-300 text-primary-600 shadow-sm focus:ring-primary-500" />
+                        {{ t('exempt') }}
+                    </label>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <SecondaryButton type="button" @click="showSubEditModal = false">{{ t('cancel') }}</SecondaryButton>
+                    <PrimaryButton :disabled="subForm.processing">{{ t('save') }}</PrimaryButton>
+                </div>
+            </form>
+        </Modal>
+
+        <ConfirmModal
+            :show="showSubRemoveModal"
+            :title="t('remove')"
+            :message="t('remove_subscription_warning')"
+            @confirm="confirmRemoveSub"
+            @cancel="showSubRemoveModal = false"
         />
 
         <ConfirmModal

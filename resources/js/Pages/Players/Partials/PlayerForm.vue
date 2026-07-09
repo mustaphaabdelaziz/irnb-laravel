@@ -15,6 +15,7 @@ const props = defineProps({
     categories: { type: Array, default: () => [] },
     positions: { type: Array, default: () => [] },
     jobs: { type: Array, default: () => [] },
+    branches: { type: Array, default: () => [] },
     wilayas: { type: Array, default: () => [] },
     communes: { type: Object, default: () => ({}) },
     nextSequenceByYear: { type: Object, default: () => ({}) },
@@ -38,10 +39,12 @@ const form = useForm({
     state: p.state || '',
     city: p.city || '',
     is_student: p.is_student ?? true,
-    status_value: p.status_value || '',
+    // New players default to "enrolled" (منخرط); edits keep the stored value.
+    status_value: isEdit ? (p.status_value || '') : 'منخرط',
     category_id: p.category_id || '',
     position_id: p.position_id || '',
     member_job_id: p.member_job_id || '',
+    branch_ids: (p.branches || []).map((b) => b.id),
     join_year: p.join_year || props.defaultJoinYear,
     skill_level: p.skill_level || '',
     picture: null,
@@ -55,7 +58,9 @@ const form = useForm({
 // --- Membership id preview ---
 const pad5 = (n) => String(n).padStart(5, '0');
 const membershipPreview = computed(() => {
-    if (isEdit) return p.membership_id || '';
+    // On edit the id is stable unless the enrollment year changes, in which case it is
+    // regenerated server-side for the new year — show the projected value.
+    if (isEdit && Number(form.join_year) === Number(p.join_year)) return p.membership_id || '';
     const seq = props.nextSequenceByYear[form.join_year] ?? 1;
     return `${form.join_year}-${pad5(seq)}`;
 });
@@ -113,6 +118,7 @@ function submit() {
         category_id: data.category_id || null,
         position_id: data.position_id || null,
         member_job_id: data.member_job_id || null,
+        branch_ids: data.branch_ids,
         join_year: data.join_year || null,
         skill_level: data.skill_level || null,
         picture: data.picture,
@@ -217,7 +223,7 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                     <InputLabel :value="t('category')" />
                     <select v-model="form.category_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                         <option value="">{{ t('select_category') }}</option>
-                        <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+                        <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.localized_name || cat.name }}</option>
                     </select>
                     <InputError :message="form.errors.category_id" class="mt-1" />
                 </div>
@@ -227,6 +233,17 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                         <option value="">-</option>
                         <option v-for="pos in positions" :key="pos.id" :value="pos.id">{{ pos.abbreviation }} - {{ pos.name }}</option>
                     </select>
+                </div>
+                <div class="sm:col-span-2 lg:col-span-3">
+                    <InputLabel :value="t('branches')" />
+                    <div v-if="branches.length" class="mt-1 flex flex-wrap gap-2">
+                        <label v-for="b in branches" :key="b.id" class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors"
+                            :class="form.branch_ids.includes(b.id) ? 'border-primary-400 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-200' : 'border-slate-300 text-slate-700 dark:border-slate-700 dark:text-slate-200'">
+                            <input type="checkbox" :value="b.id" v-model="form.branch_ids" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500" />
+                            {{ b.localized_name || b.name }}
+                        </label>
+                    </div>
+                    <p v-else class="mt-1 text-xs text-slate-400">{{ t('no_data') }}</p>
                 </div>
                 <div>
                     <InputLabel :value="t('skill_level')" />

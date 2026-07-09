@@ -5,9 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Category extends Model
+class Branch extends Model
 {
     use HasFactory;
 
@@ -24,7 +23,7 @@ class Category extends Model
     ];
 
     /**
-     * The category name in the current app locale, falling back to the base name.
+     * The branch name in the current app locale, falling back to the base name.
      */
     public function getLocalizedNameAttribute(): string
     {
@@ -33,18 +32,8 @@ class Category extends Model
         return $this->{$column} ?: $this->name;
     }
 
-    public function subscriptions(): BelongsToMany
+    public function players(): BelongsToMany
     {
-        return $this->belongsToMany(Subscription::class, 'category_subscription');
-    }
-
-    public function players(): HasMany
-    {
-        return $this->hasMany(Player::class);
-    }
-
-    public function users(): HasMany
-    {
-        return $this->hasMany(User::class);
+        return $this->belongsToMany(Player::class, 'branch_player');
     }
 }

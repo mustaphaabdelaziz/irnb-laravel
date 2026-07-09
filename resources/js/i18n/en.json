@@ -225,6 +225,7 @@
     "import": "Import",
     "import_players": "Import Players",
     "import_players_hint": "Upload an Excel or CSV file using the template format.",
+    "import_items_hint": "Upload an Excel or CSV file to add items to this catalog. Serial numbers are generated automatically.",
     "converting_excel": "Converting Excel file…",
     "excel_parse_failed": "Could not read this Excel file. Please use the template format or upload a CSV.",
     "in_progress": "In Progress",

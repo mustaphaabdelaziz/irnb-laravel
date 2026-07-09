@@ -118,6 +118,9 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
     Route::resource('equipment/catalogs', EquipmentCatalogController::class)->names('equipment.catalogs');
     Route::post('/equipment/items', [EquipmentItemController::class, 'store'])->name('equipment.items.store');
     Route::get('/equipment/items/preview-serial', [EquipmentItemController::class, 'previewSerial'])->name('equipment.items.preview-serial');
+    Route::get('/equipment/items/import/template', [EquipmentItemController::class, 'importTemplate'])->name('equipment.items.import.template');
+    Route::get('/equipment/catalogs/{catalog}/items/export', [EquipmentItemController::class, 'export'])->name('equipment.items.export');
+    Route::post('/equipment/catalogs/{catalog}/items/import', [EquipmentItemController::class, 'import'])->name('equipment.items.import');
     Route::put('/equipment/items/{item}', [EquipmentItemController::class, 'update'])->name('equipment.items.update');
     Route::delete('/equipment/items/{item}', [EquipmentItemController::class, 'destroy'])->name('equipment.items.destroy');
     Route::post('/equipment/items/rent', [EquipmentItemController::class, 'rent'])->name('equipment.items.rent');

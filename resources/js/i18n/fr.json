@@ -225,6 +225,7 @@
     "import": "Importer",
     "import_players": "Importer des joueurs",
     "import_players_hint": "Téléversez un fichier Excel ou CSV au format du modèle.",
+    "import_items_hint": "Téléversez un fichier Excel ou CSV pour ajouter des articles à ce catalogue. Les numéros de série sont générés automatiquement.",
     "converting_excel": "Conversion du fichier Excel…",
     "excel_parse_failed": "Impossible de lire ce fichier Excel. Utilisez le format du modèle ou un CSV.",
     "in_progress": "En cours",

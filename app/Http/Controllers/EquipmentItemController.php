@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Equipment\RentEquipmentRequest;
+use App\Models\EquipmentCatalog;
 use App\Models\EquipmentHistory;
 use App\Models\EquipmentItem;
 use App\Models\EquipmentRental;
@@ -11,12 +12,17 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Services\Equipment\EquipmentLifecycleService;
 use App\Services\Equipment\SerialNumberService;
+use App\Services\Export\ExcelExporter;
+use App\Support\Csv;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
 
 class EquipmentItemController extends Controller
 {
@@ -300,5 +306,144 @@ class EquipmentItemController extends Controller
                     'user' => $event->user?->name,
                 ]),
         ]);
+    }
+
+    /**
+     * Import columns shared by the template and the importer.
+     * Each entry: [field key, Arabic header, example value]. The catalog is implicit
+     * (the page the file is uploaded from); serials + status are assigned automatically.
+     *
+     * @var list<array{0:string,1:string,2:string}>
+     */
+    private const IMPORT_COLUMNS = [
+        ['designation', 'التسمية', 'قميص رقم 10'],
+        ['purchase_date', 'تاريخ الشراء (YYYY-MM-DD)', '2026-05-01'],
+        ['condition', 'الحالة (New/Good/Fair/Poor/Damaged)', 'New'],
+        ['location', 'الموقع', 'المخزن A'],
+        ['purchase_price', 'سعر الشراء', ''],
+        ['notes', 'ملاحظات', ''],
+    ];
+
+    public function importTemplate(): StreamedResponse
+    {
+        $headers = array_map(fn ($column) => $column[1], self::IMPORT_COLUMNS);
+        $example = array_map(fn ($column) => $column[2], self::IMPORT_COLUMNS);
+
+        return Csv::download('equipment-items-template.csv', $headers, [$example]);
+    }
+
+    public function export(EquipmentCatalog $catalog, ExcelExporter $exporter): StreamedResponse
+    {
+        $rows = $catalog->items()->orderBy('unique_identifier')->get()->map(fn (EquipmentItem $item) => [
+            $item->unique_identifier,
+            $item->designation,
+            $item->condition,
+            $item->location,
+            $item->status,
+            $item->purchase_date?->toDateString(),
+            $item->notes,
+        ]);
+
+        $headers = ['serial', 'designation', 'condition', 'location', 'status', 'purchase_date', 'notes'];
+
+        return $exporter->download('Equipment '.$catalog->name, $headers, $rows->all(),
+            'equipment-'.$catalog->id.'-'.now()->format('Y-m-d').'.csv');
+    }
+
+    public function import(Request $request, EquipmentCatalog $catalog): RedirectResponse
+    {
+        $request->validate(['file' => ['required', 'file', 'max:10240']]);
+
+        try {
+            $rows = Csv::readRows($request->file('file')->getRealPath());
+        } catch (Throwable $e) {
+            return back()->with('error', __('Could not read the file. Please use the provided template.'));
+        }
+
+        array_shift($rows); // drop the header row
+
+        $imported = 0;
+        $errors = [];
+
+        foreach ($rows as $i => $row) {
+            $line = $i + 2;
+            $data = $this->mapImportRow($row);
+
+            // Skip fully-blank lines (an item needs no designation, but an empty row is noise).
+            if (collect($data)->every(fn ($v) => $v === null || $v === '')) {
+                continue;
+            }
+
+            try {
+                DB::transaction(function () use ($data, $catalog, $request) {
+                    $item = new EquipmentItem([
+                        'catalog_id' => $catalog->id,
+                        'designation' => $data['designation'] ?: null,
+                        'purchase_date' => $this->parseDate($data['purchase_date']) ?? now()->toDateString(),
+                        'condition' => in_array($data['condition'], ['New', 'Good', 'Fair', 'Poor', 'Damaged'], true)
+                            ? $data['condition'] : 'New',
+                        'location' => $data['location'] ?: null,
+                        'notes' => $data['notes'] ?: null,
+                    ]);
+
+                    $this->serials->assign($item);
+
+                    if (is_numeric($data['purchase_price']) && (float) $data['purchase_price'] > 0) {
+                        $transaction = Transaction::create([
+                            'amount' => (float) $data['purchase_price'],
+                            'transaction_date' => $item->purchase_date,
+                            'transaction_type' => 'expense',
+                            'category' => 'equipment',
+                            'description' => 'Equipment purchase: '.$item->unique_identifier,
+                            'recorded_by_user_id' => $request->user()?->id,
+                            'status' => 'Paid',
+                            'fiscal_year' => now()->year,
+                        ]);
+                        $item->purchase_transaction_id = $transaction->id;
+                        $item->save();
+                    }
+                });
+
+                $imported++;
+            } catch (Throwable $e) {
+                $errors[] = __('Row :line: :message', ['line' => $line, 'message' => $e->getMessage()]);
+            }
+        }
+
+        $message = __(':count items imported successfully.', ['count' => $imported]);
+
+        if ($errors !== []) {
+            return back()->with('success', $message)->with('error', implode("\n", array_slice($errors, 0, 10)));
+        }
+
+        return back()->with('success', $message);
+    }
+
+    /**
+     * @param  array<int, mixed>  $row
+     * @return array<string, string|null>
+     */
+    private function mapImportRow(array $row): array
+    {
+        $data = [];
+        foreach (self::IMPORT_COLUMNS as $index => [$key]) {
+            $value = $row[$index] ?? null;
+            $data[$key] = is_string($value) ? trim($value) : ($value === null ? null : trim((string) $value));
+        }
+
+        return $data;
+    }
+
+    private function parseDate(?string $value): ?string
+    {
+        if (! $value) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value)->format('Y-m-d');
+        } catch (Throwable) {
+            return null;
+        }
     }
 }

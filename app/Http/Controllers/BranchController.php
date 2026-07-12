@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Branch;
+use App\Models\Player;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -14,12 +15,32 @@ class BranchController extends Controller
     {
         $branches = Branch::query()
             ->withCount('players')
+            ->with('players:id')
             ->orderBy('name')
             ->get();
 
         return Inertia::render('Settings/Branches', [
             'branches' => $branches,
+            // For assigning members directly from the branches menu.
+            'players' => Player::where('archived', false)->orderBy('lastname')->orderBy('firstname')->get()
+                ->map(fn (Player $p) => [
+                    'id' => $p->id,
+                    'fullname' => $p->fullname,
+                    'membership_id' => $p->membership_id,
+                ]),
         ]);
+    }
+
+    public function syncPlayers(Request $request, Branch $branch): RedirectResponse
+    {
+        $validated = $request->validate([
+            'player_ids' => ['present', 'array'],
+            'player_ids.*' => ['integer', 'exists:players,id'],
+        ]);
+
+        $branch->players()->sync($validated['player_ids']);
+
+        return back()->with('success', 'Branch members updated.');
     }
 
     public function store(Request $request): RedirectResponse

@@ -159,6 +159,7 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         // Settings - lookup tables
         Route::resource('categories', CategoryController::class)->except(['show', 'create', 'edit']);
         Route::resource('branches', BranchController::class)->except(['show', 'create', 'edit']);
+        Route::post('/branches/{branch}/players', [BranchController::class, 'syncPlayers'])->name('branches.players.sync');
         Route::resource('equipment-categories', EquipmentCategoryController::class)->except(['show', 'create', 'edit']);
         Route::resource('storage-locations', StorageLocationController::class)->except(['show', 'create', 'edit']);
         Route::resource('jobs', MemberJobController::class)->except(['show', 'create', 'edit']);

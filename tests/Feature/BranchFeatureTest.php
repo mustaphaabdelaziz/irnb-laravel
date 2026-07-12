@@ -18,6 +18,46 @@ class BranchFeatureTest extends TestCase
         return User::factory()->create(['privileges' => ['admin'], 'email_verified_at' => now()]);
     }
 
+    private function player(string $membershipId): Player
+    {
+        return Player::create(['firstname' => 'P'.$membershipId, 'membership_id' => $membershipId, 'join_year' => 2024]);
+    }
+
+    #[Test]
+    public function members_can_be_assigned_from_the_branches_menu(): void
+    {
+        $branch = Branch::create(['name' => 'Swimming']);
+        $a = $this->player('202400001');
+        $b = $this->player('202400002');
+
+        $this->actingAs($this->admin())
+            ->post(route('branches.players.sync', $branch), ['player_ids' => [$a->id, $b->id]])
+            ->assertRedirect();
+
+        $this->assertEqualsCanonicalizing([$a->id, $b->id], $branch->fresh()->players->pluck('id')->all());
+
+        // Re-syncing replaces the set; an empty array clears it.
+        $this->actingAs($this->admin())
+            ->post(route('branches.players.sync', $branch), ['player_ids' => []])
+            ->assertRedirect();
+        $this->assertCount(0, $branch->fresh()->players);
+    }
+
+    #[Test]
+    public function the_branches_page_exposes_players_and_member_ids(): void
+    {
+        $branch = Branch::create(['name' => 'Football']);
+        $p = $this->player('202400003');
+        $branch->players()->sync([$p->id]);
+
+        $this->actingAs($this->admin())
+            ->get(route('branches.index'))
+            ->assertInertia(fn ($page) => $page
+                ->component('Settings/Branches')
+                ->has('players', 1)
+                ->has('branches.0.players', 1));
+    }
+
     #[Test]
     public function it_creates_a_branch_with_locale_names(): void
     {

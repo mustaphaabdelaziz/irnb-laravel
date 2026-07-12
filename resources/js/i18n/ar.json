@@ -303,6 +303,8 @@
     "members": "الأعضاء",
     "branches": "الفروع",
     "all_branches": "كل الفروع",
+    "add_branch": "أضف فرعاً…",
+    "no_branches_hint": "لا توجد فروع بعد. أنشئها من",
     "default": "افتراضي",
     "membership_id": "رقم العضوية",
     "membership_status": "حالة العضوية",

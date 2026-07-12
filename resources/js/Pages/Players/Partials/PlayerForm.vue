@@ -56,6 +56,29 @@ const form = useForm({
     archived: p.archived || false,
 });
 
+// --- Branch multiselect (searchable add + removable chips) ---
+const branchPick = ref('');
+const branchesById = computed(() => Object.fromEntries(props.branches.map((b) => [b.id, b])));
+const branchOptions = computed(() => {
+    const taken = new Set(form.branch_ids);
+    return props.branches
+        .filter((b) => !taken.has(b.id))
+        .map((b) => ({ value: b.id, label: b.localized_name || b.name }));
+});
+function addBranch() {
+    if (!branchPick.value) return;
+    const id = Number(branchPick.value);
+    if (!form.branch_ids.includes(id)) form.branch_ids.push(id);
+    branchPick.value = '';
+}
+function removeBranch(id) {
+    form.branch_ids = form.branch_ids.filter((x) => x !== id);
+}
+function branchLabel(id) {
+    const b = branchesById.value[id];
+    return b ? (b.localized_name || b.name) : `#${id}`;
+}
+
 // --- Membership id preview ---
 const pad5 = (n) => String(n).padStart(5, '0');
 const membershipPreview = computed(() => {
@@ -237,14 +260,24 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                 </div>
                 <div class="sm:col-span-2 lg:col-span-3">
                     <InputLabel :value="t('branches')" />
-                    <div v-if="branches.length" class="mt-1 flex flex-wrap gap-2">
-                        <label v-for="b in branches" :key="b.id" class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors"
-                            :class="form.branch_ids.includes(b.id) ? 'border-primary-400 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-200' : 'border-slate-300 text-slate-700 dark:border-slate-700 dark:text-slate-200'">
-                            <input type="checkbox" :value="b.id" v-model="form.branch_ids" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500" />
-                            {{ b.localized_name || b.name }}
-                        </label>
+                    <SearchableSelect
+                        v-if="branches.length"
+                        v-model="branchPick"
+                        :options="branchOptions"
+                        :placeholder="t('add_branch')"
+                        class="mt-1"
+                        @update:modelValue="addBranch"
+                    />
+                    <div v-if="form.branch_ids.length" class="mt-2 flex flex-wrap gap-2">
+                        <span v-for="id in form.branch_ids" :key="id" class="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-3 py-1 text-sm text-primary-700 dark:bg-primary-900/30 dark:text-primary-200">
+                            {{ branchLabel(id) }}
+                            <button type="button" @click="removeBranch(id)" class="text-primary-400 hover:text-rose-600">×</button>
+                        </span>
                     </div>
-                    <p v-else class="mt-1 text-xs text-slate-400">{{ t('no_data') }}</p>
+                    <p v-if="!branches.length" class="mt-1 text-xs text-slate-400">
+                        {{ t('no_branches_hint') }}
+                        <Link :href="route('branches.index')" class="text-primary-600 hover:underline">{{ t('branches') }}</Link>
+                    </p>
                 </div>
                 <div>
                     <InputLabel :value="t('skill_level')" />

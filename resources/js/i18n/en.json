@@ -303,6 +303,8 @@
     "members": "Members",
     "branches": "Branches",
     "all_branches": "All branches",
+    "add_branch": "Add a branch…",
+    "no_branches_hint": "No branches yet. Create some in",
     "default": "Default",
     "membership_id": "Membership ID",
     "membership_status": "Membership status",

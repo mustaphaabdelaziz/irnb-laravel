@@ -303,6 +303,8 @@
     "members": "Membres",
     "branches": "Sections",
     "all_branches": "Toutes les sections",
+    "add_branch": "Ajouter une section…",
+    "no_branches_hint": "Aucune section pour l'instant. Créez-en dans",
     "default": "Par défaut",
     "membership_id": "Numéro d'adhésion",
     "membership_status": "Statut d'adhésion",

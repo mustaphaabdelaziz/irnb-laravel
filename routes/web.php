@@ -114,7 +114,10 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
     Route::get('/players/{player}/card', [ReportController::class, 'playerCard'])->name('players.card');
     Route::get('/reports/financial', [ReportController::class, 'financialSummary'])->name('reports.financial');
 
-    // Equipment
+    // Equipment — catalog (equipment list) import/export declared before the resource so the static paths win
+    Route::get('/equipment/catalogs/export', [EquipmentCatalogController::class, 'export'])->name('equipment.catalogs.export');
+    Route::get('/equipment/catalogs/import/template', [EquipmentCatalogController::class, 'importTemplate'])->name('equipment.catalogs.import.template');
+    Route::post('/equipment/catalogs/import', [EquipmentCatalogController::class, 'import'])->name('equipment.catalogs.import');
     Route::resource('equipment/catalogs', EquipmentCatalogController::class)->names('equipment.catalogs');
     Route::post('/equipment/items', [EquipmentItemController::class, 'store'])->name('equipment.items.store');
     Route::get('/equipment/items/preview-serial', [EquipmentItemController::class, 'previewSerial'])->name('equipment.items.preview-serial');

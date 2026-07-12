@@ -7,11 +7,15 @@ use App\Models\EquipmentCatalog;
 use App\Models\EquipmentCategory;
 use App\Models\Player;
 use App\Models\StorageLocation;
+use App\Services\Export\ExcelExporter;
 use App\Services\Storage\FileStorageService;
+use App\Support\Csv;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
 
 class EquipmentCatalogController extends Controller
 {
@@ -121,5 +125,118 @@ class EquipmentCatalogController extends Controller
 
         return redirect()->route('equipment.catalogs.index')
             ->with('success', 'Equipment catalog deleted successfully.');
+    }
+
+    /**
+     * Import columns shared by the template and the importer.
+     *
+     * @var list<array{0:string,1:string,2:string}>
+     */
+    private const IMPORT_COLUMNS = [
+        ['name', 'الاسم', 'كرة مباراة'],
+        ['category', 'الفئة', 'Balls'],
+        ['brand', 'العلامة التجارية', 'Adidas'],
+        ['purchase_price', 'سعر الشراء', ''],
+        ['description', 'الوصف', ''],
+    ];
+
+    public function importTemplate(): StreamedResponse
+    {
+        $headers = array_map(fn ($column) => $column[1], self::IMPORT_COLUMNS);
+        $example = array_map(fn ($column) => $column[2], self::IMPORT_COLUMNS);
+
+        return Csv::download('equipment-catalogs-template.csv', $headers, [$example]);
+    }
+
+    public function export(ExcelExporter $exporter): StreamedResponse
+    {
+        $rows = EquipmentCatalog::query()->withCount('items')->orderBy('name')->get()
+            ->map(fn (EquipmentCatalog $c) => [
+                $c->name,
+                $c->category,
+                $c->brand,
+                (string) $c->purchase_price,
+                $c->items_count,
+                $c->description,
+            ]);
+
+        $headers = ['name', 'category', 'brand', 'purchase_price', 'item_count', 'description'];
+
+        return $exporter->download('Equipment catalogs', $headers, $rows->all(),
+            'equipment-catalogs-'.now()->format('Y-m-d').'.csv');
+    }
+
+    public function import(Request $request): RedirectResponse
+    {
+        $request->validate(['file' => ['required', 'file', 'max:10240']]);
+
+        try {
+            $rows = Csv::readRows($request->file('file')->getRealPath());
+        } catch (Throwable $e) {
+            return back()->with('error', __('Could not read the file. Please use the provided template.'));
+        }
+
+        array_shift($rows); // drop the header row
+
+        // Resolve categories case-insensitively to their canonical name.
+        $categories = EquipmentCategory::pluck('name')
+            ->mapWithKeys(fn ($name) => [mb_strtolower(trim($name)) => $name]);
+
+        $imported = 0;
+        $errors = [];
+
+        foreach ($rows as $i => $row) {
+            $line = $i + 2;
+            $data = $this->mapImportRow($row);
+
+            if (($data['name'] ?? '') === '') {
+                continue; // blank line
+            }
+
+            $category = $categories[mb_strtolower((string) $data['category'])] ?? null;
+            if ($category === null) {
+                $errors[] = __('Row :line: unknown category ":category".', ['line' => $line, 'category' => $data['category']]);
+
+                continue;
+            }
+
+            if (EquipmentCatalog::where('name', $data['name'])->exists()) {
+                $errors[] = __('Row :line: ":name" already exists — skipped.', ['line' => $line, 'name' => $data['name']]);
+
+                continue;
+            }
+
+            EquipmentCatalog::create([
+                'name' => $data['name'],
+                'category' => $category,
+                'brand' => $data['brand'] ?: null,
+                'description' => $data['description'] ?: null,
+                'purchase_price' => is_numeric($data['purchase_price']) ? (float) $data['purchase_price'] : null,
+            ]);
+            $imported++;
+        }
+
+        $message = __(':count equipments imported successfully.', ['count' => $imported]);
+
+        if ($errors !== []) {
+            return back()->with('success', $message)->with('error', implode("\n", array_slice($errors, 0, 10)));
+        }
+
+        return back()->with('success', $message);
+    }
+
+    /**
+     * @param  array<int, mixed>  $row
+     * @return array<string, string|null>
+     */
+    private function mapImportRow(array $row): array
+    {
+        $data = [];
+        foreach (self::IMPORT_COLUMNS as $index => [$key]) {
+            $value = $row[$index] ?? null;
+            $data[$key] = is_string($value) ? trim($value) : ($value === null ? null : trim((string) $value));
+        }
+
+        return $data;
     }
 }

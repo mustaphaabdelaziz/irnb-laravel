@@ -210,19 +210,74 @@ class BackupRestoreTest extends TestCase
 
         $this->assertSame(['Ali', 'Omar'], $this->players());
 
-        // Drop the connection before restoring — this is the test standing in for the
-        // DB::disconnect() that restore() performs on the live Laravel connection. It
-        // is load-bearing on Windows: the swap rename()s the incoming database over the
-        // live file, and Windows refuses to rename over a file that anyone still holds
-        // open (SQLite does not open with FILE_SHARE_DELETE). Leaving this handle open
-        // models a *second process* sitting on the database, not the app restoring its
-        // own — and in that case failing is correct, which the tests below cover.
+        // Drop the connection before restoring — this test stands in for the
+        // DB::disconnect() that restore() performs on the live Laravel connection.
+        // It is the *clean* topology: nobody at all is holding the database. The
+        // production topology — a second process (the NativePHP queue worker) still
+        // holding it open — is covered by
+        // it_restores_while_the_queue_worker_still_holds_the_database_open().
         $pdo = null;
 
         $this->service()->restore($backup);
 
         $this->assertSame(['Ali'], $this->players());
         $this->assertSame('ORIGINAL', file_get_contents($this->mediaPath.DIRECTORY_SEPARATOR.'photo.jpg'));
+        $this->assertSame([], $this->stagingDirs(), 'A successful restore left a staging directory behind.');
+    }
+
+    #[Test]
+    public function it_restores_while_the_queue_worker_still_holds_the_database_open(): void
+    {
+        // This is not an edge case — it is the ONLY topology the packaged app ever runs
+        // in, and a restore that cannot survive it is a restore that never works.
+        //
+        // NativeServiceProvider forces `queue.default = database` and calls
+        // fireUpQueueWorkers() on every non-console boot (lines 144/148); it points that
+        // connection at config('nativephp-internal.database_path') (line 201) — the exact
+        // file AppServiceProvider hands to BackupService. config/nativephp.php declares a
+        // `default` worker, and QueueWorker::up() spawns it as a *persistent* child
+        // process running `queue:work`. That child holds an open PDO handle on the
+        // database for the entire life of the app, and DB::disconnect() only closes the
+        // web process's own connection — it cannot reach into another process.
+        //
+        // Windows refuses to rename() over a file that anyone still holds open (SQLite
+        // does not open with FILE_SHARE_DELETE), so a swap built on rename() alone can
+        // never complete in production: every restore would run all the way to the point
+        // of no return, fail, and tell the user their data was saved in a snapshot they
+        // do not need — while quietly leaving another full copy of the database and every
+        // photo on the drive. copy()-ing over an open file DOES succeed on Windows, and
+        // by the time the swap runs the incoming database is already whole at <db>.new
+        // and the pre-restore snapshot is written, so the fallback is safe.
+        $backup = $this->service()->create();
+
+        // Diverge from the backup so a database that was not swapped is unmistakable.
+        $pdo = new \PDO('sqlite:'.$this->dbPath);
+        $pdo->exec("INSERT INTO players (name) VALUES ('Omar')");
+        file_put_contents($this->mediaPath.DIRECTORY_SEPARATOR.'photo.jpg', 'CHANGED');
+        $pdo = null;
+
+        $this->assertSame(['Ali', 'Omar'], $this->players());
+
+        // The queue worker: a second connection, opened before the restore and still open
+        // during it, that restore()'s DB::disconnect() has no way of closing. Idle, just
+        // as the worker is between jobs — merely holding the handle is enough to block a
+        // rename over the file.
+        $worker = new \PDO('sqlite:'.$this->dbPath);
+        $worker->query('SELECT count(*) FROM players')->fetchColumn();
+
+        try {
+            $this->service()->restore($backup);
+        } finally {
+            $worker = null;
+        }
+
+        $this->assertSame(['Ali'], $this->players(), 'The restore did not replace the database while it was held open.');
+        $this->assertSame(
+            ['photo.jpg' => 'ORIGINAL'],
+            $this->mediaTree(),
+            'The restore did not replace the media while the database was held open.',
+        );
+        $this->assertFileDoesNotExist($this->dbPath.'.new', 'The incoming database was left staged at <db>.new.');
         $this->assertSame([], $this->stagingDirs(), 'A successful restore left a staging directory behind.');
     }
 
@@ -451,6 +506,105 @@ class BackupRestoreTest extends TestCase
         $this->assertSame(['photo.jpg' => 'ORIGINAL'], $this->mediaTree(), 'The media was swapped despite the database copy failing.');
         $this->assertFileExists($marker, 'The marker was dropped even though the database was never replaced.');
         $this->assertSame([], $this->stagingDirs());
+    }
+
+    #[Test]
+    public function a_superseded_media_folder_that_cannot_be_deleted_is_reported_not_swallowed(): void
+    {
+        // deleteDirectory() used to return void and swallow every failure, so the
+        // superseded media tree (storage/app/public.old-<ts>) could outlive a *successful*
+        // restore with nobody the wiser: a full duplicate of every photo the club owns,
+        // which nothing in the app ever prunes. And because its name is only
+        // second-granular, a second restore inside the same second would find the name
+        // already taken, fail to move the live media aside, and abort with the database
+        // already swapped.
+        //
+        // A read-only file reproduces the failure honestly: Windows unlink() refuses one,
+        // so the recursive delete genuinely cannot finish.
+        $locked = $this->mediaPath.DIRECTORY_SEPARATOR.'locked.jpg';
+        file_put_contents($locked, 'LOCKED');
+
+        $backup = $this->service()->create();
+
+        // Marked read-only only AFTER the backup was taken, so the copy inside the zip is
+        // an ordinary file: the restored tree still drops into place cleanly and it is
+        // purely the retired tree that cannot be removed.
+        chmod($locked, 0444);
+
+        $e = $this->failedRestore($backup);
+
+        try {
+            $retired = glob($this->mediaHolder.DIRECTORY_SEPARATOR.'public.old-*') ?: [];
+            $snapshots = $this->snapshots();
+
+            $this->assertCount(1, $retired, 'The undeletable media tree should still be on disk.');
+            $this->assertCount(1, $snapshots);
+
+            // The restore itself SUCCEEDED. Saying "failed partway through" here would send
+            // the user off to recover from a snapshot they do not need — the very thing this
+            // whole change exists to stop.
+            $this->assertStringContainsString('restored successfully', $e->getMessage());
+            $this->assertStringNotContainsString('failed partway through', $e->getMessage());
+
+            // But the leftover is named, because only the user can clear it...
+            $this->assertStringContainsString($retired[0], $e->getMessage());
+
+            // ...and so is the snapshot, as every error past the point of no return must.
+            $this->assertStringContainsString($snapshots[0], $e->getMessage());
+
+            // The restore really did land: database and media are the backup's.
+            $this->assertSame(['Ali'], $this->players());
+            $this->assertSame(
+                ['locked.jpg' => 'LOCKED', 'photo.jpg' => 'ORIGINAL'],
+                $this->mediaTree(),
+                'The restored media must be in place even though the old tree could not be deleted.',
+            );
+            $this->assertSame([], $this->stagingDirs());
+        } finally {
+            // Let tearDown() remove the tree.
+            foreach (glob($this->mediaHolder.DIRECTORY_SEPARATOR.'public.old-*'.DIRECTORY_SEPARATOR.'*') ?: [] as $file) {
+                @chmod($file, 0666);
+            }
+        }
+    }
+
+    #[Test]
+    public function restoring_a_backup_that_held_no_media_empties_the_media_tree(): void
+    {
+        // A backup taken while the club had zero photos carries no media/ entry in the
+        // zip at all. The restore used to key its media swap off "is there a media/
+        // directory in the staging area?", so restoring such a backup replaced the
+        // database and left TODAY's photos sitting there — the club is handed rows that
+        // reference nothing and files the backup says never existed, which is not "exactly
+        // as it was". The manifest records media_files, which tells an intentionally empty
+        // media tree apart from one that is merely absent from the archive.
+        $this->deleteTree($this->mediaPath);
+        mkdir($this->mediaPath, 0777, true);
+        $this->assertSame([], $this->mediaTree());
+
+        $backup = $this->service()->create();
+
+        // The claim the restore keys off has to actually be in the manifest.
+        $zip = new ZipArchive;
+        $zip->open($backup);
+        $manifest = json_decode($zip->getFromName('manifest.json'), true);
+        $this->assertFalse($zip->locateName('media/'), 'A media-less backup should carry no media entry.');
+        $zip->close();
+
+        $this->assertSame(0, $manifest['media_files']);
+
+        // The club uploads photos *after* the backup was taken.
+        file_put_contents($this->mediaPath.DIRECTORY_SEPARATOR.'uploaded-later.jpg', 'ADDED-AFTER-THE-BACKUP');
+
+        $this->service()->restore($backup);
+
+        $this->assertDirectoryExists($this->mediaPath, 'The media root must still exist — just empty.');
+        $this->assertSame(
+            [],
+            $this->mediaTree(),
+            'Restoring a backup that held no media must leave no media behind.',
+        );
+        $this->assertSame([], $this->stagingDirs(), 'A successful restore left a staging directory behind.');
     }
 
     #[Test]

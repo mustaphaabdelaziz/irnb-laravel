@@ -118,6 +118,7 @@ function backupNow() {
 function askRestore(backup) {
     restoring.value = backup;
     restoreForm.reset();
+    restoreForm.clearErrors();
     restoreForm.name = backup.name;
 }
 
@@ -151,6 +152,7 @@ function destroy() {
 
                 <div class="min-w-0 flex-1 space-y-3">
                     <p class="whitespace-pre-line break-words text-sm font-medium">{{ lastRestore.message }}</p>
+                    <p v-if="lastRestore.at" class="text-xs opacity-80">{{ t('date') }}: {{ formatDate(lastRestore.at) }}</p>
 
                     <div v-if="lastRestore.snapshot">
                         <p class="text-xs font-semibold uppercase tracking-wide opacity-80">{{ t('snapshot') }}</p>

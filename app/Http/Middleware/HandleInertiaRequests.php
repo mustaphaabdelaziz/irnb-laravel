@@ -35,6 +35,8 @@ class HandleInertiaRequests extends Middleware
                 'permissions' => $permissions,
             ],
             'locale' => app()->getLocale(),
+            // Gates desktop-only UI (the Backup page) — there is no folder picker on the web.
+            'isDesktop' => (bool) config('nativephp-internal.running'),
             'appName' => $config->club_name ?? ['ar' => 'Sports Club', 'fr' => 'Club Sportif', 'en' => 'Sports Club'],
             'appShortName' => $config->club_short_name ?? 'IRNB',
             'branding' => $config->branding,

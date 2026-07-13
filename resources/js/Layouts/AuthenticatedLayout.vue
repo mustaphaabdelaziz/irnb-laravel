@@ -1,6 +1,7 @@
 <script>
 // Module scope: survives layout remounts across Inertia navigations.
 let sidebarScrollTop = 0;
+let backupHeartbeat = null;
 </script>
 
 <script setup>
@@ -29,12 +30,35 @@ const navEl = ref(null);
 function rememberNavScroll() {
     sidebarScrollTop = navEl.value?.scrollTop ?? 0;
 }
+
+// A desktop app only runs when it is open, and there is no scheduler. So the
+// automatic backup is driven from here: once per app launch, then every 30
+// minutes while the window stays open. The server decides whether one is
+// actually due — this just knocks on the door.
+function tickBackup(trigger) {
+    window.axios.post('/backups/tick', { trigger }).catch(() => {});
+}
+
 onMounted(() => {
     if (navEl.value) navEl.value.scrollTop = sidebarScrollTop;
+
+    if (!isDesktop.value || !isSuperadmin.value) return;
+
+    // sessionStorage is cleared when the Electron window closes, so this fires
+    // exactly once per app launch — not on every Inertia navigation.
+    if (!sessionStorage.getItem('backupLaunchTick')) {
+        sessionStorage.setItem('backupLaunchTick', '1');
+        tickBackup('launch');
+    }
+
+    if (backupHeartbeat === null) {
+        backupHeartbeat = setInterval(() => tickBackup('heartbeat'), 30 * 60 * 1000);
+    }
 });
 
 const user = computed(() => page.props.auth.user);
 const isAdmin = computed(() => page.props.auth?.isAdmin ?? false);
+const isDesktop = computed(() => page.props.isDesktop ?? false);
 const pendingApprovals = computed(() => page.props.pendingApprovals ?? 0);
 const currentLocale = computed(() => page.props.locale || 'en');
 const appName = computed(() => {
@@ -96,6 +120,7 @@ const sections = computed(() => {
             { label: t('jobs'), href: '/jobs', icon: 'jobs', prefix: '/jobs', module: 'categories' },
             { label: t('positions'), href: '/positions', icon: 'positions', prefix: '/positions', module: 'categories' },
             { label: t('settings'), href: '/settings', icon: 'settings', prefix: '/settings', module: 'settings' },
+            { label: t('backup'), href: '/backups', icon: 'archive', prefix: '/backups', superadminOnly: true, desktopOnly: true },
         ] },
     ];
 
@@ -103,7 +128,8 @@ const sections = computed(() => {
         .map((section) => ({
             ...section,
             items: section.items.filter((i) =>
-                i.always || (i.superadminOnly ? isSuperadmin.value : can(i.module, 'view'))),
+                (!i.desktopOnly || isDesktop.value)
+                && (i.always || (i.superadminOnly ? isSuperadmin.value : can(i.module, 'view')))),
         }))
         .filter((section) => section.items.length > 0);
 });

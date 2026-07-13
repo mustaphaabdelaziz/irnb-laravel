@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureAccountApproved;
+use App\Http\Middleware\EnsureDesktop;
 use App\Http\Middleware\EnsurePermission;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\EnsureUserIsSuperadmin;
@@ -27,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,
             'approved' => EnsureAccountApproved::class,
+            'desktop' => EnsureDesktop::class,
             'permission' => EnsurePermission::class,
             'superadmin' => EnsureUserIsSuperadmin::class,
         ]);

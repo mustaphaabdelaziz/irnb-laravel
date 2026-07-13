@@ -179,70 +179,111 @@ class BackupService
             throw new RuntimeException("Could not create the working folder: {$staging}");
         }
 
-        $extracted = $zip->extractTo($staging);
-        $zip->close();
-
-        if (! $extracted) {
-            $this->deleteDirectory($staging);
-
-            throw new RuntimeException('The backup archive could not be unpacked.');
-        }
-
-        $stagedDb = $staging.DIRECTORY_SEPARATOR.'database.sqlite';
-
+        // Everything below runs inside the finally, so the staging directory is removed
+        // on EVERY exit path — including a failing snapshot(). Staging holds a plaintext
+        // copy of the whole database and every photo, and nothing else in the app ever
+        // prunes storage/app/backup-tmp, so a leak here accumulates a full unencrypted
+        // copy of the club's data per failed restore.
         try {
-            $this->assertHealthyDatabase($stagedDb);
-        } catch (\Throwable $e) {
-            $this->deleteDirectory($staging);
+            $extracted = $zip->extractTo($staging);
+            $zip->close();
 
-            throw $e;
-        }
-
-        // 3. Undo point. Still non-destructive.
-        $snapshot = $this->snapshot();
-
-        // 4. Past here, the snapshot is the only way back.
-        try {
-            DB::disconnect();
-
-            @unlink($this->databasePath.'-wal');
-            @unlink($this->databasePath.'-shm');
-
-            if (! @copy($stagedDb, $this->databasePath)) {
-                throw new RuntimeException('Could not write the restored database into place.');
+            if (! $extracted) {
+                throw new RuntimeException('The backup archive could not be unpacked.');
             }
 
-            $stagedMedia = $staging.DIRECTORY_SEPARATOR.'media';
+            $stagedDb = $staging.DIRECTORY_SEPARATOR.'database.sqlite';
 
-            if (is_dir($stagedMedia)) {
-                $retired = $this->mediaPath.'.old-'.$this->timestamp();
+            $this->assertHealthyDatabase($stagedDb);
 
-                if (is_dir($this->mediaPath) && ! $this->moveDirectory($this->mediaPath, $retired)) {
-                    throw new RuntimeException('Could not move the current media folder aside.');
+            // 3. Undo point. Still non-destructive.
+            $snapshot = $this->snapshot();
+
+            // 4. Past here, the snapshot is the only way back.
+            $strandedMedia = null;
+
+            try {
+                // Load-bearing, not hygiene: the swap below rename()s the incoming file
+                // over the live database, and Windows refuses to rename over a file that
+                // anyone still holds open (SQLite does not open with FILE_SHARE_DELETE).
+                // Without this, the restore would fail on the app's own connection. If a
+                // *second* process is holding the database, the rename still fails — and
+                // failing there is correct: the live database is left whole.
+                DB::disconnect();
+
+                // Land the incoming database beside the live one BEFORE destroying
+                // anything. Unlinking -wal/-shm first would turn a failed copy (the
+                // snapshot zip was just written to this same drive, which is now full)
+                // from "copy failed, nothing lost" into "copy failed, and every
+                // transaction still sitting in the uncheckpointed WAL is gone".
+                $incoming = $this->databasePath.'.new';
+
+                if (! @copy($stagedDb, $incoming)) {
+                    @unlink($incoming);
+
+                    throw new RuntimeException('Could not write the restored database into place.');
                 }
 
-                if (! $this->moveDirectory($stagedMedia, $this->mediaPath)) {
-                    // Put the originals back before giving up.
-                    if (is_dir($retired)) {
-                        $this->moveDirectory($retired, $this->mediaPath);
+                @unlink($this->databasePath.'-wal');
+                @unlink($this->databasePath.'-shm');
+
+                if (! @rename($incoming, $this->databasePath)) {
+                    @unlink($incoming);
+
+                    throw new RuntimeException('Could not write the restored database into place.');
+                }
+
+                // The database on disk is now the backup's, possibly on an older schema.
+                // Drop the marker IMMEDIATELY — before the media swap, which can still
+                // fail. NativeAppServiceProvider::firstRunSetup() skips `migrate` when
+                // this marker's signature matches the current migration set, so leaving
+                // it behind after the database has already been replaced would let the
+                // app boot on an old schema while claiming to be current: every request
+                // then dies on a missing table, and the self-heal is defeated in exactly
+                // the case it exists for.
+                @unlink(dirname($this->databasePath).DIRECTORY_SEPARATOR.'.migrated');
+
+                $stagedMedia = $staging.DIRECTORY_SEPARATOR.'media';
+
+                if (is_dir($stagedMedia)) {
+                    $retired = $this->mediaPath.'.old-'.$this->timestamp();
+
+                    // rename() and nothing else. There is deliberately no copy-then-delete
+                    // fallback: the staging directory (storage_path('app/backup-tmp')) and
+                    // the media root (storage_path('app/public')) are both under
+                    // storage_path(), so they are on one volume by construction and rename()
+                    // can always do the job atomically. A fallback that copies into a target
+                    // it did not create merges the backup's media over media it failed to
+                    // remove — on Windows a single open handle (antivirus, the indexer, an
+                    // image viewer) is enough to make rename() fail — and then reports
+                    // success, leaving old ∪ backup with no error. A plain rename() fails
+                    // loudly with the live tree whole, which is the only safe way to be wrong.
+                    if (is_dir($this->mediaPath) && ! @rename($this->mediaPath, $retired)) {
+                        throw new RuntimeException('Could not move the current media folder aside.');
                     }
 
-                    throw new RuntimeException('Could not write the restored media into place.');
+                    if (! @rename($stagedMedia, $this->mediaPath)) {
+                        // Put the originals back before giving up. If even that fails, the
+                        // media survives ONLY at $retired, so the error has to name it.
+                        if (is_dir($retired) && ! @rename($retired, $this->mediaPath)) {
+                            $strandedMedia = $retired;
+                        }
+
+                        throw new RuntimeException('Could not write the restored media into place.');
+                    }
+
+                    // Only once the restored tree is confirmed in place.
+                    $this->deleteDirectory($retired);
+                }
+            } catch (\Throwable $e) {
+                $message = 'The restore failed partway through. Your previous data was saved first and is safe in: '.$snapshot;
+
+                if ($strandedMedia !== null) {
+                    $message .= ' Your media files could not be put back automatically — they are in: '.$strandedMedia;
                 }
 
-                $this->deleteDirectory($retired);
+                throw new RuntimeException($message, 0, $e);
             }
-
-            // Force NativeAppServiceProvider::firstRunSetup() to re-run migrate on the
-            // next launch. Without this, restoring a backup taken on an older schema
-            // into a newer app leaves the DB missing tables the code expects.
-            @unlink(dirname($this->databasePath).DIRECTORY_SEPARATOR.'.migrated');
-        } catch (\Throwable $e) {
-            throw new RuntimeException(
-                'The restore failed partway through. Your previous data was saved first and is safe in: '.$snapshot,
-                0,
-                $e,
-            );
         } finally {
             $this->deleteDirectory($staging);
         }
@@ -325,7 +366,12 @@ class BackupService
                     $mediaFiles++;
                 }
 
-                $zip->addFromString('manifest.json', json_encode([
+                // Like addFile(), addFromString() reports failure by returning false
+                // rather than throwing. A backup with no manifest is rejected by
+                // restore() as "not a backup", so an unchecked failure here would
+                // hand the user a zip that only reveals itself as useless on the day
+                // they need it.
+                $manifestAdded = @$zip->addFromString('manifest.json', json_encode([
                     'app' => config('app.name'),
                     'app_id' => config('nativephp.app_id'),
                     'app_version' => config('nativephp.version'),
@@ -334,6 +380,10 @@ class BackupService
                     'db_bytes' => filesize($tempDb) ?: 0,
                     'media_files' => $mediaFiles,
                 ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
+                if (! $manifestAdded) {
+                    throw new RuntimeException('Could not add the manifest to the backup.');
+                }
 
                 if (! $zip->close()) {
                     throw new RuntimeException("Could not finish writing the backup file: {$target}");
@@ -451,60 +501,6 @@ class BackupService
         }
 
         @rmdir($dir);
-    }
-
-    /**
-     * Moves a directory tree from $from to $to.
-     *
-     * Tries an atomic rename() first — the normal case, since in production
-     * both the media path and the restore staging area are derived from
-     * storage_path() (see AppServiceProvider) and always share one filesystem.
-     * Falls back to a recursive copy-then-delete when rename() cannot do this
-     * atomically (e.g. the two paths sit on different drives/volumes), so a
-     * restore does not fail outright just because of where a path happens to
-     * live.
-     */
-    private function moveDirectory(string $from, string $to): bool
-    {
-        if (@rename($from, $to)) {
-            return true;
-        }
-
-        if (! $this->copyDirectory($from, $to)) {
-            $this->deleteDirectory($to);
-
-            return false;
-        }
-
-        $this->deleteDirectory($from);
-
-        return true;
-    }
-
-    private function copyDirectory(string $from, string $to): bool
-    {
-        if (! is_dir($to) && ! @mkdir($to, 0777, true) && ! is_dir($to)) {
-            return false;
-        }
-
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($from, \FilesystemIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::SELF_FIRST,
-        );
-
-        foreach ($iterator as $item) {
-            $target = $to.DIRECTORY_SEPARATOR.substr($item->getPathname(), strlen($from) + 1);
-
-            if ($item->isDir()) {
-                if (! is_dir($target) && ! @mkdir($target, 0777, true) && ! is_dir($target)) {
-                    return false;
-                }
-            } elseif (! @copy($item->getPathname(), $target)) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     private function tempPath(string $name): string

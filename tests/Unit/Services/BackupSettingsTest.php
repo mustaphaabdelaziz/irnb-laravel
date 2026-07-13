@@ -115,6 +115,14 @@ class BackupSettingsTest extends TestCase
         Carbon::setTestNow('2026-07-13 20:00:00');
         $this->assertFalse($this->settings->isDue('heartbeat'));
 
+        // One second before the exact interval elapses -> not due yet.
+        Carbon::setTestNow('2026-07-14 09:59:59');
+        $this->assertFalse($this->settings->isDue('heartbeat'));
+
+        // Exactly one day after last_run_at -> due (isDue uses lte).
+        Carbon::setTestNow('2026-07-14 10:00:00');
+        $this->assertTrue($this->settings->isDue('heartbeat'));
+
         Carbon::setTestNow('2026-07-14 10:01:00');
         $this->assertTrue($this->settings->isDue('heartbeat'));
 
@@ -135,6 +143,14 @@ class BackupSettingsTest extends TestCase
 
         Carbon::setTestNow('2026-07-18 10:00:00');
         $this->assertFalse($this->settings->isDue('heartbeat'));
+
+        // One second before the exact interval elapses -> not due yet.
+        Carbon::setTestNow('2026-07-20 09:59:59');
+        $this->assertFalse($this->settings->isDue('heartbeat'));
+
+        // Exactly one week after last_run_at -> due (isDue uses lte).
+        Carbon::setTestNow('2026-07-20 10:00:00');
+        $this->assertTrue($this->settings->isDue('heartbeat'));
 
         Carbon::setTestNow('2026-07-20 10:01:00');
         $this->assertTrue($this->settings->isDue('heartbeat'));

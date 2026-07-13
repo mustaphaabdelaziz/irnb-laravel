@@ -24,4 +24,22 @@ use RuntimeException;
  * calling code would silently break the moment the wording changes. This
  * class is the load-bearing signal instead.
  */
-class RestoreFailedAfterSwapException extends RuntimeException {}
+class RestoreFailedAfterSwapException extends RuntimeException
+{
+    /**
+     * @param  string|null  $snapshot  the pre-restore snapshot, as DATA and not only inside
+     *                                 the prose. The message names it because the user reads
+     *                                 the message; the property carries it because
+     *                                 BackupController stores the path (BackupSettings::
+     *                                 recordRestore()) so the banner still has it after the
+     *                                 relaunch, and re-parsing it out of the sentence would
+     *                                 be the string-matching this class exists to avoid.
+     */
+    public function __construct(
+        string $message,
+        public readonly ?string $snapshot = null,
+        ?\Throwable $previous = null,
+    ) {
+        parent::__construct($message, 0, $previous);
+    }
+}

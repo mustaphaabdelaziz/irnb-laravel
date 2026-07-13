@@ -5,6 +5,7 @@ namespace App\Services\Backup;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Native\Desktop\DataObjects\QueueConfig;
 use Native\Desktop\Facades\QueueWorker;
 use RuntimeException;
 use ZipArchive;
@@ -391,6 +392,20 @@ class BackupService
                 // half-swapped, so this can never delete the last whole copy of anything.
                 @unlink($incoming);
 
+                if (! $swapped) {
+                    // Nothing was swapped, so the app carries on running against the live
+                    // database — but releaseDatabase() has already KILLED the queue worker to
+                    // get here, and nothing else brings it back until the app is closed and
+                    // reopened. Left dead, every queued job stops running: including the
+                    // automatic CreateBackup, whose 30-minute heartbeat would go on enqueueing
+                    // jobs that nobody drains. Put back what was taken down.
+                    //
+                    // Only on this branch. Past the swap the worker must STAY down — it is
+                    // holding handles on a database that has just been replaced underneath it,
+                    // and the caller relaunches the whole app instead.
+                    $this->restartQueueWorker();
+                }
+
                 // The cause is carried in the text, not just chained as `previous`. Only this
                 // outer message is ever shown, so a reason that lives solely in $e — "the
                 // -wal is still open", the path of a migration marker that must be deleted
@@ -440,7 +455,7 @@ class BackupService
                 // written for the person reading it, and it is not what the code should be
                 // parsing to make a decision this consequential.
                 if ($swapped) {
-                    throw new RestoreFailedAfterSwapException($message, 0, $e);
+                    throw new RestoreFailedAfterSwapException($message, $snapshot, $e);
                 }
 
                 throw new RuntimeException($message, 0, $e);
@@ -670,6 +685,44 @@ class BackupService
             }
         } catch (\Throwable $e) {
             Log::warning('The restore could not ask the queue worker to stop; continuing to the WAL check.', [
+                'exception' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Starts the queue worker back up after a restore that aborted BEFORE the swap.
+     *
+     * stopQueueWorker() kills the worker in step 4b, before anything destructive has run.
+     * When the restore then aborts — the sidecars never cleared, the rename() lost a race
+     * with an antivirus handle — the live data is provably untouched and the app carries
+     * on. But the worker it killed to get that far stays dead for the rest of the session:
+     * automatic backups (queued CreateBackup jobs) silently stop running, while the
+     * 30-minute heartbeat keeps enqueueing them. Nothing else restarts it.
+     *
+     * Rebuilt from config exactly as NativeServiceProvider::fireUpQueueWorkers() does, so
+     * the worker comes back with the queues, memory limit and timeout it was spawned with.
+     *
+     * Everything here is best-effort and non-throwing. This runs inside the catch block
+     * that is about to report why the restore aborted, and that reason — the WAL that is
+     * still open, the marker that has to be deleted by hand — is the only text the user
+     * ever sees. A failure to respawn a worker must not be allowed to replace it.
+     *
+     * Guarded on nativephp-internal.running for the same reason as stopQueueWorker():
+     * outside the packaged app there is no runtime to talk to and no worker to restart.
+     */
+    private function restartQueueWorker(): void
+    {
+        if (! config('nativephp-internal.running')) {
+            return;
+        }
+
+        try {
+            foreach (QueueConfig::fromConfigArray((array) config('nativephp.queue_workers', [])) as $queueConfig) {
+                QueueWorker::up($queueConfig);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('The aborted restore could not restart the queue worker; automatic backups will not run until the app is restarted.', [
                 'exception' => $e->getMessage(),
             ]);
         }

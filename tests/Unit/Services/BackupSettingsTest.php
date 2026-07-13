@@ -43,7 +43,71 @@ class BackupSettingsTest extends TestCase
             'frequency' => 'daily',
             'retention' => 10,
             'last_run_at' => null,
+            'last_restore' => null,
         ], $this->settings->all());
+    }
+
+    #[Test]
+    public function it_records_and_clears_the_outcome_of_the_last_restore(): void
+    {
+        Carbon::setTestNow('2026-07-13 10:00:00');
+
+        $this->assertNull($this->settings->lastRestore());
+
+        $this->settings->recordRestore(
+            'failed_after_swap',
+            'The restore failed partway through. Your previous data is safe in: C:\\b\\pre-restore\\x.zip',
+            'C:\\b\\pre-restore\\x.zip',
+        );
+
+        $this->assertSame([
+            'outcome' => 'failed_after_swap',
+            'message' => 'The restore failed partway through. Your previous data is safe in: C:\\b\\pre-restore\\x.zip',
+            'snapshot' => 'C:\\b\\pre-restore\\x.zip',
+            'leftover_media' => null,
+            'at' => '2026-07-13T10:00:00+00:00',
+        ], $this->settings->lastRestore());
+
+        $this->settings->clearRestore();
+
+        $this->assertNull($this->settings->lastRestore());
+
+        Carbon::setTestNow();
+    }
+
+    #[Test]
+    public function recording_a_restore_leaves_the_settings_themselves_alone(): void
+    {
+        // The restore outcome shares one electron-store key with the settings, so writing
+        // it must not be a way to lose the destination the backups are written to.
+        $this->settings->put([
+            'enabled' => true,
+            'destination' => $this->dir,
+            'frequency' => 'weekly',
+            'retention' => 3,
+        ]);
+
+        $this->settings->recordRestore('success', 'Backup restored successfully.', null, 'C:\\media.old-2026');
+
+        $all = $this->settings->all();
+
+        $this->assertTrue($all['enabled']);
+        $this->assertSame($this->dir, $all['destination']);
+        $this->assertSame('weekly', $all['frequency']);
+        $this->assertSame(3, $all['retention']);
+        $this->assertSame('success', $all['last_restore']['outcome']);
+        $this->assertSame('C:\\media.old-2026', $all['last_restore']['leftover_media']);
+    }
+
+    #[Test]
+    public function an_unrecognisable_stored_restore_outcome_is_ignored(): void
+    {
+        // electron-store is a JSON file on the user's disk and can hold anything —
+        // including an entry from an older version of the app. A banner the page cannot
+        // make sense of is worse than no banner.
+        Settings::set(BackupSettings::KEY, ['last_restore' => ['outcome' => 'exploded']]);
+
+        $this->assertNull($this->settings->lastRestore());
     }
 
     #[Test]

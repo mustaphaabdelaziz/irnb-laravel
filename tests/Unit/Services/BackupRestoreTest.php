@@ -4,6 +4,7 @@ namespace Tests\Unit\Services;
 
 use App\Services\Backup\BackupService;
 use App\Services\Backup\BackupSettings;
+use App\Services\Backup\RestoreFailedAfterSwapException;
 use Native\Desktop\Contracts\QueueWorker as QueueWorkerContract;
 use Native\Desktop\DataObjects\QueueConfig;
 use Native\Desktop\Facades\QueueWorker;
@@ -693,6 +694,67 @@ class BackupRestoreTest extends TestCase
             $e->getMessage(),
             'The error must name the pre-restore snapshot — it is the only way back.',
         );
+
+        // The CLASS is the signal, and it is the whole reason RestoreFailedAfterSwapException
+        // exists. BackupController::restore() reads it to decide whether the app MUST
+        // relaunch: past the swap the live database has already been replaced and the queue
+        // worker has already been killed to get there, so leaving the app running as it is
+        // is not an option — even though this call failed. Nothing used to pin it: deleting
+        // the `throw new RestoreFailedAfterSwapException` and throwing a plain
+        // RuntimeException instead left the entire suite green, and the controller silently
+        // stopped relaunching after the one failure that cannot be walked away from.
+        $this->assertInstanceOf(
+            RestoreFailedAfterSwapException::class,
+            $e,
+            'A failure past the swap must be distinguishable BY CLASS from a pre-swap one, '
+            .'or the controller cannot know the app has to relaunch.',
+        );
+
+        // And it carries the snapshot as data, not only inside the prose: the controller
+        // persists that path (BackupSettings::recordRestore()) so the banner still names it
+        // after the relaunch, and re-parsing it out of an English sentence is exactly the
+        // string-matching this exception class exists to avoid.
+        $this->assertSame($snapshots[0], $e->snapshot);
+    }
+
+    #[Test]
+    public function an_abort_before_the_swap_puts_the_queue_worker_back(): void
+    {
+        // releaseDatabase() KILLS the queue worker — it is the other process holding the
+        // live database open, and the swap cannot happen while it does. When the restore
+        // then aborts BEFORE the swap (the sidecars never clear, as here), the live data is
+        // provably intact and the app carries on running... with a dead worker. Nothing else
+        // restarts it, so every queued job stops running for the rest of the session:
+        // including the automatic CreateBackup, whose heartbeat goes on enqueueing jobs that
+        // nobody drains. The restore has to put back what it took down.
+        config(['nativephp-internal.running' => true]);
+
+        $worker = QueueWorker::fake();
+
+        $backup = $this->service()->create();
+
+        // A second connection this process cannot close, so the -wal/-shm never clear and
+        // releaseDatabase() aborts — before the swap, with the live database whole.
+        $holder = new \PDO('sqlite:'.$this->dbPath);
+        $holder->exec("INSERT INTO players (name) VALUES ('Omar')");
+
+        $e = $this->failedRestore($backup);
+
+        $holder = null;
+
+        $this->assertNotInstanceOf(
+            RestoreFailedAfterSwapException::class,
+            $e,
+            'This restore must abort before the swap — otherwise it is not testing the abort path.',
+        );
+        $this->assertStringContainsString('Nothing was changed', $e->getMessage());
+
+        // Taken down to attempt the swap...
+        $worker->assertDown('default');
+
+        // ...and put back, with the config it was spawned with, once the swap was abandoned.
+        $worker->assertUp(fn (QueueConfig $config) => $config->alias === 'default'
+            && $config->queuesToConsume === ['default']);
     }
 
     #[Test]
@@ -1029,7 +1091,17 @@ class BackupRestoreTest extends TestCase
         $zip->addFromString('database.sqlite', 'this is definitely not a sqlite file');
         $zip->close();
 
-        $this->assertStringContainsString('corrupt', $this->failedRestore($corrupt)->getMessage());
+        $e = $this->failedRestore($corrupt);
+
+        $this->assertStringContainsString('corrupt', $e->getMessage());
+
+        // The other half of the post-swap signal, and it has to be pinned from both sides.
+        // Nothing was swapped here — the backup was rejected in staging — so this must NOT
+        // be a RestoreFailedAfterSwapException: BackupController::restore() relaunches the
+        // whole app on that class, and throwing the user out of the application to recover
+        // from a restore that changed nothing at all is not a recovery. It is a bug that
+        // looks like one.
+        $this->assertNotInstanceOf(RestoreFailedAfterSwapException::class, $e);
 
         $this->assertLiveDataUntouched();
     }

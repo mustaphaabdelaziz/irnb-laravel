@@ -239,6 +239,13 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         Route::post('/backups/folder', [BackupController::class, 'chooseFolder'])->name('backups.folder');
         Route::post('/backups/restore', [BackupController::class, 'restore'])->name('backups.restore');
         Route::post('/backups/reveal', [BackupController::class, 'reveal'])->name('backups.reveal');
+
+        // Dismisses the persistent restore banner (the `lastRestore` page prop). MUST stay
+        // above /backups/{name}: that route would otherwise match this URL first and try to
+        // delete a backup called "last-restore".
+        Route::delete('/backups/last-restore', [BackupController::class, 'dismissLastRestore'])
+            ->name('backups.last-restore.dismiss');
+
         Route::delete('/backups/{name}', [BackupController::class, 'destroy'])->name('backups.destroy');
     });
 });

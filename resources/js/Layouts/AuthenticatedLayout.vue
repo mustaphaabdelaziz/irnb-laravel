@@ -39,10 +39,27 @@ function tickBackup(trigger) {
     window.axios.post('/backups/tick', { trigger }).catch(() => {});
 }
 
+function stopBackupHeartbeat() {
+    if (backupHeartbeat !== null) {
+        clearInterval(backupHeartbeat);
+        backupHeartbeat = null;
+    }
+}
+
 onMounted(() => {
     if (navEl.value) navEl.value.scrollTop = sidebarScrollTop;
 
-    if (!isDesktop.value || !isSuperadmin.value) return;
+    if (!isDesktop.value || !isSuperadmin.value) {
+        // The interval is module-scoped so it survives the layout remounting on every
+        // Inertia visit — but that means it also survives a change of USER. A superadmin
+        // logging out and someone else logging in happens without a full page reload, so
+        // an interval started for the superadmin would keep POSTing /backups/tick every
+        // 30 minutes as a user who is not allowed to, collecting a 403 that .catch()
+        // swallows. Tear it down when the gate that opened it no longer holds.
+        stopBackupHeartbeat();
+
+        return;
+    }
 
     // sessionStorage is cleared when the Electron window closes, so this fires
     // exactly once per app launch — not on every Inertia navigation.

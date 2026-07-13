@@ -758,6 +758,57 @@ class BackupRestoreTest extends TestCase
     }
 
     #[Test]
+    public function an_abort_that_never_stopped_the_queue_worker_must_not_restart_it(): void
+    {
+        // The other side of an_abort_before_the_swap_puts_the_queue_worker_back(), and the
+        // reason "did we abort before the swap?" is NOT the question the restart hangs on.
+        //
+        // Step 4a — landing the incoming database at <db>.new — runs BEFORE
+        // releaseDatabase(), and releaseDatabase() is the only thing that stops the worker.
+        // So a 4a failure (a full disk; a permission denied on the userData volume) aborts
+        // with the worker still very much alive. Restarting it there posts QueueWorker::up()
+        // for a `queue_default` alias that is still running: in the packaged app that is at
+        // best a no-op error, and at worst Electron spawns a SECOND `queue:work` child and
+        // overwrites the alias — orphaning the first php.exe, which nothing can reach with
+        // down() any more and which holds the SQLite file open for the rest of the session.
+        // Every subsequent restore then aborts at "The database is still open in another
+        // program". No data is lost, but one disk-full attempt bricks restore until the app
+        // is restarted.
+        //
+        // Only put back what was actually taken down.
+        config(['nativephp-internal.running' => true]);
+
+        $worker = QueueWorker::fake();
+
+        $backup = $this->service()->create();
+
+        // Occupy <db>.new with a directory: no copy() can overwrite one, so step 4a fails
+        // exactly as it would on a full disk — before the worker is ever asked to stop.
+        mkdir($this->dbPath.'.new', 0777, true);
+
+        $e = $this->failedRestore($backup);
+
+        // Aborted before the swap, with the live data whole — the branch that DOES restart
+        // the worker when the worker was stopped.
+        $this->assertStringContainsString('Nothing was changed', $e->getMessage());
+
+        // Nothing was taken down...
+        $this->assertSame([], $worker->downs, 'releaseDatabase() never ran, so nothing stopped the worker.');
+
+        // ...so nothing may be put back.
+        $this->assertSame(
+            [],
+            $worker->ups,
+            'The aborted restore restarted a queue worker it never stopped — in the packaged app '
+            .'that orphans a live php.exe holding the database open, and bricks every later restore.',
+        );
+
+        // And it really did abort non-destructively.
+        $this->assertSame(['Ali'], $this->players());
+        $this->assertSame(['photo.jpg' => 'ORIGINAL'], $this->mediaTree());
+    }
+
+    #[Test]
     public function the_migrated_marker_is_gone_even_when_the_media_swap_fails(): void
     {
         // Regression test. The marker used to be deleted at the *end* of step 4, after
@@ -1067,17 +1118,74 @@ class BackupRestoreTest extends TestCase
     #[Test]
     public function it_rejects_a_backup_belonging_to_another_application(): void
     {
+        // Both halves of the identity differ, which is what a genuinely foreign backup looks
+        // like. Neither the app_id nor the name may be allowed to let it in.
         $foreign = $this->destination.DIRECTORY_SEPARATOR.BackupService::PREFIX.'2026-01-01_000000.zip';
 
         $zip = new ZipArchive;
         $zip->open($foreign, ZipArchive::CREATE);
-        $zip->addFromString('manifest.json', json_encode(['app' => 'SomeOtherApp']));
+        $zip->addFromString('manifest.json', json_encode([
+            'app' => 'SomeOtherApp',
+            'app_id' => 'com.someone.else',
+        ]));
         $zip->addFromString('database.sqlite', 'irrelevant');
         $zip->close();
 
         $this->assertStringContainsString('different application', $this->failedRestore($foreign)->getMessage());
 
         $this->assertLiveDataUntouched();
+    }
+
+    #[Test]
+    public function it_rejects_a_backup_whose_manifest_identifies_nothing(): void
+    {
+        // A manifest that carries neither an app_id nor a name identifies nothing, so there
+        // is nothing to match on. It is rejected rather than waved through: the identity
+        // check is either-or, not best-effort.
+        $anonymous = $this->destination.DIRECTORY_SEPARATOR.BackupService::PREFIX.'2026-01-06_000000.zip';
+
+        $zip = new ZipArchive;
+        $zip->open($anonymous, ZipArchive::CREATE);
+        $zip->addFromString('manifest.json', json_encode(['created_at' => '2026-01-06T00:00:00+00:00']));
+        $zip->addFromString('database.sqlite', 'irrelevant');
+        $zip->close();
+
+        $this->assertStringContainsString('different application', $this->failedRestore($anonymous)->getMessage());
+
+        $this->assertLiveDataUntouched();
+    }
+
+    #[Test]
+    public function a_backup_survives_the_club_renaming_its_own_application(): void
+    {
+        // APP_NAME is .env-settable — this codebase builds both the IRNB instance and a
+        // generic white-label from the same source, and a club can rename its own app. If
+        // the identity check keyed on the name ALONE, a club that renamed itself between
+        // taking a backup and needing it would be told "That backup belongs to a different
+        // application" about its own data, with no way past it.
+        //
+        // app_id is the stabler identity and is already in the manifest — but
+        // NATIVEPHP_APP_ID is not reliably present in the packaged runtime's env, which is
+        // why the name was chosen in the first place. So EITHER matching is enough, and only
+        // a backup that matches neither is refused.
+        $backup = $this->service()->create();
+
+        $pdo = new \PDO('sqlite:'.$this->dbPath);
+        $pdo->exec("INSERT INTO players (name) VALUES ('Omar')");
+        $pdo = null; // Stands in for DB::disconnect(); see it_restores_both_the_database_and_the_media().
+
+        $this->assertSame(['Ali', 'Omar'], $this->players());
+
+        // The club renames the app after the backup was taken.
+        config(['app.name' => 'Renamed Sports Club']);
+
+        $this->assertNull(
+            $this->service()->restore($backup),
+            'A club that renamed its own app must still be able to restore its own backup.',
+        );
+
+        $this->assertSame(['Ali'], $this->players());
+        $this->assertSame(['photo.jpg' => 'ORIGINAL'], $this->mediaTree());
     }
 
     #[Test]

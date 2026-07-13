@@ -191,7 +191,26 @@ class BackupService
 
         $manifest = json_decode($manifestRaw, true);
 
-        if (! is_array($manifest) || ($manifest['app'] ?? null) !== config('app.name')) {
+        // Identity is EITHER-OR, and deliberately so.
+        //
+        // This used to be app name alone. But APP_NAME is .env-settable — this codebase
+        // builds both the IRNB instance and a generic white-label from one source, and a
+        // club can rename its own app — so a rename between taking a backup and needing it
+        // told the club "That backup belongs to a different application" about its own data,
+        // with no way past it.
+        //
+        // app_id is the stabler identity and has been in the manifest all along. It is not a
+        // straight swap, though: NATIVEPHP_APP_ID is not reliably present in the packaged
+        // runtime's env, which is exactly why the name was picked originally. So either one
+        // matching is enough to accept, and only a backup that matches NEITHER — or one whose
+        // manifest carries neither, and so identifies nothing at all — is refused. That still
+        // turns away a genuinely foreign archive, which agrees with us on neither count.
+        $matches = is_array($manifest) && (
+            $this->identityMatches($manifest['app_id'] ?? null, config('nativephp.app_id'))
+            || $this->identityMatches($manifest['app'] ?? null, config('app.name'))
+        );
+
+        if (! $matches) {
             $zip->close();
 
             throw new RuntimeException('That backup belongs to a different application.');
@@ -278,10 +297,16 @@ class BackupService
             // on — and getting that wrong is not cosmetic. See the catch.
             $swapped = false;
 
+            // Whether the queue worker was actually taken down, which is NOT the same
+            // question as "did we abort before the swap?" — see the catch.
+            $stopped = false;
+
             try {
                 // 4a. Land the incoming database BESIDE the live one, before anything is
                 // released or removed. A failure here — a full disk, say; the snapshot zip
-                // was just written to this same drive — has then destroyed nothing.
+                // was just written to this same drive — has then destroyed nothing. Note
+                // that it also runs BEFORE the worker is stopped, which is why the restart
+                // in the catch cannot simply key off !$swapped.
                 if (! @copy($stagedDb, $incoming)) {
                     throw new RuntimeException('Could not write the restored database into place.');
                 }
@@ -289,6 +314,16 @@ class BackupService
                 // 4b. Take the live database out of everyone's hands, and PROVE it — without
                 // destroying anything to do so. Throws if it cannot, with the live database
                 // still whole, WAL included.
+                //
+                // Flagged BEFORE the call, not after: releaseDatabase() stops the worker as
+                // its very first act and can still throw afterwards (the WAL never clears).
+                // Setting this on the far side would miss exactly that case — the one where
+                // the worker is most definitely down and most definitely needs putting back.
+                // Claiming we stopped it when the call throws before it got that far is the
+                // harmless direction to be wrong: restartQueueWorker() is best-effort and
+                // idempotent enough for the runtime, whereas failing to restart a worker we
+                // really did kill silently ends automatic backups for the session.
+                $stopped = true;
                 $this->releaseDatabase();
 
                 // 4c. The swap: one rename(), and nothing else.
@@ -392,7 +427,7 @@ class BackupService
                 // half-swapped, so this can never delete the last whole copy of anything.
                 @unlink($incoming);
 
-                if (! $swapped) {
+                if (! $swapped && $stopped) {
                     // Nothing was swapped, so the app carries on running against the live
                     // database — but releaseDatabase() has already KILLED the queue worker to
                     // get here, and nothing else brings it back until the app is closed and
@@ -400,7 +435,19 @@ class BackupService
                     // automatic CreateBackup, whose 30-minute heartbeat would go on enqueueing
                     // jobs that nobody drains. Put back what was taken down.
                     //
-                    // Only on this branch. Past the swap the worker must STAY down — it is
+                    // BOTH conditions, and $stopped is not belt-and-braces. Step 4a — the copy
+                    // to <db>.new — runs before releaseDatabase(), so a full disk or a denied
+                    // write on the userData volume aborts with the worker still ALIVE. Keying
+                    // this off !$swapped alone then posts QueueWorker::up() for a
+                    // `queue_default` alias that is still running: in the packaged app that is
+                    // at best a no-op error, and at worst Electron spawns a SECOND `queue:work`
+                    // child and overwrites the alias — orphaning the first php.exe, which
+                    // down() can no longer reach and which holds the SQLite file open for the
+                    // rest of the session. Every later restore then aborts at "The database is
+                    // still open in another program", so one disk-full attempt bricks restore
+                    // until the app is restarted. Only put back what was actually taken down.
+                    //
+                    // And only before the swap. Past it the worker must STAY down — it is
                     // holding handles on a database that has just been replaced underneath it,
                     // and the caller relaunches the whole app instead.
                     $this->restartQueueWorker();
@@ -594,6 +641,25 @@ class BackupService
         try {
             $pdo = new \PDO('sqlite:'.$this->databasePath, null, null, [
                 \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+
+                // The busy timeout, and it is what makes HANDLE_RELEASE_TIMEOUT_MS an actual
+                // upper bound rather than a wish.
+                //
+                // pdo_sqlite installs a 60-SECOND busy timeout by default, and
+                // wal_checkpoint(TRUNCATE) does not come back busy under it — it WAITS. So a
+                // foreign process holding nothing more than an open read transaction (measured:
+                // a reader held for 30s blocked the checkpoint for the full 30s) can freeze one
+                // pass of the poll below, and with it the restore request and the Electron
+                // window, for up to a minute — while the deadline the poll is checking says 5
+                // seconds. Nothing is corrupted by that; it just makes the app look hung.
+                //
+                // 2s per attempt keeps the wait long enough to be useful (the point of waiting
+                // at all is that a checkpoint which blocks briefly on the dying worker then
+                // SUCCEEDS, which is what clears the sidecars and lets the restore go ahead)
+                // while keeping a single blocking pass inside the budget the poll is policing.
+                // A checkpoint that runs out of time simply leaves the sidecars where they are,
+                // and releaseDatabase()'s check aborts — non-destructively, as ever.
+                \PDO::ATTR_TIMEOUT => 2,
             ]);
 
             $pdo->query('PRAGMA wal_checkpoint(TRUNCATE)');
@@ -738,6 +804,21 @@ class BackupService
         sort($files);
 
         return md5(implode('|', array_map('basename', $files)));
+    }
+
+    /**
+     * One half of the backup's identity against ours.
+     *
+     * A missing or empty value on EITHER side is not a match — never a match. Two nulls are
+     * not evidence that the archive is ours; they are the absence of evidence, and treating
+     * them as agreement would let a manifest with no identity at all (or an app_id we cannot
+     * read in this runtime) match anything.
+     */
+    private function identityMatches(mixed $theirs, mixed $ours): bool
+    {
+        return is_string($theirs) && $theirs !== ''
+            && is_string($ours) && $ours !== ''
+            && $theirs === $ours;
     }
 
     private function requireDestination(): string

@@ -4,6 +4,7 @@ namespace Tests\Unit\Services;
 
 use App\Services\Backup\BackupService;
 use App\Services\Backup\BackupSettings;
+use Native\Desktop\Facades\QueueWorker;
 use Native\Desktop\Facades\Settings;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
@@ -55,9 +56,26 @@ class BackupRestoreTest extends TestCase
         mkdir($this->destination, 0777, true);
 
         $pdo = new \PDO('sqlite:'.$this->dbPath);
+
+        // WAL, because the packaged app is ALWAYS in WAL and nothing else is reachable:
+        // NativeServiceProvider::rewriteDatabase() runs `PRAGMA journal_mode=WAL` on
+        // config('nativephp-internal.database_path') on every boot (line 204), which is
+        // the exact file AppServiceProvider hands to BackupService — and the setting is
+        // persistent in the file header. A non-WAL fixture tests a topology the app can
+        // never be in, and it is what let a restore that silently reverts itself past a
+        // green suite: with no -wal and no -shm there is no stale WAL to checkpoint back
+        // over the restored database.
+        $pdo->exec('PRAGMA journal_mode=WAL');
         $pdo->exec('CREATE TABLE migrations (id INTEGER PRIMARY KEY, migration TEXT)');
         $pdo->exec('CREATE TABLE players (id INTEGER PRIMARY KEY, name TEXT)');
         $pdo->exec("INSERT INTO players (name) VALUES ('Ali')");
+        $pdo = null;
+
+        $this->assertSame(
+            'wal',
+            (new \PDO('sqlite:'.$this->dbPath))->query('PRAGMA journal_mode')->fetchColumn(),
+            'The fixture database must be in WAL mode — the packaged app is never in any other.',
+        );
 
         file_put_contents($this->mediaPath.DIRECTORY_SEPARATOR.'photo.jpg', 'ORIGINAL');
 
@@ -119,6 +137,23 @@ class BackupRestoreTest extends TestCase
         $pdo = new \PDO('sqlite:'.$this->dbPath);
 
         return $pdo->query('SELECT name FROM players ORDER BY id')->fetchAll(\PDO::FETCH_COLUMN);
+    }
+
+    /**
+     * players(), but tolerant of a database that can no longer be read at all.
+     *
+     * A stale WAL checkpointed back over a restored database does not necessarily
+     * produce the OLD database — it writes the old pages it happens to hold over the new
+     * file at their page offsets, which can leave a mixture SQLite refuses to open. That
+     * is still the bug, so it has to be reportable rather than an unhandled PDOException.
+     */
+    private function playersOrFailure(): array|string
+    {
+        try {
+            return $this->players();
+        } catch (\Throwable $e) {
+            return 'UNREADABLE: '.$e->getMessage();
+        }
     }
 
     private function snapshots(): array
@@ -215,10 +250,12 @@ class BackupRestoreTest extends TestCase
         // It is the *clean* topology: nobody at all is holding the database. The
         // production topology — a second process (the NativePHP queue worker) still
         // holding it open — is covered by
-        // it_restores_while_the_queue_worker_still_holds_the_database_open().
+        // restoring_while_the_queue_worker_holds_the_database_must_not_silently_no_op().
         $pdo = null;
 
-        $this->service()->restore($backup);
+        // A clean restore returns null: there is no leftover for the caller to deal with.
+        // Success is a return value, never an exception.
+        $this->assertNull($this->service()->restore($backup));
 
         $this->assertSame(['Ali'], $this->players());
         $this->assertSame('ORIGINAL', file_get_contents($this->mediaPath.DIRECTORY_SEPARATOR.'photo.jpg'));
@@ -226,59 +263,182 @@ class BackupRestoreTest extends TestCase
     }
 
     #[Test]
-    public function it_restores_while_the_queue_worker_still_holds_the_database_open(): void
+    public function restoring_while_the_queue_worker_holds_the_database_must_not_silently_no_op(): void
     {
-        // This is not an edge case — it is the ONLY topology the packaged app ever runs
-        // in, and a restore that cannot survive it is a restore that never works.
+        // THE regression test. This is not an edge case — it is the only topology the
+        // packaged app ever runs in, and the restore used to quietly do nothing in it.
         //
-        // NativeServiceProvider forces `queue.default = database` and calls
-        // fireUpQueueWorkers() on every non-console boot (lines 144/148); it points that
-        // connection at config('nativephp-internal.database_path') (line 201) — the exact
-        // file AppServiceProvider hands to BackupService. config/nativephp.php declares a
-        // `default` worker, and QueueWorker::up() spawns it as a *persistent* child
-        // process running `queue:work`. That child holds an open PDO handle on the
-        // database for the entire life of the app, and DB::disconnect() only closes the
-        // web process's own connection — it cannot reach into another process.
+        // NativeServiceProvider calls fireUpQueueWorkers() on every non-console boot
+        // (line 148) and QueueWorker::up() spawns `queue:work` as a persistent child
+        // process against config('nativephp-internal.database_path') — the exact file
+        // BackupService is handed. That child holds the .sqlite, the -wal AND the -shm
+        // open for the life of the app, and DB::disconnect() cannot reach into another
+        // process to close them.
         //
-        // Windows refuses to rename() over a file that anyone still holds open (SQLite
-        // does not open with FILE_SHARE_DELETE), so a swap built on rename() alone can
-        // never complete in production: every restore would run all the way to the point
-        // of no return, fail, and tell the user their data was saved in a snapshot they
-        // do not need — while quietly leaving another full copy of the database and every
-        // photo on the drive. copy()-ing over an open file DOES succeed on Windows, and
-        // by the time the swap runs the incoming database is already whole at <db>.new
-        // and the pre-restore snapshot is written, so the fallback is safe.
+        // The old code @unlink()ed -wal/-shm without checking (both always failed), let
+        // rename() fail, and fell back to copy()-ing the backup over the live database
+        // file — leaving a stale -wal full of the OLD database's pages beside it and the
+        // worker's -shm wal-index still declaring it current. The worker never noticed the
+        // swap, and when its handle closed (the App::relaunch() after a "successful"
+        // restore is exactly what closes it) it became the last connection and
+        // checkpointed that stale WAL back over the freshly restored database, reverting
+        // it. The media, meanwhile, really had been replaced. integrity_check said "ok".
         $backup = $this->service()->create();
 
-        // Diverge from the backup so a database that was not swapped is unmistakable.
-        $pdo = new \PDO('sqlite:'.$this->dbPath);
-        $pdo->exec("INSERT INTO players (name) VALUES ('Omar')");
-        file_put_contents($this->mediaPath.DIRECTORY_SEPARATOR.'photo.jpg', 'CHANGED');
-        $pdo = null;
+        // The queue worker: a second connection, opened before the restore and still open
+        // throughout it, which restore()'s DB::disconnect() has no way of closing.
+        $worker = new \PDO('sqlite:'.$this->dbPath);
 
+        // Diverge from the backup ON THE WORKER'S CONNECTION and leave it there. These
+        // pages are now sitting UNCHECKPOINTED in the -wal: nothing has written them back
+        // into the main database file. This is the loaded gun.
+        $worker->exec("INSERT INTO players (name) VALUES ('Omar')");
+        file_put_contents($this->mediaPath.DIRECTORY_SEPARATOR.'photo.jpg', 'CHANGED');
+
+        $this->assertFileExists($this->dbPath.'-wal', 'The fixture must be in WAL mode.');
+        $this->assertGreaterThan(0, filesize($this->dbPath.'-wal'), 'The WAL must hold uncheckpointed pages.');
         $this->assertSame(['Ali', 'Omar'], $this->players());
 
-        // The queue worker: a second connection, opened before the restore and still open
-        // during it, that restore()'s DB::disconnect() has no way of closing. Idle, just
-        // as the worker is between jobs — merely holding the handle is enough to block a
-        // rename over the file.
-        $worker = new \PDO('sqlite:'.$this->dbPath);
-        $worker->query('SELECT count(*) FROM players')->fetchColumn();
+        $failure = null;
 
         try {
             $this->service()->restore($backup);
-        } finally {
-            $worker = null;
+        } catch (RuntimeException $e) {
+            $failure = $e;
         }
 
-        $this->assertSame(['Ali'], $this->players(), 'The restore did not replace the database while it was held open.');
-        $this->assertSame(
-            ['photo.jpg' => 'ORIGINAL'],
-            $this->mediaTree(),
-            'The restore did not replace the media while the database was held open.',
+        // The worker's handle closes — as it does when the app relaunches straight after a
+        // restore. It is the last connection, so SQLite now checkpoints whatever is still
+        // in the WAL into the main database file. If a stale WAL survived the swap, this
+        // is the moment the restore is undone.
+        $worker = null;
+
+        $players = $this->playersOrFailure();
+        $media = $this->mediaTree();
+
+        // The invariant, and the only one that matters: the database and the media must
+        // tell the same story. Either the restore aborted and BOTH are still the live
+        // ones, or it succeeded and BOTH are the backup's. A database that stayed live
+        // while the media became the backup's is the silent corruption — the club is left
+        // with rows referencing photos that no longer exist, and nothing reports a thing.
+        $liveIntact = $players === ['Ali', 'Omar'] && $media === ['photo.jpg' => 'CHANGED'];
+        $restored = $players === ['Ali'] && $media === ['photo.jpg' => 'ORIGINAL'];
+
+        $this->assertTrue(
+            $liveIntact || $restored,
+            "The restore left the database and the media disagreeing.\n"
+            .'  database: '.json_encode($players)."\n"
+            .'  media:    '.json_encode($media)."\n"
+            .'  restore:  '.($failure === null ? 'reported SUCCESS' : 'threw: '.$failure->getMessage())."\n",
         );
+
+        if ($failure !== null) {
+            // A clean abort is a correct outcome — the live data is whole and the user is
+            // told what to do. It must never be a silent no-op dressed up as success.
+            $this->assertTrue($liveIntact, 'A failed restore must leave the live data exactly as it was.');
+            $this->assertCount(1, $this->snapshots());
+            $this->assertStringContainsString($this->snapshots()[0], $failure->getMessage());
+        } else {
+            $this->assertSame(['Ali'], $players, 'The restore reported success but the database is still the live one.');
+            $this->assertSame(['photo.jpg' => 'ORIGINAL'], $media);
+        }
+
         $this->assertFileDoesNotExist($this->dbPath.'.new', 'The incoming database was left staged at <db>.new.');
-        $this->assertSame([], $this->stagingDirs(), 'A successful restore left a staging directory behind.');
+        $this->assertSame([], $this->stagingDirs(), 'The restore left a staging directory behind.');
+    }
+
+    #[Test]
+    public function it_aborts_with_the_live_database_intact_when_the_wal_cannot_be_removed(): void
+    {
+        // The -wal and -shm cannot be deleted while another process holds the database
+        // open (SQLite's Windows VFS opens without FILE_SHARE_DELETE), and a restore that
+        // proceeds anyway leaves a stale WAL that will be checkpointed back over the
+        // restored database. So the removal is verified, and if it fails the restore must
+        // stop dead — nothing destructive has run at that point, the live database is
+        // whole, and the snapshot is already on disk, so aborting costs the user nothing.
+        $backup = $this->service()->create();
+
+        $marker = dirname($this->dbPath).DIRECTORY_SEPARATOR.'.migrated';
+        file_put_contents($marker, 'signature-of-the-current-migration-set');
+
+        file_put_contents($this->mediaPath.DIRECTORY_SEPARATOR.'photo.jpg', 'CHANGED');
+
+        // Holds the .sqlite, the -wal and the -shm — exactly as the queue worker does.
+        $worker = new \PDO('sqlite:'.$this->dbPath);
+        $worker->exec("INSERT INTO players (name) VALUES ('Omar')");
+
+        $this->assertFileExists($this->dbPath.'-wal');
+
+        $liveHashBefore = md5_file($this->dbPath);
+        $caught = null;
+
+        try {
+            $this->service()->restore($backup);
+        } catch (RuntimeException $e) {
+            $caught = $e;
+        }
+
+        // Read the live file while the worker is STILL holding it: closing that handle
+        // checkpoints the WAL and rewrites the main file, which would mask the comparison.
+        clearstatcache();
+        $liveHashAfter = md5_file($this->dbPath);
+        $walStillThere = file_exists($this->dbPath.'-wal');
+        $incomingLeft = file_exists($this->dbPath.'.new');
+
+        $worker = null;
+
+        $this->assertNotNull($caught, 'The restore must abort when the WAL files cannot be removed.');
+
+        // The error has to name the file that is in the way, say the restore changed
+        // nothing, and tell the user how to get out of it — a retry into the same locked
+        // WAL is not a fix.
+        $this->assertStringContainsString($this->dbPath.'-wal', $caught->getMessage());
+        $this->assertStringContainsString('Nothing was changed', $caught->getMessage());
+        $this->assertStringContainsString('close the application', $caught->getMessage());
+
+        // And, as every error past the snapshot must, it names the snapshot.
+        $snapshots = $this->snapshots();
+        $this->assertCount(1, $snapshots);
+        $this->assertStringContainsString($snapshots[0], $caught->getMessage());
+
+        // Nothing destructive ran: the live database is byte-for-byte what it was, its
+        // WAL is untouched, the media is untouched, and the marker was never dropped.
+        $this->assertSame($liveHashBefore, $liveHashAfter, 'The live database file was modified by an aborted restore.');
+        $this->assertTrue($walStillThere, 'The live WAL was destroyed by an aborted restore.');
+        $this->assertFalse($incomingLeft, 'The incoming database was left staged at <db>.new.');
+
+        $this->assertSame(['Ali', 'Omar'], $this->players(), 'The live database lost the uncheckpointed write.');
+        $this->assertSame(['photo.jpg' => 'CHANGED'], $this->mediaTree(), 'The media was swapped by an aborted restore.');
+        $this->assertFileExists($marker, 'The marker was dropped even though the database was never swapped.');
+        $this->assertSame([], $this->stagingDirs(), 'The failed restore left a staging directory behind.');
+    }
+
+    #[Test]
+    public function it_stops_the_native_queue_worker_before_swapping_the_database(): void
+    {
+        // The worker holds the database, the -wal and the -shm open, and nothing in this
+        // process can close another process's handles — so the restore has to ask the
+        // NativePHP runtime to stop the child before it swaps anything. That path only
+        // exists inside the packaged app, so the guard is opened here and the runtime's
+        // HTTP API is stood in for by the facade's own fake.
+        config(['nativephp-internal.running' => true]);
+
+        $worker = QueueWorker::fake();
+
+        $backup = $this->service()->create();
+
+        $pdo = new \PDO('sqlite:'.$this->dbPath);
+        $pdo->exec("INSERT INTO players (name) VALUES ('Omar')");
+        $pdo = null;
+
+        $this->service()->restore($backup);
+
+        // 'default' is the worker config/nativephp.php declares, and QueueWorker::down()
+        // maps it to the `queue_default` child process.
+        $worker->assertDown('default');
+
+        $this->assertSame(['Ali'], $this->players());
+        $this->assertSame(['photo.jpg' => 'ORIGINAL'], $this->mediaTree());
     }
 
     #[Test]
@@ -470,19 +630,14 @@ class BackupRestoreTest extends TestCase
         // The failure is forced by occupying <db>.new with a directory, which no copy()
         // can overwrite.
         //
-        // What this test does NOT assert is the survival of an uncheckpointed -wal file,
-        // because at this point in restore() no -wal can exist: step 3's snapshot() runs
-        // VACUUM INTO, which opens and closes a PDO on the live database, and closing the
-        // last connection checkpoints the WAL into the main file and deletes -wal/-shm.
-        // (Verified: this holds for a real WAL and even for a hand-written one.) The -wal
-        // loss the old order risked therefore needs a second process pinning the WAL open
-        // — and Windows will not unlink a file that process holds, so it cannot be staged
-        // in-process. The observable guarantee is asserted instead: a failed incoming copy
-        // runs nothing destructive.
-        $pdo = new \PDO('sqlite:'.$this->dbPath);
-        $pdo->exec('PRAGMA journal_mode=WAL');
-        $pdo = null;
-
+        // The fixture is in WAL mode (see setUp()), but no -wal exists by the time step 4
+        // runs when nobody else holds the database: closing the last connection — step 3's
+        // snapshot() opens and closes a PDO to run VACUUM INTO — checkpoints the WAL into
+        // the main file and deletes both sidecars. A -wal that survives into the swap needs
+        // a second process pinning it open, which is
+        // it_aborts_with_the_live_database_intact_when_the_wal_cannot_be_removed()'s job.
+        // What this test guards is the ordering: the incoming database is staged first, so
+        // failing to write it runs nothing destructive at all.
         $backup = $this->service()->create();
 
         // Live data diverges from the backup, so a swapped-in database is unmistakable.
@@ -509,7 +664,7 @@ class BackupRestoreTest extends TestCase
     }
 
     #[Test]
-    public function a_superseded_media_folder_that_cannot_be_deleted_is_reported_not_swallowed(): void
+    public function a_superseded_media_folder_that_cannot_be_deleted_is_returned_not_thrown(): void
     {
         // deleteDirectory() used to return void and swallow every failure, so the
         // superseded media tree (storage/app/public.old-<ts>) could outlive a *successful*
@@ -517,7 +672,14 @@ class BackupRestoreTest extends TestCase
         // which nothing in the app ever prunes. And because its name is only
         // second-granular, a second restore inside the same second would find the name
         // already taken, fail to move the live media aside, and abort with the database
-        // already swapped.
+        // already swapped. So it has to be reported.
+        //
+        // But it must not be reported by THROWING. This is a success with a caveat, and an
+        // exception cannot say that: the caller cannot tell it apart from a real failure
+        // except by string-matching, so it takes the failure branch and skips its success
+        // path — including the App::relaunch() the restore depends on — leaving the app
+        // running against a database that has just been swapped underneath it. The leftover
+        // comes back as a return value; the caller decides what to say about it.
         //
         // A read-only file reproduces the failure honestly: Windows unlink() refuses one,
         // so the recursive delete genuinely cannot finish.
@@ -531,26 +693,18 @@ class BackupRestoreTest extends TestCase
         // purely the retired tree that cannot be removed.
         chmod($locked, 0444);
 
-        $e = $this->failedRestore($backup);
-
         try {
+            // The restore SUCCEEDED, so it must not throw.
+            $leftover = $this->service()->restore($backup);
+
             $retired = glob($this->mediaHolder.DIRECTORY_SEPARATOR.'public.old-*') ?: [];
-            $snapshots = $this->snapshots();
 
             $this->assertCount(1, $retired, 'The undeletable media tree should still be on disk.');
-            $this->assertCount(1, $snapshots);
-
-            // The restore itself SUCCEEDED. Saying "failed partway through" here would send
-            // the user off to recover from a snapshot they do not need — the very thing this
-            // whole change exists to stop.
-            $this->assertStringContainsString('restored successfully', $e->getMessage());
-            $this->assertStringNotContainsString('failed partway through', $e->getMessage());
-
-            // But the leftover is named, because only the user can clear it...
-            $this->assertStringContainsString($retired[0], $e->getMessage());
-
-            // ...and so is the snapshot, as every error past the point of no return must.
-            $this->assertStringContainsString($snapshots[0], $e->getMessage());
+            $this->assertSame(
+                $retired[0],
+                $leftover,
+                'The restore must hand the leftover folder back to the caller — only the user can clear it.',
+            );
 
             // The restore really did land: database and media are the backup's.
             $this->assertSame(['Ali'], $this->players());
@@ -566,6 +720,44 @@ class BackupRestoreTest extends TestCase
                 @chmod($file, 0666);
             }
         }
+    }
+
+    #[Test]
+    public function it_rejects_a_backup_whose_manifest_promises_media_the_archive_does_not_hold(): void
+    {
+        // The mirror image of restoring_a_backup_that_held_no_media_empties_the_media_tree,
+        // and just as damaging. The manifest says the club HAD photos, but the archive
+        // carries no media/ tree — a truncated zip, or one built by something that dropped
+        // it. Keying the media swap off "is there a media/ directory in staging?" restores
+        // the database on its own and silently skips the media, handing the club rows that
+        // point at photos which are in neither the backup nor the live tree.
+        $backup = $this->service()->create();
+
+        $zip = new ZipArchive;
+        $zip->open($backup);
+        $database = $zip->getFromName('database.sqlite');
+        $manifest = json_decode($zip->getFromName('manifest.json'), true);
+        $zip->close();
+
+        // The real backup did hold the club's one photo...
+        $this->assertSame(1, $manifest['media_files']);
+
+        // ...but this archive carries the same manifest with the media/ entries stripped.
+        $stripped = $this->destination.DIRECTORY_SEPARATOR.BackupService::PREFIX.'2026-01-05_000000.zip';
+
+        $zip = new ZipArchive;
+        $zip->open($stripped, ZipArchive::CREATE);
+        $zip->addFromString('manifest.json', json_encode($manifest));
+        $zip->addFromString('database.sqlite', $database);
+        $zip->close();
+
+        $e = $this->failedRestore($stripped);
+
+        $this->assertStringContainsString('incomplete', $e->getMessage());
+        $this->assertStringContainsString('1 media file', $e->getMessage());
+
+        // Caught in staging, before the snapshot: nothing was touched.
+        $this->assertLiveDataUntouched();
     }
 
     #[Test]

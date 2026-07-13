@@ -4,6 +4,8 @@ namespace App\Services\Backup;
 
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Native\Desktop\Facades\QueueWorker;
 use RuntimeException;
 use ZipArchive;
 
@@ -19,6 +21,18 @@ class BackupService
     public const PREFIX = 'sport-club-backup-';
 
     public const SNAPSHOT_DIR = 'pre-restore';
+
+    /**
+     * How long to wait for another process to let go of the database's -wal/-shm.
+     *
+     * Stopping the queue worker is asynchronous — see stopQueueWorker() — so the
+     * child is still being torn down when QueueWorker::down() returns, and Windows
+     * holds its file handles until the process is fully reaped. Checking once,
+     * immediately, would race the kill and abort a restore that was about to work.
+     */
+    private const HANDLE_RELEASE_TIMEOUT_MS = 5000;
+
+    private const HANDLE_RELEASE_POLL_MS = 100;
 
     public function __construct(
         private BackupSettings $settings,
@@ -138,9 +152,21 @@ class BackupService
      * pre-restore snapshot is the undo path, and its location is surfaced in any
      * error message.
      *
+     * Within step 4 the point of no return is a single rename() (4c). Everything
+     * before it — staging the incoming database, stopping the queue worker, clearing
+     * the WAL — either succeeds or aborts with the live database untouched, and there
+     * is no longer any path that writes over the live file in place. That is
+     * deliberate: a restore that cannot get exclusive hold of the database must FAIL,
+     * loudly, with the data intact. It must never half-succeed.
+     *
      * Never queue this: the queue tables live inside the database being replaced.
+     *
+     * @return string|null the superseded media folder, when the restore SUCCEEDED but
+     *                     that folder could not be deleted afterwards and has to be
+     *                     removed by hand. null on a clean restore. A failed restore
+     *                     throws — success is never signalled with an exception.
      */
-    public function restore(string $zipPath): void
+    public function restore(string $zipPath): ?string
     {
         if (! is_file($zipPath)) {
             throw new RuntimeException('That backup file could not be found.');
@@ -206,6 +232,22 @@ class BackupService
 
             $this->assertHealthyDatabase($stagedDb);
 
+            $mediaFiles = (int) ($manifest['media_files'] ?? 0);
+
+            // The converse of the empty-media case below, and just as damaging. The
+            // manifest says the club HAD photos, but the archive carries no media/ tree:
+            // the zip is truncated, or was built by something that dropped it. Keying the
+            // media swap off "is there a media/ directory in staging?" would then restore
+            // the database on its own and silently skip the media — handing the club rows
+            // that point at photos which are in neither the backup nor (after the swap)
+            // the live tree. Checked in staging, before the snapshot, so it costs nothing.
+            if ($mediaFiles > 0 && ! is_dir($stagedMedia)) {
+                throw new RuntimeException(
+                    "That backup is incomplete: it says it holds {$mediaFiles} media file(s), "
+                    .'but there are none inside the archive. Nothing was changed.'
+                );
+            }
+
             // A backup taken while the club had zero photos carries no media/ entry at
             // all, so there is nothing in staging to swap in. Skipping the media swap in
             // that case would replace the database and leave TODAY's photos standing:
@@ -216,7 +258,7 @@ class BackupService
             // here and let the ordinary swap below wipe the live one, exactly as it would
             // for any other media set. Done in staging, before the snapshot, so a failure
             // to prepare it is still non-destructive.
-            if (($manifest['media_files'] ?? null) === 0 && ! is_dir($stagedMedia)
+            if ($mediaFiles === 0 && ! is_dir($stagedMedia)
                 && ! @mkdir($stagedMedia, 0777, true) && ! is_dir($stagedMedia)) {
                 throw new RuntimeException("Could not prepare the restored media folder: {$stagedMedia}");
             }
@@ -227,65 +269,51 @@ class BackupService
             // 4. Past here, the snapshot is the only way back.
             $strandedMedia = null;
             $retiredMedia = null;
+            $incoming = $this->databasePath.'.new';
 
             try {
-                // Closes the app's own connection so it is not the thing holding the
-                // database open. It cannot close anyone else's — see the swap below.
-                DB::disconnect();
-
-                // Land the incoming database beside the live one BEFORE destroying
-                // anything. Unlinking -wal/-shm first would turn a failed copy (the
-                // snapshot zip was just written to this same drive, which is now full)
-                // from "copy failed, nothing lost" into "copy failed, and every
-                // transaction still sitting in the uncheckpointed WAL is gone".
-                $incoming = $this->databasePath.'.new';
-
+                // 4a. Land the incoming database BESIDE the live one, before anything is
+                // released or removed. A failure here — a full disk, say; the snapshot zip
+                // was just written to this same drive — has then destroyed nothing.
                 if (! @copy($stagedDb, $incoming)) {
-                    @unlink($incoming);
-
                     throw new RuntimeException('Could not write the restored database into place.');
                 }
 
-                @unlink($this->databasePath.'-wal');
-                @unlink($this->databasePath.'-shm');
+                // 4b. Take the live database out of everyone's hands, and PROVE it.
+                // Throws if it cannot, with the live database still whole.
+                $this->releaseDatabase();
 
-                // rename() first, copy() as the fallback — and the fallback is NOT
-                // belt-and-braces, it is the path production actually takes. Do not
-                // "simplify" this back to a bare rename():
+                // 4c. The swap: one rename(), and nothing else.
                 //
-                // NativePHP forces `queue.default = database` and fires up its queue
-                // workers on every non-console boot (NativeServiceProvider:144,148),
-                // pointing that connection at config('nativephp-internal.database_path')
-                // (NativeServiceProvider:201) — the very file this method is restoring.
-                // config/nativephp.php declares a `default` worker, and QueueWorker::up()
-                // spawns it as a *persistent* child process running `queue:work`, which
-                // keeps a PDO handle open on the database for the whole life of the app.
-                // The DB::disconnect() above closes this process's connection; it has no
-                // way to close another process's. Windows will not rename a file over one
-                // that anybody still holds open (SQLite does not open with
-                // FILE_SHARE_DELETE) — verified: it fails with "Accès refusé (code 5)"
-                // — so a bare rename() can never once succeed in the packaged app. Every
-                // restore would reach the point of no return, fail, and send the user off
-                // to recover from a snapshot they did not need, leaving another full copy
-                // of the database and every photo on the drive each time they retried.
+                // There used to be a copy()-over-the-live-file fallback here, on the
+                // grounds that Windows refuses to rename() over a file another process
+                // holds open (SQLite does not open with FILE_SHARE_DELETE) and the queue
+                // worker always holds this one — so a bare rename() could never succeed in
+                // the packaged app. The premise was right; the conclusion was catastrophic.
                 //
-                // copy() over an open file DOES succeed on Windows, and by this line it is
-                // safe: the incoming database is already whole at $incoming (so a failure
-                // mid-copy cannot lose data that was not already captured), and the
-                // pre-restore snapshot is on disk. rename() stays first because it is
-                // atomic when it can run at all; copy() is what makes the restore possible
-                // when it cannot. The app relaunches straight after a successful restore
-                // (the controller calls App::relaunch()), so the worker's now-stale handle
-                // is short-lived.
-                if (! @rename($incoming, $this->databasePath) && ! @copy($incoming, $this->databasePath)) {
-                    @unlink($incoming);
-
-                    throw new RuntimeException('Could not write the restored database into place.');
+                // copy() writes the backup's bytes over the live *main* database file while
+                // leaving the stale -wal (full of the OLD database's pages) on disk and the
+                // worker's -shm wal-index still declaring it current. The worker never sees
+                // the swap — in WAL mode its cache is validated against the shm wal-index,
+                // not the main file's change counter — and when its handle finally closes
+                // (the relaunch straight after a "successful" restore is exactly what closes
+                // it) it becomes the last connection and checkpoints that stale WAL back
+                // over the freshly restored database, reverting it. integrity_check says
+                // "ok". The restore reports success, the media really is the backup's, and
+                // the database is not: rows then reference photos that no longer exist.
+                //
+                // So the fallback is gone, and the rename() is load-bearing in a second way:
+                // Windows lets it succeed ONLY when nobody holds the database open, which
+                // makes it the final proof that 4b did its job. If the worker is somehow
+                // still alive, this fails — and a loud failure with the live data intact is
+                // the correct outcome. A "successful" no-op is not.
+                if (! @rename($incoming, $this->databasePath)) {
+                    throw new RuntimeException(
+                        'The database file is still in use, so the restored database could not be put into '
+                        .'place. Nothing was changed. Please close the application completely, reopen it, '
+                        .'and try the restore again.'
+                    );
                 }
-
-                // No-op after a successful rename; removes the staging copy after a
-                // successful fallback copy. Either way, nothing is left at <db>.new.
-                @unlink($incoming);
 
                 // The database on disk is now the backup's, possibly on an older schema.
                 // Drop the marker IMMEDIATELY — before the media swap, which can still
@@ -297,10 +325,18 @@ class BackupService
                 // the case it exists for. An unlink() that quietly fails puts us in that
                 // same state, so it is checked: better a loud failure naming the snapshot
                 // than an app that boots into a schema mismatch on the next launch.
+                //
+                // The path goes in the message, not just in the exception. The outer catch
+                // is the only text the user ever sees, and a retry will hit this same locked
+                // marker, so "here is the file, delete it" is the difference between a fix
+                // and a loop.
                 $marker = dirname($this->databasePath).DIRECTORY_SEPARATOR.'.migrated';
 
                 if (is_file($marker) && ! @unlink($marker) && is_file($marker)) {
-                    throw new RuntimeException("Could not remove the migration marker: {$marker}");
+                    throw new RuntimeException(
+                        "The migration marker could not be removed: {$marker}. Please delete that file "
+                        .'yourself before trying the restore again.'
+                    );
                 }
 
                 if (is_dir($stagedMedia)) {
@@ -337,7 +373,22 @@ class BackupService
                     $retiredMedia = $retired;
                 }
             } catch (\Throwable $e) {
-                $message = 'The restore failed partway through. Your previous data was saved first and is safe in: '.$snapshot;
+                // Safe on every path that reaches here, and only because the copy()-over-the-
+                // live-file fallback is gone: the swap is now a single rename(), which is
+                // all-or-nothing. Either it succeeded — and there is nothing left at <db>.new
+                // for this to remove — or the live database was never touched and <db>.new is
+                // a redundant second copy of data that is still sitting in the backup archive.
+                // There is no longer any state in which the live database is torn or
+                // half-swapped, so this can never delete the last whole copy of anything.
+                @unlink($incoming);
+
+                // The cause is carried in the text, not just chained as `previous`. Only this
+                // outer message is ever shown, so a reason that lives solely in $e — "the
+                // -wal is still open", the path of a migration marker that must be deleted
+                // before retrying — would leave the user staring at the snapshot line with no
+                // idea what to do, and walk them into a retry that fails the same way.
+                $message = 'The restore failed partway through. '.$e->getMessage()
+                    .' Your previous data was saved first and is safe in: '.$snapshot;
 
                 if ($strandedMedia !== null) {
                     $message .= ' Your media files could not be put back automatically — they are in: '.$strandedMedia;
@@ -352,19 +403,158 @@ class BackupService
             // of every photo the club had, nothing in the app ever prunes it, and because
             // its name is only second-granular, a second restore inside the same second
             // would find the name taken, fail to move the live media aside, and abort with
-            // the database already swapped. So it is reported — accurately: the restore
-            // SUCCEEDED, and the leftover just has to be deleted by hand.
+            // the database already swapped.
+            //
+            // So it is reported — but NOT by throwing. This is a success with a caveat, and
+            // an exception cannot say that: a caller has no way to tell it apart from a real
+            // failure except by string-matching the message, so it takes the failure branch
+            // and skips its success path — including the App::relaunch() that a restore
+            // depends on — leaving the app running against a database that has just been
+            // swapped out underneath it. The leftover comes back as a return value instead,
+            // and the caller decides what to tell the user.
             if ($retiredMedia !== null && ! $this->deleteDirectory($retiredMedia)) {
-                throw new RuntimeException(
-                    'Your data was restored successfully, but the folder holding your previous media files '
-                    .'could not be removed afterwards. Nothing will clean it up, so please delete it yourself: '
-                    .$retiredMedia
-                    .' (Your pre-restore snapshot is in: '.$snapshot.')',
-                );
+                Log::warning('The restore succeeded, but the superseded media folder could not be deleted.', [
+                    'leftover' => $retiredMedia,
+                    'snapshot' => $snapshot,
+                ]);
+
+                return $retiredMedia;
             }
+
+            return null;
         } finally {
             $this->deleteDirectory($staging);
         }
+    }
+
+    /**
+     * Takes the live database out of every process's hands, and proves that it did.
+     *
+     * Called BEFORE the swap, and throws rather than pressing on: at the point it runs
+     * nothing destructive has happened yet — the live database is whole, the incoming
+     * one is staged beside it, and the pre-restore snapshot is on disk — so aborting
+     * here is free. Pressing on is what corrupts the club's data.
+     */
+    private function releaseDatabase(): void
+    {
+        $this->stopQueueWorker();
+
+        // Our own connection. It cannot close anyone else's, which is what the queue
+        // worker above is for.
+        DB::disconnect();
+
+        // The -wal and the -shm, and this is the check the whole restore turns on.
+        //
+        // These used to be @unlink()ed with the result thrown away. In the packaged app
+        // both unlinks fail every single time — the queue worker holds all three files
+        // open — and the restore carried blithely on, landing the backup's database over
+        // the live file while a stale -wal full of the OLD database's pages sat next to
+        // it. That WAL is not inert: the next process to close the last connection
+        // checkpoints it straight back over the restored database.
+        //
+        // Note this asks "is it gone?", not "did unlink() return true?". On the happy
+        // path there is nothing here to delete: the last SQLite connection to close
+        // checkpoints the WAL into the main file and removes both sidecars itself.
+        foreach (['-wal', '-shm'] as $suffix) {
+            $sidecar = $this->databasePath.$suffix;
+
+            if (! $this->removeWithinTimeout($sidecar)) {
+                throw new RuntimeException(
+                    'The database is still open in another program, so its working file could not be '
+                    ."removed: {$sidecar}. Nothing was changed. Please close the application completely, "
+                    .'reopen it, and try the restore again.'
+                );
+            }
+        }
+    }
+
+    /**
+     * Asks the NativePHP runtime to stop the queue worker — the OTHER process holding
+     * the live database open.
+     *
+     * NativeServiceProvider::configureApp() calls fireUpQueueWorkers() on every
+     * non-console boot (line 148), and QueueWorker::up() spawns `queue:work` as a
+     * *persistent* child process (QueueWorker.php:31-46) against
+     * config('nativephp-internal.database_path') — the exact file being restored. It
+     * keeps handles open on the .sqlite, the -wal and the -shm for the life of the app,
+     * and DB::disconnect() cannot reach into another process to close them.
+     *
+     * This is a REQUEST, not a guarantee, and the code downstream treats it as one.
+     * QueueWorker::down() posts to the Electron runtime's HTTP API and hands nothing
+     * back: ChildProcess::stop() (ChildProcess.php:132-137) discards the response and
+     * returns void. So it cannot tell us whether the child actually died, whether the
+     * runtime honoured the request for a process registered as persistent rather than
+     * respawning it, or — since the kill is asynchronous and Windows keeps a dead
+     * process's handles until it is reaped — whether it has died YET. A failure to
+     * reach the runtime at all is therefore logged, not thrown: it is not the evidence
+     * that matters.
+     *
+     * The evidence that matters is on the filesystem. releaseDatabase() will not
+     * continue until the -wal and -shm are provably gone (they cannot be deleted while
+     * the worker holds them), and the rename() that follows can only succeed on Windows
+     * if nobody holds the database open at all. Between them, a worker that ignored
+     * this, respawned, or is merely slow to die produces a clean abort with the live
+     * data untouched — never a silent half-restore.
+     *
+     * Guarded on nativephp-internal.running: outside the packaged app — the web build,
+     * artisan, the test suite — there is no runtime to talk to and no worker to stop.
+     */
+    private function stopQueueWorker(): void
+    {
+        if (! config('nativephp-internal.running')) {
+            return;
+        }
+
+        // Every configured worker, not just 'default': they all run `queue:work` against
+        // this one database, so any of them left standing holds the swap up.
+        $aliases = array_keys((array) config('nativephp.queue_workers', []));
+
+        try {
+            foreach ($aliases ?: ['default'] as $alias) {
+                QueueWorker::down($alias);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('The restore could not ask the queue worker to stop; continuing to the WAL check.', [
+                'exception' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Deletes a path, giving another process time to let go of it first, and reports
+     * whether it is actually gone.
+     *
+     * The wait is not defensive padding. Stopping the queue worker is asynchronous (see
+     * stopQueueWorker()): QueueWorker::down() returns as soon as the runtime has
+     * accepted the request, and the child is torn down after that. Windows holds a
+     * process's file handles until it is fully reaped, so a single check the instant
+     * down() returns would race the kill and abort a restore that was about to work.
+     * Costs nothing when the file is already gone, which is the ordinary case.
+     */
+    private function removeWithinTimeout(string $path): bool
+    {
+        $deadline = microtime(true) + self::HANDLE_RELEASE_TIMEOUT_MS / 1000;
+
+        do {
+            clearstatcache(true, $path);
+
+            if (! file_exists($path)) {
+                return true;
+            }
+
+            @unlink($path);
+            clearstatcache(true, $path);
+
+            if (! file_exists($path)) {
+                return true;
+            }
+
+            usleep(self::HANDLE_RELEASE_POLL_MS * 1000);
+        } while (microtime(true) < $deadline);
+
+        clearstatcache(true, $path);
+
+        return ! file_exists($path);
     }
 
     /**

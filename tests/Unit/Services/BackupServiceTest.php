@@ -4,6 +4,7 @@ namespace Tests\Unit\Services;
 
 use App\Services\Backup\BackupService;
 use App\Services\Backup\BackupSettings;
+use Illuminate\Support\Carbon;
 use Native\Desktop\Facades\Settings;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
@@ -225,5 +226,84 @@ class BackupServiceTest extends TestCase
             $this->destination.DIRECTORY_SEPARATOR.$name,
             $this->service()->resolve($name),
         );
+    }
+
+    #[Test]
+    public function list_ignores_a_leftover_tmp_staging_file_and_prune_does_not_count_it(): void
+    {
+        // A crash mid-write (kill -9, OOM, force-quit) can leave a
+        // sport-club-backup-*.zip.tmp staging file behind. It must never be
+        // presented as a real backup, nor eat into the retention count.
+        file_put_contents($this->destination.'/'.BackupService::PREFIX.'2026-07-01_100000.zip', 'a');
+        file_put_contents($this->destination.'/'.BackupService::PREFIX.'2026-07-02_100000.zip.tmp', 'partial-write');
+
+        $service = $this->service();
+
+        $names = array_column($service->list(), 'name');
+
+        $this->assertSame([BackupService::PREFIX.'2026-07-01_100000.zip'], $names);
+
+        $this->settings->put(['retention' => 1]);
+
+        $this->assertSame(0, $service->prune());
+        $this->assertFileExists($this->destination.'/'.BackupService::PREFIX.'2026-07-01_100000.zip');
+        $this->assertFileExists($this->destination.'/'.BackupService::PREFIX.'2026-07-02_100000.zip.tmp');
+    }
+
+    #[Test]
+    public function create_leaves_no_staging_file_behind_on_success(): void
+    {
+        $path = $this->service()->create();
+
+        $zip = new ZipArchive;
+        $this->assertTrue($zip->open($path) === true);
+        $zip->close();
+
+        $this->assertFileDoesNotExist($path.'.tmp');
+        $this->assertSame([], glob($this->destination.DIRECTORY_SEPARATOR.'*.tmp') ?: []);
+    }
+
+    #[Test]
+    public function list_finds_backups_when_the_destination_path_contains_glob_metacharacters(): void
+    {
+        // A Windows folder picker can hand back a path containing *, ?, [ or ] —
+        // glob() would otherwise read those as pattern syntax and silently match
+        // nothing, hiding every existing backup and defeating retention.
+        $weirdDestination = $this->root.'/dest[1]';
+        mkdir($weirdDestination, 0777, true);
+        file_put_contents($weirdDestination.'/'.BackupService::PREFIX.'2026-07-01_100000.zip', 'a');
+
+        $this->settings->put(['destination' => $weirdDestination]);
+
+        $names = array_column($this->service()->list(), 'name');
+
+        $this->assertSame([BackupService::PREFIX.'2026-07-01_100000.zip'], $names);
+    }
+
+    #[Test]
+    public function a_failed_finalize_rename_leaves_no_backup_at_the_final_name_and_cleans_up_staging(): void
+    {
+        // Simulating a hard kill mid-write isn't practical in-process, but the
+        // exact window it threatens is provable directly: force the finalize
+        // rename() to fail *after* the zip has already been fully and
+        // successfully written to the staging file, by occupying the final name
+        // with a directory. The archive must never land at the final name, and
+        // the staging file must not be left behind.
+        Carbon::setTestNow(Carbon::parse('2026-07-05 10:00:00'));
+
+        $finalPath = $this->destination.'/'.BackupService::PREFIX.'2026-07-05_100000.zip';
+        mkdir($finalPath, 0777, true);
+
+        try {
+            $this->service()->create();
+            $this->fail('Expected create() to throw when the final path cannot be finalized.');
+        } catch (RuntimeException) {
+            $this->addToAssertionCount(1);
+        } finally {
+            Carbon::setTestNow();
+        }
+
+        $this->assertTrue(is_dir($finalPath), 'The pre-existing directory at the final name must be left untouched.');
+        $this->assertFileDoesNotExist($finalPath.'.tmp');
     }
 }

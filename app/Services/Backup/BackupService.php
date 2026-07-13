@@ -69,7 +69,11 @@ class BackupService
         }
 
         // glob() does not descend, so the pre-restore/ subfolder is excluded for free.
-        $files = glob($destination.DIRECTORY_SEPARATOR.self::PREFIX.'*.zip') ?: [];
+        // The destination itself is user-chosen (e.g. via a Windows folder picker) and
+        // may contain *, ?, [ or ] — glob() would read those as pattern syntax and
+        // silently match nothing, so only the directory portion is escaped here; the
+        // '*.zip' suffix we append ourselves is meant to stay a wildcard.
+        $files = glob($this->escapeGlobPath($destination).DIRECTORY_SEPARATOR.self::PREFIX.'*.zip') ?: [];
 
         $backups = array_map(fn (string $file) => [
             'name' => basename($file),
@@ -156,47 +160,69 @@ class BackupService
         return $destination;
     }
 
+    /**
+     * Builds the zip at a staging path and only puts it at $target once it is
+     * fully and successfully written.
+     *
+     * If ZipArchive were opened on $target directly, the file would exist at its
+     * real, list()-matched name from the very first byte written — complete only
+     * after close(). A kill -9, an OOM, or the user force-quitting the Electron
+     * app mid-write would then leave a truncated file that list() presents as a
+     * legitimate backup and prune() counts toward retention, potentially evicting
+     * a good older backup to make room for it. Writing to $target.'.tmp' and
+     * rename()-ing onto $target only after a successful close() means a crash can
+     * leave at most an orphaned .tmp file (invisible to list(), since its glob
+     * pattern requires a .zip suffix) — never a fake backup at the real name.
+     */
     private function writeArchive(string $target): void
     {
+        $staging = $target.'.tmp';
         $tempDb = $this->tempPath('db-'.$this->timestamp().'.sqlite');
 
-        $this->vacuumInto($tempDb);
-
-        $zip = new ZipArchive;
-
-        if ($zip->open($target, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            @unlink($tempDb);
-
-            throw new RuntimeException("Could not write the backup file: {$target}");
-        }
-
         try {
-            $zip->addFile($tempDb, 'database.sqlite');
+            $this->vacuumInto($tempDb);
 
-            $mediaFiles = 0;
+            $zip = new ZipArchive;
 
-            foreach ($this->mediaFiles() as $absolute => $relative) {
-                $zip->addFile($absolute, 'media/'.$relative);
-                $mediaFiles++;
+            if ($zip->open($staging, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+                throw new RuntimeException("Could not write the backup file: {$target}");
             }
 
-            $zip->addFromString('manifest.json', json_encode([
-                'app' => config('app.name'),
-                'app_id' => config('nativephp.app_id'),
-                'app_version' => config('nativephp.version'),
-                'created_at' => Carbon::now()->toIso8601String(),
-                'schema_signature' => $this->schemaSignature(),
-                'db_bytes' => filesize($tempDb) ?: 0,
-                'media_files' => $mediaFiles,
-            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+            try {
+                $zip->addFile($tempDb, 'database.sqlite');
 
-            if (! $zip->close()) {
-                throw new RuntimeException("Could not finish writing the backup file: {$target}");
+                $mediaFiles = 0;
+
+                foreach ($this->mediaFiles() as $absolute => $relative) {
+                    $zip->addFile($absolute, 'media/'.$relative);
+                    $mediaFiles++;
+                }
+
+                $zip->addFromString('manifest.json', json_encode([
+                    'app' => config('app.name'),
+                    'app_id' => config('nativephp.app_id'),
+                    'app_version' => config('nativephp.version'),
+                    'created_at' => Carbon::now()->toIso8601String(),
+                    'schema_signature' => $this->schemaSignature(),
+                    'db_bytes' => filesize($tempDb) ?: 0,
+                    'media_files' => $mediaFiles,
+                ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
+                if (! $zip->close()) {
+                    throw new RuntimeException("Could not finish writing the backup file: {$target}");
+                }
+            } catch (\Throwable $e) {
+                // Never leave a half-written zip behind — it would look like a valid backup.
+                @$zip->close();
+
+                throw $e;
+            }
+
+            if (! @rename($staging, $target)) {
+                throw new RuntimeException("Could not finalize the backup file: {$target}");
             }
         } catch (\Throwable $e) {
-            // Never leave a half-written zip behind — it would look like a valid backup.
-            @$zip->close();
-            @unlink($target);
+            @unlink($staging);
 
             throw $e;
         } finally {
@@ -256,5 +282,18 @@ class BackupService
     private function timestamp(): string
     {
         return Carbon::now()->format('Y-m-d_His');
+    }
+
+    /**
+     * Escapes glob() metacharacters (* ? [ ]) in a literal path so a destination
+     * folder whose name happens to contain one of them is matched as text, not
+     * interpreted as a pattern. Each special character is wrapped in a one-char
+     * bracket class: [*], [?] and [[] match themselves literally, and []] matches
+     * a literal ] because a ] immediately after [ is taken literally rather than
+     * closing the class.
+     */
+    private function escapeGlobPath(string $path): string
+    {
+        return preg_replace('/([*?\[\]])/', '[$1]', $path);
     }
 }

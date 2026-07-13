@@ -3,6 +3,7 @@
 namespace App\Services\Backup;
 
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use ZipArchive;
 
@@ -128,9 +129,123 @@ class BackupService
         return $path;
     }
 
+    /**
+     * Replaces the live database and media with the contents of a backup.
+     *
+     * Ordering is the whole safety story: validate, verify, and snapshot BEFORE
+     * writing anything. Steps 1-3 are non-destructive — a foreign or corrupt
+     * backup is rejected with the live data still intact. From step 4 on, the
+     * pre-restore snapshot is the undo path, and its location is surfaced in any
+     * error message.
+     *
+     * Never queue this: the queue tables live inside the database being replaced.
+     */
     public function restore(string $zipPath): void
     {
-        throw new RuntimeException('Not implemented yet.');
+        if (! is_file($zipPath)) {
+            throw new RuntimeException('That backup file could not be found.');
+        }
+
+        // 1. Open and identify.
+        $zip = new ZipArchive;
+
+        if ($zip->open($zipPath) !== true) {
+            throw new RuntimeException('That file is not a readable backup archive.');
+        }
+
+        $manifestRaw = $zip->getFromName('manifest.json');
+
+        if ($manifestRaw === false || $zip->locateName('database.sqlite') === false) {
+            $zip->close();
+
+            throw new RuntimeException('That archive is not a backup — it has no manifest or database inside.');
+        }
+
+        $manifest = json_decode($manifestRaw, true);
+
+        if (! is_array($manifest) || ($manifest['app'] ?? null) !== config('app.name')) {
+            $zip->close();
+
+            throw new RuntimeException('That backup belongs to a different application.');
+        }
+
+        // 2. Unpack to a staging area and verify the database before trusting it.
+        $staging = $this->tempPath('restore-'.$this->timestamp());
+        $this->deleteDirectory($staging);
+
+        if (! @mkdir($staging, 0777, true) && ! is_dir($staging)) {
+            $zip->close();
+
+            throw new RuntimeException("Could not create the working folder: {$staging}");
+        }
+
+        $extracted = $zip->extractTo($staging);
+        $zip->close();
+
+        if (! $extracted) {
+            $this->deleteDirectory($staging);
+
+            throw new RuntimeException('The backup archive could not be unpacked.');
+        }
+
+        $stagedDb = $staging.DIRECTORY_SEPARATOR.'database.sqlite';
+
+        try {
+            $this->assertHealthyDatabase($stagedDb);
+        } catch (\Throwable $e) {
+            $this->deleteDirectory($staging);
+
+            throw $e;
+        }
+
+        // 3. Undo point. Still non-destructive.
+        $snapshot = $this->snapshot();
+
+        // 4. Past here, the snapshot is the only way back.
+        try {
+            DB::disconnect();
+
+            @unlink($this->databasePath.'-wal');
+            @unlink($this->databasePath.'-shm');
+
+            if (! @copy($stagedDb, $this->databasePath)) {
+                throw new RuntimeException('Could not write the restored database into place.');
+            }
+
+            $stagedMedia = $staging.DIRECTORY_SEPARATOR.'media';
+
+            if (is_dir($stagedMedia)) {
+                $retired = $this->mediaPath.'.old-'.$this->timestamp();
+
+                if (is_dir($this->mediaPath) && ! $this->moveDirectory($this->mediaPath, $retired)) {
+                    throw new RuntimeException('Could not move the current media folder aside.');
+                }
+
+                if (! $this->moveDirectory($stagedMedia, $this->mediaPath)) {
+                    // Put the originals back before giving up.
+                    if (is_dir($retired)) {
+                        $this->moveDirectory($retired, $this->mediaPath);
+                    }
+
+                    throw new RuntimeException('Could not write the restored media into place.');
+                }
+
+                $this->deleteDirectory($retired);
+            }
+
+            // Force NativeAppServiceProvider::firstRunSetup() to re-run migrate on the
+            // next launch. Without this, restoring a backup taken on an older schema
+            // into a newer app leaves the DB missing tables the code expects.
+            @unlink(dirname($this->databasePath).DIRECTORY_SEPARATOR.'.migrated');
+        } catch (\Throwable $e) {
+            throw new RuntimeException(
+                'The restore failed partway through. Your previous data was saved first and is safe in: '.$snapshot,
+                0,
+                $e,
+            );
+        } finally {
+            $this->deleteDirectory($staging);
+        }
     }
 
     /**
@@ -189,12 +304,24 @@ class BackupService
             }
 
             try {
-                $zip->addFile($tempDb, 'database.sqlite');
+                if (! @$zip->addFile($tempDb, 'database.sqlite')) {
+                    throw new RuntimeException('Could not add the database to the backup.');
+                }
 
                 $mediaFiles = 0;
 
                 foreach ($this->mediaFiles() as $absolute => $relative) {
-                    $zip->addFile($absolute, 'media/'.$relative);
+                    // addFile() returns false rather than throwing when the source
+                    // file has vanished or become unreadable since it was listed
+                    // (a photo deleted or locked mid-backup). ZipArchive::close()
+                    // can still succeed afterwards, so without this check a single
+                    // missing file would yield a "successful" backup that is
+                    // silently incomplete — exactly what this feature exists to
+                    // prevent.
+                    if (! @$zip->addFile($absolute, 'media/'.$relative)) {
+                        throw new RuntimeException("Could not add a file to the backup: {$absolute}");
+                    }
+
                     $mediaFiles++;
                 }
 
@@ -246,8 +373,15 @@ class BackupService
         $pdo->prepare('VACUUM INTO ?')->execute([$target]);
     }
 
-    /** @return iterable<string, string> absolute path => path relative to the media root */
-    private function mediaFiles(): iterable
+    /**
+     * @return iterable<string, string> absolute path => path relative to the media root
+     *
+     * Protected (not private) so tests can override it to simulate a source
+     * file vanishing between being listed and being added to the archive —
+     * private methods aren't virtual, so a test subclass couldn't otherwise
+     * intercept this without genuinely racing the filesystem.
+     */
+    protected function mediaFiles(): iterable
     {
         if (! is_dir($this->mediaPath)) {
             return;
@@ -266,6 +400,111 @@ class BackupService
 
             yield $file->getPathname() => $relative;
         }
+    }
+
+    /** Rejects a database that SQLite cannot read, or that is not one of ours. */
+    private function assertHealthyDatabase(string $path): void
+    {
+        if (! is_file($path)) {
+            throw new RuntimeException('That backup does not contain a database.');
+        }
+
+        try {
+            $pdo = new \PDO('sqlite:'.$path, null, null, [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+            ]);
+
+            if ($pdo->query('PRAGMA integrity_check')->fetchColumn() !== 'ok') {
+                throw new RuntimeException('integrity_check failed');
+            }
+
+            $hasMigrations = (int) $pdo
+                ->query("SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = 'migrations'")
+                ->fetchColumn();
+
+            if ($hasMigrations === 0) {
+                throw new RuntimeException('no migrations table');
+            }
+        } catch (\Throwable $e) {
+            throw new RuntimeException(
+                'The database inside that backup is corrupt or unreadable. Nothing was changed.',
+                0,
+                $e,
+            );
+        }
+    }
+
+    private function deleteDirectory(string $dir): void
+    {
+        if (! is_dir($dir)) {
+            return;
+        }
+
+        foreach (scandir($dir) ?: [] as $entry) {
+            if ($entry === '.' || $entry === '..') {
+                continue;
+            }
+
+            $path = $dir.DIRECTORY_SEPARATOR.$entry;
+
+            is_dir($path) ? $this->deleteDirectory($path) : @unlink($path);
+        }
+
+        @rmdir($dir);
+    }
+
+    /**
+     * Moves a directory tree from $from to $to.
+     *
+     * Tries an atomic rename() first — the normal case, since in production
+     * both the media path and the restore staging area are derived from
+     * storage_path() (see AppServiceProvider) and always share one filesystem.
+     * Falls back to a recursive copy-then-delete when rename() cannot do this
+     * atomically (e.g. the two paths sit on different drives/volumes), so a
+     * restore does not fail outright just because of where a path happens to
+     * live.
+     */
+    private function moveDirectory(string $from, string $to): bool
+    {
+        if (@rename($from, $to)) {
+            return true;
+        }
+
+        if (! $this->copyDirectory($from, $to)) {
+            $this->deleteDirectory($to);
+
+            return false;
+        }
+
+        $this->deleteDirectory($from);
+
+        return true;
+    }
+
+    private function copyDirectory(string $from, string $to): bool
+    {
+        if (! is_dir($to) && ! @mkdir($to, 0777, true) && ! is_dir($to)) {
+            return false;
+        }
+
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($from, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::SELF_FIRST,
+        );
+
+        foreach ($iterator as $item) {
+            $target = $to.DIRECTORY_SEPARATOR.substr($item->getPathname(), strlen($from) + 1);
+
+            if ($item->isDir()) {
+                if (! is_dir($target) && ! @mkdir($target, 0777, true) && ! is_dir($target)) {
+                    return false;
+                }
+            } elseif (! @copy($item->getPathname(), $target)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function tempPath(string $name): string

@@ -306,4 +306,33 @@ class BackupServiceTest extends TestCase
         $this->assertTrue(is_dir($finalPath), 'The pre-existing directory at the final name must be left untouched.');
         $this->assertFileDoesNotExist($finalPath.'.tmp');
     }
+
+    #[Test]
+    public function create_throws_and_leaves_no_backup_when_a_media_file_cannot_be_added(): void
+    {
+        // ZipArchive::addFile() returns false — it does not throw — when the
+        // source file no longer exists at the moment it is registered (e.g. a
+        // player photo deleted or renamed mid-backup). If that return value is
+        // ignored, ZipArchive::close() can still succeed for every other entry,
+        // producing a "successful" backup that is silently missing that photo.
+        // This subclass simulates exactly that: a file mediaFiles() reports as
+        // present at scan time but that is gone by the time it would be zipped.
+        $service = new class($this->settings, $this->dbPath, $this->mediaPath) extends BackupService
+        {
+            protected function mediaFiles(): iterable
+            {
+                yield sys_get_temp_dir().DIRECTORY_SEPARATOR.'backup-svc-vanished-'.uniqid().'.jpg' => 'vanished.jpg';
+            }
+        };
+
+        try {
+            $service->create();
+            $this->fail('Expected create() to throw when a media file cannot be added to the zip.');
+        } catch (RuntimeException) {
+            $this->addToAssertionCount(1);
+        }
+
+        $this->assertSame([], glob($this->destination.DIRECTORY_SEPARATOR.BackupService::PREFIX.'*.zip') ?: []);
+        $this->assertSame([], glob($this->destination.DIRECTORY_SEPARATOR.'*.tmp') ?: []);
+    }
 }

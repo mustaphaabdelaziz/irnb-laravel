@@ -1507,19 +1507,23 @@ class BackupPageTest extends TestCase
         config(['nativephp-internal.running' => true]);
     }
 
+    // Mirrors tests/Feature/RoleManagementTest.php:15-18 — `privileges` is an array,
+    // and the `verified` middleware needs email_verified_at.
     private function superadmin(): User
     {
         return User::factory()->create([
-            'privilege' => 'superadmin',
+            'privileges' => ['superadmin'],
             'approved' => true,
+            'email_verified_at' => now(),
         ]);
     }
 
     private function member(): User
     {
         return User::factory()->create([
-            'privilege' => 'member',
+            'privileges' => [],
             'approved' => true,
+            'email_verified_at' => now(),
         ]);
     }
 
@@ -1688,7 +1692,7 @@ class BackupPageTest extends TestCase
 Run: `php artisan test --filter=BackupPageTest`
 Expected: FAIL — 404 on every route; `Class "App\Jobs\CreateBackup" not found`.
 
-Note: if `User::factory()` does not accept `privilege`, mirror whatever `tests/Feature/RoleManagementTest.php` does to build a superadmin and a plain member — reuse that project convention rather than inventing one.
+The `superadmin()` / `member()` helpers above already match this project's convention (`tests/Feature/RoleManagementTest.php:15-18`). Use them as written.
 
 - [ ] **Step 3: Write the job**
 

@@ -153,11 +153,12 @@ class BackupService
      * error message.
      *
      * Within step 4 the point of no return is a single rename() (4c). Everything
-     * before it — staging the incoming database, stopping the queue worker, clearing
-     * the WAL — either succeeds or aborts with the live database untouched, and there
-     * is no longer any path that writes over the live file in place. That is
-     * deliberate: a restore that cannot get exclusive hold of the database must FAIL,
-     * loudly, with the data intact. It must never half-succeed.
+     * before it — staging the incoming database, stopping the queue worker, folding the
+     * WAL back into the database — either succeeds or aborts with the live database
+     * untouched, and there is no longer any path that writes over the live file in place,
+     * nor any that DELETES anything the live database is made of. That is deliberate: a
+     * restore that cannot get exclusive hold of the database must FAIL, loudly, with the
+     * data intact. It must never half-succeed, and it must never quietly subtract.
      *
      * Never queue this: the queue tables live inside the database being replaced.
      *
@@ -271,6 +272,11 @@ class BackupService
             $retiredMedia = null;
             $incoming = $this->databasePath.'.new';
 
+            // The point of no return, tracked explicitly, because the error message that
+            // comes out of the catch below depends entirely on which side of it we failed
+            // on — and getting that wrong is not cosmetic. See the catch.
+            $swapped = false;
+
             try {
                 // 4a. Land the incoming database BESIDE the live one, before anything is
                 // released or removed. A failure here — a full disk, say; the snapshot zip
@@ -279,8 +285,9 @@ class BackupService
                     throw new RuntimeException('Could not write the restored database into place.');
                 }
 
-                // 4b. Take the live database out of everyone's hands, and PROVE it.
-                // Throws if it cannot, with the live database still whole.
+                // 4b. Take the live database out of everyone's hands, and PROVE it — without
+                // destroying anything to do so. Throws if it cannot, with the live database
+                // still whole, WAL included.
                 $this->releaseDatabase();
 
                 // 4c. The swap: one rename(), and nothing else.
@@ -309,11 +316,13 @@ class BackupService
                 // the correct outcome. A "successful" no-op is not.
                 if (! @rename($incoming, $this->databasePath)) {
                     throw new RuntimeException(
-                        'The database file is still in use, so the restored database could not be put into '
-                        .'place. Nothing was changed. Please close the application completely, reopen it, '
-                        .'and try the restore again.'
+                        'The database file is still in use, so the restored database could not be put into place.'
                     );
                 }
+
+                // Crossed. Everything from here on fails LOUDLY and points at the snapshot;
+                // everything before it fails saying, truthfully, that nothing was changed.
+                $swapped = true;
 
                 // The database on disk is now the backup's, possibly on an older schema.
                 // Drop the marker IMMEDIATELY — before the media swap, which can still
@@ -387,11 +396,41 @@ class BackupService
                 // -wal is still open", the path of a migration marker that must be deleted
                 // before retrying — would leave the user staring at the snapshot line with no
                 // idea what to do, and walk them into a retry that fails the same way.
-                $message = 'The restore failed partway through. '.$e->getMessage()
-                    .' Your previous data was saved first and is safe in: '.$snapshot;
+                //
+                // But WHICH story is told matters just as much as the cause. This used to
+                // open with "The restore failed partway through." on every path, including
+                // the ones where nothing had run at all — a staging copy that could not be
+                // written, a database that could not be taken out of use — whose own text
+                // said, correctly, that nothing was changed. The message contradicted itself
+                // in consecutive sentences, and a user who cannot tell which half to believe
+                // cannot tell whether they need to go and restore the snapshot. That is not a
+                // wording nit: it is what would have let the WAL deletion above go unnoticed,
+                // by telling the club "nothing happened" on the very run that ate their day's
+                // data. So the two cases are now said in two different voices.
+                if ($swapped) {
+                    // Past the point of no return: the database on disk really is the backup's
+                    // now, and the media may be in any state. The snapshot is the way back and
+                    // the message's only job is to point at it.
+                    $message = 'The restore failed partway through. '.$e->getMessage()
+                        .' Your previous data was saved first and is safe in: '.$snapshot;
 
-                if ($strandedMedia !== null) {
-                    $message .= ' Your media files could not be put back automatically — they are in: '.$strandedMedia;
+                    if ($strandedMedia !== null) {
+                        $message .= ' Your media files could not be put back automatically — they are in: '.$strandedMedia;
+                    }
+                } else {
+                    // Nothing was swapped, and that is a guarantee rather than a hope: step 4a
+                    // only writes to <db>.new, step 4b only ever checkpoints (it deletes
+                    // nothing), and the rename() is all-or-nothing. The live database and media
+                    // are exactly what they were when the user pressed the button. Say that
+                    // plainly, and say what to do about it.
+                    //
+                    // The snapshot is still named — as a belt-and-braces reference rather than
+                    // a rescue instruction. It costs one line, and it is the thing that would
+                    // save them if this reasoning were ever wrong.
+                    $message = $e->getMessage()
+                        .' Nothing was changed — your data is exactly as it was. Please close the '
+                        .'application completely, reopen it, and try the restore again. A snapshot of '
+                        .'your data was saved before the restore started, just in case, in: '.$snapshot;
                 }
 
                 throw new RuntimeException($message, 0, $e);
@@ -428,12 +467,37 @@ class BackupService
     }
 
     /**
-     * Takes the live database out of every process's hands, and proves that it did.
+     * Takes the live database out of every process's hands, and proves that it did —
+     * WITHOUT destroying anything to get there.
      *
      * Called BEFORE the swap, and throws rather than pressing on: at the point it runs
      * nothing destructive has happened yet — the live database is whole, the incoming
      * one is staged beside it, and the pre-restore snapshot is on disk — so aborting
      * here is free. Pressing on is what corrupts the club's data.
+     *
+     * The -wal is the whole story here, and it used to be @unlink()ed.
+     *
+     * QueueWorker::down() KILLS the worker; a killed process never checkpoints. The -wal
+     * it leaves behind therefore holds transactions the club has already COMMITTED and
+     * which are not in the .sqlite yet — and in the packaged app that file is essentially
+     * never empty, because the worker holds a connection for the app's entire life, so
+     * the web process's per-request close is never the last connection and never triggers
+     * a checkpoint. Everything the user entered since SQLite's last automatic checkpoint
+     * (~1000 pages) lives ONLY in that file.
+     *
+     * Deleting it reverts the club to that last auto-checkpoint. And the deletion
+     * SUCCEEDS the moment the killed worker's handles are released — while the rename()
+     * that follows still fails if any non-SQLite reader (Defender, the search indexer, a
+     * respawned worker) so much as has the main file open for reading, because that is a
+     * share mode without FILE_SHARE_DELETE. The two do not fail under the same
+     * conditions, so the restore could destroy the WAL and then abort saying "Nothing was
+     * changed" over the top of it. Verified on Windows: both unlinks succeed, this method
+     * passes, the rename fails, and the row that was only in the WAL is gone.
+     *
+     * So the WAL is CHECKPOINTED, never deleted. That merges its pages INTO the database
+     * — the same thing SQLite does routinely on its own — and closing our connection is
+     * what removes the sidecars, which SQLite only does when nobody else is holding them.
+     * If someone still is, they stay, and this aborts. Non-destructively, either way.
      */
     private function releaseDatabase(): void
     {
@@ -443,29 +507,107 @@ class BackupService
         // worker above is for.
         DB::disconnect();
 
-        // The -wal and the -shm, and this is the check the whole restore turns on.
+        // The wait is not defensive padding, and neither is checkpointing INSIDE it.
         //
-        // These used to be @unlink()ed with the result thrown away. In the packaged app
-        // both unlinks fail every single time — the queue worker holds all three files
-        // open — and the restore carried blithely on, landing the backup's database over
-        // the live file while a stale -wal full of the OLD database's pages sat next to
-        // it. That WAL is not inert: the next process to close the last connection
-        // checkpoints it straight back over the restored database.
+        // Stopping the queue worker is asynchronous (see stopQueueWorker()): down() returns
+        // as soon as the Electron runtime has accepted the request, and the child is torn
+        // down after that. So a single checkpoint here would usually run while the worker is
+        // still alive — leaving our connection not the last one, the sidecars still on disk,
+        // and nothing to remove them afterwards, since a killed process never closes its
+        // connection cleanly. That would abort every restore in the packaged app. Retrying
+        // the checkpoint as we poll means that the moment the worker is actually reaped, the
+        // next attempt merges its orphaned WAL and its close clears both sidecars.
         //
-        // Note this asks "is it gone?", not "did unlink() return true?". On the happy
-        // path there is nothing here to delete: the last SQLite connection to close
-        // checkpoints the WAL into the main file and removes both sidecars itself.
+        // Every iteration is a merge or a no-op. Nothing in this loop can lose a byte.
+        $deadline = microtime(true) + self::HANDLE_RELEASE_TIMEOUT_MS / 1000;
+
+        do {
+            if ($this->remainingSidecars() === []) {
+                return;
+            }
+
+            $this->checkpointWal();
+
+            if ($this->remainingSidecars() === []) {
+                return;
+            }
+
+            usleep(self::HANDLE_RELEASE_POLL_MS * 1000);
+        } while (microtime(true) < $deadline);
+
+        $remaining = $this->remainingSidecars();
+
+        if ($remaining === []) {
+            return;
+        }
+
+        // Someone still has the database open, so its WAL cannot be folded in and the swap
+        // cannot go ahead. Nothing has been destroyed to find that out: the sidecars are
+        // still there, holding whatever they held. The caller turns this into the user's
+        // "nothing was changed" message.
+        throw new RuntimeException(
+            'The database is still open in another program, so it could not be taken out of use: '
+            ."{$remaining[0]}."
+        );
+    }
+
+    /**
+     * Folds the write-ahead log into the database file itself.
+     *
+     * TRUNCATE rather than PASSIVE so the WAL is emptied rather than merely copied
+     * forward, and so a WAL orphaned by a killed worker cannot be replayed again later.
+     *
+     * Failure is not fatal and is not thrown: this is one attempt among many, and the
+     * "are the sidecars actually gone?" check in releaseDatabase() is the real gate. A
+     * checkpoint that comes back busy — someone else is still reading — simply leaves the
+     * sidecars in place, which is precisely what makes that check abort.
+     */
+    private function checkpointWal(): void
+    {
+        $pdo = null;
+
+        try {
+            $pdo = new \PDO('sqlite:'.$this->databasePath, null, null, [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+            ]);
+
+            $pdo->query('PRAGMA wal_checkpoint(TRUNCATE)');
+        } catch (\Throwable) {
+            // Fall through: releaseDatabase()'s poll is still the gate.
+        } finally {
+            // Drop OUR handle whatever happened — in a finally, because if the checkpoint
+            // threw, this connection would otherwise stay open for the rest of the method
+            // and hold the -wal and the -shm itself, and the poll would then be looking at
+            // our own connection and abort a restore that was about to work.
+            //
+            // Closing it is also what REMOVES the sidecars: SQLite deletes them when the
+            // last connection closes. That is what makes this a merge rather than a
+            // deletion — the data goes into the database on the way out.
+            $pdo = null;
+        }
+    }
+
+    /**
+     * The -wal/-shm still sitting beside the live database, -wal first so it is the one
+     * an error message names.
+     *
+     * @return array<int, string>
+     */
+    private function remainingSidecars(): array
+    {
+        $remaining = [];
+
         foreach (['-wal', '-shm'] as $suffix) {
             $sidecar = $this->databasePath.$suffix;
 
-            if (! $this->removeWithinTimeout($sidecar)) {
-                throw new RuntimeException(
-                    'The database is still open in another program, so its working file could not be '
-                    ."removed: {$sidecar}. Nothing was changed. Please close the application completely, "
-                    .'reopen it, and try the restore again.'
-                );
+            clearstatcache(true, $sidecar);
+
+            if (file_exists($sidecar)) {
+                $remaining[] = $sidecar;
             }
         }
+
+        return $remaining;
     }
 
     /**
@@ -489,12 +631,15 @@ class BackupService
      * reach the runtime at all is therefore logged, not thrown: it is not the evidence
      * that matters.
      *
-     * The evidence that matters is on the filesystem. releaseDatabase() will not
-     * continue until the -wal and -shm are provably gone (they cannot be deleted while
-     * the worker holds them), and the rename() that follows can only succeed on Windows
-     * if nobody holds the database open at all. Between them, a worker that ignored
-     * this, respawned, or is merely slow to die produces a clean abort with the live
-     * data untouched — never a silent half-restore.
+     * The evidence that matters is on the filesystem. releaseDatabase() will not continue
+     * until the -wal and -shm are provably gone — and it gets them gone by CHECKPOINTING
+     * the WAL into the database, which SQLite only lets the last connection finish (and
+     * which is the only safe move anyway: this kill leaves behind a WAL full of committed
+     * rows that a worker killed mid-life never wrote back). The rename() that follows can
+     * only succeed on Windows if nobody holds the database open at all. Between them, a
+     * worker that ignored this, respawned, or is merely slow to die produces a clean abort
+     * with the live data untouched — never a silent half-restore, and never a WAL deleted
+     * out from under the club's most recent work.
      *
      * Guarded on nativephp-internal.running: outside the packaged app — the web build,
      * artisan, the test suite — there is no runtime to talk to and no worker to stop.
@@ -518,43 +663,6 @@ class BackupService
                 'exception' => $e->getMessage(),
             ]);
         }
-    }
-
-    /**
-     * Deletes a path, giving another process time to let go of it first, and reports
-     * whether it is actually gone.
-     *
-     * The wait is not defensive padding. Stopping the queue worker is asynchronous (see
-     * stopQueueWorker()): QueueWorker::down() returns as soon as the runtime has
-     * accepted the request, and the child is torn down after that. Windows holds a
-     * process's file handles until it is fully reaped, so a single check the instant
-     * down() returns would race the kill and abort a restore that was about to work.
-     * Costs nothing when the file is already gone, which is the ordinary case.
-     */
-    private function removeWithinTimeout(string $path): bool
-    {
-        $deadline = microtime(true) + self::HANDLE_RELEASE_TIMEOUT_MS / 1000;
-
-        do {
-            clearstatcache(true, $path);
-
-            if (! file_exists($path)) {
-                return true;
-            }
-
-            @unlink($path);
-            clearstatcache(true, $path);
-
-            if (! file_exists($path)) {
-                return true;
-            }
-
-            usleep(self::HANDLE_RELEASE_POLL_MS * 1000);
-        } while (microtime(true) < $deadline);
-
-        clearstatcache(true, $path);
-
-        return ! file_exists($path);
     }
 
     /**

@@ -4,6 +4,8 @@ namespace Tests\Unit\Services;
 
 use App\Services\Backup\BackupService;
 use App\Services\Backup\BackupSettings;
+use Native\Desktop\Contracts\QueueWorker as QueueWorkerContract;
+use Native\Desktop\DataObjects\QueueConfig;
 use Native\Desktop\Facades\QueueWorker;
 use Native\Desktop\Facades\Settings;
 use PHPUnit\Framework\Attributes\Test;
@@ -347,6 +349,186 @@ class BackupRestoreTest extends TestCase
         $this->assertSame([], $this->stagingDirs(), 'The restore left a staging directory behind.');
     }
 
+    /**
+     * Reads the MAIN database file on its own, with no -wal/-shm beside it.
+     *
+     * This is what tells "the row is committed and merged into the database" apart from
+     * "the row is committed but lives only in the WAL" — a distinction players() cannot
+     * make, because SQLite reads straight through the WAL and reports both identically.
+     */
+    private function mainDatabaseFileOnly(): array|string
+    {
+        $copy = $this->root.DIRECTORY_SEPARATOR.'main-only-'.uniqid().'.sqlite';
+
+        if (! @copy($this->dbPath, $copy)) {
+            return 'UNCOPYABLE';
+        }
+
+        try {
+            return (new \PDO('sqlite:'.$copy))
+                ->query('SELECT name FROM players ORDER BY id')
+                ->fetchAll(\PDO::FETCH_COLUMN);
+        } catch (\Throwable $e) {
+            return 'UNREADABLE: '.$e->getMessage();
+        }
+    }
+
+    #[Test]
+    public function it_checkpoints_a_killed_workers_orphaned_wal_instead_of_deleting_it(): void
+    {
+        // THE data-loss test, and the one the other two could never take.
+        //
+        // it_aborts_..._when_the_wal_cannot_be_removed() and
+        // restoring_while_the_queue_worker_holds_the_database_must_not_silently_no_op()
+        // both hold a live PDO across the whole restore, so the -wal is pinned and every
+        // unlink() of it fails. The destructive branch is never entered, which is exactly
+        // why this shipped. The packaged app is not in that topology at the moment it
+        // matters: QueueWorker::down() KILLS the worker, and a killed process never
+        // checkpoints — so by the time the sidecars are touched, NOTHING holds them and
+        // the unlink SUCCEEDS.
+        //
+        // What that -wal contains is not scratch. The worker holds a connection for the
+        // app's entire life, so the web process's per-request close is never the last
+        // connection and never checkpoints; everything the club has entered since SQLite's
+        // last automatic checkpoint (~1000 pages) is in that file and nowhere else.
+        // Deleting it reverts them to that checkpoint. And the rename() that follows fails
+        // on nothing more than a plain read handle — Defender, the search indexer, a
+        // respawned worker — at which point the restore aborts saying "Nothing was
+        // changed", over the top of the day's work it has just destroyed.
+        //
+        // So: a REAL child php.exe, killed exactly where the runtime kills it (inside
+        // releaseDatabase()), and a plain fopen() to fail the rename. Against the old code
+        // the live database comes back holding only 'Ali'.
+        $backup = $this->service()->create();
+
+        // The queue worker. proc_open's ARRAY form on purpose: the string form wraps the
+        // command in cmd.exe, and proc_terminate would then kill the SHELL and leave
+        // php.exe alive holding the database — the kill has to land on the process that
+        // actually has the handles.
+        $holder = $this->root.DIRECTORY_SEPARATOR.'holder.php';
+        file_put_contents($holder, <<<'PHP'
+            <?php
+            // Commits a row that stays in the -wal, says so, then holds the connection open
+            // until it is killed. It must never get the chance to checkpoint.
+            $pdo = new PDO('sqlite:'.$argv[1]);
+            $pdo->exec("INSERT INTO players (name) VALUES ('Omar')");
+            echo "READY\n";
+            flush();
+            sleep(60);
+            PHP);
+
+        $process = proc_open(
+            [PHP_BINARY, $holder, $this->dbPath],
+            [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+            $pipes,
+        );
+
+        $this->assertIsResource($process, 'Could not start the stand-in queue worker.');
+
+        $reader = null;
+
+        try {
+            $this->assertSame('READY', trim((string) fgets($pipes[1])), 'The stand-in worker never committed its row.');
+
+            // The loaded gun: 'Omar' is COMMITTED, but he is only in the -wal. The main
+            // database file itself has never heard of him.
+            clearstatcache();
+            $this->assertFileExists($this->dbPath.'-wal');
+            $this->assertGreaterThan(0, filesize($this->dbPath.'-wal'), 'The WAL must hold uncheckpointed pages.');
+            $this->assertSame(['Ali', 'Omar'], $this->players(), 'SQLite reads through the WAL, so the row is live.');
+            $this->assertSame(
+                ['Ali'],
+                $this->mainDatabaseFileOnly(),
+                "The row must exist ONLY in the -wal — otherwise this test isn't testing anything.",
+            );
+
+            // QueueWorker::down() kills the child. Swapped in so the kill lands at exactly
+            // the point in restore() where the real runtime's kill lands: inside
+            // releaseDatabase(), step 4b — AFTER the snapshot has been taken. That ordering
+            // is the bug's precondition. While the worker is alive through step 3, the
+            // snapshot's own VACUUM INTO connection is not the last one and so does not
+            // checkpoint; the -wal therefore survives into step 4b, where the worker dies
+            // and leaves it orphaned, unheld, and deletable.
+            config(['nativephp-internal.running' => true]);
+
+            QueueWorker::swap(new class($process) implements QueueWorkerContract
+            {
+                public function __construct(private $process) {}
+
+                public function up(QueueConfig $config): void {}
+
+                public function down(string $alias): void
+                {
+                    // proc_terminate is what QueueWorker::down() amounts to: the child is
+                    // killed, not asked to stop. proc_close then waits for it to be reaped,
+                    // so its file handles are released — which is what makes the old code's
+                    // unlink() of the -wal succeed.
+                    if (is_resource($this->process)) {
+                        proc_terminate($this->process);
+                        proc_close($this->process);
+                        $this->process = null;
+                    }
+                }
+            });
+
+            // A plain read handle on the main database file, held by something that is not
+            // SQLite: antivirus, the search indexer, or the queue worker the runtime has
+            // just respawned. It does NOT stop the -wal being unlinked — but it does stop
+            // the rename(), because Windows opens it without FILE_SHARE_DELETE. The two do
+            // not fail under the same conditions, which is the assumption the old design
+            // rested on and the reason it was wrong.
+            $reader = fopen($this->dbPath, 'r');
+            $this->assertIsResource($reader);
+
+            $failure = $this->failedRestore($backup);
+        } finally {
+            if (is_resource($reader)) {
+                fclose($reader);
+            }
+
+            // Belt and braces: if an assertion blew up before down() ran, don't leak a php.exe.
+            if (is_resource($process)) {
+                @proc_terminate($process);
+                @proc_close($process);
+            }
+        }
+
+        // THE ASSERTION. The restore aborted, so the club must still have everything they
+        // had — including the row that was only ever in the WAL. Against the old code this
+        // comes back as ['Ali']: the -wal was deleted, and with it every transaction
+        // committed since SQLite's last automatic checkpoint.
+        $this->assertSame(
+            ['Ali', 'Omar'],
+            $this->players(),
+            'The restore DESTROYED committed data: the orphaned WAL was deleted instead of being '
+            .'checkpointed into the database, reverting the club to its last automatic checkpoint.',
+        );
+
+        // And it is really in the database now, not still hiding in a WAL that the next
+        // thing to touch this file could throw away.
+        $this->assertSame(
+            ['Ali', 'Omar'],
+            $this->mainDatabaseFileOnly(),
+            'The orphaned WAL was not folded into the database file itself.',
+        );
+
+        // The abort must not claim to have got further than it did — and, crucially, must
+        // not tell the user that nothing happened while quietly having eaten their data.
+        // Both halves of that are now true, and the message is allowed to say so.
+        $this->assertStringContainsString('Nothing was changed', $failure->getMessage());
+        $this->assertStringNotContainsString('failed partway through', $failure->getMessage());
+
+        // The snapshot is named anyway, and it genuinely holds Omar: VACUUM INTO reads
+        // through the WAL, so the undo point was complete even while the row was only there.
+        $snapshots = $this->snapshots();
+        $this->assertCount(1, $snapshots);
+        $this->assertStringContainsString($snapshots[0], $failure->getMessage());
+
+        $this->assertSame(['photo.jpg' => 'ORIGINAL'], $this->mediaTree(), 'The media was swapped by an aborted restore.');
+        $this->assertFileDoesNotExist($this->dbPath.'.new', 'The incoming database was left staged at <db>.new.');
+        $this->assertSame([], $this->stagingDirs(), 'The failed restore left a staging directory behind.');
+    }
+
     #[Test]
     public function it_aborts_with_the_live_database_intact_when_the_wal_cannot_be_removed(): void
     {
@@ -369,7 +551,6 @@ class BackupRestoreTest extends TestCase
 
         $this->assertFileExists($this->dbPath.'-wal');
 
-        $liveHashBefore = md5_file($this->dbPath);
         $caught = null;
 
         try {
@@ -378,10 +559,19 @@ class BackupRestoreTest extends TestCase
             $caught = $e;
         }
 
-        // Read the live file while the worker is STILL holding it: closing that handle
-        // checkpoints the WAL and rewrites the main file, which would mask the comparison.
+        // Read the live database while the worker is STILL holding it — and read it as
+        // DATA, not as bytes.
+        //
+        // This used to compare md5_file() before and after, on the theory that an aborted
+        // restore must leave the main file untouched to the byte. That is no longer true,
+        // and it was never really the point. releaseDatabase() now CHECKPOINTS the WAL into
+        // the database instead of deleting it, so the main file legitimately changes here:
+        // it gains the very rows the old code used to throw away. A checkpoint is a merge —
+        // the same thing SQLite does to this file on its own schedule — not a loss.
+        //
+        // The invariant is "an abort loses nothing", so that is what is measured.
         clearstatcache();
-        $liveHashAfter = md5_file($this->dbPath);
+        $liveDuring = $this->playersOrFailure();
         $walStillThere = file_exists($this->dbPath.'-wal');
         $incomingLeft = file_exists($this->dbPath.'.new');
 
@@ -401,9 +591,12 @@ class BackupRestoreTest extends TestCase
         $this->assertCount(1, $snapshots);
         $this->assertStringContainsString($snapshots[0], $caught->getMessage());
 
-        // Nothing destructive ran: the live database is byte-for-byte what it was, its
-        // WAL is untouched, the media is untouched, and the marker was never dropped.
-        $this->assertSame($liveHashBefore, $liveHashAfter, 'The live database file was modified by an aborted restore.');
+        // Nothing destructive ran. The uncheckpointed write is still there — merged into
+        // the database now rather than sitting in the WAL, but there, which is the whole
+        // difference between a checkpoint and an unlink. The WAL sidecar itself is still on
+        // disk (the worker is holding it), the media is untouched, and the marker was never
+        // dropped.
+        $this->assertSame(['Ali', 'Omar'], $liveDuring, 'An aborted restore lost the uncheckpointed write.');
         $this->assertTrue($walStillThere, 'The live WAL was destroyed by an aborted restore.');
         $this->assertFalse($incomingLeft, 'The incoming database was left staged at <db>.new.');
 
@@ -654,7 +847,17 @@ class BackupRestoreTest extends TestCase
 
         $e = $this->failedRestore($backup);
 
-        $this->assertStringContainsString('restore failed partway through', $e->getMessage());
+        // Nothing ran at all, so the message must say exactly that — and must NOT open with
+        // "The restore failed partway through.", which is what it used to do on this very
+        // path while its own next sentence said, correctly, that nothing had changed. Two
+        // contradictory sentences in one message leave the user unable to tell whether they
+        // need to go and restore the snapshot, and that ambiguity is precisely what made it
+        // possible to ship a restore that destroyed the WAL and then reported a no-op.
+        $this->assertStringContainsString('Nothing was changed', $e->getMessage());
+        $this->assertStringNotContainsString('failed partway through', $e->getMessage());
+
+        // It still names the snapshot, as a belt-and-braces reference.
+        $this->assertStringContainsString($this->snapshots()[0], $e->getMessage());
 
         // Nothing destructive may have run: the live database is still the live one.
         $this->assertSame(['Ali', 'Omar'], $this->players(), 'The live database was destroyed by a failed copy.');

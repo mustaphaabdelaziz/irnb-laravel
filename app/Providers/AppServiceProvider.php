@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Services\Backup\BackupService;
+use App\Services\Backup\BackupSettings;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
@@ -12,7 +14,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // On desktop the DB lives in Electron's userData, not in database/.
+        $this->app->singleton(BackupService::class, fn ($app) => new BackupService(
+            $app->make(BackupSettings::class),
+            config('nativephp-internal.database_path') ?: database_path('database.sqlite'),
+            storage_path('app/public'),
+        ));
     }
 
     /**

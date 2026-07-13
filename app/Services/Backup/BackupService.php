@@ -433,6 +433,16 @@ class BackupService
                         .'your data was saved before the restore started, just in case, in: '.$snapshot;
                 }
 
+                // The exception CLASS carries the same signal as $swapped, for callers outside
+                // this method (BackupController) that need to decide whether the app is safe to
+                // keep running as-is or must relaunch — even though this call failed either way.
+                // Deliberately not left to string-matching the message above: that text is
+                // written for the person reading it, and it is not what the code should be
+                // parsing to make a decision this consequential.
+                if ($swapped) {
+                    throw new RestoreFailedAfterSwapException($message, 0, $e);
+                }
+
                 throw new RuntimeException($message, 0, $e);
             }
 

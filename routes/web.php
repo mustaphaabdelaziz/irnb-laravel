@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BackupController;
 use App\Http\Controllers\BoardController;
 use App\Http\Controllers\BoardMeetingController;
 use App\Http\Controllers\BoardMemberController;
@@ -225,6 +226,20 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         Route::post('/roles', [RoleController::class, 'store'])->name('roles.store');
         Route::put('/roles/{role}', [RoleController::class, 'update'])->name('roles.update');
         Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
+    });
+
+    // Database backup & restore — desktop app only, superadmin only.
+    // Route names are intentionally unmapped in config/permissions.php: the
+    // `permission` middleware passes unmapped names through, and `superadmin` gates them.
+    Route::middleware(['desktop', 'superadmin'])->group(function () {
+        Route::get('/backups', [BackupController::class, 'index'])->name('backups.index');
+        Route::post('/backups', [BackupController::class, 'store'])->name('backups.store');
+        Route::post('/backups/tick', [BackupController::class, 'tick'])->name('backups.tick');
+        Route::put('/backups/settings', [BackupController::class, 'updateSettings'])->name('backups.settings');
+        Route::post('/backups/folder', [BackupController::class, 'chooseFolder'])->name('backups.folder');
+        Route::post('/backups/restore', [BackupController::class, 'restore'])->name('backups.restore');
+        Route::post('/backups/reveal', [BackupController::class, 'reveal'])->name('backups.reveal');
+        Route::delete('/backups/{name}', [BackupController::class, 'destroy'])->name('backups.destroy');
     });
 });
 

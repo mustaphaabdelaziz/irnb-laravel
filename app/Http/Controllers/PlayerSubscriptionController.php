@@ -15,21 +15,70 @@ class PlayerSubscriptionController extends Controller
     {
     }
 
+    /**
+     * Record a manual/previous debt: an obligation not tied to a subscription plan,
+     * e.g. debt carried over from before the app. Only the remaining amount owed is
+     * entered, so it starts "unpaid" and is paid down through the normal payment flow.
+     */
+    public function store(Request $request, Player $player): RedirectResponse
+    {
+        $validated = $request->validate([
+            'label' => ['required', 'string', 'max:255'],
+            'amount_owed' => ['required', 'numeric', 'min:0.01'],
+            'year' => ['required', 'integer', 'min:1900', 'max:2999'],
+            'due_date' => ['nullable', 'date'],
+            'is_exempt' => ['nullable', 'boolean'],
+        ]);
+
+        PlayerSubscription::create([
+            'player_id' => $player->id,
+            'subscription_id' => null,
+            'label' => $validated['label'],
+            'transaction_id' => null,
+            'year' => $validated['year'],
+            'status_at_time' => $player->is_student ? 'student' : 'worker',
+            'is_mandatory' => true,
+            'is_legacy' => true,
+            'is_exempt' => $request->boolean('is_exempt'),
+            'amount_owed' => $validated['amount_owed'],
+            'amount_paid' => 0,
+            'due_date' => $validated['due_date'] ?? null,
+        ]);
+
+        $this->debt->forPlayer($player);
+
+        return back()->with('success', 'Previous debt added.');
+    }
+
     public function update(Request $request, Player $player, PlayerSubscription $playerSubscription): RedirectResponse
     {
         $this->ensureOwnership($player, $playerSubscription);
 
         $validated = $request->validate([
+            'label' => ['nullable', 'string', 'max:255'],
+            'year' => ['nullable', 'integer', 'min:1900', 'max:2999'],
             'amount_owed' => ['required', 'numeric', 'min:0'],
             'is_exempt' => ['nullable', 'boolean'],
             'due_date' => ['nullable', 'date'],
         ]);
 
-        $playerSubscription->update([
+        $playerSubscription->fill([
             'amount_owed' => $validated['amount_owed'],
             'is_exempt' => $request->boolean('is_exempt'),
             'due_date' => $validated['due_date'] ?? null,
         ]);
+
+        // Label/year are only editable on manual debts (no attached subscription plan).
+        if ($playerSubscription->subscription_id === null) {
+            if (array_key_exists('label', $validated)) {
+                $playerSubscription->label = $validated['label'];
+            }
+            if (! empty($validated['year'])) {
+                $playerSubscription->year = $validated['year'];
+            }
+        }
+
+        $playerSubscription->save();
 
         $this->debt->forPlayer($player);
 

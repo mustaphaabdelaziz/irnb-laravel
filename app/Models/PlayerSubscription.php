@@ -14,6 +14,7 @@ class PlayerSubscription extends Model
     protected $fillable = [
         'player_id',
         'subscription_id',
+        'label',
         'transaction_id',
         'year',
         'status_at_time',

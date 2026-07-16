@@ -91,7 +91,8 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
     Route::put('/players/{player}/transactions/{transaction}', [PlayerTransactionController::class, 'update'])->name('players.transactions.update');
     Route::delete('/players/{player}/transactions/{transaction}', [PlayerTransactionController::class, 'destroy'])->name('players.transactions.destroy');
 
-    // Player subscription obligation lines (edit amount/exempt, remove assignment)
+    // Player subscription obligation lines (add manual/previous debt, edit amount/exempt, remove assignment)
+    Route::post('/players/{player}/subscriptions', [PlayerSubscriptionController::class, 'store'])->name('players.subscriptions.store');
     Route::put('/players/{player}/subscriptions/{playerSubscription}', [PlayerSubscriptionController::class, 'update'])->name('players.subscriptions.update');
     Route::delete('/players/{player}/subscriptions/{playerSubscription}', [PlayerSubscriptionController::class, 'destroy'])->name('players.subscriptions.destroy');
 

@@ -26,11 +26,37 @@ const props = defineProps({
 const subscriptions = computed(() => props.player?.player_subscriptions ?? []);
 const transactions = computed(() => props.transactions ?? []);
 
+// Manual/previous debts = obligation lines with no subscription plan attached.
+const manualDebts = computed(() =>
+    subscriptions.value.filter(s => !s.subscription_id && !s.subscription)
+);
+
 // Selectable in the payment form: the whole catalog (mandatory + optional, assigned
 // or not) minus fully-paid ones. Exempt subs stay so they can be un-exempted.
 const payableSubscriptions = computed(() =>
     props.availableSubscriptions.filter(s => parseFloat(s.remaining_amount ?? 0) > 0 || s.is_exempt)
 );
+
+// One picker lists both catalog subscriptions and still-owing manual debts. Each
+// option carries a stable key so the form knows which id to send on submit.
+const payableOptions = computed(() => [
+    ...payableSubscriptions.value.map(s => ({
+        key: `sub:${s.subscription_id}`,
+        kind: 'sub',
+        subscription_id: s.subscription_id,
+        is_exempt: !!s.is_exempt,
+        text: `${s.name} (${s.year})${s.is_mandatory ? '' : ' — ' + t('optional')} — ${t('remaining')}: ${formatMoney(s.remaining_amount)}`,
+    })),
+    ...manualDebts.value
+        .filter(d => parseFloat(d.remaining_amount ?? 0) > 0)
+        .map(d => ({
+            key: `debt:${d.id}`,
+            kind: 'debt',
+            player_subscription_id: d.id,
+            is_exempt: !!d.is_exempt,
+            text: `${d.label || t('previous_debt')} (${d.year}) — ${t('remaining')}: ${formatMoney(d.remaining_amount)}`,
+        })),
+]);
 
 const showDeleteModal = ref(false);
 const showPaymentModal = ref(false);
@@ -38,28 +64,37 @@ const showPaymentModal = ref(false);
 const paymentForm = useForm({
     amount: '',
     subscription_id: '',
+    player_subscription_id: '',
     payment_method: 'cash',
     category: 'subscription',
     description: '',
     is_exempt: false,
 });
 
-// Hide the amount while Exempt is ticked — exemption records no payment.
+const selectedPayableKey = ref('');
+const selectedPayable = computed(() => payableOptions.value.find(o => o.key === selectedPayableKey.value) || null);
+
+// Hide the amount while Exempt is ticked — exemption records no payment. Exempt only
+// applies to catalog subscriptions here; manual-debt exemption is set on the debt itself.
 const showAmountField = computed(() =>
-    !(paymentForm.category === 'subscription' && paymentForm.is_exempt)
+    !(paymentForm.category === 'subscription' && selectedPayable.value?.kind === 'sub' && paymentForm.is_exempt)
 );
 
 watch(() => paymentForm.category, (category) => {
     if (category !== 'subscription') {
+        selectedPayableKey.value = '';
         paymentForm.subscription_id = '';
+        paymentForm.player_subscription_id = '';
         paymentForm.is_exempt = false;
     }
 });
 
-// When a subscription is picked, mirror its current exempt state into the checkbox.
-watch(() => paymentForm.subscription_id, (id) => {
-    const sub = props.availableSubscriptions.find(s => s.subscription_id === id);
-    paymentForm.is_exempt = sub ? !!sub.is_exempt : false;
+// When an obligation is picked, route its id to the right field and mirror exempt state.
+watch(selectedPayableKey, () => {
+    const opt = selectedPayable.value;
+    paymentForm.subscription_id = opt?.kind === 'sub' ? opt.subscription_id : '';
+    paymentForm.player_subscription_id = opt?.kind === 'debt' ? opt.player_subscription_id : '';
+    paymentForm.is_exempt = opt ? !!opt.is_exempt : false;
 });
 
 function submitPayment() {
@@ -67,6 +102,21 @@ function submitPayment() {
         onSuccess: () => {
             showPaymentModal.value = false;
             paymentForm.reset();
+            selectedPayableKey.value = '';
+        },
+    });
+}
+
+// --- Add a manual/previous debt (obligation with no subscription plan) ---
+const showAddDebtModal = ref(false);
+const debtForm = useForm({ label: '', amount_owed: '', year: new Date().getFullYear(), due_date: '', is_exempt: false });
+
+function submitAddDebt() {
+    debtForm.post(route('players.subscriptions.store', props.player.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            showAddDebtModal.value = false;
+            debtForm.reset();
         },
     });
 }
@@ -137,10 +187,15 @@ const statusColor = (s) => {
 // --- Edit / remove a subscription obligation line ---
 const showSubEditModal = ref(false);
 const editingSubId = ref(null);
-const subForm = useForm({ amount_owed: '', is_exempt: false, due_date: '' });
+const editingSubIsManual = ref(false);
+const subForm = useForm({ label: '', year: '', amount_owed: '', is_exempt: false, due_date: '' });
 
 function openSubEdit(sub) {
     editingSubId.value = sub.id;
+    // Label and year are only editable on manual debts (no attached subscription plan).
+    editingSubIsManual.value = !sub.subscription_id && !sub.subscription;
+    subForm.label = sub.label || '';
+    subForm.year = sub.subscription?.year || sub.year || '';
     subForm.amount_owed = sub.amount_owed;
     subForm.is_exempt = !!sub.is_exempt;
     subForm.due_date = sub.due_date ? String(sub.due_date).slice(0, 10) : '';
@@ -273,8 +328,11 @@ function formatDate(val) {
 
             <!-- Subscriptions -->
             <div class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
-                <div class="border-b border-slate-100 dark:border-slate-800 px-5 py-4">
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-5 py-4">
                     <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('subscriptions') }}</h3>
+                    <button type="button" @click="showAddDebtModal = true" class="rounded-md px-3 py-1.5 text-xs font-medium text-primary-700 ring-1 ring-inset ring-primary-300 hover:bg-primary-50 dark:text-primary-300 dark:ring-primary-700 dark:hover:bg-primary-900/30">
+                        {{ t('add_previous_debt') }}
+                    </button>
                 </div>
                 <div v-if="!subscriptions.length" class="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_data') }}</div>
                 <div v-else class="overflow-x-auto">
@@ -292,8 +350,11 @@ function formatDate(val) {
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                             <tr v-for="sub in subscriptions" :key="sub.id">
-                                <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">{{ sub.subscription?.name || '-' }}</td>
-                                <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ sub.subscription?.year || '-' }}</td>
+                                <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">
+                                    {{ sub.subscription?.name || sub.label || '-' }}
+                                    <span v-if="sub.is_legacy" class="ms-1 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium uppercase text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('previous_debt') }}</span>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ sub.subscription?.year || sub.year || '-' }}</td>
                                 <td class="px-4 py-3 text-end text-sm">{{ formatMoney(sub.amount_owed) }}</td>
                                 <td class="px-4 py-3 text-end text-sm text-emerald-700">{{ formatMoney(sub.amount_paid) }}</td>
                                 <td class="px-4 py-3 text-end text-sm" :class="parseFloat(sub.remaining_amount) > 0 ? 'text-rose-700 font-semibold' : 'text-slate-500 dark:text-slate-400'">
@@ -372,15 +433,13 @@ function formatDate(val) {
                     </div>
                     <div v-if="paymentForm.category === 'subscription'">
                         <InputLabel :value="t('subscription')" />
-                        <select v-model="paymentForm.subscription_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                        <select v-model="selectedPayableKey" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                             <option value="">{{ t('select_subscription') }}</option>
-                            <option v-for="sub in payableSubscriptions" :key="sub.subscription_id" :value="sub.subscription_id">
-                                {{ sub.name }} ({{ sub.year }}){{ sub.is_mandatory ? '' : ' — ' + t('optional') }} — {{ t('remaining') }}: {{ formatMoney(sub.remaining_amount) }}
-                            </option>
+                            <option v-for="opt in payableOptions" :key="opt.key" :value="opt.key">{{ opt.text }}</option>
                         </select>
                         <InputError :message="paymentForm.errors.subscription_id" class="mt-1" />
                     </div>
-                    <label v-if="paymentForm.category === 'subscription' && paymentForm.subscription_id" class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                    <label v-if="paymentForm.category === 'subscription' && selectedPayable?.kind === 'sub'" class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
                         <input type="checkbox" v-model="paymentForm.is_exempt" class="rounded border-slate-300 text-primary-600 shadow-sm focus:ring-primary-500" />
                         {{ t('exempt') }} — {{ t('exempt_hint') }}
                     </label>
@@ -451,8 +510,18 @@ function formatDate(val) {
         <!-- Edit subscription obligation modal -->
         <Modal :show="showSubEditModal" @close="showSubEditModal = false" max-width="md">
             <form @submit.prevent="submitSubEdit" class="p-6">
-                <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('edit_subscription') }}</h3>
+                <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ editingSubIsManual ? t('edit_previous_debt') : t('edit_subscription') }}</h3>
                 <div class="mt-4 space-y-4">
+                    <div v-if="editingSubIsManual">
+                        <InputLabel :value="t('label')" />
+                        <TextInput v-model="subForm.label" type="text" class="mt-1 w-full" />
+                        <InputError :message="subForm.errors.label" class="mt-1" />
+                    </div>
+                    <div v-if="editingSubIsManual">
+                        <InputLabel :value="t('year')" />
+                        <TextInput v-model="subForm.year" type="number" min="1900" max="2999" class="mt-1 w-full" />
+                        <InputError :message="subForm.errors.year" class="mt-1" />
+                    </div>
                     <div>
                         <InputLabel :value="t('amount_owed')" />
                         <TextInput v-model="subForm.amount_owed" type="number" step="0.01" min="0" class="mt-1 w-full" required />
@@ -482,6 +551,44 @@ function formatDate(val) {
             @confirm="confirmRemoveSub"
             @cancel="showSubRemoveModal = false"
         />
+
+        <!-- Add previous / manual debt modal -->
+        <Modal :show="showAddDebtModal" @close="showAddDebtModal = false" max-width="md">
+            <form @submit.prevent="submitAddDebt" class="p-6">
+                <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('add_previous_debt') }}</h3>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('previous_debt_hint') }}</p>
+                <div class="mt-4 space-y-4">
+                    <div>
+                        <InputLabel :value="t('label')" />
+                        <TextInput v-model="debtForm.label" type="text" class="mt-1 w-full" required />
+                        <InputError :message="debtForm.errors.label" class="mt-1" />
+                    </div>
+                    <div>
+                        <InputLabel :value="t('amount_owed')" />
+                        <TextInput v-model="debtForm.amount_owed" type="number" step="0.01" min="0.01" class="mt-1 w-full" required />
+                        <InputError :message="debtForm.errors.amount_owed" class="mt-1" />
+                    </div>
+                    <div>
+                        <InputLabel :value="t('year')" />
+                        <TextInput v-model="debtForm.year" type="number" min="1900" max="2999" class="mt-1 w-full" required />
+                        <InputError :message="debtForm.errors.year" class="mt-1" />
+                    </div>
+                    <div>
+                        <InputLabel :value="t('due_date')" />
+                        <TextInput v-model="debtForm.due_date" type="date" class="mt-1 w-full" />
+                        <InputError :message="debtForm.errors.due_date" class="mt-1" />
+                    </div>
+                    <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                        <input type="checkbox" v-model="debtForm.is_exempt" class="rounded border-slate-300 text-primary-600 shadow-sm focus:ring-primary-500" />
+                        {{ t('exempt') }}
+                    </label>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <SecondaryButton type="button" @click="showAddDebtModal = false">{{ t('cancel') }}</SecondaryButton>
+                    <PrimaryButton :disabled="debtForm.processing">{{ t('save') }}</PrimaryButton>
+                </div>
+            </form>
+        </Modal>
 
         <ConfirmModal
             :show="showDeleteModal"

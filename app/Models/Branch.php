@@ -36,4 +36,9 @@ class Branch extends Model
     {
         return $this->belongsToMany(Player::class, 'branch_player');
     }
+
+    public function subscriptions(): BelongsToMany
+    {
+        return $this->belongsToMany(Subscription::class, 'branch_subscription');
+    }
 }

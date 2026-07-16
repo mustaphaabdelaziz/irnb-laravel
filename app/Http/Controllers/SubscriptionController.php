@@ -3,30 +3,31 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Subscription\StoreSubscriptionRequest;
+use App\Models\Branch;
 use App\Models\Category;
 use App\Models\Player;
 use App\Models\PlayerSubscription;
 use App\Models\Subscription;
+use App\Support\Csv;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Color;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SubscriptionController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = Subscription::query()->with('categories');
+        $query = Subscription::query()->with(['categories', 'branches']);
 
         if ($request->filled('year')) {
             $query->where('year', $request->input('year'));
+        }
+
+        if ($request->filled('branch_id')) {
+            $query->whereHas('branches', fn ($b) => $b->where('branches.id', $request->input('branch_id')));
         }
 
         $subscriptions = $query->orderByDesc('year')->orderBy('name')
@@ -35,13 +36,85 @@ class SubscriptionController extends Controller
 
         return Inertia::render('Subscriptions/Index', [
             'subscriptions' => $subscriptions,
-            'filters' => $request->only(['year']),
+            'branches' => Branch::orderBy('name')->get(),
+            'branchStats' => $this->branchStats(),
+            'filters' => $request->only(['year', 'branch_id']),
         ]);
+    }
+
+    /**
+     * Per-branch financial breakdown of subscription obligations. Because a subscription can
+     * belong to several branches, its obligation counts under EACH of those branches, so the
+     * rows overlap and do not sum to a grand total. Obligations of an untagged subscription
+     * (or a manual debt with no subscription) fall into the "No branch" bucket.
+     *
+     * @return array<int, array{branch_id:int|null, name:string, owed:float, collected:float, outstanding:float, players:int, paid_rate:float}>
+     */
+    private function branchStats(): array
+    {
+        // subscription_id => [branch_id, ...]
+        $subBranches = DB::table('branch_subscription')
+            ->get()
+            ->groupBy('subscription_id')
+            ->map(fn ($rows) => $rows->pluck('branch_id')->all());
+
+        $buckets = []; // branch_id (or '_none') => running totals
+        $ensure = function (&$buckets, $key) {
+            if (! isset($buckets[$key])) {
+                $buckets[$key] = ['owed' => 0.0, 'collected' => 0.0, 'outstanding' => 0.0, 'players' => []];
+            }
+        };
+
+        PlayerSubscription::query()
+            ->get(['id', 'player_id', 'subscription_id', 'amount_owed', 'amount_paid', 'is_exempt'])
+            ->each(function ($ps) use (&$buckets, $subBranches, $ensure) {
+                $owed = (float) $ps->amount_owed;
+                $paid = (float) $ps->amount_paid;
+                $outstanding = $ps->is_exempt ? 0.0 : max(0.0, $owed - $paid);
+
+                $branchIds = $ps->subscription_id ? ($subBranches[$ps->subscription_id] ?? []) : [];
+                $targets = empty($branchIds) ? ['_none'] : $branchIds;
+
+                foreach ($targets as $key) {
+                    $ensure($buckets, $key);
+                    $buckets[$key]['owed'] += $owed;
+                    $buckets[$key]['collected'] += $paid;
+                    $buckets[$key]['outstanding'] += $outstanding;
+                    $buckets[$key]['players'][$ps->player_id] = true;
+                }
+            });
+
+        $row = fn ($branchId, $name, $b) => [
+            'branch_id' => $branchId,
+            'name' => $name,
+            'owed' => round($b['owed'], 2),
+            'collected' => round($b['collected'], 2),
+            'outstanding' => round($b['outstanding'], 2),
+            'players' => count($b['players']),
+            'paid_rate' => $b['owed'] > 0 ? round($b['collected'] / $b['owed'] * 100, 1) : 0.0,
+        ];
+
+        // Every branch (ordered by name), so admins see each even at zero.
+        $stats = Branch::orderBy('name')->get()
+            ->map(fn ($branch) => $row(
+                $branch->id,
+                $branch->localized_name,
+                $buckets[$branch->id] ?? ['owed' => 0.0, 'collected' => 0.0, 'outstanding' => 0.0, 'players' => []]
+            ))
+            ->values()
+            ->all();
+
+        // Append the No-branch bucket only when it actually holds obligations.
+        if (isset($buckets['_none'])) {
+            $stats[] = $row(null, 'No branch', $buckets['_none']);
+        }
+
+        return $stats;
     }
 
     public function show(Subscription $subscription): Response
     {
-        $subscription->load('categories');
+        $subscription->load(['categories', 'branches']);
 
         $playerSubscriptions = PlayerSubscription::query()
             ->where('subscription_id', $subscription->id)
@@ -85,6 +158,7 @@ class SubscriptionController extends Controller
     {
         return Inertia::render('Subscriptions/Create', [
             'categories' => Category::orderBy('name')->get(),
+            'branches' => Branch::orderBy('name')->get(),
         ]);
     }
 
@@ -92,12 +166,16 @@ class SubscriptionController extends Controller
     {
         $validated = $request->validated();
         $categoryIds = $validated['category_ids'] ?? [];
-        unset($validated['category_ids']);
+        $branchIds = $validated['branch_ids'] ?? [];
+        unset($validated['category_ids'], $validated['branch_ids']);
 
         $subscription = Subscription::create($validated);
 
         if (! empty($categoryIds)) {
             $subscription->categories()->attach($categoryIds);
+        }
+        if (! empty($branchIds)) {
+            $subscription->branches()->attach($branchIds);
         }
 
         return redirect()->route('subscriptions.show', $subscription)
@@ -106,11 +184,12 @@ class SubscriptionController extends Controller
 
     public function edit(Subscription $subscription): Response
     {
-        $subscription->load('categories');
+        $subscription->load(['categories', 'branches']);
 
         return Inertia::render('Subscriptions/Edit', [
             'subscription' => $subscription,
             'categories' => Category::orderBy('name')->get(),
+            'branches' => Branch::orderBy('name')->get(),
         ]);
     }
 
@@ -118,10 +197,12 @@ class SubscriptionController extends Controller
     {
         $validated = $request->validated();
         $categoryIds = $validated['category_ids'] ?? [];
-        unset($validated['category_ids']);
+        $branchIds = $validated['branch_ids'] ?? [];
+        unset($validated['category_ids'], $validated['branch_ids']);
 
         $subscription->update($validated);
         $subscription->categories()->sync($categoryIds);
+        $subscription->branches()->sync($branchIds);
 
         return redirect()->route('subscriptions.show', $subscription)
             ->with('success', 'Subscription updated successfully.');
@@ -231,7 +312,7 @@ class SubscriptionController extends Controller
             ->with('success', $player->firstname.' '.$player->lastname.' added to subscription.');
     }
 
-    public function export(Request $request, Subscription $subscription): HttpResponse
+    public function export(Request $request, Subscription $subscription): StreamedResponse
     {
         $playerSubscriptions = PlayerSubscription::query()
             ->where('subscription_id', $subscription->id)
@@ -248,108 +329,36 @@ class SubscriptionController extends Controller
             $playerSubscriptions = $playerSubscriptions->filter(fn ($ps) => $ps->payment_status === 'partial');
         }
 
-        $spreadsheet = new Spreadsheet;
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Subscription Payments');
-
-        // Header row styling
-        $headerStyle = [
-            'font' => ['bold' => true, 'color' => ['argb' => Color::COLOR_WHITE]],
-            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF1E40AF']],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-        ];
-
-        // Title row
-        $sheet->mergeCells('A1:G1');
-        $sheet->setCellValue('A1', $subscription->name.' - '.$subscription->year.' ('.ucfirst($filter).')');
-        $sheet->getStyle('A1')->applyFromArray([
-            'font' => ['bold' => true, 'size' => 14, 'color' => ['argb' => 'FF1E40AF']],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-        ]);
-        $sheet->getRowDimension(1)->setRowHeight(25);
-
-        // Column headers
+        $title = $subscription->name.' - '.$subscription->year.' ('.ucfirst($filter).')';
         $headers = ['#', 'Membership ID', 'Player Name', 'Category', 'Amount Owed', 'Amount Paid', 'Status'];
-        foreach ($headers as $colIdx => $header) {
-            $cell = chr(65 + $colIdx).'3';
-            $sheet->setCellValue($cell, $header);
-        }
-        $sheet->getStyle('A3:G3')->applyFromArray($headerStyle);
-        $sheet->getRowDimension(3)->setRowHeight(18);
 
-        // Data rows
-        $row = 4;
+        $rows = [];
         $rowNum = 1;
         foreach ($playerSubscriptions as $ps) {
             $player = $ps->player;
             $name = $player ? ($player->lastname.' '.$player->firstname) : 'N/A';
-            $category = $player?->category?->name ?? '-';
 
-            $sheet->setCellValue('A'.$row, $rowNum);
-            $sheet->setCellValue('B'.$row, $player?->membership_id ?? '-');
-            $sheet->setCellValue('C'.$row, $name);
-            $sheet->setCellValue('D'.$row, $category);
-            $sheet->setCellValue('E'.$row, (float) $ps->amount_owed);
-            $sheet->setCellValue('F'.$row, (float) $ps->amount_paid);
-            $sheet->setCellValue('G'.$row, strtoupper($ps->payment_status));
-
-            // Status cell color
-            $statusColor = match ($ps->payment_status) {
-                'paid' => 'FFD1FAE5',
-                'partial' => 'FFFEF3C7',
-                'exempt' => 'FFF1F5F9',
-                default => 'FFFEE2E2',
-            };
-            $sheet->getStyle('G'.$row)->applyFromArray([
-                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => $statusColor]],
-                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-            ]);
-
-            // Alternating row background
-            if ($row % 2 === 0) {
-                $sheet->getStyle('A'.$row.':F'.$row)->applyFromArray([
-                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFF8FAFC']],
-                ]);
-            }
-
-            $rowNum++;
-            $row++;
+            $rows[] = [
+                $rowNum++,
+                $player?->membership_id ?? '-',
+                $name,
+                $player?->category?->name ?? '-',
+                (float) $ps->amount_owed,
+                (float) $ps->amount_paid,
+                strtoupper($ps->payment_status),
+            ];
         }
 
-        // Summary row
-        $sheet->mergeCells('A'.$row.':D'.$row);
-        $sheet->setCellValue('A'.$row, 'TOTAL');
-        $sheet->setCellValue('E'.$row, $playerSubscriptions->sum('amount_owed'));
-        $sheet->setCellValue('F'.$row, $playerSubscriptions->sum('amount_paid'));
-        $sheet->getStyle('A'.$row.':G'.$row)->applyFromArray([
-            'font' => ['bold' => true],
-            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFE0E7FF']],
-        ]);
+        // Summary row.
+        $rows[] = [
+            '', '', '', 'TOTAL',
+            $playerSubscriptions->sum('amount_owed'),
+            $playerSubscriptions->sum('amount_paid'),
+            '',
+        ];
 
-        // Column widths
-        $sheet->getColumnDimension('A')->setWidth(6);
-        $sheet->getColumnDimension('B')->setWidth(18);
-        $sheet->getColumnDimension('C')->setWidth(28);
-        $sheet->getColumnDimension('D')->setWidth(16);
-        $sheet->getColumnDimension('E')->setWidth(16);
-        $sheet->getColumnDimension('F')->setWidth(16);
-        $sheet->getColumnDimension('G')->setWidth(14);
+        $filename = 'subscription_'.str_replace(' ', '_', $subscription->name).'_'.$subscription->year.'_'.$filter.'.csv';
 
-        // Format money columns
-        $moneyFormat = '#,##0.00 "DZD"';
-        $sheet->getStyle('E4:F'.$row)->getNumberFormat()->setFormatCode($moneyFormat);
-
-        $filename = 'subscription_'.str_replace(' ', '_', $subscription->name).'_'.$subscription->year.'_'.$filter.'.xlsx';
-
-        $writer = new Xlsx($spreadsheet);
-        ob_start();
-        $writer->save('php://output');
-        $content = ob_get_clean();
-
-        return response($content, 200, [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
-            'Cache-Control' => 'no-cache, no-store, must-revalidate',
-        ]);
+        return Csv::download($filename, $headers, $rows, $title);
     }
 }

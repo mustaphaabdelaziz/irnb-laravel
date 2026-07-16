@@ -100,6 +100,9 @@ const tabCount = (tab) => {
                         </svg>
                     </Link>
                     <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ subscription.name }} ({{ subscription.year }})</h1>
+                    <div v-if="subscription.branches?.length" class="flex flex-wrap gap-1">
+                        <Badge v-for="b in subscription.branches" :key="b.id" :label="b.localized_name || b.name" color="emerald" />
+                    </div>
                 </div>
                 <div class="no-print flex flex-wrap gap-2">
                     <!-- Add single player -->
@@ -118,7 +121,7 @@ const tabCount = (tab) => {
                         <button @click="exportExcel(activeTab)"
                             class="inline-flex items-center gap-2 rounded-lg border border-emerald-300 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-emerald-700 shadow-sm hover:bg-emerald-50 transition-colors">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                            Export Excel
+                            Export CSV
                         </button>
                     </div>
                     <!-- Print -->

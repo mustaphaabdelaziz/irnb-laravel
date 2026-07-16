@@ -37,6 +37,11 @@ class Subscription extends Model
         return $this->belongsToMany(Category::class, 'category_subscription');
     }
 
+    public function branches(): BelongsToMany
+    {
+        return $this->belongsToMany(Branch::class, 'branch_subscription');
+    }
+
     public function playerSubscriptions(): HasMany
     {
         return $this->hasMany(PlayerSubscription::class);

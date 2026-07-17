@@ -578,5 +578,11 @@
     "overrides_hint": "Les cases cochées s'ajoutent au rôle.",
     "reports": "Rapports",
     "roles": "Rôles",
-    "system": "Système"
+    "system": "Système",
+    "age_years": "{age} ans",
+    "discount": "Remise",
+    "no_discount": "Aucune remise",
+    "discount_percent": "Pourcentage (%)",
+    "discount_amount": "Montant fixe",
+    "net_owed": "Net à payer"
 }

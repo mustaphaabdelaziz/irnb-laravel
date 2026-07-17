@@ -188,7 +188,7 @@ const statusColor = (s) => {
 const showSubEditModal = ref(false);
 const editingSubId = ref(null);
 const editingSubIsManual = ref(false);
-const subForm = useForm({ label: '', year: '', amount_owed: '', is_exempt: false, due_date: '' });
+const subForm = useForm({ label: '', year: '', amount_owed: '', is_exempt: false, due_date: '', discount_type: '', discount_value: '' });
 
 function openSubEdit(sub) {
     editingSubId.value = sub.id;
@@ -199,8 +199,30 @@ function openSubEdit(sub) {
     subForm.amount_owed = sub.amount_owed;
     subForm.is_exempt = !!sub.is_exempt;
     subForm.due_date = sub.due_date ? String(sub.due_date).slice(0, 10) : '';
+    subForm.discount_type = sub.discount_type || '';
+    subForm.discount_value = sub.discount_value ?? '';
     subForm.clearErrors();
     showSubEditModal.value = true;
+}
+
+// Mirror the server's clamp so the previewed net matches what will be saved.
+const subEditDiscount = computed(() => {
+    const owed = parseFloat(subForm.amount_owed) || 0;
+    const value = parseFloat(subForm.discount_value) || 0;
+    if (!subForm.discount_type || value <= 0) return 0;
+    const raw = subForm.discount_type === 'percent' ? (owed * value) / 100 : value;
+    return Math.round(Math.min(Math.max(raw, 0), owed) * 100) / 100;
+});
+
+const subEditNetOwed = computed(() => Math.max(0, (parseFloat(subForm.amount_owed) || 0) - subEditDiscount.value));
+
+// A discount label for the obligations table, e.g. "-20% (400)" or "-400".
+function discountLabel(sub) {
+    const amount = parseFloat(sub.discount_amount ?? 0);
+    if (!sub.discount_type || amount <= 0) return null;
+    return sub.discount_type === 'percent'
+        ? `-${parseFloat(sub.discount_value)}% (${formatMoney(amount)})`
+        : `-${formatMoney(amount)}`;
 }
 
 function submitSubEdit() {
@@ -273,7 +295,13 @@ function formatDate(val) {
                     </div>
                     <dl class="mt-4 grid gap-3 sm:grid-cols-2">
                         <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('membership_id') }}</dt><dd class="font-mono text-sm">{{ player.membership_id }}</dd></div>
-                        <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('date_of_birth') }}</dt><dd class="text-sm">{{ formatDate(player.birthdate) }}</dd></div>
+                        <div>
+                            <dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('date_of_birth') }}</dt>
+                            <dd class="text-sm">
+                                {{ formatDate(player.birthdate) }}
+                                <span v-if="player.age !== null && player.age !== undefined" class="ms-1 text-slate-500 dark:text-slate-400">({{ t('age_years', { age: player.age }) }})</span>
+                            </dd>
+                        </div>
                         <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('gender') }}</dt><dd class="text-sm">{{ player.gender?.toLowerCase() === 'female' ? t('female') : t('male') }}</dd></div>
                         <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('blood_group') }}</dt><dd class="text-sm">{{ player.health_blood_group_rhesus || '-' }}</dd></div>
                         <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('phone') }}</dt><dd class="text-sm">{{ player.phones?.[0] || '-' }}</dd></div>
@@ -342,6 +370,7 @@ function formatDate(val) {
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('subscription') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('year') }}</th>
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('amount') }}</th>
+                                <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('discount') }}</th>
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('amount_paid') }}</th>
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('remaining') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('status') }}</th>
@@ -356,6 +385,10 @@ function formatDate(val) {
                                 </td>
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ sub.subscription?.year || sub.year || '-' }}</td>
                                 <td class="px-4 py-3 text-end text-sm">{{ formatMoney(sub.amount_owed) }}</td>
+                                <td class="px-4 py-3 text-end text-sm">
+                                    <span v-if="discountLabel(sub)" class="text-amber-700 dark:text-amber-400">{{ discountLabel(sub) }}</span>
+                                    <span v-else class="text-slate-400 dark:text-slate-500">—</span>
+                                </td>
                                 <td class="px-4 py-3 text-end text-sm text-emerald-700">{{ formatMoney(sub.amount_paid) }}</td>
                                 <td class="px-4 py-3 text-end text-sm" :class="parseFloat(sub.remaining_amount) > 0 ? 'text-rose-700 font-semibold' : 'text-slate-500 dark:text-slate-400'">
                                     {{ formatMoney(sub.remaining_amount) }}
@@ -532,6 +565,26 @@ function formatDate(val) {
                         <TextInput v-model="subForm.due_date" type="date" class="mt-1 w-full" />
                         <InputError :message="subForm.errors.due_date" class="mt-1" />
                     </div>
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <div>
+                            <InputLabel :value="t('discount')" />
+                            <select v-model="subForm.discount_type" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-900 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                                <option value="">{{ t('no_discount') }}</option>
+                                <option value="percent">{{ t('discount_percent') }}</option>
+                                <option value="amount">{{ t('discount_amount') }}</option>
+                            </select>
+                            <InputError :message="subForm.errors.discount_type" class="mt-1" />
+                        </div>
+                        <div v-if="subForm.discount_type">
+                            <InputLabel :value="subForm.discount_type === 'percent' ? '%' : t('amount')" />
+                            <TextInput v-model="subForm.discount_value" type="number" step="0.01" min="0"
+                                :max="subForm.discount_type === 'percent' ? 100 : undefined" class="mt-1 w-full" />
+                            <InputError :message="subForm.errors.discount_value" class="mt-1" />
+                        </div>
+                    </div>
+                    <p v-if="subEditDiscount > 0" class="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        {{ t('discount') }}: −{{ formatMoney(subEditDiscount) }} · <span class="font-semibold">{{ t('net_owed') }}: {{ formatMoney(subEditNetOwed) }}</span>
+                    </p>
                     <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
                         <input type="checkbox" v-model="subForm.is_exempt" class="rounded border-slate-300 text-primary-600 shadow-sm focus:ring-primary-500" />
                         {{ t('exempt') }}

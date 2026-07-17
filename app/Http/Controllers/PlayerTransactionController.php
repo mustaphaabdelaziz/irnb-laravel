@@ -115,13 +115,17 @@ class PlayerTransactionController extends Controller
     private function createSubscriptionPayment(PlayerSubscription $sub, Player $player, float $amount, ?string $method, ?string $description, ?int $userId): void
     {
         DB::transaction(function () use ($sub, $player, $amount, $method, $description, $userId) {
-            $remaining = max(0.0, (float) $sub->amount_owed - (float) $sub->amount_paid);
+            // remaining_amount is discount- and exemption-aware: only what is
+            // genuinely still owed may land on the subscription, the rest is a donation.
+            $remaining = (float) $sub->remaining_amount;
             $subPortion = min($amount, $remaining);
             $donationPortion = round($amount - $subPortion, 2);
 
             if ($subPortion > 0) {
+                // Status is judged against what is owed after any discount, so paying
+                // the net in full stamps the payment Paid rather than Partial.
                 $status = app(ResolvePaymentStatusService::class)
-                    ->handle((float) $sub->amount_paid + $subPortion, (float) $sub->amount_owed);
+                    ->handle((float) $sub->amount_paid + $subPortion, (float) $sub->net_owed);
 
                 $transaction = Transaction::create([
                     'amount' => $subPortion,

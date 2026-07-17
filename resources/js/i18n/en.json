@@ -578,5 +578,11 @@
     "overrides_hint": "Checked cells are granted on top of the role.",
     "reports": "Reports",
     "roles": "Roles",
-    "system": "System"
+    "system": "System",
+    "age_years": "{age} years",
+    "discount": "Discount",
+    "no_discount": "No discount",
+    "discount_percent": "Percentage (%)",
+    "discount_amount": "Fixed amount",
+    "net_owed": "Net owed"
 }

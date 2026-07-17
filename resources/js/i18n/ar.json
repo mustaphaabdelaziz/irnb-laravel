@@ -578,5 +578,11 @@
     "overrides_hint": "الخانات المحددة تُمنح إضافةً إلى الدور.",
     "reports": "التقارير",
     "roles": "الأدوار",
-    "system": "النظام"
+    "system": "النظام",
+    "age_years": "{age} سنة",
+    "discount": "تخفيض",
+    "no_discount": "بدون تخفيض",
+    "discount_percent": "نسبة مئوية (%)",
+    "discount_amount": "مبلغ ثابت",
+    "net_owed": "الصافي المستحق"
 }

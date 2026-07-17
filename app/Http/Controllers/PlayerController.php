@@ -382,17 +382,47 @@ class PlayerController extends Controller
     }
 
     /**
+     * Name search across every part of a player's name.
+     *
+     * The full name is spread over several columns (lastname firstname (nickname)
+     * بن father grandfather), so matching the raw term against single columns fails
+     * for anything but one word. Instead each whitespace-separated token must match
+     * SOME name column (AND across tokens, OR across columns). That makes the search
+     * order-independent and works with a full name, a partial one, and with or
+     * without the بن connector — while still requiring all tokens to land on the
+     * same player.
+     */
+    private function applySearch($query, string $search): void
+    {
+        $columns = ['firstname', 'lastname', 'nickname', 'father', 'grandfather', 'membership_id'];
+
+        // بن is a connector in the rendered full name, not part of any column.
+        $tokens = collect(preg_split('/\s+/u', trim($search), -1, PREG_SPLIT_NO_EMPTY) ?: [])
+            ->reject(fn ($token) => $token === 'بن')
+            ->values();
+
+        if ($tokens->isEmpty()) {
+            return;
+        }
+
+        $query->where(function ($outer) use ($tokens, $columns) {
+            foreach ($tokens as $token) {
+                $outer->where(function ($inner) use ($token, $columns) {
+                    foreach ($columns as $column) {
+                        $inner->orWhere($column, 'like', '%'.$token.'%');
+                    }
+                });
+            }
+        });
+    }
+
+    /**
      * Apply the shared list filters (used by index + export).
      */
     private function applyPlayerFilters($query, Request $request): void
     {
         if ($request->filled('search')) {
-            $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('firstname', 'like', "%{$search}%")
-                    ->orWhere('lastname', 'like', "%{$search}%")
-                    ->orWhere('membership_id', 'like', "%{$search}%");
-            });
+            $this->applySearch($query, (string) $request->input('search'));
         }
 
         if ($request->filled('category_id')) {

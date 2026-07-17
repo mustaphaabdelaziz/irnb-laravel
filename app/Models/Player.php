@@ -48,6 +48,7 @@ class Player extends Model
     /** Expose the computed Arabic full name to the frontend (tables, profile). */
     protected $appends = [
         'fullname',
+        'age',
     ];
 
     /** Normalise the stored photo URL to a host-relative /media path (web + desktop). */
@@ -109,6 +110,12 @@ class Player extends Model
         return $this->morphMany(EquipmentRental::class, 'rentable');
     }
 
+    /** Age in whole years, or null when no birthdate is on record. */
+    public function getAgeAttribute(): ?int
+    {
+        return $this->birthdate?->age;
+    }
+
     public function getFullnameAttribute(): string
     {
         $parts = [
@@ -133,10 +140,14 @@ class Player extends Model
         return trim($full);
     }
 
+    /**
+     * Outstanding debt = what is still owed across every obligation assigned to the
+     * player. Optional subscriptions count too: assigning one means the player owes
+     * it. Exempt obligations report a remaining_amount of 0, so they drop out here.
+     */
     public function calculateTotalDebt(): float
     {
         return (float) $this->playerSubscriptions()
-            ->where('is_mandatory', true)
             ->with('payments')
             ->get()
             ->sum(fn (PlayerSubscription $sub) => $sub->remaining_amount);

@@ -66,11 +66,13 @@ class SubscriptionController extends Controller
         };
 
         PlayerSubscription::query()
-            ->get(['id', 'player_id', 'subscription_id', 'amount_owed', 'amount_paid', 'is_exempt'])
+            ->get(['id', 'player_id', 'subscription_id', 'amount_owed', 'amount_paid', 'is_exempt', 'discount_type', 'discount_value'])
             ->each(function ($ps) use (&$buckets, $subBranches, $ensure) {
                 $owed = (float) $ps->amount_owed;
                 $paid = (float) $ps->amount_paid;
-                $outstanding = $ps->is_exempt ? 0.0 : max(0.0, $owed - $paid);
+                // Via the accessor so discounts and exemptions are honoured; `owed`
+                // stays gross (the real price) while `outstanding` is what is due.
+                $outstanding = (float) $ps->remaining_amount;
 
                 $branchIds = $ps->subscription_id ? ($subBranches[$ps->subscription_id] ?? []) : [];
                 $targets = empty($branchIds) ? ['_none'] : $branchIds;

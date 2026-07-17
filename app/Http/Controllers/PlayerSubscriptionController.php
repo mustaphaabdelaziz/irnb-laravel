@@ -7,6 +7,7 @@ use App\Models\PlayerSubscription;
 use App\Services\Finance\RecalculatePlayerDebtService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class PlayerSubscriptionController extends Controller
@@ -60,12 +61,26 @@ class PlayerSubscriptionController extends Controller
             'amount_owed' => ['required', 'numeric', 'min:0'],
             'is_exempt' => ['nullable', 'boolean'],
             'due_date' => ['nullable', 'date'],
+            'discount_type' => ['nullable', 'in:percent,amount'],
+            'discount_value' => [
+                'nullable',
+                'required_with:discount_type',
+                'numeric',
+                'min:0',
+                // A percentage over 100 would mean giving money back.
+                Rule::when($request->input('discount_type') === 'percent', ['max:100']),
+            ],
         ]);
+
+        $discountType = $validated['discount_type'] ?? null;
 
         $playerSubscription->fill([
             'amount_owed' => $validated['amount_owed'],
             'is_exempt' => $request->boolean('is_exempt'),
             'due_date' => $validated['due_date'] ?? null,
+            // Clearing the type clears the value, so no orphan discount is left behind.
+            'discount_type' => $discountType,
+            'discount_value' => $discountType ? $validated['discount_value'] : null,
         ]);
 
         // Label/year are only editable on manual debts (no attached subscription plan).

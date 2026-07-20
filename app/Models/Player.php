@@ -30,6 +30,7 @@ class Player extends Model
         'email',
         'status_class',
         'status_value',
+        'status_id',
         'state',
         'city',
         'is_student',
@@ -83,6 +84,11 @@ class Player extends Model
     public function position(): BelongsTo
     {
         return $this->belongsTo(Position::class);
+    }
+
+    public function status(): BelongsTo
+    {
+        return $this->belongsTo(PlayerStatus::class, 'status_id');
     }
 
     public function branches(): BelongsToMany

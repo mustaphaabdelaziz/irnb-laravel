@@ -8,6 +8,8 @@ use App\Models\InventorySessionItem;
 use App\Models\Player;
 use App\Models\StorageLocation;
 use App\Models\User;
+use App\Services\Equipment\EquipmentStockService;
+use App\Services\Export\ExcelExporter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -52,7 +54,9 @@ class InventoryController extends Controller
             ]);
 
             // Snapshot every non-retired item into the count sheet.
-            $items = EquipmentItem::where('status', '!=', 'Retired')->get(['id', 'status', 'condition', 'location']);
+            $items = EquipmentItem::where('status', '!=', 'Retired')
+                ->get(['id', 'status', 'condition', 'location', 'quantity']);
+
             foreach ($items as $it) {
                 InventorySessionItem::create([
                     'inventory_session_id' => $session->id,
@@ -60,6 +64,8 @@ class InventoryController extends Controller
                     'expected_status' => $it->status,
                     'expected_condition' => $it->condition,
                     'expected_location' => $it->location,
+                    // How many units of this lot the counter should find.
+                    'expected_quantity' => $it->quantity,
                 ]);
             }
             // Expected is a number of units to find, not a number of lots.
@@ -96,6 +102,7 @@ class InventoryController extends Controller
             'items' => ['present', 'array'],
             'items.*.id' => ['required', 'integer'],
             'items.*.found' => ['required', 'boolean'],
+            'items.*.found_quantity' => ['nullable', 'integer', 'min:0'],
             'items.*.actual_condition' => ['nullable', 'string', 'max:40'],
             'items.*.actual_location' => ['nullable', 'string', 'max:160'],
             'items.*.note' => ['nullable', 'string', 'max:500'],
@@ -106,6 +113,7 @@ class InventoryController extends Controller
                 ->update([
                     'counted' => true,
                     'found' => $row['found'],
+                    'found_quantity' => $row['found'] ? ($row['found_quantity'] ?? null) : 0,
                     'actual_condition' => $row['actual_condition'] ?? null,
                     'actual_location' => $row['actual_location'] ?? null,
                     'note' => $row['note'] ?? null,
@@ -157,28 +165,37 @@ class InventoryController extends Controller
         DB::transaction(function () use ($session) {
             $found = 0;
             $missing = 0;
+            $stock = app(EquipmentStockService::class);
 
             foreach ($session->items()->with('item')->get() as $line) {
                 if (! $line->counted) {
                     continue;
                 }
-                if ($line->found) {
-                    $found++;
-                    if ($line->item) {
-                        $update = [];
-                        if ($line->actual_condition && $line->actual_condition !== $line->item->condition) {
-                            $update['condition'] = $line->actual_condition;
-                        }
-                        if ($line->actual_location && $line->actual_location !== $line->item->location) {
-                            $update['location'] = $line->actual_location;
-                        }
-                        if ($update) {
-                            $line->item->update($update);
-                        }
+
+                // Units, not lines: a lot of 50 where 47 turned up is 47 found
+                // and 3 missing, not one "found" tick.
+                $foundUnits = $line->found ? (int) ($line->found_quantity ?? $line->expected_quantity) : 0;
+                $missingUnits = max(0, $line->expected_quantity - $foundUnits);
+
+                $found += $foundUnits;
+                $missing += $missingUnits;
+
+                if ($line->item && $foundUnits > 0) {
+                    $update = [];
+                    if ($line->actual_condition && $line->actual_condition !== $line->item->condition) {
+                        $update['condition'] = $line->actual_condition;
                     }
-                } else {
-                    $missing++;
-                    $line->item?->update(['status' => 'Lost']);
+                    if ($line->actual_location && $line->actual_location !== $line->item->location) {
+                        $update['location'] = $line->actual_location;
+                    }
+                    if ($update) {
+                        $line->item->update($update);
+                    }
+                }
+
+                if ($line->item && $missingUnits > 0) {
+                    // Only the missing units are condemned; the rest stay in service.
+                    $stock->writeOffMissing($line->item, $missingUnits, $session->conducted_by_user_id);
                 }
             }
 
@@ -193,7 +210,7 @@ class InventoryController extends Controller
         return back()->with('success', "Inventory {$session->reference} completed.");
     }
 
-    public function export(InventorySession $session, \App\Services\Export\ExcelExporter $exporter)
+    public function export(InventorySession $session, ExcelExporter $exporter)
     {
         $session->load('items.item.catalog:id,name');
         $rows = $session->items->map(function (InventorySessionItem $l) {

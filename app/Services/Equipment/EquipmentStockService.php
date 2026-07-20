@@ -112,6 +112,62 @@ class EquipmentStockService
     }
 
     /**
+     * Write off units that a stock-take could not find.
+     *
+     * Finding 47 of 50 dossards must not condemn all 50: the three missing
+     * units move into their own lot marked Lost and the rest stay in service.
+     * If nothing at all was found the whole lot is marked Lost, which is what
+     * a serialized item does.
+     */
+    public function writeOffMissing(EquipmentItem $item, int $quantity, ?int $userId = null): void
+    {
+        if ($quantity < 1) {
+            return;
+        }
+
+        if ($quantity >= $item->quantity) {
+            $item->update(['status' => 'Lost']);
+
+            EquipmentHistory::create([
+                'item_id' => $item->id,
+                'user_id' => $userId,
+                'event_type' => 'Lost',
+                'details' => ['quantity' => $item->quantity, 'source' => 'stocktake'],
+                'event_timestamp' => now(),
+            ]);
+
+            return;
+        }
+
+        DB::transaction(function () use ($item, $quantity, $userId) {
+            $item->decrement('quantity', $quantity);
+
+            $lost = EquipmentItem::create([
+                'catalog_id' => $item->catalog_id,
+                'quantity' => $quantity,
+                'unit_price' => $item->unit_price,
+                'purchase_date' => $item->purchase_date,
+                // Coalesced because an in-memory parent may not carry the
+                // column's database default.
+                'condition' => $item->condition ?? 'New',
+                'location' => $item->location,
+                'status' => 'Lost',
+                'received_via' => $item->received_via ?? 'purchase',
+            ]);
+
+            $lost->branches()->sync($item->branches()->pluck('branches.id')->all());
+
+            EquipmentHistory::create([
+                'item_id' => $lost->id,
+                'user_id' => $userId,
+                'event_type' => 'Lost',
+                'details' => ['quantity' => $quantity, 'from_item_id' => $item->id, 'source' => 'stocktake'],
+                'event_timestamp' => now(),
+            ]);
+        });
+    }
+
+    /**
      * Bring stock into the club as a new lot.
      *
      * Spending money is opt-in via `record_expense`, not a side effect of

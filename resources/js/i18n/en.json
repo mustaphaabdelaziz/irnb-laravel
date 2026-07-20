@@ -609,5 +609,8 @@
     "equipment.cross_branch_warning": "This equipment belongs to another branch.",
     "equipment.returned_of": "returned",
     "adjustment": "Adjustment",
-    "equipment.branch_hint": "Leave empty for club-wide equipment that every branch can use."
+    "equipment.branch_hint": "Leave empty for club-wide equipment that every branch can use.",
+    "equipment.asset_value": "Asset value",
+    "equipment.asset_value_hint": "Excludes lost and retired stock. Uses each batch price, falling back to the catalog reference value.",
+    "value": "Value"
 }

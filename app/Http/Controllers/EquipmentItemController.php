@@ -296,10 +296,52 @@ class EquipmentItemController extends Controller
             ])
             ->values();
 
+        // Asset value: quantity x what a unit cost, falling back to the
+        // catalog's reference value when a lot has no price of its own.
+        $totalValue = (float) DB::table('equipment_items')
+            ->join('equipment_catalogs', 'equipment_catalogs.id', '=', 'equipment_items.catalog_id')
+            ->whereNotIn('equipment_items.status', ['Lost', 'Retired'])
+            ->selectRaw('COALESCE(SUM(equipment_items.quantity *
+                COALESCE(equipment_items.unit_price, equipment_catalogs.purchase_price, 0)), 0) as value')
+            ->value('value');
+
+        // Value per branch. Club-wide lots have no branch row, so they are
+        // reported separately rather than silently dropped by the join.
+        $valueByBranch = DB::table('branch_equipment_item')
+            ->join('branches', 'branches.id', '=', 'branch_equipment_item.branch_id')
+            ->join('equipment_items', 'equipment_items.id', '=', 'branch_equipment_item.equipment_item_id')
+            ->join('equipment_catalogs', 'equipment_catalogs.id', '=', 'equipment_items.catalog_id')
+            ->whereNotIn('equipment_items.status', ['Lost', 'Retired'])
+            ->groupBy('branches.id', 'branches.name')
+            ->selectRaw('branches.name as branch,
+                SUM(equipment_items.quantity) as units,
+                SUM(equipment_items.quantity *
+                    COALESCE(equipment_items.unit_price, equipment_catalogs.purchase_price, 0)) as value')
+            ->orderBy('branches.name')
+            ->get()
+            ->map(fn ($row) => [
+                'branch' => $row->branch,
+                'units' => (int) $row->units,
+                'value' => (float) $row->value,
+            ])
+            ->values();
+
+        $clubWide = DB::table('equipment_items')
+            ->join('equipment_catalogs', 'equipment_catalogs.id', '=', 'equipment_items.catalog_id')
+            ->whereNotIn('equipment_items.status', ['Lost', 'Retired'])
+            ->whereNotExists(fn ($q) => $q->select(DB::raw(1))->from('branch_equipment_item')
+                ->whereColumn('branch_equipment_item.equipment_item_id', 'equipment_items.id'))
+            ->selectRaw('COALESCE(SUM(equipment_items.quantity), 0) as units,
+                COALESCE(SUM(equipment_items.quantity *
+                    COALESCE(equipment_items.unit_price, equipment_catalogs.purchase_price, 0)), 0) as value')
+            ->first();
+
         $overdueRentals = EquipmentRental::query()
             ->with(['equipmentItem.catalog', 'rentable'])
             ->whereNull('return_date')
             ->whereNotNull('due_date')
+            // Assignments are open-ended and can never be late.
+            ->where('type', '!=', 'assignment')
             ->whereDate('due_date', '<', now())
             ->get()
             ->map(fn (EquipmentRental $rental) => [
@@ -309,6 +351,7 @@ class EquipmentItemController extends Controller
                 'catalog' => $rental->equipmentItem?->catalog
                     ? ['name' => $rental->equipmentItem->catalog->name]
                     : null,
+                'quantity' => $rental->outstanding_quantity,
                 'rented_to' => $rental->rentable
                     ? ['firstname' => $rental->rentable->firstname, 'lastname' => $rental->rentable->lastname]
                     : null,
@@ -317,6 +360,9 @@ class EquipmentItemController extends Controller
 
         return Inertia::render('Equipment/Inventory', [
             'summary' => $summary,
+            'totalValue' => $totalValue,
+            'valueByBranch' => $valueByBranch,
+            'clubWideValue' => ['units' => (int) $clubWide->units, 'value' => (float) $clubWide->value],
             'conditionBreakdown' => $conditionBreakdown,
             'categoryBreakdown' => $categoryBreakdown,
             'overdueRentals' => $overdueRentals,

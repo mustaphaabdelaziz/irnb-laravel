@@ -609,5 +609,8 @@
     "equipment.cross_branch_warning": "Ce matériel appartient à une autre branche.",
     "equipment.returned_of": "rendues",
     "adjustment": "Ajustement",
-    "equipment.branch_hint": "Laissez vide pour un matériel commun, utilisable par toutes les branches."
+    "equipment.branch_hint": "Laissez vide pour un matériel commun, utilisable par toutes les branches.",
+    "equipment.asset_value": "Valeur du parc",
+    "equipment.asset_value_hint": "Hors matériel perdu ou réformé. Utilise le prix de chaque lot, à défaut la valeur de référence du catalogue.",
+    "value": "Valeur"
 }

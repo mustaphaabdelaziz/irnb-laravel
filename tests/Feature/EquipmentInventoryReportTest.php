@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Branch;
 use App\Models\EquipmentCatalog;
 use App\Models\EquipmentItem;
 use App\Models\EquipmentRental;
@@ -106,6 +107,67 @@ class EquipmentInventoryReportTest extends TestCase
         $this->assertSame(26, $summary['total']);
         $this->assertSame(20, $summary['available']);
         $this->assertSame(6, $summary['under_repair']);
+    }
+
+    private function props(): array
+    {
+        $response = $this->actingAs($this->user())->get(route('equipment.inventory'));
+        $response->assertOk();
+
+        return $response->viewData('page')['props'];
+    }
+
+    #[Test]
+    public function asset_value_multiplies_units_by_the_batch_price(): void
+    {
+        $this->lot(50, ['unit_price' => 120]);
+        $this->lot(10, ['unit_price' => 135]);
+
+        $this->assertEqualsWithDelta(7350, $this->props()['totalValue'], 0.01);
+    }
+
+    #[Test]
+    public function lost_stock_is_excluded_from_asset_value(): void
+    {
+        $this->lot(50, ['unit_price' => 120]);
+        $this->lot(10, ['unit_price' => 120, 'status' => 'Lost']);
+
+        $this->assertEqualsWithDelta(6000, $this->props()['totalValue'], 0.01);
+    }
+
+    #[Test]
+    public function club_wide_stock_is_reported_separately_from_branch_value(): void
+    {
+        $branch = Branch::create(['name' => 'Football', 'name_en' => 'Football']);
+
+        $tagged = $this->lot(20, ['unit_price' => 100]);
+        $tagged->branches()->sync([$branch->id]);
+
+        $this->lot(5, ['unit_price' => 100]);   // untagged: club-wide
+
+        $props = $this->props();
+
+        $this->assertEqualsWithDelta(2000, $props['valueByBranch'][0]['value'], 0.01);
+        // Untagged stock must not vanish through the branch join.
+        $this->assertSame(5, $props['clubWideValue']['units']);
+        $this->assertEqualsWithDelta(2500, $props['totalValue'], 0.01);
+    }
+
+    #[Test]
+    public function an_assignment_never_appears_as_overdue(): void
+    {
+        $lot = $this->lot(5);
+
+        EquipmentRental::create([
+            'equipment_item_id' => $lot->id,
+            'rentable_type' => Player::class,
+            'rentable_id' => $this->player()->id,
+            'checkout_date' => now()->subYear(),
+            'due_date' => now()->subMonths(6),
+            'type' => 'assignment',
+        ]);
+
+        $this->assertCount(0, $this->props()['overdueRentals']);
     }
 
     #[Test]

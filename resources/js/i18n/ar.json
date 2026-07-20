@@ -609,5 +609,8 @@
     "equipment.cross_branch_warning": "هذه المعدات تخص فرعاً آخر.",
     "equipment.returned_of": "أُرجعت",
     "adjustment": "تسوية",
-    "equipment.branch_hint": "اتركه فارغاً للمعدات المشتركة التي يمكن لكل الفروع استخدامها."
+    "equipment.branch_hint": "اتركه فارغاً للمعدات المشتركة التي يمكن لكل الفروع استخدامها.",
+    "equipment.asset_value": "قيمة الأصول",
+    "equipment.asset_value_hint": "لا تشمل المفقود والمُستبعد. تعتمد سعر كل دفعة، وإلا القيمة المرجعية في الكتالوج.",
+    "value": "القيمة"
 }

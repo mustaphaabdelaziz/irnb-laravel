@@ -260,7 +260,7 @@ class BoardController extends Controller
             $m->term_start?->format('Y-m-d'), $m->term_end?->format('Y-m-d'), $m->status,
         ])->all();
 
-        return $exporter->download('Board Members', ['Name', 'Role', 'Email', 'Phone', 'Term Start', 'Term End', 'Status'], $rows, 'board-members.xlsx');
+        return $exporter->download('Board Members', ['Name', 'Role', 'Email', 'Phone', 'Term Start', 'Term End', 'Status'], $rows, 'board-members.csv');
     }
 
     public function exportTasks(ExcelExporter $exporter)
@@ -270,6 +270,6 @@ class BoardController extends Controller
             $t->progress.'%', $t->due_date?->format('Y-m-d'),
         ])->all();
 
-        return $exporter->download('Board Tasks', ['Title', 'Assignee', 'Meeting', 'Priority', 'Status', 'Progress', 'Due Date'], $rows, 'board-tasks.xlsx');
+        return $exporter->download('Board Tasks', ['Title', 'Assignee', 'Meeting', 'Priority', 'Status', 'Progress', 'Due Date'], $rows, 'board-tasks.csv');
     }
 }

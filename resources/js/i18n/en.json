@@ -584,5 +584,6 @@
     "no_discount": "No discount",
     "discount_percent": "Percentage (%)",
     "discount_amount": "Fixed amount",
-    "net_owed": "Net owed"
+    "net_owed": "Net owed",
+    "flash.equipment_stock_received": "Stock received successfully."
 }

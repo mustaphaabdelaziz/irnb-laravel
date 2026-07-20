@@ -514,7 +514,7 @@
     "task": "مهمة",
     "task_title": "عنوان المهمة",
     "tasks": "المهام",
-    "tasks_without_due_date": "مهمة/مهام بدون تاريخ استحقاق",
+    "tasks_without_due_date": "مهمة\/مهام بدون تاريخ استحقاق",
     "team": "الفريق",
     "template": "النموذج",
     "term": "العهدة",
@@ -584,5 +584,6 @@
     "no_discount": "بدون تخفيض",
     "discount_percent": "نسبة مئوية (%)",
     "discount_amount": "مبلغ ثابت",
-    "net_owed": "الصافي المستحق"
+    "net_owed": "الصافي المستحق",
+    "flash.equipment_stock_received": "تم استلام المخزون بنجاح."
 }

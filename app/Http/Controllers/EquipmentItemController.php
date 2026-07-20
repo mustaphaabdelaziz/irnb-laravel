@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Equipment\ReceiveStockRequest;
 use App\Http\Requests\Equipment\RentEquipmentRequest;
 use App\Models\EquipmentCatalog;
 use App\Models\EquipmentHistory;
@@ -32,6 +33,15 @@ class EquipmentItemController extends Controller
         private SerialNumberService $serials,
     ) {}
 
+    /** Bring stock into the club. The only path that can spend money. */
+    public function receive(ReceiveStockRequest $request, EquipmentStockService $stock): RedirectResponse
+    {
+        $item = $stock->receive($request->validated(), $request->user()?->id);
+
+        return redirect()->route('equipment.catalogs.show', $item->catalog_id)
+            ->with('success', 'flash.equipment_stock_received');
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -44,7 +54,7 @@ class EquipmentItemController extends Controller
             'purchase_price' => ['nullable', 'numeric', 'min:0'],
         ]);
 
-        DB::transaction(function () use ($validated, $request) {
+        DB::transaction(function () use ($validated) {
             $item = new EquipmentItem([
                 'catalog_id' => $validated['catalog_id'],
                 'designation' => $validated['designation'] ?? null,
@@ -52,26 +62,14 @@ class EquipmentItemController extends Controller
                 'condition' => $validated['condition'] ?? 'New',
                 'location' => $validated['location'] ?? null,
                 'notes' => $validated['notes'] ?? null,
+                // The price records what the unit is worth. It no longer
+                // spends money: purchases go through receive-stock, where
+                // recording the expense is an explicit choice.
+                'unit_price' => $validated['purchase_price'] ?? null,
             ]);
 
             // Assigns unique_identifier and saves (with collision retry).
             $this->serials->assign($item);
-
-            if (! empty($validated['purchase_price'])) {
-                $purchaseTransaction = Transaction::create([
-                    'amount' => $validated['purchase_price'],
-                    'transaction_date' => $validated['purchase_date'],
-                    'transaction_type' => 'expense',
-                    'category' => 'equipment',
-                    'description' => 'Equipment purchase: '.$item->unique_identifier,
-                    'recorded_by_user_id' => $request->user()?->id,
-                    'status' => 'Paid',
-                    'fiscal_year' => now()->year,
-                ]);
-
-                $item->purchase_transaction_id = $purchaseTransaction->id;
-                $item->save();
-            }
         });
 
         return redirect()->route('equipment.catalogs.show', $validated['catalog_id'])

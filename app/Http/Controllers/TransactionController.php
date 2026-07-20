@@ -115,7 +115,7 @@ class TransactionController extends Controller
 
         $headers = ['Date', 'Type', 'Category', 'Amount', 'Status', 'Payment', 'Description', 'Recorded By'];
 
-        return $exporter->download('Transactions', $headers, $rows, 'transactions-'.now()->format('Y-m-d').'.xlsx');
+        return $exporter->download('Transactions', $headers, $rows, 'transactions-'.now()->format('Y-m-d').'.csv');
     }
 
     public function show(Transaction $transaction): Response

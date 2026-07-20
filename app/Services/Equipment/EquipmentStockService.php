@@ -2,7 +2,11 @@
 
 namespace App\Services\Equipment;
 
+use App\Models\EquipmentHistory;
 use App\Models\EquipmentItem;
+use App\Models\Transaction;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * All lot arithmetic lives here.
@@ -39,5 +43,72 @@ class EquipmentStockService
             ->whereNull('return_date')
             ->selectRaw('COALESCE(SUM(quantity - returned_quantity), 0) as outstanding')
             ->value('outstanding');
+    }
+
+    /**
+     * Bring stock into the club as a new lot.
+     *
+     * Spending money is opt-in via `record_expense`, not a side effect of
+     * recording what the equipment is worth. Unticked covers donations,
+     * found items and opening balances.
+     */
+    public function receive(array $data, ?int $userId = null): EquipmentItem
+    {
+        return DB::transaction(function () use ($data, $userId) {
+            $quantity = (int) $data['quantity'];
+            $unitPrice = isset($data['unit_price']) && $data['unit_price'] !== null
+                ? (float) $data['unit_price']
+                : null;
+            $purchaseDate = $data['purchase_date'];
+
+            $transactionId = null;
+
+            if (! empty($data['record_expense']) && $unitPrice > 0) {
+                $transactionId = Transaction::create([
+                    'amount' => $unitPrice * $quantity,
+                    'transaction_date' => $purchaseDate,
+                    'transaction_type' => 'expense',
+                    'category' => 'equipment',
+                    'description' => "Equipment purchase: {$quantity} unit(s)",
+                    'recorded_by_user_id' => $userId,
+                    'status' => 'Paid',
+                    // The purchase date's year, not today's — a backdated
+                    // purchase belongs to the year it happened.
+                    'fiscal_year' => Carbon::parse($purchaseDate)->year,
+                ])->id;
+            }
+
+            $item = EquipmentItem::create([
+                'catalog_id' => $data['catalog_id'],
+                'quantity' => $quantity,
+                'unit_price' => $unitPrice,
+                'purchase_date' => $purchaseDate,
+                'condition' => $data['condition'],
+                'location' => $data['location'] ?? null,
+                'notes' => $data['notes'] ?? null,
+                'received_via' => $data['received_via'] ?? 'purchase',
+                'purchase_transaction_id' => $transactionId,
+                'status' => 'Available',
+            ]);
+
+            if (! empty($data['branch_ids'])) {
+                $item->branches()->sync($data['branch_ids']);
+            }
+
+            EquipmentHistory::create([
+                'item_id' => $item->id,
+                'user_id' => $userId,
+                'event_type' => 'Received',
+                'details' => [
+                    'quantity' => $quantity,
+                    'unit_price' => $unitPrice,
+                    'received_via' => $item->received_via,
+                    'transaction_id' => $transactionId,
+                ],
+                'event_timestamp' => now(),
+            ]);
+
+            return $item;
+        });
     }
 }

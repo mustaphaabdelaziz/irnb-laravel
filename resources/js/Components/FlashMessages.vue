@@ -1,26 +1,44 @@
 <script setup>
 import { usePage } from '@inertiajs/vue3';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 
+const { t, te } = useI18n();
 const page = usePage();
 const show = ref(false);
 const message = ref('');
 const type = ref('success');
+let dismissTimer = null;
 
 const flash = computed(() => page.props.flash);
 
-onMounted(() => {
-    checkFlash();
-});
+/**
+ * Controllers flash a translation key ('flash.player_created'), optionally
+ * as { key, params } when the message interpolates data. Anything that is
+ * not a known key falls through as literal text, so controllers still
+ * carrying hardcoded English keep working.
+ */
+function translate(payload) {
+    if (payload && typeof payload === 'object' && payload.key) {
+        return te(payload.key) ? t(payload.key, payload.params ?? {}) : payload.key;
+    }
+
+    return te(payload) ? t(payload) : payload;
+}
+
+// This component mounts once in the layout, so checking on mount alone meant
+// every flash after the first Inertia visit was silently dropped.
+watch(flash, checkFlash, { deep: true });
+onMounted(checkFlash);
 
 function checkFlash() {
     if (flash.value?.success) {
-        message.value = flash.value.success;
+        message.value = translate(flash.value.success);
         type.value = 'success';
         show.value = true;
         autoDismiss();
     } else if (flash.value?.error) {
-        message.value = flash.value.error;
+        message.value = translate(flash.value.error);
         type.value = 'error';
         show.value = true;
         autoDismiss();
@@ -28,7 +46,8 @@ function checkFlash() {
 }
 
 function autoDismiss() {
-    setTimeout(() => { show.value = false; }, 4000);
+    clearTimeout(dismissTimer);
+    dismissTimer = setTimeout(() => { show.value = false; }, 4000);
 }
 </script>
 

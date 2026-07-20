@@ -584,5 +584,6 @@
     "no_discount": "Aucune remise",
     "discount_percent": "Pourcentage (%)",
     "discount_amount": "Montant fixe",
-    "net_owed": "Net à payer"
+    "net_owed": "Net à payer",
+    "flash.equipment_stock_received": "Stock reçu avec succès."
 }

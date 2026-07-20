@@ -354,6 +354,7 @@
     "flash.players_assigned": "{count} players assigned.",
     "flash.players_deleted": "{count} players permanently deleted.",
     "flash.players_restored": "{count} players restored.",
+    "flash.players_updated": "{count} players updated.",
     "flash.position_created": "Position created successfully.",
     "flash.position_deleted": "Position deleted successfully.",
     "flash.position_updated": "Position updated successfully.",

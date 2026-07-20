@@ -27,6 +27,13 @@ return [
     // Exact route name => [module, action]. Wins over prefix derivation.
     'overrides' => [
         'players.transactions.store' => ['players', 'add'],
+
+        // Permanent deletion. Without these the action name falls through
+        // deriveAction()'s default and is gated as 'edit', so a user with only
+        // edit rights could irreversibly delete players.
+        'players.forceDelete' => ['players', 'delete'],
+        'players.bulkForceDelete' => ['players', 'delete'],
+        'players.bulkArchive' => ['players', 'delete'],
         'players.transactions.update' => ['players', 'edit'],
         'players.transactions.destroy' => ['players', 'delete'],
         'players.card' => ['players', 'view'],

@@ -354,6 +354,7 @@
     "flash.players_assigned": "تم إسناد {count} لاعبين.",
     "flash.players_deleted": "تم حذف {count} لاعبين نهائياً.",
     "flash.players_restored": "تمت استعادة {count} لاعبين.",
+    "flash.players_updated": "تم تحديث {count} لاعبين.",
     "flash.position_created": "تم إنشاء المركز بنجاح.",
     "flash.position_deleted": "تم حذف المركز بنجاح.",
     "flash.position_updated": "تم تحديث المركز بنجاح.",

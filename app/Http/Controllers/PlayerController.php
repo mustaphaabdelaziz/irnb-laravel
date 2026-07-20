@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Player\BulkUpdatePlayersRequest;
 use App\Http\Requests\Player\StorePlayerRequest;
 use App\Http\Requests\Player\UpdatePlayerRequest;
 use App\Models\Branch;
@@ -20,6 +21,7 @@ use App\Services\Storage\FileStorageService;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -343,6 +345,45 @@ class PlayerController extends Controller
         Player::whereIn('id', $ids)->update(['archived' => false]);
 
         return back()->with('success', ['key' => 'flash.players_restored', 'params' => ['count' => count($ids)]]);
+    }
+
+    /**
+     * Set one field on many players at once.
+     *
+     * The field is an allow-list (BulkUpdatePlayersRequest::FIELDS) and the
+     * value is validated against whichever field was named, so this cannot be
+     * steered into rewriting an arbitrary column.
+     */
+    public function bulkUpdate(BulkUpdatePlayersRequest $request): RedirectResponse
+    {
+        $data = $request->validated();
+        $ids = $data['ids'];
+        $field = $data['field'];
+        $value = $data['value'] ?? null;
+
+        DB::transaction(function () use ($ids, $field, $value, $data) {
+            if ($field !== 'branches') {
+                Player::whereIn('id', $ids)->update([$field => $value ?: null]);
+
+                return;
+            }
+
+            $branchIds = array_map('intval', (array) $value);
+            $mode = $data['mode'] ?? 'replace';
+
+            // Branches are many-to-many, so "set" is ambiguous: replace the
+            // whole set, add to it, or remove from it.
+            Player::whereIn('id', $ids)->get()->each(fn (Player $player) => match ($mode) {
+                'attach' => $player->branches()->syncWithoutDetaching($branchIds),
+                'detach' => $player->branches()->detach($branchIds),
+                default => $player->branches()->sync($branchIds),
+            });
+        });
+
+        return back()->with('success', [
+            'key' => 'flash.players_updated',
+            'params' => ['count' => count($ids)],
+        ]);
     }
 
     public function bulkForceDelete(Request $request, FileStorageService $files): RedirectResponse

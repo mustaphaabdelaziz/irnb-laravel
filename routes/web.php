@@ -81,6 +81,7 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
     Route::post('/players/bulk-archive', [PlayerController::class, 'bulkArchive'])->name('players.bulkArchive');
     Route::post('/players/bulk-restore', [PlayerController::class, 'bulkRestore'])->name('players.bulkRestore');
     Route::post('/players/bulk-force-delete', [PlayerController::class, 'bulkForceDelete'])->name('players.bulkForceDelete');
+    Route::post('/players/bulk-update', [PlayerController::class, 'bulkUpdate'])->name('players.bulkUpdate');
 
     // Players
     Route::resource('players', PlayerController::class);

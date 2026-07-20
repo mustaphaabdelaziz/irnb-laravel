@@ -348,13 +348,41 @@ Rules: nullable, `Rules\Password::defaults()`, `confirmed`. Absent or empty → 
 - The target user's existing sessions are invalidated on password change.
 - No "show current password" anywhere — hashes are one-way and the UI must not imply otherwise.
 
-## D2 — User activity tracking (remark 9)
+## D2 — User contribution evaluation (remark 9)
 
-**Problem.** Nothing exists. No audit package, no generic log table. `equipment_histories` is the only
-append-only trail and covers equipment only. There is no record of who created a player, edited a user or
-imported a file — so contribution cannot be measured or rewarded.
+**Goal.** Evaluate a user: show what they actually did — payments recorded, players added, equipment
+received, meetings attended — so contribution can be measured and rewarded.
 
-**Decision.** A generic append-only `activity_logs` table plus an opt-in model trait.
+**Problem.** No audit package, no generic log table. `equipment_histories` covers equipment only.
+`players` has no `created_by_user_id` at all, so nobody knows who added a player.
+
+But a large part of the answer **already exists** as attribution columns and must not be duplicated
+into a log:
+
+| Contribution | Existing source |
+|---|---|
+| Payments recorded | `transactions.recorded_by_user_id` / `received_by_user_id` |
+| Equipment rented / returned / repaired | `equipment_histories.user_id` + `event_type` |
+| Stock-takes conducted | `inventory_sessions.conducted_by_user_id` |
+| Meetings created | `board_meetings.created_by_user_id` |
+| Tasks created | `board_tasks.created_by_user_id` |
+| **Meetings attended** | `meeting_attendances` → `board_members.user_id` |
+
+Meeting *attendance* is the contribution that matters for a board member, not meeting creation. That
+data is already collected and never surfaced. It is joined, never copied.
+
+**Decision.** A generic append-only `activity_logs` table fills only the gaps, and the report reads
+from both sources.
+
+### Domain events, not CRUD verbs
+
+`action` holds domain events — `player_created`, `payment_recorded`, `equipment_received`,
+`transaction_imported`, `stocktake_completed` — never `created` / `updated` / `deleted`. "Updated Player
+12 times" cannot evaluate anyone.
+
+Events are recorded **explicitly at the point of the action** in the service or controller, **not** via a
+blind model observer. An observer fires on every save — background fixes, imports, migrations — which
+inflates counts and makes the metric meaningless.
 
 | column | notes |
 |---|---|
@@ -369,16 +397,49 @@ imported a file — so contribution cannot be measured or rewarded.
 No `updated_at` — immutable, matching the `equipment_histories` precedent
 (`2026_04_07_080000_fix_equipment_tables.php:33`).
 
-A `LogsActivity` trait registers model observers. **Opt-in per model, not global** — a blanket observer
-would log framework churn and drown the signal. Initial set: `Player`, `EquipmentItem`, `Transaction`,
-`PlayerSubscription`, `User`.
+A small `RecordsActivity` helper exposes `activity($action, $subject, $changes = [])`, called from the
+services and controllers that own each event. Sensitive attributes (`password`, `remember_token`) are
+never written to `changes`.
 
-Sensitive attributes (`password`, `remember_token`) are never written to `changes`.
+### The evaluation report
 
-**Reward view:** contributions per user over a period — players added, equipment received, transactions
-recorded, imports run — as a leaderboard, driven by `GROUP BY user_id, action, subject_type` over a date
-range. Deliberately a *count of contributions*, not a productivity score; the design does not attempt to
-weight or rank actions against each other.
+**Per user** — `/users/{user}/activity`, with a selectable date range:
+
+```
+Karim B. — 01 Jan → 20 Jul 2026
+
+Players        added 34   archived 6   imported 120
+Payments       recorded 212   worth 486 000 DZD
+Equipment      received 12 lots   rented out 45   returned 41
+Meetings       attended 9 / 11        created 3
+Stock-takes    conducted 2
+Imports        4 files
+```
+
+**Comparison view** — the same metrics as a sortable table across all users for a period, for the reward
+decision.
+
+Both are read-only and gated behind `users.view`. Every number drills through to the underlying records,
+so a figure can always be checked rather than trusted.
+
+Payments show **both count and amount**, ranked on **count**. Amount rewards whoever happens to handle
+the largest accounts rather than whoever does the most work, so it is displayed as context, not as the
+ranking key.
+
+### Backfill
+
+The attribution columns mean history is **not** lost: payments, equipment events, stock-takes and
+meetings are countable from the club's first record. Only the log-based metrics (player creation,
+imports) necessarily start empty.
+
+A backfill command seeds `activity_logs` from those existing columns at deploy. Without it the first
+report shows everyone contributing nothing before this month, which reads as broken.
+
+### Gaming
+
+Counting contributions creates an incentive to inflate them — reward per player added and someone will
+add junk players. Each count is therefore paired with a **records later archived or corrected** column, so
+quality sits next to quantity. Cheap to compute, and it keeps the metric honest.
 
 **Retention:** the table grows without bound. A scheduled prune (default 24 months, configurable) ships
 with the feature rather than being discovered later.
@@ -394,6 +455,6 @@ magnitude and answers a question nobody asked.
 |---|----------|---------|--------|
 | 1 | Promote `players.status_value` to a lookup table, or keep the free-form string? | C2 | bulk edit of status |
 | 2 | Wire up or drop the unreachable `Out of Service` status and `retire()`? | A | minor cleanup |
-| 3 | Confirm the initial model set for activity logging | D2 | D2 planning |
+| 3 | Any contribution missing from the evaluation report? | D2 | D2 planning |
 
 Nothing blocks Package A.

@@ -46,6 +46,72 @@ class EquipmentStockService
     }
 
     /**
+     * Move units out of a lot into a new lot with a different condition —
+     * "3 of these 20 balls are punctured".
+     *
+     * Atomic: the two rows must never disagree about the total, which is why
+     * this is a service method rather than two separate updates.
+     */
+    public function splitLot(EquipmentItem $item, int $quantity, string $condition, ?int $userId = null, ?string $notes = null): EquipmentItem
+    {
+        if ($quantity < 1) {
+            throw new \InvalidArgumentException('Split quantity must be at least 1.');
+        }
+
+        $available = $this->availableQuantity($item);
+
+        if ($quantity > $available) {
+            // Units out on rental are not in your hands to inspect.
+            throw new \InvalidArgumentException("Cannot split {$quantity} units: only {$available} are available in this lot.");
+        }
+
+        return DB::transaction(function () use ($item, $quantity, $condition, $userId, $notes) {
+            $item->decrement('quantity', $quantity);
+
+            $new = EquipmentItem::create([
+                'catalog_id' => $item->catalog_id,
+                'quantity' => $quantity,
+                'unit_price' => $item->unit_price,
+                'purchase_date' => $item->purchase_date,
+                'condition' => $condition,
+                'location' => $item->location,
+                'status' => 'Available',
+                // Split units keep the origin of the batch they came from.
+                // Coalesced because an in-memory parent may not have the
+                // column's database default loaded.
+                'received_via' => $item->received_via ?? 'purchase',
+                'notes' => $notes,
+            ]);
+
+            $new->branches()->sync($item->branches()->pluck('branches.id')->all());
+
+            $details = [
+                'quantity' => $quantity,
+                'condition' => $condition,
+                'notes' => $notes,
+            ];
+
+            EquipmentHistory::create([
+                'item_id' => $item->id,
+                'user_id' => $userId,
+                'event_type' => 'Split Out',
+                'details' => $details + ['to_item_id' => $new->id],
+                'event_timestamp' => now(),
+            ]);
+
+            EquipmentHistory::create([
+                'item_id' => $new->id,
+                'user_id' => $userId,
+                'event_type' => 'Split In',
+                'details' => $details + ['from_item_id' => $item->id],
+                'event_timestamp' => now(),
+            ]);
+
+            return $new;
+        });
+    }
+
+    /**
      * Bring stock into the club as a new lot.
      *
      * Spending money is opt-in via `record_expense`, not a side effect of

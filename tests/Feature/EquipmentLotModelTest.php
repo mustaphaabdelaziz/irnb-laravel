@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Branch;
 use App\Models\EquipmentCatalog;
 use App\Models\EquipmentItem;
 use App\Models\EquipmentRental;
@@ -169,6 +170,64 @@ class EquipmentLotModelTest extends TestCase
 
         $this->assertSame(20, $catalog->fresh()->total_quantity);
         $this->assertSame(12, $catalog->fresh()->available_count);
+    }
+
+    #[Test]
+    public function splitting_a_lot_moves_units_into_a_new_row(): void
+    {
+        $lot = $this->lot(20);
+
+        $damaged = $this->stock()->splitLot($lot, 3, 'Damaged', null, 'punctured');
+
+        $this->assertSame(17, $lot->fresh()->quantity);
+        $this->assertSame(3, $damaged->quantity);
+        $this->assertSame('Damaged', $damaged->condition);
+        $this->assertSame($lot->catalog_id, $damaged->catalog_id);
+    }
+
+    #[Test]
+    public function a_split_preserves_the_total_unit_count(): void
+    {
+        $lot = $this->lot(20);
+
+        $this->stock()->splitLot($lot, 3, 'Damaged', null, null);
+
+        $this->assertSame(20, (int) EquipmentItem::where('catalog_id', $lot->catalog_id)->sum('quantity'));
+    }
+
+    #[Test]
+    public function a_split_cannot_exceed_available_units(): void
+    {
+        $lot = $this->lot(20);
+        $this->rent($lot, 18);
+
+        // Units out on rental are not in your hands to inspect or reclassify.
+        $this->expectException(\InvalidArgumentException::class);
+
+        $this->stock()->splitLot($lot->fresh(), 5, 'Damaged', null, null);
+    }
+
+    #[Test]
+    public function a_split_carries_the_branch_tags_over(): void
+    {
+        $branch = Branch::create(['name' => 'Football', 'name_en' => 'Football']);
+        $lot = $this->lot(20);
+        $lot->branches()->sync([$branch->id]);
+
+        $damaged = $this->stock()->splitLot($lot, 3, 'Damaged', null, null);
+
+        $this->assertCount(1, $damaged->branches);
+    }
+
+    #[Test]
+    public function splitting_records_history_on_both_lots(): void
+    {
+        $lot = $this->lot(20);
+
+        $damaged = $this->stock()->splitLot($lot, 3, 'Damaged', null, null);
+
+        $this->assertDatabaseHas('equipment_histories', ['item_id' => $lot->id, 'event_type' => 'Split Out']);
+        $this->assertDatabaseHas('equipment_histories', ['item_id' => $damaged->id, 'event_type' => 'Split In']);
     }
 
     #[Test]

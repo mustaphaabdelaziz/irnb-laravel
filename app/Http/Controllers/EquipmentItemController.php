@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Equipment\ReceiveStockRequest;
 use App\Http\Requests\Equipment\RentEquipmentRequest;
+use App\Http\Requests\Equipment\SplitLotRequest;
 use App\Models\EquipmentCatalog;
 use App\Models\EquipmentHistory;
 use App\Models\EquipmentItem;
@@ -40,6 +41,24 @@ class EquipmentItemController extends Controller
 
         return redirect()->route('equipment.catalogs.show', $item->catalog_id)
             ->with('success', 'flash.equipment_stock_received');
+    }
+
+    /** Reclassify part of a lot — "3 of these 20 balls are punctured". */
+    public function split(SplitLotRequest $request, EquipmentItem $item, EquipmentStockService $stock): RedirectResponse
+    {
+        try {
+            $stock->splitLot(
+                $item,
+                (int) $request->validated('quantity'),
+                $request->validated('condition'),
+                $request->user()?->id,
+                $request->validated('notes'),
+            );
+        } catch (\InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', 'flash.equipment_lot_split');
     }
 
     public function store(Request $request): RedirectResponse

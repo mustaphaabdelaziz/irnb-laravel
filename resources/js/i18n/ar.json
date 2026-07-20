@@ -585,5 +585,6 @@
     "discount_percent": "نسبة مئوية (%)",
     "discount_amount": "مبلغ ثابت",
     "net_owed": "الصافي المستحق",
-    "flash.equipment_stock_received": "تم استلام المخزون بنجاح."
+    "flash.equipment_stock_received": "تم استلام المخزون بنجاح.",
+    "flash.equipment_lot_split": "تم إعادة تصنيف الوحدات بنجاح."
 }

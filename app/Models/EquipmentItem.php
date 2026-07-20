@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use App\Services\Equipment\EquipmentStockService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -58,6 +60,27 @@ class EquipmentItem extends Model
     public function histories(): HasMany
     {
         return $this->hasMany(EquipmentHistory::class, 'item_id');
+    }
+
+    public function branches(): BelongsToMany
+    {
+        return $this->belongsToMany(Branch::class, 'branch_equipment_item');
+    }
+
+    /**
+     * Lots usable by a branch: those tagged with it, plus untagged lots,
+     * which are club-wide and genuinely usable by everyone.
+     */
+    public function scopeForBranch(Builder $query, ?int $branchId): Builder
+    {
+        if (! $branchId) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $q) use ($branchId) {
+            $q->whereHas('branches', fn (Builder $b) => $b->where('branches.id', $branchId))
+                ->orWhereDoesntHave('branches');
+        });
     }
 
     /** Units of this lot that can be issued right now. */

@@ -37,6 +37,12 @@ class Branch extends Model
         return $this->belongsToMany(Player::class, 'branch_player');
     }
 
+    /** Equipment lots assigned to this branch. Untagged lots are club-wide. */
+    public function equipmentItems(): BelongsToMany
+    {
+        return $this->belongsToMany(EquipmentItem::class, 'branch_equipment_item');
+    }
+
     public function subscriptions(): BelongsToMany
     {
         return $this->belongsToMany(Subscription::class, 'branch_subscription');

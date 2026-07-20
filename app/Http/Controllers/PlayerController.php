@@ -17,6 +17,7 @@ use App\Services\Export\ExcelExporter;
 use App\Services\Player\MembershipNumber;
 use App\Services\Player\RegisterPlayerService;
 use App\Services\Storage\FileStorageService;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
@@ -39,13 +40,16 @@ class PlayerController extends Controller
             ->paginate(25)
             ->withQueryString();
 
-        // Category distribution over active players (stat chips above the list).
         // Prefer the current-locale name, falling back to the base name.
         $locale = in_array(app()->getLocale(), ['ar', 'fr', 'en'], true) ? app()->getLocale() : 'en';
         $localeCol = 'categories.name_'.$locale;
-        $categoryStats = \Illuminate\Support\Facades\DB::table('players')
+
+        // Every chart describes the same population the list is showing, but
+        // each one ignores its OWN filter — otherwise picking a category
+        // collapses the category chart to a single 100% slice and the user can
+        // no longer switch category by clicking it.
+        $categoryStats = $this->statsQuery($request, 'category_id')
             ->leftJoin('categories', 'categories.id', '=', 'players.category_id')
-            ->where('players.archived', false)
             ->groupBy('players.category_id', 'categories.name', $localeCol)
             ->selectRaw("players.category_id, COALESCE(NULLIF({$localeCol}, ''), categories.name) as name, COUNT(*) as total")
             ->orderByDesc('total')
@@ -57,12 +61,9 @@ class PlayerController extends Controller
             ])
             ->values();
 
-        // Status distribution over active players, from the lookup so the
-        // label follows the interface language.
         $statusCol = 'player_statuses.name_'.$locale;
-        $statusStats = \Illuminate\Support\Facades\DB::table('players')
+        $statusStats = $this->statsQuery($request, 'status')
             ->leftJoin('player_statuses', 'player_statuses.id', '=', 'players.status_id')
-            ->where('players.archived', false)
             ->groupBy('players.status_id', 'player_statuses.name', $statusCol)
             ->selectRaw("players.status_id, COALESCE(NULLIF({$statusCol}, ''), player_statuses.name) as name, COUNT(*) as total")
             ->orderByDesc('total')
@@ -74,10 +75,8 @@ class PlayerController extends Controller
             ])
             ->values();
 
-        // Position distribution over active players.
-        $positionStats = \Illuminate\Support\Facades\DB::table('players')
+        $positionStats = $this->statsQuery($request, 'position_id')
             ->leftJoin('positions', 'positions.id', '=', 'players.position_id')
-            ->where('players.archived', false)
             ->groupBy('players.position_id', 'positions.name')
             ->selectRaw('players.position_id, positions.name, COUNT(*) as total')
             ->orderByDesc('total')
@@ -89,22 +88,9 @@ class PlayerController extends Controller
             ])
             ->values();
 
-        // Age distribution bucketed by decade (bucket keys mirror the `age` filter).
-        $ageBuckets = ['u10' => 0, '10-19' => 0, '20-29' => 0, '30-39' => 0, '40+' => 0, 'unknown' => 0];
-        Player::where('archived', false)->get(['birthdate'])->each(function (Player $p) use (&$ageBuckets) {
-            if (! $p->birthdate) {
-                $ageBuckets['unknown']++;
-
-                return;
-            }
-            $age = $p->birthdate->age;
-            $key = $age < 10 ? 'u10' : ($age < 20 ? '10-19' : ($age < 30 ? '20-29' : ($age < 40 ? '30-39' : '40+')));
-            $ageBuckets[$key]++;
-        });
-        $ageStats = collect($ageBuckets)
-            ->filter(fn ($count) => $count > 0)
-            ->map(fn ($count, $bucket) => ['bucket' => $bucket, 'count' => $count])
-            ->values();
+        // Age buckets in SQL. This previously loaded every player's birthdate
+        // into PHP and counted them in a loop on each request.
+        $ageStats = $this->ageStats($request);
 
         return Inertia::render('Players/Index', [
             'players' => $players,
@@ -422,6 +408,60 @@ class PlayerController extends Controller
                 });
             }
         });
+    }
+
+    /**
+     * Base query for a stat block: the same population the list is showing,
+     * minus its own dimension.
+     *
+     * `$except` names the filter this chart drives, so the chart keeps
+     * offering its other options. Without it, filtering by category leaves
+     * the category chart with a single slice and nothing to click.
+     */
+    private function statsQuery(Request $request, ?string $except = null): Builder
+    {
+        $filters = $request->query();
+        unset($filters[$except]);
+
+        // A fresh Request carrying only the remaining filters, so
+        // applyPlayerFilters stays the single definition of what each means.
+        $scoped = new Request($filters);
+
+        $query = Player::query();
+        $this->applyPlayerFilters($query, $scoped);
+
+        return $query->getQuery()->from('players');
+    }
+
+    /**
+     * Age distribution bucketed by decade, in SQL. Bucket keys mirror the
+     * `age` filter so a chip click round-trips.
+     *
+     * @return \Illuminate\Support\Collection<int, array{bucket:string,count:int}>
+     */
+    private function ageStats(Request $request): \Illuminate\Support\Collection
+    {
+        $today = \Carbon\Carbon::today();
+        $at = fn (int $years) => $today->copy()->subYears($years)->toDateString();
+
+        $bucket = "CASE
+            WHEN players.birthdate IS NULL THEN 'unknown'
+            WHEN players.birthdate > '{$at(10)}' THEN 'u10'
+            WHEN players.birthdate > '{$at(20)}' THEN '10-19'
+            WHEN players.birthdate > '{$at(30)}' THEN '20-29'
+            WHEN players.birthdate > '{$at(40)}' THEN '30-39'
+            ELSE '40+' END";
+
+        $counts = $this->statsQuery($request, 'age')
+            ->selectRaw("{$bucket} as bucket, COUNT(*) as total")
+            ->groupBy(\Illuminate\Support\Facades\DB::raw($bucket))
+            ->pluck('total', 'bucket');
+
+        // Fixed order regardless of what the data happens to contain.
+        return collect(['u10', '10-19', '20-29', '30-39', '40+', 'unknown'])
+            ->map(fn ($key) => ['bucket' => $key, 'count' => (int) ($counts[$key] ?? 0)])
+            ->filter(fn ($row) => $row['count'] > 0)
+            ->values();
     }
 
     /**

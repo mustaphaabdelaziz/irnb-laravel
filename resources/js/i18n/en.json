@@ -608,5 +608,6 @@
     "equipment.assignment_hint": "Given to a person to work with. No due date.",
     "equipment.cross_branch_warning": "This equipment belongs to another branch.",
     "equipment.returned_of": "returned",
-    "adjustment": "Adjustment"
+    "adjustment": "Adjustment",
+    "equipment.branch_hint": "Leave empty for club-wide equipment that every branch can use."
 }

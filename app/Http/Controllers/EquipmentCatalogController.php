@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Equipment\StoreEquipmentCatalogRequest;
+use App\Models\Branch;
 use App\Models\EquipmentCatalog;
 use App\Models\EquipmentCategory;
 use App\Models\EquipmentItem;
 use App\Models\Player;
 use App\Models\StorageLocation;
+use App\Models\User;
 use App\Services\Export\ExcelExporter;
 use App\Services\Storage\FileStorageService;
 use App\Support\Csv;
@@ -56,8 +58,10 @@ class EquipmentCatalogController extends Controller
     {
         // The page links to the per-item history endpoint rather than rendering
         // histories inline, so don't over-fetch items.histories here.
-        // Rentals are loaded because availability derives from them.
-        $catalog->load(['items.activeRental.rentable', 'items.rentals']);
+        // Rentals are loaded because availability derives from them; branches
+        // because each lot shows its tags.
+        $catalog->load(['items.activeRental.rentable', 'items.rentals', 'items.branches']);
+        $catalog->items->each->append('available_quantity');
 
         return Inertia::render('Equipment/Catalog/Show', [
             'catalog' => $catalog,
@@ -65,6 +69,8 @@ class EquipmentCatalogController extends Controller
             'availableCount' => $catalog->items->sum(fn (EquipmentItem $item) => $item->available_quantity),
             'totalQuantity' => (int) $catalog->items->sum('quantity'),
             'storageLocations' => StorageLocation::orderBy('name')->pluck('name'),
+            'branches' => Branch::orderBy('name')->get()
+                ->map(fn (Branch $b) => ['id' => $b->id, 'name' => $b->localized_name]),
             // For the rent dropdown: identify players by name + membership id, not a raw id.
             'players' => Player::where('archived', false)->orderBy('lastname')->orderBy('firstname')->get()
                 ->map(fn (Player $p) => [
@@ -72,7 +78,11 @@ class EquipmentCatalogController extends Controller
                     'fullname' => $p->fullname,
                     'membership_id' => $p->membership_id,
                     'birthdate' => $p->birthdate?->toDateString(),
+                    'branch_ids' => $p->branches->pluck('id'),
                 ]),
+            // Equipment can be assigned to staff, not only lent to players.
+            'users' => User::where('is_active', true)->orderBy('name')->get()
+                ->map(fn (User $u) => ['id' => $u->id, 'fullname' => $u->name]),
         ]);
     }
 

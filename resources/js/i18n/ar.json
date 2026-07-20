@@ -608,5 +608,6 @@
     "equipment.assignment_hint": "يُسلَّم لشخص للعمل به. بدون تاريخ إرجاع.",
     "equipment.cross_branch_warning": "هذه المعدات تخص فرعاً آخر.",
     "equipment.returned_of": "أُرجعت",
-    "adjustment": "تسوية"
+    "adjustment": "تسوية",
+    "equipment.branch_hint": "اتركه فارغاً للمعدات المشتركة التي يمكن لكل الفروع استخدامها."
 }

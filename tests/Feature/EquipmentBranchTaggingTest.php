@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Branch;
 use App\Models\EquipmentCatalog;
 use App\Models\EquipmentItem;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -78,6 +79,27 @@ class EquipmentBranchTaggingTest extends TestCase
         $this->lot();
 
         $this->assertCount(2, EquipmentItem::forBranch(null)->get());
+    }
+
+    #[Test]
+    public function the_catalog_page_exposes_branches_users_and_unit_totals(): void
+    {
+        $lot = $this->lot(50);
+        $lot->branches()->sync([$this->branch('Football')->id]);
+
+        $user = User::factory()->admin()->create(['email_verified_at' => now()]);
+
+        $response = $this->actingAs($user)->get(route('equipment.catalogs.show', $lot->catalog_id));
+        $response->assertOk();
+
+        $props = $response->viewData('page')['props'];
+
+        $this->assertSame(50, $props['totalQuantity']);
+        $this->assertSame(50, $props['availableCount']);
+        $this->assertNotEmpty($props['branches'], 'branch picker needs options');
+        // Equipment can be assigned to staff, not only lent to players.
+        $this->assertNotEmpty($props['users'], 'staff must be assignable');
+        $this->assertSame(50, $props['catalog']['items'][0]['available_quantity']);
     }
 
     #[Test]

@@ -608,5 +608,6 @@
     "equipment.assignment_hint": "Remis à une personne pour son travail. Sans date de retour.",
     "equipment.cross_branch_warning": "Ce matériel appartient à une autre branche.",
     "equipment.returned_of": "rendues",
-    "adjustment": "Ajustement"
+    "adjustment": "Ajustement",
+    "equipment.branch_hint": "Laissez vide pour un matériel commun, utilisable par toutes les branches."
 }

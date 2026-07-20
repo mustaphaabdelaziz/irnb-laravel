@@ -586,5 +586,7 @@
     "discount_amount": "Montant fixe",
     "net_owed": "Net à payer",
     "flash.equipment_stock_received": "Stock reçu avec succès.",
-    "flash.equipment_lot_split": "Unités reclassées avec succès."
+    "flash.equipment_lot_split": "Unités reclassées avec succès.",
+    "flash.equipment_issued": "Équipement remis avec succès.",
+    "flash.equipment_returned": "Équipement rendu avec succès."
 }

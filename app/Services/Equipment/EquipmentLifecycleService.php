@@ -10,53 +10,106 @@ use Illuminate\Support\Facades\DB;
 
 class EquipmentLifecycleService
 {
-    public function rentOut(EquipmentItem $item, Model $rentable, ?string $dueDate = null, ?int $userId = null, ?string $notes = null): EquipmentRental
+    /**
+     * Issue units of a lot to a player or a user.
+     *
+     * $options: quantity, type ('rental'|'assignment'), checkout_date,
+     * due_date, notes, user_id.
+     */
+    public function rentOut(EquipmentItem $item, Model $rentable, array $options = []): EquipmentRental
     {
-        if ($item->status !== 'Available') {
-            throw new \InvalidArgumentException("Item #{$item->unique_identifier} is not available for rental (current status: {$item->status}).");
+        $quantity = (int) ($options['quantity'] ?? 1);
+        $type = $options['type'] ?? 'rental';
+
+        if ($quantity < 1) {
+            throw new \InvalidArgumentException('Quantity must be at least 1.');
         }
 
-        return DB::transaction(function () use ($item, $rentable, $dueDate, $userId, $notes) {
-            $item->update(['status' => 'Rented']);
+        $available = app(EquipmentStockService::class)->availableQuantity($item);
+
+        if ($quantity > $available) {
+            $label = $item->unique_identifier ?? "lot #{$item->id}";
+            throw new \InvalidArgumentException("Cannot issue {$quantity} unit(s) of {$label}: only {$available} available.");
+        }
+
+        return DB::transaction(function () use ($item, $rentable, $options, $quantity, $type) {
+            // status is a lot-level disposition. Only a single-unit lot flips
+            // to Rented; a multi-unit lot stays Available and lets the
+            // availability formula account for what is out.
+            if ($item->quantity === 1) {
+                $item->update(['status' => 'Rented']);
+            }
 
             $rental = EquipmentRental::create([
                 'equipment_item_id' => $item->id,
                 'rentable_type' => $rentable->getMorphClass(),
                 'rentable_id' => $rentable->getKey(),
-                'checkout_date' => now(),
-                'due_date' => $dueDate,
-                'notes' => $notes,
+                'type' => $type,
+                'quantity' => $quantity,
+                'returned_quantity' => 0,
+                'checkout_date' => $options['checkout_date'] ?? now(),
+                // An assignment is open-ended, so a due date would only be
+                // stored and then silently ignored.
+                'due_date' => $type === 'assignment' ? null : ($options['due_date'] ?? null),
+                'notes' => $options['notes'] ?? null,
             ]);
 
-            $this->logHistory($item, $userId, 'Checkout', [
+            $this->logHistory($item, $options['user_id'] ?? null, $type === 'assignment' ? 'Assigned' : 'Checkout', [
                 'rentable_type' => $rentable->getMorphClass(),
                 'rentable_id' => $rentable->getKey(),
-                'due_date' => $dueDate,
+                'quantity' => $quantity,
+                'due_date' => $rental->due_date?->toDateString(),
             ]);
 
             return $rental;
         });
     }
 
-    public function returnItem(EquipmentRental $rental, ?int $userId = null, string $condition = 'Good', ?string $notes = null): void
+    /**
+     * Take units back, in whole or in part.
+     *
+     * $options: quantity (defaults to everything outstanding), condition,
+     * return_date, notes, user_id.
+     */
+    public function returnItem(EquipmentRental $rental, array $options = []): void
     {
         $item = $rental->equipmentItem;
+        $outstanding = $rental->outstanding_quantity;
+        $quantity = (int) ($options['quantity'] ?? $outstanding);
+        $condition = $options['condition'] ?? $item->condition;
 
-        if ($item->status !== 'Rented') {
-            throw new \InvalidArgumentException("Item #{$item->unique_identifier} is not currently rented (current status: {$item->status}).");
+        if ($rental->return_date !== null) {
+            throw new \InvalidArgumentException('This rental is already closed.');
         }
 
-        DB::transaction(function () use ($item, $rental, $userId, $condition, $notes) {
-            $rental->update(['return_date' => now(), 'notes' => $notes]);
+        if ($quantity < 1 || $quantity > $outstanding) {
+            throw new \InvalidArgumentException("Cannot return {$quantity} unit(s): {$outstanding} outstanding.");
+        }
 
-            $item->update([
-                'status' => 'Available',
-                'condition' => $condition,
+        DB::transaction(function () use ($item, $rental, $options, $quantity, $condition) {
+            $returned = $rental->returned_quantity + $quantity;
+            $fullyReturned = $returned >= $rental->quantity;
+
+            $rental->update([
+                'returned_quantity' => $returned,
+                // The rental closes only once every unit is back.
+                'return_date' => $fullyReturned ? ($options['return_date'] ?? now()) : null,
+                // Its own column, so the checkout note survives.
+                'return_notes' => $options['notes'] ?? $rental->return_notes,
             ]);
 
-            $this->logHistory($item, $userId, 'Return', [
+            // Only a single-unit lot carries the returned condition back to
+            // the item. For a lot of 20, "6 came back damaged" is a split,
+            // not a mutation of all twenty.
+            if ($item->quantity === 1 && $fullyReturned) {
+                $item->update(['status' => 'Available', 'condition' => $condition]);
+            }
+
+            $this->logHistory($item, $options['user_id'] ?? null, 'Return', [
                 'rental_id' => $rental->id,
+                'quantity' => $quantity,
                 'returned_condition' => $condition,
+                'fully_returned' => $fullyReturned,
                 'rental_duration_days' => $rental->rental_duration,
             ]);
         });
@@ -103,10 +156,16 @@ class EquipmentLifecycleService
             $previousStatus = $item->status;
             $item->update(['status' => 'Lost']);
 
-            // Close any active rental
+            // Close any active rental. returned_quantity is squared up with
+            // quantity so the availability formula stays consistent — the
+            // units are gone, not outstanding.
             $activeRental = $item->activeRental;
             if ($activeRental) {
-                $activeRental->update(['return_date' => now(), 'notes' => 'Marked as lost']);
+                $activeRental->update([
+                    'return_date' => now(),
+                    'returned_quantity' => $activeRental->quantity,
+                    'return_notes' => 'Marked as lost',
+                ]);
             }
 
             $this->logHistory($item, $userId, 'Lost', [

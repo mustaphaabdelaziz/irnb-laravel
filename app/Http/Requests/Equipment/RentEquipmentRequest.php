@@ -17,7 +17,12 @@ class RentEquipmentRequest extends FormRequest
             'equipment_item_id' => ['required', 'integer', 'exists:equipment_items,id'],
             'rentable_type' => ['required', 'string', 'in:Player,User'],
             'rentable_id' => ['required', 'integer'],
-            'due_date' => ['nullable', 'date', 'after:today'],
+            'type' => ['nullable', 'in:rental,assignment'],
+            'quantity' => ['nullable', 'integer', 'min:1'],
+            'checkout_date' => ['nullable', 'date'],
+            // Was after:today, which made backdating a rental impossible. The
+            // due date only has to make sense relative to the checkout.
+            'due_date' => ['nullable', 'date', 'after_or_equal:checkout_date'],
             'notes' => ['nullable', 'string'],
         ];
     }

@@ -158,32 +158,44 @@ class EquipmentItemController extends Controller
             'User' => User::findOrFail($validated['rentable_id']),
         };
 
-        $this->lifecycle->rentOut(
-            $item,
-            $rentable,
-            $validated['due_date'] ?? null,
-            $request->user()?->id,
-            $validated['notes'] ?? null,
-        );
+        try {
+            $this->lifecycle->rentOut($item, $rentable, [
+                'quantity' => (int) ($validated['quantity'] ?? 1),
+                'type' => $validated['type'] ?? 'rental',
+                'checkout_date' => $validated['checkout_date'] ?? null,
+                'due_date' => $validated['due_date'] ?? null,
+                'notes' => $validated['notes'] ?? null,
+                'user_id' => $request->user()?->id,
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
 
-        return back()->with('success', 'Equipment rented successfully.');
+        return back()->with('success', 'flash.equipment_issued');
     }
 
     public function returnItem(Request $request, EquipmentRental $rental): RedirectResponse
     {
-        $request->validate([
+        $validated = $request->validate([
+            'quantity' => ['nullable', 'integer', 'min:1'],
             'condition' => ['nullable', 'string', 'in:New,Good,Fair,Poor,Damaged'],
+            'return_date' => ['nullable', 'date'],
             'notes' => ['nullable', 'string'],
         ]);
 
-        $this->lifecycle->returnItem(
-            $rental,
-            $request->user()?->id,
-            $request->input('condition', 'Good'),
-            $request->input('notes'),
-        );
+        try {
+            $this->lifecycle->returnItem($rental, [
+                'quantity' => $validated['quantity'] ?? null,
+                'condition' => $validated['condition'] ?? 'Good',
+                'return_date' => $validated['return_date'] ?? null,
+                'notes' => $validated['notes'] ?? null,
+                'user_id' => $request->user()?->id,
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
 
-        return back()->with('success', 'Equipment returned successfully.');
+        return back()->with('success', 'flash.equipment_returned');
     }
 
     public function repair(Request $request, EquipmentItem $item): RedirectResponse

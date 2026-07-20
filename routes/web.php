@@ -23,6 +23,7 @@ use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\MemberJobController;
 use App\Http\Controllers\PlayerController;
 use App\Http\Controllers\PlayerImportController;
+use App\Http\Controllers\PlayerStatusController;
 use App\Http\Controllers\PlayerSubscriptionController;
 use App\Http\Controllers\PlayerTransactionController;
 use App\Http\Controllers\PositionController;
@@ -168,6 +169,7 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         Route::resource('storage-locations', StorageLocationController::class)->except(['show', 'create', 'edit']);
         Route::resource('jobs', MemberJobController::class)->except(['show', 'create', 'edit']);
         Route::resource('positions', PositionController::class)->except(['show', 'create', 'edit']);
+        Route::resource('player-statuses', PlayerStatusController::class)->except(['show', 'create', 'edit']);
 
         // Finance management — fiscal years (close/reopen), budgets, chart of accounts, accounts
         Route::get('/finance/settings', [FinanceController::class, 'settings'])->name('finance.settings');

@@ -136,6 +136,7 @@ const sections = computed(() => {
             { label: t('board_roles'), href: '/board-roles', icon: 'board', prefix: '/board-roles', module: 'board' },
             { label: t('jobs'), href: '/jobs', icon: 'jobs', prefix: '/jobs', module: 'categories' },
             { label: t('positions'), href: '/positions', icon: 'positions', prefix: '/positions', module: 'categories' },
+            { label: t('player_statuses'), href: '/player-statuses', icon: 'positions', prefix: '/player-statuses', module: 'categories' },
             { label: t('settings'), href: '/settings', icon: 'settings', prefix: '/settings', module: 'settings' },
             { label: t('backup'), href: '/backups', icon: 'archive', prefix: '/backups', superadminOnly: true, desktopOnly: true },
         ] },

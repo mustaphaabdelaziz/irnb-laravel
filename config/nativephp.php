@@ -89,6 +89,7 @@ return [
         'installers',
         'storage/app/mpdf',
         'db-lagacy',
+        'public/hot',
     ],
 
     /**

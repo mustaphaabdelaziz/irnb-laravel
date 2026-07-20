@@ -18,6 +18,7 @@ return [
         'branches' => 'categories',
         'jobs' => 'categories',
         'positions' => 'categories',
+        'player-statuses' => 'categories',
         'equipment-categories' => 'categories',
         'storage-locations' => 'categories',
         'settings' => 'settings',

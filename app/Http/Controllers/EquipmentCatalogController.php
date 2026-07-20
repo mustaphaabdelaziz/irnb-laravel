@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Equipment\StoreEquipmentCatalogRequest;
 use App\Models\EquipmentCatalog;
 use App\Models\EquipmentCategory;
+use App\Models\EquipmentItem;
 use App\Models\Player;
 use App\Models\StorageLocation;
 use App\Services\Export\ExcelExporter;
@@ -21,7 +22,11 @@ class EquipmentCatalogController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = EquipmentCatalog::query()->withCount('items');
+        // items_count is the number of lots; units_total is the number of
+        // physical units, which is the figure that means something to a user.
+        $query = EquipmentCatalog::query()
+            ->withCount('items')
+            ->withSum('items as units_total', 'quantity');
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -51,12 +56,14 @@ class EquipmentCatalogController extends Controller
     {
         // The page links to the per-item history endpoint rather than rendering
         // histories inline, so don't over-fetch items.histories here.
-        $catalog->load(['items.activeRental.rentable']);
+        // Rentals are loaded because availability derives from them.
+        $catalog->load(['items.activeRental.rentable', 'items.rentals']);
 
         return Inertia::render('Equipment/Catalog/Show', [
             'catalog' => $catalog,
-            // Count from the already-loaded collection (avoids an extra COUNT query).
-            'availableCount' => $catalog->items->where('status', 'Available')->count(),
+            // Units, not rows: sum what each lot can still issue.
+            'availableCount' => $catalog->items->sum(fn (EquipmentItem $item) => $item->available_quantity),
+            'totalQuantity' => (int) $catalog->items->sum('quantity'),
             'storageLocations' => StorageLocation::orderBy('name')->pluck('name'),
             // For the rent dropdown: identify players by name + membership id, not a raw id.
             'players' => Player::where('archived', false)->orderBy('lastname')->orderBy('firstname')->get()

@@ -11,6 +11,7 @@ use App\Models\Player;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\Equipment\EquipmentLifecycleService;
+use App\Services\Equipment\EquipmentStockService;
 use App\Services\Equipment\SerialNumberService;
 use App\Services\Export\ExcelExporter;
 use App\Support\Csv;
@@ -208,34 +209,54 @@ class EquipmentItemController extends Controller
 
     public function inventory(): Response
     {
-        $statusCounts = EquipmentItem::query()
-            ->selectRaw('status, COUNT(*) as c')
+        // Units, not rows: one lot row can hold 100 dossards.
+        $statusQuantities = EquipmentItem::query()
+            ->selectRaw('status, SUM(quantity) as c')
             ->groupBy('status')
             ->pluck('c', 'status');
 
+        // "Rented" cannot come from the status column any more: a lot of 20
+        // with 10 units issued is still status Available. It comes from the
+        // open rentals instead.
+        $unitsOut = (int) EquipmentRental::query()
+            ->whereNull('return_date')
+            ->selectRaw('COALESCE(SUM(quantity - returned_quantity), 0) as out_units')
+            ->value('out_units');
+
+        $unblockedUnits = (int) $statusQuantities
+            ->reject(fn ($quantity, $status) => in_array($status, EquipmentStockService::BLOCKING_STATUSES, true))
+            ->sum();
+
         $summary = [
-            'total' => (int) $statusCounts->sum(),
-            'available' => (int) ($statusCounts['Available'] ?? 0),
-            'rented' => (int) ($statusCounts['Rented'] ?? 0),
-            'under_repair' => (int) ($statusCounts['Under Repair'] ?? 0),
-            'lost' => (int) ($statusCounts['Lost'] ?? 0),
-            'retired' => (int) ($statusCounts['Retired'] ?? 0),
+            'total' => (int) $statusQuantities->sum(),
+            'available' => max(0, $unblockedUnits - $unitsOut),
+            'rented' => $unitsOut,
+            'under_repair' => (int) ($statusQuantities['Under Repair'] ?? 0),
+            'lost' => (int) ($statusQuantities['Lost'] ?? 0),
+            'retired' => (int) ($statusQuantities['Retired'] ?? 0),
         ];
 
         $conditionBreakdown = EquipmentItem::query()
-            ->selectRaw('condition, COUNT(*) as count')
+            ->selectRaw('condition, SUM(quantity) as count')
             ->groupBy('condition')
             ->orderBy('condition')
             ->get()
             ->map(fn ($row) => ['condition' => $row->condition, 'count' => (int) $row->count])
             ->values();
 
+        $blockedList = "'".implode("','", EquipmentStockService::BLOCKING_STATUSES)."'";
+
         $categoryBreakdown = DB::table('equipment_items')
             ->join('equipment_catalogs', 'equipment_catalogs.id', '=', 'equipment_items.catalog_id')
+            ->leftJoin(DB::raw('(SELECT equipment_item_id, SUM(quantity - returned_quantity) AS out_units
+                FROM equipment_rentals WHERE return_date IS NULL GROUP BY equipment_item_id) rentals_out'),
+                'rentals_out.equipment_item_id', '=', 'equipment_items.id')
             ->groupBy('equipment_catalogs.category')
-            ->selectRaw("equipment_catalogs.category as category, COUNT(*) as total,
-                SUM(CASE WHEN equipment_items.status = 'Available' THEN 1 ELSE 0 END) as available,
-                SUM(CASE WHEN equipment_items.status = 'Rented' THEN 1 ELSE 0 END) as rented")
+            ->selectRaw("equipment_catalogs.category as category,
+                SUM(equipment_items.quantity) as total,
+                SUM(CASE WHEN equipment_items.status IN ({$blockedList}) THEN 0
+                    ELSE equipment_items.quantity - COALESCE(rentals_out.out_units, 0) END) as available,
+                COALESCE(SUM(rentals_out.out_units), 0) as rented")
             ->orderBy('equipment_catalogs.category')
             ->get()
             ->map(fn ($row) => [

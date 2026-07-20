@@ -44,8 +44,23 @@ class EquipmentCatalog extends Model
         return $this->hasMany(EquipmentItem::class, 'catalog_id');
     }
 
+    /** Every unit held under this catalog, across all its lots. */
+    public function getTotalQuantityAttribute(): int
+    {
+        return (int) $this->items()->sum('quantity');
+    }
+
+    /**
+     * Units that can be issued right now. Keeps its old name so existing
+     * bindings still work; only its meaning changes from rows to units.
+     *
+     * Loading the lots to sum a derived value is fine here — a catalog holds
+     * a handful of lots, and under the lot model that is fewer rows than
+     * before, not more.
+     */
     public function getAvailableCountAttribute(): int
     {
-        return $this->items()->where('status', 'Available')->count();
+        return $this->items()->with('rentals')->get()
+            ->sum(fn (EquipmentItem $item) => $item->available_quantity);
     }
 }

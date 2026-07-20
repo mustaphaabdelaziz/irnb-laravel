@@ -147,6 +147,31 @@ class EquipmentLotModelTest extends TestCase
     }
 
     #[Test]
+    public function catalog_counts_are_measured_in_units_not_rows(): void
+    {
+        $catalog = $this->catalog();
+
+        EquipmentItem::create(['catalog_id' => $catalog->id, 'purchase_date' => '2026-01-01', 'quantity' => 20]);
+        EquipmentItem::create(['catalog_id' => $catalog->id, 'purchase_date' => '2026-01-01', 'quantity' => 5, 'condition' => 'Damaged']);
+
+        $catalog = $catalog->fresh();
+
+        $this->assertSame(25, $catalog->total_quantity);
+        $this->assertSame(25, $catalog->available_count);
+    }
+
+    #[Test]
+    public function rented_units_leave_the_catalog_available_count(): void
+    {
+        $catalog = $this->catalog();
+        $lot = EquipmentItem::create(['catalog_id' => $catalog->id, 'purchase_date' => '2026-01-01', 'quantity' => 20]);
+        $this->rent($lot, 8);
+
+        $this->assertSame(20, $catalog->fresh()->total_quantity);
+        $this->assertSame(12, $catalog->fresh()->available_count);
+    }
+
+    #[Test]
     public function availability_never_goes_negative(): void
     {
         $lot = $this->lot(5);

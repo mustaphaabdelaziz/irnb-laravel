@@ -25,7 +25,8 @@ class InventoryController extends Controller
             'sessions' => InventorySession::withCount('items')
                 ->with('conductedBy:id,name')
                 ->orderByDesc('session_date')->orderByDesc('id')->get(),
-            'itemCount' => EquipmentItem::where('status', '!=', 'Retired')->count(),
+            // Units awaiting a count, not lot rows.
+            'itemCount' => (int) EquipmentItem::where('status', '!=', 'Retired')->sum('quantity'),
         ]);
     }
 
@@ -61,7 +62,8 @@ class InventoryController extends Controller
                     'expected_location' => $it->location,
                 ]);
             }
-            $session->update(['total_expected' => $items->count()]);
+            // Expected is a number of units to find, not a number of lots.
+            $session->update(['total_expected' => (int) $items->sum('quantity')]);
 
             return $session;
         });

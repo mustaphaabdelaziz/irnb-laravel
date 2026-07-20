@@ -26,6 +26,7 @@ class UpdatePlayerRequest extends FormRequest
             'email' => ['nullable', 'email', 'max:255'],
             'status_class' => ['nullable', 'string', 'max:255'],
             'status_value' => ['nullable', 'string', 'max:255'],
+            'status_id' => ['nullable', 'exists:player_statuses,id'],
             'state' => ['nullable', 'string', 'max:255'],
             'city' => ['nullable', 'string', 'max:255'],
             'is_student' => ['nullable', 'boolean'],

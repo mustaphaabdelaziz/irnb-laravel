@@ -3,6 +3,7 @@
 namespace App\Services\Player;
 
 use App\Models\Player;
+use App\Models\PlayerStatus;
 use App\Models\PlayerSubscription;
 use App\Models\Subscription;
 use App\Services\Player\MembershipNumber;
@@ -22,8 +23,8 @@ class RegisterPlayerService
 
             // New members default to "enrolled" (منخرط) when no status is given
             // (e.g. spreadsheet import, which carries no membership-status column).
-            if (empty($attributes['status_value'])) {
-                $attributes['status_value'] = 'منخرط';
+            if (empty($attributes['status_id'])) {
+                $attributes['status_id'] = PlayerStatus::where('name', 'منخرط')->value('id');
             }
 
             if (empty($attributes['membership_id'])) {

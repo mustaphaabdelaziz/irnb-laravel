@@ -14,6 +14,7 @@ const props = defineProps({
     player: { type: Object, default: null },
     categories: { type: Array, default: () => [] },
     positions: { type: Array, default: () => [] },
+    playerStatuses: { type: Array, default: () => [] },
     jobs: { type: Array, default: () => [] },
     branches: { type: Array, default: () => [] },
     wilayas: { type: Array, default: () => [] },
@@ -41,7 +42,7 @@ const form = useForm({
     // New players default to "worker"; edits keep the stored value.
     is_student: isEdit ? (p.is_student ?? true) : false,
     // New players default to "enrolled" (منخرط); edits keep the stored value.
-    status_value: isEdit ? (p.status_value || '') : 'منخرط',
+    status_id: isEdit ? (p.status_id || null) : (props.playerStatuses[0]?.id ?? null),
     category_id: p.category_id || '',
     position_id: p.position_id || '',
     member_job_id: p.member_job_id || '',
@@ -138,7 +139,7 @@ function submit() {
         state: data.state || null,
         city: data.city || null,
         is_student: data.is_student,
-        status_value: data.status_value || null,
+        status_id: data.status_id || null,
         category_id: data.category_id || null,
         position_id: data.position_id || null,
         member_job_id: data.member_job_id || null,
@@ -288,16 +289,13 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                 </div>
                 <div>
                     <InputLabel :value="t('membership_status')" />
-                    <select v-model="form.status_value" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                        <option value="">-</option>
-                        <option value="منخرط">{{ t('status_enrolled') }}</option>
-                        <option value="معتزل">{{ t('status_retired') }}</option>
-                        <option value="متوقف">{{ t('status_stopped') }}</option>
-                        <option value="غادر الفريق">{{ t('status_left_team') }}</option>
-                        <option value="غير واضح">{{ t('status_unclear') }}</option>
-                        <option value="معاقب">{{ t('status_sanctioned') }}</option>
+                    <!-- Options come from the player_statuses lookup, so they are
+                         managed in Settings and translate with the interface. -->
+                    <select v-model="form.status_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                        <option :value="null">-</option>
+                        <option v-for="s in playerStatuses" :key="s.id" :value="s.id">{{ s.localized_name }}</option>
                     </select>
-                    <InputError :message="form.errors.status_value" class="mt-1" />
+                    <InputError :message="form.errors.status_id" class="mt-1" />
                 </div>
                 <div>
                     <InputLabel :value="t('status')" />

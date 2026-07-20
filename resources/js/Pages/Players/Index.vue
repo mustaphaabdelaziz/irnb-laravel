@@ -61,7 +61,7 @@ const categoryChips = computed(() => props.categoryStats.map((s) => ({
     key: s.category_id ?? '', label: s.name || t('uncategorized'), count: s.count,
 })));
 const statusChips = computed(() => props.statusStats.map((s) => ({
-    key: s.status ?? '', label: s.status || t('uncategorized'), count: s.count,
+    key: s.status_id ?? '', label: s.name || t('uncategorized'), count: s.count,
 })));
 const positionChips = computed(() => props.positionStats.map((s) => ({
     key: s.position_id ?? '', label: s.name || t('unassigned'), count: s.count,

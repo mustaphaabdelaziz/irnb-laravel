@@ -9,6 +9,7 @@ use App\Models\Category;
 use App\Models\MemberJob;
 use App\Models\Player;
 use App\Models\PlayerEmergencyContact;
+use App\Models\PlayerStatus;
 use App\Models\Position;
 use App\Models\Subscription;
 use App\Models\Transaction;
@@ -56,15 +57,19 @@ class PlayerController extends Controller
             ])
             ->values();
 
-        // Status distribution (status_value, e.g. منخرط / معتزل) over active players.
+        // Status distribution over active players, from the lookup so the
+        // label follows the interface language.
+        $statusCol = 'player_statuses.name_'.$locale;
         $statusStats = \Illuminate\Support\Facades\DB::table('players')
-            ->where('archived', false)
-            ->groupBy('status_value')
-            ->selectRaw('status_value, COUNT(*) as total')
+            ->leftJoin('player_statuses', 'player_statuses.id', '=', 'players.status_id')
+            ->where('players.archived', false)
+            ->groupBy('players.status_id', 'player_statuses.name', $statusCol)
+            ->selectRaw("players.status_id, COALESCE(NULLIF({$statusCol}, ''), player_statuses.name) as name, COUNT(*) as total")
             ->orderByDesc('total')
             ->get()
             ->map(fn ($row) => [
-                'status' => $row->status_value,
+                'status_id' => $row->status_id,
+                'name' => $row->name,
                 'count' => (int) $row->total,
             ])
             ->values();
@@ -105,6 +110,7 @@ class PlayerController extends Controller
             'players' => $players,
             'categories' => Category::orderBy('name')->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
             'branches' => Branch::orderBy('name')->get(),
+            'playerStatuses' => PlayerStatus::orderBy('sort_order')->get(),
             'categoryStats' => $categoryStats,
             'statusStats' => $statusStats,
             'positionStats' => $positionStats,
@@ -218,6 +224,7 @@ class PlayerController extends Controller
         return Inertia::render('Players/Create', [
             'categories' => Category::orderBy('name')->get(),
             'positions' => Position::orderBy('name')->get(),
+            'playerStatuses' => PlayerStatus::where('is_active', true)->orderBy('sort_order')->get(),
             'jobs' => MemberJob::orderBy('name')->get(),
             'branches' => Branch::orderBy('name')->get(),
             'wilayas' => $geo['wilayas'],
@@ -261,6 +268,7 @@ class PlayerController extends Controller
             'player' => $player,
             'categories' => Category::orderBy('name')->get(),
             'positions' => Position::orderBy('name')->get(),
+            'playerStatuses' => PlayerStatus::where('is_active', true)->orderBy('sort_order')->get(),
             'jobs' => MemberJob::orderBy('name')->get(),
             'branches' => Branch::orderBy('name')->get(),
             'wilayas' => $geo['wilayas'],
@@ -361,14 +369,14 @@ class PlayerController extends Controller
 
     public function export(Request $request, ExcelExporter $exporter): StreamedResponse
     {
-        $query = Player::query()->with(['category', 'position', 'branches']);
+        $query = Player::query()->with(['category', 'position', 'branches', 'status']);
         $this->applyPlayerFilters($query, $request);
 
         $rows = $query->orderBy('lastname')->orderBy('firstname')->get()->map(fn (Player $p) => [
             $p->membership_id,
             $p->fullname,
             $p->category?->localized_name,
-            $p->status_value,
+            $p->status?->localized_name,
             $p->is_student ? 'student' : 'worker',
             $p->join_year,
             (string) $p->outstanding_debt,
@@ -430,7 +438,7 @@ class PlayerController extends Controller
         }
 
         if ($request->filled('status')) {
-            $query->where('status_value', $request->input('status'));
+            $query->where('status_id', $request->input('status'));
         }
 
         if ($request->filled('position_id')) {

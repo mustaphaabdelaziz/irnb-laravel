@@ -15,6 +15,21 @@ Spec: `docs/superpowers/specs/2026-07-20-post-testing-enhancements-design.md` (P
 - **SQLite is the only dialect.** `DB_CONNECTION=sqlite` in `.env`, `config/database.php:20`, and `phpunit.xml`. SQLite cannot `ALTER TABLE ... ADD CONSTRAINT`, so the spec's `quantity = 1 OR unique_identifier IS NULL` check is enforced in the **model and Form Request**, not the database. Do not attempt a DB-level check constraint.
 - **Tests are PHPUnit, not Pest.** Use `#[Test]` attributes from `PHPUnit\Framework\Attributes\Test`, `use RefreshDatabase;`, and extend `Tests\TestCase`. Follow `tests/Feature/EquipmentItemManagementTest.php` for style.
 - Run tests with `php artisan test --filter=<TestClass>`. There is no Sail in this project.
+- **There is no `PlayerFactory`.** Only `RoleFactory` and `UserFactory` exist in `database/factories/`. Build players directly, as the existing tests do, with a unique `membership_id`:
+
+```php
+    private int $membership = 202600000;
+
+    private function player(): Player
+    {
+        return Player::create([
+            'firstname' => 'Ali',
+            'lastname' => 'B',
+            'membership_id' => (string) ++$this->membership,
+            'join_year' => 2026,
+        ]);
+    }
+```
 - **Existing behaviour for single-unit lots must not change.** Every existing test in `tests/Feature/Equipment*.php` must still pass at every commit. They are the regression net for this refactor.
 - `equipment_catalogs.requires_serial` backfills to `true` for existing rows, defaults to `false` for new ones.
 - Money is `decimal:2`. Dates use the existing casts (`purchase_date` => `date`).
@@ -328,7 +343,7 @@ class EquipmentLotRentalTest extends TestCase
         $rental = EquipmentRental::create([
             'equipment_item_id' => $this->lot()->id,
             'rentable_type' => Player::class,
-            'rentable_id' => Player::factory()->create()->id,
+            'rentable_id' => $this->player()->id,
             'checkout_date' => now(),
         ]);
 
@@ -344,7 +359,7 @@ class EquipmentLotRentalTest extends TestCase
         $rental = EquipmentRental::create([
             'equipment_item_id' => $this->lot()->id,
             'rentable_type' => Player::class,
-            'rentable_id' => Player::factory()->create()->id,
+            'rentable_id' => $this->player()->id,
             'checkout_date' => now(),
             'quantity' => 10,
             'returned_quantity' => 6,
@@ -469,7 +484,7 @@ Append to `tests/Feature/EquipmentLotModelTest.php` (add the `use` statements fo
         return EquipmentRental::create([
             'equipment_item_id' => $item->id,
             'rentable_type' => Player::class,
-            'rentable_id' => Player::factory()->create()->id,
+            'rentable_id' => $this->player()->id,
             'checkout_date' => now(),
             'quantity' => $quantity,
             'returned_quantity' => $returned,
@@ -1306,7 +1321,7 @@ git commit -m "feat(equipment): split a lot to reclassify damaged units"
     public function ten_units_can_be_issued_from_a_lot_of_twenty(): void
     {
         $lot = $this->lot(20);
-        $player = Player::factory()->create();
+        $player = $this->player();
 
         app(EquipmentLifecycleService::class)->rentOut($lot, $player, [
             'quantity' => 10,
@@ -1325,14 +1340,14 @@ git commit -m "feat(equipment): split a lot to reclassify damaged units"
 
         $this->expectException(\InvalidArgumentException::class);
 
-        app(EquipmentLifecycleService::class)->rentOut($lot, Player::factory()->create(), ['quantity' => 25]);
+        app(EquipmentLifecycleService::class)->rentOut($lot, $this->player(), ['quantity' => 25]);
     }
 
     #[Test]
     public function a_partial_return_leaves_the_rest_outstanding(): void
     {
         $lot = $this->lot(20);
-        $rental = app(EquipmentLifecycleService::class)->rentOut($lot, Player::factory()->create(), ['quantity' => 10]);
+        $rental = app(EquipmentLifecycleService::class)->rentOut($lot, $this->player(), ['quantity' => 10]);
 
         app(EquipmentLifecycleService::class)->returnItem($rental, ['quantity' => 6, 'condition' => 'Good']);
 
@@ -1346,7 +1361,7 @@ git commit -m "feat(equipment): split a lot to reclassify damaged units"
     public function returning_the_last_unit_closes_the_rental(): void
     {
         $lot = $this->lot(20);
-        $rental = app(EquipmentLifecycleService::class)->rentOut($lot, Player::factory()->create(), ['quantity' => 10]);
+        $rental = app(EquipmentLifecycleService::class)->rentOut($lot, $this->player(), ['quantity' => 10]);
 
         app(EquipmentLifecycleService::class)->returnItem($rental, ['quantity' => 6]);
         app(EquipmentLifecycleService::class)->returnItem($rental->fresh(), ['quantity' => 4]);
@@ -1359,7 +1374,7 @@ git commit -m "feat(equipment): split a lot to reclassify damaged units"
     public function the_checkout_note_survives_a_return(): void
     {
         $lot = $this->lot(1);
-        $rental = app(EquipmentLifecycleService::class)->rentOut($lot, Player::factory()->create(), [
+        $rental = app(EquipmentLifecycleService::class)->rentOut($lot, $this->player(), [
             'quantity' => 1,
             'notes' => 'handed over at training',
         ]);
@@ -1375,7 +1390,7 @@ git commit -m "feat(equipment): split a lot to reclassify damaged units"
     public function an_assignment_is_never_overdue(): void
     {
         $lot = $this->lot(5);
-        $rental = app(EquipmentLifecycleService::class)->rentOut($lot, Player::factory()->create(), [
+        $rental = app(EquipmentLifecycleService::class)->rentOut($lot, $this->player(), [
             'quantity' => 1,
             'type' => 'assignment',
             'due_date' => '2020-01-01',

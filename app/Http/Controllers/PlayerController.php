@@ -98,6 +98,8 @@ class PlayerController extends Controller
             'players' => $players,
             'categories' => Category::orderBy('name')->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
             'branches' => Branch::orderBy('name')->get(),
+            // positions feeds the bulk-edit field picker as well as the filter.
+            'positions' => Position::orderBy('name')->get(['id', 'name']),
             'playerStatuses' => PlayerStatus::orderBy('sort_order')->get(),
             'categoryStats' => $categoryStats,
             'statusStats' => $statusStats,

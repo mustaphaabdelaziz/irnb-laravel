@@ -184,6 +184,24 @@ class PlayerBulkUpdateTest extends TestCase
     }
 
     #[Test]
+    public function the_list_supplies_every_option_the_bulk_editor_needs(): void
+    {
+        Category::create(['name' => 'U15']);
+        Position::create(['name' => 'Goalkeeper', 'abbreviation' => 'GK']);
+        Branch::create(['name' => 'Football', 'name_en' => 'Football']);
+
+        $props = $this->actingAs($this->admin())->get(route('players.index'))
+            ->assertOk()->viewData('page')['props'];
+
+        // Each drives one field of the bulk-edit modal; a missing prop leaves
+        // that dropdown silently empty rather than erroring.
+        $this->assertNotEmpty($props['categories'], 'category options');
+        $this->assertNotEmpty($props['positions'], 'position options');
+        $this->assertNotEmpty($props['playerStatuses'], 'status options');
+        $this->assertNotEmpty($props['branches'], 'branch options');
+    }
+
+    #[Test]
     public function editing_does_not_confer_permanent_deletion(): void
     {
         $editor = User::factory()->create([

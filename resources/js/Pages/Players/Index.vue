@@ -9,6 +9,7 @@ import { useI18n } from 'vue-i18n';
 import { ref, watch, computed } from 'vue';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useBulkSelection } from '@/Composables/useBulkSelection';
+import BulkEditModal from '@/Components/BulkEditModal.vue';
 import StatDoughnut from '@/Components/StatDoughnut.vue';
 
 const { t } = useI18n();
@@ -18,6 +19,8 @@ const props = defineProps({
     players: Object,
     categories: Array,
     branches: { type: Array, default: () => [] },
+    positions: { type: Array, default: () => [] },
+    playerStatuses: { type: Array, default: () => [] },
     categoryStats: { type: Array, default: () => [] },
     statusStats: { type: Array, default: () => [] },
     positionStats: { type: Array, default: () => [] },
@@ -130,6 +133,35 @@ function doArchive() { const id = archiveId.value; archiveId.value = null; route
 function doRestore() { const id = restoreId.value; restoreId.value = null; router.put(route('players.restore', id), {}, opts); }
 function doForce() { const id = forceId.value; forceId.value = null; router.delete(route('players.forceDelete', id), opts); }
 
+// --- Bulk edit ---
+const showBulkEdit = ref(false);
+
+// Only fields backed by a real lookup are offered; the backend enforces the
+// same allow-list, this just builds the controls.
+const bulkFields = computed(() => [
+    {
+        key: 'category_id',
+        label: t('category'),
+        options: props.categories.map((c) => ({ value: c.id, label: c.localized_name || c.name })),
+    },
+    {
+        key: 'position_id',
+        label: t('position'),
+        options: props.positions.map((p) => ({ value: p.id, label: p.name })),
+    },
+    {
+        key: 'status_id',
+        label: t('membership_status'),
+        options: props.playerStatuses.map((s) => ({ value: s.id, label: s.localized_name || s.name })),
+    },
+    {
+        key: 'branches',
+        label: t('branch'),
+        multiple: true,
+        options: props.branches.map((b) => ({ value: b.id, label: b.localized_name || b.name })),
+    },
+]);
+
 // --- Bulk actions (confirm-gated) ---
 const bulkAction = ref(null); // 'archive' | 'restore' | 'force'
 const bulkMessage = computed(() => ({
@@ -220,6 +252,7 @@ function runBulk() {
             <div v-if="view === 'list' && selected.length" class="flex flex-wrap items-center gap-3 rounded-xl bg-primary-50 dark:bg-primary-900/20 px-4 py-2.5 ring-1 ring-primary-200 dark:ring-primary-800">
                 <span class="text-sm font-medium text-primary-800 dark:text-primary-200">{{ t('selected_count', { count: selected.length }) }}</span>
                 <div class="ms-auto flex items-center gap-2">
+                    <button v-if="!archivedView" @click="showBulkEdit = true" class="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700">{{ t('bulk_edit') }}</button>
                     <button v-if="!archivedView" @click="bulkAction = 'archive'" class="rounded-lg bg-white dark:bg-slate-900 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-200 ring-1 ring-slate-300 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800">{{ t('archive_selected') }}</button>
                     <button v-if="archivedView" @click="bulkAction = 'restore'" class="rounded-lg bg-white dark:bg-slate-900 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-300 dark:ring-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/30">{{ t('restore_selected') }}</button>
                     <button v-if="archivedView" @click="bulkAction = 'force'" class="rounded-lg bg-white dark:bg-slate-900 px-3 py-1.5 text-sm font-medium text-rose-700 dark:text-rose-300 ring-1 ring-rose-300 dark:ring-rose-800 hover:bg-rose-50 dark:hover:bg-rose-900/30">{{ t('delete_permanently_selected') }}</button>
@@ -352,5 +385,14 @@ function runBulk() {
         <ConfirmModal :show="!!restoreId" :message="t('confirm_restore_player')" @confirm="doRestore" @cancel="restoreId = null" />
         <ConfirmModal :show="!!forceId" :message="t('confirm_force_delete_player')" @confirm="doForce" @cancel="forceId = null" />
         <ConfirmModal :show="!!bulkAction" :message="bulkMessage" @confirm="runBulk" @cancel="bulkAction = null" />
+
+        <BulkEditModal
+            :show="showBulkEdit"
+            :ids="selected"
+            action="players.bulkUpdate"
+            :fields="bulkFields"
+            @close="showBulkEdit = false"
+            @saved="clearSelection"
+        />
     </AuthenticatedLayout>
 </template>

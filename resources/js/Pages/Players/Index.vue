@@ -8,6 +8,7 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref, watch, computed } from 'vue';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
+import { useBulkSelection } from '@/Composables/useBulkSelection';
 import StatDoughnut from '@/Components/StatDoughnut.vue';
 
 const { t } = useI18n();
@@ -49,10 +50,7 @@ function applyFilters() {
     router.get(route('players.index'), filterParams.value, { preserveState: true, replace: true });
 }
 
-watch([search, categoryFilter, statusFilter, positionFilter, branchFilter, ageFilter, archivedView], () => {
-    selected.value = [];
-    applyFilters();
-});
+watch([search, categoryFilter, statusFilter, positionFilter, branchFilter, ageFilter, archivedView], applyFilters);
 
 const exportHref = computed(() => route('players.export', filterParams.value));
 
@@ -117,23 +115,16 @@ function submitImport() {
 }
 
 // --- Row selection (list view) ---
-const selected = ref([]);
-const pageIds = computed(() => props.players.data.map((p) => p.id));
-const allSelected = computed(() => pageIds.value.length > 0 && pageIds.value.every((id) => selected.value.includes(id)));
-function toggleAll(e) {
-    selected.value = e.target.checked ? [...pageIds.value] : [];
-}
-function toggleOne(id) {
-    const i = selected.value.indexOf(id);
-    if (i === -1) selected.value.push(id);
-    else selected.value.splice(i, 1);
-}
+// filterParams is the reset signal: when the filters change the rows are
+// replaced, so a carried-over selection would act on off-screen players.
+const { selected, allSelected, toggleAll, toggleOne, clear: clearSelection } =
+    useBulkSelection(computed(() => props.players.data), filterParams);
 
 // --- Single-row actions (confirm-gated) ---
 const archiveId = ref(null);
 const restoreId = ref(null);
 const forceId = ref(null);
-const opts = { preserveScroll: true, onSuccess: () => { selected.value = []; } };
+const opts = { preserveScroll: true, onSuccess: () => clearSelection() };
 
 function doArchive() { const id = archiveId.value; archiveId.value = null; router.delete(route('players.destroy', id), opts); }
 function doRestore() { const id = restoreId.value; restoreId.value = null; router.put(route('players.restore', id), {}, opts); }

@@ -1,6 +1,6 @@
 <script setup>
 import Modal from '@/Components/Modal.vue';
-import { router, usePage } from '@inertiajs/vue3';
+import { router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref } from 'vue';
 
@@ -38,7 +38,9 @@ function save(cat) {
 function remove(cat) {
     router.delete(route('finance.categories.destroy', cat.id), {
         preserveScroll: true,
-        onSuccess: () => { error.value = usePage().props.flash?.error || ''; },
+        // The shared toast already renders flash.error, and it translates the
+        // key. Reading the raw prop here would print "flash.category_in_use".
+        onSuccess: () => { error.value = ''; },
     });
 }
 </script>

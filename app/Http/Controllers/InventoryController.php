@@ -74,7 +74,7 @@ class InventoryController extends Controller
             return $session;
         });
 
-        return redirect()->route('inventory.show', $session)->with('success', "Inventory {$session->reference} started.");
+        return redirect()->route('inventory.show', $session)->with('success', ['key' => 'flash.inventory_started', 'params' => ['reference' => $session->reference]]);
     }
 
     public function show(InventorySession $session): Response
@@ -207,7 +207,7 @@ class InventoryController extends Controller
             ]);
         });
 
-        return back()->with('success', "Inventory {$session->reference} completed.");
+        return back()->with('success', ['key' => 'flash.inventory_completed', 'params' => ['reference' => $session->reference]]);
     }
 
     public function export(InventorySession $session, ExcelExporter $exporter)

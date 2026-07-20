@@ -148,7 +148,7 @@ class TransactionController extends Controller
         }
 
         if ($this->yearClosed((int) $validated['fiscal_year'])) {
-            return back()->withInput()->with('error', "Fiscal year {$validated['fiscal_year']} is closed. Reopen it to add transactions.");
+            return back()->withInput()->with('error', ['key' => 'flash.year_closed_add', 'params' => ['year' => $validated['fiscal_year']]]);
         }
 
         if ($request->hasFile('receipt')) {
@@ -174,7 +174,7 @@ class TransactionController extends Controller
     public function update(StoreTransactionRequest $request, Transaction $transaction, FileStorageService $files): RedirectResponse
     {
         if ($this->yearClosed((int) $transaction->fiscal_year)) {
-            return back()->with('error', "This transaction is in closed fiscal year {$transaction->fiscal_year} and cannot be edited.");
+            return back()->with('error', ['key' => 'flash.year_closed_edit', 'params' => ['year' => $transaction->fiscal_year]]);
         }
 
         $validated = $request->validated();
@@ -199,7 +199,7 @@ class TransactionController extends Controller
     public function destroy(Transaction $transaction): RedirectResponse
     {
         if ($this->yearClosed((int) $transaction->fiscal_year)) {
-            return back()->with('error', "This transaction is in closed fiscal year {$transaction->fiscal_year} and cannot be removed.");
+            return back()->with('error', ['key' => 'flash.year_closed_delete', 'params' => ['year' => $transaction->fiscal_year]]);
         }
 
         $transaction->update(['archived' => true]);

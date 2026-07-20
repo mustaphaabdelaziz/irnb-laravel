@@ -2,6 +2,7 @@
 
 namespace App\Services\Equipment;
 
+use App\Exceptions\Equipment\StockException;
 use App\Models\EquipmentHistory;
 use App\Models\EquipmentItem;
 use App\Models\EquipmentRental;
@@ -22,14 +23,13 @@ class EquipmentLifecycleService
         $type = $options['type'] ?? 'rental';
 
         if ($quantity < 1) {
-            throw new \InvalidArgumentException('Quantity must be at least 1.');
+            throw StockException::invalidQuantity();
         }
 
         $available = app(EquipmentStockService::class)->availableQuantity($item);
 
         if ($quantity > $available) {
-            $label = $item->unique_identifier ?? "lot #{$item->id}";
-            throw new \InvalidArgumentException("Cannot issue {$quantity} unit(s) of {$label}: only {$available} available.");
+            throw StockException::notEnoughAvailable($quantity, $available);
         }
 
         return DB::transaction(function () use ($item, $rentable, $options, $quantity, $type) {
@@ -79,11 +79,11 @@ class EquipmentLifecycleService
         $condition = $options['condition'] ?? $item->condition;
 
         if ($rental->return_date !== null) {
-            throw new \InvalidArgumentException('This rental is already closed.');
+            throw StockException::rentalAlreadyClosed();
         }
 
         if ($quantity < 1 || $quantity > $outstanding) {
-            throw new \InvalidArgumentException("Cannot return {$quantity} unit(s): {$outstanding} outstanding.");
+            throw StockException::tooManyToReturn($quantity, $outstanding);
         }
 
         DB::transaction(function () use ($item, $rental, $options, $quantity, $condition) {

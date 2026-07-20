@@ -340,7 +340,7 @@ class PlayerController extends Controller
         $ids = $this->validatedIds($request);
         Player::whereIn('id', $ids)->update(['archived' => true]);
 
-        return back()->with('success', count($ids).' players archived.');
+        return back()->with('success', ['key' => 'flash.players_archived', 'params' => ['count' => count($ids)]]);
     }
 
     public function bulkRestore(Request $request): RedirectResponse
@@ -348,7 +348,7 @@ class PlayerController extends Controller
         $ids = $this->validatedIds($request);
         Player::whereIn('id', $ids)->update(['archived' => false]);
 
-        return back()->with('success', count($ids).' players restored.');
+        return back()->with('success', ['key' => 'flash.players_restored', 'params' => ['count' => count($ids)]]);
     }
 
     public function bulkForceDelete(Request $request, FileStorageService $files): RedirectResponse
@@ -356,7 +356,7 @@ class PlayerController extends Controller
         $ids = $this->validatedIds($request);
         Player::whereIn('id', $ids)->get()->each(fn (Player $p) => $this->permanentlyDelete($p, $files));
 
-        return back()->with('success', count($ids).' players permanently deleted.');
+        return back()->with('success', ['key' => 'flash.players_deleted', 'params' => ['count' => count($ids)]]);
     }
 
     public function export(Request $request, ExcelExporter $exporter): StreamedResponse

@@ -2,6 +2,7 @@
 
 namespace App\Services\Equipment;
 
+use App\Exceptions\Equipment\StockException;
 use App\Models\EquipmentHistory;
 use App\Models\EquipmentItem;
 use App\Models\Transaction;
@@ -55,14 +56,14 @@ class EquipmentStockService
     public function splitLot(EquipmentItem $item, int $quantity, string $condition, ?int $userId = null, ?string $notes = null): EquipmentItem
     {
         if ($quantity < 1) {
-            throw new \InvalidArgumentException('Split quantity must be at least 1.');
+            throw StockException::invalidQuantity();
         }
 
         $available = $this->availableQuantity($item);
 
         if ($quantity > $available) {
             // Units out on rental are not in your hands to inspect.
-            throw new \InvalidArgumentException("Cannot split {$quantity} units: only {$available} are available in this lot.");
+            throw StockException::cannotSplit($quantity, $available);
         }
 
         return DB::transaction(function () use ($item, $quantity, $condition, $userId, $notes) {

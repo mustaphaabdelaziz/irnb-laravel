@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\Equipment\StockException;
 use App\Http\Requests\Equipment\ReceiveStockRequest;
 use App\Http\Requests\Equipment\RentEquipmentRequest;
 use App\Http\Requests\Equipment\SplitLotRequest;
@@ -54,8 +55,8 @@ class EquipmentItemController extends Controller
                 $request->user()?->id,
                 $request->validated('notes'),
             );
-        } catch (\InvalidArgumentException $e) {
-            return back()->with('error', $e->getMessage());
+        } catch (StockException $e) {
+            return back()->with('error', $e->toFlash());
         }
 
         return back()->with('success', 'flash.equipment_lot_split');
@@ -167,8 +168,8 @@ class EquipmentItemController extends Controller
                 'notes' => $validated['notes'] ?? null,
                 'user_id' => $request->user()?->id,
             ]);
-        } catch (\InvalidArgumentException $e) {
-            return back()->with('error', $e->getMessage());
+        } catch (StockException $e) {
+            return back()->with('error', $e->toFlash());
         }
 
         return back()->with('success', 'flash.equipment_issued');
@@ -191,8 +192,8 @@ class EquipmentItemController extends Controller
                 'notes' => $validated['notes'] ?? null,
                 'user_id' => $request->user()?->id,
             ]);
-        } catch (\InvalidArgumentException $e) {
-            return back()->with('error', $e->getMessage());
+        } catch (StockException $e) {
+            return back()->with('error', $e->toFlash());
         }
 
         return back()->with('success', 'flash.equipment_returned');

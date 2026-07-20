@@ -271,7 +271,7 @@ class SubscriptionController extends Controller
         });
 
         return redirect()->route('subscriptions.show', $subscription)
-            ->with('success', $newPlayerIds->count().' players assigned.');
+            ->with('success', ['key' => 'flash.players_assigned', 'params' => ['count' => $newPlayerIds->count()]]);
     }
 
     public function assignOne(Request $request, Subscription $subscription): RedirectResponse
@@ -311,7 +311,7 @@ class SubscriptionController extends Controller
         });
 
         return redirect()->route('subscriptions.show', $subscription)
-            ->with('success', $player->firstname.' '.$player->lastname.' added to subscription.');
+            ->with('success', ['key' => 'flash.player_added_to_subscription', 'params' => ['name' => $player->firstname.' '.$player->lastname]]);
     }
 
     public function export(Request $request, Subscription $subscription): StreamedResponse

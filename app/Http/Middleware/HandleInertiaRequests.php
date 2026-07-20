@@ -47,6 +47,9 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
+                // Breeze's auth flows flash 'status'; without this it was
+                // set on every password reset and never reached the toast.
+                'status' => fn () => $request->session()->get('status'),
             ],
         ];
     }

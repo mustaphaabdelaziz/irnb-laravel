@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import ThemeToggle from '@/Components/ThemeToggle.vue';
+import FlashMessages from '@/Components/FlashMessages.vue';
 
 const page = usePage();
 const appLogo = computed(() => page.props.branding?.logo ?? null);
@@ -15,6 +16,8 @@ const appName = computed(() => {
 
 <template>
     <div class="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-slate-50 p-4 dark:bg-slate-950">
+        <!-- Guest-side flashes (password reset, verification) had nowhere to render. -->
+        <FlashMessages />
         <!-- Soft primary ambient on a clean canvas -->
         <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_50%_at_50%_0%,theme(colors.primary.500/0.10),transparent_70%)] dark:bg-[radial-gradient(60%_50%_at_50%_0%,theme(colors.primary.500/0.18),transparent_70%)]"></div>
         <div class="pointer-events-none absolute -top-24 start-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-primary-400/20 blur-3xl dark:bg-primary-500/20"></div>

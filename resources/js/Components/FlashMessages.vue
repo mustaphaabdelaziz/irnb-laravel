@@ -32,8 +32,11 @@ watch(flash, checkFlash, { deep: true });
 onMounted(checkFlash);
 
 function checkFlash() {
-    if (flash.value?.success) {
-        message.value = translate(flash.value.success);
+    // 'status' is what Breeze's auth flows flash (password reset, verification).
+    const success = flash.value?.success ?? flash.value?.status;
+
+    if (success) {
+        message.value = translate(success);
         type.value = 'success';
         show.value = true;
         autoDismiss();

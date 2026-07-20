@@ -28,7 +28,7 @@ class FiscalYearController extends Controller
             'opening_balance' => $data['opening_balance'] ?? 0,
         ]);
 
-        return back()->with('success', "Fiscal year {$data['year']} created.");
+        return back()->with('success', ['key' => 'flash.fiscal_year_created', 'params' => ['year' => $data['year']]]);
     }
 
     public function update(Request $request, FiscalYear $fiscalYear): RedirectResponse
@@ -50,13 +50,13 @@ class FiscalYearController extends Controller
     {
         $this->finance->closeYear($fiscalYear, $request->user());
 
-        return back()->with('success', "Year {$fiscalYear->year} closed. Balance carried forward to ".($fiscalYear->year + 1).'.');
+        return back()->with('success', ['key' => 'flash.fiscal_year_closed', 'params' => ['year' => $fiscalYear->year, 'next' => $fiscalYear->year + 1]]);
     }
 
     public function reopen(FiscalYear $fiscalYear): RedirectResponse
     {
         $this->finance->reopenYear($fiscalYear);
 
-        return back()->with('success', "Year {$fiscalYear->year} reopened.");
+        return back()->with('success', ['key' => 'flash.fiscal_year_reopened', 'params' => ['year' => $fiscalYear->year]]);
     }
 }

@@ -14,9 +14,11 @@ class EquipmentItem extends Model
 
     protected $fillable = [
         'catalog_id',
+        'quantity',
         'unique_identifier',
         'designation',
         'purchase_date',
+        'received_via',
         'status',
         'condition',
         'location',
@@ -28,6 +30,7 @@ class EquipmentItem extends Model
     {
         return [
             'purchase_date' => 'date',
+            'quantity' => 'integer',
         ];
     }
 

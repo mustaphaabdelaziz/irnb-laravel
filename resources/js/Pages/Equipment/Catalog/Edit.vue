@@ -6,6 +6,7 @@ import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { Head, useForm, Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
@@ -19,11 +20,16 @@ const props = defineProps({
 const form = useForm({
     name: props.catalog.name || '',
     category: props.catalog.category || '',
+    requires_serial: !!props.catalog.requires_serial,
     brand: props.catalog.brand || '',
     description: props.catalog.description || '',
     purchase_price: props.catalog.purchase_price || '',
     picture: null,
 });
+
+// Switching mode with stock on hand would strand it in a shape the new mode
+// cannot express. The backend enforces this too.
+const trackingLocked = computed(() => (props.catalog.items_count ?? 0) > 0);
 
 function submit() {
     form.transform((data) => ({ ...data, _method: 'put' }))
@@ -72,6 +78,17 @@ function submit() {
                         </div>
                     </div>
                     <div>
+                        <label class="mb-4 flex items-start gap-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 p-3"
+                            :class="{ 'opacity-60': trackingLocked }">
+                            <input type="checkbox" v-model="form.requires_serial" :disabled="trackingLocked"
+                                class="mt-0.5 rounded border-slate-300 dark:border-slate-600 text-primary-600 focus:ring-primary-500 disabled:cursor-not-allowed" />
+                            <span>
+                                <span class="block text-sm font-medium text-slate-900 dark:text-slate-100">{{ t('equipment.track_each_unit') }}</span>
+                                <span class="block text-xs text-slate-500 dark:text-slate-400">
+                                    {{ trackingLocked ? t('equipment.track_locked') : t('equipment.track_each_unit_hint') }}
+                                </span>
+                            </span>
+                        </label>
                         <InputLabel :value="t('description')" />
                         <textarea v-model="form.description" rows="3" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500" />
                     </div>

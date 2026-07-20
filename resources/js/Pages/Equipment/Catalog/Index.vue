@@ -131,7 +131,14 @@ function submitImport() {
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ cat.category }}</td>
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ cat.brand || '-' }}</td>
                                 <td class="px-4 py-3 text-end text-sm">{{ formatMoney(cat.purchase_price) }}</td>
-                                <td class="px-4 py-3 text-end text-sm font-semibold">{{ cat.items_count ?? 0 }}</td>
+                                <!-- Units is the figure that means something; a lot row can hold 100 dossards. -->
+                                <td class="px-4 py-3 text-end text-sm">
+                                    <span class="font-semibold">{{ cat.units_total ?? 0 }}</span>
+                                    <span class="ms-1 text-xs text-slate-400">{{ t('equipment.units') }}</span>
+                                    <span v-if="(cat.items_count ?? 0) > 1" class="block text-xs text-slate-400">
+                                        {{ cat.items_count }} {{ t('equipment.lots') }}
+                                    </span>
+                                </td>
                                 <td class="px-4 py-3 text-end">
                                     <div class="flex items-center justify-end gap-2">
                                         <Link :href="route('equipment.catalogs.show', cat.id)" class="text-sm text-primary-600 hover:text-primary-800">{{ t('details') }}</Link>

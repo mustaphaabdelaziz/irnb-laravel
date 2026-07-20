@@ -16,6 +16,9 @@ class StoreEquipmentCatalogRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string', 'max:255', 'exists:equipment_categories,name'],
+            // false = count-tracked (dossards, balls); true = one row per
+            // physical unit with its own serial.
+            'requires_serial' => ['boolean'],
             'brand' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'specifications' => ['nullable', 'array'],

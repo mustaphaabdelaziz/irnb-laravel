@@ -16,6 +16,9 @@ defineProps({ equipmentCategories: { type: Array, default: () => [] } });
 const form = useForm({
     name: '',
     category: '',
+    // Most club equipment is counted, not serialized, so count-tracking is
+    // the default. Ticking this gives every unit its own serial and history.
+    requires_serial: false,
     brand: '',
     description: '',
     purchase_price: '',
@@ -69,6 +72,14 @@ function submit() {
                             <InputError :message="form.errors.purchase_price" class="mt-1" />
                         </div>
                     </div>
+                    <label class="flex items-start gap-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 p-3">
+                        <input type="checkbox" v-model="form.requires_serial"
+                            class="mt-0.5 rounded border-slate-300 dark:border-slate-600 text-primary-600 focus:ring-primary-500" />
+                        <span>
+                            <span class="block text-sm font-medium text-slate-900 dark:text-slate-100">{{ t('equipment.track_each_unit') }}</span>
+                            <span class="block text-xs text-slate-500 dark:text-slate-400">{{ t('equipment.track_each_unit_hint') }}</span>
+                        </span>
+                    </label>
                     <div>
                         <InputLabel :value="t('description')" />
                         <textarea v-model="form.description" rows="3" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500" />

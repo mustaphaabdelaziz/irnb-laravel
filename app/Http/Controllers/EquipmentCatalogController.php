@@ -103,7 +103,8 @@ class EquipmentCatalogController extends Controller
     public function edit(EquipmentCatalog $catalog): Response
     {
         return Inertia::render('Equipment/Catalog/Edit', [
-            'catalog' => $catalog,
+            // items_count drives the tracking-mode lock in the form.
+            'catalog' => $catalog->loadCount('items'),
             'equipmentCategories' => EquipmentCategory::orderBy('name')->pluck('name'),
         ]);
     }
@@ -112,6 +113,13 @@ class EquipmentCatalogController extends Controller
     {
         $data = $request->validated();
         unset($data['picture']);
+
+        // Switching tracking mode with stock on hand would strand that stock
+        // in a shape the new mode cannot express, so it is locked once the
+        // catalog holds lots.
+        if ($catalog->items()->exists()) {
+            unset($data['requires_serial']);
+        }
 
         if ($request->hasFile('picture')) {
             $files->delete($catalog->picture_filename);

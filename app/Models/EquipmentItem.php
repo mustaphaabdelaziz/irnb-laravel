@@ -59,6 +59,12 @@ class EquipmentItem extends Model
         return $this->hasMany(EquipmentHistory::class, 'item_id');
     }
 
+    /** Units of this lot that can be issued right now. */
+    public function getAvailableQuantityAttribute(): int
+    {
+        return app(EquipmentStockService::class)->availableQuantity($this);
+    }
+
     public function getIsOverdueAttribute(): bool
     {
         return $this->status === 'Rented'

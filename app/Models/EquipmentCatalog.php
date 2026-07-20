@@ -21,13 +21,13 @@ class EquipmentCatalog extends Model
     protected $fillable = [
         'name',
         'category',
+        'requires_serial',
         'brand',
         'description',
         'specifications',
         'purchase_price',
         'picture_url',
         'picture_filename',
-        'item_count',
     ];
 
     protected function casts(): array
@@ -35,7 +35,7 @@ class EquipmentCatalog extends Model
         return [
             'specifications' => 'array',
             'purchase_price' => 'decimal:2',
-            'item_count' => 'integer',
+            'requires_serial' => 'boolean',
         ];
     }
 

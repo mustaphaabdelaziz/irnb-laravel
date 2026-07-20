@@ -43,4 +43,12 @@ class EquipmentLotModelTest extends TestCase
         $this->assertSame(20, $item->fresh()->quantity);
         $this->assertNull($item->fresh()->unique_identifier);
     }
+
+    #[Test]
+    public function new_catalogs_default_to_count_tracking(): void
+    {
+        $catalog = EquipmentCatalog::create(['name' => 'Dossards', 'category' => 'Apparel']);
+
+        $this->assertFalse($catalog->fresh()->requires_serial);
+    }
 }

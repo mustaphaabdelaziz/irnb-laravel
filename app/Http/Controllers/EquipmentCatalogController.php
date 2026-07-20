@@ -150,17 +150,20 @@ class EquipmentCatalogController extends Controller
 
     public function export(ExcelExporter $exporter): StreamedResponse
     {
-        $rows = EquipmentCatalog::query()->withCount('items')->orderBy('name')->get()
+        $rows = EquipmentCatalog::query()
+            ->withSum('items as units_total', 'quantity')
+            ->orderBy('name')->get()
             ->map(fn (EquipmentCatalog $c) => [
                 $c->name,
                 $c->category,
                 $c->brand,
                 (string) $c->purchase_price,
-                $c->items_count,
+                (int) $c->units_total,
                 $c->description,
             ]);
 
-        $headers = ['name', 'category', 'brand', 'purchase_price', 'item_count', 'description'];
+        // Units, not rows: one lot row can hold 100 dossards.
+        $headers = ['name', 'category', 'brand', 'purchase_price', 'total_units', 'description'];
 
         return $exporter->download('Equipment catalogs', $headers, $rows->all(),
             'equipment-catalogs-'.now()->format('Y-m-d').'.csv');

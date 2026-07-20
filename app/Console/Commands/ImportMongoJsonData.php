@@ -674,7 +674,6 @@ class ImportMongoJsonData extends Command
                     'purchase_price' => isset($row['purchasePrice']) ? (float) $row['purchasePrice'] : (isset($row['purchase_price']) ? (float) $row['purchase_price'] : null),
                     'picture_url' => $this->nullableString($row['picture']['url'] ?? $row['picture_url'] ?? null),
                     'picture_filename' => $this->nullableString($row['picture']['filename'] ?? $row['picture_filename'] ?? null),
-                    'item_count' => max(0, (int) ($row['itemCount'] ?? $row['item_count'] ?? 0)),
                 ]
             );
 
@@ -740,11 +739,8 @@ class ImportMongoJsonData extends Command
             $count++;
         }
 
-        EquipmentCatalog::query()->each(function (EquipmentCatalog $catalog): void {
-            $catalog->update([
-                'item_count' => $catalog->items()->count(),
-            ]);
-        });
+        // No item_count reconciliation: catalog counts derive from
+        // SUM(quantity) over their lots, so there is nothing to backfill.
 
         $this->info('Equipment items imported: '.$count);
 

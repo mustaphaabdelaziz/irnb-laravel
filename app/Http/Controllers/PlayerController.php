@@ -249,7 +249,7 @@ class PlayerController extends Controller
         }
 
         return redirect()->route('players.show', $player)
-            ->with('success', 'Player created successfully.');
+            ->with('success', 'flash.player_created');
     }
 
     public function edit(Player $player): Response
@@ -309,7 +309,7 @@ class PlayerController extends Controller
         }
 
         return redirect()->route('players.show', $player)
-            ->with('success', 'Player updated successfully.');
+            ->with('success', 'flash.player_updated');
     }
 
     public function destroy(Player $player): RedirectResponse
@@ -317,14 +317,14 @@ class PlayerController extends Controller
         $player->update(['archived' => true]);
 
         return redirect()->route('players.index')
-            ->with('success', 'Player archived successfully.');
+            ->with('success', 'flash.player_archived');
     }
 
     public function restore(Player $player): RedirectResponse
     {
         $player->update(['archived' => false]);
 
-        return back()->with('success', 'Player restored successfully.');
+        return back()->with('success', 'flash.player_restored');
     }
 
     public function forceDelete(Player $player, FileStorageService $files): RedirectResponse
@@ -332,7 +332,7 @@ class PlayerController extends Controller
         $this->permanentlyDelete($player, $files);
 
         return redirect()->route('players.index', ['archived' => 1])
-            ->with('success', 'Player permanently deleted.');
+            ->with('success', 'flash.player_permanently_deleted');
     }
 
     public function bulkArchive(Request $request): RedirectResponse

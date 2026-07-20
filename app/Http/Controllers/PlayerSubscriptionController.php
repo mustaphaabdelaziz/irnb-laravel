@@ -48,7 +48,7 @@ class PlayerSubscriptionController extends Controller
 
         $this->debt->forPlayer($player);
 
-        return back()->with('success', 'Previous debt added.');
+        return back()->with('success', 'flash.previous_debt_added');
     }
 
     public function update(Request $request, Player $player, PlayerSubscription $playerSubscription): RedirectResponse
@@ -97,7 +97,7 @@ class PlayerSubscriptionController extends Controller
 
         $this->debt->forPlayer($player);
 
-        return back()->with('success', 'Subscription updated.');
+        return back()->with('success', 'flash.subscription_updated');
     }
 
     public function destroy(Player $player, PlayerSubscription $playerSubscription): RedirectResponse
@@ -106,13 +106,13 @@ class PlayerSubscriptionController extends Controller
 
         // Guard: keep the obligation while it still has recorded payments.
         if ($playerSubscription->payments()->where('archived', false)->exists()) {
-            return back()->with('error', 'Remove this subscription\'s payments before deleting it.');
+            return back()->with('error', 'flash.subscription_has_payments');
         }
 
         $playerSubscription->delete();
         $this->debt->forPlayer($player);
 
-        return back()->with('success', 'Subscription removed.');
+        return back()->with('success', 'flash.subscription_removed');
     }
 
     private function ensureOwnership(Player $player, PlayerSubscription $playerSubscription): void

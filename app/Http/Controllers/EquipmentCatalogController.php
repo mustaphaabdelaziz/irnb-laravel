@@ -107,7 +107,7 @@ class EquipmentCatalogController extends Controller
         $catalog = EquipmentCatalog::create($data);
 
         return redirect()->route('equipment.catalogs.show', $catalog)
-            ->with('success', 'Equipment catalog created successfully.');
+            ->with('success', 'flash.equipment_catalog_created');
     }
 
     public function edit(EquipmentCatalog $catalog): Response
@@ -141,7 +141,7 @@ class EquipmentCatalogController extends Controller
         $catalog->update($data);
 
         return redirect()->route('equipment.catalogs.show', $catalog)
-            ->with('success', 'Equipment catalog updated successfully.');
+            ->with('success', 'flash.equipment_catalog_updated');
     }
 
     public function destroy(EquipmentCatalog $catalog): RedirectResponse
@@ -149,7 +149,7 @@ class EquipmentCatalogController extends Controller
         $catalog->delete();
 
         return redirect()->route('equipment.catalogs.index')
-            ->with('success', 'Equipment catalog deleted successfully.');
+            ->with('success', 'flash.equipment_catalog_deleted');
     }
 
     /**

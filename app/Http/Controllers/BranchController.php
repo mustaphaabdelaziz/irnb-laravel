@@ -40,28 +40,28 @@ class BranchController extends Controller
 
         $branch->players()->sync($validated['player_ids']);
 
-        return back()->with('success', 'Branch members updated.');
+        return back()->with('success', 'flash.branch_members_updated');
     }
 
     public function store(Request $request): RedirectResponse
     {
         Branch::create($this->validated($request));
 
-        return back()->with('success', 'Branch created successfully.');
+        return back()->with('success', 'flash.branch_created');
     }
 
     public function update(Request $request, Branch $branch): RedirectResponse
     {
         $branch->update($this->validated($request, $branch->id));
 
-        return back()->with('success', 'Branch updated successfully.');
+        return back()->with('success', 'flash.branch_updated');
     }
 
     public function destroy(Branch $branch): RedirectResponse
     {
         $branch->delete();
 
-        return back()->with('success', 'Branch deleted successfully.');
+        return back()->with('success', 'flash.branch_deleted');
     }
 
     /**

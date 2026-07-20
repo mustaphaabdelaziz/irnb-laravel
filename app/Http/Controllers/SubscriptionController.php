@@ -181,7 +181,7 @@ class SubscriptionController extends Controller
         }
 
         return redirect()->route('subscriptions.show', $subscription)
-            ->with('success', 'Subscription created successfully.');
+            ->with('success', 'flash.subscription_created');
     }
 
     public function edit(Subscription $subscription): Response
@@ -207,7 +207,7 @@ class SubscriptionController extends Controller
         $subscription->branches()->sync($branchIds);
 
         return redirect()->route('subscriptions.show', $subscription)
-            ->with('success', 'Subscription updated successfully.');
+            ->with('success', 'flash.subscription_updated');
     }
 
     public function destroy(Subscription $subscription): RedirectResponse
@@ -215,7 +215,7 @@ class SubscriptionController extends Controller
         $subscription->delete();
 
         return redirect()->route('subscriptions.index')
-            ->with('success', 'Subscription deleted successfully.');
+            ->with('success', 'flash.subscription_deleted');
     }
 
     public function assign(Request $request, Subscription $subscription): RedirectResponse
@@ -289,7 +289,7 @@ class SubscriptionController extends Controller
 
         if ($alreadyAssigned) {
             return redirect()->route('subscriptions.show', $subscription)
-                ->with('error', 'Player is already assigned to this subscription.');
+                ->with('error', 'flash.player_already_subscribed');
         }
 
         $amountOwed = $player->is_student

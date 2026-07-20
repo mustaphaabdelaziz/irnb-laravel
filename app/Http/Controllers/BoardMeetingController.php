@@ -17,7 +17,7 @@ class BoardMeetingController extends Controller
         $data['created_by_user_id'] = $request->user()?->id;
         $meeting = BoardMeeting::create($data);
 
-        return redirect()->route('board.meetings.show', $meeting)->with('success', 'Meeting created.');
+        return redirect()->route('board.meetings.show', $meeting)->with('success', 'flash.meeting_created');
     }
 
     public function update(Request $request, BoardMeeting $meeting): RedirectResponse
@@ -30,7 +30,7 @@ class BoardMeetingController extends Controller
         ]);
         $meeting->update($data);
 
-        return back()->with('success', 'Meeting updated.');
+        return back()->with('success', 'flash.meeting_updated');
     }
 
     public function attendance(Request $request, BoardMeeting $meeting): RedirectResponse
@@ -48,7 +48,7 @@ class BoardMeetingController extends Controller
             );
         }
 
-        return back()->with('success', 'Attendance saved.');
+        return back()->with('success', 'flash.attendance_saved');
     }
 
     /**
@@ -70,7 +70,7 @@ class BoardMeetingController extends Controller
             'attachment_filename' => $stored['filename'],
         ]);
 
-        return back()->with('success', 'Minutes file uploaded.');
+        return back()->with('success', 'flash.minutes_file_uploaded');
     }
 
     public function deleteAttachment(BoardMeeting $meeting, FileStorageService $storage): RedirectResponse
@@ -78,14 +78,14 @@ class BoardMeetingController extends Controller
         $storage->delete($meeting->attachment_filename);
         $meeting->update(['attachment_url' => null, 'attachment_filename' => null]);
 
-        return back()->with('success', 'Minutes file removed.');
+        return back()->with('success', 'flash.minutes_file_removed');
     }
 
     public function destroy(BoardMeeting $meeting): RedirectResponse
     {
         $meeting->delete();
 
-        return redirect()->route('board.meetings')->with('success', 'Meeting deleted.');
+        return redirect()->route('board.meetings')->with('success', 'flash.meeting_deleted');
     }
 
     /** @return array<string, mixed> */

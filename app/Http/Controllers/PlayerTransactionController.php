@@ -53,7 +53,7 @@ class PlayerTransactionController extends Controller
         }
 
         return redirect()->route('players.show', $player)
-            ->with('success', 'Payment recorded successfully.');
+            ->with('success', 'flash.payment_recorded');
     }
 
     /**
@@ -92,7 +92,7 @@ class PlayerTransactionController extends Controller
         app(RecalculatePlayerDebtService::class)->forPlayer($player);
 
         return redirect()->route('players.show', $player)
-            ->with('success', 'Payment updated successfully.');
+            ->with('success', 'flash.payment_updated');
     }
 
     /** Remove = archive (soft): the row leaves the table but stays for audit. */
@@ -105,7 +105,7 @@ class PlayerTransactionController extends Controller
         app(RecalculatePlayerDebtService::class)->forPlayer($player);
 
         return redirect()->route('players.show', $player)
-            ->with('success', 'Payment removed.');
+            ->with('success', 'flash.payment_removed');
     }
 
     /**

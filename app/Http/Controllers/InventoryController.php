@@ -120,7 +120,7 @@ class InventoryController extends Controller
                 ]);
         }
 
-        return back()->with('success', 'Counts saved.');
+        return back()->with('success', 'flash.counts_saved');
     }
 
     public function participants(Request $request, InventorySession $session): RedirectResponse
@@ -151,7 +151,7 @@ class InventoryController extends Controller
             }
         });
 
-        return back()->with('success', 'Participants updated.');
+        return back()->with('success', 'flash.participants_updated');
     }
 
     /**
@@ -232,6 +232,6 @@ class InventoryController extends Controller
     {
         $session->delete();
 
-        return redirect()->route('inventory.index')->with('success', 'Inventory deleted.');
+        return redirect()->route('inventory.index')->with('success', 'flash.inventory_deleted');
     }
 }

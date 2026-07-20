@@ -17,7 +17,7 @@ class FinanceAccountController extends Controller
         FinanceAccount::create($this->validateData($request));
         $this->finance->recomputeAccountBalances();
 
-        return back()->with('success', 'Account added.');
+        return back()->with('success', 'flash.account_added');
     }
 
     public function update(Request $request, FinanceAccount $financeAccount): RedirectResponse
@@ -25,18 +25,18 @@ class FinanceAccountController extends Controller
         $financeAccount->update($this->validateData($request));
         $this->finance->recomputeAccountBalances();
 
-        return back()->with('success', 'Account updated.');
+        return back()->with('success', 'flash.account_updated');
     }
 
     public function destroy(FinanceAccount $financeAccount): RedirectResponse
     {
         if ($financeAccount->transactions()->exists()) {
-            return back()->with('error', 'Cannot delete an account that has transactions. Deactivate it instead.');
+            return back()->with('error', 'flash.account_has_transactions');
         }
 
         $financeAccount->delete();
 
-        return back()->with('success', 'Account deleted.');
+        return back()->with('success', 'flash.account_deleted');
     }
 
     /** @return array<string, mixed> */

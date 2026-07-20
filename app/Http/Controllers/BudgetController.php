@@ -34,6 +34,6 @@ class BudgetController extends Controller
             );
         }
 
-        return back()->with('success', 'Budget saved.');
+        return back()->with('success', 'flash.budget_saved');
     }
 }

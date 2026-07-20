@@ -43,7 +43,7 @@ class FiscalYearController extends Controller
         $fiscalYear->update($data);
         $this->finance->recomputeYear($fiscalYear);
 
-        return back()->with('success', 'Fiscal year updated.');
+        return back()->with('success', 'flash.fiscal_year_updated');
     }
 
     public function close(FiscalYear $fiscalYear, Request $request): RedirectResponse

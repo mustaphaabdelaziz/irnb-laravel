@@ -16,7 +16,7 @@ class BoardTaskController extends Controller
         $this->syncCompletion($data);
         BoardTask::create($data);
 
-        return back()->with('success', 'Task created.');
+        return back()->with('success', 'flash.task_created');
     }
 
     public function update(Request $request, BoardTask $boardTask): RedirectResponse
@@ -25,14 +25,14 @@ class BoardTaskController extends Controller
         $this->syncCompletion($data);
         $boardTask->update($data);
 
-        return back()->with('success', 'Task updated.');
+        return back()->with('success', 'flash.task_updated');
     }
 
     public function destroy(BoardTask $boardTask): RedirectResponse
     {
         $boardTask->delete();
 
-        return back()->with('success', 'Task deleted.');
+        return back()->with('success', 'flash.task_deleted');
     }
 
     /** Keep progress / status / completed_at consistent. */

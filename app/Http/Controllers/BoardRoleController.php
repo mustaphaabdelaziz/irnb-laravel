@@ -30,7 +30,7 @@ class BoardRoleController extends Controller
 
         BoardRole::create($validated);
 
-        return back()->with('success', 'Role created.');
+        return back()->with('success', 'flash.role_created');
     }
 
     public function update(Request $request, BoardRole $boardRole): RedirectResponse
@@ -48,17 +48,17 @@ class BoardRoleController extends Controller
 
         $boardRole->update($validated);
 
-        return back()->with('success', 'Role updated.');
+        return back()->with('success', 'flash.role_updated');
     }
 
     public function destroy(BoardRole $boardRole): RedirectResponse
     {
         if ($boardRole->members()->exists()) {
-            return back()->with('error', 'Cannot delete: role is assigned to board members.');
+            return back()->with('error', 'flash.board_role_in_use');
         }
 
         $boardRole->delete();
 
-        return back()->with('success', 'Role deleted.');
+        return back()->with('success', 'flash.role_deleted');
     }
 }

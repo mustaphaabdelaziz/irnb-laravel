@@ -34,7 +34,7 @@ class CategoryController extends Controller
 
         Category::create($validated);
 
-        return back()->with('success', 'Category created successfully.');
+        return back()->with('success', 'flash.category_created');
     }
 
     public function update(Request $request, Category $category): RedirectResponse
@@ -49,13 +49,13 @@ class CategoryController extends Controller
 
         $category->update($validated);
 
-        return back()->with('success', 'Category updated successfully.');
+        return back()->with('success', 'flash.category_updated');
     }
 
     public function destroy(Category $category): RedirectResponse
     {
         $category->delete();
 
-        return back()->with('success', 'Category deleted successfully.');
+        return back()->with('success', 'flash.category_deleted');
     }
 }

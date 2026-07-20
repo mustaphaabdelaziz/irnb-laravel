@@ -121,30 +121,30 @@ class UserController extends Controller
         $user->update($validated);
 
         return redirect()->route('users.index')
-            ->with('success', 'User updated successfully.');
+            ->with('success', 'flash.user_updated');
     }
 
     public function approve(User $user): RedirectResponse
     {
         $user->update(['approved' => true, 'is_active' => true]);
 
-        return back()->with('success', 'Member approved successfully.');
+        return back()->with('success', 'flash.member_approved');
     }
 
     public function destroy(Request $request, User $user): RedirectResponse
     {
         if ($user->id === $request->user()->id) {
-            return back()->with('error', 'You cannot delete your own account.');
+            return back()->with('error', 'flash.cannot_delete_self');
         }
 
         if (in_array('superadmin', $user->privileges ?? [], true)) {
-            return back()->with('error', 'Super administrators cannot be deleted.');
+            return back()->with('error', 'flash.superadmin_undeletable');
         }
 
         $user->delete();
 
         return redirect()->route('users.index')
-            ->with('success', 'User deleted successfully.');
+            ->with('success', 'flash.user_deleted');
     }
 
     private function guardSuperadmin(Request $request, User $user): void

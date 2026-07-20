@@ -66,7 +66,7 @@ class WebsiteConfigController extends Controller
 
         $config->update($validated);
 
-        return back()->with('success', 'Configuration updated successfully.');
+        return back()->with('success', 'flash.configuration_updated');
     }
 
     /**

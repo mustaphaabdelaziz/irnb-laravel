@@ -28,7 +28,7 @@ class MemberJobController extends Controller
 
         MemberJob::create($validated);
 
-        return back()->with('success', 'Job created successfully.');
+        return back()->with('success', 'flash.job_created');
     }
 
     public function update(Request $request, MemberJob $job): RedirectResponse
@@ -40,13 +40,13 @@ class MemberJobController extends Controller
 
         $job->update($validated);
 
-        return back()->with('success', 'Job updated successfully.');
+        return back()->with('success', 'flash.job_updated');
     }
 
     public function destroy(MemberJob $job): RedirectResponse
     {
         $job->delete();
 
-        return back()->with('success', 'Job deleted successfully.');
+        return back()->with('success', 'flash.job_deleted');
     }
 }

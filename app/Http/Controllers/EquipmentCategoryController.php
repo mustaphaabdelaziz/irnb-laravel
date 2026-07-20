@@ -32,7 +32,7 @@ class EquipmentCategoryController extends Controller
 
         EquipmentCategory::create($validated);
 
-        return back()->with('success', 'Category created successfully.');
+        return back()->with('success', 'flash.category_created');
     }
 
     public function update(Request $request, EquipmentCategory $equipmentCategory): RedirectResponse
@@ -52,7 +52,7 @@ class EquipmentCategoryController extends Controller
 
         $equipmentCategory->update($validated);
 
-        return back()->with('success', 'Category updated successfully.');
+        return back()->with('success', 'flash.category_updated');
     }
 
     private function normaliseCode(?string $code, string $name): string
@@ -63,11 +63,11 @@ class EquipmentCategoryController extends Controller
     public function destroy(EquipmentCategory $equipmentCategory): RedirectResponse
     {
         if ($equipmentCategory->catalogs()->exists()) {
-            return back()->with('error', 'Cannot delete: category is used by equipment catalogs.');
+            return back()->with('error', 'flash.category_in_use');
         }
 
         $equipmentCategory->delete();
 
-        return back()->with('success', 'Category deleted successfully.');
+        return back()->with('success', 'flash.category_deleted');
     }
 }

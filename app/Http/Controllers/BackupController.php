@@ -53,7 +53,7 @@ class BackupController extends Controller
         $lock = Cache::lock('backup', 300);
 
         if (! $lock->get()) {
-            return back()->with('error', 'A backup or restore is already running. Please try again in a moment.');
+            return back()->with('error', 'flash.backup_already_running');
         }
 
         try {
@@ -66,7 +66,7 @@ class BackupController extends Controller
             $this->releaseLock($lock);
         }
 
-        return back()->with('success', 'Backup created successfully.');
+        return back()->with('success', 'flash.backup_created');
     }
 
     /**
@@ -101,7 +101,7 @@ class BackupController extends Controller
 
         $settings->put($data);
 
-        return back()->with('success', 'Backup settings saved.');
+        return back()->with('success', 'flash.backup_settings_saved');
     }
 
     /** Opens the OS folder picker and stores whatever the user chose. */
@@ -119,7 +119,7 @@ class BackupController extends Controller
 
         $settings->put(['destination' => $path]);
 
-        return back()->with('success', 'Backup destination set.');
+        return back()->with('success', 'flash.backup_destination_set');
     }
 
     /**
@@ -165,7 +165,7 @@ class BackupController extends Controller
         if (! $lock->get()) {
             // Not a restore outcome — nothing was attempted, so nothing is recorded.
             // This one is safe to flash: no relaunch follows it.
-            return back()->with('error', 'A backup or restore is already running. Please try again in a moment.');
+            return back()->with('error', 'flash.backup_already_running');
         }
 
         $outcome = 'success';
@@ -280,7 +280,7 @@ class BackupController extends Controller
             );
         }
 
-        return back()->with('success', 'Backup deleted successfully.');
+        return back()->with('success', 'flash.backup_deleted');
     }
 
     /**

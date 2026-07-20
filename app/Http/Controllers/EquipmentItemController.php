@@ -92,7 +92,7 @@ class EquipmentItemController extends Controller
         });
 
         return redirect()->route('equipment.catalogs.show', $validated['catalog_id'])
-            ->with('success', 'Equipment item added successfully.');
+            ->with('success', 'flash.equipment_item_added');
     }
 
     public function previewSerial(Request $request): JsonResponse
@@ -120,13 +120,13 @@ class EquipmentItemController extends Controller
         // Serial (unique_identifier) is immutable identity — never touched here.
         $item->update($validated);
 
-        return back()->with('success', 'Equipment item updated successfully.');
+        return back()->with('success', 'flash.equipment_item_updated');
     }
 
     public function destroy(EquipmentItem $item): RedirectResponse
     {
         if ($item->status === 'Rented' || $item->activeRental) {
-            return back()->with('error', 'Cannot delete a rented item. Return it first.');
+            return back()->with('error', 'flash.item_is_rented');
         }
 
         $catalogId = $item->catalog_id;
@@ -144,7 +144,7 @@ class EquipmentItemController extends Controller
         });
 
         return redirect()->route('equipment.catalogs.show', $catalogId)
-            ->with('success', 'Equipment item deleted successfully.');
+            ->with('success', 'flash.equipment_item_deleted');
     }
 
     public function rent(RentEquipmentRequest $request): RedirectResponse
@@ -204,7 +204,7 @@ class EquipmentItemController extends Controller
 
         $this->lifecycle->sendToRepair($item, $request->user()?->id, $request->input('notes'));
 
-        return back()->with('success', 'Equipment sent to repair.');
+        return back()->with('success', 'flash.equipment_sent_to_repair');
     }
 
     public function completeRepair(Request $request, EquipmentItem $item): RedirectResponse
@@ -215,7 +215,7 @@ class EquipmentItemController extends Controller
 
         $this->lifecycle->completeRepair($item, $request->user()?->id, $request->input('condition', 'Good'));
 
-        return back()->with('success', 'Equipment repair completed.');
+        return back()->with('success', 'flash.equipment_repair_completed');
     }
 
     public function markLost(Request $request, EquipmentItem $item): RedirectResponse
@@ -224,7 +224,7 @@ class EquipmentItemController extends Controller
 
         $this->lifecycle->markAsLost($item, $request->user()?->id, $request->input('notes'));
 
-        return back()->with('success', 'Equipment marked as lost.');
+        return back()->with('success', 'flash.equipment_marked_as_lost');
     }
 
     public function markFound(Request $request, EquipmentItem $item): RedirectResponse
@@ -233,7 +233,7 @@ class EquipmentItemController extends Controller
 
         $this->lifecycle->markAsFound($item, $request->user()?->id, $request->input('notes'));
 
-        return back()->with('success', 'Equipment restored to available.');
+        return back()->with('success', 'flash.equipment_found');
     }
 
     public function inventory(): Response

@@ -160,7 +160,7 @@ class TransactionController extends Controller
         $transaction = Transaction::create($validated);
 
         return redirect()->route('transactions.show', $transaction)
-            ->with('success', 'Transaction created successfully.');
+            ->with('success', 'flash.transaction_created');
     }
 
     public function edit(Transaction $transaction): Response
@@ -193,7 +193,7 @@ class TransactionController extends Controller
         $transaction->update($validated);
 
         return redirect()->route('transactions.show', $transaction)
-            ->with('success', 'Transaction updated successfully.');
+            ->with('success', 'flash.transaction_updated');
     }
 
     public function destroy(Transaction $transaction): RedirectResponse
@@ -205,7 +205,7 @@ class TransactionController extends Controller
         $transaction->update(['archived' => true]);
 
         return redirect()->route('transactions.index')
-            ->with('success', 'Transaction archived successfully.');
+            ->with('success', 'flash.transaction_archived');
     }
 
     /** Whether the given fiscal year exists and is closed (locked). */

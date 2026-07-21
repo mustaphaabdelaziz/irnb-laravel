@@ -3,7 +3,7 @@ import { usePage } from '@inertiajs/vue3';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-const { t, te } = useI18n();
+const { t } = useI18n();
 const page = usePage();
 const show = ref(false);
 const message = ref('');
@@ -14,16 +14,20 @@ const flash = computed(() => page.props.flash);
 
 /**
  * Controllers flash a translation key ('flash.player_created'), optionally
- * as { key, params } when the message interpolates data. Anything that is
- * not a known key falls through as literal text, so controllers still
- * carrying hardcoded English keep working.
+ * as { key, params } when the message interpolates data.
+ *
+ * t() returns the translation when the key exists and returns the input
+ * unchanged when it does not, so a controller still flashing a literal
+ * English sentence keeps working. te() is deliberately NOT used as a guard:
+ * it wrongly reports flat dotted keys (our whole flash.* namespace) as
+ * missing, which is what rendered raw "flash.player_updated" on screen.
  */
 function translate(payload) {
     if (payload && typeof payload === 'object' && payload.key) {
-        return te(payload.key) ? t(payload.key, payload.params ?? {}) : payload.key;
+        return t(payload.key, payload.params ?? {});
     }
 
-    return te(payload) ? t(payload) : payload;
+    return typeof payload === 'string' ? t(payload) : payload;
 }
 
 // This component mounts once in the layout, so checking on mount alone meant

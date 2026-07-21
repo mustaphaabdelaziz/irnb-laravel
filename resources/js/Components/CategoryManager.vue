@@ -25,14 +25,14 @@ function add(type) {
             draft.value[type] = { name: '', color: type === 'income' ? '#10b981' : '#ef4444' };
             error.value = '';
         },
-        onError: (errors) => { error.value = Object.values(errors)[0] || 'Save failed.'; },
+        onError: (errors) => { error.value = Object.values(errors)[0] || t('save_failed'); },
     });
 }
 function save(cat) {
     router.put(route('finance.categories.update', cat.id), { type: cat.type, name: cat.name, color: cat.color, is_active: cat.is_active }, {
         preserveScroll: true,
         onSuccess: () => { error.value = ''; },
-        onError: (errors) => { error.value = Object.values(errors)[0] || 'Save failed.'; },
+        onError: (errors) => { error.value = Object.values(errors)[0] || t('save_failed'); },
     });
 }
 function remove(cat) {

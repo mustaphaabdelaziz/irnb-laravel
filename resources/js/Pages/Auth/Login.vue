@@ -7,6 +7,9 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 defineProps({
     canResetPassword: {
@@ -34,7 +37,7 @@ const submit = () => {
 
 <template>
     <GuestLayout>
-        <Head title="Log in" />
+        <Head :title="t('log_in')" />
 
         <div v-if="status" class="mb-4 text-sm font-medium text-green-600">
             {{ status }}
@@ -42,7 +45,7 @@ const submit = () => {
 
         <form @submit.prevent="submit">
             <div>
-                <InputLabel for="email" value="Email" />
+                <InputLabel for="email" :value="t('email')" />
 
                 <TextInput
                     id="email"
@@ -58,7 +61,7 @@ const submit = () => {
             </div>
 
             <div class="mt-4">
-                <InputLabel for="password" value="Password" />
+                <InputLabel for="password" :value="t('password')" />
 
                 <div class="relative">
                     <TextInput
@@ -72,7 +75,7 @@ const submit = () => {
                     <button
                         type="button"
                         @click="showPassword = !showPassword"
-                        :aria-label="showPassword ? 'Hide password' : 'Show password'"
+                        :aria-label="showPassword ? t('hide_password') : t('show_password')"
                         :aria-pressed="showPassword"
                         tabindex="-1"
                         class="absolute inset-y-0 end-0 mt-1 flex items-center px-3 text-slate-400 hover:text-slate-600 focus:outline-none focus-visible:text-slate-600 dark:hover:text-slate-300"
@@ -96,7 +99,7 @@ const submit = () => {
                 <label class="flex items-center">
                     <Checkbox name="remember" v-model:checked="form.remember" />
                     <span class="ms-2 text-sm text-gray-600"
-                        >Remember me</span
+                        >{{ t('remember_me') }}</span
                     >
                 </label>
             </div>
@@ -107,7 +110,7 @@ const submit = () => {
                     :href="route('password.request')"
                     class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                 >
-                    Forgot your password?
+                    {{ t('forgot_password') }}
                 </Link>
 
                 <PrimaryButton
@@ -115,7 +118,7 @@ const submit = () => {
                     :class="{ 'opacity-25': form.processing }"
                     :disabled="form.processing"
                 >
-                    Log in
+                    {{ t('log_in') }}
                 </PrimaryButton>
             </div>
         </form>

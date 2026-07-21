@@ -329,7 +329,7 @@ function saveSettings() {
                                 <TextInput v-model="basicForm.club_short_name" class="mt-1 w-48" placeholder="e.g. IRNB" />
                             </div>
                             <div>
-                                <InputLabel value="Tagline" />
+                                <InputLabel :value="t('tagline')" />
                                 <TextInput v-model="basicForm.tagline" class="mt-1 w-full" />
                             </div>
                             <div>
@@ -342,7 +342,7 @@ function saveSettings() {
                                     <TextInput v-model="basicForm.founding_date" type="date" class="mt-1 w-full" />
                                 </div>
                                 <div>
-                                    <InputLabel value="Motto" />
+                                    <InputLabel :value="t('motto')" />
                                     <TextInput v-model="basicForm.motto" class="mt-1 w-full" />
                                 </div>
                             </div>
@@ -359,15 +359,15 @@ function saveSettings() {
                             <div class="grid gap-4 sm:grid-cols-2">
                                 <div><InputLabel :value="t('email')" /><TextInput v-model="contactForm.contact_email" type="email" class="mt-1 w-full" /></div>
                                 <div><InputLabel :value="t('phone')" /><TextInput v-model="contactForm.contact_phone" type="tel" class="mt-1 w-full" /></div>
-                                <div><InputLabel value="Mobile" /><TextInput v-model="contactForm.contact_mobile" type="tel" class="mt-1 w-full" /></div>
-                                <div><InputLabel value="Website" /><TextInput v-model="contactForm.contact_website" type="url" class="mt-1 w-full" /></div>
+                                <div><InputLabel :value="t('mobile')" /><TextInput v-model="contactForm.contact_mobile" type="tel" class="mt-1 w-full" /></div>
+                                <div><InputLabel :value="t('website')" /><TextInput v-model="contactForm.contact_website" type="url" class="mt-1 w-full" /></div>
                             </div>
                             <hr class="border-slate-200 dark:border-slate-800" />
                             <div class="grid gap-4 sm:grid-cols-2">
                                 <div><InputLabel :value="t('address')" /><TextInput v-model="contactForm.address_street" class="mt-1 w-full" /></div>
                                 <div><InputLabel :value="t('city')" /><TextInput v-model="contactForm.address_city" class="mt-1 w-full" /></div>
                                 <div><InputLabel :value="t('state')" /><TextInput v-model="contactForm.address_state" class="mt-1 w-full" /></div>
-                                <div><InputLabel value="Code Postal" /><TextInput v-model="contactForm.address_postal_code" class="mt-1 w-full" /></div>
+                                <div><InputLabel :value="t('postal_code')" /><TextInput v-model="contactForm.address_postal_code" class="mt-1 w-full" /></div>
                             </div>
                         </div>
                     </div>
@@ -394,18 +394,18 @@ function saveSettings() {
                         <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('banking_info') }}</h2>
                         <div class="space-y-4">
                             <div class="grid gap-4 sm:grid-cols-2">
-                                <div><InputLabel value="Bank" /><TextInput v-model="bankingForm.bank_name" class="mt-1 w-full" /></div>
+                                <div><InputLabel :value="t('bank')" /><TextInput v-model="bankingForm.bank_name" class="mt-1 w-full" /></div>
                                 <div><InputLabel :value="t('name')" /><TextInput v-model="bankingForm.account_holder" class="mt-1 w-full" /></div>
-                                <div><InputLabel value="Numéro de compte" /><TextInput v-model="bankingForm.account_number" class="mt-1 w-full" /></div>
+                                <div><InputLabel :value="t('account_number')" /><TextInput v-model="bankingForm.account_number" class="mt-1 w-full" /></div>
                                 <div><InputLabel value="IBAN" /><TextInput v-model="bankingForm.iban" class="mt-1 w-full" /></div>
                                 <div><InputLabel value="RIB" /><TextInput v-model="bankingForm.rib" class="mt-1 w-full" /></div>
                             </div>
                             <hr class="border-slate-200 dark:border-slate-800" />
                             <h3 class="text-sm font-medium text-slate-700 dark:text-slate-200">CCP</h3>
                             <div class="grid gap-4 sm:grid-cols-3">
-                                <div><InputLabel value="Numéro" /><TextInput v-model="bankingForm.ccp_account" class="mt-1 w-full" /></div>
-                                <div><InputLabel value="Titulaire" /><TextInput v-model="bankingForm.ccp_holder" class="mt-1 w-full" /></div>
-                                <div><InputLabel value="Clé" /><TextInput v-model="bankingForm.ccp_key" class="mt-1 w-full" /></div>
+                                <div><InputLabel :value="t('number')" /><TextInput v-model="bankingForm.ccp_account" class="mt-1 w-full" /></div>
+                                <div><InputLabel :value="t('holder')" /><TextInput v-model="bankingForm.ccp_holder" class="mt-1 w-full" /></div>
+                                <div><InputLabel :value="t('key')" /><TextInput v-model="bankingForm.ccp_key" class="mt-1 w-full" /></div>
                             </div>
                         </div>
                     </div>
@@ -417,10 +417,10 @@ function saveSettings() {
                     <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                         <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('legal_info') }}</h2>
                         <div class="grid gap-4 sm:grid-cols-2">
-                            <div><InputLabel value="N° d'enregistrement" /><TextInput v-model="legalForm.registration_number" class="mt-1 w-full" /></div>
+                            <div><InputLabel :value="t('registration_number')" /><TextInput v-model="legalForm.registration_number" class="mt-1 w-full" /></div>
                             <div><InputLabel value="NIF" /><TextInput v-model="legalForm.nif" class="mt-1 w-full" /></div>
                             <div><InputLabel value="NIS" /><TextInput v-model="legalForm.nis" class="mt-1 w-full" /></div>
-                            <div><InputLabel value="Forme juridique" /><TextInput v-model="legalForm.legal_form" class="mt-1 w-full" /></div>
+                            <div><InputLabel :value="t('legal_form')" /><TextInput v-model="legalForm.legal_form" class="mt-1 w-full" /></div>
                         </div>
                     </div>
                     <div class="flex justify-end"><PrimaryButton :disabled="legalForm.processing">{{ t('save') }}</PrimaryButton></div>
@@ -488,7 +488,7 @@ function saveSettings() {
                         <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('branding') }}</h2>
                         <div class="space-y-4">
                             <div>
-                                <InputLabel value="Logo" />
+                                <InputLabel :value="t('logo')" />
                                 <div v-if="config?.branding?.logo" class="mb-2">
                                     <img :src="config.branding.logo" alt="Logo" class="h-16 w-16 rounded-lg object-contain" />
                                 </div>
@@ -496,7 +496,7 @@ function saveSettings() {
                                     class="text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700" />
                             </div>
                             <div>
-                                <InputLabel value="Favicon" />
+                                <InputLabel :value="t('favicon')" />
                                 <input type="file" accept="image/*" @change="brandingForm.favicon = $event.target.files[0]"
                                     class="text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700" />
                             </div>

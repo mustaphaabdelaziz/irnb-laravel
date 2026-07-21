@@ -244,7 +244,7 @@ function switchLocale(code) {
                 <button
                     @click="mobileMenuOpen = !mobileMenuOpen"
                     class="-ms-1 rounded-lg p-2 text-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 lg:hidden"
-                    aria-label="Toggle menu"
+                    :aria-label="t('toggle_menu')"
                 >
                     <Icon name="menu" />
                 </button>

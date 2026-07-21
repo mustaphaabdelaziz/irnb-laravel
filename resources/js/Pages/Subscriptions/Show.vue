@@ -109,7 +109,7 @@ const tabCount = (tab) => {
                     <button @click="showAddPlayerModal = true"
                         class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 transition-colors">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                        Add Player
+                        {{ t('add_player') }}
                     </button>
                     <!-- Assign all -->
                     <button @click="showAssignModal = true"
@@ -121,14 +121,14 @@ const tabCount = (tab) => {
                         <button @click="exportExcel(activeTab)"
                             class="inline-flex items-center gap-2 rounded-lg border border-emerald-300 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-emerald-700 shadow-sm hover:bg-emerald-50 transition-colors">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                            Export CSV
+                            {{ t('export_csv') }}
                         </button>
                     </div>
                     <!-- Print -->
                     <button @click="printList"
                         class="inline-flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                        Print
+                        {{ t('print') }}
                     </button>
                     <Link :href="route('subscriptions.edit', subscription.id)"
                         class="inline-flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
@@ -154,15 +154,15 @@ const tabCount = (tab) => {
                     <p class="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">{{ stats?.total ?? 0 }}</p>
                 </div>
                 <div class="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-emerald-200">
-                    <p class="text-xs text-emerald-600">Paid</p>
+                    <p class="text-xs text-emerald-600">{{ t('paid') }}</p>
                     <p class="mt-1 text-xl font-bold text-emerald-700">{{ stats?.paid_count ?? 0 }}</p>
                 </div>
                 <div class="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-rose-200">
-                    <p class="text-xs text-rose-600">Unpaid</p>
+                    <p class="text-xs text-rose-600">{{ t('unpaid') }}</p>
                     <p class="mt-1 text-xl font-bold text-rose-700">{{ stats?.unpaid_count ?? 0 }}</p>
                 </div>
                 <div class="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Collected</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('collected') }}</p>
                     <p class="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">{{ formatMoney(stats?.total_collected ?? 0) }}</p>
                 </div>
             </div>
@@ -170,7 +170,7 @@ const tabCount = (tab) => {
             <!-- Payment percentage bar -->
             <div class="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div class="flex items-center justify-between mb-2">
-                    <span class="text-sm font-medium text-slate-700 dark:text-slate-200">Payment rate</span>
+                    <span class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('payment_rate') }}</span>
                     <span class="text-lg font-bold" :class="stats?.paid_percentage >= 80 ? 'text-emerald-600' : stats?.paid_percentage >= 50 ? 'text-amber-600' : 'text-rose-600'">
                         {{ stats?.paid_percentage ?? 0 }}%
                     </span>
@@ -181,7 +181,7 @@ const tabCount = (tab) => {
                         :style="{ width: (stats?.paid_percentage ?? 0) + '%' }">
                     </div>
                 </div>
-                <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">{{ stats?.paid_count ?? 0 }} of {{ stats?.total ?? 0 }} players have paid</p>
+                <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">{{ t('players_paid_of', { paid: stats?.paid_count ?? 0, total: stats?.total ?? 0 }) }}</p>
             </div>
 
             <!-- Tabs + Player subscriptions table -->
@@ -194,7 +194,7 @@ const tabCount = (tab) => {
                         :class="activeTab === tab
                             ? 'text-primary-600 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary-600'
                             : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'">
-                        {{ tab.charAt(0).toUpperCase() + tab.slice(1) }}
+                        {{ t(tab) }}
                         <span class="ml-1.5 rounded-full px-1.5 py-0.5 text-xs"
                             :class="activeTab === tab ? 'bg-primary-100 text-primary-700' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'">
                             {{ tabCount(tab) }}
@@ -205,7 +205,7 @@ const tabCount = (tab) => {
                         <button @click="exportExcel(activeTab)"
                             class="inline-flex items-center gap-1 rounded-md border border-slate-200 dark:border-slate-800 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">
                             <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                            Export {{ activeTab }}
+                            {{ t('export') }} {{ t(activeTab) }}
                         </button>
                     </div>
                 </div>
@@ -213,11 +213,11 @@ const tabCount = (tab) => {
                 <!-- Print header (only shown when printing) -->
                 <div class="hidden px-5 py-4 print:block">
                     <h2 class="text-lg font-bold">{{ subscription.name }} — {{ subscription.year }}</h2>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">{{ activeTab.toUpperCase() }} players — Printed {{ new Date().toLocaleDateString() }}</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">{{ t(activeTab) }} — {{ new Date().toLocaleDateString() }}</p>
                 </div>
 
                 <div v-if="!filteredList.length" class="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
-                    No players in this list.
+                    {{ t('no_players_in_list') }}
                 </div>
                 <div v-else class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
@@ -225,7 +225,7 @@ const tabCount = (tab) => {
                             <tr>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">#</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('player') }}</th>
-                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Category</th>
+                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('category') }}</th>
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('amount') }}</th>
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('amount_paid') }}</th>
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('remaining') }}</th>
@@ -256,7 +256,7 @@ const tabCount = (tab) => {
                                 <td class="no-print px-4 py-3 text-end">
                                     <Link :href="route('players.show', ps.player_id)"
                                         class="text-xs text-slate-400 dark:text-slate-500 hover:text-primary-600">
-                                        View →
+                                        {{ t('view') }} →
                                     </Link>
                                 </td>
                             </tr>
@@ -264,7 +264,7 @@ const tabCount = (tab) => {
                         <tfoot class="bg-slate-50 dark:bg-slate-950">
                             <tr>
                                 <td colspan="3" class="px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-200">
-                                    Total ({{ filteredList.length }} players)
+                                    {{ t('total') }} ({{ t('players_count_paren', { count: filteredList.length }) }})
                                 </td>
                                 <td class="px-4 py-3 text-end text-sm font-semibold text-slate-700 dark:text-slate-200">
                                     {{ formatMoney(filteredList.reduce((s, ps) => s + parseFloat(ps.amount_owed || 0), 0)) }}
@@ -310,19 +310,19 @@ const tabCount = (tab) => {
         <Teleport to="body">
             <div v-if="showAddPlayerModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50" @click.self="showAddPlayerModal = false">
                 <div class="w-full max-w-lg rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
-                    <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Add Player to Subscription</h3>
+                    <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('add_player_to_subscription') }}</h3>
                     <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ subscription.name }} ({{ subscription.year }})</p>
 
                     <!-- Search -->
                     <div class="mt-4">
-                        <input v-model="playerSearch" type="text" placeholder="Search by name or ID…"
+                        <input v-model="playerSearch" type="text" :placeholder="t('search_name_or_id')"
                             class="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500" />
                     </div>
 
                     <!-- Player list -->
                     <div class="mt-3 max-h-64 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-800">
                         <div v-if="!filteredAvailable.length" class="px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
-                            No available players found.
+                            {{ t('no_available_players') }}
                         </div>
                         <label v-for="player in filteredAvailable" :key="player.id"
                             class="flex cursor-pointer items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800"
@@ -335,16 +335,16 @@ const tabCount = (tab) => {
                                 <p class="text-xs text-slate-400 dark:text-slate-500">
                                     {{ player.membership_id }}
                                     <span v-if="player.category" class="ml-2">· {{ player.category?.name }}</span>
-                                    <span class="ml-2">· {{ player.is_student ? 'Student' : 'Worker' }}</span>
+                                    <span class="ml-2">· {{ player.is_student ? t('student') : t('worker') }}</span>
                                 </p>
                             </div>
                         </label>
                     </div>
 
                     <div v-if="addPlayerForm.player_id" class="mt-3 rounded-lg bg-slate-50 dark:bg-slate-950 px-4 py-2 text-sm text-slate-600 dark:text-slate-300">
-                        Amount will be:
+                        {{ t('amount_will_be') }}
                         <strong>{{ formatMoney(availablePlayers?.find(p => p.id === addPlayerForm.player_id)?.is_student ? subscription.amount_student : subscription.amount_worker) }}</strong>
-                        ({{ availablePlayers?.find(p => p.id === addPlayerForm.player_id)?.is_student ? 'student' : 'worker' }} rate)
+                        ({{ availablePlayers?.find(p => p.id === addPlayerForm.player_id)?.is_student ? t('student') : t('worker') }} {{ t('rate') }})
                     </div>
 
                     <div class="mt-4 flex justify-end gap-3">
@@ -353,7 +353,7 @@ const tabCount = (tab) => {
                             {{ t('cancel') }}
                         </button>
                         <PrimaryButton :disabled="!addPlayerForm.player_id || addPlayerForm.processing" @click="addSinglePlayer">
-                            Add to Subscription
+                            {{ t('add_to_subscription') }}
                         </PrimaryButton>
                     </div>
                 </div>

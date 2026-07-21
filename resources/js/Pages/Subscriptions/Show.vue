@@ -243,7 +243,7 @@ const tabCount = (tab) => {
                                     </Link>
                                     <p class="text-xs text-slate-400 dark:text-slate-500">{{ ps.player?.membership_id }}</p>
                                 </td>
-                                <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ ps.player?.category?.name ?? '-' }}</td>
+                                <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ ps.player?.category?.localized_name || ps.player?.category?.name || '-' }}</td>
                                 <td class="px-4 py-3 text-end text-sm">{{ formatMoney(ps.amount_owed) }}</td>
                                 <td class="px-4 py-3 text-end text-sm text-emerald-700">{{ formatMoney(ps.amount_paid) }}</td>
                                 <td class="px-4 py-3 text-end text-sm font-semibold"
@@ -294,7 +294,7 @@ const tabCount = (tab) => {
                             <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('category') }}</label>
                             <select v-model="assignForm.category_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                                 <option value="">{{ t('all_categories') }}</option>
-                                <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+                                <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.localized_name || cat.name }}</option>
                             </select>
                         </div>
                         <div class="flex justify-end gap-3">
@@ -334,7 +334,7 @@ const tabCount = (tab) => {
                                 </p>
                                 <p class="text-xs text-slate-400 dark:text-slate-500">
                                     {{ player.membership_id }}
-                                    <span v-if="player.category" class="ml-2">· {{ player.category?.name }}</span>
+                                    <span v-if="player.category" class="ml-2">· {{ player.category?.localized_name || player.category?.name }}</span>
                                     <span class="ml-2">· {{ player.is_student ? t('student') : t('worker') }}</span>
                                 </p>
                             </div>

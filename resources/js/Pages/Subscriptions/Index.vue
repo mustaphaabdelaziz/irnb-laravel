@@ -127,7 +127,7 @@ function destroy() {
                                 <td class="px-4 py-3 text-end text-sm">{{ formatMoney(sub.amount_worker) }}</td>
                                 <td class="px-4 py-3">
                                     <div class="flex flex-wrap gap-1">
-                                        <Badge v-for="cat in sub.categories" :key="cat.id" :label="cat.name" color="primary" />
+                                        <Badge v-for="cat in sub.categories" :key="cat.id" :label="cat.localized_name || cat.name" color="primary" />
                                         <span v-if="!sub.categories?.length" class="text-xs text-slate-400 dark:text-slate-500">{{ t('all') }}</span>
                                     </div>
                                 </td>

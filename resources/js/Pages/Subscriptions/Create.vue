@@ -86,7 +86,7 @@ function submit() {
                             <label v-for="cat in categories" :key="cat.id" class="flex items-center gap-2">
                                 <input type="checkbox" :value="cat.id" v-model="form.category_ids"
                                     class="rounded border-gray-300 text-primary-600 shadow-sm focus:ring-primary-500" />
-                                <span class="text-sm">{{ cat.name }}</span>
+                                <span class="text-sm">{{ cat.localized_name || cat.name }}</span>
                             </label>
                         </div>
                         <InputError :message="form.errors.category_ids" class="mt-1" />

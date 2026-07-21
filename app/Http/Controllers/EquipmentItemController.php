@@ -12,7 +12,6 @@ use App\Models\EquipmentItem;
 use App\Models\EquipmentRental;
 use App\Models\Player;
 use App\Models\Transaction;
-use App\Models\User;
 use App\Services\Equipment\EquipmentLifecycleService;
 use App\Services\Equipment\EquipmentStockService;
 use App\Services\Equipment\SerialNumberService;
@@ -154,17 +153,26 @@ class EquipmentItemController extends Controller
 
         $item = EquipmentItem::findOrFail($validated['equipment_item_id']);
 
-        $rentable = match ($validated['rentable_type']) {
-            'Player' => Player::findOrFail($validated['rentable_id']),
-            'User' => User::findOrFail($validated['rentable_id']),
-        };
+        // Player from the team, or a free-text external person (no account).
+        $rentable = $validated['rentable_type'] === 'Player'
+            ? Player::findOrFail($validated['rentable_id'])
+            : null;
+
+        // The due date is derived from the expected rent period, so overdue
+        // detection has a concrete date to compare against.
+        $checkout = $validated['checkout_date'] ?? now()->toDateString();
+        $dueDate = ! empty($validated['expected_days'])
+            ? Carbon::parse($checkout)->addDays((int) $validated['expected_days'])->toDateString()
+            : null;
 
         try {
             $this->lifecycle->rentOut($item, $rentable, [
                 'quantity' => (int) ($validated['quantity'] ?? 1),
                 'type' => $validated['type'] ?? 'rental',
-                'checkout_date' => $validated['checkout_date'] ?? null,
-                'due_date' => $validated['due_date'] ?? null,
+                'checkout_date' => $checkout,
+                'due_date' => $dueDate,
+                'external_name' => $validated['external_name'] ?? null,
+                'external_phone' => $validated['external_phone'] ?? null,
                 'notes' => $validated['notes'] ?? null,
                 'user_id' => $request->user()?->id,
             ]);
@@ -353,14 +361,8 @@ class EquipmentItemController extends Controller
                     ? ['name' => $rental->equipmentItem->catalog->name]
                     : null,
                 'quantity' => $rental->outstanding_quantity,
-                // A rentable is a Player (firstname/lastname) or a User (name);
-                // fall back so a staff rental doesn't show a blank name.
-                'rented_to' => $rental->rentable
-                    ? ['name' => trim(
-                        ($rental->rentable->firstname ?? $rental->rentable->name ?? '')
-                        .' '.($rental->rentable->lastname ?? '')
-                    )]
-                    : null,
+                // A team player or an external person — recipient_name covers both.
+                'rented_to' => $rental->recipient_name ? ['name' => $rental->recipient_name] : null,
             ])
             ->values();
 

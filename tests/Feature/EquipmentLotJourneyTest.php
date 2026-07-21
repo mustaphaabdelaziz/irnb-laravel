@@ -188,7 +188,7 @@ class EquipmentLotJourneyTest extends TestCase
     }
 
     #[Test]
-    public function equipment_can_be_assigned_to_a_staff_member(): void
+    public function equipment_can_be_rented_to_an_external_person(): void
     {
         $admin = $this->user();
         $catalog = EquipmentCatalog::create(['name' => 'Radio', 'category' => 'Accessories']);
@@ -203,20 +203,41 @@ class EquipmentLotJourneyTest extends TestCase
 
         $lot = EquipmentItem::first();
 
-        // Previously impossible from the UI: rentable_type was hardcoded to Player.
+        // The recipient can be someone from outside the club — captured as
+        // free text, not a Player or an account.
         $this->actingAs($admin)->post(route('equipment.items.rent'), [
             'equipment_item_id' => $lot->id,
-            'rentable_type' => 'User',
-            'rentable_id' => $admin->id,
-            'type' => 'assignment',
+            'rentable_type' => 'External',
+            'external_name' => 'Karim Visitor',
+            'external_phone' => '0555 12 34 56',
+            'type' => 'rental',
             'quantity' => 1,
+            'expected_days' => 7,
+            'checkout_date' => '2026-03-01',
         ])->assertRedirect();
 
         $rental = $lot->fresh()->activeRental;
-        $this->assertSame('assignment', $rental->type);
-        $this->assertNull($rental->due_date, 'an assignment is open-ended');
-        $this->assertFalse($rental->is_overdue);
-        $this->assertSame($admin->id, $rental->rentable_id);
+        $this->assertNull($rental->rentable_id, 'an external person has no id');
+        $this->assertSame('Karim Visitor', $rental->external_name);
+        $this->assertSame('0555 12 34 56', $rental->external_phone);
+        $this->assertSame('Karim Visitor', $rental->recipient_name);
+        // Expected period drives the due date (7 days after checkout).
+        $this->assertSame('2026-03-08', $rental->due_date->toDateString());
+    }
+
+    #[Test]
+    public function an_external_rental_requires_a_name(): void
+    {
+        $admin = $this->user();
+        $catalog = EquipmentCatalog::create(['name' => 'Cone', 'category' => 'Training Equipment']);
+        $lot = EquipmentItem::create(['catalog_id' => $catalog->id, 'purchase_date' => '2026-01-01', 'quantity' => 5]);
+
+        $this->actingAs($admin)->post(route('equipment.items.rent'), [
+            'equipment_item_id' => $lot->id,
+            'rentable_type' => 'External',
+            'type' => 'rental',
+            'quantity' => 1,
+        ])->assertSessionHasErrors('external_name');
     }
 
     #[Test]

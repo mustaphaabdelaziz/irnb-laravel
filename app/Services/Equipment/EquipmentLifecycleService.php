@@ -17,7 +17,11 @@ class EquipmentLifecycleService
      * $options: quantity, type ('rental'|'assignment'), checkout_date,
      * due_date, notes, user_id.
      */
-    public function rentOut(EquipmentItem $item, Model $rentable, array $options = []): EquipmentRental
+    /**
+     * Issue units to a team player ($rentable) or to an external person
+     * (options: external_name, external_phone, with $rentable null).
+     */
+    public function rentOut(EquipmentItem $item, ?Model $rentable, array $options = []): EquipmentRental
     {
         $quantity = (int) ($options['quantity'] ?? 1);
         $type = $options['type'] ?? 'rental';
@@ -42,8 +46,10 @@ class EquipmentLifecycleService
 
             $rental = EquipmentRental::create([
                 'equipment_item_id' => $item->id,
-                'rentable_type' => $rentable->getMorphClass(),
-                'rentable_id' => $rentable->getKey(),
+                'rentable_type' => $rentable?->getMorphClass(),
+                'rentable_id' => $rentable?->getKey(),
+                'external_name' => $rentable ? null : ($options['external_name'] ?? null),
+                'external_phone' => $rentable ? null : ($options['external_phone'] ?? null),
                 'type' => $type,
                 'quantity' => $quantity,
                 'returned_quantity' => 0,
@@ -54,9 +60,13 @@ class EquipmentLifecycleService
                 'notes' => $options['notes'] ?? null,
             ]);
 
+            // So recipient_name resolves the player name without a lazy load.
+            if ($rentable) {
+                $rental->setRelation('rentable', $rentable);
+            }
+
             $this->logHistory($item, $options['user_id'] ?? null, $type === 'assignment' ? 'Assigned' : 'Checkout', [
-                'rentable_type' => $rentable->getMorphClass(),
-                'rentable_id' => $rentable->getKey(),
+                'recipient' => $rental->recipient_name,
                 'quantity' => $quantity,
                 'due_date' => $rental->due_date?->toDateString(),
             ]);

@@ -9,7 +9,6 @@ use App\Models\EquipmentCategory;
 use App\Models\EquipmentItem;
 use App\Models\Player;
 use App\Models\StorageLocation;
-use App\Models\User;
 use App\Services\Export\ExcelExporter;
 use App\Services\Storage\FileStorageService;
 use App\Support\Csv;
@@ -84,9 +83,6 @@ class EquipmentCatalogController extends Controller
                     'birthdate' => $p->birthdate?->toDateString(),
                     'branch_ids' => $p->branches->pluck('id'),
                 ]),
-            // Equipment can be assigned to staff, not only lent to players.
-            'users' => User::where('is_active', true)->orderBy('name')->get()
-                ->map(fn (User $u) => ['id' => $u->id, 'fullname' => $u->name]),
         ]);
     }
 

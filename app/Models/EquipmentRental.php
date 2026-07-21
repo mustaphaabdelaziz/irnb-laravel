@@ -15,6 +15,8 @@ class EquipmentRental extends Model
         'equipment_item_id',
         'rentable_type',
         'rentable_id',
+        'external_name',
+        'external_phone',
         'type',
         'quantity',
         'returned_quantity',
@@ -23,6 +25,10 @@ class EquipmentRental extends Model
         'return_date',
         'notes',
         'return_notes',
+    ];
+
+    protected $appends = [
+        'recipient_name',
     ];
 
     protected function casts(): array
@@ -44,6 +50,30 @@ class EquipmentRental extends Model
     public function rentable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    /**
+     * Who holds the equipment: a team player's name, or the free-text name of
+     * an external person. Kept as one accessor so every view (item table,
+     * overdue report, history) has a single thing to render.
+     */
+    public function getRecipientNameAttribute(): ?string
+    {
+        if ($this->external_name) {
+            return $this->external_name;
+        }
+
+        // Never trigger a lazy load — recipient_name is appended, so it runs on
+        // every serialization including the bulk `rentals` collection loaded
+        // for availability. Only resolve a player name when rentable is already
+        // in memory; callers that display it eager-load rentable.
+        if (! $this->relationLoaded('rentable') || ! $this->rentable) {
+            return null;
+        }
+
+        $r = $this->rentable;
+
+        return trim(($r->firstname ?? $r->name ?? '').' '.($r->lastname ?? '')) ?: null;
     }
 
     /** Units still out: what was taken, less what has come back. */

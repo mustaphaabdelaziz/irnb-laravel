@@ -22,7 +22,6 @@ const props = defineProps({
     storageLocations: { type: Array, default: () => [] },
     branches: { type: Array, default: () => [] },
     players: { type: Array, default: () => [] },
-    users: { type: Array, default: () => [] },
 });
 
 // Count-tracked catalogs (dossards, balls) get the quantity-first workflow;
@@ -35,10 +34,6 @@ const playerOptions = computed(() => props.players.map((p) => ({
     label: `${p.fullname || ''} — ${p.membership_id || ''}${p.birthdate ? ' (' + p.birthdate + ')' : ''}`.trim(),
 })));
 
-const userOptions = computed(() => props.users.map((u) => ({ value: u.id, label: u.fullname })));
-
-const rentableOptions = computed(() =>
-    rentForm.rentable_type === 'User' ? userOptions.value : playerOptions.value);
 
 // How many units sit in each condition, so a count-tracked catalog can show
 // "Good 15 / Fair 2 / Damaged 3" without inventing per-unit identities.
@@ -97,15 +92,27 @@ const addItemForm = useForm({
 
 const rentForm = useForm({
     equipment_item_id: '',
+    // Player (from the team) or External (free-text person from outside).
     rentable_type: 'Player',
     rentable_id: '',
+    external_name: '',
+    external_phone: '',
     // 'rental' is a temporary loan with a due date; 'assignment' is equipment
     // given to someone to work with, open-ended.
     type: 'rental',
     quantity: 1,
     checkout_date: new Date().toISOString().slice(0, 10),
-    due_date: '',
+    // How many days it is expected to be out; drives the overdue flag.
+    expected_days: '',
     notes: '',
+});
+
+// The expected return date, shown read-only so the user sees when it is due.
+const expectedReturnDate = computed(() => {
+    if (!rentForm.checkout_date || !rentForm.expected_days) return null;
+    const d = new Date(rentForm.checkout_date);
+    d.setDate(d.getDate() + Number(rentForm.expected_days));
+    return d.toISOString().slice(0, 10);
 });
 
 const returnForm = useForm({
@@ -249,7 +256,7 @@ function doRent() {
     rentForm.post(route('equipment.items.rent'), {
         onSuccess: () => {
             showRentModal.value = false;
-            rentForm.reset('rentable_id', 'due_date', 'notes', 'quantity');
+            rentForm.reset('rentable_id', 'external_name', 'external_phone', 'expected_days', 'notes', 'quantity');
         },
     });
 }
@@ -313,7 +320,11 @@ watch(() => rentForm.type, (type) => {
 });
 
 // Switching between a player and a staff member invalidates the chosen id.
-watch(() => rentForm.rentable_type, () => { rentForm.rentable_id = ''; });
+watch(() => rentForm.rentable_type, () => {
+    rentForm.rentable_id = '';
+    rentForm.external_name = '';
+    rentForm.external_phone = '';
+});
 
 const statusColor = (s) => {
     const map = { Available: 'emerald', Rented: 'amber', 'Under Repair': 'slate', Lost: 'rose', Retired: 'slate' };
@@ -478,8 +489,7 @@ function submitImport() {
                                 </td>
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
                                     <span v-if="item.active_rental">
-                                        {{ item.active_rental.rentable?.firstname || item.active_rental.rentable?.name }}
-                                        {{ item.active_rental.rentable?.lastname }}
+                                        {{ item.active_rental.recipient_name }}
                                         <span v-if="(item.active_rental.quantity ?? 1) > 1" class="text-xs text-slate-400">
                                             ({{ item.active_rental.quantity - (item.active_rental.returned_quantity ?? 0) }})
                                         </span>
@@ -622,20 +632,34 @@ function submitImport() {
                         </div>
                         <p v-if="rentForm.type === 'assignment'" class="text-xs text-slate-500 dark:text-slate-400">{{ t('equipment.assignment_hint') }}</p>
 
+                        <!-- Recipient: a team player, or a free-text person from outside the club. -->
                         <div class="grid grid-cols-2 gap-2">
                             <button type="button" @click="rentForm.rentable_type = 'Player'"
                                 :class="rentForm.rentable_type === 'Player' ? 'bg-slate-100 dark:bg-slate-800 border-slate-400' : 'border-slate-200 dark:border-slate-800'"
                                 class="rounded-lg border px-3 py-2 text-sm text-slate-700 dark:text-slate-200">{{ t('player') }}</button>
-                            <button type="button" @click="rentForm.rentable_type = 'User'"
-                                :class="rentForm.rentable_type === 'User' ? 'bg-slate-100 dark:bg-slate-800 border-slate-400' : 'border-slate-200 dark:border-slate-800'"
-                                class="rounded-lg border px-3 py-2 text-sm text-slate-700 dark:text-slate-200">{{ t('user') }}</button>
+                            <button type="button" @click="rentForm.rentable_type = 'External'"
+                                :class="rentForm.rentable_type === 'External' ? 'bg-slate-100 dark:bg-slate-800 border-slate-400' : 'border-slate-200 dark:border-slate-800'"
+                                class="rounded-lg border px-3 py-2 text-sm text-slate-700 dark:text-slate-200">{{ t('external_person') }}</button>
                         </div>
 
-                        <div>
-                            <InputLabel :value="rentForm.rentable_type === 'User' ? t('user') : t('player')" />
-                            <SearchableSelect v-model="rentForm.rentable_id" :options="rentableOptions" :placeholder="t('select_player')" />
+                        <div v-if="rentForm.rentable_type === 'Player'">
+                            <InputLabel :value="t('player')" />
+                            <SearchableSelect v-model="rentForm.rentable_id" :options="playerOptions" :placeholder="t('select_player')" />
                             <InputError :message="rentForm.errors.rentable_id" class="mt-1" />
                         </div>
+
+                        <template v-else>
+                            <div>
+                                <InputLabel :value="t('full_name')" />
+                                <TextInput v-model="rentForm.external_name" class="mt-1 w-full" :placeholder="t('full_name')" required />
+                                <InputError :message="rentForm.errors.external_name" class="mt-1" />
+                            </div>
+                            <div>
+                                <InputLabel :value="t('phone')" />
+                                <TextInput v-model="rentForm.external_phone" type="tel" class="mt-1 w-full" />
+                                <InputError :message="rentForm.errors.external_phone" class="mt-1" />
+                            </div>
+                        </template>
 
                         <!-- Soft warning: never blocks. Clubs lend across branches constantly. -->
                         <p v-if="crossBranchWarning" class="rounded-lg bg-amber-50 dark:bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
@@ -653,13 +677,16 @@ function submitImport() {
 
                         <div class="grid gap-3" :class="rentForm.type === 'rental' ? 'sm:grid-cols-2' : ''">
                             <div>
-                                <InputLabel :value="t('date')" />
+                                <InputLabel :value="t('rental_date')" />
                                 <TextInput v-model="rentForm.checkout_date" type="date" class="mt-1 w-full" />
                             </div>
                             <div v-if="rentForm.type === 'rental'">
-                                <InputLabel :value="t('due_date')" />
-                                <TextInput v-model="rentForm.due_date" type="date" class="mt-1 w-full" />
-                                <InputError :message="rentForm.errors.due_date" class="mt-1" />
+                                <InputLabel :value="t('expected_rent_period')" />
+                                <TextInput v-model="rentForm.expected_days" type="number" min="1" class="mt-1 w-full" :placeholder="t('days')" />
+                                <p v-if="expectedReturnDate" class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                    {{ t('return_date') }}: {{ expectedReturnDate }}
+                                </p>
+                                <InputError :message="rentForm.errors.expected_days" class="mt-1" />
                             </div>
                         </div>
                         <div>
@@ -694,7 +721,7 @@ function submitImport() {
                             <InputError :message="returnForm.errors.quantity" class="mt-1" />
                         </div>
                         <div>
-                            <InputLabel :value="t('date')" />
+                            <InputLabel :value="t('return_date')" />
                             <TextInput v-model="returnForm.return_date" type="date" class="mt-1 w-full" />
                         </div>
                         <div>

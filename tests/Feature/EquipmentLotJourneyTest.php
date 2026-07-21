@@ -267,4 +267,38 @@ class EquipmentLotJourneyTest extends TestCase
 
         $this->assertSame(5, $catalog->fresh()->available_count, 'nothing was issued');
     }
+
+    #[Test]
+    public function the_history_page_shows_who_a_serialized_item_was_rented_to(): void
+    {
+        $admin = $this->user();
+        $catalog = EquipmentCatalog::create(['name' => 'GPS Vest', 'category' => 'Training Equipment', 'requires_serial' => true]);
+
+        $this->actingAs($admin)->post(route('equipment.items.store'), [
+            'catalog_id' => $catalog->id, 'purchase_date' => '2026-01-01', 'condition' => 'New',
+        ])->assertRedirect();
+
+        $item = EquipmentItem::first();
+
+        $this->actingAs($admin)->post(route('equipment.items.rent'), [
+            'equipment_item_id' => $item->id,
+            'rentable_type' => 'External',
+            'external_name' => 'Karim Visitor',
+            'external_phone' => '0555 00 11 22',
+            'type' => 'rental',
+            'quantity' => 1,
+            'expected_days' => 5,
+        ])->assertRedirect();
+
+        $props = $this->actingAs($admin)->get(route('equipment.items.history', $item->id))
+            ->assertOk()->viewData('page')['props'];
+
+        // The current-holder card names the external person.
+        $this->assertSame('Karim Visitor', $props['item']['rented_to']['name']);
+        $this->assertNull($props['item']['rented_to']['player_id']);
+
+        // The checkout event records the recipient for the timeline.
+        $checkout = collect($props['history'])->firstWhere('event_type', 'checkout');
+        $this->assertSame('Karim Visitor', $checkout['details']['recipient']);
+    }
 }

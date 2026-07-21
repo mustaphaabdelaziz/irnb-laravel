@@ -3,6 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Badge from '@/Components/Badge.vue';
 import Icon from '@/Components/Icon.vue';
 import { Head, Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
@@ -10,6 +11,23 @@ const { t } = useI18n();
 const props = defineProps({
     item: Object,
     history: Array,
+});
+
+// Summary computed from the event log. Rentals cover both loans (checkout)
+// and assignments; repairs count send-to-repair events.
+const stats = computed(() => {
+    const h = props.history ?? [];
+    const is = (...types) => h.filter((e) => types.includes(e.event_type)).length;
+    const recipients = new Set(
+        h.map((e) => e.details?.recipient).filter(Boolean),
+    );
+    return {
+        events: h.length,
+        rentals: is('checkout', 'rental', 'assigned'),
+        returns: is('return'),
+        repairs: is('repair'),
+        people: recipients.size,
+    };
 });
 
 // Event types are stored capitalised, sometimes with spaces ("Split Out"),
@@ -118,11 +136,30 @@ const eventLabel = (type) => {
                     </div>
                 </div>
                 <div v-if="item.rented_to" class="mt-4 rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-500/10">
-                    <span class="font-medium text-amber-900 dark:text-amber-200">{{ t('rented') }}:</span>
-                    <Link :href="route('players.show', item.rented_to.id)" class="ms-1 text-primary-600 dark:text-primary-400 hover:underline">
-                        {{ item.rented_to.firstname }} {{ item.rented_to.lastname }}
+                    <span class="font-medium text-amber-900 dark:text-amber-200">{{ t('rented_to') }}:</span>
+                    <!-- A player links to their profile; an external person is plain text + phone. -->
+                    <Link v-if="item.rented_to.player_id" :href="route('players.show', item.rented_to.player_id)" class="ms-1 text-primary-600 dark:text-primary-400 hover:underline">
+                        {{ item.rented_to.name }}
                     </Link>
-                    <span v-if="item.due_date" class="ms-2 text-amber-700 dark:text-amber-300"> — {{ t('due_date') }}: {{ item.due_date }}</span>
+                    <span v-else class="ms-1 text-amber-900 dark:text-amber-200">
+                        {{ item.rented_to.name }}
+                        <span v-if="item.rented_to.phone" class="text-amber-700 dark:text-amber-300">({{ item.rented_to.phone }})</span>
+                    </span>
+                    <span v-if="item.due_date" class="ms-2 text-amber-700 dark:text-amber-300"> — {{ t('return_date') }}: {{ item.due_date }}</span>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                <div v-for="s in [
+                    { label: t('total'), value: stats.events, color: 'text-slate-900 dark:text-slate-100' },
+                    { label: t('equipment.rental'), value: stats.rentals, color: 'text-amber-600 dark:text-amber-400' },
+                    { label: t('return'), value: stats.returns, color: 'text-primary-600 dark:text-primary-400' },
+                    { label: t('send_to_repair'), value: stats.repairs, color: 'text-slate-600 dark:text-slate-300' },
+                    { label: t('rented_to'), value: stats.people, color: 'text-emerald-600 dark:text-emerald-400' },
+                ]" :key="s.label" class="rounded-2xl bg-white dark:bg-slate-900 p-4 text-center shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+                    <p class="text-2xl font-bold" :class="s.color">{{ s.value }}</p>
+                    <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{{ s.label }}</p>
                 </div>
             </div>
 
@@ -144,10 +181,11 @@ const eventLabel = (type) => {
                             </div>
                             <!-- Keys match what the lifecycle/stock services actually write. -->
                             <div v-if="event.details" class="mt-1 space-y-0.5 text-sm text-slate-600 dark:text-slate-300">
+                                <p v-if="event.details.recipient" class="font-medium text-slate-700 dark:text-slate-200">{{ t('rented_to') }}: {{ event.details.recipient }}</p>
                                 <p v-if="event.details.quantity">{{ t('quantity') }}: {{ event.details.quantity }}</p>
                                 <p v-if="event.details.unit_price">{{ t('unit_price') }}: {{ event.details.unit_price }}</p>
                                 <p v-if="event.details.received_via">{{ t('equipment.received_via') }}: {{ t(event.details.received_via) }}</p>
-                                <p v-if="event.details.due_date">{{ t('due_date') }}: {{ event.details.due_date }}</p>
+                                <p v-if="event.details.due_date">{{ t('return_date') }}: {{ event.details.due_date }}</p>
                                 <p v-if="event.details.returned_condition">{{ t('condition') }}: {{ stateLabel(event.details.returned_condition) }}</p>
                                 <p v-if="event.details.condition">{{ t('condition') }}: {{ stateLabel(event.details.condition) }}</p>
                                 <p v-if="event.details.previous_status">{{ t('status') }}: {{ stateLabel(event.details.previous_status) }}</p>

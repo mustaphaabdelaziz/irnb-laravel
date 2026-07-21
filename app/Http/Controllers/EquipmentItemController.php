@@ -380,7 +380,8 @@ class EquipmentItemController extends Controller
     public function history(EquipmentItem $item): Response
     {
         $item->load(['catalog', 'activeRental.rentable']);
-        $rentable = $item->activeRental?->rentable;
+        $active = $item->activeRental;
+        $rentable = $active?->rentable;
 
         return Inertia::render('Equipment/History', [
             'item' => [
@@ -390,13 +391,16 @@ class EquipmentItemController extends Controller
                 'status' => $item->status,
                 'condition' => $item->condition,
                 'location' => $item->location,
-                'due_date' => $item->activeRental?->due_date?->toDateString(),
+                'due_date' => $active?->due_date?->toDateString(),
                 'catalog' => $item->catalog
                     ? ['id' => $item->catalog->id, 'name' => $item->catalog->name]
                     : null,
-                'rented_to' => $rentable instanceof Player
-                    ? ['id' => $rentable->id, 'firstname' => $rentable->firstname, 'lastname' => $rentable->lastname]
-                    : null,
+                // The current holder: a player (linkable) or an external person.
+                'rented_to' => $active && $active->recipient_name ? [
+                    'name' => $active->recipient_name,
+                    'player_id' => $rentable instanceof Player ? $rentable->id : null,
+                    'phone' => $active->external_phone,
+                ] : null,
             ],
             'history' => $item->histories()
                 ->with('user:id,name')

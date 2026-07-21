@@ -161,6 +161,8 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
         Route::post('/users/{user}/approve', [UserController::class, 'approve'])->name('users.approve');
+        Route::post('/users/{user}/password', [UserController::class, 'resetPassword'])->name('users.password');
+        Route::post('/users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggleActive');
 
         // Settings - lookup tables
         Route::resource('categories', CategoryController::class)->except(['show', 'create', 'edit']);

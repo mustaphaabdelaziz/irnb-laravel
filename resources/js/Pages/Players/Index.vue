@@ -324,11 +324,12 @@ function runBulk() {
                                 <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ player.category?.localized_name || player.category?.name || '-' }}</td>
                                 <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ player.position?.abbreviation || '-' }}</td>
                                 <td class="whitespace-nowrap px-4 py-3">
-                                    <Badge v-if="player.archived" :label="t('archived')" color="slate" />
-                                    <Badge v-else :label="t('active')" color="emerald" />
+                                    <!-- Membership status (منخرط/معتزل…); the active/archived split is the view toggle. -->
+                                    <Badge v-if="player.status" :label="player.status.localized_name || player.status.name" color="primary" />
+                                    <span v-else class="text-sm text-slate-400">-</span>
                                 </td>
                                 <td class="whitespace-nowrap px-4 py-3 text-end text-sm font-semibold"
-                                    :class="player.total_debt > 0 ? 'text-rose-700' : 'text-emerald-700'">
+                                    :class="player.total_debt > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'">
                                     {{ formatMoney(player.total_debt || 0) }}
                                 </td>
                                 <td class="whitespace-nowrap px-4 py-3 text-end">

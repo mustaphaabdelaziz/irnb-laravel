@@ -40,6 +40,15 @@ class EquipmentStockService
     /** Units currently out on open rentals or assignments. */
     public function outstandingQuantity(EquipmentItem $item): int
     {
+        // When the caller eager-loaded `rentals` (the catalog show page loads
+        // it for every lot), sum in memory rather than firing one query per
+        // lot — otherwise the availability accessor is an N+1.
+        if ($item->relationLoaded('rentals')) {
+            return (int) $item->rentals
+                ->whereNull('return_date')
+                ->sum(fn ($rental) => max(0, $rental->quantity - $rental->returned_quantity));
+        }
+
         return (int) $item->rentals()
             ->whereNull('return_date')
             ->selectRaw('COALESCE(SUM(quantity - returned_quantity), 0) as outstanding')

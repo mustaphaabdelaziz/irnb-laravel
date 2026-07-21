@@ -34,7 +34,7 @@ class PlayerController extends Controller
         $query = Player::query()
             ->select('players.*')
             ->selectRaw('players.outstanding_debt as total_debt')
-            ->with(['category', 'position', 'memberJob']);
+            ->with(['category', 'position', 'memberJob', 'status']);
 
         $this->applyPlayerFilters($query, $request);
 

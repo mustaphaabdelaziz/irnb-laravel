@@ -369,7 +369,7 @@ function submitImport() {
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <Link :href="route('equipment.catalogs.index')" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                        <svg class="h-5 w-5 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
                     </Link>
                     <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ catalog.name }}</h1>
                 </div>
@@ -511,12 +511,12 @@ function submitImport() {
 
         <!-- Add Item Modal -->
         <Teleport to="body">
-            <div v-if="showAddItemModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50" @click.self="showAddItemModal = false">
-                <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
+            <div v-if="showAddItemModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" @click.self="showAddItemModal = false">
+                <div class="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
                     <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('add') }} {{ t('items') }}</h3>
                     <form @submit.prevent="addItem" class="mt-4 space-y-3">
                         <div>
-                            <InputLabel value="ID / Serial" />
+                            <InputLabel :value="t('id_serial')" />
                             <div class="mt-1 flex items-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2 font-mono text-sm text-slate-700 dark:text-slate-200">
                                 {{ serialPreview || '—' }}
                             </div>
@@ -524,7 +524,7 @@ function submitImport() {
                         </div>
                         <div>
                             <InputLabel :value="t('designation')" />
-                            <TextInput v-model="addItemForm.designation" class="mt-1 w-full" placeholder="e.g. T-shirt n° 10" />
+                            <TextInput v-model="addItemForm.designation" class="mt-1 w-full" :placeholder="t('designation_example')" />
                             <InputError :message="addItemForm.errors.designation" class="mt-1" />
                         </div>
                         <div class="grid gap-3 sm:grid-cols-2">
@@ -535,7 +535,7 @@ function submitImport() {
                             <div>
                                 <InputLabel :value="t('condition')" />
                                 <select v-model="addItemForm.condition" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                                    <option v-for="c in ['New','Good','Fair','Poor','Damaged']" :key="c" :value="c">{{ c }}</option>
+                                    <option v-for="c in ['New','Good','Fair','Poor','Damaged']" :key="c" :value="c">{{ stateLabel(c) }}</option>
                                 </select>
                             </div>
                         </div>
@@ -563,8 +563,8 @@ function submitImport() {
             </div>
 
             <!-- Edit Item Modal -->
-            <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50" @click.self="showEditModal = false">
-                <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
+            <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" @click.self="showEditModal = false">
+                <div class="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
                     <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('edit') }} — {{ selectedItem?.unique_identifier }}</h3>
                     <form @submit.prevent="submitEdit" class="mt-4 space-y-3">
                         <div>
@@ -581,7 +581,7 @@ function submitImport() {
                             <div>
                                 <InputLabel :value="t('condition')" />
                                 <select v-model="editItemForm.condition" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                                    <option v-for="c in ['New','Good','Fair','Poor','Damaged']" :key="c" :value="c">{{ c }}</option>
+                                    <option v-for="c in ['New','Good','Fair','Poor','Damaged']" :key="c" :value="c">{{ stateLabel(c) }}</option>
                                 </select>
                             </div>
                         </div>
@@ -605,8 +605,8 @@ function submitImport() {
             </div>
 
             <!-- Rent Modal -->
-            <div v-if="showRentModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50" @click.self="showRentModal = false">
-                <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
+            <div v-if="showRentModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" @click.self="showRentModal = false">
+                <div class="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
                     <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
                         {{ t('rent') }} — {{ selectedItem?.unique_identifier || selectedItem?.designation || catalog.name }}
                     </h3>
@@ -614,10 +614,10 @@ function submitImport() {
                         <!-- A rental comes back by a date; an assignment is open-ended. -->
                         <div class="grid grid-cols-2 gap-2">
                             <button type="button" @click="rentForm.type = 'rental'"
-                                :class="rentForm.type === 'rental' ? 'bg-primary-100 border-primary-500 text-primary-800' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'"
+                                :class="rentForm.type === 'rental' ? 'bg-primary-100 dark:bg-primary-500/25 border-primary-500 text-primary-800 dark:text-primary-100' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'"
                                 class="rounded-lg border px-3 py-2 text-sm font-medium transition-colors">{{ t('equipment.rental') }}</button>
                             <button type="button" @click="rentForm.type = 'assignment'"
-                                :class="rentForm.type === 'assignment' ? 'bg-primary-100 border-primary-500 text-primary-800' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'"
+                                :class="rentForm.type === 'assignment' ? 'bg-primary-100 dark:bg-primary-500/25 border-primary-500 text-primary-800 dark:text-primary-100' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'"
                                 class="rounded-lg border px-3 py-2 text-sm font-medium transition-colors">{{ t('equipment.assignment') }}</button>
                         </div>
                         <p v-if="rentForm.type === 'assignment'" class="text-xs text-slate-500 dark:text-slate-400">{{ t('equipment.assignment_hint') }}</p>
@@ -675,8 +675,8 @@ function submitImport() {
             </div>
 
             <!-- Return Modal -->
-            <div v-if="showReturnModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50" @click.self="showReturnModal = false">
-                <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
+            <div v-if="showReturnModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" @click.self="showReturnModal = false">
+                <div class="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
                     <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
                         {{ t('return') }} — {{ selectedItem?.unique_identifier || selectedItem?.designation || catalog.name }}
                     </h3>
@@ -702,8 +702,8 @@ function submitImport() {
                             <div class="mt-2 grid grid-cols-5 gap-2">
                                 <button v-for="c in ['New','Good','Fair','Poor','Damaged']" :key="c" type="button"
                                     @click="returnForm.condition = c"
-                                    :class="returnForm.condition === c ? 'bg-primary-100 border-primary-500 text-primary-800' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'"
-                                    class="rounded-lg border px-2 py-2 text-xs font-medium text-center transition-colors">{{ c }}</button>
+                                    :class="returnForm.condition === c ? 'bg-primary-100 dark:bg-primary-500/25 border-primary-500 text-primary-800 dark:text-primary-100' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'"
+                                    class="rounded-lg border px-2 py-2 text-xs font-medium text-center transition-colors">{{ stateLabel(c) }}</button>
                             </div>
                         </div>
                         <div>
@@ -722,7 +722,7 @@ function submitImport() {
         <!-- Import items modal -->
         <Teleport to="body">
             <div v-if="showImport" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" @click.self="showImport = false">
-                <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
+                <div class="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
                     <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('import') }} — {{ catalog.name }}</h3>
                     <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ t('import_items_hint') }}</p>
                     <form @submit.prevent="submitImport" class="mt-4 space-y-4">
@@ -793,9 +793,9 @@ function submitImport() {
                             <InputLabel :value="t('branch')" />
                             <div class="mt-2 flex flex-wrap gap-2">
                                 <label v-for="b in branches" :key="b.id"
-                                    class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm"
-                                    :class="receiveForm.branch_ids.includes(b.id) ? 'border-primary-500 bg-primary-50 text-primary-800' : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'">
-                                    <input type="checkbox" :value="b.id" v-model="receiveForm.branch_ids" class="hidden" />
+                                    class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary-500"
+                                    :class="receiveForm.branch_ids.includes(b.id) ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/20 text-primary-800 dark:text-primary-100' : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'">
+                                    <input type="checkbox" :value="b.id" v-model="receiveForm.branch_ids" class="sr-only" />
                                     {{ b.name }}
                                 </label>
                             </div>
@@ -836,7 +836,7 @@ function submitImport() {
 
             <!-- Split: reclassify part of a lot without touching the rest. -->
             <div v-if="showSplitModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" @click.self="showSplitModal = false">
-                <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
+                <div class="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
                     <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('equipment.mark_damaged') }}</h3>
                     <form @submit.prevent="doSplit" class="mt-4 space-y-3">
                         <div>
@@ -852,7 +852,7 @@ function submitImport() {
                             <div class="mt-2 grid grid-cols-5 gap-2">
                                 <button v-for="c in ['New','Good','Fair','Poor','Damaged']" :key="c" type="button"
                                     @click="splitForm.condition = c"
-                                    :class="splitForm.condition === c ? 'bg-primary-100 border-primary-500 text-primary-800' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'"
+                                    :class="splitForm.condition === c ? 'bg-primary-100 dark:bg-primary-500/25 border-primary-500 text-primary-800 dark:text-primary-100' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'"
                                     class="rounded-lg border px-2 py-2 text-xs font-medium text-center transition-colors">{{ stateLabel(c) }}</button>
                             </div>
                         </div>

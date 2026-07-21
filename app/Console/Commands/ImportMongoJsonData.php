@@ -11,6 +11,7 @@ use App\Models\EquipmentHistory;
 use App\Models\EquipmentItem;
 use App\Models\MemberJob;
 use App\Models\Player;
+use App\Models\PlayerStatus;
 use App\Models\PlayerSubscription;
 use App\Models\Position;
 use App\Models\Subscription;
@@ -453,6 +454,9 @@ class ImportMongoJsonData extends Command
                     'email' => $this->nullableString($row['email'] ?? null),
                     'status_class' => $this->nullableString($status['class'] ?? null),
                     'status_value' => $this->nullableString($status['value'] ?? null),
+                    // Resolve the imported status string to the lookup FK so it
+                    // shows up in the status-based UI; keep the raw string too.
+                    'status_id' => $this->resolveStatusId($this->nullableString($status['value'] ?? null)),
                     'state' => $this->nullableString($row['state'] ?? null) ?? 'Unknown',
                     'city' => $this->nullableString($row['city'] ?? null) ?? 'Unknown',
                     'is_student' => $this->toBoolean($row['isStudent'] ?? true),
@@ -1271,6 +1275,34 @@ class ImportMongoJsonData extends Command
 
         return $string === '' ? null : $string;
     }
+
+    /**
+     * Map an imported status string to the player_statuses lookup, creating an
+     * inactive row for anything unrecognised so the value survives and can be
+     * cleaned up in Settings — mirroring the backfill migration.
+     */
+    private function resolveStatusId(?string $value): ?int
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $this->statusCache ??= PlayerStatus::pluck('id', 'name')->all();
+
+        if (! isset($this->statusCache[$value])) {
+            $this->statusCache[$value] = PlayerStatus::create([
+                'name' => $value,
+                'name_ar' => $value,
+                'sort_order' => 99,
+                'is_active' => false,
+            ])->id;
+        }
+
+        return $this->statusCache[$value];
+    }
+
+    /** @var array<string, int>|null */
+    private ?array $statusCache = null;
 
     private function toBoolean(mixed $value): bool
     {

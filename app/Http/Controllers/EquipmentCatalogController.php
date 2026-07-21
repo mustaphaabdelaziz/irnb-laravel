@@ -72,7 +72,11 @@ class EquipmentCatalogController extends Controller
             'branches' => Branch::orderBy('name')->get()
                 ->map(fn (Branch $b) => ['id' => $b->id, 'name' => $b->localized_name]),
             // For the rent dropdown: identify players by name + membership id, not a raw id.
-            'players' => Player::where('archived', false)->orderBy('lastname')->orderBy('firstname')->get()
+            // branches is eager-loaded because the cross-branch warning reads
+            // branch_ids for every player — without it this maps into an N+1.
+            'players' => Player::where('archived', false)
+                ->with('branches:id')
+                ->orderBy('lastname')->orderBy('firstname')->get()
                 ->map(fn (Player $p) => [
                     'id' => $p->id,
                     'fullname' => $p->fullname,

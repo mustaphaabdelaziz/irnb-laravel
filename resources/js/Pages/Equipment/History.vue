@@ -12,33 +12,56 @@ const props = defineProps({
     history: Array,
 });
 
-const eventColor = (type) => {
-    const map = {
-        purchase: 'emerald',
-        rental: 'amber',
-        return: 'primary',
-        repair: 'slate',
-        lost: 'rose',
-        condition_update: 'slate',
-    };
-    return map[type] || 'slate';
+// Event types are stored capitalised, sometimes with spaces ("Split Out"),
+// so normalise to a lowercase_underscore key before any lookup. Without this
+// every map missed and all events rendered grey with the default icon.
+const normalizeEvent = (type) => String(type ?? '').toLowerCase().replaceAll(' ', '_');
+
+const EVENT_COLORS = {
+    received: 'emerald',
+    purchase: 'emerald',
+    checkout: 'amber',
+    rental: 'amber',
+    assigned: 'amber',
+    return: 'primary',
+    repair: 'slate',
+    repair_complete: 'emerald',
+    lost: 'rose',
+    found: 'emerald',
+    retired: 'slate',
+    split_out: 'amber',
+    split_in: 'emerald',
 };
 
-const eventIcon = (type) => {
-    const map = {
-        purchase: 'money',
-        checkout: 'upload',
-        rental: 'upload',
-        return: 'download',
-        repair: 'wrench',
-        repair_complete: 'wrench',
-        lost: 'xcircle',
-        found: 'download',
-        retired: 'xcircle',
-        condition_update: 'document',
-    };
-    return map[type] || 'document';
+const EVENT_ICONS = {
+    received: 'money',
+    purchase: 'money',
+    checkout: 'upload',
+    rental: 'upload',
+    assigned: 'upload',
+    return: 'download',
+    repair: 'wrench',
+    repair_complete: 'wrench',
+    lost: 'xcircle',
+    found: 'download',
+    retired: 'xcircle',
+    split_out: 'document',
+    split_in: 'document',
 };
+
+const eventColor = (type) => EVENT_COLORS[normalizeEvent(type)] || 'slate';
+const eventIcon = (type) => EVENT_ICONS[normalizeEvent(type)] || 'document';
+
+// Timeline dot text + ring, derived from the same colour map so the marker,
+// the badge and the icon always agree. Each colour needs its dark variant.
+const DOT_CLASSES = {
+    emerald: 'text-emerald-600 dark:text-emerald-400 ring-emerald-400 dark:ring-emerald-500',
+    amber: 'text-amber-600 dark:text-amber-400 ring-amber-400 dark:ring-amber-500',
+    primary: 'text-primary-600 dark:text-primary-400 ring-primary-400 dark:ring-primary-500',
+    rose: 'text-rose-600 dark:text-rose-400 ring-rose-400 dark:ring-rose-500',
+    slate: 'text-slate-500 dark:text-slate-400 ring-slate-400 dark:ring-slate-600',
+};
+const dotClass = (type) => DOT_CLASSES[eventColor(type)] || DOT_CLASSES.slate;
 
 // Translate an enum value (status/condition) via its lowercased, underscored key.
 const stateLabel = (v) => {
@@ -48,10 +71,11 @@ const stateLabel = (v) => {
     return translated === key ? v : translated;
 };
 
-// Translate a normalized event type (checkout/return/repair/…); fall back to readable text.
+// Translate the normalized event type; fall back to readable text if unmapped.
 const eventLabel = (type) => {
-    const translated = t('event_' + type);
-    return translated === 'event_' + type ? type.replaceAll('_', ' ') : translated;
+    const key = 'event_' + normalizeEvent(type);
+    const translated = t(key);
+    return translated === key ? String(type ?? '').replaceAll('_', ' ') : translated;
 };
 </script>
 
@@ -62,7 +86,7 @@ const eventLabel = (type) => {
         <template #header>
             <div class="flex items-center gap-3">
                 <Link :href="item.catalog ? route('equipment.catalogs.show', item.catalog.id) : route('equipment.catalogs.index')" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                    <Icon name="back" class="text-lg rtl:rotate-180" />
                 </Link>
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ item.catalog?.name || item.unique_identifier }}</h1>
             </div>
@@ -110,12 +134,7 @@ const eventLabel = (type) => {
                     <div class="absolute start-4 top-2 h-[calc(100%-1rem)] w-0.5 bg-slate-200 dark:bg-slate-800" />
                     <div v-for="(event, idx) in history" :key="event.id || idx" class="relative flex gap-4 pb-6">
                         <div class="relative z-10 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white dark:bg-slate-900 text-sm ring-2"
-                            :class="{
-                                'text-emerald-600 ring-emerald-400': event.event_type === 'purchase',
-                                'text-amber-600 ring-amber-400': event.event_type === 'rental',
-                                'text-primary-600 ring-primary-400': event.event_type === 'return',
-                                'text-slate-500 dark:text-slate-400 ring-slate-400': !['purchase','rental','return'].includes(event.event_type),
-                            }">
+                            :class="dotClass(event.event_type)">
                             <Icon :name="eventIcon(event.event_type)" />
                         </div>
                         <div class="min-w-0 flex-1">
@@ -123,11 +142,15 @@ const eventLabel = (type) => {
                                 <Badge :label="eventLabel(event.event_type)" :color="eventColor(event.event_type)" />
                                 <span class="text-xs text-slate-500 dark:text-slate-400">{{ event.created_at }}</span>
                             </div>
-                            <div v-if="event.details" class="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                                <p v-if="event.details.vendor">Vendor: {{ event.details.vendor }}</p>
-                                <p v-if="event.details.price">{{ t('price') }}: {{ event.details.price }}</p>
-                                <p v-if="event.details.player">{{ t('player') }}: {{ event.details.player }}</p>
+                            <!-- Keys match what the lifecycle/stock services actually write. -->
+                            <div v-if="event.details" class="mt-1 space-y-0.5 text-sm text-slate-600 dark:text-slate-300">
+                                <p v-if="event.details.quantity">{{ t('quantity') }}: {{ event.details.quantity }}</p>
+                                <p v-if="event.details.unit_price">{{ t('unit_price') }}: {{ event.details.unit_price }}</p>
+                                <p v-if="event.details.received_via">{{ t('equipment.received_via') }}: {{ t(event.details.received_via) }}</p>
+                                <p v-if="event.details.due_date">{{ t('due_date') }}: {{ event.details.due_date }}</p>
+                                <p v-if="event.details.returned_condition">{{ t('condition') }}: {{ stateLabel(event.details.returned_condition) }}</p>
                                 <p v-if="event.details.condition">{{ t('condition') }}: {{ stateLabel(event.details.condition) }}</p>
+                                <p v-if="event.details.previous_status">{{ t('status') }}: {{ stateLabel(event.details.previous_status) }}</p>
                                 <p v-if="event.details.notes">{{ event.details.notes }}</p>
                             </div>
                         </div>

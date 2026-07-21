@@ -55,7 +55,7 @@ function submit() {
 <template>
     <Teleport to="body">
         <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" @click.self="emit('close')">
-            <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
+            <div class="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
                 <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('bulk_edit') }}</h3>
                 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
                     {{ t('bulk_edit_hint', { count: ids.length }) }}
@@ -73,7 +73,7 @@ function submit() {
                     <div v-if="isMultiple" class="grid grid-cols-3 gap-2">
                         <button v-for="m in ['replace', 'attach', 'detach']" :key="m" type="button"
                             @click="form.mode = m"
-                            :class="form.mode === m ? 'bg-primary-100 border-primary-500 text-primary-800' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'"
+                            :class="form.mode === m ? 'bg-primary-100 dark:bg-primary-500/25 border-primary-500 text-primary-800 dark:text-primary-100' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'"
                             class="rounded-lg border px-2 py-2 text-xs font-medium transition-colors">
                             {{ t('bulk_mode_' + m) }}
                         </button>
@@ -84,9 +84,9 @@ function submit() {
 
                         <div v-if="isMultiple" class="mt-2 flex flex-wrap gap-2">
                             <label v-for="o in activeField.options" :key="o.value"
-                                class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm"
-                                :class="form.value?.includes(o.value) ? 'border-primary-500 bg-primary-50 text-primary-800' : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'">
-                                <input type="checkbox" :value="o.value" v-model="form.value" class="hidden" />
+                                class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary-500"
+                                :class="form.value?.includes(o.value) ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/20 text-primary-800 dark:text-primary-100' : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'">
+                                <input type="checkbox" :value="o.value" v-model="form.value" class="sr-only" />
                                 {{ o.label }}
                             </label>
                         </div>

@@ -324,7 +324,7 @@ function formatDate(val) {
                 <div class="space-y-4">
                     <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                         <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('outstanding_debt') }}</p>
-                        <p class="mt-2 text-3xl font-bold" :class="totalDebt > 0 ? 'text-rose-700' : 'text-emerald-700'">
+                        <p class="mt-2 text-3xl font-bold" :class="totalDebt > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'">
                             {{ formatMoney(totalDebt) }} <span class="text-base font-normal text-slate-400 dark:text-slate-500">DZD</span>
                         </p>
                         <button
@@ -394,7 +394,7 @@ function formatDate(val) {
                                     {{ formatMoney(sub.remaining_amount) }}
                                 </td>
                                 <td class="px-4 py-3">
-                                    <Badge :label="paymentStatus(sub)" :color="statusColor(paymentStatus(sub))" />
+                                    <Badge :label="t(paymentStatus(sub))" :color="statusColor(paymentStatus(sub))" />
                                 </td>
                                 <td class="px-4 py-3 text-end whitespace-nowrap">
                                     <button type="button" @click="openSubEdit(sub)" class="rounded-md px-2 py-1 text-xs font-medium text-primary-700 ring-1 ring-inset ring-primary-300 hover:bg-primary-50 dark:text-primary-300 dark:ring-primary-700 dark:hover:bg-primary-900/30">

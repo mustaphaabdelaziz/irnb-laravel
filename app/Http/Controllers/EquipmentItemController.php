@@ -353,8 +353,13 @@ class EquipmentItemController extends Controller
                     ? ['name' => $rental->equipmentItem->catalog->name]
                     : null,
                 'quantity' => $rental->outstanding_quantity,
+                // A rentable is a Player (firstname/lastname) or a User (name);
+                // fall back so a staff rental doesn't show a blank name.
                 'rented_to' => $rental->rentable
-                    ? ['firstname' => $rental->rentable->firstname, 'lastname' => $rental->rentable->lastname]
+                    ? ['name' => trim(
+                        ($rental->rentable->firstname ?? $rental->rentable->name ?? '')
+                        .' '.($rental->rentable->lastname ?? '')
+                    )]
                     : null,
             ])
             ->values();

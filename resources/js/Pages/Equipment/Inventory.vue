@@ -92,23 +92,23 @@ const hasBranchValues = computed(
             <div v-if="overdueRentals?.length" class="rounded-2xl border border-rose-200 bg-rose-50 p-5 dark:border-rose-500/30 dark:bg-rose-500/10">
                 <h3 class="flex items-center gap-2 text-base font-semibold text-rose-900 dark:text-rose-200"><Icon name="alert" class="text-lg text-rose-500 dark:text-rose-400" /> {{ t('overdue') }} ({{ overdueRentals.length }})</h3>
                 <div class="mt-3 overflow-x-auto">
-                    <table class="min-w-full divide-y divide-rose-200">
+                    <table class="min-w-full divide-y divide-rose-200 dark:divide-rose-500/20">
                         <thead>
                             <tr>
-                                <th class="px-3 py-2 text-start text-xs font-semibold uppercase text-rose-600">{{ t('equipment') }}</th>
-                                <th class="px-3 py-2 text-start text-xs font-semibold uppercase text-rose-600">{{ t('player') }}</th>
-                                <th class="px-3 py-2 text-start text-xs font-semibold uppercase text-rose-600">{{ t('due_date') }}</th>
+                                <th class="px-3 py-2 text-start text-xs font-semibold uppercase text-rose-600 dark:text-rose-300">{{ t('equipment') }}</th>
+                                <th class="px-3 py-2 text-start text-xs font-semibold uppercase text-rose-600 dark:text-rose-300">{{ t('rented_to') }}</th>
+                                <th class="px-3 py-2 text-start text-xs font-semibold uppercase text-rose-600 dark:text-rose-300">{{ t('due_date') }}</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-rose-100">
+                        <tbody class="divide-y divide-rose-100 dark:divide-rose-500/10">
                             <tr v-for="r in overdueRentals" :key="r.id">
-                                <td class="px-3 py-2 text-sm text-rose-900">
+                                <td class="px-3 py-2 text-sm text-rose-900 dark:text-rose-100">
                                     {{ r.catalog?.name }}
                                     <span v-if="r.unique_identifier">({{ r.unique_identifier }})</span>
-                                    <span v-else-if="r.quantity > 1" class="text-rose-700">× {{ r.quantity }}</span>
+                                    <span v-else-if="r.quantity > 1" class="text-rose-700 dark:text-rose-300">× {{ r.quantity }}</span>
                                 </td>
-                                <td class="px-3 py-2 text-sm text-rose-800">{{ r.rented_to?.firstname }} {{ r.rented_to?.lastname }}</td>
-                                <td class="px-3 py-2 text-sm font-medium text-rose-700">{{ r.due_date }}</td>
+                                <td class="px-3 py-2 text-sm text-rose-800 dark:text-rose-200">{{ r.rented_to?.name }}</td>
+                                <td class="px-3 py-2 text-sm font-medium text-rose-700 dark:text-rose-300">{{ r.due_date }}</td>
                             </tr>
                         </tbody>
                     </table>

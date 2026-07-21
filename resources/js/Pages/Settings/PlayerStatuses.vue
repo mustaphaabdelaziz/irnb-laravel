@@ -90,7 +90,7 @@ function destroy() {
             </div>
 
             <!-- List -->
-            <div class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+            <div class="overflow-x-auto rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
                     <thead class="bg-slate-50 dark:bg-slate-950">
                         <tr>
@@ -105,17 +105,20 @@ function destroy() {
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                         <tr v-for="s in playerStatuses" :key="s.id" :class="{ 'opacity-60': !s.is_active }">
                             <template v-if="editingId === s.id">
-                                <td class="px-4 py-2"><TextInput v-model="editForm.name" class="w-full" /></td>
+                                <td class="px-4 py-2">
+                                    <TextInput v-model="editForm.name" class="w-full" />
+                                    <InputError :message="editForm.errors.name" class="mt-1" />
+                                </td>
                                 <td class="px-4 py-2"><TextInput v-model="editForm.name_ar" class="w-full" /></td>
                                 <td class="px-4 py-2"><TextInput v-model="editForm.name_fr" class="w-full" /></td>
                                 <td class="px-4 py-2"><TextInput v-model="editForm.name_en" class="w-full" /></td>
+                                <!-- Keeps the players-count column aligned; the active toggle sits with the actions. -->
+                                <td class="px-4 py-2 text-end text-sm text-slate-400">{{ s.players_count }}</td>
                                 <td class="px-4 py-2 text-end">
-                                    <label class="inline-flex items-center gap-1 text-xs">
-                                        <input type="checkbox" v-model="editForm.is_active" class="rounded border-slate-300" />
+                                    <label class="me-3 inline-flex items-center gap-1 text-xs text-slate-600 dark:text-slate-300">
+                                        <input type="checkbox" v-model="editForm.is_active" class="rounded border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-primary-600 focus:ring-primary-500" />
                                         {{ t('active') }}
                                     </label>
-                                </td>
-                                <td class="px-4 py-2 text-end">
                                     <button @click="saveEdit(s.id)" class="text-sm text-emerald-600 hover:text-emerald-800">{{ t('save') }}</button>
                                     <button @click="editingId = null" class="ms-3 text-sm text-slate-500">{{ t('cancel') }}</button>
                                 </td>
@@ -136,6 +139,9 @@ function destroy() {
                                     <button v-if="s.players_count === 0" @click="deleteId = s.id" class="ms-3 text-sm text-rose-500 hover:text-rose-700">{{ t('delete') }}</button>
                                 </td>
                             </template>
+                        </tr>
+                        <tr v-if="!playerStatuses.length">
+                            <td colspan="6" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
                         </tr>
                     </tbody>
                 </table>

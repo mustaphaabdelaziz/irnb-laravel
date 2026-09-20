@@ -8,7 +8,7 @@ import Icon from '@/Components/Icon.vue';
 import { Card, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Separator } from '@/Components/ui/separator';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
-import { baseOptions, barDataset, ordinal, seriesColor } from '@/lib/chartTheme';
+import { baseOptions, barDataset, ordinal, seriesColor, spanLabel } from '@/lib/chartTheme';
 
 const props = defineProps({
     data: { type: Object, default: null },
@@ -102,7 +102,7 @@ const activityIcon = { transaction: 'money', registration: 'user', rental: 'box'
             <ChartCard
                 class="lg:col-span-3"
                 :title="t('dashboard.cash_flow')"
-                :subtitle="t('dashboard.last_12_months')"
+                :subtitle="spanLabel(cashFlow.labels)"
                 :loading="loading"
                 :empty="!hasCashFlow"
                 :empty-hint="t('dashboard.cash_flow_empty')"

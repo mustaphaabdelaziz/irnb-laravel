@@ -73,6 +73,22 @@ export function wash(slot, alpha = 0.1) {
     return `rgba(${(int >> 16) & 255}, ${(int >> 8) & 255}, ${int & 255}, ${alpha})`;
 }
 
+/**
+ * The span a month series actually covers, as "YYYY-MM → YYYY-MM".
+ *
+ * These series end at the selected window, not at today — picking "This year"
+ * in December shows that year, not the trailing twelve months. Labelling every
+ * one of them "Last 12 months" would be wrong for every range but one, so the
+ * chart states the span it is really showing.
+ */
+export function spanLabel(labels) {
+    if (!labels?.length) return '';
+
+    return labels.length === 1
+        ? labels[0]
+        : `${labels[0]} → ${labels[labels.length - 1]}`;
+}
+
 /** Reads a design token off the document so charts follow the app's theme. */
 export function token(name, fallback) {
     if (typeof window === 'undefined') return fallback;

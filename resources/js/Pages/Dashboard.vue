@@ -8,6 +8,8 @@ import StatTile from '@/Components/Dashboard/StatTile.vue';
 import Icon from '@/Components/Icon.vue';
 import { Button } from '@/Components/ui/button';
 import FinanceTab from '@/Pages/Dashboard/Partials/FinanceTab.vue';
+import MembersTab from '@/Pages/Dashboard/Partials/MembersTab.vue';
+import OperationsTab from '@/Pages/Dashboard/Partials/OperationsTab.vue';
 import OverviewTab from '@/Pages/Dashboard/Partials/OverviewTab.vue';
 import '@/lib/registerCharts';
 
@@ -109,10 +111,7 @@ const heroTiles = computed(() => props.hero.map((tile) => ({
     label: t(`dashboard.kpi_${tile.key}`),
     icon: TILE_STYLE[tile.key]?.icon ?? 'dot',
     tone: TILE_STYLE[tile.key]?.tone ?? 'primary',
-    // Composed rather than interpolated: the production bundle ships vue-i18n
-    // without its runtime message compiler, so a "{count} overdue" message
-    // renders the braces literally.
-    meta: tile.meta?.overdue ? `${tile.meta.overdue} ${t('dashboard.overdue')}` : null,
+    meta: tile.meta?.overdue ? t('dashboard.overdue_count', { count: tile.meta.overdue }) : null,
 })));
 </script>
 
@@ -183,17 +182,8 @@ const heroTiles = computed(() => props.hero.map((tile) => ({
 
             <OverviewTab v-if="activeTab === 'overview'" :data="overview" :loading="loadingTab" :rtl="rtl" />
             <FinanceTab v-else-if="activeTab === 'finance'" :data="finance" :loading="loadingTab" :rtl="rtl" />
-
-            <!-- Members and Operations land in phase 3. The tab bar and the
-                 fetch machinery are already in place for them. -->
-            <div
-                v-else
-                class="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border py-16 text-center"
-            >
-                <Icon name="dashboard" class="size-6 text-muted-foreground/60" />
-                <p class="text-sm font-medium text-muted-foreground">{{ t(`dashboard.tab_${activeTab}`) }}</p>
-                <p class="max-w-sm text-xs text-muted-foreground/80">{{ t('dashboard.tab_coming_soon') }}</p>
-            </div>
+            <MembersTab v-else-if="activeTab === 'members'" :data="members" :loading="loadingTab" :rtl="rtl" />
+            <OperationsTab v-else :data="operations" :loading="loadingTab" :rtl="rtl" />
         </div>
     </AuthenticatedLayout>
 </template>

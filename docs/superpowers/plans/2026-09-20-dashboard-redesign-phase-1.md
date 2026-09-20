@@ -98,7 +98,7 @@
   - `DeltaCalculator::compute(float $current, ?float $previous, string $direction): ?array` where `$direction` is `'up_good'` or `'down_good'`; returns `['percent' => float, 'tone' => 'positive'|'negative'|'neutral', 'raw' => float]` or `null`
   - `BranchScope::players(Builder $q, ?int $branchId): Builder`, `::transactions(...)`, `::equipmentItems(...)`, `::subscriptions(...)`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/Feature/Dashboard/DashboardFiltersTest.php`:
 
@@ -219,26 +219,26 @@ class DashboardFiltersTest extends TestCase
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `composer test -- --filter=DashboardFiltersTest`
 Expected: FAIL — `Class "App\Services\Dashboard\DashboardFilters" not found`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create the four classes per the interfaces above. `DashboardFilters` resolves windows with `CarbonImmutable`, clamps `range` to the allowed set (`month`, `last_month`, `quarter`, `year`, `last12`, `all`), forces `compare` false for `all`, and clamps `tab` to `overview|finance|members|operations`. `MonthBucket::expression()` switches on `DB::connection()->getDriverName()`. `DeltaCalculator::compute()` returns `null` when `$previous` is null or zero, computes `($current - $previous) / $previous * 100` rounded to one decimal, and maps sign to tone through `$direction`. `BranchScope` applies `whereHas('branches', ...)` for players and subscriptions, `whereHas('financeAccount', fn ($q) => $q->where('branch_id', $id))` for transactions, and the `branch_equipment_item` pivot for equipment.
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 Run: `composer test -- --filter=DashboardFiltersTest`
 Expected: PASS, 10 tests
 
-- [ ] **Step 5: Run Pint**
+- [x] **Step 5: Run Pint**
 
 Run: `vendor/bin/pint app/Services/Dashboard tests/Feature/Dashboard`
 Expected: no style errors remaining
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add app/Services/Dashboard tests/Feature/Dashboard
@@ -259,7 +259,7 @@ git commit -m "feat(dashboard): filters DTO, month bucketing, delta rules, branc
   `['key' => string, 'value' => float|int, 'format' => 'number'|'money'|'percent', 'delta' => ?array, 'spark' => float[], 'meta' => ?array]`
   with `key` in `members`, `collection_rate`, `net_cash_flow`, `outstanding_debt`, `equipment_on_loan`, `treasury`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/Feature/Dashboard/HeroStatsTest.php` covering:
 - `it_counts_active_members_and_excludes_archived`
@@ -274,21 +274,21 @@ git commit -m "feat(dashboard): filters DTO, month bucketing, delta rules, branc
 
 Each test builds fixtures with `Model::create()` / `RegisterPlayerService`, calls `app(HeroStats::class)->get($filters)`, and asserts on the returned array.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `composer test -- --filter=HeroStatsTest`
 Expected: FAIL — `Class "App\Services\Dashboard\HeroStats" not found`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 One aggregate query per tile, plus grouped-by-month queries for the sparklines. Debt and treasury sparklines use the reconstruction rules from the spec (accrual from `player_subscriptions`; opening funds plus cumulative non-archived transactions). `collection_rate` returns `null` when the denominator is zero so the tile renders `—`.
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 Run: `composer test -- --filter=HeroStatsTest`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add app/Services/Dashboard/HeroStats.php tests/Feature/Dashboard/HeroStatsTest.php
@@ -310,23 +310,23 @@ git commit -m "feat(dashboard): hero KPI stat provider"
   - `alerts`: list of `['key' => string, 'count' => int, 'severity' => 'warning'|'serious'|'critical', 'href' => ?string]`
   - `activity`: list of `['type' => 'transaction'|'registration'|'rental', 'at' => string, 'label' => string, 'amount' => ?float, 'href' => ?string]`, max 10
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Covering: aging buckets place a line by `due_date` with the December-of-`year` fallback; exempt lines are excluded; the cash flow series always has 12 labelled points even with no data; alerts fire for overdue rentals, low stock, negative balance and members unpaid over 60 days; the activity feed merges sources, sorts newest first and caps at 10.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `composer test -- --filter=OverviewStatsTest`
 Expected: FAIL — class not found
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 Run: `composer test -- --filter=OverviewStatsTest`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add app/Services/Dashboard/OverviewStats.php tests/Feature/Dashboard/OverviewStatsTest.php
@@ -346,29 +346,29 @@ git commit -m "feat(dashboard): overview stat provider"
 - Consumes: `HeroStats`, `OverviewStats`, `DashboardFilters`.
 - Produces props: `filters`, `branches`, `hero`, `overview` (optional), `finance` (optional, empty in this phase), `members` (optional, empty), `operations` (optional, empty).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Covering: the page renders with `filters` and `hero`; `overview` is absent from a plain visit and present on `?tab=overview` partial reload; a user without `finance.view` gets an empty finance payload even when requesting it directly; the hero costs ≤ 6 queries and overview ≤ 8, asserted with `DB::listen`.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `composer test -- --filter=DashboardPageTest`
 Expected: FAIL
 
-- [ ] **Step 3: Rewrite the controller**
+- [x] **Step 3: Rewrite the controller**
 
-- [ ] **Step 4: Delete the superseded test**
+- [x] **Step 4: Delete the superseded test**
 
 ```bash
 git rm tests/Feature/DashboardTest.php
 ```
 
-- [ ] **Step 5: Run the whole suite**
+- [x] **Step 5: Run the whole suite**
 
 Run: `composer test`
 Expected: PASS, no regressions
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add app/Http/Controllers/DashboardController.php tests/Feature/Dashboard/DashboardPageTest.php
@@ -386,20 +386,20 @@ git commit -m "feat(dashboard): thin controller over stat providers with lazy ta
 **Interfaces:**
 - Produces: `palette(mode)`, `seriesColor(slot, mode)`, `MONEY_IN`, `MONEY_OUT`, `sequentialRamp(steps, mode)`, `applyChartDefaults()`, `baseOptions({ rtl })`, `moneyTooltip(formatMoney)`.
 
-- [ ] **Step 1: Write the module**
+- [x] **Step 1: Write the module**
 
 Exports the two palettes verbatim from Global Constraints, reads `--surface`/`--muted-foreground` from CSS custom properties at call time so theme switches are picked up, sets Chart.js defaults (font stack, hairline solid gridlines, no dashes, `pointRadius: 0` with `pointHoverRadius: 4`, `borderWidth: 2`, bar `borderRadius: 4` with `borderSkipped: 'start'`, `maxBarThickness: 24`), and flips `reverse` on the category scale plus legend/tooltip alignment when `rtl` is true.
 
-- [ ] **Step 2: Register the extra Chart.js pieces**
+- [x] **Step 2: Register the extra Chart.js pieces**
 
 Add the elements the Overview charts need to `registerCharts.js`.
 
-- [ ] **Step 3: Build to verify no import errors**
+- [x] **Step 3: Build to verify no import errors**
 
 Run: `npm run build`
 Expected: build succeeds
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add resources/js/lib
@@ -424,14 +424,14 @@ git commit -m "feat(dashboard): validated chart palette and shared Chart.js them
 
 Sparse-data rules are part of these contracts: `StatTile` renders `—` for a null value, hides the delta and sparkline when `delta` is null, and `ChartCard` renders its empty state rather than an empty axis.
 
-- [ ] **Step 1: Write the components**
+- [x] **Step 1: Write the components**
 
-- [ ] **Step 2: Build**
+- [x] **Step 2: Build**
 
 Run: `npm run build`
 Expected: succeeds
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add resources/js/Components/Dashboard
@@ -446,20 +446,20 @@ git commit -m "feat(dashboard): shared stat tile, sparkline, chart card and filt
 - Modify: `resources/js/Pages/Dashboard.vue`
 - Create: `resources/js/Pages/Dashboard/Partials/OverviewTab.vue`
 
-- [ ] **Step 1: Rewrite `Dashboard.vue` as the shell**
+- [x] **Step 1: Rewrite `Dashboard.vue` as the shell**
 
 Header, `DashboardFilterBar`, hero row of six `StatTile`s, tab switcher that calls `router.reload({ only: [tab] })` and caches loaded tabs in a `reactive` map. Tabs the user cannot view are not rendered.
 
-- [ ] **Step 2: Write `OverviewTab.vue`**
+- [x] **Step 2: Write `OverviewTab.vue`**
 
 Cash flow `ChartCard` (bar + line, one axis), debt aging horizontal stacked bar, alert strip of `AlertChip`s, activity feed list. Every chart gets a table toggle.
 
-- [ ] **Step 3: Build**
+- [x] **Step 3: Build**
 
 Run: `npm run build`
 Expected: succeeds
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add resources/js/Pages/Dashboard.vue resources/js/Pages/Dashboard
@@ -473,19 +473,19 @@ git commit -m "feat(dashboard): tabbed shell with hero row and overview tab"
 **Files:**
 - Modify: `resources/js/i18n/{ar,fr,en}.json`
 
-- [ ] **Step 1: Add every new key to all three locale files**
+- [x] **Step 1: Add every new key to all three locale files**
 
-- [ ] **Step 2: Run the i18n check**
+- [x] **Step 2: Run the i18n check**
 
 Run: `npm run i18n:check`
 Expected: no missing keys
 
-- [ ] **Step 3: Run the full suite and linters**
+- [x] **Step 3: Run the full suite and linters**
 
 Run: `composer test && vendor/bin/pint --test && npm run build`
 Expected: all pass
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add resources/js/i18n

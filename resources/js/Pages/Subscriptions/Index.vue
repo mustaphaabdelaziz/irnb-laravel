@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import StatStrip from '@/Components/Dashboard/StatStrip.vue';
 import Pagination from '@/Components/Pagination.vue';
 import Badge from '@/Components/Badge.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
@@ -12,6 +13,7 @@ const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
 
 const props = defineProps({
+    strip: { type: Array, default: () => [] },
     subscriptions: Object,
     branches: { type: Array, default: () => [] },
     branchStats: { type: Array, default: () => [] },
@@ -56,6 +58,8 @@ function destroy() {
                 </Link>
             </div>
         </template>
+
+        <StatStrip :tiles="strip || []" class="mb-4" />
 
         <div class="space-y-6">
             <!-- Per-branch financial breakdown -->

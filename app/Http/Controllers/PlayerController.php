@@ -14,6 +14,7 @@ use App\Models\PlayerStatus;
 use App\Models\Position;
 use App\Models\Subscription;
 use App\Models\Transaction;
+use App\Services\Dashboard\ModuleStats;
 use App\Services\Export\ExcelExporter;
 use App\Services\Player\MembershipNumber;
 use App\Services\Player\RegisterPlayerService;
@@ -96,6 +97,9 @@ class PlayerController extends Controller
 
         return Inertia::render('Players/Index', [
             'players' => $players,
+            // A closure: the strip does not depend on the page's filters, so a
+            // filter reload should not pay to recompute it.
+            'strip' => fn (): array => app(ModuleStats::class)->players(),
             'categories' => Category::orderBy('name')->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
             'branches' => Branch::orderBy('name')->get(),
             // positions feeds the bulk-edit field picker as well as the filter.

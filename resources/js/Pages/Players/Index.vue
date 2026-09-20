@@ -1,5 +1,6 @@
 ﻿<script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import StatStrip from '@/Components/Dashboard/StatStrip.vue';
 import Pagination from '@/Components/Pagination.vue';
 import SearchInput from '@/Components/SearchInput.vue';
 import Badge from '@/Components/Badge.vue';
@@ -16,6 +17,7 @@ const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
 
 const props = defineProps({
+    strip: { type: Array, default: () => [] },
     players: Object,
     categories: Array,
     branches: { type: Array, default: () => [] },
@@ -204,6 +206,8 @@ function runBulk() {
                 </div>
             </div>
         </template>
+
+        <StatStrip :tiles="strip || []" class="mb-4" />
 
         <div class="space-y-4">
             <!-- Distribution doughnuts (count + % of active players); click a slice or chip to filter -->

@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Player;
 use App\Models\PlayerSubscription;
 use App\Models\Subscription;
+use App\Services\Dashboard\ModuleStats;
 use App\Support\Csv;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -36,6 +37,7 @@ class SubscriptionController extends Controller
 
         return Inertia::render('Subscriptions/Index', [
             'subscriptions' => $subscriptions,
+            'strip' => fn (): array => app(ModuleStats::class)->subscriptions(),
             'branches' => Branch::orderBy('name')->get(),
             'branchStats' => $this->branchStats(),
             'filters' => $request->only(['year', 'branch_id']),

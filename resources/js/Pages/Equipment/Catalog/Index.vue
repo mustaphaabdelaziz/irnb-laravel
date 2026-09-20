@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import StatStrip from '@/Components/Dashboard/StatStrip.vue';
 import SearchInput from '@/Components/SearchInput.vue';
 import Badge from '@/Components/Badge.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
@@ -13,6 +14,7 @@ const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
 
 const props = defineProps({
+    strip: { type: Array, default: () => [] },
     catalogs: Object,
     filters: Object,
     // Managed in Settings > Equipment Categories.
@@ -96,6 +98,8 @@ function submitImport() {
                 </div>
             </div>
         </template>
+
+        <StatStrip :tiles="strip || []" class="mb-4" />
 
         <div class="space-y-4">
             <!-- Filters -->

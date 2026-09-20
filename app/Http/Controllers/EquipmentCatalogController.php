@@ -9,6 +9,7 @@ use App\Models\EquipmentCategory;
 use App\Models\EquipmentItem;
 use App\Models\Player;
 use App\Models\StorageLocation;
+use App\Services\Dashboard\ModuleStats;
 use App\Services\Export\ExcelExporter;
 use App\Services\Storage\FileStorageService;
 use App\Support\Csv;
@@ -48,6 +49,7 @@ class EquipmentCatalogController extends Controller
 
         return Inertia::render('Equipment/Catalog/Index', [
             'catalogs' => $catalogs,
+            'strip' => fn (): array => app(ModuleStats::class)->equipment(),
             'filters' => $request->only(['search', 'category']),
             'equipmentCategories' => EquipmentCategory::orderBy('name')->pluck('name'),
         ]);

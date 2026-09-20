@@ -371,8 +371,16 @@ class HeroStats
             $accounts->where('branch_id', $filters->branchId);
         }
 
+        // Current balances are summed over ROOT accounts only. A treasury's
+        // current_balance is a roll-up that already contains every child
+        // register's money (see FinanceService::recomputeAccountBalances), so
+        // summing every row counts the branch's cash twice. Opening balances
+        // are each account's own and are summed across all of them.
         $totals = $accounts
-            ->selectRaw('SUM(opening_balance) as opening, SUM(current_balance) as current')
+            ->selectRaw(
+                'SUM(opening_balance) as opening, '
+                .'SUM(CASE WHEN parent_account_id IS NULL THEN current_balance ELSE 0 END) as current'
+            )
             ->first();
 
         $opening = (float) ($totals->opening ?? 0);

@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Services\Dashboard\DashboardFilters;
 use App\Services\Dashboard\FinanceStats;
 use App\Services\Dashboard\HeroStats;
+use App\Services\Dashboard\MemberStats;
+use App\Services\Dashboard\OperationsStats;
 use App\Services\Dashboard\OverviewStats;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -33,6 +35,8 @@ class DashboardController extends Controller
         private readonly HeroStats $hero,
         private readonly OverviewStats $overview,
         private readonly FinanceStats $finance,
+        private readonly MemberStats $members,
+        private readonly OperationsStats $operations,
     ) {}
 
     public function __invoke(Request $request): Response
@@ -74,8 +78,12 @@ class DashboardController extends Controller
             'finance' => fn (): ?array => $this->guard($user, 'finance')
                 ? $this->finance->get($filters)
                 : null,
-            'members' => fn (): ?array => $this->guard($user, 'members') ? [] : null,
-            'operations' => fn (): ?array => $this->guard($user, 'operations') ? [] : null,
+            'members' => fn (): ?array => $this->guard($user, 'members')
+                ? $this->members->get($filters)
+                : null,
+            'operations' => fn (): ?array => $this->guard($user, 'operations')
+                ? $this->operations->get($filters)
+                : null,
         ];
 
         $props = [];

@@ -196,6 +196,59 @@ class DashboardPageTest extends TestCase
     }
 
     #[Test]
+    public function the_members_and_operations_tabs_carry_their_real_payloads(): void
+    {
+        $this->seedSomeData();
+        $admin = $this->admin();
+
+        $members = $this->actingAs($admin)
+            ->get(route('dashboard'), $this->partialHeaders('members'))
+            ->assertOk()
+            ->json('props.members');
+
+        $this->assertArrayHasKey('growth', $members);
+        $this->assertArrayHasKey('byAge', $members);
+        $this->assertCount(5, $members['summary']);
+
+        $operations = $this->actingAs($admin)
+            ->get(route('dashboard'), $this->partialHeaders('operations'))
+            ->assertOk()
+            ->json('props.operations');
+
+        $this->assertArrayHasKey('subscriptionFunnel', $operations);
+        $this->assertArrayHasKey('inventory', $operations);
+        $this->assertCount(4, $operations['summary']);
+    }
+
+    #[Test]
+    public function every_tab_stays_within_its_query_budget(): void
+    {
+        $this->seedSomeData();
+        $admin = $this->admin();
+
+        // Each tab gets its own recorder object. Closures declared in a loop
+        // that capture a by-reference local all share one variable slot, so a
+        // listener from an earlier pass keeps appending to the current pass's
+        // array and every query is counted once per iteration so far.
+        foreach (['members' => 17, 'operations' => 12] as $tab => $budget) {
+            $recorder = new \ArrayObject;
+            DB::listen(function ($query) use ($recorder): void {
+                $recorder->append($query->sql);
+            });
+
+            $this->actingAs($admin)->get(route('dashboard'), $this->partialHeaders($tab))->assertOk();
+
+            $sql = $recorder->getArrayCopy();
+
+            $this->assertLessThanOrEqual(
+                $budget,
+                count($sql),
+                "The {$tab} tab ran ".count($sql)." queries:\n".implode("\n", $sql),
+            );
+        }
+    }
+
+    #[Test]
     public function a_user_without_finance_permission_cannot_pull_the_finance_tab(): void
     {
         $this->seedSomeData();

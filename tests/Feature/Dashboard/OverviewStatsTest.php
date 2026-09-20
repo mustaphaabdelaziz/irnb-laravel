@@ -13,6 +13,7 @@ use App\Services\Dashboard\DashboardFilters;
 use App\Services\Dashboard\OverviewStats;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -205,6 +206,27 @@ class OverviewStatsTest extends TestCase
     public function alerts_with_nothing_to_report_are_left_out(): void
     {
         $this->assertSame([], $this->overview()['alerts']);
+    }
+
+    #[Test]
+    public function every_alert_links_to_a_route_that_exists(): void
+    {
+        // Ziggy throws in the browser on an unknown route name, and an alert's
+        // link is only rendered once that alert has something to report — so
+        // without this the break would surface at the worst possible moment.
+        FinanceAccount::create(['name' => 'Petty cash', 'type' => 'cash', 'current_balance' => -50]);
+        $this->line($this->player(), 1000, 0, '2026-03-01');
+
+        $alerts = $this->overview()['alerts'];
+
+        $this->assertNotEmpty($alerts);
+
+        foreach ($alerts as $alert) {
+            $this->assertTrue(
+                Route::has($alert['href']),
+                "Alert {$alert['key']} points at route {$alert['href']}, which does not exist.",
+            );
+        }
     }
 
     #[Test]

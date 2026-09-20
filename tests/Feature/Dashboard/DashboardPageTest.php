@@ -104,15 +104,25 @@ class DashboardPageTest extends TestCase
     }
 
     #[Test]
-    public function tab_payloads_are_absent_until_they_are_asked_for(): void
+    public function the_open_tab_arrives_with_the_first_paint_and_the_others_do_not(): void
     {
         $this->actingAs($this->admin())
             ->get(route('dashboard'))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->missing('overview')
+                ->has('overview.cashFlow')
                 ->missing('finance')
                 ->missing('members')
                 ->missing('operations'));
+    }
+
+    #[Test]
+    public function deep_linking_a_tab_loads_that_tab_instead_of_the_default(): void
+    {
+        $this->actingAs($this->admin())
+            ->get(route('dashboard', ['tab' => 'finance']))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('finance')
+                ->missing('overview'));
     }
 
     #[Test]
@@ -184,10 +194,11 @@ class DashboardPageTest extends TestCase
         $this->actingAs($admin)->get(route('dashboard'))->assertOk();
 
         // Six tiles, each needing a value, a previous-period value and a
-        // twelve-month series, plus the shell's own lookups. Measured at 18;
-        // the headroom is small on purpose — one N+1 adds ten and trips this.
+        // twelve-month series, plus the open tab's four widgets and the
+        // shell's own lookups. Measured at 27; the headroom is small on
+        // purpose — one N+1 adds ten and trips this.
         $this->assertLessThanOrEqual(
-            20,
+            29,
             $queries,
             "First paint ran {$queries} queries — the hero row is leaking work.",
         );

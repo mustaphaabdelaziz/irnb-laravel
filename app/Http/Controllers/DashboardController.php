@@ -49,21 +49,37 @@ class DashboardController extends Controller
                 ->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
             'can' => fn (): array => $this->visibleTabs($user),
             'hero' => fn (): array => $this->hero->get($filters),
-
-            'overview' => Inertia::optional(fn (): array => $this->overview->get($filters)),
-
-            // Phase 2 and 3 fill these in. The props exist now so the client's
-            // tab machinery has one shape to code against from the start.
-            'finance' => Inertia::optional(
-                fn (): ?array => $this->guard($user, 'finance') ? [] : null,
-            ),
-            'members' => Inertia::optional(
-                fn (): ?array => $this->guard($user, 'members') ? [] : null,
-            ),
-            'operations' => Inertia::optional(
-                fn (): ?array => $this->guard($user, 'operations') ? [] : null,
-            ),
+            ...$this->tabProps($filters, $user),
         ]);
+    }
+
+    /**
+     * Tab payloads: the open one eagerly, the rest on demand.
+     *
+     * An optional prop only resolves when a partial reload names it, so
+     * marking every tab optional left the tab the reader actually opened with
+     * no data until a second request went out. The open tab is a plain closure
+     * — computed on this request — and the others stay optional.
+     *
+     * @return array<string, mixed>
+     */
+    private function tabProps(DashboardFilters $filters, ?User $user): array
+    {
+        // Phase 2 and 3 fill these in. The keys exist now so the client's tab
+        // machinery has one shape to code against from the start.
+        $resolvers = [
+            'overview' => fn (): array => $this->overview->get($filters),
+            'finance' => fn (): ?array => $this->guard($user, 'finance') ? [] : null,
+            'members' => fn (): ?array => $this->guard($user, 'members') ? [] : null,
+            'operations' => fn (): ?array => $this->guard($user, 'operations') ? [] : null,
+        ];
+
+        $props = [];
+        foreach ($resolvers as $tab => $resolver) {
+            $props[$tab] = $tab === $filters->tab ? $resolver : Inertia::optional($resolver);
+        }
+
+        return $props;
     }
 
     /** @return array<string, bool> */

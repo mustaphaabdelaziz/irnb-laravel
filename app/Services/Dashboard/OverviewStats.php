@@ -170,9 +170,12 @@ class OverviewStats
             ->distinct()
             ->count('player_subscriptions.player_id');
 
+        // Route names, resolved client-side by Ziggy. They are asserted below
+        // so a renamed route fails a test here rather than throwing in the
+        // browser when an alert finally has something to report.
         return collect([
-            ['key' => 'overdue_rentals', 'count' => $overdueRentals, 'severity' => 'serious', 'href' => 'equipment.index'],
-            ['key' => 'low_stock', 'count' => $lowStock, 'severity' => 'warning', 'href' => 'equipment.catalog.index'],
+            ['key' => 'overdue_rentals', 'count' => $overdueRentals, 'severity' => 'serious', 'href' => 'equipment.catalogs.index'],
+            ['key' => 'low_stock', 'count' => $lowStock, 'severity' => 'warning', 'href' => 'equipment.catalogs.index'],
             ['key' => 'negative_balance', 'count' => $negativeAccounts, 'severity' => 'critical', 'href' => 'finance.index'],
             ['key' => 'unpaid_over_60', 'count' => $unpaidMembers, 'severity' => 'warning', 'href' => 'players.index'],
         ])->filter(fn (array $alert): bool => $alert['count'] > 0)->values()->all();

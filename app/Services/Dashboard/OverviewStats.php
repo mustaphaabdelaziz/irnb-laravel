@@ -3,7 +3,6 @@
 namespace App\Services\Dashboard;
 
 use App\Models\EquipmentRental;
-use App\Models\Player;
 use App\Models\Transaction;
 use App\Services\Dashboard\Support\BranchScope;
 use App\Services\Dashboard\Support\MonthBucket;
@@ -212,52 +211,68 @@ class OverviewStats
      *
      * Each source is capped before the merge so one busy table cannot crowd
      * the others out of the feed.
+     *
+     * Deliberately on the query builder rather than Eloquent: EquipmentRental
+     * appends `recipient_name`, whose accessor loads the polymorphic rentable
+     * one row at a time. Hydrating ten rentals as models costs ten extra
+     * queries for a label this feed does not use.
      */
     private function activity(DashboardFilters $filters): array
     {
-        $transactions = BranchScope::transactions(
-            Transaction::query()->where('archived', false),
-            $filters->branchId,
-        )
-            ->latest('transaction_date')
+        $transactions = DB::table('transactions')
+            ->where('transactions.archived', false)
+            ->when($filters->branchId !== null, fn ($q) => $q->whereIn(
+                'transactions.finance_account_id',
+                DB::table('finance_accounts')->where('branch_id', $filters->branchId)->select('id'),
+            ))
+            ->orderByDesc('transaction_date')
             ->limit(10)
             ->get(['id', 'transaction_date', 'amount', 'transaction_type', 'category', 'description'])
-            ->map(fn (Transaction $t): array => [
+            ->map(fn (object $t): array => [
                 'type' => 'transaction',
-                'at' => $t->transaction_date?->toDateTimeString(),
+                'at' => (string) $t->transaction_date,
                 'label' => $t->description ?: $t->category,
                 'amount' => $t->transaction_type === 'income' ? (float) $t->amount : -(float) $t->amount,
                 'id' => $t->id,
             ]);
 
-        $registrations = BranchScope::players(
-            Player::query()->where('archived', false),
-            $filters->branchId,
-        )
-            ->latest('created_at')
+        $registrations = DB::table('players')
+            ->where('archived', false)
+            ->when($filters->branchId !== null, fn ($q) => $q->whereIn(
+                'players.id',
+                DB::table('branch_player')->where('branch_id', $filters->branchId)->select('player_id'),
+            ))
+            ->orderByDesc('created_at')
             ->limit(10)
             ->get(['id', 'created_at', 'firstname', 'lastname'])
-            ->map(fn (Player $p): array => [
+            ->map(fn (object $p): array => [
                 'type' => 'registration',
-                'at' => $p->created_at?->toDateTimeString(),
+                'at' => (string) $p->created_at,
                 'label' => trim("{$p->firstname} {$p->lastname}"),
                 'amount' => null,
                 'id' => $p->id,
             ]);
 
-        $rentals = EquipmentRental::query()
-            ->when(
-                $filters->branchId !== null,
-                fn ($q) => $q->whereHas('equipmentItem.branches', fn ($b) => $b->whereKey($filters->branchId)),
-            )
-            ->with('equipmentItem:id,catalog_id', 'equipmentItem.catalog:id,name')
-            ->latest('checkout_date')
+        $rentals = DB::table('equipment_rentals')
+            ->join('equipment_items', 'equipment_items.id', '=', 'equipment_rentals.equipment_item_id')
+            ->join('equipment_catalogs', 'equipment_catalogs.id', '=', 'equipment_items.catalog_id')
+            ->when($filters->branchId !== null, fn ($q) => $q->whereIn(
+                'equipment_items.id',
+                DB::table('branch_equipment_item')
+                    ->where('branch_id', $filters->branchId)
+                    ->select('equipment_item_id'),
+            ))
+            ->orderByDesc('equipment_rentals.checkout_date')
             ->limit(10)
-            ->get(['id', 'equipment_item_id', 'checkout_date'])
-            ->map(fn (EquipmentRental $r): array => [
+            ->get([
+                'equipment_rentals.id as id',
+                'equipment_rentals.checkout_date as checkout_date',
+                'equipment_catalogs.name as catalog_name',
+            ])
+            ->map(fn (object $r): array => [
                 'type' => 'rental',
-                'at' => $r->checkout_date?->toDateTimeString(),
-                'label' => $r->equipmentItem?->catalog?->name ?? '',
+                'at' => (string) $r->checkout_date,
+                'label' => (string) $r->catalog_name,
                 'amount' => null,
                 'id' => $r->id,
             ]);
@@ -266,7 +281,7 @@ class OverviewStats
             ->concat($transactions)
             ->concat($registrations)
             ->concat($rentals)
-            ->filter(fn (array $entry): bool => $entry['at'] !== null)
+            ->filter(fn (array $entry): bool => $entry['at'] !== '')
             ->sortByDesc('at')
             ->take(10)
             ->values()

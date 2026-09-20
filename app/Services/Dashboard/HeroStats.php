@@ -45,11 +45,16 @@ class HeroStats
 
         // "New members" is the comparable quantity — the active headcount at a
         // past date is not stored, so joins in each window stand in for it.
+        // Both windows come back from one query rather than two.
         $delta = null;
         if ($filters->hasComparison()) {
-            $current = (float) $this->joinsBetween($filters, $filters->from, $filters->to);
-            $previous = (float) $this->joinsBetween($filters, $filters->prevFrom, $filters->prevTo);
-            $delta = DeltaCalculator::compute($current, $previous);
+            $joins = $this->twoWindowAggregate(
+                BranchScope::players(Player::query()->where('archived', false), $filters->branchId)->toBase(),
+                'players.created_at',
+                'COUNT(players.id)',
+                $filters,
+            );
+            $delta = DeltaCalculator::compute($joins['current'], $joins['previous']);
         }
 
         return [
@@ -68,15 +73,35 @@ class HeroStats
         ];
     }
 
-    private function joinsBetween(DashboardFilters $filters, ?CarbonImmutable $from, ?CarbonImmutable $to): int
+    /**
+     * One query, both windows.
+     *
+     * A tile needs its current value and the previous period's to show a
+     * delta. Asking twice doubles the hero row's query count for no gain, so
+     * the two windows ride in as conditional aggregates on a single pass.
+     *
+     * @param  string  $aggregate  a SQL aggregate over the column of interest, e.g. 'SUM(amount)'
+     * @return array{current: float, previous: float}
+     */
+    private function twoWindowAggregate(Builder $query, string $dateColumn, string $aggregate, DashboardFilters $filters): array
     {
-        $query = BranchScope::players(Player::query()->where('archived', false), $filters->branchId);
+        $inner = preg_replace('/^(\w+)\((.*)\)$/', '$2', $aggregate) ?? '*';
+        $function = preg_replace('/^(\w+)\(.*\)$/', '$1', $aggregate) ?? 'SUM';
+        $zero = $function === 'COUNT' ? 'NULL' : '0';
 
-        if ($from !== null) {
-            $query->whereBetween('players.created_at', [$from, $to]);
-        }
+        $row = $query->selectRaw(
+            "{$function}(CASE WHEN {$dateColumn} BETWEEN ? AND ? THEN {$inner} ELSE {$zero} END) as current_window, "
+            ."{$function}(CASE WHEN {$dateColumn} BETWEEN ? AND ? THEN {$inner} ELSE {$zero} END) as previous_window",
+            [
+                $filters->from, $filters->to,
+                $filters->prevFrom, $filters->prevTo,
+            ],
+        )->first();
 
-        return (int) $query->count();
+        return [
+            'current' => (float) ($row->current_window ?? 0),
+            'previous' => (float) ($row->previous_window ?? 0),
+        ];
     }
 
     /**
@@ -87,15 +112,11 @@ class HeroStats
      */
     private function collectionRate(DashboardFilters $filters): array
     {
-        $rate = fn (?CarbonImmutable $from, ?CarbonImmutable $to): ?float => $this->rateBetween($filters, $from, $to);
+        [$value, $previous] = $this->rateWindows($filters);
 
-        $value = $rate($filters->from, $filters->to);
-        $delta = null;
-
-        if ($filters->hasComparison() && $value !== null) {
-            $previous = $rate($filters->prevFrom, $filters->prevTo);
-            $delta = DeltaCalculator::compute($value, $previous);
-        }
+        $delta = ($filters->hasComparison() && $value !== null)
+            ? DeltaCalculator::compute($value, $previous)
+            : null;
 
         return [
             'key' => 'collection_rate',
@@ -107,19 +128,49 @@ class HeroStats
         ];
     }
 
-    private function rateBetween(DashboardFilters $filters, ?CarbonImmutable $from, ?CarbonImmutable $to): ?float
+    /**
+     * Collection rate for the current and previous windows, in one query.
+     *
+     * Null rather than zero when nothing is billed in a window — "nothing was
+     * due" and "nothing was collected" are different facts.
+     *
+     * @return array{0: ?float, 1: ?float}
+     */
+    private function rateWindows(DashboardFilters $filters): array
     {
-        $row = $this->subscriptionLines($filters, $from, $to)
-            ->selectRaw('SUM(amount_paid) as paid, SUM(amount_owed) as owed')
-            ->first();
+        $due = $this->effectiveDueDate();
+        $query = $this->subscriptionLines($filters, null, null);
 
-        $owed = (float) ($row->owed ?? 0);
+        if ($filters->isAllTime()) {
+            $row = $query->selectRaw('SUM(amount_paid) as current_paid, SUM(amount_owed) as current_owed')->first();
 
-        if ($owed <= 0.0) {
-            return null;
+            return [$this->ratio($row->current_paid ?? 0, $row->current_owed ?? 0), null];
         }
 
-        return round((float) ($row->paid ?? 0) / $owed * 100, 1);
+        $row = $query->selectRaw(
+            "SUM(CASE WHEN {$due} BETWEEN ? AND ? THEN amount_paid ELSE 0 END) as current_paid, "
+            ."SUM(CASE WHEN {$due} BETWEEN ? AND ? THEN amount_owed ELSE 0 END) as current_owed, "
+            ."SUM(CASE WHEN {$due} BETWEEN ? AND ? THEN amount_paid ELSE 0 END) as previous_paid, "
+            ."SUM(CASE WHEN {$due} BETWEEN ? AND ? THEN amount_owed ELSE 0 END) as previous_owed",
+            [
+                $filters->from->toDateString(), $filters->to->toDateString(),
+                $filters->from->toDateString(), $filters->to->toDateString(),
+                $filters->prevFrom->toDateString(), $filters->prevTo->toDateString(),
+                $filters->prevFrom->toDateString(), $filters->prevTo->toDateString(),
+            ],
+        )->first();
+
+        return [
+            $this->ratio($row->current_paid ?? 0, $row->current_owed ?? 0),
+            $this->ratio($row->previous_paid ?? 0, $row->previous_owed ?? 0),
+        ];
+    }
+
+    private function ratio(float|int|string|null $paid, float|int|string|null $owed): ?float
+    {
+        $owed = (float) $owed;
+
+        return $owed > 0.0 ? round((float) $paid / $owed * 100, 1) : null;
     }
 
     /**
@@ -177,17 +228,32 @@ class HeroStats
 
     private function netCashFlow(DashboardFilters $filters, array $months): array
     {
-        $net = fn (?CarbonImmutable $from, ?CarbonImmutable $to): float => $this->sumTransactions($filters, 'income', $from, $to)
-            - $this->sumTransactions($filters, 'expense', $from, $to);
+        $signed = "CASE WHEN transaction_type = 'income' THEN amount ELSE -amount END";
 
-        $value = $net($filters->from, $filters->to);
-        $delta = $filters->hasComparison()
-            ? DeltaCalculator::compute($value, $net($filters->prevFrom, $filters->prevTo))
-            : null;
+        $base = fn () => BranchScope::transactions(
+            Transaction::query()->where('archived', false),
+            $filters->branchId,
+        );
+
+        if ($filters->isAllTime()) {
+            $value = (float) $base()->sum(DB::raw($signed));
+            $delta = null;
+        } else {
+            $windows = $this->twoWindowAggregate(
+                $base()->toBase(),
+                'transaction_date',
+                "SUM({$signed})",
+                $filters,
+            );
+            $value = round($windows['current'], 2);
+            $delta = $filters->hasComparison()
+                ? DeltaCalculator::compute($value, $windows['previous'])
+                : null;
+        }
 
         $bucket = MonthBucket::expression('transaction_date');
-        $rows = BranchScope::transactions(Transaction::query()->where('archived', false), $filters->branchId)
-            ->selectRaw("{$bucket} as bucket, SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE -amount END) as net")
+        $rows = $base()
+            ->selectRaw("{$bucket} as bucket, SUM({$signed}) as net")
             ->groupBy('bucket')
             ->pluck('net', 'bucket')
             ->all();
@@ -200,20 +266,6 @@ class HeroStats
             'spark' => MonthBucket::series($rows, $months),
             'meta' => null,
         ];
-    }
-
-    private function sumTransactions(DashboardFilters $filters, string $type, ?CarbonImmutable $from, ?CarbonImmutable $to): float
-    {
-        $query = BranchScope::transactions(
-            Transaction::query()->where('archived', false)->where('transaction_type', $type),
-            $filters->branchId,
-        );
-
-        if ($from !== null) {
-            $query->whereBetween('transaction_date', [$from, $to]);
-        }
-
-        return (float) $query->sum('amount');
     }
 
     /**
@@ -251,9 +303,21 @@ class HeroStats
         // good news about debt being brought down.
         $delta = null;
         if ($filters->hasComparison()) {
-            $current = $this->unpaidAccruedIn($filters, $filters->from, $filters->to);
-            $previous = $this->unpaidAccruedIn($filters, $filters->prevFrom, $filters->prevTo);
-            $delta = DeltaCalculator::compute($current, $previous, DeltaCalculator::DOWN_GOOD);
+            $due = $this->effectiveDueDate();
+            $windows = $this->subscriptionLines($filters, null, null)->selectRaw(
+                "SUM(CASE WHEN {$due} BETWEEN ? AND ? THEN amount_owed - amount_paid ELSE 0 END) as current_window, "
+                ."SUM(CASE WHEN {$due} BETWEEN ? AND ? THEN amount_owed - amount_paid ELSE 0 END) as previous_window",
+                [
+                    $filters->from->toDateString(), $filters->to->toDateString(),
+                    $filters->prevFrom->toDateString(), $filters->prevTo->toDateString(),
+                ],
+            )->first();
+
+            $delta = DeltaCalculator::compute(
+                (float) ($windows->current_window ?? 0),
+                (float) ($windows->previous_window ?? 0),
+                DeltaCalculator::DOWN_GOOD,
+            );
         }
 
         return [
@@ -264,13 +328,6 @@ class HeroStats
             'spark' => $spark,
             'meta' => null,
         ];
-    }
-
-    /** Debt that came due in a window and is still unpaid. */
-    private function unpaidAccruedIn(DashboardFilters $filters, ?CarbonImmutable $from, ?CarbonImmutable $to): float
-    {
-        return (float) $this->subscriptionLines($filters, $from, $to)
-            ->sum(DB::raw('amount_owed - amount_paid'));
     }
 
     private function equipmentOnLoan(DashboardFilters $filters): array
@@ -314,8 +371,12 @@ class HeroStats
             $accounts->where('branch_id', $filters->branchId);
         }
 
-        $opening = (float) (clone $accounts)->sum('opening_balance');
-        $value = (float) (clone $accounts)->sum('current_balance');
+        $totals = $accounts
+            ->selectRaw('SUM(opening_balance) as opening, SUM(current_balance) as current')
+            ->first();
+
+        $opening = (float) ($totals->opening ?? 0);
+        $value = (float) ($totals->current ?? 0);
 
         $bucket = MonthBucket::expression('transaction_date');
         $monthly = BranchScope::transactions(Transaction::query()->where('archived', false), $filters->branchId)

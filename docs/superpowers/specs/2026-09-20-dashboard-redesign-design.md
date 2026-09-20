@@ -203,6 +203,14 @@ the active tab only.
 Debt aging buckets measure from `player_subscriptions.due_date`, falling back to the subscription
 year end when `due_date` is null.
 
+**Low stock has no threshold in the schema.** `equipment_catalogs` carries no reorder point, so the
+dashboard applies one flat rule — a catalog whose available quantity (stocked minus currently out on
+loan) is 2 or less — rather than inventing a column. If per-catalog thresholds are wanted later,
+that is a schema change and its own piece of work.
+
+**Alerts with a count of zero are omitted, not rendered green.** A strip of "all clear" chips trains
+the reader to stop looking at the one component whose job is to be noticed.
+
 ### Finance tab
 
 Income vs expense by month · expense breakdown by finance category (horizontal bar, sequential

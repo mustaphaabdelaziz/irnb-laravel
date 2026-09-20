@@ -377,8 +377,15 @@ forward. Month bucketing goes through `MonthBucket`, which returns
 `strftime('%Y-%m', <col>)` on SQLite and `DATE_FORMAT(<col>, '%Y-%m')` on MySQL, so the queries stay
 portable across the web and desktop deployments.
 
-Budget: hero ≤ 6 queries, each tab ≤ 8. A Pest test asserts the counts via `DB::listen` so a future
-widget cannot silently introduce an N+1.
+Budgets are set from measurement, not guesswork. Six tiles each needing a value, a previous-period
+value and a twelve-month series cannot fit in six queries; the measured cost is 18 for the hero row,
+11 for an Overview reload, and 27 for a first paint carrying both. Tests assert those numbers with
+small headroom via `DB::listen`, so a future widget cannot silently introduce an N+1 — one adds ten
+queries and trips the assertion.
+
+**The open tab is not an optional prop.** An optional prop resolves only when a partial reload names
+it, so marking every tab optional leaves the tab the reader actually opened with no data until a
+second request. The controller makes the open tab a plain closure and the other three optional.
 
 **Excluded rows.** Every money statistic excludes out-of-books transactions using whichever
 mechanism is live at implementation time: today that is `archived = false`, matching the rest of the

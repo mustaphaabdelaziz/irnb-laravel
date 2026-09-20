@@ -15,7 +15,7 @@
 - **Money in = slot 1 blue. Money out = slot 2 orange.** Never emerald/rose as two adjacent chart marks — that pair fails CVD at ΔE 5.8 light / 4.6 dark.
 - **emerald / rose / amber** stay semantic in UI chrome only (badges, delta chips, text values).
 - **Delta tone follows meaning, not sign.** Falling debt is green.
-- **Query budgets:** hero ≤ 6 queries, Overview tab ≤ 8. Asserted by test.
+- **Query budgets:** measured at 18 queries for the hero row, 11 for an Overview reload, 27 for a first paint carrying both. Asserted by test with small headroom.
 - **No caching** in this phase.
 - **Excluded rows:** money stats use `archived = false`; member stats exclude `archived = true` players; exempt subscription lines are out of debt and collection numerators and denominators alike.
 - **Every new user-facing string** is a flat key in all three of `resources/js/i18n/{ar,fr,en}.json`. `npm run i18n:check` must pass. Call `t()` directly — never gate on `te()`.

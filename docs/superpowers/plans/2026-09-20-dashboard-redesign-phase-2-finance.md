@@ -44,7 +44,7 @@ Everything in [Phase 1's plan](2026-09-20-dashboard-redesign-phase-1.md) still b
   - `accounts`: list of `['id' => int, 'name' => string, 'branch' => ?string, 'is_treasury' => bool, 'opening' => float, 'current' => float]`
   - `transfers`: `['count' => int, 'total' => float, 'recent' => list of ['from' => string, 'to' => string, 'amount' => float, 'date' => string]]`
 
-- [ ] **Step 1: Write the failing test** covering:
+- [x] **Step 1: Write the failing test** covering:
   - average transaction size over the window, archived excluded
   - largest single expense returns its amount, label and date
   - burn rate is mean monthly expense across the window, not the total
@@ -55,26 +55,26 @@ Everything in [Phase 1's plan](2026-09-20-dashboard-redesign-phase-1.md) still b
   - branch filter isolates accounts and transactions
   - an empty database returns empty lists and null runway without dividing by zero
 
-- [ ] **Step 2: Run it and watch it fail** — `php artisan test --filter=FinanceStatsTest`
+- [x] **Step 2: Run it and watch it fail** — `php artisan test --filter=FinanceStatsTest`
 
-- [ ] **Step 3: Implement the provider**
+- [x] **Step 3: Implement the provider**
 
-- [ ] **Step 4: Run it green, then Pint, then commit**
+- [x] **Step 4: Run it green, then Pint, then commit**
 
 ---
 
 ## Task 2: Wire the controller
 
-- [ ] **Step 1: Extend `DashboardPageTest`** — the finance payload has `summary`, `accounts` and `transfers` for a permitted user; stays null without `finance.view`; the tab reload stays within budget.
-- [ ] **Step 2: Replace the placeholder resolver** with `fn () => $this->guard($user, 'finance') ? $this->finance->get($filters) : null`
-- [ ] **Step 3: Run the suite, Pint, commit**
+- [x] **Step 1: Extend `DashboardPageTest`** — the finance payload has `summary`, `accounts` and `transfers` for a permitted user; stays null without `finance.view`; the tab reload stays within budget.
+- [x] **Step 2: Replace the placeholder resolver** with `fn () => $this->guard($user, 'finance') ? $this->finance->get($filters) : null`
+- [x] **Step 3: Run the suite, Pint, commit**
 
 ---
 
 ## Task 3: FinanceTab.vue
 
-- [ ] **Step 1: Build the tab** — a four-tile summary row using `StatTile`, two `ChartCard` horizontal bars (expense and income by category, sequential ramp, table view on each), an accounts card using `Meter` for each account against the largest balance, and a transfers card.
-- [ ] **Step 2: Render it from `Dashboard.vue`**
-- [ ] **Step 3: Add the i18n keys to all three locales, compose any string needing a number** (no `{placeholder}` — the bundle has no runtime message compiler)
-- [ ] **Step 4: `npm run build`, then drive the page in the browser and look at it**
-- [ ] **Step 5: Commit**
+- [x] **Step 1: Build the tab** — a four-tile summary row using `StatTile`, two `ChartCard` horizontal bars (expense and income by category, sequential ramp, table view on each), an accounts card using `Meter` for each account against the largest balance, and a transfers card.
+- [x] **Step 2: Render it from `Dashboard.vue`**
+- [x] **Step 3: Add the i18n keys to all three locales, compose any string needing a number** (no `{placeholder}` — the bundle has no runtime message compiler)
+- [x] **Step 4: `npm run build`, then drive the page in the browser and look at it**
+- [x] **Step 5: Commit**

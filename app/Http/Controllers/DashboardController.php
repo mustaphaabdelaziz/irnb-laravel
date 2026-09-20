@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Branch;
 use App\Models\User;
 use App\Services\Dashboard\DashboardFilters;
+use App\Services\Dashboard\FinanceStats;
 use App\Services\Dashboard\HeroStats;
 use App\Services\Dashboard\OverviewStats;
 use Illuminate\Http\Request;
@@ -31,6 +32,7 @@ class DashboardController extends Controller
     public function __construct(
         private readonly HeroStats $hero,
         private readonly OverviewStats $overview,
+        private readonly FinanceStats $finance,
     ) {}
 
     public function __invoke(Request $request): Response
@@ -69,7 +71,9 @@ class DashboardController extends Controller
         // machinery has one shape to code against from the start.
         $resolvers = [
             'overview' => fn (): array => $this->overview->get($filters),
-            'finance' => fn (): ?array => $this->guard($user, 'finance') ? [] : null,
+            'finance' => fn (): ?array => $this->guard($user, 'finance')
+                ? $this->finance->get($filters)
+                : null,
             'members' => fn (): ?array => $this->guard($user, 'members') ? [] : null,
             'operations' => fn (): ?array => $this->guard($user, 'operations') ? [] : null,
         ];

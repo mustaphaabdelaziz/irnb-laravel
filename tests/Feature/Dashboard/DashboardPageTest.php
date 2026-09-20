@@ -159,6 +159,43 @@ class DashboardPageTest extends TestCase
     }
 
     #[Test]
+    public function the_finance_tab_carries_its_real_payload(): void
+    {
+        $this->seedSomeData();
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('dashboard'), $this->partialHeaders('finance'))
+            ->assertOk();
+
+        $finance = $response->json('props.finance');
+
+        $this->assertCount(4, $finance['summary']);
+        $this->assertArrayHasKey('accounts', $finance);
+        $this->assertArrayHasKey('transfers', $finance);
+        $this->assertArrayHasKey('expenseByCategory', $finance);
+    }
+
+    #[Test]
+    public function the_finance_tab_stays_within_its_query_budget(): void
+    {
+        $this->seedSomeData();
+        $admin = $this->admin();
+
+        $sql = [];
+        DB::listen(function ($query) use (&$sql): void {
+            $sql[] = $query->sql;
+        });
+
+        $this->actingAs($admin)->get(route('dashboard'), $this->partialHeaders('finance'))->assertOk();
+
+        $this->assertLessThanOrEqual(
+            14,
+            count($sql),
+            'The finance tab ran '.count($sql)." queries — a widget is leaking work:\n".implode("\n", $sql),
+        );
+    }
+
+    #[Test]
     public function a_user_without_finance_permission_cannot_pull_the_finance_tab(): void
     {
         $this->seedSomeData();

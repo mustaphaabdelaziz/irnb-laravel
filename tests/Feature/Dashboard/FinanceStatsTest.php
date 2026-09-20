@@ -12,6 +12,7 @@ use App\Services\Dashboard\FinanceStats;
 use App\Services\FinanceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -183,13 +184,61 @@ class FinanceStatsTest extends TestCase
     }
 
     #[Test]
+    public function category_names_follow_the_app_locale(): void
+    {
+        $category = FinanceCategory::create([
+            'type' => 'expense',
+            'name' => 'Pitch hire',
+            'name_ar' => 'كراء الملعب',
+            'name_fr' => 'Location du terrain',
+        ]);
+        $this->transaction('expense', 400, '2026-05-02', ['finance_category_id' => $category->id]);
+
+        app()->setLocale('fr');
+        $this->assertSame('Location du terrain', $this->finance()['expenseByCategory'][0]['name']);
+
+        app()->setLocale('ar');
+        $this->assertSame('كراء الملعب', $this->finance()['expenseByCategory'][0]['name']);
+
+        app()->setLocale('en');
+        $this->assertSame('Pitch hire', $this->finance()['expenseByCategory'][0]['name']);
+    }
+
+    #[Test]
+    public function a_category_without_a_translation_falls_back_to_its_base_name(): void
+    {
+        $category = FinanceCategory::create(['type' => 'expense', 'name' => 'Zamboni fuel']);
+        $this->transaction('expense', 400, '2026-05-02', ['finance_category_id' => $category->id]);
+
+        app()->setLocale('fr');
+
+        $this->assertSame('Zamboni fuel', $this->finance()['expenseByCategory'][0]['name']);
+    }
+
+    #[Test]
     public function transactions_without_a_category_are_grouped_not_dropped(): void
     {
-        $this->transaction('expense', 250, '2026-05-02');
+        // transactions.category is NOT NULL and TransactionObserver turns it
+        // into a finance_category_id on every save, so an uncategorised row
+        // can only be a legacy one written before that observer existed. This
+        // inserts through the query builder to reproduce exactly that.
+        DB::table('transactions')->insert([
+            'amount' => 250,
+            'transaction_date' => '2026-05-02 00:00:00',
+            'transaction_type' => 'expense',
+            'category' => 'legacy',
+            'status' => 'Paid',
+            'archived' => false,
+            'fiscal_year' => 2026,
+            'finance_category_id' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
         $rows = $this->finance()['expenseByCategory'];
 
         $this->assertCount(1, $rows);
+        $this->assertSame('uncategorised', $rows[0]['labelKey']);
         $this->assertSame(250.0, $rows[0]['amount']);
     }
 
@@ -204,7 +253,9 @@ class FinanceStatsTest extends TestCase
         $rows = $this->finance()['expenseByCategory'];
 
         $this->assertCount(9, $rows);
-        $this->assertSame('Other', $rows[8]['name']);
+        // A key, not a word: the client translates it like everything else.
+        $this->assertSame('other', $rows[8]['labelKey']);
+        $this->assertSame(4, $rows[8]['folded']);
         // Categories 1 to 4 are the four smallest: 100 + 200 + 300 + 400.
         $this->assertSame(1000.0, $rows[8]['amount']);
     }

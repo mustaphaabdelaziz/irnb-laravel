@@ -148,12 +148,21 @@ class FinanceStats
      */
     private function byCategory(DashboardFilters $filters, string $type): array
     {
+        // The locale column is picked here rather than reading the model's
+        // localized_name accessor, because hydrating a model per category to
+        // read one string would undo the point of aggregating in SQL. Falls
+        // back to the base name, exactly as the accessor does.
+        $localeColumn = 'finance_categories.name_'.app()->getLocale();
+
         $rows = $this->windowed($filters)
             ->leftJoin('finance_categories', 'finance_categories.id', '=', 'transactions.finance_category_id')
             ->where('transactions.transaction_type', $type)
-            ->groupBy('finance_categories.id', 'finance_categories.name')
+            ->groupBy('finance_categories.id', 'finance_categories.name', $localeColumn)
             ->orderByDesc('total')
-            ->selectRaw('finance_categories.name as name, SUM(transactions.amount) as total')
+            ->selectRaw(
+                "COALESCE(NULLIF({$localeColumn}, ''), finance_categories.name) as name, "
+                .'SUM(transactions.amount) as total'
+            )
             ->get();
 
         if ($rows->isEmpty()) {
@@ -165,8 +174,12 @@ class FinanceStats
         $head = $rows->take(self::CATEGORY_ROWS);
         $tail = $rows->slice(self::CATEGORY_ROWS);
 
+        // `labelKey` carries the two rows the dashboard names itself rather
+        // than reading from the database. They are keys, not English, so they
+        // translate with the rest of the interface.
         $result = $head->map(fn (object $row): array => [
-            'name' => $row->name ?: 'Uncategorised',
+            'name' => $row->name ?: null,
+            'labelKey' => $row->name ? null : 'uncategorised',
             'amount' => round((float) $row->total, 2),
             'share' => $grandTotal > 0 ? round((float) $row->total / $grandTotal * 100, 1) : 0.0,
         ])->values()->all();
@@ -175,7 +188,8 @@ class FinanceStats
             $tailTotal = (float) $tail->sum('total');
 
             $result[] = [
-                'name' => 'Other',
+                'name' => null,
+                'labelKey' => 'other',
                 'amount' => round($tailTotal, 2),
                 'share' => $grandTotal > 0 ? round($tailTotal / $grandTotal * 100, 1) : 0.0,
                 'folded' => $tail->count(),

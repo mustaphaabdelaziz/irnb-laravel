@@ -7,6 +7,7 @@ import DashboardFilterBar from '@/Components/Dashboard/DashboardFilterBar.vue';
 import StatTile from '@/Components/Dashboard/StatTile.vue';
 import Icon from '@/Components/Icon.vue';
 import { Button } from '@/Components/ui/button';
+import FinanceTab from '@/Pages/Dashboard/Partials/FinanceTab.vue';
 import OverviewTab from '@/Pages/Dashboard/Partials/OverviewTab.vue';
 import '@/lib/registerCharts';
 
@@ -181,9 +182,10 @@ const heroTiles = computed(() => props.hero.map((tile) => ({
             </div>
 
             <OverviewTab v-if="activeTab === 'overview'" :data="overview" :loading="loadingTab" :rtl="rtl" />
+            <FinanceTab v-else-if="activeTab === 'finance'" :data="finance" :loading="loadingTab" :rtl="rtl" />
 
-            <!-- Finance, Members and Operations land in phase 2. The tab bar and
-                 the fetch machinery are already in place for them. -->
+            <!-- Members and Operations land in phase 3. The tab bar and the
+                 fetch machinery are already in place for them. -->
             <div
                 v-else
                 class="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border py-16 text-center"

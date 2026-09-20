@@ -16,11 +16,12 @@ class DeltaCalculator
     public const DOWN_GOOD = 'down_good';
 
     /**
+     * Returns null when there is nothing to compare against: a missing previous
+     * period is not a 100% rise, and dividing by zero is not an infinity worth
+     * printing on a tile.
+     *
      * @param  string  $direction  self::UP_GOOD or self::DOWN_GOOD
      * @return array{percent: float, raw: float, tone: string}|null
-     *                                                              Null when there is nothing to compare against — a missing previous
-     *                                                              period is not a 100% rise, and dividing by zero is not infinity worth
-     *                                                              printing.
      */
     public static function compute(float $current, ?float $previous, string $direction = self::UP_GOOD): ?array
     {

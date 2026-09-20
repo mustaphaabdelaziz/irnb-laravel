@@ -171,6 +171,12 @@ table, so a 12-point sparkline cannot read them directly. Both are reconstructed
 If reconstruction proves too slow or too divergent during implementation, the fallback is to drop
 those two sparklines rather than ship a misleading line — the tiles keep value and delta.
 
+**The debt tile's delta measures newly accrued unpaid debt, not the running total.** A cumulative
+accrual can only rise, so comparing totals period over period would report "neutral or worse"
+forever and the tile could never show good news about debt being brought down. The delta therefore
+compares debt that *came due within* each window and is still unpaid: less new debt than last period
+is the good direction. The headline value stays the current total.
+
 When compare is off, the delta chip and sparkline are removed from the DOM and the tile shrinks. No
 empty placeholder, no dash, no zero.
 

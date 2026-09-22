@@ -18,6 +18,9 @@ const active = ref(0);
 const root = ref(null);
 
 const selected = computed(() => props.options.find((o) => String(o.value) === String(props.modelValue)) || null);
+// A value can be set with no matching option (e.g. a stale/removed id): the
+// clear button must still show so the field isn't stuck unclearable.
+const hasValue = computed(() => props.modelValue !== '' && props.modelValue !== null && props.modelValue !== undefined);
 
 // Every typed word must appear somewhere in the label, description or keywords:
 // "benali amine" and "amine benali" find the same person, and a membership ID
@@ -58,7 +61,7 @@ function onBlur(e) {
             class="mt-1 flex w-full items-center justify-between rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-start text-sm shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 disabled:opacity-50">
             <span :class="selected ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400'">{{ selected ? selected.label : (placeholder || '-') }}</span>
             <span class="flex items-center gap-1">
-                <span v-if="selected" class="text-slate-400 hover:text-rose-500" @click.stop="choose(null)">&times;</span>
+                <span v-if="hasValue" class="text-slate-400 hover:text-rose-500" @click.stop="choose(null)">&times;</span>
                 <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </span>
         </button>

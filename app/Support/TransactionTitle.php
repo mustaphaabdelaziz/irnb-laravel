@@ -20,6 +20,14 @@ use Illuminate\Support\Str;
  */
 final class TransactionTitle
 {
+    /**
+     * The only category slugs the app itself generates (see PlayerController,
+     * TransactionController). Any other slug is free text a user typed as a
+     * finance category name, and must never be looked up in the UI catalog —
+     * it could collide with an unrelated key there (paid, cancel, all…).
+     */
+    private const SYSTEM_CATEGORY_SLUGS = ['subscription', 'donation', 'debt_payment'];
+
     /** Eager loads that for() and decorate() read. */
     public const RELATIONS = [
         'financeCategory',
@@ -82,6 +90,10 @@ final class TransactionTitle
         }
 
         $slug = (string) ($transaction->category ?: 'transaction');
+
+        if (! in_array($slug, self::SYSTEM_CATEGORY_SLUGS, true)) {
+            return Str::headline($slug);
+        }
 
         return UiLang::get($slug, Str::headline($slug));
     }

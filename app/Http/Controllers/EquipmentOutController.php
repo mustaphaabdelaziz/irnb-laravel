@@ -23,7 +23,8 @@ class EquipmentOutController extends Controller
         $type = in_array($request->query('type'), self::TYPES, true) ? $request->query('type') : 'rental';
         $search = trim((string) $request->query('search', ''));
 
-        $open = EquipmentRental::query()->whereNull('return_date');
+        $open = EquipmentRental::query()->whereNull('return_date')
+            ->when($search !== '', fn (Builder $q) => $this->applySearch($q, $search));
 
         $counts = (clone $open)
             ->selectRaw('type, COUNT(*) as total')
@@ -32,9 +33,6 @@ class EquipmentOutController extends Controller
 
         $rentals = (clone $open)
             ->where('type', $type)
-            ->when($search !== '', fn (Builder $q) => $q->where(fn (Builder $w) => $w
-                ->where('external_name', 'like', "%{$search}%")
-                ->orWhereHasMorph('rentable', [Player::class], fn (Builder $p) => $p->search($search))))
             ->with(['equipmentItem.catalog:id,name', 'rentable'])
             ->orderBy('checkout_date')
             ->orderBy('id')
@@ -67,5 +65,13 @@ class EquipmentOutController extends Controller
             ],
             'filters' => ['type' => $type, 'search' => $search],
         ]);
+    }
+
+    /** The holder-search condition, shared by the tab counts and the table so they never disagree. */
+    private function applySearch(Builder $query, string $search): Builder
+    {
+        return $query->where(fn (Builder $w) => $w
+            ->where('external_name', 'like', "%{$search}%")
+            ->orWhereHasMorph('rentable', [Player::class], fn (Builder $p) => $p->search($search)));
     }
 }

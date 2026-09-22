@@ -37,6 +37,9 @@ class ReportController extends Controller
             'title' => TransactionTitle::for($transaction),
             'categoryLabel' => $transaction->financeCategory?->localized_name ?? $transaction->category,
             'statusLabel' => UiLang::get(strtolower((string) $transaction->status), (string) $transaction->status),
+            'paymentLabel' => $transaction->payment_method
+                ? UiLang::get(strtolower((string) $transaction->payment_method), (string) $transaction->payment_method)
+                : null,
         ])->render();
 
         return $this->pdf->stream($html, "receipt-{$transaction->id}.pdf");

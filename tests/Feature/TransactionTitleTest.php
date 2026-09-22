@@ -100,6 +100,21 @@ class TransactionTitleTest extends TestCase
     }
 
     #[Test]
+    public function a_category_slug_that_collides_with_an_unrelated_ui_key_is_headlined_not_mistranslated(): void
+    {
+        // 'paid' is a UI key for payment status ("مدفوع" in Arabic); a finance
+        // category slug that happens to collide with it must not borrow that
+        // unrelated label. Deliberately not eager-loading financeCategory, so
+        // categoryLabel() falls through to the free-text slug branch.
+        $tx = Transaction::create([
+            'amount' => 100, 'transaction_type' => 'expense', 'category' => 'paid', 'status' => 'Paid',
+        ]);
+
+        app()->setLocale('ar');
+        $this->assertSame('Paid', TransactionTitle::for($tx));
+    }
+
+    #[Test]
     public function a_line_without_its_own_label_falls_back_to_the_subscriptions_name(): void
     {
         FinanceCategory::updateOrCreate(

@@ -137,6 +137,23 @@ class EquipmentAssignmentTest extends TestCase
     }
 
     #[Test]
+    public function a_players_profile_exposes_whether_each_rental_is_overdue(): void
+    {
+        $lot = $this->lot();
+        $player = $this->player();
+        $this->open($lot, [
+            'rentable_type' => Player::class,
+            'rentable_id' => $player->id,
+            'due_date' => now()->subDay(),
+        ]);
+
+        $props = $this->actingAs($this->admin())->get(route('players.show', $player))
+            ->assertOk()->viewData('page')['props'];
+
+        $this->assertTrue($props['player']['equipment_rentals'][0]['is_overdue']);
+    }
+
+    #[Test]
     public function viewing_equipment_out_needs_only_equipment_view(): void
     {
         $role = Role::factory()->create(['permissions' => ['equipment' => ['view']]]);

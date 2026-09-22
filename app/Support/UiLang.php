@@ -35,9 +35,14 @@ final class UiLang
             $locale = 'en';
         }
 
-        return self::$catalogs[$locale] ??= json_decode(
-            (string) file_get_contents(resource_path("js/i18n/{$locale}.json")),
-            true,
-        ) ?: [];
+        if (isset(self::$catalogs[$locale])) {
+            return self::$catalogs[$locale];
+        }
+
+        $path = resource_path("js/i18n/{$locale}.json");
+
+        return self::$catalogs[$locale] = is_file($path)
+            ? (json_decode((string) file_get_contents($path), true) ?: [])
+            : [];
     }
 }

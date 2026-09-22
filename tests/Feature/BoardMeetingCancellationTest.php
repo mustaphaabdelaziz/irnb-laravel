@@ -78,6 +78,19 @@ class BoardMeetingCancellationTest extends TestCase
     }
 
     #[Test]
+    public function a_held_meeting_with_an_empty_reason_gets_the_not_cancellable_flash_not_a_validation_error(): void
+    {
+        $meeting = $this->meeting(['status' => 'held']);
+
+        $this->actingAs($this->admin())
+            ->post(route('board.meetings.cancel', $meeting), ['reason' => ''])
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('error', 'flash.meeting_not_cancellable');
+
+        $this->assertSame('held', $meeting->fresh()->status);
+    }
+
+    #[Test]
     public function a_cancelled_meeting_is_read_only(): void
     {
         $admin = $this->admin();

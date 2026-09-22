@@ -257,7 +257,11 @@ class TransactionController extends Controller
                     ->when($ownPlayerId, fn (Builder $q) => $q->orWhere('id', $ownPlayerId)))
                 ->with(['branches:id,name,name_ar,name_fr,name_en', 'category:id,name,name_ar,name_fr,name_en'])
                 ->orderBy('lastname')->orderBy('firstname')
-                ->get()
+                ->get([
+                    'id', 'firstname', 'lastname', 'nickname', 'father', 'grandfather',
+                    'membership_id', 'category_id', 'birthdate', 'picture_url', 'picture_filename',
+                    'outstanding_debt', 'archived',
+                ])
                 ->map(fn (Player $player) => [
                     'id' => $player->id,
                     'name' => $player->short_name,

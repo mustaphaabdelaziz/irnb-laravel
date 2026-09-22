@@ -135,6 +135,11 @@ class PlayerController extends Controller
             'equipmentRentals.equipmentItem.catalog',
         ]);
 
+        // Instance-only append (not $appends on the model): is_overdue re-implements
+        // EquipmentRental::getIsOverdueAttribute() so the page doesn't have to, without
+        // making every serialized rental elsewhere carry the extra attribute.
+        $player->equipmentRentals->each->append('is_overdue');
+
         $transactions = Transaction::query()
             ->with([...Transaction::FINANCE_ACCOUNT_LABEL, ...TransactionTitle::RELATIONS])
             ->where('related_entity_type', 'Player')

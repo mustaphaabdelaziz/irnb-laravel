@@ -42,10 +42,6 @@ const equipmentGroups = computed(() => [
     { key: 'rented', label: t('equipment.rentals_tab'), rows: equipmentRentals.value.filter((r) => !r.return_date && r.type !== 'assignment') },
     { key: 'returned', label: t('equipment.past_items'), rows: equipmentRentals.value.filter((r) => r.return_date) },
 ].filter((group) => group.rows.length));
-function isOverdueRental(r) {
-    return r.type !== 'assignment' && !r.return_date && r.due_date
-        && String(r.due_date).slice(0, 10) < new Date().toISOString().slice(0, 10);
-}
 
 // Manual/previous debts = obligation lines with no subscription plan attached.
 const manualDebts = computed(() =>
@@ -498,7 +494,7 @@ function formatDate(val) {
                                 <span v-if="(r.quantity ?? 1) > 1" class="text-xs text-slate-500">× {{ r.return_date ? r.quantity : r.quantity - (r.returned_quantity ?? 0) }}</span>
                                 <span class="text-xs text-slate-500 dark:text-slate-400">{{ t('equipment.out_since') }} {{ formatDate(r.checkout_date) }}</span>
                                 <span v-if="r.return_date" class="text-xs text-slate-500 dark:text-slate-400">· {{ t('equipment.returned_on') }} {{ formatDate(r.return_date) }}</span>
-                                <Badge v-else-if="isOverdueRental(r)" :label="t('overdue')" color="rose" />
+                                <Badge v-else-if="r.is_overdue" :label="t('overdue')" color="rose" />
                             </li>
                         </ul>
                     </section>

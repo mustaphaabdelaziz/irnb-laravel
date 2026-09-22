@@ -27,7 +27,7 @@
         @endif
         <tr><td class="label">{{ __('Type') }}</td><td>{{ $transaction->transaction_type === 'income' ? __('Income') : __('Expense') }}</td></tr>
         <tr><td class="label">{{ __('Category') }}</td><td>{{ $categoryLabel }}</td></tr>
-        <tr><td class="label">{{ __('Payment Method') }}</td><td>{{ $transaction->payment_method ?: '—' }}</td></tr>
+        <tr><td class="label">{{ __('Payment Method') }}</td><td>{{ $paymentLabel ?: '—' }}</td></tr>
         <tr><td class="label">{{ __('Status') }}</td><td><span class="badge">{{ $statusLabel }}</span></td></tr>
         @if ($transaction->description)
             <tr><td class="label">{{ __('Description') }}</td><td>{{ $transaction->description }}</td></tr>

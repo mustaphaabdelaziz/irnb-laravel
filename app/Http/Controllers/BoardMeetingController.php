@@ -103,13 +103,13 @@ class BoardMeetingController extends Controller
      */
     public function cancel(Request $request, BoardMeeting $meeting): RedirectResponse
     {
-        $data = $request->validate([
-            'reason' => ['required', 'string', 'min:3', 'max:500'],
-        ]);
-
         if ($meeting->status !== 'scheduled') {
             return back()->with('error', 'flash.meeting_not_cancellable');
         }
+
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'min:3', 'max:500'],
+        ]);
 
         $meeting->update([
             'status' => 'cancelled',

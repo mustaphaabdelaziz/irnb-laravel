@@ -137,6 +137,12 @@ class Player extends Model
         return $this->birthdate?->age;
     }
 
+    /** "Firstname Lastname" for lists and labels; never "Amine null". */
+    public function getShortNameAttribute(): string
+    {
+        return trim($this->firstname.' '.($this->lastname ?? ''));
+    }
+
     public function getFullnameAttribute(): string
     {
         $parts = [

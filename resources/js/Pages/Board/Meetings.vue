@@ -1,11 +1,14 @@
 <script setup>
-import { ref } from 'vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { ref, watch } from 'vue';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Icon from '@/Components/Icon.vue';
 
-const props = defineProps({ meetings: { type: Array, default: () => [] } });
+const props = defineProps({
+    meetings: { type: Array, default: () => [] },
+    filters: { type: Object, default: () => ({}) },
+});
 const { t, locale } = useI18n();
 
 const showForm = ref(false);
@@ -26,6 +29,15 @@ const statusChip = {
     held: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300',
     cancelled: 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400',
 };
+
+// Cancelled meetings stay listed (history); the filter narrows the list.
+const statusFilter = ref(props.filters?.status || '');
+watch(statusFilter, (status) => {
+    router.get(route('board.meetings'), status ? { status } : {}, {
+        only: ['meetings', 'filters'], preserveState: true, preserveScroll: true, replace: true,
+    });
+});
+const filterOptions = ['', 'scheduled', 'held', 'cancelled'];
 </script>
 
 <template>
@@ -39,7 +51,14 @@ const statusChip = {
         </template>
 
         <div class="space-y-5">
-            <div class="flex justify-end">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex flex-wrap gap-1.5">
+                    <button v-for="s in filterOptions" :key="s || 'all'" type="button" @click="statusFilter = s"
+                        class="rounded-full px-3 py-1 text-xs font-bold transition-colors"
+                        :class="statusFilter === s ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' : 'bg-white text-slate-500 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-400 dark:ring-slate-800'">
+                        {{ s ? t(s) : t('all') }}
+                    </button>
+                </div>
                 <button @click="showForm = !showForm" class="inline-flex items-center gap-1.5 rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><Icon name="plus" /> {{ t('add_meeting') }}</button>
             </div>
 
@@ -75,11 +94,13 @@ const statusChip = {
             </form>
 
             <div class="space-y-3">
-                <Link v-for="mt in meetings" :key="mt.id" :href="route('board.meetings.show', mt.id)" class="card flex items-center justify-between gap-4 p-4 transition-shadow hover:shadow-md">
+                <Link v-for="mt in meetings" :key="mt.id" :href="route('board.meetings.show', mt.id)"
+                    class="card flex items-center justify-between gap-4 p-4 transition-shadow hover:shadow-md"
+                    :class="mt.status === 'cancelled' ? 'opacity-70' : ''">
                     <div class="flex min-w-0 items-center gap-3">
                         <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600 ring-1 ring-primary-100 dark:bg-primary-500/10 dark:text-primary-300 dark:ring-primary-500/20"><Icon name="calendar" /></span>
                         <div class="min-w-0">
-                            <p class="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{{ mt.title }}</p>
+                            <p class="truncate text-sm font-bold text-slate-900 dark:text-slate-100" :class="mt.status === 'cancelled' ? 'line-through decoration-slate-400' : ''">{{ mt.title }}</p>
                             <p class="truncate text-xs text-slate-500 dark:text-slate-400">{{ fmtDate(mt.meeting_date) }} · {{ t(mt.type) }}<span v-if="mt.location"> · {{ mt.location }}</span></p>
                         </div>
                     </div>

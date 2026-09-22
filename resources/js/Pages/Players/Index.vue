@@ -10,8 +10,11 @@ import { useI18n } from 'vue-i18n';
 import { ref, watch, computed } from 'vue';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useBulkSelection } from '@/Composables/useBulkSelection';
+import { useListFilters } from '@/Composables/useListFilters';
 import BulkEditModal from '@/Components/BulkEditModal.vue';
 import StatDoughnut from '@/Components/StatDoughnut.vue';
+import Dropdown from '@/Components/Dropdown.vue';
+import Icon from '@/Components/Icon.vue';
 
 const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
@@ -41,23 +44,27 @@ const ageFilter = ref(props.filters?.age || '');
 // Active vs Archived view. Backend defaults to active when no `archived` param.
 const archivedView = ref(!!Number(props.filters?.archived));
 
-const filterParams = computed(() => ({
-    search: search.value || undefined,
-    category_id: categoryFilter.value || undefined,
-    status: statusFilter.value || undefined,
-    position_id: positionFilter.value || undefined,
-    branch_id: branchFilter.value || undefined,
-    age: ageFilter.value || undefined,
+// The stats follow the filters too; the lookup lists never do, so they stay out
+// of the reload.
+const { params: filterParams, loading: filtering } = useListFilters('players.index', () => ({
+    search: search.value,
+    category_id: categoryFilter.value,
+    status: statusFilter.value,
+    position_id: positionFilter.value,
+    branch_id: branchFilter.value,
+    age: ageFilter.value,
     archived: archivedView.value ? 1 : undefined,
-}));
-
-function applyFilters() {
-    router.get(route('players.index'), filterParams.value, { preserveState: true, replace: true });
-}
-
-watch([search, categoryFilter, statusFilter, positionFilter, branchFilter, ageFilter, archivedView], applyFilters);
+}), { only: ['players', 'filters', 'categoryStats', 'statusStats', 'positionStats', 'ageStats'] });
 
 const exportHref = computed(() => route('players.export', filterParams.value));
+
+// Secondary header actions: shown inline on wide screens, folded into a
+// "more" menu below xl so the fixed-height header never overflows.
+const secondaryActions = computed(() => [
+    { key: 'template', label: t('template'), icon: 'document', href: route('players.import.template') },
+    { key: 'import', label: t('import'), icon: 'upload', onClick: () => { showImport.value = true; } },
+    { key: 'export', label: t('export'), icon: 'download', href: exportHref.value },
+]);
 
 // Distribution panels: map each stat source to StatDoughnut's {key, label, count}.
 const categoryChips = computed(() => props.categoryStats.map((s) => ({
@@ -185,23 +192,65 @@ function runBulk() {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between gap-3">
-                <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('players') }}</h1>
-                <div class="flex items-center gap-2">
-                    <a :href="route('players.import.template')" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                        {{ t('template') }}
-                    </a>
-                    <button @click="showImport = true" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v12m0-12l-4 4m4-4l4 4M4 20h16"/></svg>
-                        {{ t('import') }}
-                    </button>
-                    <a :href="exportHref" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                        {{ t('export') }}
-                    </a>
-                    <Link :href="route('players.create')" class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 transition-colors">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                        {{ t('new_player') }}
+                <h1 class="min-w-0 truncate text-lg font-bold text-slate-900 dark:text-slate-100 sm:text-xl">{{ t('players') }}</h1>
+                <div class="flex shrink-0 items-center gap-2">
+                    <!-- Secondary actions inline on wide screens -->
+                    <div class="hidden items-center gap-2 xl:flex">
+                        <component
+                            :is="action.href ? 'a' : 'button'"
+                            v-for="action in secondaryActions"
+                            :key="action.key"
+                            :href="action.href"
+                            :type="action.href ? undefined : 'button'"
+                            @click="action.onClick?.()"
+                            class="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 dark:focus-visible:ring-offset-slate-900"
+                        >
+                            <Icon :name="action.icon" class="text-base" />
+                            {{ action.label }}
+                        </component>
+                    </div>
+
+                    <!-- ...folded into an overflow menu below xl -->
+                    <Dropdown align="right" width="48" class="xl:hidden">
+                        <template #trigger>
+                            <button
+                                type="button"
+                                :aria-label="t('more_actions')"
+                                :title="t('more_actions')"
+                                aria-haspopup="menu"
+                                class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 bg-white text-lg text-slate-600 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:focus-visible:ring-offset-slate-900"
+                            >
+                                <Icon name="more" />
+                            </button>
+                        </template>
+                        <template #content>
+                            <div role="menu">
+                                <component
+                                    :is="action.href ? 'a' : 'button'"
+                                    v-for="action in secondaryActions"
+                                    :key="action.key"
+                                    :href="action.href"
+                                    :type="action.href ? undefined : 'button'"
+                                    role="menuitem"
+                                    @click="action.onClick?.()"
+                                    class="flex w-full items-center gap-2.5 px-4 py-2.5 text-start text-sm text-slate-700 transition-colors hover:bg-slate-100 focus:bg-slate-100 focus:outline-none dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:bg-slate-700"
+                                >
+                                    <Icon :name="action.icon" class="text-base text-slate-400 dark:text-slate-500" />
+                                    {{ action.label }}
+                                </component>
+                            </div>
+                        </template>
+                    </Dropdown>
+
+                    <!-- Primary action: always visible, icon-only on phones -->
+                    <Link
+                        :href="route('players.create')"
+                        :aria-label="t('new_player')"
+                        :title="t('new_player')"
+                        class="inline-flex h-9 min-w-9 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-primary-600 px-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-slate-900 sm:px-4"
+                    >
+                        <Icon name="plus" class="text-base" :stroke-width="2" />
+                        <span class="hidden sm:inline">{{ t('new_player') }}</span>
                     </Link>
                 </div>
             </div>
@@ -221,11 +270,11 @@ function runBulk() {
             <!-- Filters + view toggle -->
             <div class="flex flex-wrap items-center gap-3">
                 <div class="w-full sm:w-64">
-                    <SearchInput v-model="search" :placeholder="t('search_for_member')" />
+                    <SearchInput v-model="search" :loading="filtering" :placeholder="t('search_for_member')" />
                 </div>
                 <select
                     v-model="categoryFilter"
-                    class="rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                    class="min-w-0 flex-1 rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:max-w-xs sm:flex-none"
                 >
                     <option value="">{{ t('all_categories') }}</option>
                     <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.localized_name || cat.name }}</option>
@@ -233,29 +282,38 @@ function runBulk() {
                 <select
                     v-if="branches.length"
                     v-model="branchFilter"
-                    class="rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                    class="min-w-0 flex-1 rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:max-w-xs sm:flex-none"
                 >
                     <option value="">{{ t('all_branches') }}</option>
                     <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.localized_name || b.name }}</option>
                 </select>
-                <div class="inline-flex rounded-xl bg-slate-100 p-0.5 dark:bg-slate-800">
-                    <button @click="archivedView = false" class="rounded-lg px-3 py-1.5 text-xs font-bold transition-colors"
-                        :class="!archivedView ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">{{ t('active') }}</button>
-                    <button @click="archivedView = true" class="rounded-lg px-3 py-1.5 text-xs font-bold transition-colors"
-                        :class="archivedView ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">{{ t('archived') }}</button>
-                </div>
-                <div class="ms-auto inline-flex rounded-xl bg-slate-100 p-0.5 dark:bg-slate-800">
-                    <button @click="view = 'list'" :title="t('list_view')" class="rounded-lg px-3 py-1.5 text-xs font-bold transition-colors"
-                        :class="view === 'list' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">☰ {{ t('list_view') }}</button>
-                    <button @click="view = 'grid'" :title="t('grid_view')" class="rounded-lg px-3 py-1.5 text-xs font-bold transition-colors"
-                        :class="view === 'grid' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">▦ {{ t('grid_view') }}</button>
+                <!-- Toggles share a row on phones: status left, view right -->
+                <div class="flex w-full items-center justify-between gap-3 sm:w-auto sm:flex-1">
+                    <div class="inline-flex rounded-xl bg-slate-100 p-0.5 dark:bg-slate-800">
+                        <button type="button" @click="archivedView = false" :aria-pressed="!archivedView" class="rounded-lg px-3 py-1.5 text-xs font-bold transition-colors"
+                            :class="!archivedView ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">{{ t('active') }}</button>
+                        <button type="button" @click="archivedView = true" :aria-pressed="archivedView" class="rounded-lg px-3 py-1.5 text-xs font-bold transition-colors"
+                            :class="archivedView ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">{{ t('archived') }}</button>
+                    </div>
+                    <div class="inline-flex rounded-xl bg-slate-100 p-0.5 dark:bg-slate-800">
+                        <button type="button" @click="view = 'list'" :title="t('list_view')" :aria-label="t('list_view')" :aria-pressed="view === 'list'" class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors"
+                            :class="view === 'list' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">
+                            <Icon name="menu" class="text-sm" />
+                            <span class="hidden sm:inline">{{ t('list_view') }}</span>
+                        </button>
+                        <button type="button" @click="view = 'grid'" :title="t('grid_view')" :aria-label="t('grid_view')" :aria-pressed="view === 'grid'" class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors"
+                            :class="view === 'grid' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">
+                            <Icon name="dashboard" class="text-sm" />
+                            <span class="hidden sm:inline">{{ t('grid_view') }}</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <!-- Bulk action bar (list view) -->
             <div v-if="view === 'list' && selected.length" class="flex flex-wrap items-center gap-3 rounded-xl bg-primary-50 dark:bg-primary-900/20 px-4 py-2.5 ring-1 ring-primary-200 dark:ring-primary-800">
                 <span class="text-sm font-medium text-primary-800 dark:text-primary-200">{{ t('selected_count', { count: selected.length }) }}</span>
-                <div class="ms-auto flex items-center gap-2">
+                <div class="ms-auto flex flex-wrap items-center gap-2">
                     <button v-if="!archivedView" @click="showBulkEdit = true" class="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700">{{ t('bulk_edit') }}</button>
                     <button v-if="!archivedView" @click="bulkAction = 'archive'" class="rounded-lg bg-white dark:bg-slate-900 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-200 ring-1 ring-slate-300 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800">{{ t('archive_selected') }}</button>
                     <button v-if="archivedView" @click="bulkAction = 'restore'" class="rounded-lg bg-white dark:bg-slate-900 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-300 dark:ring-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/30">{{ t('restore_selected') }}</button>
@@ -264,7 +322,7 @@ function runBulk() {
             </div>
 
             <!-- Grid view -->
-            <div v-if="view === 'grid'" class="space-y-4">
+            <div v-if="view === 'grid'" class="space-y-4 transition-opacity" :class="{ 'opacity-60': filtering }" :aria-busy="filtering">
                 <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     <Link v-for="player in players.data" :key="player.id" :href="route('players.show', player.id)"
                         class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 transition-shadow hover:shadow-md dark:bg-slate-900 dark:ring-slate-800">
@@ -296,7 +354,7 @@ function runBulk() {
             </div>
 
             <!-- Table -->
-            <div v-if="view === 'list'" class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+            <div v-if="view === 'list'" :class="{ 'opacity-60': filtering }" :aria-busy="filtering" class="overflow-hidden transition-opacity rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
                         <thead class="bg-slate-50 dark:bg-slate-950">

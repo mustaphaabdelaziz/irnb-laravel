@@ -9,6 +9,7 @@ use App\Models\Player;
 use App\Models\PlayerSubscription;
 use App\Models\Subscription;
 use App\Services\Dashboard\ModuleStats;
+use App\Services\Finance\RecalculatePlayerDebtService;
 use App\Support\Csv;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -38,8 +39,9 @@ class SubscriptionController extends Controller
         return Inertia::render('Subscriptions/Index', [
             'subscriptions' => $subscriptions,
             'strip' => fn (): array => app(ModuleStats::class)->subscriptions(),
-            'branches' => Branch::orderBy('name')->get(),
-            'branchStats' => $this->branchStats(),
+            // Closures so filter reloads (partial) skip these queries.
+            'branches' => fn () => Branch::orderBy('name')->get(),
+            'branchStats' => fn () => $this->branchStats(),
             'filters' => $request->only(['year', 'branch_id']),
         ]);
     }
@@ -135,7 +137,7 @@ class SubscriptionController extends Controller
 
         // Players not yet assigned to this subscription
         $assignedPlayerIds = $playerSubscriptions->pluck('player_id')->toArray();
-        $availablePlayers = Player::query()
+        $availablePlayers = Player::query()->eligibleFor($subscription)
             ->where('archived', false)
             ->whereNotIn('id', $assignedPlayerIds)
             ->with('category')
@@ -229,16 +231,18 @@ class SubscriptionController extends Controller
             'assign_all' => ['nullable', 'boolean'],
         ]);
 
-        $query = Player::query()->where('archived', false);
+        $query = Player::query()->eligibleFor($subscription);
 
         if ($request->boolean('assign_all')) {
+            $query->where('archived', false);
             if ($request->filled('category_id')) {
                 $query->where('category_id', $request->input('category_id'));
             }
-            $playerIds = $query->pluck('id');
         } else {
-            $playerIds = collect($request->input('player_ids', []));
+            $query->whereIn('id', $request->input('player_ids', []));
         }
+
+        $playerIds = $query->pluck('id');
 
         $existingPlayerIds = PlayerSubscription::query()
             ->where('subscription_id', $subscription->id)
@@ -254,21 +258,8 @@ class SubscriptionController extends Controller
                     continue;
                 }
 
-                $amountOwed = $player->is_student
-                    ? (float) $subscription->amount_student
-                    : (float) $subscription->amount_worker;
-
-                PlayerSubscription::create([
-                    'player_id' => $player->id,
-                    'subscription_id' => $subscription->id,
-                    'transaction_id' => null,
-                    'year' => $subscription->year,
-                    'status_at_time' => $player->is_student ? 'student' : 'worker',
-                    'is_mandatory' => (bool) $subscription->is_mandatory,
-                    'amount_owed' => $amountOwed,
-                    'amount_paid' => 0,
-                ]);
-                app(\App\Services\Finance\RecalculatePlayerDebtService::class)->forPlayer($player);
+                $subscription->assignTo($player);
+                app(RecalculatePlayerDebtService::class)->forPlayer($player);
             }
         });
 
@@ -294,22 +285,14 @@ class SubscriptionController extends Controller
                 ->with('error', 'flash.player_already_subscribed');
         }
 
-        $amountOwed = $player->is_student
-            ? (float) $subscription->amount_student
-            : (float) $subscription->amount_worker;
+        if (! $subscription->appliesToCategory($player->category_id)) {
+            return redirect()->route('subscriptions.show', $subscription)
+                ->with('error', 'flash.player_not_eligible_for_subscription');
+        }
 
-        DB::transaction(function () use ($player, $subscription, $amountOwed) {
-            PlayerSubscription::create([
-                'player_id' => $player->id,
-                'subscription_id' => $subscription->id,
-                'transaction_id' => null,
-                'year' => $subscription->year,
-                'status_at_time' => $player->is_student ? 'student' : 'worker',
-                'is_mandatory' => (bool) $subscription->is_mandatory,
-                'amount_owed' => $amountOwed,
-                'amount_paid' => 0,
-            ]);
-            app(\App\Services\Finance\RecalculatePlayerDebtService::class)->forPlayer($player);
+        DB::transaction(function () use ($player, $subscription) {
+            $subscription->assignTo($player);
+            app(RecalculatePlayerDebtService::class)->forPlayer($player);
         });
 
         return redirect()->route('subscriptions.show', $subscription)

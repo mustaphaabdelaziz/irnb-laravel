@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Equipment;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ReceiveStockRequest extends FormRequest
 {
@@ -21,6 +22,11 @@ class ReceiveStockRequest extends FormRequest
             // enforced here.
             'received_via' => ['nullable', 'in:purchase,donation,opening_balance,adjustment'],
             'record_expense' => ['boolean'],
+            'finance_account_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('finance_accounts', 'id')->where('is_active', true),
+            ],
             'branch_ids' => ['array'],
             'branch_ids.*' => ['exists:branches,id'],
         ];

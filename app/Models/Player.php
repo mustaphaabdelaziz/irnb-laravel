@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\Media;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -56,6 +57,20 @@ class Player extends Model
     protected function pictureUrl(): Attribute
     {
         return Attribute::make(get: fn ($value) => Media::path($value));
+    }
+
+    /**
+     * Players a subscription applies to: everyone when it has no category,
+     * otherwise the players of its categories. The query-side twin of
+     * Subscription::appliesToCategory().
+     */
+    public function scopeEligibleFor(Builder $query, Subscription $subscription): void
+    {
+        $categoryIds = $subscription->categories->pluck('id');
+
+        if ($categoryIds->isNotEmpty()) {
+            $query->whereIn('category_id', $categoryIds);
+        }
     }
 
     protected function casts(): array

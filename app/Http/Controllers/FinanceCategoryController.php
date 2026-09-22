@@ -43,6 +43,9 @@ class FinanceCategoryController extends Controller
             'type' => ['required', Rule::in(['income', 'expense'])],
             'name' => ['required', 'string', 'max:120', Rule::unique('finance_categories', 'name')
                 ->where('type', $request->input('type'))->ignore($existing?->id)],
+            'name_ar' => ['nullable', 'string', 'max:120'],
+            'name_fr' => ['nullable', 'string', 'max:120'],
+            'name_en' => ['nullable', 'string', 'max:120'],
             'code' => ['nullable', 'string', 'max:16'],
             'color' => ['nullable', 'string', 'max:16'],
             'sort_order' => ['nullable', 'integer', 'min:0'],

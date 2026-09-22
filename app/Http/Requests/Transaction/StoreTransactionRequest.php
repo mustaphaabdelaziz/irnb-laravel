@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Transaction;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreTransactionRequest extends FormRequest
 {
@@ -19,7 +20,7 @@ class StoreTransactionRequest extends FormRequest
             'transaction_type' => ['required', 'in:income,expense'],
             'finance_category_id' => [
                 'required',
-                \Illuminate\Validation\Rule::exists('finance_categories', 'id')
+                Rule::exists('finance_categories', 'id')
                     ->where('type', $this->input('transaction_type')),
             ],
             'sub_category' => ['nullable', 'string', 'max:255'],
@@ -29,6 +30,11 @@ class StoreTransactionRequest extends FormRequest
             'payment_bank_name' => ['nullable', 'string', 'max:255'],
             'payment_holder' => ['nullable', 'string', 'max:255'],
             'payment_reference' => ['nullable', 'string', 'max:255'],
+            'finance_account_id' => [
+                'nullable',
+                Rule::exists('finance_accounts', 'id')
+                    ->where('is_active', true),
+            ],
             'related_entity_type' => ['nullable', 'string', 'max:255'],
             'related_entity_id' => ['nullable', 'integer'],
             'description' => ['nullable', 'string'],

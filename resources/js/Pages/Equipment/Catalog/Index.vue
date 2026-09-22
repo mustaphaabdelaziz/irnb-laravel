@@ -8,7 +8,9 @@ import Pagination from '@/Components/Pagination.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
-import { ref, watch } from 'vue';
+import { useBulkSelection } from '@/Composables/useBulkSelection';
+import { computed, ref } from 'vue';
+import { useListFilters } from '@/Composables/useListFilters';
 
 const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
@@ -24,20 +26,35 @@ const props = defineProps({
 const search = ref(props.filters?.search || '');
 const categoryFilter = ref(props.filters?.category || '');
 
-function applyFilters() {
-    router.get(route('equipment.catalogs.index'), {
-        search: search.value || undefined,
-        category: categoryFilter.value || undefined,
-    }, { preserveState: true, replace: true });
-}
+const { params: filterParams, loading: filtering } = useListFilters('equipment.catalogs.index', () => ({
+    search: search.value,
+    category: categoryFilter.value,
+}), { only: ['catalogs', 'filters'] });
 
-watch([search, categoryFilter], applyFilters);
+const catalogRows = computed(() => props.catalogs?.data ?? []);
+const {
+    selected,
+    allSelected,
+    toggleAll,
+    toggleOne,
+    clear: clearSelection,
+} = useBulkSelection(catalogRows, filterParams);
 
 const deleteId = ref(null);
+const bulkDeletePending = ref(false);
 
 function destroy() {
     router.delete(route('equipment.catalogs.destroy', deleteId.value), {
         onSuccess: () => { deleteId.value = null; },
+    });
+}
+
+function bulkDestroy() {
+    router.post(route('equipment.catalogs.bulk-destroy'), { ids: selected.value }, {
+        onSuccess: () => {
+            bulkDeletePending.value = false;
+            clearSelection();
+        },
     });
 }
 
@@ -105,7 +122,7 @@ function submitImport() {
             <!-- Filters -->
             <div class="flex flex-wrap items-center gap-3">
                 <div class="w-full sm:w-64">
-                    <SearchInput v-model="search" :placeholder="t('search')" />
+                    <SearchInput v-model="search" :loading="filtering" :placeholder="t('search')" />
                 </div>
                 <select v-model="categoryFilter" class="rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500">
                     <option value="">{{ t('all_categories') }}</option>
@@ -113,12 +130,34 @@ function submitImport() {
                 </select>
             </div>
 
+            <div v-if="selected.length" class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-primary-50 px-4 py-2.5 ring-1 ring-primary-200 dark:bg-primary-900/20 dark:ring-primary-800">
+                <span class="text-sm font-medium text-primary-800 dark:text-primary-200">
+                    {{ t('selected_count', { count: selected.length }) }}
+                </span>
+                <button
+                    type="button"
+                    class="rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-rose-700 ring-1 ring-rose-300 transition-colors hover:bg-rose-50 dark:bg-slate-900 dark:text-rose-300 dark:ring-rose-800 dark:hover:bg-rose-900/30"
+                    @click="bulkDeletePending = true"
+                >
+                    {{ t('delete_selected') }}
+                </button>
+            </div>
+
             <!-- Catalog table -->
-            <div class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+            <div :class="{ 'opacity-60': filtering }" :aria-busy="filtering" class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 transition-opacity dark:ring-slate-800">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
                         <thead class="bg-slate-50 dark:bg-slate-950">
                             <tr>
+                                <th class="w-12 px-4 py-3 text-start">
+                                    <input
+                                        type="checkbox"
+                                        :checked="allSelected"
+                                        :aria-label="t('select_all')"
+                                        class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800"
+                                        @change="toggleAll"
+                                    />
+                                </th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('name') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('category') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('brand') }}</th>
@@ -128,7 +167,21 @@ function submitImport() {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                            <tr v-for="cat in catalogs.data" :key="cat.id" class="hover:bg-slate-50 dark:hover:bg-slate-800">
+                            <tr
+                                v-for="cat in catalogs.data"
+                                :key="cat.id"
+                                class="hover:bg-slate-50 dark:hover:bg-slate-800"
+                                :class="selected.includes(cat.id) ? 'bg-primary-50/50 dark:bg-primary-900/10' : ''"
+                            >
+                                <td class="w-12 px-4 py-3">
+                                    <input
+                                        type="checkbox"
+                                        :checked="selected.includes(cat.id)"
+                                        :aria-label="t('select_item', { name: cat.name })"
+                                        class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800"
+                                        @change="toggleOne(cat.id)"
+                                    />
+                                </td>
                                 <td class="px-4 py-3">
                                     <Link :href="route('equipment.catalogs.show', cat.id)" class="text-sm font-medium text-primary-600 hover:text-primary-800">{{ cat.name }}</Link>
                                 </td>
@@ -152,7 +205,7 @@ function submitImport() {
                                 </td>
                             </tr>
                             <tr v-if="!catalogs.data?.length">
-                                <td colspan="6" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
+                                <td colspan="7" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -162,6 +215,13 @@ function submitImport() {
         </div>
 
         <ConfirmModal :show="!!deleteId" :message="t('are_you_sure')" @confirm="destroy" @cancel="deleteId = null" />
+        <ConfirmModal
+            :show="bulkDeletePending"
+            :message="t('confirm_bulk_material_delete', { count: selected.length })"
+            :confirm-label="t('delete_selected')"
+            @confirm="bulkDestroy"
+            @cancel="bulkDeletePending = false"
+        />
 
         <!-- Import equipments modal -->
         <Teleport to="body">

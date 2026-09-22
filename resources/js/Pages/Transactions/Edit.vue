@@ -8,6 +8,7 @@ const { t } = useI18n();
 defineProps({
     transaction: Object,
     financeCategories: { type: Array, default: () => [] },
+    financeAccounts: { type: Array, default: () => [] },
     players: { type: Array, default: () => [] },
     clubCcp: { type: Object, default: null },
 });
@@ -24,6 +25,6 @@ defineProps({
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('edit') }}</h1>
             </div>
         </template>
-        <TransactionForm :transaction="transaction" :finance-categories="financeCategories" :players="players" :club-ccp="clubCcp" />
+        <TransactionForm :transaction="transaction" :finance-categories="financeCategories" :finance-accounts="financeAccounts" :players="players" :club-ccp="clubCcp" />
     </AuthenticatedLayout>
 </template>

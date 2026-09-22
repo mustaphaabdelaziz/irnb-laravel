@@ -9,6 +9,7 @@ use App\Http\Controllers\BoardTaskController;
 use App\Http\Controllers\BoardTermController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\BudgetController;
+use App\Http\Controllers\CashRegisterController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EquipmentCatalogController;
@@ -113,6 +114,8 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
 
     // Finance — year-grouped dashboard (view open to approved members)
     Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');
+    Route::get('/finance/registers', [CashRegisterController::class, 'index'])->name('finance.registers.index');
+    Route::post('/finance/transfers', [CashRegisterController::class, 'transfer'])->name('finance.transfers.store');
 
     // PDF documents
     Route::get('/players/{player}/card', [ReportController::class, 'playerCard'])->name('players.card');
@@ -122,6 +125,7 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
     Route::get('/equipment/catalogs/export', [EquipmentCatalogController::class, 'export'])->name('equipment.catalogs.export');
     Route::get('/equipment/catalogs/import/template', [EquipmentCatalogController::class, 'importTemplate'])->name('equipment.catalogs.import.template');
     Route::post('/equipment/catalogs/import', [EquipmentCatalogController::class, 'import'])->name('equipment.catalogs.import');
+    Route::post('/equipment/catalogs/bulk-delete', [EquipmentCatalogController::class, 'bulkDestroy'])->name('equipment.catalogs.bulk-destroy');
     Route::resource('equipment/catalogs', EquipmentCatalogController::class)->names('equipment.catalogs');
     Route::post('/equipment/stock/receive', [EquipmentItemController::class, 'receive'])->name('equipment.stock.receive');
     Route::post('/equipment/items/{item}/split', [EquipmentItemController::class, 'split'])->name('equipment.stock.split');
@@ -130,6 +134,7 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
     Route::get('/equipment/items/import/template', [EquipmentItemController::class, 'importTemplate'])->name('equipment.items.import.template');
     Route::get('/equipment/catalogs/{catalog}/items/export', [EquipmentItemController::class, 'export'])->name('equipment.items.export');
     Route::post('/equipment/catalogs/{catalog}/items/import', [EquipmentItemController::class, 'import'])->name('equipment.items.import');
+    Route::post('/equipment/items/bulk-delete', [EquipmentItemController::class, 'bulkDestroy'])->name('equipment.items.bulk-destroy');
     Route::put('/equipment/items/{item}', [EquipmentItemController::class, 'update'])->name('equipment.items.update');
     Route::delete('/equipment/items/{item}', [EquipmentItemController::class, 'destroy'])->name('equipment.items.destroy');
     Route::post('/equipment/items/rent', [EquipmentItemController::class, 'rent'])->name('equipment.items.rent');

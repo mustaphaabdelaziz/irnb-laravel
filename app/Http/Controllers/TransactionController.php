@@ -3,12 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Transaction\StoreTransactionRequest;
+use App\Models\FinanceAccount;
 use App\Models\FinanceCategory;
 use App\Models\FiscalYear;
 use App\Models\Player;
 use App\Models\Transaction;
 use App\Models\WebsiteConfig;
+use App\Services\Export\ExcelExporter;
+use App\Services\Finance\DefaultRegisterResolver;
 use App\Services\Storage\FileStorageService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -19,60 +23,29 @@ class TransactionController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = Transaction::query()
-            ->with(['recordedBy', 'receivedBy'])
-            ->where('archived', false);
+        $query = Transaction::query()->where('archived', false);
+        $this->applyFilters($query, $request);
 
-        if ($request->filled('search')) {
-            $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('description', 'like', "%{$search}%")
-                    ->orWhere('category', 'like', "%{$search}%");
-            });
-        }
+        $income = (float) (clone $query)->where('transaction_type', 'income')->sum('amount');
+        $expense = (float) (clone $query)->where('transaction_type', 'expense')->sum('amount');
 
-        if ($request->filled('type')) {
-            $query->where('transaction_type', $request->input('type'));
-        }
-
-        if ($request->filled('category')) {
-            $query->where('category', $request->input('category'));
-        }
-
-        if ($request->filled('fiscal_year')) {
-            $query->where('fiscal_year', $request->input('fiscal_year'));
-        }
-
-        if ($request->filled('status')) {
-            $query->where('status', $request->input('status'));
-        }
-
-        if ($request->filled('date_from')) {
-            $query->where('transaction_date', '>=', $request->input('date_from'));
-        }
-
-        if ($request->filled('date_to')) {
-            $query->where('transaction_date', '<=', $request->input('date_to'));
-        }
-
-        if ($request->filled('finance_category_id')) {
-            $query->where('finance_category_id', $request->input('finance_category_id'));
-        }
-
-        $statsBase = clone $query;
-        $income = (float) (clone $statsBase)->where('transaction_type', 'income')->sum('amount');
-        $expense = (float) (clone $statsBase)->where('transaction_type', 'expense')->sum('amount');
-
-        $transactions = $query->with(['recordedBy', 'receivedBy', 'financeCategory'])
+        $transactions = $query->with(['recordedBy', 'receivedBy', 'financeCategory', ...Transaction::FINANCE_ACCOUNT_LABEL])
             ->latest('transaction_date')
             ->paginate(25)
             ->withQueryString();
 
         return Inertia::render('Transactions/Index', [
             'transactions' => $transactions,
-            'filters' => $request->only(['search', 'type', 'category', 'finance_category_id', 'fiscal_year', 'status', 'date_from', 'date_to']),
-            'financeCategories' => FinanceCategory::where('is_active', true)
-                ->orderBy('type')->orderBy('sort_order')->orderBy('name')->get(['id', 'type', 'name', 'color']),
+            'filters' => $request->only(['search', 'type', 'category', 'finance_category_id', 'finance_account_id', 'fiscal_year', 'status', 'date_from', 'date_to']),
+            // Lookups as closures so filter reloads (partial) skip these queries.
+            'financeCategories' => fn () => FinanceCategory::where('is_active', true)
+                ->orderBy('type')->orderBy('sort_order')->orderBy('name')->get(['id', 'type', 'name', 'name_ar', 'name_fr', 'name_en', 'color']),
+            'financeAccounts' => fn () => FinanceAccount::query()
+                ->with([
+                    'branch:id,name,name_ar,name_fr,name_en',
+                    'category:id,name,name_ar,name_fr,name_en',
+                ])
+                ->orderBy('sort_order')->orderBy('name')->get(),
             'stats' => [
                 'income' => $income,
                 'expense' => $expense,
@@ -82,38 +55,24 @@ class TransactionController extends Controller
         ]);
     }
 
-    public function export(Request $request, \App\Services\Export\ExcelExporter $exporter)
+    public function export(Request $request, ExcelExporter $exporter)
     {
-        $query = Transaction::query()->with(['recordedBy', 'financeCategory'])->where('archived', false);
-
-        if ($request->filled('search')) {
-            $s = $request->input('search');
-            $query->where(fn ($q) => $q->where('description', 'like', "%{$s}%")->orWhere('category', 'like', "%{$s}%"));
-        }
-        foreach (['type' => 'transaction_type', 'category' => 'category', 'fiscal_year' => 'fiscal_year', 'status' => 'status'] as $param => $col) {
-            if ($request->filled($param)) {
-                $query->where($col, $request->input($param));
-            }
-        }
-        if ($request->filled('date_from')) {
-            $query->where('transaction_date', '>=', $request->input('date_from'));
-        }
-        if ($request->filled('date_to')) {
-            $query->where('transaction_date', '<=', $request->input('date_to'));
-        }
+        $query = Transaction::query()->with(['recordedBy', 'financeCategory', 'financeAccount'])->where('archived', false);
+        $this->applyFilters($query, $request);
 
         $rows = $query->latest('transaction_date')->get()->map(fn (Transaction $t) => [
             $t->transaction_date?->format('Y-m-d'),
             ucfirst($t->transaction_type),
-            $t->financeCategory?->name ?? $t->category,
+            $t->financeCategory?->localized_name ?? $t->category,
             (float) $t->amount,
             $t->status,
             $t->payment_method,
+            $t->financeAccount?->name,
             $t->description,
             $t->recordedBy?->name,
         ])->all();
 
-        $headers = ['Date', 'Type', 'Category', 'Amount', 'Status', 'Payment', 'Description', 'Recorded By'];
+        $headers = ['Date', 'Type', 'Category', 'Amount', 'Status', 'Payment', 'Cash Register', 'Description', 'Recorded By'];
 
         return $exporter->download('Transactions', $headers, $rows, 'transactions-'.now()->format('Y-m-d').'.csv');
     }
@@ -122,7 +81,14 @@ class TransactionController extends Controller
     {
         // Eager-load the transaction relation too: PlayerSubscription appends
         // remaining_amount/payment_status accessors that read ->transaction (else N+1).
-        $transaction->load(['recordedBy', 'receivedBy', 'playerSubscriptions.player', 'playerSubscriptions.transaction']);
+        $transaction->load([
+            'recordedBy',
+            'receivedBy',
+            'financeCategory',
+            ...Transaction::FINANCE_ACCOUNT_LABEL,
+            'playerSubscriptions.player',
+            'playerSubscriptions.transaction',
+        ]);
 
         return Inertia::render('Transactions/Show', [
             'transaction' => $transaction,
@@ -208,6 +174,42 @@ class TransactionController extends Controller
             ->with('success', 'flash.transaction_archived');
     }
 
+    /**
+     * The list filters, shared by the index and its export so the file always
+     * matches what the page shows.
+     *
+     * @param  Builder<Transaction>  $query
+     */
+    private function applyFilters(Builder $query, Request $request): void
+    {
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(fn ($q) => $q->where('description', 'like', "%{$search}%")
+                ->orWhere('category', 'like', "%{$search}%"));
+        }
+
+        $columns = [
+            'type' => 'transaction_type',
+            'category' => 'category',
+            'fiscal_year' => 'fiscal_year',
+            'status' => 'status',
+            'finance_category_id' => 'finance_category_id',
+            'finance_account_id' => 'finance_account_id',
+        ];
+        foreach ($columns as $param => $column) {
+            if ($request->filled($param)) {
+                $query->where($column, $request->input($param));
+            }
+        }
+
+        if ($request->filled('date_from')) {
+            $query->where('transaction_date', '>=', $request->input('date_from'));
+        }
+        if ($request->filled('date_to')) {
+            $query->where('transaction_date', '<=', $request->input('date_to'));
+        }
+    }
+
     /** Whether the given fiscal year exists and is closed (locked). */
     private function yearClosed(?int $year): bool
     {
@@ -221,15 +223,25 @@ class TransactionController extends Controller
     /** Shared Create/Edit form props: active finance categories, the club's own CCP details, and active players. */
     private function formOptions(): array
     {
+        $financeAccounts = FinanceAccount::selectable()->get();
+        $registers = new DefaultRegisterResolver($financeAccounts);
+
         return [
             'financeCategories' => FinanceCategory::where('is_active', true)
                 ->orderBy('type')->orderBy('sort_order')->orderBy('name')
-                ->get(['id', 'type', 'name', 'color']),
+                ->get(['id', 'type', 'name', 'name_ar', 'name_fr', 'name_en', 'color']),
             'clubCcp' => WebsiteConfig::query()->first()?->banking_info['ccp'] ?? null,
             'players' => Player::where('archived', false)
+                ->with('branches:id')
                 ->orderBy('lastname')->orderBy('firstname')
-                ->get(['id', 'firstname', 'lastname']),
+                ->get(['id', 'firstname', 'lastname', 'category_id'])
+                ->map(fn (Player $player) => [
+                    'id' => $player->id,
+                    'firstname' => $player->firstname,
+                    'lastname' => $player->lastname,
+                    'default_finance_account_id' => $registers->forPlayer($player)?->id,
+                ]),
+            'financeAccounts' => $financeAccounts,
         ];
     }
 }
-

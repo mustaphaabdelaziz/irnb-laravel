@@ -30,7 +30,12 @@ const filteredList = computed(() => {
 
 // ── Assign all (by category) ─────────────────────────────────────────
 const showAssignModal = ref(false);
-const assignForm = useForm({ category_id: '' });
+const assignForm = useForm({ category_id: '', assign_all: true });
+
+// Only the subscription's own categories can be assigned (all when it has none).
+const assignableCategories = computed(() =>
+    props.subscription.categories?.length ? props.subscription.categories : props.categories
+);
 
 function assign() {
     assignForm.post(route('subscriptions.assign', props.subscription.id), {
@@ -294,7 +299,7 @@ const tabCount = (tab) => {
                             <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('category') }}</label>
                             <select v-model="assignForm.category_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                                 <option value="">{{ t('all_categories') }}</option>
-                                <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.localized_name || cat.name }}</option>
+                                <option v-for="cat in assignableCategories" :key="cat.id" :value="cat.id">{{ cat.localized_name || cat.name }}</option>
                             </select>
                         </div>
                         <div class="flex justify-end gap-3">

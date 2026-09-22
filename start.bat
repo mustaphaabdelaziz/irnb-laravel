@@ -2,7 +2,7 @@
 setlocal
 REM ============================================================
 REM  start.bat - Launch backend + frontend dev servers
-REM  Backend : php artisan serve  -> http://127.0.0.1:8000
+REM  Backend : php artisan serve  -> http://127.0.0.1:2026
 REM  Frontend: npm run dev (Vite) -> http://127.0.0.1:5173
 REM  Each runs in its own window. Close a window to stop it.
 REM ============================================================
@@ -52,8 +52,8 @@ REM  Vite first so the hot file exists before the page loads.
 echo [start] Starting frontend (npm run dev / Vite)
 start "FRONTEND - vite" cmd /k "npm run dev"
 
-echo [start] Starting backend  (php artisan serve)  -> http://127.0.0.1:8000
-start "BACKEND - artisan serve" cmd /k "php artisan serve"
+echo [start] Starting backend  (php artisan serve)  -> http://127.0.0.1:2026
+start "BACKEND - artisan serve" cmd /k "php artisan serve --port=2026"
 
 REM --- Wait until backend actually responds --------------------
 REM  Poll the /up health route instead of a fixed sleep, so the
@@ -61,7 +61,7 @@ REM  browser never opens before the server is ready to answer.
 echo [start] Waiting for backend to be ready...
 set /a _tries=0
 :wait
-curl -s -o nul http://127.0.0.1:8000/up
+curl -s -o nul http://127.0.0.1:2026/up
 if not errorlevel 1 goto :ready
 set /a _tries+=1
 if %_tries% geq 30 (
@@ -72,7 +72,7 @@ timeout /t 1 /nobreak >nul
 goto :wait
 
 :ready
-start "" "http://127.0.0.1:8000"
+start "" "http://127.0.0.1:2026"
 echo [start] Done. Two server windows opened. Close them to stop.
 goto :eof
 

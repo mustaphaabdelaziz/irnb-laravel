@@ -85,6 +85,12 @@ class EquipmentItem extends Model
         });
     }
 
+    /** Out on loan, so it must not be deleted. */
+    public function isRented(): bool
+    {
+        return $this->status === 'Rented' || $this->activeRental !== null;
+    }
+
     /** Units of this lot that can be issued right now. */
     public function getAvailableQuantityAttribute(): int
     {

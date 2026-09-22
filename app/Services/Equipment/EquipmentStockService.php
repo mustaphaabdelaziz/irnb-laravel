@@ -203,6 +203,7 @@ class EquipmentStockService
                     'category' => 'equipment',
                     'description' => "Equipment purchase: {$quantity} unit(s)",
                     'recorded_by_user_id' => $userId,
+                    'finance_account_id' => $data['finance_account_id'] ?? null,
                     'status' => 'Paid',
                     // The purchase date's year, not today's — a backdated
                     // purchase belongs to the year it happened.

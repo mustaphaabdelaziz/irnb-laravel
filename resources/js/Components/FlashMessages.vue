@@ -54,7 +54,7 @@ function checkFlash() {
 
 function autoDismiss() {
     clearTimeout(dismissTimer);
-    dismissTimer = setTimeout(() => { show.value = false; }, 4000);
+    dismissTimer = setTimeout(() => { show.value = false; }, 2000);
 }
 </script>
 
@@ -67,9 +67,9 @@ function autoDismiss() {
         leave-from-class="opacity-100 translate-y-0"
         leave-to-class="opacity-0 translate-y-[-1rem]"
     >
-        <div v-if="show" class="fixed top-4 inset-x-0 z-50 flex justify-center px-4">
+        <div v-if="show" class="pointer-events-none fixed top-4 inset-x-0 z-50 flex justify-center px-4">
             <div
-                class="flex items-center gap-3 rounded-lg px-4 py-3 shadow-lg"
+                class="pointer-events-auto flex items-center gap-3 rounded-lg px-4 py-3 shadow-lg"
                 :class="type === 'success'
                     ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-200 dark:ring-emerald-500/30'
                     : 'bg-rose-50 text-rose-800 ring-1 ring-rose-200 dark:bg-rose-500/15 dark:text-rose-200 dark:ring-rose-500/30'"

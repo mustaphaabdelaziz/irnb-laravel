@@ -125,26 +125,40 @@ class EquipmentItemController extends Controller
 
     public function destroy(EquipmentItem $item): RedirectResponse
     {
-        if ($item->status === 'Rented' || $item->activeRental) {
+        if ($item->isRented()) {
             return back()->with('error', 'flash.item_is_rented');
         }
 
-        $catalogId = $item->catalog_id;
+        $this->purge([$item->id]);
 
-        // Explicitly remove all cascade-child rows (rentals, histories, inventory
-        // session lines) so deletion is deterministic regardless of DB FK
-        // enforcement. The purchase Transaction is intentionally kept. Note: a
-        // past inventory session's stored `total_expected` count is not
-        // retroactively decremented.
-        DB::transaction(function () use ($item) {
-            $item->rentals()->delete();
-            $item->histories()->delete();
-            DB::table('inventory_session_items')->where('equipment_item_id', $item->id)->delete();
-            $item->delete();
-        });
+        return redirect()->route('equipment.catalogs.show', $item->catalog_id)
+            ->with('success', 'flash.equipment_item_deleted');
+    }
+
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            // exists on the array itself: one whereIn query, not one per id.
+            'ids' => ['required', 'array', 'min:1', 'max:500', 'exists:equipment_items,id'],
+            'ids.*' => ['integer', 'distinct'],
+        ]);
+
+        $items = EquipmentItem::with('activeRental')
+            ->whereIn('id', $validated['ids'])
+            ->get();
+
+        if ($items->contains(fn (EquipmentItem $item) => $item->isRented())) {
+            return back()->with('error', 'flash.bulk_items_include_rented');
+        }
+
+        $catalogId = $items->firstOrFail()->catalog_id;
+        $this->purge($items->modelKeys());
 
         return redirect()->route('equipment.catalogs.show', $catalogId)
-            ->with('success', 'flash.equipment_item_deleted');
+            ->with('success', [
+                'key' => 'flash.equipment_items_deleted',
+                'params' => ['count' => $items->count()],
+            ]);
     }
 
     public function rent(RentEquipmentRequest $request): RedirectResponse
@@ -553,5 +567,24 @@ class EquipmentItemController extends Controller
         } catch (Throwable) {
             return null;
         }
+    }
+
+    /**
+     * Delete items with their cascade-child rows (rentals, histories, inventory
+     * session lines) removed explicitly, so deletion is deterministic regardless
+     * of DB FK enforcement. The purchase Transaction is intentionally kept. Note:
+     * a past inventory session's stored `total_expected` count is not
+     * retroactively decremented.
+     *
+     * @param  array<int, int>  $ids
+     */
+    private function purge(array $ids): void
+    {
+        DB::transaction(function () use ($ids) {
+            EquipmentRental::whereIn('equipment_item_id', $ids)->delete();
+            EquipmentHistory::whereIn('item_id', $ids)->delete();
+            DB::table('inventory_session_items')->whereIn('equipment_item_id', $ids)->delete();
+            EquipmentItem::whereIn('id', $ids)->delete();
+        });
     }
 }

@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
 defineProps({
     financeCategories: { type: Array, default: () => [] },
+    financeAccounts: { type: Array, default: () => [] },
     players: { type: Array, default: () => [] },
     clubCcp: { type: Object, default: null },
 });
@@ -23,6 +24,6 @@ defineProps({
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('add_transaction') }}</h1>
             </div>
         </template>
-        <TransactionForm :finance-categories="financeCategories" :players="players" :club-ccp="clubCcp" />
+        <TransactionForm :finance-categories="financeCategories" :finance-accounts="financeAccounts" :players="players" :club-ccp="clubCcp" />
     </AuthenticatedLayout>
 </template>

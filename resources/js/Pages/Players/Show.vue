@@ -11,6 +11,7 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
+import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 import { ref, computed, watch } from 'vue';
 
 const { t } = useI18n();
@@ -21,10 +22,13 @@ const props = defineProps({
     totalDebt: Number,
     transactions: { type: Array, default: () => [] },
     availableSubscriptions: { type: Array, default: () => [] },
+    financeAccounts: { type: Array, default: () => [] },
+    defaultFinanceAccountId: { type: [Number, String], default: '' },
 });
 
 const subscriptions = computed(() => props.player?.player_subscriptions ?? []);
 const transactions = computed(() => props.transactions ?? []);
+const { accountLabel } = useFinanceAccountLabel();
 
 // Manual/previous debts = obligation lines with no subscription plan attached.
 const manualDebts = computed(() =>
@@ -44,6 +48,7 @@ const payableOptions = computed(() => [
         key: `sub:${s.subscription_id}`,
         kind: 'sub',
         subscription_id: s.subscription_id,
+        default_finance_account_id: s.default_finance_account_id,
         is_exempt: !!s.is_exempt,
         text: `${s.name} (${s.year})${s.is_mandatory ? '' : ' — ' + t('optional')} — ${t('remaining')}: ${formatMoney(s.remaining_amount)}`,
     })),
@@ -66,6 +71,7 @@ const paymentForm = useForm({
     subscription_id: '',
     player_subscription_id: '',
     payment_method: 'cash',
+    finance_account_id: props.defaultFinanceAccountId || '',
     category: 'subscription',
     description: '',
     is_exempt: false,
@@ -86,15 +92,20 @@ watch(() => paymentForm.category, (category) => {
         paymentForm.subscription_id = '';
         paymentForm.player_subscription_id = '';
         paymentForm.is_exempt = false;
+        paymentForm.finance_account_id = props.defaultFinanceAccountId || '';
     }
 });
 
-// When an obligation is picked, route its id to the right field and mirror exempt state.
+// When an obligation is picked, route its id and automatically select the register
+// assigned to the subscription's single branch/category pair.
 watch(selectedPayableKey, () => {
     const opt = selectedPayable.value;
     paymentForm.subscription_id = opt?.kind === 'sub' ? opt.subscription_id : '';
     paymentForm.player_subscription_id = opt?.kind === 'debt' ? opt.player_subscription_id : '';
     paymentForm.is_exempt = opt ? !!opt.is_exempt : false;
+    paymentForm.finance_account_id = opt?.kind === 'sub' && opt.default_finance_account_id
+        ? opt.default_finance_account_id
+        : (props.defaultFinanceAccountId || '');
 });
 
 function submitPayment() {
@@ -137,12 +148,13 @@ function paymentStatus(sub) {
 // Edit a payment = archive the original + record a new one (handled server-side).
 const showEditModal = ref(false);
 const editingId = ref(null);
-const editForm = useForm({ amount: '', payment_method: 'cash', description: '' });
+const editForm = useForm({ amount: '', payment_method: 'cash', finance_account_id: '', description: '' });
 
 function openEdit(tx) {
     editingId.value = tx.id;
     editForm.amount = tx.amount;
     editForm.payment_method = tx.payment_method || 'cash';
+    editForm.finance_account_id = tx.finance_account_id || props.defaultFinanceAccountId || '';
     editForm.description = tx.description || '';
     editForm.clearErrors();
     showEditModal.value = true;
@@ -423,6 +435,7 @@ function formatDate(val) {
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('date') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('category') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('payment_method') }}</th>
+                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('cash_register') }}</th>
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('amount') }}</th>
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400"></th>
                             </tr>
@@ -432,6 +445,7 @@ function formatDate(val) {
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ formatDate(tx.transaction_date) }}</td>
                                 <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">{{ tx.category }}</td>
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ tx.payment_method || '-' }}</td>
+                                <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ accountLabel(tx.finance_account) }}</td>
                                 <td class="px-4 py-3 text-end text-sm font-semibold"
                                     :class="tx.transaction_type === 'income' ? 'text-emerald-700' : 'text-rose-700'">
                                     {{ tx.transaction_type === 'income' ? '+' : '-' }}{{ formatMoney(tx.amount) }}
@@ -490,6 +504,16 @@ function formatDate(val) {
                         </select>
                     </div>
                     <div>
+                        <InputLabel :value="t('destination_register')" />
+                        <select v-model="paymentForm.finance_account_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500" :required="showAmountField">
+                            <option value="" disabled>{{ t('select_cash_register') }}</option>
+                            <option v-for="account in financeAccounts" :key="account.id" :value="account.id">
+                                {{ accountLabel(account) }}
+                            </option>
+                        </select>
+                        <InputError :message="paymentForm.errors.finance_account_id" class="mt-1" />
+                    </div>
+                    <div>
                         <InputLabel :value="t('description')" />
                         <textarea v-model="paymentForm.description" rows="2" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500" />
                     </div>
@@ -519,6 +543,16 @@ function formatDate(val) {
                             <option value="ccp">{{ t('ccp') }}</option>
                             <option value="baridimob">{{ t('baridimob') }}</option>
                         </select>
+                    </div>
+                    <div>
+                        <InputLabel :value="t('destination_register')" />
+                        <select v-model="editForm.finance_account_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500" required>
+                            <option value="" disabled>{{ t('select_cash_register') }}</option>
+                            <option v-for="account in financeAccounts" :key="account.id" :value="account.id">
+                                {{ accountLabel(account) }}
+                            </option>
+                        </select>
+                        <InputError :message="editForm.errors.finance_account_id" class="mt-1" />
                     </div>
                     <div>
                         <InputLabel :value="t('description')" />

@@ -10,10 +10,14 @@ import SearchableSelect from '@/Components/SearchableSelect.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
+import { useBulkSelection } from '@/Composables/useBulkSelection';
+import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 import { ref, watch, computed } from 'vue';
 
 const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
+
+const { accountLabel } = useFinanceAccountLabel();
 
 const props = defineProps({
     catalog: Object,
@@ -21,6 +25,7 @@ const props = defineProps({
     totalQuantity: Number,
     storageLocations: { type: Array, default: () => [] },
     branches: { type: Array, default: () => [] },
+    financeAccounts: { type: Array, default: () => [] },
     players: { type: Array, default: () => [] },
 });
 
@@ -47,6 +52,15 @@ const conditionBreakdown = computed(() => {
 });
 
 const unitsOut = computed(() => (props.totalQuantity ?? 0) - (props.availableCount ?? 0));
+const isDeletable = (item) => item.status !== 'Rented' && !item.active_rental;
+const deletableItems = computed(() => (props.catalog.items ?? []).filter(isDeletable));
+const {
+    selected: selectedItems,
+    allSelected: allItemsSelected,
+    toggleAll: toggleAllItems,
+    toggleOne: toggleItem,
+    clear: clearItemSelection,
+} = useBulkSelection(deletableItems);
 
 const showAddItemModal = ref(false);
 const showRentModal = ref(false);
@@ -56,6 +70,7 @@ const lostItemId = ref(null);
 const foundItemId = ref(null);
 const repairItemId = ref(null);
 const fixedItemId = ref(null);
+const bulkDeleteItemsPending = ref(false);
 
 const serialPreview = ref('');
 
@@ -132,9 +147,9 @@ const receiveForm = useForm({
     condition: 'New',
     location: '',
     branch_ids: [],
-    // Ticked by default: most stock arriving is bought. Unticking covers
-    // donations, found items and an opening inventory.
-    record_expense: true,
+    // Recording an expense is an explicit choice when receiving material.
+    record_expense: false,
+    finance_account_id: props.financeAccounts[0]?.id || '',
     received_via: 'purchase',
     notes: '',
 });
@@ -233,6 +248,16 @@ function deleteItem() {
     const id = deleteItemId.value;
     deleteItemId.value = null;
     router.delete(route('equipment.items.destroy', id), { preserveState: false });
+}
+
+function bulkDeleteItems() {
+    router.post(route('equipment.items.bulk-destroy'), { ids: selectedItems.value }, {
+        preserveState: false,
+        onSuccess: () => {
+            bulkDeleteItemsPending.value = false;
+            clearItemSelection();
+        },
+    });
 }
 
 function addItem() {
@@ -449,14 +474,36 @@ function submitImport() {
 
             <!-- Items table -->
             <div class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
-                <div class="border-b border-slate-100 dark:border-slate-800 px-5 py-4">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800">
                     <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('items') }}</h3>
+                    <div v-if="selectedItems.length" class="flex items-center gap-3">
+                        <span class="text-sm font-medium text-primary-700 dark:text-primary-300">
+                            {{ t('selected_count', { count: selectedItems.length }) }}
+                        </span>
+                        <button
+                            type="button"
+                            class="rounded-lg bg-rose-50 px-3 py-1.5 text-sm font-medium text-rose-700 ring-1 ring-rose-200 transition-colors hover:bg-rose-100 dark:bg-rose-900/20 dark:text-rose-300 dark:ring-rose-800 dark:hover:bg-rose-900/30"
+                            @click="bulkDeleteItemsPending = true"
+                        >
+                            {{ t('delete_selected') }}
+                        </button>
+                    </div>
                 </div>
                 <div v-if="!catalog.items?.length" class="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</div>
                 <div v-else class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
                         <thead class="bg-slate-50 dark:bg-slate-950">
                             <tr>
+                                <th class="w-12 px-4 py-3 text-start">
+                                    <input
+                                        type="checkbox"
+                                        :checked="allItemsSelected"
+                                        :disabled="!deletableItems.length"
+                                        :aria-label="t('select_all')"
+                                        class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-600 dark:bg-slate-800"
+                                        @change="toggleAllItems"
+                                    />
+                                </th>
                                 <th v-if="isSerialized" class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('identifier') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('designation') }}</th>
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('equipment.quantity') }}</th>
@@ -468,7 +515,21 @@ function submitImport() {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                            <tr v-for="item in catalog.items" :key="item.id">
+                            <tr
+                                v-for="item in catalog.items"
+                                :key="item.id"
+                                :class="selectedItems.includes(item.id) ? 'bg-primary-50/50 dark:bg-primary-900/10' : ''"
+                            >
+                                <td class="w-12 px-4 py-3">
+                                    <input
+                                        type="checkbox"
+                                        :checked="selectedItems.includes(item.id)"
+                                        :disabled="!isDeletable(item)"
+                                        :aria-label="t('select_item', { name: item.unique_identifier || item.designation || catalog.name })"
+                                        class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-600 dark:bg-slate-800"
+                                        @change="toggleItem(item.id)"
+                                    />
+                                </td>
                                 <td v-if="isSerialized" class="px-4 py-3 font-mono text-sm text-slate-700 dark:text-slate-200">{{ item.unique_identifier }}</td>
                                 <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">{{ item.designation || '—' }}</td>
                                 <td class="px-4 py-3 text-end text-sm">
@@ -838,6 +899,18 @@ function submitImport() {
                             </span>
                         </label>
 
+                        <div v-if="receiveForm.record_expense">
+                            <InputLabel :value="t('source_register')" />
+                            <select v-model="receiveForm.finance_account_id" required class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                                <option value="" disabled>{{ t('select_cash_register') }}</option>
+                                <option v-for="account in financeAccounts" :key="account.id" :value="account.id">
+                                    {{ accountLabel(account) }}
+                                </option>
+                            </select>
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('expense_register_hint') }}</p>
+                            <InputError :message="receiveForm.errors.finance_account_id" class="mt-1" />
+                        </div>
+
                         <!-- Only asked when no money changed hands, so the reason is captured. -->
                         <div v-if="!receiveForm.record_expense">
                             <InputLabel :value="t('equipment.received_via')" />
@@ -899,5 +972,12 @@ function submitImport() {
         <ConfirmModal :show="!!lostItemId" :message="t('mark_as_lost') + '?'" @confirm="markAsLost(lostItemId)" @cancel="lostItemId = null" />
         <ConfirmModal :show="!!foundItemId" :message="t('restore_item') + '?'" @confirm="markAsFound(foundItemId)" @cancel="foundItemId = null" />
         <ConfirmModal :show="!!deleteItemId" :message="t('are_you_sure')" @confirm="deleteItem" @cancel="deleteItemId = null" />
+        <ConfirmModal
+            :show="bulkDeleteItemsPending"
+            :message="t('confirm_bulk_item_delete', { count: selectedItems.length })"
+            :confirm-label="t('delete_selected')"
+            @confirm="bulkDeleteItems"
+            @cancel="bulkDeleteItemsPending = false"
+        />
     </AuthenticatedLayout>
 </template>

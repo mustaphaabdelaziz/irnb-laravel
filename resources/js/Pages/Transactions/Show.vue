@@ -4,8 +4,10 @@ import Badge from '@/Components/Badge.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
+import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 
 const { t } = useI18n();
+const { accountLabel } = useFinanceAccountLabel();
 const { formatMoney } = useFormatMoney();
 
 const props = defineProps({
@@ -58,7 +60,7 @@ const statusColor = (s) => s === 'Paid' ? 'emerald' : s === 'Partial' ? 'amber' 
                     </div>
                     <div>
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('category') }}</p>
-                        <p class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">{{ transaction.category }}</p>
+                        <p class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">{{ transaction.finance_category?.localized_name || transaction.finance_category?.name || transaction.category }}</p>
                     </div>
                     <div>
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('date') }}</p>
@@ -67,6 +69,14 @@ const statusColor = (s) => s === 'Paid' ? 'emerald' : s === 'Partial' ? 'amber' 
                     <div>
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('payment_method') }}</p>
                         <p class="mt-1 text-sm text-slate-900 dark:text-slate-100">{{ transaction.payment_method || '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">
+                            {{ transaction.transaction_type === 'income' ? t('destination_register') : t('source_register') }}
+                        </p>
+                        <p class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">
+                            {{ accountLabel(transaction.finance_account) }}
+                        </p>
                     </div>
                     <div v-if="transaction.description" class="sm:col-span-2 lg:col-span-3">
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('description') }}</p>

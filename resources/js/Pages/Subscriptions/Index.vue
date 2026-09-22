@@ -7,7 +7,8 @@ import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
+import { useListFilters } from '@/Composables/useListFilters';
 
 const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
@@ -23,12 +24,10 @@ const props = defineProps({
 const branchFilter = ref(props.filters?.branch_id || '');
 const yearFilter = ref(props.filters?.year || '');
 
-watch([branchFilter, yearFilter], () => {
-    router.get(route('subscriptions.index'), {
-        branch_id: branchFilter.value || undefined,
-        year: yearFilter.value || undefined,
-    }, { preserveState: true, replace: true, preserveScroll: true });
-});
+const { loading: filtering } = useListFilters('subscriptions.index', () => ({
+    branch_id: branchFilter.value,
+    year: yearFilter.value,
+}), { only: ['subscriptions', 'filters'] });
 
 const branchName = (row) => row.branch_id === null ? t('no_branch') : row.name;
 
@@ -109,7 +108,7 @@ function destroy() {
                 </div>
             </div>
 
-            <div class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+            <div :class="{ 'opacity-60': filtering }" :aria-busy="filtering" class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 transition-opacity dark:ring-slate-800">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
                         <thead class="bg-slate-50 dark:bg-slate-950">

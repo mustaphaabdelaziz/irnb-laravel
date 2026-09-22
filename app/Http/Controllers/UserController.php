@@ -62,7 +62,8 @@ class UserController extends Controller
         return Inertia::render('Users/Index', [
             'users' => $users,
             'filters' => $request->only(['search', 'status', 'role']),
-            'pendingCount' => User::where('is_user', true)->where('approved', false)->count(),
+            // Closure so filter reloads (partial) skip the count query.
+            'pendingCount' => fn () => User::where('is_user', true)->where('approved', false)->count(),
             // Password reset and superadmin actions are gated to a superadmin.
             'canManageAccess' => $request->user()->isSuperadmin(),
             'currentUserId' => $request->user()->id,

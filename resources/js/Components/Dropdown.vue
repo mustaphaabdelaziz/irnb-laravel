@@ -16,14 +16,31 @@ const props = defineProps({
     },
 });
 
+const root = ref(null);
+
 const closeOnEscape = (e) => {
     if (open.value && e.key === 'Escape') {
         open.value = false;
     }
 };
 
-onMounted(() => document.addEventListener('keydown', closeOnEscape));
-onUnmounted(() => document.removeEventListener('keydown', closeOnEscape));
+// Document-level outside click instead of a fixed full-screen overlay: inside
+// the header, backdrop-blur makes `position: fixed` relative to the header, so
+// an overlay only covered the header strip and clicks below never closed it.
+const closeOnOutsideClick = (e) => {
+    if (open.value && root.value && !root.value.contains(e.target)) {
+        open.value = false;
+    }
+};
+
+onMounted(() => {
+    document.addEventListener('keydown', closeOnEscape);
+    document.addEventListener('pointerdown', closeOnOutsideClick);
+});
+onUnmounted(() => {
+    document.removeEventListener('keydown', closeOnEscape);
+    document.removeEventListener('pointerdown', closeOnOutsideClick);
+});
 
 const widthClass = computed(() => {
     return {
@@ -45,17 +62,10 @@ const open = ref(false);
 </script>
 
 <template>
-    <div class="relative">
+    <div ref="root" class="relative">
         <div @click="open = !open">
             <slot name="trigger" />
         </div>
-
-        <!-- Full Screen Dropdown Overlay -->
-        <div
-            v-show="open"
-            class="fixed inset-0 z-40"
-            @click="open = false"
-        ></div>
 
         <Transition
             enter-active-class="transition ease-out duration-200"

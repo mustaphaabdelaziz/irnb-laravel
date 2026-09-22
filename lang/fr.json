@@ -28,6 +28,7 @@
     "Row :line: :message": "Ligne :line : :message",
     "Row :line: unknown category \":category\".": "Ligne :line : catégorie inconnue « :category ».",
     "Status": "Statut",
+    "This subscription does not apply to this player's category.": "Cet abonnement ne s'applique pas à la catégorie de ce joueur.",
     "Total Expense": "Dépenses totales",
     "Total Income": "Revenus totaux",
     "Type": "Type"

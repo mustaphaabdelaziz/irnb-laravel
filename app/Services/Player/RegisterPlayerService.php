@@ -6,7 +6,7 @@ use App\Models\Player;
 use App\Models\PlayerStatus;
 use App\Models\PlayerSubscription;
 use App\Models\Subscription;
-use App\Services\Player\MembershipNumber;
+use App\Services\Finance\RecalculatePlayerDebtService;
 use Illuminate\Support\Facades\DB;
 
 class RegisterPlayerService
@@ -16,7 +16,7 @@ class RegisterPlayerService
      */
     public function handle(array $attributes, ?int $recordedByUserId = null): Player
     {
-        return DB::transaction(function () use ($attributes, $recordedByUserId) {
+        return DB::transaction(function () use ($attributes) {
             $joinYear = (int) ($attributes['join_year'] ?? now()->year);
             $isStudent = (bool) ($attributes['is_student'] ?? true);
             $categoryId = $attributes['category_id'] ?? null;
@@ -38,15 +38,7 @@ class RegisterPlayerService
                 ->where('is_mandatory', true)
                 ->where('is_active', true)
                 ->where('year', '>=', $joinYear)
-                ->where(function ($query) use ($categoryId) {
-                    // Include subscriptions with no category restriction (available to all)
-                    $query->whereDoesntHave('categories');
-
-                    // OR subscriptions explicitly assigned to the player's category
-                    if ($categoryId) {
-                        $query->orWhereHas('categories', fn ($sub) => $sub->where('categories.id', $categoryId));
-                    }
-                })
+                ->forCategory($categoryId ? (int) $categoryId : null)
                 ->get();
 
             foreach ($subscriptions as $subscription) {
@@ -64,7 +56,7 @@ class RegisterPlayerService
                 ]);
             }
 
-            app(\App\Services\Finance\RecalculatePlayerDebtService::class)->forPlayer($player);
+            app(RecalculatePlayerDebtService::class)->forPlayer($player);
 
             return $player->load(['playerSubscriptions.subscription', 'playerSubscriptions.transaction']);
         });

@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\EquipmentCatalog;
 use App\Models\EquipmentCategory;
 use App\Models\EquipmentItem;
+use App\Models\FinanceAccount;
 use App\Models\Player;
 use App\Models\StorageLocation;
 use App\Services\Dashboard\ModuleStats;
@@ -15,6 +16,7 @@ use App\Services\Storage\FileStorageService;
 use App\Support\Csv;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -51,7 +53,8 @@ class EquipmentCatalogController extends Controller
             'catalogs' => $catalogs,
             'strip' => fn (): array => app(ModuleStats::class)->equipment(),
             'filters' => $request->only(['search', 'category']),
-            'equipmentCategories' => EquipmentCategory::orderBy('name')->pluck('name'),
+            // Closure so filter reloads (partial) skip the lookup query.
+            'equipmentCategories' => fn () => EquipmentCategory::orderBy('name')->pluck('name'),
         ]);
     }
 
@@ -72,6 +75,7 @@ class EquipmentCatalogController extends Controller
             'storageLocations' => StorageLocation::orderBy('name')->pluck('name'),
             'branches' => Branch::orderBy('name')->get()
                 ->map(fn (Branch $b) => ['id' => $b->id, 'name' => $b->localized_name]),
+            'financeAccounts' => FinanceAccount::selectable()->get(),
             // For the rent dropdown: identify players by name + membership id, not a raw id.
             // branches is eager-loaded because the cross-branch warning reads
             // branch_ids for every player — without it this maps into an N+1.
@@ -152,6 +156,27 @@ class EquipmentCatalogController extends Controller
 
         return redirect()->route('equipment.catalogs.index')
             ->with('success', 'flash.equipment_catalog_deleted');
+    }
+
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            // exists on the array itself: one whereIn query, not one per id.
+            'ids' => ['required', 'array', 'min:1', 'max:500', 'exists:equipment_catalogs,id'],
+            'ids.*' => ['integer', 'distinct'],
+        ]);
+
+        $catalogs = EquipmentCatalog::whereIn('id', $validated['ids'])->get();
+
+        DB::transaction(function () use ($catalogs) {
+            $catalogs->each->delete();
+        });
+
+        return redirect()->route('equipment.catalogs.index')
+            ->with('success', [
+                'key' => 'flash.equipment_catalogs_deleted',
+                'params' => ['count' => $catalogs->count()],
+            ]);
     }
 
     /**

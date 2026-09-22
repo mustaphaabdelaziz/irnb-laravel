@@ -16,6 +16,13 @@ class Transaction extends Model
 {
     use HasFactory;
 
+    /** Eager loads that let the UI label a transaction's cash register. */
+    public const FINANCE_ACCOUNT_LABEL = [
+        'financeAccount:id,name,branch_id,category_id,is_treasury',
+        'financeAccount.branch:id,name,name_ar,name_fr,name_en',
+        'financeAccount.category:id,name,name_ar,name_fr,name_en',
+    ];
+
     protected $fillable = [
         'amount',
         'transaction_date',

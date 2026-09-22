@@ -28,6 +28,7 @@
     "Row :line: :message": "السطر :line: :message",
     "Row :line: unknown category \":category\".": "السطر :line: فئة غير معروفة \":category\".",
     "Status": "الحالة",
+    "This subscription does not apply to this player's category.": "هذا الاشتراك لا يخص فئة هذا اللاعب.",
     "Total Expense": "إجمالي المصاريف",
     "Total Income": "إجمالي المداخيل",
     "Type": "النوع"

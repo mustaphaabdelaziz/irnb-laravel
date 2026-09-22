@@ -10,7 +10,8 @@ import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import { useI18n } from 'vue-i18n';
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
+import { useListFilters } from '@/Composables/useListFilters';
 
 const { t } = useI18n();
 
@@ -27,17 +28,11 @@ const statusFilter = ref(props.filters?.status || '');
 const roleFilter = ref(props.filters?.role || '');
 const deleteId = ref(null);
 
-function applyFilters() {
-    router.get(route('users.index'), {
-        search: search.value || undefined,
-        status: statusFilter.value || undefined,
-        role: roleFilter.value || undefined,
-    }, { preserveState: true, replace: true });
-}
-
-watch(search, applyFilters);
-watch(statusFilter, applyFilters);
-watch(roleFilter, applyFilters);
+const { loading: filtering } = useListFilters('users.index', () => ({
+    search: search.value,
+    status: statusFilter.value,
+    role: roleFilter.value,
+}), { only: ['users', 'filters'] });
 
 function approve(id) {
     router.post(route('users.approve', id), {}, { preserveScroll: true });
@@ -91,7 +86,7 @@ function initial(user) {
             <!-- Filters -->
             <div class="flex flex-wrap items-center gap-3">
                 <div class="w-full sm:w-64">
-                    <SearchInput v-model="search" :placeholder="t('search')" />
+                    <SearchInput v-model="search" :loading="filtering" :placeholder="t('search')" />
                 </div>
                 <select v-model="statusFilter" class="rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500">
                     <option value="">{{ t('all') }}</option>
@@ -108,7 +103,7 @@ function initial(user) {
             </div>
 
             <!-- Table -->
-            <div class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+            <div :class="{ 'opacity-60': filtering }" :aria-busy="filtering" class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 transition-opacity dark:ring-slate-800">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
                         <thead class="bg-slate-50 dark:bg-slate-950">

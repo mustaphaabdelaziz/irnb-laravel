@@ -5,15 +5,18 @@ import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Icon from '@/Components/Icon.vue';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
+import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 
 const props = defineProps({
     categories: { type: Array, default: () => [] },
     accounts: { type: Array, default: () => [] },
+    branches: { type: Array, default: () => [] },
     years: { type: Array, default: () => [] },
     budgets: { type: Object, default: () => ({}) },
 });
 
 const { t } = useI18n();
+const { accountLabel } = useFinanceAccountLabel();
 const { formatMoney } = useFormatMoney();
 
 const income = computed(() => props.categories.filter((c) => c.type === 'income'));
@@ -53,7 +56,7 @@ function deleteCategory(c) {
 }
 
 /* ----- Accounts ----- */
-const accForm = useForm({ name: '', type: 'cash', opening_balance: 0, account_number: '' });
+const accForm = useForm({ name: '', type: 'cash', branch_id: '', opening_balance: 0, account_number: '' });
 function addAccount() {
     accForm.post(route('finance.accounts.store'), { preserveScroll: true, onSuccess: () => accForm.reset() });
 }
@@ -136,7 +139,7 @@ function deleteAccount(a) {
                     <div v-for="c in categories" :key="c.id" class="flex items-center justify-between gap-2">
                         <span class="flex min-w-0 items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                             <span class="h-2.5 w-2.5 shrink-0 rounded-full" :style="{ background: c.color || '#94a3b8' }"></span>
-                            <span class="truncate">{{ c.name }}</span>
+                            <span class="truncate">{{ c.localized_name || c.name }}</span>
                             <span class="text-xs text-slate-400">({{ c.type === 'income' ? t('income') : t('expense') }})</span>
                         </span>
                         <input
@@ -158,7 +161,7 @@ function deleteAccount(a) {
                             <li v-for="c in income" :key="c.id" class="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/50">
                                 <span class="flex min-w-0 items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
                                     <span class="h-3 w-3 shrink-0 rounded-full" :style="{ background: c.color || '#94a3b8' }"></span>
-                                    <span class="truncate">{{ c.name }}</span>
+                                    <span class="truncate">{{ c.localized_name || c.name }}</span>
                                     <span v-if="c.transactions_count" class="text-xs text-slate-400">· {{ c.transactions_count }}</span>
                                 </span>
                                 <button @click="deleteCategory(c)" class="shrink-0 text-slate-300 hover:text-rose-500" :title="t('delete')"><Icon name="xcircle" /></button>
@@ -171,7 +174,7 @@ function deleteAccount(a) {
                             <li v-for="c in expense" :key="c.id" class="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/50">
                                 <span class="flex min-w-0 items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
                                     <span class="h-3 w-3 shrink-0 rounded-full" :style="{ background: c.color || '#94a3b8' }"></span>
-                                    <span class="truncate">{{ c.name }}</span>
+                                    <span class="truncate">{{ c.localized_name || c.name }}</span>
                                     <span v-if="c.transactions_count" class="text-xs text-slate-400">· {{ c.transactions_count }}</span>
                                 </span>
                                 <button @click="deleteCategory(c)" class="shrink-0 text-slate-300 hover:text-rose-500" :title="t('delete')"><Icon name="xcircle" /></button>
@@ -191,10 +194,18 @@ function deleteAccount(a) {
 
             <!-- Accounts -->
             <section class="card p-5">
-                <p class="mb-4 text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('accounts') }}</p>
+                <div class="mb-4 flex items-center justify-between gap-3">
+                    <p class="text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('cash_registers') }}</p>
+                    <Link :href="route('finance.registers.index')" class="text-sm font-semibold text-primary-600 hover:text-primary-700">
+                        {{ t('manage_cash_registers') }}
+                    </Link>
+                </div>
                 <ul class="space-y-1.5">
                     <li v-for="a in accounts" :key="a.id" class="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/50">
-                        <span class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200"><Icon name="money" class="text-slate-400" /> {{ a.name }} <span class="text-xs text-slate-400">({{ t(a.type) }})</span></span>
+                        <span class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                            <Icon name="money" class="text-slate-400" />
+                            {{ accountLabel(a) }}
+                        </span>
                         <span class="flex items-center gap-3">
                             <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ formatMoney(a.current_balance) }}</span>
                             <button @click="deleteAccount(a)" class="text-slate-300 hover:text-rose-500" :title="t('delete')"><Icon name="xcircle" /></button>
@@ -205,6 +216,10 @@ function deleteAccount(a) {
                     <input v-model="accForm.name" :placeholder="t('account')" required class="rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800" />
                     <select v-model="accForm.type" class="rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800">
                         <option value="cash">{{ t('cash') }}</option><option value="bank">{{ t('account') }}</option><option value="other">{{ t('other') }}</option>
+                    </select>
+                    <select v-model="accForm.branch_id" class="rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800">
+                        <option value="">{{ t('club_wide') }}</option>
+                        <option v-for="branch in branches" :key="branch.id" :value="branch.id">{{ branch.localized_name || branch.name }}</option>
                     </select>
                     <label class="text-sm"><span class="mb-1 block text-xs font-medium text-slate-500">{{ t('opening_balance') }}</span>
                         <input v-model="accForm.opening_balance" type="number" step="0.01" class="w-32 rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800" /></label>

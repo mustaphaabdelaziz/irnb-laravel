@@ -7,6 +7,7 @@ use App\Http\Requests\Player\StorePlayerRequest;
 use App\Http\Requests\Player\UpdatePlayerRequest;
 use App\Models\Branch;
 use App\Models\Category;
+use App\Models\FinanceAccount;
 use App\Models\MemberJob;
 use App\Models\Player;
 use App\Models\PlayerEmergencyContact;
@@ -16,12 +17,15 @@ use App\Models\Subscription;
 use App\Models\Transaction;
 use App\Services\Dashboard\ModuleStats;
 use App\Services\Export\ExcelExporter;
+use App\Services\Finance\DefaultRegisterResolver;
 use App\Services\Player\MembershipNumber;
 use App\Services\Player\RegisterPlayerService;
 use App\Services\Storage\FileStorageService;
+use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Inertia\Inertia;
@@ -95,16 +99,18 @@ class PlayerController extends Controller
         // into PHP and counted them in a loop on each request.
         $ageStats = $this->ageStats($request);
 
+        // Lookup lists are closures: the page's filter reloads ask only for the
+        // filter-dependent props, so these queries are skipped on every search.
         return Inertia::render('Players/Index', [
             'players' => $players,
-            // A closure: the strip does not depend on the page's filters, so a
+            // A closure like the lookups below: the strip is unfiltered, so a
             // filter reload should not pay to recompute it.
             'strip' => fn (): array => app(ModuleStats::class)->players(),
-            'categories' => Category::orderBy('name')->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
-            'branches' => Branch::orderBy('name')->get(),
+            'categories' => fn () => Category::orderBy('name')->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
+            'branches' => fn () => Branch::orderBy('name')->get(),
             // positions feeds the bulk-edit field picker as well as the filter.
-            'positions' => Position::orderBy('name')->get(['id', 'name']),
-            'playerStatuses' => PlayerStatus::orderBy('sort_order')->get(),
+            'positions' => fn () => Position::orderBy('name')->get(['id', 'name']),
+            'playerStatuses' => fn () => PlayerStatus::orderBy('sort_order')->get(),
             'categoryStats' => $categoryStats,
             'statusStats' => $statusStats,
             'positionStats' => $positionStats,
@@ -129,38 +135,49 @@ class PlayerController extends Controller
         ]);
 
         $transactions = Transaction::query()
+            ->with(Transaction::FINANCE_ACCOUNT_LABEL)
             ->where('related_entity_type', 'Player')
             ->where('related_entity_id', $player->id)
             ->where('archived', false)
             ->orderByDesc('transaction_date')
             ->get();
 
+        $financeAccounts = FinanceAccount::selectable()->get();
+        $registers = new DefaultRegisterResolver($financeAccounts);
+
         return Inertia::render('Players/Show', [
             'player' => $player,
             'transactions' => $transactions,
-            'availableSubscriptions' => $this->availableSubscriptions($player),
+            'availableSubscriptions' => $this->availableSubscriptions($player, $registers),
             'totalDebt' => $player->calculateTotalDebt(),
+            'financeAccounts' => $financeAccounts,
+            'defaultFinanceAccountId' => $registers->forPlayer($player)?->id,
         ]);
     }
 
     /**
-     * The full subscription catalog with this player's status for each, so the
-     * add-payment form can list every subscription (mandatory and optional),
-     * whether or not the player is already assigned to it.
+     * The subscription catalog this player may pay, with their status for each:
+     * every subscription open to the player's category (mandatory and optional),
+     * plus any other subscription they are already assigned to, so existing
+     * debts stay payable.
      *
-     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     * @return Collection<int, array<string, mixed>>
      */
-    private function availableSubscriptions(Player $player): \Illuminate\Support\Collection
+    private function availableSubscriptions(Player $player, DefaultRegisterResolver $registers): Collection
     {
         $assigned = $player->playerSubscriptions->keyBy('subscription_id');
 
         return Subscription::query()
+            ->where(fn ($query) => $query
+                ->forCategory($player->category_id)
+                ->orWhereIn('id', $assigned->keys()->filter()))
+            ->with(['branches:id', 'categories:id'])
             ->orderByDesc('year')
             ->orderBy('name')
             ->get()
-            ->map(function (Subscription $s) use ($player, $assigned) {
+            ->map(function (Subscription $s) use ($player, $assigned, $registers) {
                 $ps = $assigned->get($s->id);
-                $owed = $player->is_student ? (float) $s->amount_student : (float) $s->amount_worker;
+                $owed = $s->amountFor($player);
 
                 return [
                     'subscription_id' => $s->id,
@@ -172,6 +189,7 @@ class PlayerController extends Controller
                     'amount_owed' => $ps ? (float) $ps->amount_owed : $owed,
                     'amount_paid' => $ps ? (float) $ps->amount_paid : 0.0,
                     'remaining_amount' => $ps ? (float) $ps->remaining_amount : $owed,
+                    'default_finance_account_id' => $registers->forSubscription($s)?->id,
                 ];
             })
             ->values();
@@ -484,11 +502,11 @@ class PlayerController extends Controller
      * Age distribution bucketed by decade, in SQL. Bucket keys mirror the
      * `age` filter so a chip click round-trips.
      *
-     * @return \Illuminate\Support\Collection<int, array{bucket:string,count:int}>
+     * @return Collection<int, array{bucket:string,count:int}>
      */
-    private function ageStats(Request $request): \Illuminate\Support\Collection
+    private function ageStats(Request $request): Collection
     {
-        $today = \Carbon\Carbon::today();
+        $today = Carbon::today();
         $at = fn (int $years) => $today->copy()->subYears($years)->toDateString();
 
         $bucket = "CASE
@@ -501,7 +519,7 @@ class PlayerController extends Controller
 
         $counts = $this->statsQuery($request, 'age')
             ->selectRaw("{$bucket} as bucket, COUNT(*) as total")
-            ->groupBy(\Illuminate\Support\Facades\DB::raw($bucket))
+            ->groupBy(DB::raw($bucket))
             ->pluck('total', 'bucket');
 
         // Fixed order regardless of what the data happens to contain.
@@ -537,7 +555,7 @@ class PlayerController extends Controller
         }
 
         if ($request->filled('age')) {
-            $today = \Carbon\Carbon::today();
+            $today = Carbon::today();
             match ($request->input('age')) {
                 'unknown' => $query->whereNull('birthdate'),
                 'u10' => $query->where('birthdate', '>', $today->copy()->subYears(10)),
@@ -573,7 +591,7 @@ class PlayerController extends Controller
      */
     private function permanentlyDelete(Player $player, FileStorageService $files): void
     {
-        \Illuminate\Support\Facades\DB::transaction(function () use ($player) {
+        DB::transaction(function () use ($player) {
             Transaction::where('related_entity_type', 'Player')
                 ->where('related_entity_id', $player->id)
                 ->update(['archived' => true]);

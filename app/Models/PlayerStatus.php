@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasLocalizedName;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PlayerStatus extends Model
 {
-    use HasFactory;
+    use HasFactory, HasLocalizedName;
 
     protected $fillable = [
         'name',
@@ -29,14 +30,6 @@ class PlayerStatus extends Model
             'is_active' => 'boolean',
             'sort_order' => 'integer',
         ];
-    }
-
-    /** The status name in the current app locale, falling back to the base name. */
-    public function getLocalizedNameAttribute(): string
-    {
-        $column = 'name_'.app()->getLocale();
-
-        return $this->{$column} ?: $this->name;
     }
 
     public function players(): HasMany

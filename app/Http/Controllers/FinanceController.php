@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Branch;
 use App\Models\Budget;
 use App\Models\FinanceAccount;
 use App\Models\FinanceCategory;
@@ -38,7 +39,13 @@ class FinanceController extends Controller
             'years' => $years,
             'selectedYear' => $selectedYear,
             'detail' => $fiscalYear ? $this->yearDetail($fiscalYear) : null,
-            'accounts' => FinanceAccount::orderBy('sort_order')->orderBy('id')->get(),
+            'accounts' => FinanceAccount::query()
+                ->where(function ($query) {
+                    $query->where('is_treasury', true)
+                        ->orWhere(fn ($root) => $root->whereNull('branch_id')->whereNull('parent_account_id'));
+                })
+                ->with('branch:id,name,name_ar,name_fr,name_en')
+                ->orderBy('sort_order')->orderBy('id')->get(),
             'allTime' => [
                 'income' => (float) Transaction::where('archived', false)->where('transaction_type', 'income')->sum('amount'),
                 'expense' => (float) Transaction::where('archived', false)->where('transaction_type', 'expense')->sum('amount'),
@@ -57,8 +64,15 @@ class FinanceController extends Controller
         return Inertia::render('Finance/Settings', [
             'categories' => FinanceCategory::withCount('transactions')
                 ->orderBy('type')->orderBy('sort_order')->orderBy('name')->get(),
-            'accounts' => FinanceAccount::withCount('transactions')
+            'accounts' => FinanceAccount::with([
+                'branch:id,name,name_ar,name_fr,name_en',
+                'category:id,name,name_ar,name_fr,name_en',
+            ])
+                ->withCount('transactions')
                 ->orderBy('sort_order')->orderBy('id')->get(),
+            'branches' => Branch::orderBy('name')->get([
+                'id', 'name', 'name_ar', 'name_fr', 'name_en',
+            ]),
             'years' => FiscalYear::orderByDesc('year')->get(),
             'budgets' => $budgets,
         ]);
@@ -74,13 +88,20 @@ class FinanceController extends Controller
     {
         $year = $fy->year;
 
-        $byCategory = DB::table('transactions as t')
-            ->leftJoin('finance_categories as c', 'c.id', '=', 't.finance_category_id')
-            ->where('t.archived', false)
-            ->where('t.fiscal_year', $year)
-            ->groupBy('t.transaction_type', 'c.id', 'c.name', 'c.color')
-            ->selectRaw('t.transaction_type as type, c.id as category_id, c.name, c.color, SUM(t.amount) as total, COUNT(*) as count')
+        $byCategory = DB::table('transactions')
+            ->where('archived', false)
+            ->where('fiscal_year', $year)
+            ->groupBy('transaction_type', 'finance_category_id')
+            ->selectRaw('transaction_type as type, finance_category_id as category_id, SUM(amount) as total, COUNT(*) as count')
             ->get();
+
+        // Names through the model so the locale fallback lives in one place.
+        $categories = FinanceCategory::findMany($byCategory->pluck('category_id')->filter())->keyBy('id');
+        $byCategory->each(function ($row) use ($categories) {
+            $category = $categories->get($row->category_id);
+            $row->name = $category?->localized_name;
+            $row->color = $category?->color;
+        });
 
         $income = $byCategory->where('type', 'income')->sortByDesc('total')->values();
         $expense = $byCategory->where('type', 'expense')->sortByDesc('total')->values();
@@ -109,7 +130,7 @@ class FinanceController extends Controller
                 $actual = (float) ($actuals[$c->id]->total ?? 0);
 
                 return [
-                    'category_id' => $c->id, 'name' => $c->name, 'type' => $c->type, 'color' => $c->color,
+                    'category_id' => $c->id, 'name' => $c->localized_name, 'type' => $c->type, 'color' => $c->color,
                     'planned' => $planned, 'actual' => $actual,
                     'variance' => $c->type === 'expense' ? $planned - $actual : $actual - $planned,
                 ];

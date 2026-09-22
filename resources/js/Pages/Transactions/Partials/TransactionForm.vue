@@ -6,13 +6,15 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import { Link, useForm } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 
 const { t } = useI18n();
 const props = defineProps({
     transaction: { type: Object, default: null },
     financeCategories: { type: Array, default: () => [] },
+    financeAccounts: { type: Array, default: () => [] },
     players: { type: Array, default: () => [] },
     clubCcp: { type: Object, default: null },
 });
@@ -31,6 +33,7 @@ const form = useForm({
     payment_bank_name: props.transaction?.payment_bank_name || '',
     payment_holder: props.transaction?.payment_holder || '',
     payment_reference: props.transaction?.payment_reference || '',
+    finance_account_id: props.transaction?.finance_account_id || props.financeAccounts[0]?.id || '',
     status: props.transaction?.status || 'Paid',
     related_entity_id: props.transaction?.related_entity_id || '',
     receipt: null,
@@ -38,6 +41,14 @@ const form = useForm({
 
 const categoryOptions = computed(() => props.financeCategories.filter((c) => c.type === form.transaction_type));
 const playerOptions = computed(() => props.players.map((p) => ({ value: p.id, label: p.fullname || `${p.firstname} ${p.lastname}` })));
+const { accountLabel } = useFinanceAccountLabel();
+
+watch(() => form.related_entity_id, (playerId) => {
+    const player = props.players.find((item) => String(item.id) === String(playerId));
+    if (player?.default_finance_account_id) {
+        form.finance_account_id = player.default_finance_account_id;
+    }
+});
 
 // reset category when the type flips and the selection no longer matches
 function onTypeChange() {
@@ -78,7 +89,7 @@ function submit() {
                     <InputLabel :value="t('category')" />
                     <select v-model="form.finance_category_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm" required>
                         <option value="" disabled>-</option>
-                        <option v-for="c in categoryOptions" :key="c.id" :value="c.id">{{ c.name }}</option>
+                        <option v-for="c in categoryOptions" :key="c.id" :value="c.id">{{ c.localized_name || c.name }}</option>
                     </select>
                     <InputError :message="form.errors.finance_category_id" class="mt-1" />
                 </div>
@@ -98,6 +109,19 @@ function submit() {
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <InputLabel :value="form.transaction_type === 'income' ? t('destination_register') : t('source_register')" />
+                    <select v-model="form.finance_account_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm" required>
+                        <option value="" disabled>{{ t('select_cash_register') }}</option>
+                        <option v-for="account in financeAccounts" :key="account.id" :value="account.id">
+                            {{ accountLabel(account) }}
+                        </option>
+                    </select>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        {{ form.transaction_type === 'income' ? t('income_register_hint') : t('expense_register_hint') }}
+                    </p>
+                    <InputError :message="form.errors.finance_account_id" class="mt-1" />
+                </div>
                 <div>
                     <InputLabel :value="t('payment_method')" />
                     <select v-model="form.payment_method" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm">

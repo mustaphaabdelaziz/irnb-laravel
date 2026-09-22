@@ -6,6 +6,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import StatCard from '@/Components/StatCard.vue';
 import Icon from '@/Components/Icon.vue';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
+import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 import '@/lib/registerCharts';
 import { Line, Doughnut } from 'vue-chartjs';
 
@@ -18,6 +19,7 @@ const props = defineProps({
 });
 
 const { t, locale } = useI18n();
+const { accountLabel } = useFinanceAccountLabel();
 const { formatMoney } = useFormatMoney();
 const page = usePage();
 const isAdmin = computed(() => page.props.auth?.isAdmin ?? false);
@@ -95,6 +97,10 @@ const currentBalance = computed(() => props.accounts.reduce((s, a) => s + Number
                     </button>
                 </div>
                 <div class="flex items-center gap-2">
+                    <Link
+                        :href="route('finance.registers.index')"
+                        class="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 transition-colors hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800"
+                    ><Icon name="money" /> {{ t('cash_registers') }}</Link>
                     <a
                         :href="route('reports.financial', { year: selectedYear })" target="_blank"
                         class="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 transition-colors hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800"
@@ -153,7 +159,10 @@ const currentBalance = computed(() => props.accounts.reduce((s, a) => s + Number
                         <p class="figure text-3xl font-extrabold text-primary-700 dark:text-primary-400">{{ formatMoney(currentBalance) }}</p>
                         <ul class="mt-4 space-y-2">
                             <li v-for="a in accounts" :key="a.id" class="flex items-center justify-between text-sm">
-                                <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300"><Icon name="money" class="text-slate-400" /> {{ a.name }}</span>
+                                <span class="flex min-w-0 items-center gap-2 text-slate-600 dark:text-slate-300">
+                                    <Icon name="money" class="shrink-0 text-slate-400" />
+                                    <span class="truncate">{{ accountLabel(a) }}</span>
+                                </span>
                                 <span class="font-semibold text-slate-900 dark:text-slate-100">{{ formatMoney(a.current_balance) }}</span>
                             </li>
                         </ul>

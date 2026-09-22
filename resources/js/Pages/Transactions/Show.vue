@@ -45,6 +45,14 @@ const statusColor = (s) => s === 'Paid' ? 'emerald' : s === 'Partial' ? 'amber' 
 
         <div class="space-y-6">
             <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+                <div class="mb-5 border-b border-slate-100 pb-4 dark:border-slate-800">
+                    <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('title') }}</p>
+                    <h2 class="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">{{ transaction.display_title }}</h2>
+                    <Link v-if="transaction.player_summary" :href="route('players.show', transaction.player_summary.id)" class="mt-1 inline-flex items-center gap-2 text-sm text-primary-600 hover:underline">
+                        {{ transaction.player_summary.name }}
+                        <span class="font-mono text-xs text-slate-400">{{ transaction.player_summary.membership_id }}</span>
+                    </Link>
+                </div>
                 <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     <div>
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('amount') }}</p>

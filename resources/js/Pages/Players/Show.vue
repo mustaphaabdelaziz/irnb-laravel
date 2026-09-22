@@ -435,7 +435,7 @@ function formatDate(val) {
                         <thead class="bg-slate-50 dark:bg-slate-950">
                             <tr>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('date') }}</th>
-                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('category') }}</th>
+                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('title') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('payment_method') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('cash_register') }}</th>
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('amount') }}</th>
@@ -445,7 +445,7 @@ function formatDate(val) {
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                             <tr v-for="tx in transactions" :key="tx.id">
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ formatDate(tx.transaction_date) }}</td>
-                                <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">{{ tx.category }}</td>
+                                <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">{{ tx.display_title }}</td>
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ statusLabel('payment_method', tx.payment_method) }}</td>
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ accountLabel(tx.finance_account) }}</td>
                                 <td class="px-4 py-3 text-end text-sm font-semibold"

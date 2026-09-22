@@ -3,7 +3,10 @@ import { computed, ref, watch } from 'vue';
 
 const props = defineProps({
     modelValue: { type: [String, Number], default: '' },
-    options: { type: Array, default: () => [] }, // [{ value, label }]
+    // [{ value, label, description?, keywords? }]. description is a muted second
+    // line (e.g. membership ID · category · birth year); keywords is extra search
+    // text that is not shown (e.g. the full name with the father's name).
+    options: { type: Array, default: () => [] },
     placeholder: { type: String, default: '' },
     disabled: { type: Boolean, default: false },
 });
@@ -16,10 +19,16 @@ const root = ref(null);
 
 const selected = computed(() => props.options.find((o) => String(o.value) === String(props.modelValue)) || null);
 
+// Every typed word must appear somewhere in the label, description or keywords:
+// "benali amine" and "amine benali" find the same person, and a membership ID
+// typed on its own finds them too.
 const filtered = computed(() => {
-    const q = queryText.value.trim().toLowerCase();
-    if (!q) return props.options;
-    return props.options.filter((o) => o.label.toLowerCase().includes(q));
+    const tokens = queryText.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if (!tokens.length) return props.options;
+    return props.options.filter((o) => {
+        const haystack = [o.label, o.description, o.keywords].filter(Boolean).join(' ').toLowerCase();
+        return tokens.every((token) => haystack.includes(token));
+    });
 });
 
 watch([queryText, open], () => { active.value = 0; });
@@ -61,7 +70,8 @@ function onBlur(e) {
                 <li v-for="(o, i) in filtered" :key="o.value" @mousedown.prevent="choose(o)"
                     class="cursor-pointer px-3 py-2 text-sm"
                     :class="i === active ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'">
-                    {{ o.label }}
+                    <span class="block">{{ o.label }}</span>
+                    <span v-if="o.description" class="block text-xs text-slate-400 dark:text-slate-500">{{ o.description }}</span>
                 </li>
                 <li v-if="!filtered.length" class="px-3 py-2 text-sm text-slate-400">-</li>
             </ul>

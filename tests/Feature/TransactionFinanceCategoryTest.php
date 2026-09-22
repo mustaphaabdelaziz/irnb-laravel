@@ -45,6 +45,7 @@ class TransactionFinanceCategoryTest extends TestCase
 
         $this->actingAs($this->admin())
             ->post(route('transactions.store'), [
+                'title' => 'Donation',
                 'transaction_type' => 'income',
                 'finance_category_id' => $incomeCat->id,
                 'amount' => 500,

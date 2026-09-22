@@ -21,6 +21,7 @@ use App\Services\Finance\DefaultRegisterResolver;
 use App\Services\Player\MembershipNumber;
 use App\Services\Player\RegisterPlayerService;
 use App\Services\Storage\FileStorageService;
+use App\Support\TransactionTitle;
 use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -135,12 +136,13 @@ class PlayerController extends Controller
         ]);
 
         $transactions = Transaction::query()
-            ->with(Transaction::FINANCE_ACCOUNT_LABEL)
+            ->with([...Transaction::FINANCE_ACCOUNT_LABEL, ...TransactionTitle::RELATIONS])
             ->where('related_entity_type', 'Player')
             ->where('related_entity_id', $player->id)
             ->where('archived', false)
             ->orderByDesc('transaction_date')
-            ->get();
+            ->get()
+            ->each(fn (Transaction $transaction) => TransactionTitle::decorate($transaction));
 
         $financeAccounts = FinanceAccount::selectable()->get();
         $registers = new DefaultRegisterResolver($financeAccounts);

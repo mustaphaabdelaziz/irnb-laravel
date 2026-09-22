@@ -20,14 +20,15 @@
 
     <table class="info">
         <tr><td class="label">{{ __('Receipt No.') }}</td><td>#{{ $receiptNumber }}</td></tr>
+        <tr><td class="label">{{ __('Title') }}</td><td>{{ $title }}</td></tr>
         <tr><td class="label">{{ __('Date') }}</td><td>{{ optional($transaction->transaction_date)->format('Y-m-d') }}</td></tr>
         @if ($relatedName)
             <tr><td class="label">{{ __('Member') }}</td><td>{{ $relatedName }}</td></tr>
         @endif
         <tr><td class="label">{{ __('Type') }}</td><td>{{ $transaction->transaction_type === 'income' ? __('Income') : __('Expense') }}</td></tr>
-        <tr><td class="label">{{ __('Category') }}</td><td>{{ $transaction->category }}</td></tr>
+        <tr><td class="label">{{ __('Category') }}</td><td>{{ $categoryLabel }}</td></tr>
         <tr><td class="label">{{ __('Payment Method') }}</td><td>{{ $transaction->payment_method ?: '—' }}</td></tr>
-        <tr><td class="label">{{ __('Status') }}</td><td><span class="badge">{{ $transaction->status }}</span></td></tr>
+        <tr><td class="label">{{ __('Status') }}</td><td><span class="badge">{{ $statusLabel }}</span></td></tr>
         @if ($transaction->description)
             <tr><td class="label">{{ __('Description') }}</td><td>{{ $transaction->description }}</td></tr>
         @endif

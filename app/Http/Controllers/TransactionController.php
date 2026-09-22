@@ -12,6 +12,7 @@ use App\Models\WebsiteConfig;
 use App\Services\Export\ExcelExporter;
 use App\Services\Finance\DefaultRegisterResolver;
 use App\Services\Storage\FileStorageService;
+use App\Support\TransactionTitle;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,10 +30,11 @@ class TransactionController extends Controller
         $income = (float) (clone $query)->where('transaction_type', 'income')->sum('amount');
         $expense = (float) (clone $query)->where('transaction_type', 'expense')->sum('amount');
 
-        $transactions = $query->with(['recordedBy', 'receivedBy', 'financeCategory', ...Transaction::FINANCE_ACCOUNT_LABEL])
+        $transactions = $query->with(['recordedBy', 'receivedBy', ...TransactionTitle::RELATIONS, ...Transaction::FINANCE_ACCOUNT_LABEL])
             ->latest('transaction_date')
             ->paginate(25)
-            ->withQueryString();
+            ->withQueryString()
+            ->through(fn (Transaction $transaction) => TransactionTitle::decorate($transaction));
 
         return Inertia::render('Transactions/Index', [
             'transactions' => $transactions,
@@ -57,11 +59,12 @@ class TransactionController extends Controller
 
     public function export(Request $request, ExcelExporter $exporter)
     {
-        $query = Transaction::query()->with(['recordedBy', 'financeCategory', 'financeAccount'])->where('archived', false);
+        $query = Transaction::query()->with(['recordedBy', 'financeAccount', ...TransactionTitle::RELATIONS])->where('archived', false);
         $this->applyFilters($query, $request);
 
         $rows = $query->latest('transaction_date')->get()->map(fn (Transaction $t) => [
             $t->transaction_date?->format('Y-m-d'),
+            TransactionTitle::for($t),
             ucfirst($t->transaction_type),
             $t->financeCategory?->localized_name ?? $t->category,
             (float) $t->amount,
@@ -72,7 +75,7 @@ class TransactionController extends Controller
             $t->recordedBy?->name,
         ])->all();
 
-        $headers = ['Date', 'Type', 'Category', 'Amount', 'Status', 'Payment', 'Cash Register', 'Description', 'Recorded By'];
+        $headers = ['Date', 'Title', 'Type', 'Category', 'Amount', 'Status', 'Payment', 'Cash Register', 'Description', 'Recorded By'];
 
         return $exporter->download('Transactions', $headers, $rows, 'transactions-'.now()->format('Y-m-d').'.csv');
     }
@@ -85,10 +88,13 @@ class TransactionController extends Controller
             'recordedBy',
             'receivedBy',
             'financeCategory',
+            ...TransactionTitle::RELATIONS,
             ...Transaction::FINANCE_ACCOUNT_LABEL,
             'playerSubscriptions.player',
             'playerSubscriptions.transaction',
         ]);
+
+        TransactionTitle::decorate($transaction);
 
         return Inertia::render('Transactions/Show', [
             'transaction' => $transaction,
@@ -131,6 +137,9 @@ class TransactionController extends Controller
 
     public function edit(Transaction $transaction): Response
     {
+        // The edit form pre-fills the title with the generated label when none is stored.
+        TransactionTitle::decorate($transaction->load(TransactionTitle::RELATIONS));
+
         return Inertia::render('Transactions/Edit', [
             'transaction' => $transaction,
             ...$this->formOptions(),

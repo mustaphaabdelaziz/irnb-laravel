@@ -15,7 +15,8 @@ class BoardTask extends Model
     protected function casts(): array
     {
         return [
-            'due_date' => 'date',
+            // Y-m-d so the edit modal's <input type="date"> opens filled.
+            'due_date' => 'date:Y-m-d',
             'completed_at' => 'datetime',
             'progress' => 'integer',
         ];

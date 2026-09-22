@@ -12,6 +12,7 @@ use App\Models\PlayerSubscription;
 use App\Services\Export\ExcelExporter;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -35,7 +36,8 @@ class BoardController extends Controller
             'stats' => [
                 'members' => BoardMember::where('status', 'active')->count(),
                 'meetings_held' => BoardMeeting::where('status', 'held')->count(),
-                'meetings_total' => (clone $termMeetings)->count(),
+                // A cancelled meeting never took place, so it is not part of the term's total.
+                'meetings_total' => (clone $termMeetings)->where('status', '!=', 'cancelled')->count(),
                 'tasks_open' => (clone $tasks)->whereIn('status', ['not_started', 'in_progress'])->count(),
                 'tasks_completed' => (clone $tasks)->where('status', 'completed')->count(),
                 'tasks_total' => (clone $tasks)->count(),
@@ -149,18 +151,24 @@ class BoardController extends Controller
         ]);
     }
 
-    public function meetings(): Response
+    public function meetings(Request $request): Response
     {
+        $status = in_array($request->query('status'), ['scheduled', 'held', 'cancelled'], true)
+            ? $request->query('status')
+            : null;
+
         return Inertia::render('Board/Meetings', [
             'meetings' => BoardMeeting::withCount(['attendances as present_count' => fn ($q) => $q->where('status', 'present')])
                 ->withCount('tasks')
+                ->when($status, fn ($q) => $q->where('status', $status))
                 ->orderByDesc('meeting_date')->get(),
+            'filters' => ['status' => $status],
         ]);
     }
 
     public function meeting(BoardMeeting $meeting): Response
     {
-        $meeting->load(['attendances.member', 'tasks.member', 'createdBy:id,name']);
+        $meeting->load(['attendances.member', 'tasks.member', 'createdBy:id,name', 'cancelledBy:id,name']);
         $present = $meeting->attendances->keyBy('board_member_id');
 
         return Inertia::render('Board/Meeting', [
@@ -191,10 +199,10 @@ class BoardController extends Controller
     /**
      * Task evaluation metrics for the board Tasks page (Stats view).
      *
-     * @param  \Illuminate\Support\Collection<int, BoardTask>  $all
+     * @param  Collection<int, BoardTask>  $all
      * @return array<string, mixed>
      */
-    private function taskStats(\Illuminate\Support\Collection $all): array
+    private function taskStats(Collection $all): array
     {
         $total = $all->count();
         $completed = $all->where('status', 'completed')->count();

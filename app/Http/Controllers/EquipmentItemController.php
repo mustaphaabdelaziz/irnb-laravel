@@ -414,6 +414,7 @@ class EquipmentItemController extends Controller
                     'name' => $active->recipient_name,
                     'player_id' => $rentable instanceof Player ? $rentable->id : null,
                     'phone' => $active->external_phone,
+                    'type' => $active->type,
                 ] : null,
             ],
             'history' => $item->histories()

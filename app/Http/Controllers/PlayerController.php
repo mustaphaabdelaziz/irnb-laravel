@@ -21,6 +21,7 @@ use App\Services\Finance\DefaultRegisterResolver;
 use App\Services\Player\MembershipNumber;
 use App\Services\Player\RegisterPlayerService;
 use App\Services\Storage\FileStorageService;
+use App\Support\TransactionTitle;
 use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -134,13 +135,19 @@ class PlayerController extends Controller
             'equipmentRentals.equipmentItem.catalog',
         ]);
 
+        // Instance-only append (not $appends on the model): is_overdue re-implements
+        // EquipmentRental::getIsOverdueAttribute() so the page doesn't have to, without
+        // making every serialized rental elsewhere carry the extra attribute.
+        $player->equipmentRentals->each->append('is_overdue');
+
         $transactions = Transaction::query()
-            ->with(Transaction::FINANCE_ACCOUNT_LABEL)
+            ->with([...Transaction::FINANCE_ACCOUNT_LABEL, ...TransactionTitle::RELATIONS])
             ->where('related_entity_type', 'Player')
             ->where('related_entity_id', $player->id)
             ->where('archived', false)
             ->orderByDesc('transaction_date')
-            ->get();
+            ->get()
+            ->each(fn (Transaction $transaction) => TransactionTitle::decorate($transaction));
 
         $financeAccounts = FinanceAccount::selectable()->get();
         $registers = new DefaultRegisterResolver($financeAccounts);
@@ -441,41 +448,6 @@ class PlayerController extends Controller
     }
 
     /**
-     * Name search across every part of a player's name.
-     *
-     * The full name is spread over several columns (lastname firstname (nickname)
-     * بن father grandfather), so matching the raw term against single columns fails
-     * for anything but one word. Instead each whitespace-separated token must match
-     * SOME name column (AND across tokens, OR across columns). That makes the search
-     * order-independent and works with a full name, a partial one, and with or
-     * without the بن connector — while still requiring all tokens to land on the
-     * same player.
-     */
-    private function applySearch($query, string $search): void
-    {
-        $columns = ['firstname', 'lastname', 'nickname', 'father', 'grandfather', 'membership_id'];
-
-        // بن is a connector in the rendered full name, not part of any column.
-        $tokens = collect(preg_split('/\s+/u', trim($search), -1, PREG_SPLIT_NO_EMPTY) ?: [])
-            ->reject(fn ($token) => $token === 'بن')
-            ->values();
-
-        if ($tokens->isEmpty()) {
-            return;
-        }
-
-        $query->where(function ($outer) use ($tokens, $columns) {
-            foreach ($tokens as $token) {
-                $outer->where(function ($inner) use ($token, $columns) {
-                    foreach ($columns as $column) {
-                        $inner->orWhere($column, 'like', '%'.$token.'%');
-                    }
-                });
-            }
-        });
-    }
-
-    /**
      * Base query for a stat block: the same population the list is showing,
      * minus its own dimension.
      *
@@ -535,7 +507,7 @@ class PlayerController extends Controller
     private function applyPlayerFilters($query, Request $request): void
     {
         if ($request->filled('search')) {
-            $this->applySearch($query, (string) $request->input('search'));
+            $query->search((string) $request->input('search'));
         }
 
         if ($request->filled('category_id')) {

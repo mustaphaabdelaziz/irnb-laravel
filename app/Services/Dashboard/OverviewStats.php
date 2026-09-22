@@ -230,11 +230,11 @@ class OverviewStats
             ))
             ->orderByDesc('transaction_date')
             ->limit(10)
-            ->get(['id', 'transaction_date', 'amount', 'transaction_type', 'category', 'description'])
+            ->get(['id', 'transaction_date', 'amount', 'transaction_type', 'category', 'title', 'description'])
             ->map(fn (object $t): array => [
                 'type' => 'transaction',
                 'at' => (string) $t->transaction_date,
-                'label' => $t->description ?: $t->category,
+                'label' => $t->title ?: ($t->description ?: $t->category),
                 'amount' => $t->transaction_type === 'income' ? (float) $t->amount : -(float) $t->amount,
                 'id' => $t->id,
             ]);
@@ -271,9 +271,10 @@ class OverviewStats
                 'equipment_rentals.id as id',
                 'equipment_rentals.checkout_date as checkout_date',
                 'equipment_catalogs.name as catalog_name',
+                'equipment_rentals.type as type',
             ])
             ->map(fn (object $r): array => [
-                'type' => 'rental',
+                'type' => $r->type === 'assignment' ? 'assignment' : 'rental',
                 'at' => (string) $r->checkout_date,
                 'label' => (string) $r->catalog_name,
                 'amount' => null,

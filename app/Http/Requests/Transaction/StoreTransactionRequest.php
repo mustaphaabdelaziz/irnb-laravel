@@ -15,6 +15,7 @@ class StoreTransactionRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'title' => ['required', 'string', 'max:150'],
             'amount' => ['required', 'numeric', 'min:0'],
             'transaction_date' => ['nullable', 'date'],
             'transaction_type' => ['required', 'in:income,expense'],
@@ -35,8 +36,9 @@ class StoreTransactionRequest extends FormRequest
                 Rule::exists('finance_accounts', 'id')
                     ->where('is_active', true),
             ],
-            'related_entity_type' => ['nullable', 'string', 'max:255'],
-            'related_entity_id' => ['nullable', 'integer'],
+            // A transaction points at a player by id, never by name — and the id must exist.
+            'related_entity_type' => ['nullable', 'required_with:related_entity_id', 'in:Player'],
+            'related_entity_id' => ['nullable', 'integer', Rule::exists('players', 'id')],
             'description' => ['nullable', 'string'],
             'status' => ['nullable', 'in:Paid,Partial,Unpaid,Exempt'],
             'receipt' => ['nullable', 'file', 'max:10240'],

@@ -8,13 +8,16 @@ import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
+import RentalTypeBadge from '@/Components/RentalTypeBadge.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 import { ref, computed, watch } from 'vue';
+import { useStatusLabel } from '@/Composables/useStatusLabel';
 
 const { t } = useI18n();
+const { statusLabel } = useStatusLabel();
 const { formatMoney } = useFormatMoney();
 
 const props = defineProps({
@@ -29,6 +32,16 @@ const props = defineProps({
 const subscriptions = computed(() => props.player?.player_subscriptions ?? []);
 const transactions = computed(() => props.transactions ?? []);
 const { accountLabel } = useFinanceAccountLabel();
+
+// Equipment the player holds or held. Assignments (work kit) and rentals are
+// listed apart so a loan is never mistaken for kit given to work with.
+const equipmentRentals = computed(() => [...(props.player?.equipment_rentals ?? [])]
+    .sort((a, b) => String(b.checkout_date).localeCompare(String(a.checkout_date))));
+const equipmentGroups = computed(() => [
+    { key: 'assigned', label: t('equipment.assignments_tab'), rows: equipmentRentals.value.filter((r) => !r.return_date && r.type === 'assignment') },
+    { key: 'rented', label: t('equipment.rentals_tab'), rows: equipmentRentals.value.filter((r) => !r.return_date && r.type !== 'assignment') },
+    { key: 'returned', label: t('equipment.past_items'), rows: equipmentRentals.value.filter((r) => r.return_date) },
+].filter((group) => group.rows.length));
 
 // Manual/previous debts = obligation lines with no subscription plan attached.
 const manualDebts = computed(() =>
@@ -433,7 +446,7 @@ function formatDate(val) {
                         <thead class="bg-slate-50 dark:bg-slate-950">
                             <tr>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('date') }}</th>
-                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('category') }}</th>
+                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('title') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('payment_method') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('cash_register') }}</th>
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('amount') }}</th>
@@ -443,8 +456,8 @@ function formatDate(val) {
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                             <tr v-for="tx in transactions" :key="tx.id">
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ formatDate(tx.transaction_date) }}</td>
-                                <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">{{ tx.category }}</td>
-                                <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ tx.payment_method || '-' }}</td>
+                                <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">{{ tx.display_title }}</td>
+                                <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ statusLabel('payment_method', tx.payment_method) }}</td>
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ accountLabel(tx.finance_account) }}</td>
                                 <td class="px-4 py-3 text-end text-sm font-semibold"
                                     :class="tx.transaction_type === 'income' ? 'text-emerald-700' : 'text-rose-700'">
@@ -461,6 +474,30 @@ function formatDate(val) {
                             </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- Equipment: work assignments and rentals, current then returned -->
+            <div class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+                <div class="border-b border-slate-100 dark:border-slate-800 px-5 py-4">
+                    <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('equipment') }}</h3>
+                </div>
+                <div v-if="!equipmentRentals.length" class="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_data') }}</div>
+                <div v-else class="divide-y divide-slate-100 dark:divide-slate-800">
+                    <section v-for="group in equipmentGroups" :key="group.key" class="px-5 py-4">
+                        <p class="mb-2 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ group.label }} ({{ group.rows.length }})</p>
+                        <ul class="space-y-2">
+                            <li v-for="r in group.rows" :key="r.id" class="flex flex-wrap items-center gap-2 text-sm">
+                                <RentalTypeBadge :type="r.type" />
+                                <Link v-if="r.equipment_item?.catalog" :href="route('equipment.catalogs.show', r.equipment_item.catalog.id)" class="font-medium text-slate-800 hover:text-primary-600 dark:text-slate-200">{{ r.equipment_item.catalog.name }}</Link>
+                                <span v-if="r.equipment_item?.unique_identifier" class="font-mono text-xs text-slate-400">{{ r.equipment_item.unique_identifier }}</span>
+                                <span v-if="(r.quantity ?? 1) > 1" class="text-xs text-slate-500">× {{ r.return_date ? r.quantity : r.quantity - (r.returned_quantity ?? 0) }}</span>
+                                <span class="text-xs text-slate-500 dark:text-slate-400">{{ t('equipment.out_since') }} {{ formatDate(r.checkout_date) }}</span>
+                                <span v-if="r.return_date" class="text-xs text-slate-500 dark:text-slate-400">· {{ t('equipment.returned_on') }} {{ formatDate(r.return_date) }}</span>
+                                <Badge v-else-if="r.is_overdue" :label="t('overdue')" color="rose" />
+                            </li>
+                        </ul>
+                    </section>
                 </div>
             </div>
         </div>

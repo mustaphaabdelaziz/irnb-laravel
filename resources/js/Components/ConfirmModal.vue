@@ -11,6 +11,10 @@ defineProps({
     title: { type: String, default: '' },
     message: { type: String, default: '' },
     confirmLabel: { type: String, default: '' },
+    // e.g. "Keep meeting" — a plain "Cancel" next to "Cancel meeting" misleads.
+    cancelLabel: { type: String, default: '' },
+    // Disables the confirm button while the request runs.
+    busy: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['confirm', 'cancel']);
@@ -25,9 +29,11 @@ const emit = defineEmits(['confirm', 'cancel']);
             <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
                 {{ message || t('are_you_sure') }}
             </p>
+            <!-- Optional extra fields, e.g. a required reason. -->
+            <slot />
             <div class="mt-6 flex justify-end gap-3">
-                <SecondaryButton @click="emit('cancel')">{{ t('cancel') }}</SecondaryButton>
-                <DangerButton @click="emit('confirm')">{{ confirmLabel || t('delete') }}</DangerButton>
+                <SecondaryButton @click="emit('cancel')">{{ cancelLabel || t('cancel') }}</SecondaryButton>
+                <DangerButton :disabled="busy" @click="emit('confirm')">{{ confirmLabel || t('delete') }}</DangerButton>
             </div>
         </div>
     </Modal>

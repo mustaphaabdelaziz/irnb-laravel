@@ -2,6 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Badge from '@/Components/Badge.vue';
 import Icon from '@/Components/Icon.vue';
+import RentalTypeBadge from '@/Components/RentalTypeBadge.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -136,7 +137,8 @@ const eventLabel = (type) => {
                     </div>
                 </div>
                 <div v-if="item.rented_to" class="mt-4 rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-500/10">
-                    <span class="font-medium text-amber-900 dark:text-amber-200">{{ t('rented_to') }}:</span>
+                    <RentalTypeBadge :type="item.rented_to.type" class="me-1" />
+                    <span class="font-medium text-amber-900 dark:text-amber-200">{{ item.rented_to.type === 'assignment' ? t('assigned_to') : t('rented_to') }}:</span>
                     <!-- A player links to their profile; an external person is plain text + phone. -->
                     <Link v-if="item.rented_to.player_id" :href="route('players.show', item.rented_to.player_id)" class="ms-1 text-primary-600 dark:text-primary-400 hover:underline">
                         {{ item.rented_to.name }}

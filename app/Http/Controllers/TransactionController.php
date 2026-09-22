@@ -12,6 +12,7 @@ use App\Models\WebsiteConfig;
 use App\Services\Export\ExcelExporter;
 use App\Services\Finance\DefaultRegisterResolver;
 use App\Services\Storage\FileStorageService;
+use App\Support\TransactionTitle;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,10 +30,11 @@ class TransactionController extends Controller
         $income = (float) (clone $query)->where('transaction_type', 'income')->sum('amount');
         $expense = (float) (clone $query)->where('transaction_type', 'expense')->sum('amount');
 
-        $transactions = $query->with(['recordedBy', 'receivedBy', 'financeCategory', ...Transaction::FINANCE_ACCOUNT_LABEL])
+        $transactions = $query->with(['recordedBy', 'receivedBy', ...TransactionTitle::RELATIONS, ...Transaction::FINANCE_ACCOUNT_LABEL])
             ->latest('transaction_date')
             ->paginate(25)
-            ->withQueryString();
+            ->withQueryString()
+            ->through(fn (Transaction $transaction) => TransactionTitle::decorate($transaction));
 
         return Inertia::render('Transactions/Index', [
             'transactions' => $transactions,
@@ -57,11 +59,12 @@ class TransactionController extends Controller
 
     public function export(Request $request, ExcelExporter $exporter)
     {
-        $query = Transaction::query()->with(['recordedBy', 'financeCategory', 'financeAccount'])->where('archived', false);
+        $query = Transaction::query()->with(['recordedBy', 'financeAccount', ...TransactionTitle::RELATIONS])->where('archived', false);
         $this->applyFilters($query, $request);
 
         $rows = $query->latest('transaction_date')->get()->map(fn (Transaction $t) => [
             $t->transaction_date?->format('Y-m-d'),
+            TransactionTitle::for($t),
             ucfirst($t->transaction_type),
             $t->financeCategory?->localized_name ?? $t->category,
             (float) $t->amount,
@@ -72,7 +75,7 @@ class TransactionController extends Controller
             $t->recordedBy?->name,
         ])->all();
 
-        $headers = ['Date', 'Type', 'Category', 'Amount', 'Status', 'Payment', 'Cash Register', 'Description', 'Recorded By'];
+        $headers = ['Date', 'Title', 'Type', 'Category', 'Amount', 'Status', 'Payment', 'Cash Register', 'Description', 'Recorded By'];
 
         return $exporter->download('Transactions', $headers, $rows, 'transactions-'.now()->format('Y-m-d').'.csv');
     }
@@ -85,10 +88,13 @@ class TransactionController extends Controller
             'recordedBy',
             'receivedBy',
             'financeCategory',
+            ...TransactionTitle::RELATIONS,
             ...Transaction::FINANCE_ACCOUNT_LABEL,
             'playerSubscriptions.player',
             'playerSubscriptions.transaction',
         ]);
+
+        TransactionTitle::decorate($transaction);
 
         return Inertia::render('Transactions/Show', [
             'transaction' => $transaction,
@@ -131,9 +137,12 @@ class TransactionController extends Controller
 
     public function edit(Transaction $transaction): Response
     {
+        // The edit form pre-fills the title with the generated label when none is stored.
+        TransactionTitle::decorate($transaction->load(TransactionTitle::RELATIONS));
+
         return Inertia::render('Transactions/Edit', [
             'transaction' => $transaction,
-            ...$this->formOptions(),
+            ...$this->formOptions($transaction),
         ]);
     }
 
@@ -183,9 +192,16 @@ class TransactionController extends Controller
     private function applyFilters(Builder $query, Request $request): void
     {
         if ($request->filled('search')) {
-            $search = $request->input('search');
-            $query->where(fn ($q) => $q->where('description', 'like', "%{$search}%")
-                ->orWhere('category', 'like', "%{$search}%"));
+            $search = (string) $request->input('search');
+            $like = "%{$search}%";
+            $query->where(fn (Builder $q) => $q
+                ->where('title', 'like', $like)
+                ->orWhere('description', 'like', $like)
+                ->orWhere('category', 'like', $like)
+                // A player's payments, found by any part of the name or the membership ID.
+                ->orWhere(fn (Builder $p) => $p
+                    ->where('related_entity_type', 'Player')
+                    ->whereIn('related_entity_id', Player::query()->search($search)->select('id'))));
         }
 
         $columns = [
@@ -220,25 +236,42 @@ class TransactionController extends Controller
         return FiscalYear::where('year', $year)->where('status', 'closed')->exists();
     }
 
-    /** Shared Create/Edit form props: active finance categories, the club's own CCP details, and active players. */
-    private function formOptions(): array
+    /**
+     * Shared Create/Edit form props. Players carry enough to tell two people
+     * with the same name apart (membership ID, category, birth year, photo);
+     * the transaction's own player stays selectable on edit even once archived.
+     */
+    private function formOptions(?Transaction $transaction = null): array
     {
         $financeAccounts = FinanceAccount::selectable()->get();
         $registers = new DefaultRegisterResolver($financeAccounts);
+        $ownPlayerId = $transaction?->related_entity_type === 'Player' ? $transaction->related_entity_id : null;
 
         return [
             'financeCategories' => FinanceCategory::where('is_active', true)
                 ->orderBy('type')->orderBy('sort_order')->orderBy('name')
                 ->get(['id', 'type', 'name', 'name_ar', 'name_fr', 'name_en', 'color']),
             'clubCcp' => WebsiteConfig::query()->first()?->banking_info['ccp'] ?? null,
-            'players' => Player::where('archived', false)
-                ->with('branches:id')
+            'players' => Player::query()
+                ->where(fn (Builder $q) => $q->where('archived', false)
+                    ->when($ownPlayerId, fn (Builder $q) => $q->orWhere('id', $ownPlayerId)))
+                ->with(['branches:id,name,name_ar,name_fr,name_en', 'category:id,name,name_ar,name_fr,name_en'])
                 ->orderBy('lastname')->orderBy('firstname')
-                ->get(['id', 'firstname', 'lastname', 'category_id'])
+                ->get([
+                    'id', 'firstname', 'lastname', 'nickname', 'father', 'grandfather',
+                    'membership_id', 'category_id', 'birthdate', 'picture_url', 'picture_filename',
+                    'outstanding_debt', 'archived',
+                ])
                 ->map(fn (Player $player) => [
                     'id' => $player->id,
-                    'firstname' => $player->firstname,
-                    'lastname' => $player->lastname,
+                    'name' => $player->short_name,
+                    'fullname' => $player->fullname,
+                    'membership_id' => $player->membership_id,
+                    'category' => $player->category?->localized_name,
+                    'birth_year' => $player->birthdate?->year,
+                    'picture_url' => $player->picture_url,
+                    'branches' => $player->branches->map(fn ($branch) => $branch->localized_name)->values(),
+                    'outstanding_debt' => (float) $player->outstanding_debt,
                     'default_finance_account_id' => $registers->forPlayer($player)?->id,
                 ]),
             'financeAccounts' => $financeAccounts,

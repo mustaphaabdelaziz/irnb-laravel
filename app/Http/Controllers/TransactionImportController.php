@@ -21,6 +21,8 @@ class TransactionImportController extends Controller
         ['status', 'Status (Paid/Partial/Unpaid/Exempt)', 'Paid'],
         ['payment_method', 'Payment Method', 'cash'],
         ['description', 'Description', ''],
+        // Last so files made from the old 7-column template still import.
+        ['title', 'Title', ''],
     ];
 
     public function template(): StreamedResponse
@@ -65,6 +67,7 @@ class TransactionImportController extends Controller
                     'status' => in_array($data['status'], ['Paid', 'Partial', 'Unpaid', 'Exempt'], true) ? $data['status'] : 'Paid',
                     'payment_method' => $data['payment_method'] ?: 'cash',
                     'description' => $data['description'] ?: null,
+                    'title' => $data['title'] ? mb_substr($data['title'], 0, 150) : null,
                     'recorded_by_user_id' => $request->user()?->id,
                 ]);
                 $imported++;

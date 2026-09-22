@@ -7,6 +7,8 @@ import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
+import RentalTypeBadge from '@/Components/RentalTypeBadge.vue';
+import ReturnRentalModal from '@/Components/ReturnRentalModal.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
@@ -52,7 +54,7 @@ const conditionBreakdown = computed(() => {
 });
 
 const unitsOut = computed(() => (props.totalQuantity ?? 0) - (props.availableCount ?? 0));
-const isDeletable = (item) => item.status !== 'Rented' && !item.active_rental;
+const isDeletable = (item) => item.status !== 'Rented' && !item.open_rentals?.length;
 const deletableItems = computed(() => (props.catalog.items ?? []).filter(isDeletable));
 const {
     selected: selectedItems,
@@ -64,7 +66,6 @@ const {
 
 const showAddItemModal = ref(false);
 const showRentModal = ref(false);
-const showReturnModal = ref(false);
 const selectedItem = ref(null);
 const lostItemId = ref(null);
 const foundItemId = ref(null);
@@ -128,13 +129,6 @@ const expectedReturnDate = computed(() => {
     const d = new Date(rentForm.checkout_date);
     d.setDate(d.getDate() + Number(rentForm.expected_days));
     return d.toISOString().slice(0, 10);
-});
-
-const returnForm = useForm({
-    quantity: 1,
-    condition: 'Good',
-    return_date: new Date().toISOString().slice(0, 10),
-    notes: '',
 });
 
 const showReceiveModal = ref(false);
@@ -286,25 +280,13 @@ function doRent() {
     });
 }
 
-function openReturn(item) {
+// One lot can be out with several people; Return acts on the chosen rental.
+const returningRental = ref(null);
+function openReturn(item, rental) {
     selectedItem.value = item;
-    // Default to bringing back everything still out, which is the common case.
-    returnForm.quantity = item.active_rental?.quantity
-        ? item.active_rental.quantity - (item.active_rental.returned_quantity ?? 0)
-        : 1;
-    returnForm.clearErrors();
-    showReturnModal.value = true;
+    returningRental.value = rental;
 }
-
-function doReturn() {
-    const rental = selectedItem.value?.active_rental;
-    if (!rental) return;
-    returnForm.post(route('equipment.rentals.return', rental.id), {
-        onSuccess: () => {
-            showReturnModal.value = false;
-        },
-    });
-}
+const returningLabel = computed(() => selectedItem.value?.unique_identifier || selectedItem.value?.designation || props.catalog.name);
 
 function sendToRepair(itemId) {
     repairItemId.value = null;
@@ -338,13 +320,13 @@ watch(() => addItemForm.purchase_date, () => {
     if (showAddItemModal.value) fetchSerialPreview();
 });
 
-// An assignment is open-ended; the backend discards a due date on one, so
-// don't leave a stale value sitting in the form.
+// Work equipment is only ever assigned to a player; the server enforces the
+// same rule, this just keeps the form from offering the invalid combination.
 watch(() => rentForm.type, (type) => {
-    if (type === 'assignment') rentForm.due_date = '';
+    if (type === 'assignment') rentForm.rentable_type = 'Player';
 });
 
-// Switching between a player and a staff member invalidates the chosen id.
+// Switching between a player and an external person invalidates the chosen id.
 watch(() => rentForm.rentable_type, () => {
     rentForm.rentable_id = '';
     rentForm.external_name = '';
@@ -510,7 +492,7 @@ function submitImport() {
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('status') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('condition') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('branch') }}</th>
-                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('rented_to') }}</th>
+                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('equipment.holder') }}</th>
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('actions') }}</th>
                             </tr>
                         </thead>
@@ -549,19 +531,21 @@ function submitImport() {
                                     </span>
                                 </td>
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
-                                    <span v-if="item.active_rental">
-                                        {{ item.active_rental.recipient_name }}
-                                        <span v-if="(item.active_rental.quantity ?? 1) > 1" class="text-xs text-slate-400">
-                                            ({{ item.active_rental.quantity - (item.active_rental.returned_quantity ?? 0) }})
-                                        </span>
-                                    </span>
+                                    <!-- Every open rental of the lot, each with its own Return. -->
+                                    <ul v-if="item.open_rentals?.length" class="space-y-1">
+                                        <li v-for="r in item.open_rentals" :key="r.id" class="flex flex-wrap items-center gap-1.5">
+                                            <RentalTypeBadge :type="r.type" />
+                                            <span>{{ r.recipient_name || '—' }}</span>
+                                            <span v-if="(r.quantity ?? 1) > 1" class="text-xs text-slate-400">({{ r.quantity - (r.returned_quantity ?? 0) }})</span>
+                                            <button @click="openReturn(item, r)" class="text-xs font-medium text-emerald-600 hover:text-emerald-800">{{ t('return') }}</button>
+                                        </li>
+                                    </ul>
                                     <span v-else>-</span>
                                 </td>
                                 <td class="px-4 py-3 text-end">
                                     <div class="flex items-center justify-end gap-2">
                                         <!-- Driven by available units, not status: a lot of 20 with 10 out is still lendable. -->
                                         <button v-if="(item.available_quantity ?? 0) > 0" @click="openRent(item)" class="text-sm text-amber-600 hover:text-amber-800">{{ t('rent') }}</button>
-                                        <button v-if="item.active_rental" @click="openReturn(item)" class="text-sm text-emerald-600 hover:text-emerald-800">{{ t('return') }}</button>
                                         <button v-if="(item.quantity ?? 1) > 1 && (item.available_quantity ?? 0) > 0" @click="openSplit(item)"
                                             :title="t('equipment.mark_damaged')" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">⚖️</button>
                                         <button v-if="item.status === 'Available'" @click="repairItemId = item.id" :title="t('send_to_repair')" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">🔧</button>
@@ -570,7 +554,7 @@ function submitImport() {
                                         <button v-if="item.status === 'Lost'" @click="foundItemId = item.id" class="text-sm text-emerald-600 hover:text-emerald-800">{{ t('restore') }}</button>
                                         <Link :href="route('equipment.items.history', item.id)" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200" :title="t('history')">🕘</Link>
                                         <button @click="openEdit(item)" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200" :title="t('edit')">✏️</button>
-                                        <button v-if="!item.active_rental" @click="deleteItemId = item.id" class="text-sm text-rose-500 hover:text-rose-700" :title="t('delete')">🗑️</button>
+                                        <button v-if="!item.open_rentals?.length" @click="deleteItemId = item.id" class="text-sm text-rose-500 hover:text-rose-700" :title="t('delete')">🗑️</button>
                                     </div>
                                 </td>
                             </tr>
@@ -694,14 +678,16 @@ function submitImport() {
                         <p v-if="rentForm.type === 'assignment'" class="text-xs text-slate-500 dark:text-slate-400">{{ t('equipment.assignment_hint') }}</p>
 
                         <!-- Recipient: a team player, or a free-text person from outside the club. -->
-                        <div class="grid grid-cols-2 gap-2">
+                        <div class="grid gap-2" :class="rentForm.type === 'rental' ? 'grid-cols-2' : 'grid-cols-1'">
                             <button type="button" @click="rentForm.rentable_type = 'Player'"
                                 :class="rentForm.rentable_type === 'Player' ? 'bg-slate-100 dark:bg-slate-800 border-slate-400' : 'border-slate-200 dark:border-slate-800'"
                                 class="rounded-lg border px-3 py-2 text-sm text-slate-700 dark:text-slate-200">{{ t('player') }}</button>
-                            <button type="button" @click="rentForm.rentable_type = 'External'"
+                            <button v-if="rentForm.type === 'rental'" type="button" @click="rentForm.rentable_type = 'External'"
                                 :class="rentForm.rentable_type === 'External' ? 'bg-slate-100 dark:bg-slate-800 border-slate-400' : 'border-slate-200 dark:border-slate-800'"
                                 class="rounded-lg border px-3 py-2 text-sm text-slate-700 dark:text-slate-200">{{ t('external_person') }}</button>
                         </div>
+                        <p v-if="rentForm.type === 'assignment'" class="text-xs text-slate-500 dark:text-slate-400">{{ t('equipment.assignment_player_only') }}</p>
+                        <InputError :message="rentForm.errors.rentable_type" class="mt-1" />
 
                         <div v-if="rentForm.rentable_type === 'Player'">
                             <InputLabel :value="t('player')" />
@@ -763,48 +749,7 @@ function submitImport() {
             </div>
 
             <!-- Return Modal -->
-            <div v-if="showReturnModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" @click.self="showReturnModal = false">
-                <div class="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
-                    <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                        {{ t('return') }} — {{ selectedItem?.unique_identifier || selectedItem?.designation || catalog.name }}
-                    </h3>
-                    <form @submit.prevent="doReturn" class="mt-4 space-y-3">
-                        <!-- Units can come back in instalments; the rental stays open until all are in. -->
-                        <div v-if="(selectedItem?.active_rental?.quantity ?? 1) > 1">
-                            <InputLabel :value="t('equipment.quantity')" />
-                            <TextInput v-model="returnForm.quantity" type="number" min="1"
-                                :max="selectedItem.active_rental.quantity - (selectedItem.active_rental.returned_quantity ?? 0)"
-                                class="mt-1 w-full" required />
-                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                {{ selectedItem.active_rental.returned_quantity ?? 0 }} / {{ selectedItem.active_rental.quantity }}
-                                {{ t('equipment.returned_of') }}
-                            </p>
-                            <InputError :message="returnForm.errors.quantity" class="mt-1" />
-                        </div>
-                        <div>
-                            <InputLabel :value="t('return_date')" />
-                            <TextInput v-model="returnForm.return_date" type="date" class="mt-1 w-full" />
-                        </div>
-                        <div>
-                            <InputLabel :value="t('condition')" />
-                            <div class="mt-2 grid grid-cols-5 gap-2">
-                                <button v-for="c in ['New','Good','Fair','Poor','Damaged']" :key="c" type="button"
-                                    @click="returnForm.condition = c"
-                                    :class="returnForm.condition === c ? 'bg-primary-100 dark:bg-primary-500/25 border-primary-500 text-primary-800 dark:text-primary-100' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'"
-                                    class="rounded-lg border px-2 py-2 text-xs font-medium text-center transition-colors">{{ stateLabel(c) }}</button>
-                            </div>
-                        </div>
-                        <div>
-                            <InputLabel :value="t('notes')" />
-                            <textarea v-model="returnForm.notes" rows="2" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500" />
-                        </div>
-                        <div class="flex justify-end gap-3 pt-2">
-                            <button type="button" @click="showReturnModal = false" class="rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">{{ t('cancel') }}</button>
-                            <PrimaryButton :disabled="returnForm.processing">{{ t('return') }}</PrimaryButton>
-                        </div>
-                    </form>
-                </div>
-            </div>
+            <ReturnRentalModal :rental="returningRental" :title="returningLabel" @close="returningRental = null" />
         </Teleport>
 
         <!-- Import items modal -->

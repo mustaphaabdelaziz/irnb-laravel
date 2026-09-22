@@ -13,8 +13,10 @@ import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { ref, computed } from 'vue';
 import { useListFilters } from '@/Composables/useListFilters';
 import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
+import { useStatusLabel } from '@/Composables/useStatusLabel';
 
 const { t } = useI18n();
+const { statusLabel } = useStatusLabel();
 const { formatMoney } = useFormatMoney();
 
 const props = defineProps({
@@ -135,7 +137,8 @@ function destroy() {
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('type') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('category') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('cash_register') }}</th>
-                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('description') }}</th>
+                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('title') }}</th>
+                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('player') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('status') }}</th>
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('amount') }}</th>
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('actions') }}</th>
@@ -157,9 +160,19 @@ function destroy() {
                                 <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
                                     {{ accountLabel(tx.finance_account) }}
                                 </td>
-                                <td class="max-w-xs truncate px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ tx.description || '-' }}</td>
+                                <td class="max-w-xs px-4 py-3 text-sm">
+                                    <Link :href="route('transactions.show', tx.id)" class="block truncate font-medium text-slate-900 hover:text-primary-600 dark:text-slate-100">{{ tx.display_title }}</Link>
+                                    <span v-if="tx.description" class="block truncate text-xs text-slate-500 dark:text-slate-400">{{ tx.description }}</span>
+                                </td>
+                                <td class="whitespace-nowrap px-4 py-3 text-sm">
+                                    <template v-if="tx.player_summary">
+                                        <Link :href="route('players.show', tx.player_summary.id)" class="text-primary-600 hover:underline">{{ tx.player_summary.name }}</Link>
+                                        <span class="block font-mono text-xs text-slate-400">{{ tx.player_summary.membership_id }}</span>
+                                    </template>
+                                    <span v-else class="text-slate-400">—</span>
+                                </td>
                                 <td class="whitespace-nowrap px-4 py-3">
-                                    <Badge :label="tx.status || '-'" :color="tx.status === 'Paid' ? 'emerald' : tx.status === 'Partial' ? 'amber' : tx.status === 'Exempt' ? 'slate' : 'rose'" />
+                                    <Badge :label="statusLabel('payment', tx.status)" :color="tx.status === 'Paid' ? 'emerald' : tx.status === 'Partial' ? 'amber' : tx.status === 'Exempt' ? 'slate' : 'rose'" />
                                 </td>
                                 <td class="whitespace-nowrap px-4 py-3 text-end text-sm font-semibold"
                                     :class="tx.transaction_type === 'income' ? 'text-emerald-700' : 'text-rose-700'">
@@ -173,7 +186,7 @@ function destroy() {
                                 </td>
                             </tr>
                             <tr v-if="!transactions.data?.length">
-                                <td colspan="8" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
+                                <td colspan="9" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
                             </tr>
                         </tbody>
                     </table>

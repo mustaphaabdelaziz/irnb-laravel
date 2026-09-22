@@ -9,6 +9,7 @@ import { Link, useForm } from '@inertiajs/vue3';
 import { computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
+import { useFormatMoney } from '@/Composables/useFormatMoney';
 
 const { t } = useI18n();
 const props = defineProps({
@@ -22,6 +23,8 @@ const props = defineProps({
 const isEdit = !!props.transaction;
 
 const form = useForm({
+    // An untitled (legacy/automatic) transaction pre-fills its generated label.
+    title: props.transaction?.title || props.transaction?.display_title || '',
     transaction_type: props.transaction?.transaction_type || 'income',
     finance_category_id: props.transaction?.finance_category_id || '',
     amount: props.transaction?.amount || '',
@@ -40,7 +43,16 @@ const form = useForm({
 });
 
 const categoryOptions = computed(() => props.financeCategories.filter((c) => c.type === form.transaction_type));
-const playerOptions = computed(() => props.players.map((p) => ({ value: p.id, label: p.fullname || `${p.firstname} ${p.lastname}` })));
+// Name first; membership ID, category and birth year tell two people with the
+// same name apart. keywords lets the full name (father's name) match too.
+const playerOptions = computed(() => props.players.map((p) => ({
+    value: p.id,
+    label: p.name,
+    description: [p.membership_id, p.category, p.birth_year].filter(Boolean).join(' · '),
+    keywords: p.fullname,
+})));
+const selectedPlayer = computed(() => props.players.find((p) => String(p.id) === String(form.related_entity_id)) || null);
+const { formatMoney } = useFormatMoney();
 const { accountLabel } = useFinanceAccountLabel();
 
 watch(() => form.related_entity_id, (playerId) => {
@@ -76,6 +88,12 @@ function submit() {
 <template>
     <form @submit.prevent="submit" class="mx-auto max-w-2xl space-y-6">
         <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 space-y-4">
+            <div>
+                <InputLabel :value="t('title')" />
+                <TextInput v-model="form.title" class="mt-1 w-full" maxlength="150" required :placeholder="t('transaction_title_placeholder')" />
+                <InputError :message="form.errors.title" class="mt-1" />
+            </div>
+
             <div class="grid gap-4 sm:grid-cols-2">
                 <div>
                     <InputLabel :value="t('type')" />
@@ -171,6 +189,26 @@ function submit() {
             <div v-if="players.length">
                 <InputLabel :value="t('player')" />
                 <SearchableSelect v-model="form.related_entity_id" :options="playerOptions" :placeholder="t('search_player')" />
+                <!-- Confirms the right person before saving: photo, IDs, category, debt. -->
+                <div v-if="selectedPlayer" class="mt-2 flex items-center gap-3 rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200 dark:bg-slate-950 dark:ring-slate-800">
+                    <img v-if="selectedPlayer.picture_url" :src="selectedPlayer.picture_url" alt="" class="h-12 w-12 shrink-0 rounded-full object-cover" />
+                    <span v-else class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-100 text-lg font-bold text-primary-700 dark:bg-primary-500/20 dark:text-primary-300">{{ selectedPlayer.name.charAt(0) }}</span>
+                    <div class="min-w-0 flex-1 text-sm">
+                        <p class="truncate font-semibold text-slate-900 dark:text-slate-100">{{ selectedPlayer.fullname || selectedPlayer.name }}</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                            <span class="font-mono">{{ selectedPlayer.membership_id }}</span>
+                            <span v-if="selectedPlayer.category"> · {{ selectedPlayer.category }}</span>
+                            <span v-if="selectedPlayer.birth_year"> · {{ t('born_in') }} {{ selectedPlayer.birth_year }}</span>
+                        </p>
+                        <p v-if="selectedPlayer.branches?.length" class="truncate text-xs text-slate-500 dark:text-slate-400">{{ selectedPlayer.branches.join(', ') }}</p>
+                    </div>
+                    <div class="shrink-0 text-end text-xs">
+                        <p class="text-slate-500 dark:text-slate-400">{{ t('outstanding_debt') }}</p>
+                        <p class="font-semibold" :class="selectedPlayer.outstanding_debt > 0 ? 'text-rose-600' : 'text-emerald-600'">{{ formatMoney(selectedPlayer.outstanding_debt) }}</p>
+                        <a :href="route('players.show', selectedPlayer.id)" target="_blank" class="text-primary-600 hover:underline">{{ t('view_player') }} ↗</a>
+                    </div>
+                </div>
+                <InputError :message="form.errors.related_entity_id" class="mt-1" />
             </div>
 
             <div>

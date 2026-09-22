@@ -128,4 +128,13 @@ class PlayerSearchTest extends TestCase
         // "Khelifi" (player 1) + "Karim" (player 2's father) must match nobody.
         $this->assertSame([], $this->search('Khelifi Karim'));
     }
+
+    #[Test]
+    public function a_search_of_only_the_connector_matches_no_players(): void
+    {
+        // بن alone leaves no usable token: this must match nobody, not everybody
+        // (the scope also feeds an id subquery elsewhere, where "everybody" would widen it).
+        $this->assertSame([], $this->search('بن'));
+        $this->assertSame([], $this->search('بن بن'));
+    }
 }

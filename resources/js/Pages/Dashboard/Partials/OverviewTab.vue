@@ -82,7 +82,7 @@ const agingOptions = computed(() => baseOptions({
     money: formatMoney,
 }));
 
-const activityIcon = { transaction: 'money', registration: 'user', rental: 'box' };
+const activityIcon = { transaction: 'money', registration: 'user', rental: 'box', assignment: 'wrench' };
 </script>
 
 <template>

@@ -73,6 +73,47 @@ class Player extends Model
         }
     }
 
+    /**
+     * Name search across every part of a player's name, plus the membership ID.
+     *
+     * The full name is spread over several columns (lastname firstname (nickname)
+     * بن father grandfather), so matching the raw term against single columns fails
+     * for anything but one word. Instead each whitespace-separated token must match
+     * SOME column (AND across tokens, OR across columns). That makes the search
+     * order-independent and works with a full name, a partial one, and with or
+     * without the بن connector — while still requiring all tokens to land on the
+     * same player.
+     *
+     * A search left with no usable token (e.g. just "بن") matches NO players, not
+     * every player: this scope also backs an id subquery (transaction search), where
+     * an unfiltered query would silently widen the result to everyone instead of no one.
+     */
+    public function scopeSearch(Builder $query, string $search): void
+    {
+        $columns = ['firstname', 'lastname', 'nickname', 'father', 'grandfather', 'membership_id'];
+
+        // بن is a connector in the rendered full name, not part of any column.
+        $tokens = collect(preg_split('/\s+/u', trim($search), -1, PREG_SPLIT_NO_EMPTY) ?: [])
+            ->reject(fn ($token) => $token === 'بن')
+            ->values();
+
+        if ($tokens->isEmpty()) {
+            $query->whereRaw('1 = 0');
+
+            return;
+        }
+
+        $query->where(function (Builder $outer) use ($tokens, $columns) {
+            foreach ($tokens as $token) {
+                $outer->where(function (Builder $inner) use ($token, $columns) {
+                    foreach ($columns as $column) {
+                        $inner->orWhere($column, 'like', '%'.$token.'%');
+                    }
+                });
+            }
+        });
+    }
+
     protected function casts(): array
     {
         return [
@@ -135,6 +176,12 @@ class Player extends Model
     public function getAgeAttribute(): ?int
     {
         return $this->birthdate?->age;
+    }
+
+    /** "Firstname Lastname" for lists and labels; never "Amine null". */
+    public function getShortNameAttribute(): string
+    {
+        return trim($this->firstname.' '.($this->lastname ?? ''));
     }
 
     public function getFullnameAttribute(): string

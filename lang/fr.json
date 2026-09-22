@@ -11,6 +11,7 @@
     "Date of Birth": "Date de naissance",
     "Description": "Description",
     "Donations": "Dons",
+    "Equipment can only be assigned to a player.": "Le matériel ne peut être affecté qu'à un joueur.",
     "Expense": "Dépense",
     "Financial Summary": "Résumé financier",
     "Income": "Revenu",
@@ -29,6 +30,7 @@
     "Row :line: unknown category \":category\".": "Ligne :line : catégorie inconnue « :category ».",
     "Status": "Statut",
     "This subscription does not apply to this player's category.": "Cet abonnement ne s'applique pas à la catégorie de ce joueur.",
+    "Title": "Intitulé",
     "Total Expense": "Dépenses totales",
     "Total Income": "Revenus totaux",
     "Type": "Type"

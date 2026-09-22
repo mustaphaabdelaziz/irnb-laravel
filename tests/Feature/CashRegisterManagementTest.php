@@ -213,6 +213,7 @@ class CashRegisterManagementTest extends TestCase
         $admin = $this->admin();
 
         $this->actingAs($admin)->post(route('transactions.store'), [
+            'title' => 'Sponsor gift',
             'transaction_type' => 'income',
             'finance_category_id' => $income->id,
             'finance_account_id' => $register->id,
@@ -223,6 +224,7 @@ class CashRegisterManagementTest extends TestCase
         ])->assertRedirect();
 
         $this->actingAs($admin)->post(route('transactions.store'), [
+            'title' => 'Printer ink',
             'transaction_type' => 'expense',
             'finance_category_id' => $expense->id,
             'finance_account_id' => $register->id,

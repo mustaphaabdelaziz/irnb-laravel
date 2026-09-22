@@ -21,10 +21,11 @@ class RegisterPlayerService
             $isStudent = (bool) ($attributes['is_student'] ?? true);
             $categoryId = $attributes['category_id'] ?? null;
 
-            // New members default to "enrolled" (منخرط) when no status is given
-            // (e.g. spreadsheet import, which carries no membership-status column).
+            // New members default to "registered" when no status is given (e.g.
+            // spreadsheet import, which carries no membership-status column).
+            // Matched by code: the display name is editable in Settings.
             if (empty($attributes['status_id'])) {
-                $attributes['status_id'] = PlayerStatus::where('name', 'منخرط')->value('id');
+                $attributes['status_id'] = PlayerStatus::where('code', 'registered')->value('id');
             }
 
             if (empty($attributes['membership_id'])) {

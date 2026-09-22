@@ -83,6 +83,10 @@ class Player extends Model
      * order-independent and works with a full name, a partial one, and with or
      * without the بن connector — while still requiring all tokens to land on the
      * same player.
+     *
+     * A search left with no usable token (e.g. just "بن") matches NO players, not
+     * every player: this scope also backs an id subquery (transaction search), where
+     * an unfiltered query would silently widen the result to everyone instead of no one.
      */
     public function scopeSearch(Builder $query, string $search): void
     {
@@ -94,6 +98,8 @@ class Player extends Model
             ->values();
 
         if ($tokens->isEmpty()) {
+            $query->whereRaw('1 = 0');
+
             return;
         }
 

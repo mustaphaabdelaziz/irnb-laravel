@@ -96,4 +96,16 @@ class TransactionPlayerLookupTest extends TestCase
 
         $this->assertContains($archived->id, collect($players)->pluck('id')->all());
     }
+
+    #[Test]
+    public function a_search_of_only_the_connector_does_not_return_every_players_payment(): void
+    {
+        $amine = Player::create(['membership_id' => '202600017', 'firstname' => 'Amine', 'lastname' => 'Benali']);
+        $linked = $this->paymentFor($amine);
+        $this->paymentFor(null, ['title' => 'Printer ink']);
+
+        // بن alone leaves no usable token: it must not widen the search to every
+        // player-linked transaction (today it does, because the id subquery matches everybody).
+        $this->assertNotContains($linked->id, $this->searchIds('بن'));
+    }
 }

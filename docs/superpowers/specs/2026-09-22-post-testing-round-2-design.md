@@ -642,6 +642,8 @@ import template:
 **Transactions import/export alignment.**
 - The export has Cash Register at column 7, where the import expects Description. The columns are
   aligned.
+- P1 widened the gap: the export puts **Title** at column 2 while the import reads it at column 8, so
+  re-importing an exported file shifts every column. Fix both ends together here.
 - The export's title and spacer rows are skipped correctly on re-import.
 - A title column is added.
 

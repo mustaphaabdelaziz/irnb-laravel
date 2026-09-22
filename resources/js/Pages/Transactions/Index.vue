@@ -13,8 +13,10 @@ import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { ref, computed } from 'vue';
 import { useListFilters } from '@/Composables/useListFilters';
 import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
+import { useStatusLabel } from '@/Composables/useStatusLabel';
 
 const { t } = useI18n();
+const { statusLabel } = useStatusLabel();
 const { formatMoney } = useFormatMoney();
 
 const props = defineProps({
@@ -159,7 +161,7 @@ function destroy() {
                                 </td>
                                 <td class="max-w-xs truncate px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ tx.description || '-' }}</td>
                                 <td class="whitespace-nowrap px-4 py-3">
-                                    <Badge :label="tx.status || '-'" :color="tx.status === 'Paid' ? 'emerald' : tx.status === 'Partial' ? 'amber' : tx.status === 'Exempt' ? 'slate' : 'rose'" />
+                                    <Badge :label="statusLabel('payment', tx.status)" :color="tx.status === 'Paid' ? 'emerald' : tx.status === 'Partial' ? 'amber' : tx.status === 'Exempt' ? 'slate' : 'rose'" />
                                 </td>
                                 <td class="whitespace-nowrap px-4 py-3 text-end text-sm font-semibold"
                                     :class="tx.transaction_type === 'income' ? 'text-emerald-700' : 'text-rose-700'">

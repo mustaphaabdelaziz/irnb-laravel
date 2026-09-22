@@ -13,8 +13,10 @@ import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 import { ref, computed, watch } from 'vue';
+import { useStatusLabel } from '@/Composables/useStatusLabel';
 
 const { t } = useI18n();
+const { statusLabel } = useStatusLabel();
 const { formatMoney } = useFormatMoney();
 
 const props = defineProps({
@@ -444,7 +446,7 @@ function formatDate(val) {
                             <tr v-for="tx in transactions" :key="tx.id">
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ formatDate(tx.transaction_date) }}</td>
                                 <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">{{ tx.category }}</td>
-                                <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ tx.payment_method || '-' }}</td>
+                                <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ statusLabel('payment_method', tx.payment_method) }}</td>
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ accountLabel(tx.finance_account) }}</td>
                                 <td class="px-4 py-3 text-end text-sm font-semibold"
                                     :class="tx.transaction_type === 'income' ? 'text-emerald-700' : 'text-rose-700'">

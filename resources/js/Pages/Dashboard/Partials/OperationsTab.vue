@@ -10,6 +10,7 @@ import { Card, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Separator } from '@/Components/ui/separator';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { baseOptions, seriesColor, spanLabel } from '@/lib/chartTheme';
+import { useStatusLabel } from '@/Composables/useStatusLabel';
 
 const props = defineProps({
     data: { type: Object, default: null },
@@ -18,6 +19,7 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
+const { statusLabel } = useStatusLabel();
 const { formatMoney } = useFormatMoney();
 
 const summary = computed(() => props.data?.summary ?? []);
@@ -223,7 +225,7 @@ const statusTone = {
                         :key="row.status"
                         class="flex items-center justify-between gap-3 px-5 py-3"
                     >
-                        <Badge variant="outline" :class="statusTone[row.status] || ''">{{ row.status }}</Badge>
+                        <Badge variant="outline" :class="statusTone[row.status] || ''">{{ statusLabel('equipment', row.status) }}</Badge>
                         <span class="text-sm font-semibold tabular-nums">{{ row.count }}</span>
                     </li>
                 </ul>

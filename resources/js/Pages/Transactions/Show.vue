@@ -5,8 +5,10 @@ import { Head, Link } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
+import { useStatusLabel } from '@/Composables/useStatusLabel';
 
 const { t } = useI18n();
+const { statusLabel } = useStatusLabel();
 const { accountLabel } = useFinanceAccountLabel();
 const { formatMoney } = useFormatMoney();
 
@@ -56,7 +58,7 @@ const statusColor = (s) => s === 'Paid' ? 'emerald' : s === 'Partial' ? 'amber' 
                     </div>
                     <div>
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('status') }}</p>
-                        <div class="mt-2"><Badge :label="transaction.status" :color="statusColor(transaction.status)" /></div>
+                        <div class="mt-2"><Badge :label="statusLabel('payment', transaction.status)" :color="statusColor(transaction.status)" /></div>
                     </div>
                     <div>
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('category') }}</p>
@@ -68,7 +70,7 @@ const statusColor = (s) => s === 'Paid' ? 'emerald' : s === 'Partial' ? 'amber' 
                     </div>
                     <div>
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('payment_method') }}</p>
-                        <p class="mt-1 text-sm text-slate-900 dark:text-slate-100">{{ transaction.payment_method || '-' }}</p>
+                        <p class="mt-1 text-sm text-slate-900 dark:text-slate-100">{{ statusLabel('payment_method', transaction.payment_method) }}</p>
                     </div>
                     <div>
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">

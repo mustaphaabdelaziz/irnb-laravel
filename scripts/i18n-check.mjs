@@ -8,6 +8,7 @@
 // Run: node scripts/i18n-check.mjs   (exit 1 on any failure)
 import { createI18n } from 'vue-i18n';
 import { readFileSync, readdirSync } from 'node:fs';
+import { STATUS_KEYS } from '../resources/js/lib/statusLabels.js';
 
 const load = (l) => JSON.parse(readFileSync(new URL(`../resources/js/i18n/${l}.json`, import.meta.url)));
 const messages = { ar: load('ar'), en: load('en'), fr: load('fr') };
@@ -27,10 +28,13 @@ const walk = (dir) => {
 walk(new URL('../app/Http/Controllers', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 walk(new URL('../app/Exceptions', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
 
+// Every status label the screens render through statusLabel().
+const statusKeys = new Set(Object.values(STATUS_KEYS).flatMap((map) => Object.values(map)));
+
 let failures = 0;
 for (const locale of ['ar', 'fr', 'en']) {
   i18n.global.locale.value = locale;
-  for (const key of keys) {
+  for (const key of [...keys, ...statusKeys]) {
     const out = i18n.global.t(key);
     if (out === key) {
       console.error(`  [${locale}] does not resolve: ${key}`);
@@ -40,7 +44,7 @@ for (const locale of ['ar', 'fr', 'en']) {
 }
 
 if (failures) {
-  console.error(`\n✗ ${failures} flash key(s) render raw. Add them to resources/js/i18n/*.json.`);
+  console.error(`\n✗ ${failures} key(s) render raw. Add them to resources/js/i18n/*.json.`);
   process.exit(1);
 }
-console.log(`✓ all ${keys.size} flash keys resolve in ar/fr/en`);
+console.log(`✓ all ${keys.size} flash keys and ${statusKeys.size} status keys resolve in ar/fr/en`);

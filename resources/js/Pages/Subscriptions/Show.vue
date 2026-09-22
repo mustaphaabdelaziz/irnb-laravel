@@ -6,8 +6,10 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { ref, computed } from 'vue';
+import { useStatusLabel } from '@/Composables/useStatusLabel';
 
 const { t } = useI18n();
+const { statusLabel } = useStatusLabel();
 const { formatMoney } = useFormatMoney();
 
 const props = defineProps({
@@ -256,7 +258,7 @@ const tabCount = (tab) => {
                                     {{ formatMoney(ps.remaining_amount) }}
                                 </td>
                                 <td class="px-4 py-3">
-                                    <Badge :label="ps.payment_status" :color="statusColor(ps.payment_status)" />
+                                    <Badge :label="statusLabel('payment', ps.payment_status)" :color="statusColor(ps.payment_status)" />
                                 </td>
                                 <td class="no-print px-4 py-3 text-end">
                                     <Link :href="route('players.show', ps.player_id)"

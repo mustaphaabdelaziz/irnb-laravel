@@ -17,7 +17,9 @@
 
         @php
             $websiteConfig = \App\Models\WebsiteConfig::singleton();
-            $appTitle = $websiteConfig->club_short_name ?? config('app.name', 'IRNB');
+            // Not config('app.name'): that is a technical identifier — it names
+            // the desktop app's data folder — and reads "SPORT_CLUB" here.
+            $appTitle = \App\Support\ClubIdentity::shortName($websiteConfig);
             $branding = $websiteConfig->branding ?? [];
             $logoUrl = $branding['logo'] ?? null;
             $primaryVars = \App\Support\Theme::cssVars($branding);

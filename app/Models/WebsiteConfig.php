@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\ClubIdentity;
+use App\Support\Media;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -70,16 +72,11 @@ class WebsiteConfig extends Model
         return static::query()->firstOrCreate(
             ['singleton_key' => 1],
             [
-                'club_name' => [
-                    'ar' => 'Sports Club',
-                    'fr' => 'Club Sportif',
-                    'en' => 'Sports Club',
-                ],
-                'tagline' => [
-                    'ar' => 'Excellence in sports',
-                    'fr' => 'Excellence en sport',
-                    'en' => 'Excellence in sports',
-                ],
+                // First-run defaults for a club that has not been set up yet.
+                // The Arabic entries used to be English, so an Arabic-speaking
+                // club opened its new install to an English name and tagline.
+                'club_name' => ClubIdentity::DEFAULT_NAME,
+                'tagline' => ClubIdentity::DEFAULT_TAGLINE,
                 'settings' => [
                     'currency' => 'DZD',
                     'currencySymbol' => 'DZD',
@@ -141,7 +138,7 @@ class WebsiteConfig extends Model
      */
     public static function toMediaPath(?string $url): ?string
     {
-        return \App\Support\Media::path($url);
+        return Media::path($url);
     }
 
     public function getIsConfiguredAttribute(): bool

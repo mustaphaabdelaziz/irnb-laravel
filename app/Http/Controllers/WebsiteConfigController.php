@@ -28,6 +28,13 @@ class WebsiteConfigController extends Controller
         $validated = $request->validated();
         $validated['last_modified_by_user_id'] = $request->user()?->id;
 
+        // An emptied short name arrives as null, but the column is NOT NULL.
+        // Store it as blank instead — ClubIdentity reads blank as "not set" and
+        // shows the neutral default, which is what clearing the field means.
+        if (array_key_exists('club_short_name', $validated)) {
+            $validated['club_short_name'] = $validated['club_short_name'] ?? '';
+        }
+
         // Settings forms submit a subset of keys; merge into the existing JSON so
         // unrelated keys (currencySymbol, dateFormat, fiscalYearStart, ...) are preserved.
         if (isset($validated['settings']) && is_array($validated['settings'])) {

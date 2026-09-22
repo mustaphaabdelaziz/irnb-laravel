@@ -10,6 +10,7 @@ import { Link, usePage, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import SidebarLink from '@/Components/SidebarLink.vue';
 import { useCan } from '@/Composables/useCan.js';
+import { useClubIdentity } from '@/Composables/useClubIdentity';
 import FlashMessages from '@/Components/FlashMessages.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
@@ -78,12 +79,7 @@ const isAdmin = computed(() => page.props.auth?.isAdmin ?? false);
 const isDesktop = computed(() => page.props.isDesktop ?? false);
 const pendingApprovals = computed(() => page.props.pendingApprovals ?? 0);
 const currentLocale = computed(() => page.props.locale || 'en');
-const appName = computed(() => {
-    const name = page.props.appName;
-    const loc = currentLocale.value;
-    return typeof name === 'object' ? (name[loc] || name.en || 'IRNB') : (name || 'IRNB');
-});
-const appShortName = computed(() => page.props.appShortName ?? 'IRNB');
+const { appName, appShortName } = useClubIdentity();
 const appLogo = computed(() => page.props.branding?.logo ?? null);
 const currentUrl = computed(() => page.url);
 

@@ -3,15 +3,11 @@ import { computed } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import ThemeToggle from '@/Components/ThemeToggle.vue';
 import FlashMessages from '@/Components/FlashMessages.vue';
+import { useClubIdentity } from '@/Composables/useClubIdentity';
 
 const page = usePage();
 const appLogo = computed(() => page.props.branding?.logo ?? null);
-const appShortName = computed(() => page.props.appShortName ?? 'IRNB');
-const appName = computed(() => {
-    const name = page.props.appName;
-    const loc = page.props.locale || 'ar';
-    return typeof name === 'object' ? (name[loc] || name.en || 'IRNB') : (name || 'IRNB');
-});
+const { appName, appShortName } = useClubIdentity();
 </script>
 
 <template>

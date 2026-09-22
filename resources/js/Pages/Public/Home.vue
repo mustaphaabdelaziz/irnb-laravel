@@ -28,7 +28,7 @@ const socialMeta = {
 </script>
 
 <template>
-    <Head :title="club.name || 'IRNB'" />
+    <Head :title="club.name || club.shortName" />
 
     <div class="min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-200">
         <!-- Top bar -->
@@ -36,7 +36,7 @@ const socialMeta = {
             <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
                 <div class="flex items-center gap-3">
                     <img v-if="club.logo" :src="club.logo" :alt="club.name" class="h-14 w-14 object-contain" />
-                    <span v-else class="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 text-2xl font-bold text-white shadow-glow">{{ (club.shortName || club.name || 'I').charAt(0) }}</span>
+                    <span v-else class="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 text-2xl font-bold text-white shadow-glow">{{ (club.shortName || club.name || '').charAt(0) }}</span>
                     <span class="text-base font-bold tracking-tight text-slate-900 dark:text-slate-100">{{ club.name }}</span>
                 </div>
                 <nav class="flex items-center gap-1.5">

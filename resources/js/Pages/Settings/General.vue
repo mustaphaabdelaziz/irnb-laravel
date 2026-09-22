@@ -326,7 +326,7 @@ function saveSettings() {
                             </div>
                             <div>
                                 <InputLabel :value="t('abbreviation')" />
-                                <TextInput v-model="basicForm.club_short_name" class="mt-1 w-48" placeholder="e.g. IRNB" />
+                                <TextInput v-model="basicForm.club_short_name" class="mt-1 w-48" placeholder="e.g. FCB" />
                             </div>
                             <div>
                                 <InputLabel :value="t('tagline')" />

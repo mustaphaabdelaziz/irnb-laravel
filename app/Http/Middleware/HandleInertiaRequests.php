@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\User;
 use App\Models\WebsiteConfig;
+use App\Support\ClubIdentity;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -37,8 +38,8 @@ class HandleInertiaRequests extends Middleware
             'locale' => app()->getLocale(),
             // Gates desktop-only UI (the Backup page) — there is no folder picker on the web.
             'isDesktop' => (bool) config('nativephp-internal.running'),
-            'appName' => $config->club_name ?? ['ar' => 'Sports Club', 'fr' => 'Club Sportif', 'en' => 'Sports Club'],
-            'appShortName' => $config->club_short_name ?? 'IRNB',
+            'appName' => ClubIdentity::name($config),
+            'appShortName' => ClubIdentity::shortName($config),
             'branding' => $config->branding,
             // Lazily evaluated so the count query only runs for admins.
             'pendingApprovals' => $isAdmin

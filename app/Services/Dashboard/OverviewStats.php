@@ -271,9 +271,10 @@ class OverviewStats
                 'equipment_rentals.id as id',
                 'equipment_rentals.checkout_date as checkout_date',
                 'equipment_catalogs.name as catalog_name',
+                'equipment_rentals.type as type',
             ])
             ->map(fn (object $r): array => [
-                'type' => 'rental',
+                'type' => $r->type === 'assignment' ? 'assignment' : 'rental',
                 'at' => (string) $r->checkout_date,
                 'label' => (string) $r->catalog_name,
                 'amount' => null,

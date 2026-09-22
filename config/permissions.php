@@ -42,6 +42,8 @@ return [
         'finance.index' => ['finance', 'view'],
         'finance.settings' => ['finance', 'edit'],
         'inventory.report' => ['inventory', 'view'],
+        // "out" is not a view verb, so without this the list would need edit rights.
+        'equipment.out' => ['equipment', 'view'],
         'board.meetings.minutes' => ['board', 'view'],
     ],
 

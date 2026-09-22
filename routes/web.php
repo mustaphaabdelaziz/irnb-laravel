@@ -15,6 +15,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EquipmentCatalogController;
 use App\Http\Controllers\EquipmentCategoryController;
 use App\Http\Controllers\EquipmentItemController;
+use App\Http\Controllers\EquipmentOutController;
 use App\Http\Controllers\FinanceAccountController;
 use App\Http\Controllers\FinanceCategoryController;
 use App\Http\Controllers\FinanceController;
@@ -144,6 +145,7 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
     Route::post('/equipment/items/{item}/mark-lost', [EquipmentItemController::class, 'markLost'])->name('equipment.items.mark-lost');
     Route::post('/equipment/items/{item}/mark-found', [EquipmentItemController::class, 'markFound'])->name('equipment.items.mark-found');
     Route::get('/equipment/inventory', [EquipmentItemController::class, 'inventory'])->name('equipment.inventory');
+    Route::get('/equipment/out', EquipmentOutController::class)->name('equipment.out');
     Route::get('/equipment/items/{item}/history', [EquipmentItemController::class, 'history'])->name('equipment.items.history');
 
     // Periodic inventory / stock-take sessions (count -> reconcile -> report)

@@ -64,7 +64,9 @@ class EquipmentCatalogController extends Controller
         // histories inline, so don't over-fetch items.histories here.
         // Rentals are loaded because availability derives from them; branches
         // because each lot shows its tags.
-        $catalog->load(['items.activeRental.rentable', 'items.rentals', 'items.branches']);
+        // openRentals (with holders) so every person a lot is out with is listed,
+        // not just the latest one.
+        $catalog->load(['items.openRentals.rentable', 'items.rentals', 'items.branches']);
         $catalog->items->each->append('available_quantity');
 
         return Inertia::render('Equipment/Catalog/Show', [

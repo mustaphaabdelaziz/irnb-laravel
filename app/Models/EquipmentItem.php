@@ -59,6 +59,12 @@ class EquipmentItem extends Model
         return $this->hasOne(EquipmentRental::class)->whereNull('return_date')->latest('checkout_date');
     }
 
+    /** Every rental of this lot still out — a lot can be out with several people at once. */
+    public function openRentals(): HasMany
+    {
+        return $this->hasMany(EquipmentRental::class)->whereNull('return_date')->orderBy('checkout_date')->orderBy('id');
+    }
+
     public function histories(): HasMany
     {
         return $this->hasMany(EquipmentHistory::class, 'item_id');

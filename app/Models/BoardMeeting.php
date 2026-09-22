@@ -14,6 +14,7 @@ class BoardMeeting extends Model
         'title', 'type', 'meeting_date', 'location', 'agenda', 'status',
         'quorum_required', 'minutes', 'decisions', 'attachment_url',
         'attachment_filename', 'created_by_user_id',
+        'cancelled_at', 'cancelled_by_user_id', 'cancel_reason',
     ];
 
     /** Normalise the stored attachment URL to a host-relative /media path (web + desktop). */
@@ -26,6 +27,7 @@ class BoardMeeting extends Model
     {
         return [
             'meeting_date' => 'datetime',
+            'cancelled_at' => 'datetime',
             'agenda' => 'array',
             'decisions' => 'array',
             'quorum_required' => 'integer',
@@ -45,5 +47,16 @@ class BoardMeeting extends Model
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_user_id');
+    }
+
+    public function cancelledBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cancelled_by_user_id');
+    }
+
+    /** A cancelled meeting is kept as history and can no longer be changed. */
+    public function isCancelled(): bool
+    {
+        return $this->status === 'cancelled';
     }
 }

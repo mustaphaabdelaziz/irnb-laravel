@@ -218,7 +218,8 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         Route::put('/board/meetings/{meeting}/attendance', [BoardMeetingController::class, 'attendance'])->name('board.meetings.attendance');
         Route::post('/board/meetings/{meeting}/attachment', [BoardMeetingController::class, 'attachment'])->name('board.meetings.attachment');
         Route::delete('/board/meetings/{meeting}/attachment', [BoardMeetingController::class, 'deleteAttachment'])->name('board.meetings.attachment.delete');
-        Route::delete('/board/meetings/{meeting}', [BoardMeetingController::class, 'destroy'])->name('board.meetings.destroy');
+        // Meetings are never deleted: cancelling keeps the record (who/when/why).
+        Route::post('/board/meetings/{meeting}/cancel', [BoardMeetingController::class, 'cancel'])->name('board.meetings.cancel');
 
         Route::get('/board/tasks', [BoardController::class, 'tasks'])->name('board.tasks');
         Route::get('/board/tasks/export', [BoardController::class, 'exportTasks'])->name('board.tasks.export');

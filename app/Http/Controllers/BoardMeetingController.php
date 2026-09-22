@@ -22,6 +22,10 @@ class BoardMeetingController extends Controller
 
     public function update(Request $request, BoardMeeting $meeting): RedirectResponse
     {
+        if ($meeting->isCancelled()) {
+            return back()->with('error', 'flash.meeting_is_cancelled');
+        }
+
         $data = $this->validateCore($request);
         $data += $request->validate([
             'minutes' => ['nullable', 'string'],
@@ -35,6 +39,10 @@ class BoardMeetingController extends Controller
 
     public function attendance(Request $request, BoardMeeting $meeting): RedirectResponse
     {
+        if ($meeting->isCancelled()) {
+            return back()->with('error', 'flash.meeting_is_cancelled');
+        }
+
         $data = $request->validate([
             'attendances' => ['present', 'array'],
             'attendances.*.board_member_id' => ['required', 'integer', 'exists:board_members,id'],
@@ -58,6 +66,10 @@ class BoardMeetingController extends Controller
      */
     public function attachment(Request $request, BoardMeeting $meeting, FileStorageService $storage): RedirectResponse
     {
+        if ($meeting->isCancelled()) {
+            return back()->with('error', 'flash.meeting_is_cancelled');
+        }
+
         $request->validate([
             'attachment' => ['required', 'file', 'mimes:pdf,doc,docx,jpg,jpeg,png,webp', 'max:10240'],
         ]);
@@ -75,17 +87,38 @@ class BoardMeetingController extends Controller
 
     public function deleteAttachment(BoardMeeting $meeting, FileStorageService $storage): RedirectResponse
     {
+        if ($meeting->isCancelled()) {
+            return back()->with('error', 'flash.meeting_is_cancelled');
+        }
+
         $storage->delete($meeting->attachment_filename);
         $meeting->update(['attachment_url' => null, 'attachment_filename' => null]);
 
         return back()->with('success', 'flash.minutes_file_removed');
     }
 
-    public function destroy(BoardMeeting $meeting): RedirectResponse
+    /**
+     * Cancel = keep the record, mark it cancelled, say why. Only a meeting that
+     * has not happened yet can be cancelled; a held meeting is history.
+     */
+    public function cancel(Request $request, BoardMeeting $meeting): RedirectResponse
     {
-        $meeting->delete();
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'min:3', 'max:500'],
+        ]);
 
-        return redirect()->route('board.meetings')->with('success', 'flash.meeting_deleted');
+        if ($meeting->status !== 'scheduled') {
+            return back()->with('error', 'flash.meeting_not_cancellable');
+        }
+
+        $meeting->update([
+            'status' => 'cancelled',
+            'cancelled_at' => now(),
+            'cancelled_by_user_id' => $request->user()?->id,
+            'cancel_reason' => $data['reason'],
+        ]);
+
+        return back()->with('success', 'flash.meeting_cancelled');
     }
 
     /** @return array<string, mixed> */
@@ -98,7 +131,8 @@ class BoardMeetingController extends Controller
             'location' => ['nullable', 'string', 'max:200'],
             'agenda' => ['nullable', 'array'],
             'agenda.*' => ['nullable', 'string', 'max:500'],
-            'status' => ['required', Rule::in(['scheduled', 'held', 'cancelled'])],
+            // 'cancelled' is reached only through cancel(), which records who and why.
+            'status' => ['required', Rule::in(['scheduled', 'held'])],
             'quorum_required' => ['nullable', 'integer', 'min:0'],
         ]);
     }

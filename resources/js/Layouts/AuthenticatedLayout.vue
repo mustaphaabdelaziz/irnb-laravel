@@ -112,6 +112,7 @@ const sections = computed(() => {
         ] },
         { label: t('nav_equipment'), items: [
             { label: t('equipments'), href: '/equipment/catalogs', icon: 'equipment', prefix: '/equipment/catalogs', module: 'equipment' },
+            { label: t('equipment_out'), href: '/equipment/out', icon: 'box', prefix: '/equipment/out', module: 'equipment' },
             { label: t('inventory'), href: '/equipment/stocktake', icon: 'clipboard', prefix: '/equipment/stocktake', module: 'inventory' },
             { label: t('equipment_categories'), href: '/equipment-categories', icon: 'equipment', prefix: '/equipment-categories', module: 'categories' },
             { label: t('storage_locations'), href: '/storage-locations', icon: 'equipment', prefix: '/storage-locations', module: 'categories' },

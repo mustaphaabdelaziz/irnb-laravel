@@ -8,6 +8,7 @@ import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
+import RentalTypeBadge from '@/Components/RentalTypeBadge.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
@@ -31,6 +32,20 @@ const props = defineProps({
 const subscriptions = computed(() => props.player?.player_subscriptions ?? []);
 const transactions = computed(() => props.transactions ?? []);
 const { accountLabel } = useFinanceAccountLabel();
+
+// Equipment the player holds or held. Assignments (work kit) and rentals are
+// listed apart so a loan is never mistaken for kit given to work with.
+const equipmentRentals = computed(() => [...(props.player?.equipment_rentals ?? [])]
+    .sort((a, b) => String(b.checkout_date).localeCompare(String(a.checkout_date))));
+const equipmentGroups = computed(() => [
+    { key: 'assigned', label: t('equipment.assignments_tab'), rows: equipmentRentals.value.filter((r) => !r.return_date && r.type === 'assignment') },
+    { key: 'rented', label: t('equipment.rentals_tab'), rows: equipmentRentals.value.filter((r) => !r.return_date && r.type !== 'assignment') },
+    { key: 'returned', label: t('equipment.past_items'), rows: equipmentRentals.value.filter((r) => r.return_date) },
+].filter((group) => group.rows.length));
+function isOverdueRental(r) {
+    return r.type !== 'assignment' && !r.return_date && r.due_date
+        && String(r.due_date).slice(0, 10) < new Date().toISOString().slice(0, 10);
+}
 
 // Manual/previous debts = obligation lines with no subscription plan attached.
 const manualDebts = computed(() =>
@@ -463,6 +478,30 @@ function formatDate(val) {
                             </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- Equipment: work assignments and rentals, current then returned -->
+            <div class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+                <div class="border-b border-slate-100 dark:border-slate-800 px-5 py-4">
+                    <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('equipment') }}</h3>
+                </div>
+                <div v-if="!equipmentRentals.length" class="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_data') }}</div>
+                <div v-else class="divide-y divide-slate-100 dark:divide-slate-800">
+                    <section v-for="group in equipmentGroups" :key="group.key" class="px-5 py-4">
+                        <p class="mb-2 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ group.label }} ({{ group.rows.length }})</p>
+                        <ul class="space-y-2">
+                            <li v-for="r in group.rows" :key="r.id" class="flex flex-wrap items-center gap-2 text-sm">
+                                <RentalTypeBadge :type="r.type" />
+                                <Link v-if="r.equipment_item?.catalog" :href="route('equipment.catalogs.show', r.equipment_item.catalog.id)" class="font-medium text-slate-800 hover:text-primary-600 dark:text-slate-200">{{ r.equipment_item.catalog.name }}</Link>
+                                <span v-if="r.equipment_item?.unique_identifier" class="font-mono text-xs text-slate-400">{{ r.equipment_item.unique_identifier }}</span>
+                                <span v-if="(r.quantity ?? 1) > 1" class="text-xs text-slate-500">× {{ r.return_date ? r.quantity : r.quantity - (r.returned_quantity ?? 0) }}</span>
+                                <span class="text-xs text-slate-500 dark:text-slate-400">{{ t('equipment.out_since') }} {{ formatDate(r.checkout_date) }}</span>
+                                <span v-if="r.return_date" class="text-xs text-slate-500 dark:text-slate-400">· {{ t('equipment.returned_on') }} {{ formatDate(r.return_date) }}</span>
+                                <Badge v-else-if="isOverdueRental(r)" :label="t('overdue')" color="rose" />
+                            </li>
+                        </ul>
+                    </section>
                 </div>
             </div>
         </div>

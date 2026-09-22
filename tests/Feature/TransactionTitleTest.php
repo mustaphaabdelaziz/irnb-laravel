@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\FinanceCategory;
 use App\Models\Player;
 use App\Models\PlayerSubscription;
+use App\Models\Subscription;
 use App\Models\Transaction;
 use App\Support\TransactionTitle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -96,5 +97,29 @@ class TransactionTitleTest extends TestCase
         $player = Player::create(['membership_id' => '202600019', 'firstname' => 'Yanis']);
 
         $this->assertSame('Yanis', $player->short_name);
+    }
+
+    #[Test]
+    public function a_line_without_its_own_label_falls_back_to_the_subscriptions_name(): void
+    {
+        FinanceCategory::updateOrCreate(
+            ['type' => 'income', 'name' => 'Subscription'],
+            ['name_fr' => 'Cotisation', 'name_ar' => 'اشتراك', 'is_active' => true],
+        );
+        $player = $this->player();
+        $subscription = Subscription::create(['name' => 'Hiver', 'year' => 2026]);
+        $line = PlayerSubscription::create([
+            'player_id' => $player->id, 'subscription_id' => $subscription->id, 'year' => 2026,
+            'amount_owed' => 1000, 'amount_paid' => 0,
+        ]);
+
+        $tx = Transaction::create([
+            'amount' => 500, 'transaction_type' => 'income', 'category' => 'subscription', 'status' => 'Partial',
+            'related_entity_type' => 'Player', 'related_entity_id' => $player->id,
+            'player_subscription_id' => $line->id,
+        ])->load(TransactionTitle::RELATIONS);
+
+        app()->setLocale('fr');
+        $this->assertSame('Cotisation · Hiver 2026 · Amine Benali', TransactionTitle::for($tx));
     }
 }

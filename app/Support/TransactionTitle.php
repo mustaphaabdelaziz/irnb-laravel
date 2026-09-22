@@ -47,6 +47,9 @@ final class TransactionTitle
      * Adds display_title and player_summary for the UI, then drops the helper
      * relations so they are not serialized: PlayerSubscription appends
      * accessors that would lazy-load once per row.
+     *
+     * The returned model carries two non-column attributes (display_title,
+     * player_summary) and must not be saved.
      */
     public static function decorate(Transaction $transaction): Transaction
     {
@@ -90,7 +93,8 @@ final class TransactionTitle
         }
 
         $line = $transaction->playerSubscription;
-        $name = trim((string) ($line->label ?: $line->subscription?->name));
+        $subscriptionName = $line->relationLoaded('subscription') ? $line->subscription?->name : null;
+        $name = trim((string) ($line->label ?: $subscriptionName));
         $year = $line->year ? (string) $line->year : '';
 
         // "Dette 2024" already names its year; don't print it twice.

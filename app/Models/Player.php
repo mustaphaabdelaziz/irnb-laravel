@@ -73,6 +73,41 @@ class Player extends Model
         }
     }
 
+    /**
+     * Name search across every part of a player's name, plus the membership ID.
+     *
+     * The full name is spread over several columns (lastname firstname (nickname)
+     * بن father grandfather), so matching the raw term against single columns fails
+     * for anything but one word. Instead each whitespace-separated token must match
+     * SOME column (AND across tokens, OR across columns). That makes the search
+     * order-independent and works with a full name, a partial one, and with or
+     * without the بن connector — while still requiring all tokens to land on the
+     * same player.
+     */
+    public function scopeSearch(Builder $query, string $search): void
+    {
+        $columns = ['firstname', 'lastname', 'nickname', 'father', 'grandfather', 'membership_id'];
+
+        // بن is a connector in the rendered full name, not part of any column.
+        $tokens = collect(preg_split('/\s+/u', trim($search), -1, PREG_SPLIT_NO_EMPTY) ?: [])
+            ->reject(fn ($token) => $token === 'بن')
+            ->values();
+
+        if ($tokens->isEmpty()) {
+            return;
+        }
+
+        $query->where(function (Builder $outer) use ($tokens, $columns) {
+            foreach ($tokens as $token) {
+                $outer->where(function (Builder $inner) use ($token, $columns) {
+                    foreach ($columns as $column) {
+                        $inner->orWhere($column, 'like', '%'.$token.'%');
+                    }
+                });
+            }
+        });
+    }
+
     protected function casts(): array
     {
         return [

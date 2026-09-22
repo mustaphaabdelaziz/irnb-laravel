@@ -75,6 +75,6 @@ Everything in [Phase 1's plan](2026-09-20-dashboard-redesign-phase-1.md) still b
 
 - [x] **Step 1: Build the tab** — a four-tile summary row using `StatTile`, two `ChartCard` horizontal bars (expense and income by category, sequential ramp, table view on each), an accounts card using `Meter` for each account against the largest balance, and a transfers card.
 - [x] **Step 2: Render it from `Dashboard.vue`**
-- [x] **Step 3: Add the i18n keys to all three locales, compose any string needing a number** (no `{placeholder}` — the bundle has no runtime message compiler)
+- [x] **Step 3: Add the i18n keys to all three locales**
 - [x] **Step 4: `npm run build`, then drive the page in the browser and look at it**
 - [x] **Step 5: Commit**

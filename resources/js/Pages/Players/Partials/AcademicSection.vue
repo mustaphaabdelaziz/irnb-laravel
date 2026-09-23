@@ -150,18 +150,18 @@ function confirmRemove() {
             <div v-if="records.length" class="grid gap-3 sm:grid-cols-3">
                 <div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-800/60">
                     <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('latest_gpa') }}</p>
-                    <p class="mt-1 text-2xl font-bold tabular-nums" :class="passed(latest) ? 'text-emerald-600' : 'text-rose-600'">{{ fmt(latest.gpa) }}<span class="text-sm font-normal text-slate-400"> / 20</span></p>
+                    <p class="mt-1 text-2xl font-bold tabular-nums" :class="passed(latest) ? 'text-emerald-600' : 'text-rose-600'"><bdi dir="ltr">{{ fmt(latest.gpa) }}<span class="text-sm font-normal text-slate-400"> / 20</span></bdi></p>
                 </div>
                 <div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-800/60">
                     <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('average_gpa') }}</p>
-                    <p class="mt-1 text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100">{{ fmt(average) }}<span class="text-sm font-normal text-slate-400"> / 20</span></p>
+                    <p class="mt-1 text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100"><bdi dir="ltr">{{ fmt(average) }}<span class="text-sm font-normal text-slate-400"> / 20</span></bdi></p>
                 </div>
                 <div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-800/60">
                     <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('gpa_change') }}</p>
                     <p class="mt-1 text-2xl font-bold tabular-nums"
                        :class="delta === null || delta === 0 ? 'text-slate-400' : delta > 0 ? 'text-emerald-600' : 'text-rose-600'">
                         <template v-if="delta === null">—</template>
-                        <template v-else>{{ delta > 0 ? '▲ +' : delta < 0 ? '▼ ' : '' }}{{ delta.toFixed(2) }}</template>
+                        <template v-else>{{ delta > 0 ? `▲ +${delta.toFixed(2)}` : delta < 0 ? `▼ ${Math.abs(delta).toFixed(2)}` : '0.00' }}</template>
                     </p>
                 </div>
             </div>
@@ -186,7 +186,7 @@ function confirmRemove() {
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                     <tr v-for="r in tableRows" :key="r.id">
-                        <td class="px-4 py-3 text-sm tabular-nums text-slate-600 dark:text-slate-300">{{ yearLabel(r.academic_year) }}</td>
+                        <td class="px-4 py-3 text-sm tabular-nums text-slate-600 dark:text-slate-300"><bdi dir="ltr">{{ yearLabel(r.academic_year) }}</bdi></td>
                         <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">{{ t(`period_${r.period}`) }}</td>
                         <td class="px-4 py-3 text-end text-sm font-semibold tabular-nums" :class="passed(r) ? 'text-emerald-700' : 'text-rose-700'">{{ fmt(r.gpa) }}</td>
                         <td class="px-4 py-3"><Badge :label="t(passed(r) ? 'gpa_pass' : 'gpa_fail')" :color="passed(r) ? 'emerald' : 'rose'" /></td>
@@ -220,7 +220,7 @@ function confirmRemove() {
                         <InputError :message="form.errors.period" class="mt-1" />
                     </div>
                     <div class="sm:col-span-2">
-                        <InputLabel :value="`${t('gpa')} / 20`" />
+                        <InputLabel>{{ t('gpa') }} <bdi dir="ltr">/ 20</bdi></InputLabel>
                         <TextInput v-model="form.gpa" type="number" step="0.01" min="0" max="20" class="mt-1 w-full" required />
                         <InputError :message="form.errors.gpa" class="mt-1" />
                     </div>

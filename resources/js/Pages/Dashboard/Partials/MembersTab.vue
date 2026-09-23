@@ -13,6 +13,7 @@ const props = defineProps({
     data: { type: Object, default: null },
     loading: { type: Boolean, default: false },
     rtl: { type: Boolean, default: false },
+    branchId: { type: [Number, String], default: null },
 });
 
 const { t } = useI18n();
@@ -26,6 +27,24 @@ const debtBands = computed(() => props.data?.debtBands ?? []);
 const split = computed(() => props.data?.split ?? { students: 0, workers: 0, male: 0, female: 0 });
 const topCities = computed(() => props.data?.topCities ?? []);
 const academic = computed(() => props.data?.academic ?? null);
+
+// StatTile renders its value as plain text (no markup slot), so a "12.50 / 20"
+// string can't be wrapped in a dir="ltr" element. Unicode isolates (LRI/PDI)
+// give the same protection against the digits and slash re-ordering under the
+// Arabic UI without needing HTML.
+const academicAverageDisplay = computed(() => (academic.value?.average === null || academic.value?.average === undefined
+    ? null
+    : `⁦${academic.value.average.toFixed(2)} / 20⁩`));
+
+// The at-risk / missing-GPA counts are scoped to the dashboard's branch
+// filter (see MemberStats::academic), so the drill-down into the players
+// list must carry that same branch along or it lands on an unfiltered,
+// club-wide list that no longer matches the number just clicked.
+function academicLink(bucket) {
+    const params = { academic: bucket };
+    if (props.branchId) params.branch_id = props.branchId;
+    return route('players.index', params);
+}
 
 const TILE_STYLE = {
     total_members: { icon: 'players', tone: 'primary' },
@@ -153,9 +172,9 @@ const genderTotal = computed(() => (split.value.male + split.value.female) || 1)
             <h3 class="text-sm font-semibold text-muted-foreground">{{ t('dashboard.mem_academic') }}</h3>
             <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <StatTile :label="t('dashboard.mem_students')" :value="academic.students" icon="players" tone="primary" />
-                <StatTile :label="t('dashboard.mem_academic_average')" :value="academic.average === null ? null : `${academic.average.toFixed(2)} / 20`" format="text" icon="check" tone="positive" />
-                <StatTile :label="t('dashboard.mem_at_risk')" :value="academic.at_risk" icon="alert" tone="negative" :href="route('players.index', { academic: 'at_risk' })" />
-                <StatTile :label="t('dashboard.mem_missing_gpa')" :value="academic.missing" icon="dot" tone="warning" :href="route('players.index', { academic: 'none' })" />
+                <StatTile :label="t('dashboard.mem_academic_average')" :value="academicAverageDisplay" format="text" icon="check" tone="positive" />
+                <StatTile :label="t('dashboard.mem_at_risk')" :value="academic.at_risk" icon="alert" tone="negative" :href="academicLink('at_risk')" />
+                <StatTile :label="t('dashboard.mem_missing_gpa')" :value="academic.missing" icon="dot" tone="warning" :href="academicLink('none')" />
             </div>
         </section>
 

@@ -182,7 +182,7 @@ const heroTiles = computed(() => props.hero.map((tile) => ({
 
             <OverviewTab v-if="activeTab === 'overview'" :data="overview" :loading="loadingTab" :rtl="rtl" />
             <FinanceTab v-else-if="activeTab === 'finance'" :data="finance" :loading="loadingTab" :rtl="rtl" />
-            <MembersTab v-else-if="activeTab === 'members'" :data="members" :loading="loadingTab" :rtl="rtl" />
+            <MembersTab v-else-if="activeTab === 'members'" :data="members" :loading="loadingTab" :rtl="rtl" :branch-id="filters.branch" />
             <OperationsTab v-else :data="operations" :loading="loadingTab" :rtl="rtl" />
         </div>
     </AuthenticatedLayout>

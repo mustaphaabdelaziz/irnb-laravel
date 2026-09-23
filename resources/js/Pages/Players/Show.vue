@@ -337,8 +337,10 @@ function formatDate(val) {
                         <PlayerFieldRow icon="user" :label="t('gender')" :value="player.gender ? t(player.gender.toLowerCase()) : ''" />
                         <PlayerFieldRow icon="positions" :label="t('main_position')">
                             {{ player.position?.abbreviation || '—' }}
+                            <span v-if="player.position?.name" class="text-slate-500 dark:text-slate-400">{{ player.position.name }}</span>
                             <span v-if="player.other_positions?.length" class="text-slate-500 dark:text-slate-400">
-                                · {{ player.other_positions.map((p) => p.abbreviation).join(', ') }}
+                                ·
+                                <template v-for="(p, index) in player.other_positions" :key="p.id"><span :title="p.name">{{ p.abbreviation }}</span>{{ index < player.other_positions.length - 1 ? ', ' : '' }}</template>
                             </span>
                         </PlayerFieldRow>
                         <PlayerFieldRow icon="categories" :label="t('category')" :value="player.category?.localized_name || player.category?.name" />

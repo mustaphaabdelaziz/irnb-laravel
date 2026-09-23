@@ -1093,5 +1093,9 @@
     "year": "Year",
     "year_closed_locked": "This year is closed and locked.",
     "yearly": "Yearly",
-    "yes": "Yes"
+    "yes": "Yes",
+    "flash.academic_record_added": "GPA added.",
+    "flash.academic_record_updated": "GPA updated.",
+    "flash.academic_record_deleted": "GPA deleted.",
+    "academic_not_student": "This member is not a student."
 }

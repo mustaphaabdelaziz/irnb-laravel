@@ -1093,5 +1093,9 @@
     "year": "Année",
     "year_closed_locked": "Cette année est clôturée et verrouillée.",
     "yearly": "Annuel",
-    "yes": "Oui"
+    "yes": "Oui",
+    "flash.academic_record_added": "Moyenne ajoutée.",
+    "flash.academic_record_updated": "Moyenne mise à jour.",
+    "flash.academic_record_deleted": "Moyenne supprimée.",
+    "academic_not_student": "Ce membre n'est pas étudiant."
 }

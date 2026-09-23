@@ -80,4 +80,123 @@ class PlayerAcademicRecordTest extends TestCase
         $this->assertEquals(10.5, (float) $latest[$b->id]);
         $this->assertNull($latest[$c->id]);
     }
+
+    private function payload(array $overrides = []): array
+    {
+        return array_merge([
+            'academic_year' => 2025,
+            'period' => 'S1',
+            'gpa' => 12.5,
+            'remark' => 'Good start',
+        ], $overrides);
+    }
+
+    #[Test]
+    public function admin_adds_updates_and_deletes_a_record(): void
+    {
+        $player = $this->makePlayer();
+        $admin = $this->admin();
+
+        $this->actingAs($admin)
+            ->post(route('players.academic-records.store', $player), $this->payload())
+            ->assertRedirect()
+            ->assertSessionHas('success', 'flash.academic_record_added');
+
+        $record = PlayerAcademicRecord::firstOrFail();
+        $this->assertSame(2025, $record->academic_year);
+        $this->assertSame('S1', $record->period);
+        $this->assertEquals(12.5, (float) $record->gpa);
+
+        $this->actingAs($admin)
+            ->put(route('players.academic-records.update', [$player, $record]), $this->payload(['gpa' => 14, 'remark' => null]))
+            ->assertSessionHas('success', 'flash.academic_record_updated');
+        $this->assertEquals(14.0, (float) $record->fresh()->gpa);
+        $this->assertNull($record->fresh()->remark);
+
+        $this->actingAs($admin)
+            ->delete(route('players.academic-records.destroy', [$player, $record]))
+            ->assertSessionHas('success', 'flash.academic_record_deleted');
+        $this->assertDatabaseCount('player_academic_records', 0);
+    }
+
+    #[Test]
+    public function gpa_must_be_between_0_and_20_and_period_known(): void
+    {
+        $player = $this->makePlayer();
+
+        $this->actingAs($this->admin())
+            ->post(route('players.academic-records.store', $player), $this->payload(['gpa' => 20.5, 'period' => 'S9']))
+            ->assertSessionHasErrors(['gpa', 'period']);
+
+        $this->assertDatabaseCount('player_academic_records', 0);
+    }
+
+    #[Test]
+    public function the_same_year_and_period_cannot_be_recorded_twice(): void
+    {
+        $player = $this->makePlayer();
+        $admin = $this->admin();
+        $this->record($player, 2025, 'S1', 11);
+        $other = $this->record($player, 2025, 'S2', 12);
+
+        $this->actingAs($admin)
+            ->post(route('players.academic-records.store', $player), $this->payload())
+            ->assertSessionHasErrors('period');
+
+        // Updating a record onto another record's slot is also refused…
+        $this->actingAs($admin)
+            ->put(route('players.academic-records.update', [$player, $other]), $this->payload())
+            ->assertSessionHasErrors('period');
+
+        // …but saving a record onto its own slot is fine.
+        $this->actingAs($admin)
+            ->put(route('players.academic-records.update', [$player, $other]), $this->payload(['period' => 'S2']))
+            ->assertSessionHasNoErrors();
+
+        // Another player may use the same slot.
+        $this->actingAs($admin)
+            ->post(route('players.academic-records.store', $this->makePlayer()), $this->payload())
+            ->assertSessionHasNoErrors();
+    }
+
+    #[Test]
+    public function records_cannot_be_added_to_a_worker(): void
+    {
+        $worker = $this->makePlayer(student: false);
+
+        $this->actingAs($this->admin())
+            ->post(route('players.academic-records.store', $worker), $this->payload())
+            ->assertSessionHasErrors('student');
+
+        $this->assertDatabaseCount('player_academic_records', 0);
+    }
+
+    #[Test]
+    public function a_record_of_another_player_is_not_found(): void
+    {
+        $owner = $this->makePlayer();
+        $record = $this->record($owner, 2025, 'S1', 11);
+        $stranger = $this->makePlayer();
+
+        $this->actingAs($this->admin())
+            ->delete(route('players.academic-records.destroy', [$stranger, $record]))
+            ->assertNotFound();
+
+        $this->assertDatabaseCount('player_academic_records', 1);
+    }
+
+    #[Test]
+    public function adding_a_record_needs_players_add(): void
+    {
+        $viewer = User::factory()->create([
+            'privileges' => ['user'],
+            'approved' => true,
+            'email_verified_at' => now(),
+            'role_id' => Role::factory()->create(['permissions' => ['players' => ['view']]])->id,
+        ]);
+
+        $this->actingAs($viewer)
+            ->post(route('players.academic-records.store', $this->makePlayer()), $this->payload())
+            ->assertForbidden();
+    }
 }

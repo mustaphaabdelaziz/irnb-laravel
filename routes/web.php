@@ -23,6 +23,7 @@ use App\Http\Controllers\FiscalYearController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\MemberJobController;
+use App\Http\Controllers\PlayerAcademicRecordController;
 use App\Http\Controllers\PlayerController;
 use App\Http\Controllers\PlayerImportController;
 use App\Http\Controllers\PlayerPrintController;
@@ -102,6 +103,13 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
     Route::post('/players/{player}/subscriptions', [PlayerSubscriptionController::class, 'store'])->name('players.subscriptions.store');
     Route::put('/players/{player}/subscriptions/{playerSubscription}', [PlayerSubscriptionController::class, 'update'])->name('players.subscriptions.update');
     Route::delete('/players/{player}/subscriptions/{playerSubscription}', [PlayerSubscriptionController::class, 'destroy'])->name('players.subscriptions.destroy');
+
+    // Student players' graded periods (semester / trimester / yearly GPA out of 20)
+    Route::scopeBindings()->group(function () {
+        Route::post('/players/{player}/academic-records', [PlayerAcademicRecordController::class, 'store'])->name('players.academic-records.store');
+        Route::put('/players/{player}/academic-records/{academicRecord}', [PlayerAcademicRecordController::class, 'update'])->name('players.academic-records.update');
+        Route::delete('/players/{player}/academic-records/{academicRecord}', [PlayerAcademicRecordController::class, 'destroy'])->name('players.academic-records.destroy');
+    });
 
     // Subscriptions
     Route::resource('subscriptions', SubscriptionController::class);

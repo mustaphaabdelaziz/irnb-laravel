@@ -1093,5 +1093,9 @@
     "year": "السنة",
     "year_closed_locked": "هذه السنة مُقفلة ومقفلة للتعديل.",
     "yearly": "سنوي",
-    "yes": "نعم"
+    "yes": "نعم",
+    "flash.academic_record_added": "تمت إضافة المعدل.",
+    "flash.academic_record_updated": "تم تحديث المعدل.",
+    "flash.academic_record_deleted": "تم حذف المعدل.",
+    "academic_not_student": "هذا العضو ليس طالبًا."
 }

@@ -34,7 +34,7 @@ const academic = computed(() => props.data?.academic ?? null);
 // Arabic UI without needing HTML.
 const academicAverageDisplay = computed(() => (academic.value?.average === null || academic.value?.average === undefined
     ? null
-    : `⁦${academic.value.average.toFixed(2)} / 20⁩`));
+    : `\u2066${academic.value.average.toFixed(2)} / 20\u2069`));
 
 // The at-risk / missing-GPA counts are scoped to the dashboard's branch
 // filter (see MemberStats::academic), so the drill-down into the players

@@ -53,7 +53,7 @@
                 <tr>
                     <th>{{ $L('academic_year') }}</th>
                     <th>{{ $L('period') }}</th>
-                    <th>{{ $L('gpa') }} <span dir="ltr">/ 20</span></th>
+                    <th>{{ $L('gpa') }} <bdi dir="ltr">/ 20</bdi></th>
                     <th>{{ $L('status') }}</th>
                     <th>{{ $L('remark') }}</th>
                 </tr>
@@ -62,7 +62,7 @@
                 @foreach ($records as $record)
                     @php($passed = (float) $record->gpa >= $passMark)
                     <tr>
-                        <td class="num"><span dir="ltr">{{ $record->academic_year }}/{{ $record->academic_year + 1 }}</span></td>
+                        <td class="num"><bdi dir="ltr">{{ $record->academic_year }}/{{ $record->academic_year + 1 }}</bdi></td>
                         <td>{{ $L('period_'.$record->period) }}</td>
                         <td class="num {{ $passed ? 'pass' : 'fail' }}">{{ number_format((float) $record->gpa, 2) }}</td>
                         <td class="{{ $passed ? 'pass' : 'fail' }}">{{ $L($passed ? 'gpa_pass' : 'gpa_fail') }}</td>
@@ -73,9 +73,9 @@
         </table>
 
         <div class="summary">
-            <strong>{{ $L('latest_gpa') }}:</strong> <span dir="ltr">{{ number_format((float) $latest->gpa, 2) }} / 20</span>
+            <strong>{{ $L('latest_gpa') }}:</strong> <bdi dir="ltr">{{ number_format((float) $latest->gpa, 2) }} / 20</bdi>
             &nbsp;&middot;&nbsp;
-            <strong>{{ $L('average_gpa') }}:</strong> <span dir="ltr">{{ number_format($average, 2) }} / 20</span>
+            <strong>{{ $L('average_gpa') }}:</strong> <bdi dir="ltr">{{ number_format($average, 2) }} / 20</bdi>
             &nbsp;&middot;&nbsp;
             {{ $L('pass_mark') }}: {{ $passMark }}
         </div>

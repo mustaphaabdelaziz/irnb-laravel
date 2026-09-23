@@ -71,51 +71,59 @@ return new class extends Migration
      */
     public function syncOfficialWilayas(): void
     {
-        $official = require database_path('data/algeria_wilayas_official.php');
-        $now = now();
+        // The whole sync is one transaction: if anything throws between the
+        // temporary-offset move and the final one (or during the upsert
+        // loop), every row write here rolls back instead of stranding
+        // legacy rows at a temporary external_id forever. The column-add
+        // DDL in up() is unaffected either way (see up()'s comment) - this
+        // only protects the row data.
+        DB::transaction(function () {
+            $official = require database_path('data/algeria_wilayas_official.php');
+            $now = now();
 
-        $countryId = DB::table('countries')->where('code', 'DZ')->value('id');
+            $countryId = DB::table('countries')->where('code', 'DZ')->value('id');
 
-        if ($countryId === null) {
-            $countryId = DB::table('countries')->insertGetId([
-                'name' => 'Algeria',
-                'code' => 'DZ',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
-        }
-
-        $this->rekeyLegacySouthernWilayas($countryId, $official);
-
-        foreach ($official as $code => $names) {
-            $number = (int) $code;
-
-            $existing = DB::table('country_states')
-                ->where('country_id', $countryId)
-                ->where('external_id', $number)
-                ->first();
-
-            $values = [
-                'code' => $code,
-                'name' => $names['fr'],
-                'name_fr' => $names['fr'],
-                'name_ar' => $names['ar'],
-                'ar_name' => $names['ar'],
-                'updated_at' => $now,
-            ];
-
-            if ($existing) {
-                DB::table('country_states')->where('id', $existing->id)->update($values);
-
-                continue;
+            if ($countryId === null) {
+                $countryId = DB::table('countries')->insertGetId([
+                    'name' => 'Algeria',
+                    'code' => 'DZ',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
             }
 
-            DB::table('country_states')->insert($values + [
-                'country_id' => $countryId,
-                'external_id' => $number,
-                'created_at' => $now,
-            ]);
-        }
+            $this->rekeyLegacySouthernWilayas($countryId, $official);
+
+            foreach ($official as $code => $names) {
+                $number = (int) $code;
+
+                $existing = DB::table('country_states')
+                    ->where('country_id', $countryId)
+                    ->where('external_id', $number)
+                    ->first();
+
+                $values = [
+                    'code' => $code,
+                    'name' => $names['fr'],
+                    'name_fr' => $names['fr'],
+                    'name_ar' => $names['ar'],
+                    'ar_name' => $names['ar'],
+                    'updated_at' => $now,
+                ];
+
+                if ($existing) {
+                    DB::table('country_states')->where('id', $existing->id)->update($values);
+
+                    continue;
+                }
+
+                DB::table('country_states')->insert($values + [
+                    'country_id' => $countryId,
+                    'external_id' => $number,
+                    'created_at' => $now,
+                ]);
+            }
+        });
     }
 
     /**
@@ -213,11 +221,22 @@ return new class extends Migration
             $moves[$row->id] = (int) $code;
         }
 
+        if ($moves === []) {
+            return;
+        }
+
         // Two phases so we never collide with unique(country_id, external_id):
-        // land every matched row on a temporary offset clear of the 1-58
-        // range first, then on its final official number.
+        // land every matched row on a temporary offset first, then on its
+        // final official number. The offset is computed from the current
+        // max external_id for this country (floor 1000) rather than a fixed
+        // +1000, so it's clear of every external_id already in the table -
+        // inside or outside this selection, official range or not - no
+        // matter how messy the existing data is.
+        $maxExternalId = (int) (DB::table('country_states')->where('country_id', $countryId)->max('external_id') ?? 0);
+        $offset = max($maxExternalId + 1, 1000);
+
         foreach ($moves as $rowId => $targetCode) {
-            DB::table('country_states')->where('id', $rowId)->update(['external_id' => $targetCode + 1000]);
+            DB::table('country_states')->where('id', $rowId)->update(['external_id' => $offset + $targetCode]);
         }
 
         foreach ($moves as $rowId => $targetCode) {

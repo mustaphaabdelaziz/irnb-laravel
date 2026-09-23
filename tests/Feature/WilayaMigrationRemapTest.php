@@ -301,4 +301,104 @@ class WilayaMigrationRemapTest extends TestCase
             $this->assertSame($names['fr'], $state->name_fr);
         }
     }
+
+    /**
+     * A stray row already sitting exactly where the old fixed "target code +
+     * 1000" temporary offset would have tried to park a legacy row (e.g.
+     * code 49 -> 1049) must not break the sync. The offset is computed from
+     * the current max external_id (floor 1000) precisely so phase 1 can
+     * never collide with anything already in the table, no matter how messy
+     * the existing data is - this reproduces the legacy southern layout
+     * plus that stray row and confirms the sync still succeeds and every
+     * legacy row keeps its own id (and so keeps whatever is attached to it).
+     */
+    #[Test]
+    public function a_stray_row_already_at_the_old_fixed_offset_does_not_break_the_sync(): void
+    {
+        $country = Country::query()->where('code', 'DZ')->firstOrFail();
+
+        CountryState::query()
+            ->where('country_id', $country->id)
+            ->whereBetween('external_id', [49, 58])
+            ->delete();
+
+        // Legacy southern layout: the old JSON's wrong numbering, Touggourt
+        // (55) missing entirely, same as the real dev DB.
+        $legacyRows = [
+            49 => "El M'ghair",
+            50 => 'El Menia',
+            52 => 'Bordj Baji Mokhtar',
+            53 => 'Béni Abbès',
+            54 => 'Timimoun',
+            56 => 'Djanet',
+            57 => 'In Salah',
+            58 => 'In Guezzam',
+        ];
+
+        $idsByName = [];
+
+        foreach ($legacyRows as $externalId => $name) {
+            $state = CountryState::query()->create([
+                'country_id' => $country->id,
+                'external_id' => $externalId,
+                'name' => $name,
+                'ar_name' => null,
+                'code' => null,
+                'name_fr' => null,
+                'name_ar' => null,
+            ]);
+
+            $idsByName[$name] = $state->id;
+        }
+
+        // Sits exactly where the old fixed "+1000" scheme would have tried
+        // to park the Timimoun row (target code 49) during phase 1.
+        CountryState::query()->create([
+            'country_id' => $country->id,
+            'external_id' => 1049,
+            'name' => 'Reserved Slot (test fixture)',
+            'ar_name' => null,
+            'code' => null,
+            'name_fr' => null,
+            'name_ar' => null,
+        ]);
+
+        $migration = require database_path('migrations/2026_09_23_100003_official_wilayas.php');
+        $migration->syncOfficialWilayas();
+
+        $this->assertSame(
+            58,
+            CountryState::query()->where('country_id', $country->id)->whereNotNull('code')->count(),
+            'the sync must still succeed and code all 58 official rows'
+        );
+
+        $expectedCodes = [
+            "El M'ghair" => '57',
+            'El Menia' => '58',
+            'Bordj Baji Mokhtar' => '50',
+            'Béni Abbès' => '52',
+            'Timimoun' => '49',
+            'Djanet' => '56',
+            'In Salah' => '53',
+            'In Guezzam' => '54',
+        ];
+
+        foreach ($expectedCodes as $name => $code) {
+            $state = CountryState::query()->where('country_id', $country->id)->where('code', $code)->firstOrFail();
+            $this->assertSame(
+                $idsByName[$name],
+                $state->id,
+                "{$name} should keep its own row id after moving to code {$code}"
+            );
+        }
+
+        $touggourt = CountryState::query()->where('country_id', $country->id)->where('code', '55')->firstOrFail();
+        $this->assertSame('Touggourt', $touggourt->name_fr, 'the missing row is still inserted fresh');
+
+        $this->assertSame(
+            1049,
+            (int) CountryState::query()->where('name', 'Reserved Slot (test fixture)')->value('external_id'),
+            'the unrelated stray row outside the legacy selection is left untouched'
+        );
+    }
 }

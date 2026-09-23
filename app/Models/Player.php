@@ -18,7 +18,9 @@ class Player extends Model
 
     protected $fillable = [
         'membership_id',
-        'file_number',
+        // file_number is intentionally NOT mass-assignable: it is allocated
+        // once by FileNumber::assign() (via forceFill) and must never be set
+        // through a create()/update() array — see app/Services/Player/FileNumber.php.
         'firstname',
         'lastname',
         'nickname',

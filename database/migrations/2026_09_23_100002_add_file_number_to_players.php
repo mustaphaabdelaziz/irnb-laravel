@@ -17,13 +17,32 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('players', function (Blueprint $table) {
-            $table->unsignedInteger('file_number')->nullable()->unique()->after('membership_id');
-        });
+        // The desktop build runs `migrate` on every boot, and SQLite does not
+        // roll back DDL: if a previous run got this far and then died before
+        // being recorded, the column (and/or its unique index) may already
+        // exist. Guard each piece so a re-run never throws "duplicate column
+        // name" / "index already exists" — and never re-adds either.
+        if (! Schema::hasColumn('players', 'file_number')) {
+            Schema::table('players', function (Blueprint $table) {
+                $table->unsignedInteger('file_number')->nullable()->after('membership_id');
+            });
+        }
 
-        $next = 1;
+        if (! Schema::hasIndex('players', ['file_number'], 'unique')) {
+            Schema::table('players', function (Blueprint $table) {
+                $table->unique('file_number');
+            });
+        }
+
+        // Only number rows that don't already have a number, continuing
+        // after the current max — never renumbering a row a previous
+        // (possibly partial) run already assigned. On a fresh run every row
+        // is null and the max is 0, so this numbers 1, 2, 3… exactly as
+        // before.
+        $next = (int) DB::table('players')->max('file_number') + 1;
 
         $rows = DB::table('players')
+            ->whereNull('file_number')
             ->select('id')
             ->orderByRaw('join_year is null, join_year, membership_id, id')
             ->get();
@@ -35,8 +54,17 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (! Schema::hasColumn('players', 'file_number')) {
+            return;
+        }
+
+        if (Schema::hasIndex('players', ['file_number'], 'unique')) {
+            Schema::table('players', function (Blueprint $table) {
+                $table->dropUnique(['file_number']);
+            });
+        }
+
         Schema::table('players', function (Blueprint $table) {
-            $table->dropUnique(['file_number']);
             $table->dropColumn('file_number');
         });
     }

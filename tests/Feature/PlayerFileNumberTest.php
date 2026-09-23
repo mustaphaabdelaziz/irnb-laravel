@@ -8,6 +8,8 @@ use App\Models\WebsiteConfig;
 use App\Services\Player\FileNumber;
 use App\Services\Player\RegisterPlayerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -136,5 +138,62 @@ class PlayerFileNumberTest extends TestCase
         foreach (['status', 'wilaya', 'other_positions', 'member_job', 'emergency_contacts'] as $key) {
             $this->assertArrayHasKey($key, $props['player'], $key.' is not loaded');
         }
+    }
+
+    /**
+     * The desktop build runs `migrate` on every boot. SQLite does not roll
+     * back DDL, so if up() ever partially failed after the column-add
+     * committed, the migration would stay unrecorded and the next boot
+     * would re-run up() — which must not throw "duplicate column name" (or
+     * "index already exists") when the column/index are already there.
+     */
+    #[Test]
+    public function up_can_be_re_run_on_an_already_migrated_database_without_throwing(): void
+    {
+        $migration = require database_path('migrations/2026_09_23_100002_add_file_number_to_players.php');
+
+        // RefreshDatabase already ran this migration once for this test; call
+        // it again to simulate the next boot re-running an unrecorded up().
+        $migration->up();
+
+        $this->assertTrue(Schema::hasColumn('players', 'file_number'));
+    }
+
+    /**
+     * Simulates the exact partial state a mid-loop failure would leave
+     * behind: the column (and its unique index) already exist, some rows
+     * are already numbered, and others are still null. Re-running up() must
+     * only number the null rows, continuing after the current max — never
+     * touching or renumbering rows that already have a number.
+     */
+    #[Test]
+    public function up_only_numbers_rows_still_missing_a_file_number_continuing_after_the_max(): void
+    {
+        $migration = require database_path('migrations/2026_09_23_100002_add_file_number_to_players.php');
+
+        $numbered = Player::create(['membership_id' => '202600001', 'firstname' => 'A', 'join_year' => 2024]);
+        $stillNull = Player::create(['membership_id' => '202600002', 'firstname' => 'B', 'join_year' => 2025]);
+
+        // Pretend the migration died after numbering the first row.
+        $numbered->forceFill(['file_number' => 5])->save();
+        DB::table('players')->where('id', $stillNull->id)->update(['file_number' => null]);
+
+        $migration->up();
+
+        $this->assertSame(5, $numbered->fresh()->file_number, 'an existing number is never renumbered');
+        $this->assertSame(6, $stillNull->fresh()->file_number, 'the null row is numbered continuing after the max');
+    }
+
+    #[Test]
+    public function down_drops_the_column_only_when_present(): void
+    {
+        $migration = require database_path('migrations/2026_09_23_100002_add_file_number_to_players.php');
+
+        $migration->down();
+        $this->assertFalse(Schema::hasColumn('players', 'file_number'));
+
+        // Calling down() again must not throw even though the column is gone.
+        $migration->down();
+        $this->assertFalse(Schema::hasColumn('players', 'file_number'));
     }
 }

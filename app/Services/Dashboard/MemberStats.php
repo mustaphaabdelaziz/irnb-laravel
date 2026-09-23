@@ -3,6 +3,7 @@
 namespace App\Services\Dashboard;
 
 use App\Models\Player;
+use App\Models\PlayerAcademicRecord;
 use App\Services\Dashboard\Support\BranchScope;
 use App\Services\Dashboard\Support\DeltaCalculator;
 use App\Services\Dashboard\Support\MonthBucket;
@@ -43,6 +44,7 @@ class MemberStats
             'byAge' => $this->byAge($filters),
             'debtBands' => $this->debtBands($filters),
             'split' => $this->split($filters),
+            'academic' => $this->academic($filters),
             'topCities' => $this->topCities($filters),
         ];
     }
@@ -382,6 +384,25 @@ class MemberStats
             ])
             ->values()
             ->all();
+    }
+
+    /** How the club's students are doing at school, judged on each one's latest GPA. */
+    private function academic(DashboardFilters $filters): array
+    {
+        $latest = $this->active($filters)
+            ->where('players.is_student', true)
+            ->toBase()
+            ->selectRaw('('.PlayerAcademicRecord::latestGpaSql().') as latest_gpa')
+            ->pluck('latest_gpa');
+
+        $graded = $latest->filter(fn ($gpa) => $gpa !== null)->map(fn ($gpa) => (float) $gpa);
+
+        return [
+            'students' => $latest->count(),
+            'average' => $graded->isEmpty() ? null : round($graded->avg(), 2),
+            'at_risk' => $graded->filter(fn (float $gpa) => $gpa < PlayerAcademicRecord::PASS_MARK)->count(),
+            'missing' => $latest->count() - $graded->count(),
+        ];
     }
 
     private function active(DashboardFilters $filters): Builder

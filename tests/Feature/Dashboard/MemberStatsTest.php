@@ -264,4 +264,30 @@ class MemberStatsTest extends TestCase
         $this->assertNull($this->summary()['median_debt']['value']);
         $this->assertNull($this->summary()['renewal_rate']['value']);
     }
+
+    #[Test]
+    public function academic_block_averages_each_students_latest_gpa(): void
+    {
+        $a = $this->player(['is_student' => true]);
+        $a->academicRecords()->create(['academic_year' => 2024, 'period' => 'S1', 'gpa' => 6]);
+        $a->academicRecords()->create(['academic_year' => 2025, 'period' => 'S1', 'gpa' => 14]); // latest 14
+        $b = $this->player(['is_student' => true]);
+        $b->academicRecords()->create(['academic_year' => 2025, 'period' => 'S1', 'gpa' => 9]);  // at risk
+        $this->player(['is_student' => true]);                                                     // missing
+        $w = $this->player(['is_student' => false]);
+        $w->academicRecords()->create(['academic_year' => 2025, 'period' => 'S1', 'gpa' => 2]);  // ignored
+
+        $this->assertSame(
+            ['students' => 3, 'average' => 11.5, 'at_risk' => 1, 'missing' => 1],
+            $this->members()['academic'],
+        );
+    }
+
+    #[Test]
+    public function academic_average_is_null_without_any_gpa(): void
+    {
+        $this->player(['is_student' => true]);
+
+        $this->assertNull($this->members()['academic']['average']);
+    }
 }

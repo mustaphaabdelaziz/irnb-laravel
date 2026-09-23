@@ -339,7 +339,15 @@ function formatDate(val) {
                         <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('email') }}</dt><dd class="text-sm">{{ player.email || '-' }}</dd></div>
                         <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('city') }}, {{ t('state') }}</dt><dd class="text-sm">{{ [player.city, player.wilaya?.localized_name || player.wilaya?.name || player.state].filter(Boolean).join(', ') || '-' }}</dd></div>
                         <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('category') }}</dt><dd class="text-sm">{{ player.category?.localized_name || player.category?.name || '-' }}</dd></div>
-                        <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('position') }}</dt><dd class="text-sm">{{ player.position?.abbreviation || '-' }} {{ player.position?.name || '' }}</dd></div>
+                        <div>
+                            <dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('position') }}</dt>
+                            <dd class="text-sm">
+                                {{ player.position?.abbreviation || '-' }} {{ player.position?.name || '' }}
+                                <span v-if="player.other_positions?.length" class="text-slate-500 dark:text-slate-400">
+                                    · {{ player.other_positions.map((p) => p.abbreviation).join(', ') }}
+                                </span>
+                            </dd>
+                        </div>
                         <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('status') }}</dt><dd class="text-sm">{{ player.is_student ? t('student') : t('worker') }}</dd></div>
                         <div class="sm:col-span-2">
                             <dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('branches') }}</dt>

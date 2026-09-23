@@ -258,6 +258,22 @@ class PlayerPositionsTest extends TestCase
     }
 
     #[Test]
+    public function the_edit_page_prefills_the_other_positions(): void
+    {
+        $mid = $this->position('MF', 'Milieu');
+        $wing = $this->position('WG', 'Ailier');
+
+        $player = Player::create(['membership_id' => '202600014', 'firstname' => 'Amine', 'position_id' => $mid->id]);
+        $player->otherPositions()->sync([$wing->id]);
+
+        $props = $this->actingAs($this->admin())
+            ->get(route('players.edit', $player))
+            ->assertOk()->viewData('page')['props'];
+
+        $this->assertSame([$wing->id], collect($props['player']['other_positions'])->pluck('id')->all());
+    }
+
+    #[Test]
     public function filtering_by_an_other_position_still_counts_the_stats_chart_under_the_main_position(): void
     {
         $mid = $this->position('MF', 'Milieu');

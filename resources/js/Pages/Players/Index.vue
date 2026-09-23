@@ -407,7 +407,13 @@ function runBulk() {
                                     </Link>
                                 </td>
                                 <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ player.category?.localized_name || player.category?.name || '-' }}</td>
-                                <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ player.position?.abbreviation || '-' }}</td>
+                                <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
+                                    {{ player.position?.abbreviation || '-' }}
+                                    <span v-if="player.other_positions?.length" class="ms-1 rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                                        :title="player.other_positions.map((p) => p.abbreviation).join(', ')">
+                                        +{{ player.other_positions.length }}
+                                    </span>
+                                </td>
                                 <td class="whitespace-nowrap px-4 py-3">
                                     <!-- Membership status (منخرط/معتزل…); the active/archived split is the view toggle. -->
                                     <Badge v-if="player.status" :label="player.status.localized_name || player.status.name" color="primary" />

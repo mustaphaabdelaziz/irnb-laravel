@@ -46,6 +46,7 @@ const form = useForm({
     status_id: isEdit ? (p.status_id || null) : (props.playerStatuses[0]?.id ?? null),
     category_id: p.category_id || '',
     position_id: p.position_id || '',
+    other_position_ids: (p.other_positions || []).map((pos) => pos.id),
     member_job_id: p.member_job_id || '',
     branch_ids: (p.branches || []).map((b) => b.id),
     join_year: p.join_year || props.defaultJoinYear,
@@ -80,6 +81,31 @@ function branchLabel(id) {
     const b = branchesById.value[id];
     return b ? (b.localized_name || b.name) : `#${id}`;
 }
+
+// --- Other positions (searchable add + removable chips) ---
+// Same add-picker + chips pattern as branches. The main position is never
+// offered here — it is already recorded on its own field. Ids can arrive as
+// either numbers (fresh from `positions`/`other_position_ids`) or strings
+// (e.g. bounced back through a validation error round-trip), so every
+// comparison below normalizes with Number() before matching.
+const otherPositionOptions = computed(() => props.positions
+    .filter((pos) => String(pos.id) !== String(form.position_id)
+        && !form.other_position_ids.some((id) => Number(id) === Number(pos.id)))
+    .map((pos) => ({ value: pos.id, label: `${pos.abbreviation} - ${pos.name}` })));
+const chosenOtherPositions = computed(() => form.other_position_ids
+    .map((id) => props.positions.find((pos) => Number(pos.id) === Number(id)))
+    .filter(Boolean));
+function addOtherPosition(id) {
+    if (id === '' || id === null || id === undefined) return;
+    const numId = Number(id);
+    if (!form.other_position_ids.some((value) => Number(value) === numId)) form.other_position_ids.push(numId);
+}
+function removeOtherPosition(id) {
+    const numId = Number(id);
+    form.other_position_ids = form.other_position_ids.filter((value) => Number(value) !== numId);
+}
+// Promoting a position to main drops it from the extras.
+watch(() => form.position_id, (id) => { form.other_position_ids = form.other_position_ids.filter((value) => String(value) !== String(id)); });
 
 // --- Membership id preview ---
 const pad5 = (n) => String(n).padStart(5, '0');
@@ -144,6 +170,12 @@ function submit() {
         status_id: data.status_id || null,
         category_id: data.category_id || null,
         position_id: data.position_id || null,
+        // Inertia's FormData conversion (forceFormData: true, below) drops empty
+        // arrays entirely, so an omitted key would leave the server-side list
+        // untouched instead of clearing it. Sending '' when empty makes the
+        // "remove all other positions" case reach the server as a present,
+        // clearable value.
+        other_position_ids: data.other_position_ids.length ? data.other_position_ids : '',
         member_job_id: data.member_job_id || null,
         branch_ids: data.branch_ids,
         join_year: data.join_year || null,
@@ -262,11 +294,24 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                     <InputError :message="form.errors.category_id" class="mt-1" />
                 </div>
                 <div>
-                    <InputLabel :value="t('position')" />
+                    <InputLabel :value="t('main_position')" />
                     <select v-model="form.position_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                         <option value="">-</option>
                         <option v-for="pos in positions" :key="pos.id" :value="pos.id">{{ pos.abbreviation }} - {{ pos.name }}</option>
                     </select>
+                </div>
+                <div>
+                    <InputLabel :value="t('other_positions')" />
+                    <div v-if="chosenOtherPositions.length" class="mt-1 flex flex-wrap gap-1.5">
+                        <span v-for="pos in chosenOtherPositions" :key="pos.id"
+                            class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                            {{ pos.abbreviation }}
+                            <button type="button" @click="removeOtherPosition(pos.id)" :aria-label="t('remove')" class="text-slate-400 hover:text-rose-500">&times;</button>
+                        </span>
+                    </div>
+                    <SearchableSelect v-if="otherPositionOptions.length" :model-value="''" :options="otherPositionOptions"
+                        :placeholder="t('add_position')" class="mt-1" @update:modelValue="addOtherPosition" />
+                    <InputError :message="form.errors.other_position_ids" class="mt-1" />
                 </div>
                 <div class="sm:col-span-2 lg:col-span-3">
                     <InputLabel :value="t('branches')" />

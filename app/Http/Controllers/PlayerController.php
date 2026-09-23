@@ -322,7 +322,7 @@ class PlayerController extends Controller
 
     public function edit(Player $player): Response
     {
-        $player->load(['emergencyContacts', 'branches']);
+        $player->load(['emergencyContacts', 'branches', 'otherPositions']);
         $geo = $this->algeriaGeo();
 
         return Inertia::render('Players/Edit', [

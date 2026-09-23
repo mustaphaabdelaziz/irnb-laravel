@@ -25,6 +25,7 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\MemberJobController;
 use App\Http\Controllers\PlayerController;
+use App\Http\Controllers\PlayerDocumentController;
 use App\Http\Controllers\PlayerImportController;
 use App\Http\Controllers\PlayerPrintController;
 use App\Http\Controllers\PlayerStatusController;
@@ -103,6 +104,17 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
     Route::post('/players/{player}/subscriptions', [PlayerSubscriptionController::class, 'store'])->name('players.subscriptions.store');
     Route::put('/players/{player}/subscriptions/{playerSubscription}', [PlayerSubscriptionController::class, 'update'])->name('players.subscriptions.update');
     Route::delete('/players/{player}/subscriptions/{playerSubscription}', [PlayerSubscriptionController::class, 'destroy'])->name('players.subscriptions.destroy');
+
+    // Player documents — every name is players.documents.*, gated by the `documents`
+    // module (config/permissions.php). Files are served from the private disk only.
+    Route::post('/players/{player}/documents', [PlayerDocumentController::class, 'store'])->name('players.documents.store');
+    Route::post('/players/{player}/documents/exempt', [PlayerDocumentController::class, 'exempt'])->name('players.documents.exempt');
+    Route::put('/players/{player}/documents/{document}', [PlayerDocumentController::class, 'update'])->name('players.documents.update');
+    Route::delete('/players/{player}/documents/{document}/exempt', [PlayerDocumentController::class, 'unexempt'])->name('players.documents.unexempt');
+    Route::post('/players/{player}/documents/{document}/files', [PlayerDocumentController::class, 'storeFiles'])->name('players.documents.files.store');
+    Route::get('/players/{player}/documents/files/{file}', [PlayerDocumentController::class, 'showFile'])->name('players.documents.files.show');
+    Route::get('/players/{player}/documents/files/{file}/download', [PlayerDocumentController::class, 'downloadFile'])->name('players.documents.files.download');
+    Route::delete('/players/{player}/documents/files/{file}', [PlayerDocumentController::class, 'destroyFile'])->name('players.documents.files.destroy');
 
     // Subscriptions
     Route::resource('subscriptions', SubscriptionController::class);

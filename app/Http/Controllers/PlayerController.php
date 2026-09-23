@@ -19,6 +19,7 @@ use App\Models\Transaction;
 use App\Services\Dashboard\ModuleStats;
 use App\Services\Export\ExcelExporter;
 use App\Services\Finance\DefaultRegisterResolver;
+use App\Services\Player\DocumentChecklist;
 use App\Services\Player\FileNumber;
 use App\Services\Player\MembershipNumber;
 use App\Services\Player\RegisterPlayerService;
@@ -132,7 +133,7 @@ class PlayerController extends Controller
         ]);
     }
 
-    public function show(Player $player): Response
+    public function show(Request $request, Player $player): Response
     {
         $player->load([
             'category',
@@ -175,6 +176,11 @@ class PlayerController extends Controller
             'financeAccounts' => $financeAccounts,
             'defaultFinanceAccountId' => $registers->forPlayer($player)?->id,
             'fileDrawerSize' => FileNumber::drawerSize(),
+            // Owner decision: documents have their own permission. Without
+            // documents/view the checklist is not even sent to the page.
+            'documents' => $request->user()?->hasPermission('documents', 'view')
+                ? DocumentChecklist::for($player)
+                : null,
         ]);
     }
 

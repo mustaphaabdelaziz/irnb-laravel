@@ -87,7 +87,7 @@ class ReportPdfTest extends TestCase
             'education_level' => 'licence',
             'institution' => 'Université de Béjaïa',
         ]);
-        $player->academicRecords()->create(['academic_year' => 2025, 'period' => 'S1', 'gpa' => 12.75]);
+        $player->academicRecords()->create(['academic_year' => 2025, 'period' => 'T1', 'gpa' => 12.75]);
 
         $response = $this->actingAs($this->admin())->get(route('players.academic-report', $player));
 

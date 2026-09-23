@@ -22,13 +22,13 @@ const props = defineProps({
 });
 
 const PASS_MARK = 10;
-const PERIODS = ['S1', 'S2', 'T1', 'T2', 'T3', 'ANNUAL'];
+const PERIODS = ['T1', 'T2', 'T3'];
 
 const { t, locale } = useI18n();
 const { can } = useCan();
 const rtl = computed(() => locale.value === 'ar');
 
-// Server sends them oldest first (year, then period rank with ANNUAL last).
+// Server sends them oldest first (year, then period rank).
 const records = computed(() => props.player.academic_records ?? []);
 const gpa = (r) => Number(r.gpa);
 const yearLabel = (year) => `${year}/${Number(year) + 1}`;
@@ -73,7 +73,7 @@ const showForm = ref(false);
 const editingId = ref(null);
 const form = useForm({
     academic_year: new Date().getMonth() >= 8 ? new Date().getFullYear() : new Date().getFullYear() - 1,
-    period: 'S1',
+    period: 'T1',
     gpa: '',
     remark: '',
 });

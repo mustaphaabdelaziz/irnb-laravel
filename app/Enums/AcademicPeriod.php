@@ -3,28 +3,21 @@
 namespace App\Enums;
 
 /**
- * A grading period inside a school year. Universities grade per semester,
- * schools per trimester, and either may also publish a yearly average.
+ * A grading period inside a school year. Schools grade per trimester.
  */
 enum AcademicPeriod: string
 {
     case T1 = 'T1';
-    case S1 = 'S1';
     case T2 = 'T2';
-    case S2 = 'S2';
     case T3 = 'T3';
-    case Annual = 'ANNUAL';
 
-    /** Position inside one school year; the yearly average always comes last. */
+    /** Position inside one school year. */
     public function rank(): int
     {
         return match ($this) {
             self::T1 => 1,
-            self::S1 => 2,
-            self::T2 => 3,
-            self::S2 => 4,
-            self::T3 => 5,
-            self::Annual => 6,
+            self::T2 => 2,
+            self::T3 => 3,
         };
     }
 

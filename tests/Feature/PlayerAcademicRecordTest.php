@@ -48,29 +48,32 @@ class PlayerAcademicRecordTest extends TestCase
     }
 
     #[Test]
-    public function records_order_chronologically_with_annual_last_in_a_year(): void
+    public function records_order_chronologically_with_t3_last_in_a_year(): void
     {
         $player = $this->makePlayer();
-        $this->record($player, 2025, 'ANNUAL', 13);
-        $this->record($player, 2024, 'S2', 11);
-        $this->record($player, 2025, 'S1', 12);
-        $this->record($player, 2024, 'S1', 9.5);
+        $this->record($player, 2025, 'T3', 13);
+        $this->record($player, 2024, 'T2', 11);
+        $this->record($player, 2025, 'T1', 12);
+        $this->record($player, 2024, 'T1', 9.5);
+        $this->record($player, 2025, 'T2', 10);
 
         $order = $player->academicRecords()->chronological()->get()
             ->map(fn ($r) => $r->academic_year.'-'.$r->period)->all();
 
-        $this->assertSame(['2024-S1', '2024-S2', '2025-S1', '2025-ANNUAL'], $order);
+        // T1 < T2 within 2024; T1 < T2 < T3 within 2025; and the later year
+        // (2025) sorts after 2024 even where 2024 holds the higher-rank period.
+        $this->assertSame(['2024-T1', '2024-T2', '2025-T1', '2025-T2', '2025-T3'], $order);
     }
 
     #[Test]
     public function latest_gpa_sql_picks_the_last_record_in_chronological_order(): void
     {
         $a = $this->makePlayer();
-        $this->record($a, 2024, 'S2', 15);
+        $this->record($a, 2024, 'T2', 15);
         $this->record($a, 2025, 'T1', 8.25);   // later year wins over higher rank
         $b = $this->makePlayer();
-        $this->record($b, 2025, 'S2', 9);
-        $this->record($b, 2025, 'ANNUAL', 10.5); // ANNUAL after S2
+        $this->record($b, 2025, 'T2', 9);
+        $this->record($b, 2025, 'T3', 10.5);   // T3 after T2 within the same year
         $c = $this->makePlayer();                 // no records
 
         $latest = DB::table('players')
@@ -86,7 +89,7 @@ class PlayerAcademicRecordTest extends TestCase
     {
         return array_merge([
             'academic_year' => 2025,
-            'period' => 'S1',
+            'period' => 'T1',
             'gpa' => 12.5,
             'remark' => 'Good start',
         ], $overrides);
@@ -105,7 +108,7 @@ class PlayerAcademicRecordTest extends TestCase
 
         $record = PlayerAcademicRecord::firstOrFail();
         $this->assertSame(2025, $record->academic_year);
-        $this->assertSame('S1', $record->period);
+        $this->assertSame('T1', $record->period);
         $this->assertEquals(12.5, (float) $record->gpa);
 
         $this->actingAs($admin)
@@ -125,8 +128,10 @@ class PlayerAcademicRecordTest extends TestCase
     {
         $player = $this->makePlayer();
 
+        // 'S1' used to be a valid semester period; now that semesters are
+        // removed it must be rejected just like any other unknown value.
         $this->actingAs($this->admin())
-            ->post(route('players.academic-records.store', $player), $this->payload(['gpa' => 20.5, 'period' => 'S9']))
+            ->post(route('players.academic-records.store', $player), $this->payload(['gpa' => 20.5, 'period' => 'S1']))
             ->assertSessionHasErrors(['gpa', 'period']);
 
         $this->assertDatabaseCount('player_academic_records', 0);
@@ -137,8 +142,8 @@ class PlayerAcademicRecordTest extends TestCase
     {
         $player = $this->makePlayer();
         $admin = $this->admin();
-        $this->record($player, 2025, 'S1', 11);
-        $other = $this->record($player, 2025, 'S2', 12);
+        $this->record($player, 2025, 'T1', 11);
+        $other = $this->record($player, 2025, 'T2', 12);
 
         $this->actingAs($admin)
             ->post(route('players.academic-records.store', $player), $this->payload())
@@ -151,7 +156,7 @@ class PlayerAcademicRecordTest extends TestCase
 
         // …but saving a record onto its own slot is fine.
         $this->actingAs($admin)
-            ->put(route('players.academic-records.update', [$player, $other]), $this->payload(['period' => 'S2']))
+            ->put(route('players.academic-records.update', [$player, $other]), $this->payload(['period' => 'T2']))
             ->assertSessionHasNoErrors();
 
         // Another player may use the same slot.
@@ -176,7 +181,7 @@ class PlayerAcademicRecordTest extends TestCase
     public function a_record_of_another_player_is_not_found(): void
     {
         $owner = $this->makePlayer();
-        $record = $this->record($owner, 2025, 'S1', 11);
+        $record = $this->record($owner, 2025, 'T1', 11);
         $stranger = $this->makePlayer();
 
         $this->actingAs($this->admin())
@@ -205,15 +210,15 @@ class PlayerAcademicRecordTest extends TestCase
     public function profile_shows_records_in_order_for_students_only(): void
     {
         $student = $this->makePlayer();
-        $this->record($student, 2025, 'S2', 13);
-        $this->record($student, 2025, 'S1', 11);
+        $this->record($student, 2025, 'T2', 13);
+        $this->record($student, 2025, 'T1', 11);
         $worker = $this->makePlayer(student: false);
-        $this->record($worker, 2025, 'S1', 11); // kept from when they studied
+        $this->record($worker, 2025, 'T1', 11); // kept from when they studied
 
         $this->actingAs($this->admin())->get(route('players.show', $student))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('player.academic_records.0.period', 'S1')
-                ->where('player.academic_records.1.period', 'S2'));
+                ->where('player.academic_records.0.period', 'T1')
+                ->where('player.academic_records.1.period', 'T2'));
 
         $this->actingAs($this->admin())->get(route('players.show', $worker))
             ->assertInertia(fn (Assert $page) => $page->missing('player.academic_records'));

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/** One graded period (semester, trimester or yearly average) of a student player, out of 20. */
+/** One graded trimester of a student player, out of 20. */
 class PlayerAcademicRecord extends Model
 {
     public const PASS_MARK = 10;
@@ -33,7 +33,7 @@ class PlayerAcademicRecord extends Model
         return $this->belongsTo(Player::class);
     }
 
-    /** Oldest first: by school year, then by period rank (the yearly average last). */
+    /** Oldest first: by school year, then by period rank. */
     public function scopeChronological(Builder $query): void
     {
         $query->orderBy('academic_year')

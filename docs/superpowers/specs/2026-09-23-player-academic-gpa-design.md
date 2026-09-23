@@ -19,7 +19,7 @@ and a dashboard widget.
 | School info | Stored on player: level, institution, field/class |
 | Display | Table + trend chart + stats (latest, average, delta) |
 | Workers | Section always hidden when `is_student = false` (records kept in DB) |
-| Periods | S1, S2, T1, T2, T3, ANNUAL |
+| Periods | T1, T2, T3 |
 | Permissions | Reuse `players` module (view/add/edit/delete) |
 | Print | New A4 "academic report" PDF; member card untouched |
 | List filter | `academic` = `at_risk` / `good` / `none`, students only |
@@ -42,7 +42,7 @@ and a dashboard widget.
 | id | bigint PK |
 | player_id | FK → players, cascade on delete |
 | academic_year | unsigned smallint — start year (2025 means "2025/2026") |
-| period | string(10): `S1`, `S2`, `T1`, `T2`, `T3`, `ANNUAL` |
+| period | string(10): `T1`, `T2`, `T3` |
 | gpa | decimal(4,2), 0–20 |
 | remark | text nullable |
 | timestamps | |
@@ -52,7 +52,7 @@ Unique index `(player_id, academic_year, period)`.
 ### Ordering and "latest"
 
 Chronological order: `academic_year` asc, then period rank
-`T1=1, S1=2, T2=3, S2=4, T3=5, ANNUAL=6`.
+`T1=1, T2=2, T3=3`.
 **Latest GPA** = the last record in that order. **Average** = mean of all the
 player's GPAs. **Delta** = latest minus the previous record's GPA (null when
 fewer than two records).
@@ -122,7 +122,7 @@ subqueries.
 - Create, update, delete record; flash messages.
 - Uniqueness and GPA range validation; non-student rejection.
 - Record of another player → 404.
-- Latest-GPA ordering (ANNUAL after S2, later year wins).
+- Latest-GPA ordering (T3 after T2 within a year, later year wins).
 - List filter buckets `at_risk`, `good`, `none`; workers excluded.
 - Dashboard academic stats values.
 - Academic report route returns 200 for student, 404 for worker.
@@ -131,3 +131,7 @@ subqueries.
 ## Out of scope
 
 Per-subject grades, non-/20 scales, notifications, bulk GPA import.
+
+## Changelog
+
+- 2026-09-23: periods reduced to trimesters T1–T3 (semesters and yearly average removed) at user request.

@@ -50,11 +50,11 @@ class PlayerAcademicFilterTest extends TestCase
     #[Test]
     public function buckets_use_the_latest_gpa_of_students_only(): void
     {
-        $this->player('Recovered', gpas: [[2024, 'S1', 8], [2024, 'S2', 12]]);   // latest 12 → good
-        $this->player('Slipping', gpas: [[2024, 'S2', 15], [2025, 'S1', 9.99]]); // latest 9.99 → at risk
-        $this->player('Borderline', gpas: [[2025, 'ANNUAL', 10]]);               // exactly 10 → good
+        $this->player('Recovered', gpas: [[2024, 'T1', 8], [2024, 'T2', 12]]);   // latest 12 → good
+        $this->player('Slipping', gpas: [[2024, 'T2', 15], [2025, 'T1', 9.99]]); // latest 9.99 → at risk
+        $this->player('Borderline', gpas: [[2025, 'T3', 10]]);                   // exactly 10 → good
         $this->player('Blank');                                                   // student, no GPA
-        $this->player('Worker', student: false, gpas: [[2025, 'S1', 5]]);       // never listed
+        $this->player('Worker', student: false, gpas: [[2025, 'T1', 5]]);       // never listed
 
         $this->assertSame(['Slipping'], $this->listed('at_risk'));
         $this->assertSame(['Borderline', 'Recovered'], $this->listed('good'));

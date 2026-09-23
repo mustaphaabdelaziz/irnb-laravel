@@ -269,13 +269,13 @@ class MemberStatsTest extends TestCase
     public function academic_block_averages_each_students_latest_gpa(): void
     {
         $a = $this->player(['is_student' => true]);
-        $a->academicRecords()->create(['academic_year' => 2024, 'period' => 'S1', 'gpa' => 6]);
-        $a->academicRecords()->create(['academic_year' => 2025, 'period' => 'S1', 'gpa' => 14]); // latest 14
+        $a->academicRecords()->create(['academic_year' => 2024, 'period' => 'T1', 'gpa' => 6]);
+        $a->academicRecords()->create(['academic_year' => 2025, 'period' => 'T1', 'gpa' => 14]); // latest 14
         $b = $this->player(['is_student' => true]);
-        $b->academicRecords()->create(['academic_year' => 2025, 'period' => 'S1', 'gpa' => 9]);  // at risk
+        $b->academicRecords()->create(['academic_year' => 2025, 'period' => 'T1', 'gpa' => 9]);  // at risk
         $this->player(['is_student' => true]);                                                     // missing
         $w = $this->player(['is_student' => false]);
-        $w->academicRecords()->create(['academic_year' => 2025, 'period' => 'S1', 'gpa' => 2]);  // ignored
+        $w->academicRecords()->create(['academic_year' => 2025, 'period' => 'T1', 'gpa' => 2]);  // ignored
 
         $this->assertSame(
             ['students' => 3, 'average' => 11.5, 'at_risk' => 1, 'missing' => 1],

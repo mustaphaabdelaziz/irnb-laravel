@@ -121,7 +121,7 @@ const removingId = ref(null);
 function confirmRemove() {
     router.delete(route('players.academic-records.destroy', [props.player.id, removingId.value]), {
         preserveScroll: true,
-        onFinish: () => { removingId.value = null; },
+        onSuccess: () => { removingId.value = null; },
     });
 }
 </script>

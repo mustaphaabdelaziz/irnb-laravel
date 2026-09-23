@@ -11,6 +11,7 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 import RentalTypeBadge from '@/Components/RentalTypeBadge.vue';
 import Icon from '@/Components/Icon.vue';
 import PlayerFieldRow from '@/Components/PlayerFieldRow.vue';
+import AcademicSection from '@/Pages/Players/Partials/AcademicSection.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
@@ -423,6 +424,9 @@ function formatDate(val) {
                     </div>
                 </div>
             </div>
+
+            <!-- Studies: only students carry an education section -->
+            <AcademicSection v-if="player.is_student" :player="player" />
 
             <!-- Subscriptions -->
             <div class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">

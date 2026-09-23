@@ -114,6 +114,16 @@ class PlayerController extends Controller
             // positions feeds the bulk-edit field picker as well as the filter.
             'positions' => fn () => Position::orderBy('name')->get(['id', 'name']),
             'playerStatuses' => fn () => PlayerStatus::orderBy('sort_order')->get(),
+            // Rows with no `code` are stray legacy rows (see algeriaGeo()) and are
+            // excluded so the filter never offers an uncoded wilaya.
+            'wilayas' => fn () => CountryState::query()->whereNotNull('code')->orderBy('code')
+                ->get(['id', 'code', 'name', 'name_fr', 'name_ar'])
+                ->map(fn (CountryState $state) => [
+                    'id' => $state->id,
+                    'code' => $state->code,
+                    'name' => $state->name_fr ?: $state->name,
+                    'localized_name' => $state->localized_name,
+                ]),
             'categoryStats' => $categoryStats,
             'statusStats' => $statusStats,
             'positionStats' => $positionStats,
@@ -126,6 +136,7 @@ class PlayerController extends Controller
     {
         $player->load([
             'category',
+            'wilaya',
             'position',
             'memberJob',
             'branches',

@@ -38,7 +38,7 @@ const form = useForm({
     health_blood_group_rhesus: p.health_blood_group_rhesus || '',
     phone: p.phones?.[0] || '',
     email: p.email || '',
-    state: p.state || '',
+    wilaya_id: p.wilaya_id || '',
     city: p.city || '',
     // New players default to "worker"; edits keep the stored value.
     is_student: isEdit ? (p.is_student ?? true) : false,
@@ -92,13 +92,14 @@ const membershipPreview = computed(() => {
 });
 
 // --- Wilaya -> city dependency ---
-const wilayaOptions = computed(() => {
-    const opts = props.wilayas.map((w) => ({ value: w.name, label: `${w.name} — ${w.ar_name}` }));
-    if (form.state && !opts.some((o) => o.value === form.state)) opts.unshift({ value: form.state, label: form.state });
-    return opts;
-});
-const selectedWilayaId = computed(() => props.wilayas.find((w) => w.name === form.state)?.id ?? null);
-const cityList = computed(() => (selectedWilayaId.value != null ? (props.communes[selectedWilayaId.value] || []) : []));
+// The wilaya is chosen by id; the label follows the app language, and the
+// code is searchable so "47" finds Ghardaïa.
+const wilayaOptions = computed(() => props.wilayas.map((w) => ({
+    value: w.id,
+    label: `${w.code} · ${w.localized_name || w.name}`,
+    keywords: [w.name, w.ar_name, w.code].filter(Boolean).join(' '),
+})));
+const cityList = computed(() => (form.wilaya_id ? (props.communes[form.wilaya_id] || []) : []));
 const hasCityList = computed(() => cityList.value.length > 0);
 const cityOptions = computed(() => {
     const opts = cityList.value.map((c) => ({ value: c, label: c }));
@@ -106,7 +107,7 @@ const cityOptions = computed(() => {
     return opts;
 });
 // reset city when wilaya changes (fires only on change, not initial mount)
-watch(() => form.state, () => { form.city = ''; });
+watch(() => form.wilaya_id, () => { form.city = ''; });
 
 // --- Job gated on worker ---
 watch(() => form.is_student, (student) => { if (student) form.member_job_id = ''; });
@@ -137,7 +138,7 @@ function submit() {
         health_blood_group_rhesus: data.health_blood_group_rhesus || null,
         phones: data.phone ? [data.phone] : [],
         email: data.email || null,
-        state: data.state || null,
+        wilaya_id: data.wilaya_id || null,
         city: data.city || null,
         is_student: data.is_student,
         status_id: data.status_id || null,
@@ -219,8 +220,8 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                 </div>
                 <div>
                     <InputLabel :value="t('state')" />
-                    <SearchableSelect v-model="form.state" :options="wilayaOptions" :placeholder="t('search_wilaya')" />
-                    <InputError :message="form.errors.state" class="mt-1" />
+                    <SearchableSelect v-model="form.wilaya_id" :options="wilayaOptions" :placeholder="t('search_wilaya')" />
+                    <InputError :message="form.errors.wilaya_id" class="mt-1" />
                 </div>
                 <div>
                     <InputLabel :value="t('city')" />

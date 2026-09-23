@@ -27,6 +27,7 @@ const props = defineProps({
     branches: { type: Array, default: () => [] },
     positions: { type: Array, default: () => [] },
     playerStatuses: { type: Array, default: () => [] },
+    wilayas: { type: Array, default: () => [] },
     categoryStats: { type: Array, default: () => [] },
     statusStats: { type: Array, default: () => [] },
     positionStats: { type: Array, default: () => [] },
@@ -42,6 +43,7 @@ const statusFilter = ref(props.filters?.status || '');
 const positionFilter = ref(props.filters?.position_id || '');
 const branchFilter = ref(props.filters?.branch_id || '');
 const ageFilter = ref(props.filters?.age || '');
+const wilayaFilter = ref(props.filters?.wilaya_id || '');
 // Active vs Archived view. Backend defaults to active when no `archived` param.
 const archivedView = ref(!!Number(props.filters?.archived));
 
@@ -54,6 +56,7 @@ const { params: filterParams, loading: filtering } = useListFilters('players.ind
     position_id: positionFilter.value,
     branch_id: branchFilter.value,
     age: ageFilter.value,
+    wilaya_id: wilayaFilter.value,
     archived: archivedView.value ? 1 : undefined,
 }), { only: ['players', 'filters', 'categoryStats', 'statusStats', 'positionStats', 'ageStats'] });
 
@@ -292,6 +295,14 @@ function runBulk() {
                 >
                     <option value="">{{ t('all_branches') }}</option>
                     <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.localized_name || b.name }}</option>
+                </select>
+                <select
+                    v-if="wilayas.length"
+                    v-model="wilayaFilter"
+                    class="min-w-0 flex-1 rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:max-w-xs sm:flex-none"
+                >
+                    <option value="">{{ t('all_wilayas') }}</option>
+                    <option v-for="w in wilayas" :key="w.id" :value="w.id">{{ w.code }} · {{ w.localized_name || w.name }}</option>
                 </select>
                 <!-- Toggles share a row on phones: status left, view right -->
                 <div class="flex w-full items-center justify-between gap-3 sm:w-auto sm:flex-1">

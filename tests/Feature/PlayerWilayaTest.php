@@ -59,6 +59,33 @@ class PlayerWilayaTest extends TestCase
         $this->assertSame('Ghardaïa', $player->wilaya->name_fr);
     }
 
+    /**
+     * Show.vue falls back to player.wilaya?.localized_name (and then
+     * player.state) so the linked wilaya's name follows the viewer's
+     * language — this locks in that the show page actually serializes the
+     * `wilaya` relation with its `localized_name` append, not just the id.
+     */
+    #[Test]
+    public function the_show_page_exposes_the_wilayas_localized_name(): void
+    {
+        $ghardaia = $this->wilaya('47');
+
+        $player = Player::create([
+            'membership_id' => '202600099',
+            'firstname' => 'Amine',
+            'wilaya_id' => $ghardaia->id,
+            'city' => 'Metlili',
+        ]);
+
+        // The default admin() actor's preferred_lng is 'ar' (users table default).
+        $props = $this->actingAs($this->admin())
+            ->get(route('players.show', $player))
+            ->assertOk()->viewData('page')['props'];
+
+        $this->assertSame($ghardaia->id, $props['player']['wilaya']['id']);
+        $this->assertSame('غرداية', $props['player']['wilaya']['localized_name']);
+    }
+
     #[Test]
     public function the_list_filters_by_wilaya(): void
     {

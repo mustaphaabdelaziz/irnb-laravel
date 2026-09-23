@@ -39,7 +39,7 @@
                     <td>{{ $player->fullname }}</td>
                     <td class="num">{{ $player->membership_id }}</td>
                     <td class="num">{{ FileNumber::format($player->file_number) ?: '—' }}</td>
-                    <td class="num">{{ $player->file_number ? FileNumber::drawer($player->file_number) : '—' }}</td>
+                    <td class="num">{{ $player->file_number ? FileNumber::drawer($player->file_number, $drawerSize ?? null) : '—' }}</td>
                 </tr>
             @endforeach
         </table>

@@ -6,11 +6,13 @@ use App\Models\Category;
 use App\Models\Player;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\WebsiteConfig;
 use App\Services\Pdf\PdfService;
 use App\Services\Player\RegisterPlayerService;
 use App\Support\Season;
 use Closure;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use stdClass;
 use Symfony\Component\HttpFoundation\Response;
@@ -167,5 +169,47 @@ class BoardTablePdfTest extends TestCase
         $this->actingAs($viewer)
             ->get(route('players.board-table', ['category_id' => $cadets->id]))
             ->assertOk();
+    }
+
+    /**
+     * FileNumber::drawer() used to be called per row in the blade template,
+     * and it queries WebsiteConfig::singleton() every time it isn't given an
+     * explicit size — turning the board table into an N+1. The controller
+     * must compute the drawer size once and hand it to the view, so the
+     * query count stays flat as the row count grows.
+     */
+    #[Test]
+    public function printing_the_board_table_queries_website_config_a_constant_number_of_times(): void
+    {
+        // Pre-warm the singleton row so both requests below hit the same
+        // (row-already-exists) path — otherwise the very first touch of
+        // website_configs pays for an extra firstOrCreate() insert that has
+        // nothing to do with row count, and would mask what we're testing.
+        WebsiteConfig::singleton();
+
+        $small = Category::create(['name' => 'Small']);
+        $this->player('Amine', 'Benali', $small);
+
+        DB::enableQueryLog();
+        $this->actingAs($this->admin())
+            ->get(route('players.board-table', ['category_id' => $small->id]))
+            ->assertOk();
+        $countForOne = collect(DB::getQueryLog())
+            ->filter(fn ($q) => str_contains($q['query'], 'website_configs'))->count();
+        DB::flushQueryLog();
+
+        $big = Category::create(['name' => 'Big']);
+        $this->player('B', 'Ziani', $big);
+        $this->player('C', 'Kaci', $big);
+        $this->player('D', 'Amrani', $big);
+
+        $this->actingAs($this->admin())
+            ->get(route('players.board-table', ['category_id' => $big->id]))
+            ->assertOk();
+        $countForThree = collect(DB::getQueryLog())
+            ->filter(fn ($q) => str_contains($q['query'], 'website_configs'))->count();
+        DB::disableQueryLog();
+
+        $this->assertSame($countForOne, $countForThree, 'website_configs must not be queried once per row');
     }
 }

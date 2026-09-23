@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Player;
 use App\Models\WebsiteConfig;
 use App\Services\Pdf\PdfService;
+use App\Services\Player\FileNumber;
 use App\Support\Media;
 use App\Support\Season;
 use Illuminate\Http\Request;
@@ -89,6 +90,10 @@ class PlayerPrintController extends Controller
             'category' => $category,
             'season' => $season,
             'players' => $players,
+            // Computed once here rather than per row in the view: FileNumber::drawer()
+            // queries WebsiteConfig::singleton() when not given a size, which would
+            // otherwise turn the table into one query per player.
+            'drawerSize' => FileNumber::drawerSize(),
         ])->render();
 
         return $this->pdf->stream($html, 'board-table-'.$category->id.'-'.$season->startYear.'.pdf');
@@ -99,6 +104,8 @@ class PlayerPrintController extends Controller
         $html = view('pdf.folder-label', [
             'club' => $this->club(),
             'players' => $players,
+            // Same reasoning as boardTable() above: compute once, not per label.
+            'drawerSize' => FileNumber::drawerSize(),
         ])->render();
 
         return $this->pdf->stream($html, $filename);

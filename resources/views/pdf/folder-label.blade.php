@@ -23,7 +23,7 @@
                 <td style="width:32%; vertical-align:top;">
                     <div class="file">{{ FileNumber::format($player->file_number) ?: '—' }}</div>
                     <div class="drawer">
-                        {{ __('Drawer') }} {{ $player->file_number ? FileNumber::drawer($player->file_number) : '—' }}
+                        {{ __('Drawer') }} {{ $player->file_number ? FileNumber::drawer($player->file_number, $drawerSize ?? null) : '—' }}
                     </div>
                 </td>
                 <td style="vertical-align:top;">

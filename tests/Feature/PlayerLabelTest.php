@@ -5,8 +5,10 @@ namespace Tests\Feature;
 use App\Models\Player;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\WebsiteConfig;
 use App\Services\Player\RegisterPlayerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -112,5 +114,43 @@ class PlayerLabelTest extends TestCase
         ]);
 
         $this->actingAs($viewer)->get(route('players.label', $this->player()))->assertOk();
+    }
+
+    /**
+     * FileNumber::drawer() used to be called per row in the blade template,
+     * and it queries WebsiteConfig::singleton() every time it isn't given an
+     * explicit size — turning a sheet of labels into an N+1. The controller
+     * must compute the drawer size once and hand it to the view, so the
+     * query count stays flat as the row count grows.
+     */
+    #[Test]
+    public function printing_a_sheet_of_labels_queries_website_config_a_constant_number_of_times(): void
+    {
+        // Pre-warm the singleton row so both requests below hit the same
+        // (row-already-exists) path — otherwise the very first touch of
+        // website_configs pays for an extra firstOrCreate() insert that has
+        // nothing to do with row count, and would mask what we're testing.
+        WebsiteConfig::singleton();
+
+        $one = $this->player('Amine');
+
+        DB::enableQueryLog();
+        $this->actingAs($this->admin())
+            ->get(route('players.labels', ['ids' => (string) $one->id]))
+            ->assertOk();
+        $countForOne = collect(DB::getQueryLog())
+            ->filter(fn ($q) => str_contains($q['query'], 'website_configs'))->count();
+        DB::flushQueryLog();
+
+        $two = $this->player('Yanis');
+        $three = $this->player('Sami');
+        $this->actingAs($this->admin())
+            ->get(route('players.labels', ['ids' => "{$one->id},{$two->id},{$three->id}"]))
+            ->assertOk();
+        $countForThree = collect(DB::getQueryLog())
+            ->filter(fn ($q) => str_contains($q['query'], 'website_configs'))->count();
+        DB::disableQueryLog();
+
+        $this->assertSame($countForOne, $countForThree, 'website_configs must not be queried once per row');
     }
 }

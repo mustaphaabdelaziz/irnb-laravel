@@ -41,10 +41,24 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Guarded per-column: if a previous run of this migration added the
+        // columns but then failed during the data sync below, SQLite/MySQL
+        // won't have rolled back that DDL even though the migration itself
+        // is unrecorded - the desktop build runs `migrate` on every boot, so
+        // an unguarded add would fail every later run with "duplicate
+        // column name" and the app would never boot again.
         Schema::table('country_states', function (Blueprint $table) {
-            $table->char('code', 2)->nullable()->after('external_id');
-            $table->string('name_fr')->nullable()->after('name');
-            $table->string('name_ar')->nullable()->after('name_fr');
+            if (! Schema::hasColumn('country_states', 'code')) {
+                $table->char('code', 2)->nullable()->after('external_id');
+            }
+
+            if (! Schema::hasColumn('country_states', 'name_fr')) {
+                $table->string('name_fr')->nullable()->after('name');
+            }
+
+            if (! Schema::hasColumn('country_states', 'name_ar')) {
+                $table->string('name_ar')->nullable()->after('name_fr');
+            }
         });
 
         $this->syncOfficialWilayas();
@@ -132,6 +146,19 @@ return new class extends Migration
             ->orderBy('id')
             ->get();
 
+        // A code already held by a row OUTSIDE this selection (a correctly
+        // numbered wilaya we're not touching) must never be taken from it.
+        // Reachable in practice: ImportMongoJsonData writes a null
+        // external_id when the source record has none, and that row's name
+        // can coincidentally match an already-correct 1-48 wilaya.
+        $reservedExternalIds = DB::table('country_states')
+            ->where('country_id', $countryId)
+            ->whereNotIn('id', $rows->pluck('id'))
+            ->whereNotNull('external_id')
+            ->pluck('external_id')
+            ->map(fn ($value) => (int) $value)
+            ->all();
+
         $claimedBy = [];
         $moves = [];
 
@@ -148,6 +175,21 @@ return new class extends Migration
                     $row->id,
                     $row->name,
                     $row->external_id ?? 'null'
+                ));
+
+                continue;
+            }
+
+            if (in_array((int) $code, $reservedExternalIds, true)) {
+                if ($row->external_id !== null) {
+                    DB::table('country_states')->where('id', $row->id)->update(['external_id' => null]);
+                }
+
+                logger()->warning(sprintf(
+                    'official_wilayas migration: row id=%d name="%s" matches code %s, but that external_id already belongs to another row outside this legacy selection; cleared external_id to avoid a duplicate.',
+                    $row->id,
+                    $row->name,
+                    $code
                 ));
 
                 continue;
@@ -191,7 +233,14 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('country_states', function (Blueprint $table) {
-            $table->dropColumn(['code', 'name_fr', 'name_ar']);
+            $columns = array_values(array_filter(
+                ['code', 'name_fr', 'name_ar'],
+                fn (string $column): bool => Schema::hasColumn('country_states', $column)
+            ));
+
+            if ($columns !== []) {
+                $table->dropColumn($columns);
+            }
         });
     }
 };

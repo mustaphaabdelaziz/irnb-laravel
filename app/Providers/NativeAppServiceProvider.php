@@ -129,6 +129,16 @@ class NativeAppServiceProvider implements ProvidesPhpIni
         // validate_timestamps=0 skips per-file stat() calls. The NativePHP
         // server runs the CLI SAPI, hence enable_cli. This is the biggest
         // lever on desktop cold-start / per-request latency.
+        //
+        // The bundled static php.exe ships with no php.ini, so PHP falls back
+        // to its compiled-in defaults: upload_max_filesize=2M, post_max_size=8M,
+        // max_file_uploads=20 (verified by running the packaged php.exe
+        // directly). P3 promises 10 MB per file and up to 10 files for player
+        // documents, board minutes and transaction receipts — well past the 2M
+        // default — so without these overrides PHP rejects the upload before
+        // Laravel's own `max:10240` validation rule ever runs. NativePHP passes
+        // this array straight through as `-d` flags to `php -S`, and all three
+        // are PHP_INI_PERDIR, settable via -d.
         return [
             'opcache.enable' => '1',
             'opcache.enable_cli' => '1',
@@ -136,6 +146,9 @@ class NativeAppServiceProvider implements ProvidesPhpIni
             'opcache.interned_strings_buffer' => '16',
             'opcache.max_accelerated_files' => '20000',
             'opcache.validate_timestamps' => '0',
+            'upload_max_filesize' => '10M',
+            'post_max_size' => '110M',
+            'max_file_uploads' => '20',
         ];
     }
 }

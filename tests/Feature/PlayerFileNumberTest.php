@@ -1,0 +1,98 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Player;
+use App\Models\User;
+use App\Models\WebsiteConfig;
+use App\Services\Player\FileNumber;
+use App\Services\Player\RegisterPlayerService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
+
+class PlayerFileNumberTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private function admin(): User
+    {
+        return User::factory()->admin()->create(['email_verified_at' => now()]);
+    }
+
+    private function register(string $firstname, int $joinYear = 2026): Player
+    {
+        return app(RegisterPlayerService::class)->handle([
+            'firstname' => $firstname,
+            'join_year' => $joinYear,
+        ]);
+    }
+
+    #[Test]
+    public function a_registered_player_gets_the_next_file_number(): void
+    {
+        $first = $this->register('Amine');
+        $second = $this->register('Yanis');
+
+        $this->assertSame(1, $first->fresh()->file_number);
+        $this->assertSame(2, $second->fresh()->file_number);
+    }
+
+    #[Test]
+    public function a_number_is_never_reused_after_a_player_leaves(): void
+    {
+        $this->register('Amine');
+        $second = $this->register('Yanis');
+        $second->forceFill(['archived' => true])->save();
+
+        $this->assertSame(3, $this->register('Sami')->fresh()->file_number);
+    }
+
+    #[Test]
+    public function both_identifiers_survive_a_join_year_change(): void
+    {
+        $player = $this->register('Amine', 2024);
+        $membership = $player->membership_id;
+        $fileNumber = $player->fresh()->file_number;
+
+        $this->actingAs($this->admin())
+            ->put(route('players.update', $player), ['firstname' => 'Amine', 'join_year' => 2025])
+            ->assertRedirect();
+
+        $player->refresh();
+        $this->assertSame($membership, $player->membership_id, 'the card and the folder carry this number');
+        $this->assertSame($fileNumber, $player->file_number);
+        $this->assertSame(2025, $player->join_year);
+    }
+
+    #[Test]
+    public function the_search_finds_a_player_by_file_number_with_or_without_leading_zeros(): void
+    {
+        // A join year without a '2' in it: the default (this year, 2026) would make
+        // both players' membership_id contain '2' too, and this test would then pass
+        // by coincidence via the pre-existing membership_id match rather than the
+        // file_number match it is meant to exercise.
+        $this->register('Amine', 1999);
+        $target = $this->register('Yanis', 1999); // file number 2
+
+        $this->assertSame([$target->id], Player::query()->search('2')->pluck('id')->all());
+        $this->assertSame([$target->id], Player::query()->search('0002')->pluck('id')->all());
+    }
+
+    #[Test]
+    public function a_file_number_is_shown_padded_and_sits_in_a_drawer(): void
+    {
+        $this->assertSame('0123', FileNumber::format(123));
+        $this->assertSame('', FileNumber::format(null));
+
+        // Default drawer holds 100 files.
+        $this->assertSame(1, FileNumber::drawer(1));
+        $this->assertSame(1, FileNumber::drawer(100));
+        $this->assertSame(2, FileNumber::drawer(101));
+
+        $config = WebsiteConfig::singleton();
+        $config->update(['settings' => [...$config->settings, 'fileDrawerSize' => 50]]);
+
+        $this->assertSame(2, FileNumber::drawer(51));
+    }
+}

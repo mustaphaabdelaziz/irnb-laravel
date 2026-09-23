@@ -18,6 +18,7 @@ class Player extends Model
 
     protected $fillable = [
         'membership_id',
+        'file_number',
         'firstname',
         'lastname',
         'nickname',
@@ -74,7 +75,8 @@ class Player extends Model
     }
 
     /**
-     * Name search across every part of a player's name, plus the membership ID.
+     * Name search across every part of a player's name, plus the membership ID
+     * and the paper-folder file number.
      *
      * The full name is spread over several columns (lastname firstname (nickname)
      * بن father grandfather), so matching the raw term against single columns fails
@@ -108,6 +110,11 @@ class Player extends Model
                 $outer->where(function (Builder $inner) use ($token, $columns) {
                     foreach ($columns as $column) {
                         $inner->orWhere($column, 'like', '%'.$token.'%');
+                    }
+
+                    // A folder number, typed with or without its leading zeros.
+                    if (ctype_digit((string) $token)) {
+                        $inner->orWhere('file_number', (int) ltrim((string) $token, '0'));
                     }
                 });
             }

@@ -41,6 +41,8 @@ return [
         'players.transactions.update' => ['players', 'edit'],
         'players.transactions.destroy' => ['players', 'delete'],
         'players.card' => ['players', 'view'],
+        // "academic-report" is not a view verb, so without this printing would need edit rights.
+        'players.academic-report' => ['players', 'view'],
         'players.label' => ['players', 'view'],
         'players.labels' => ['players', 'view'],
         'players.board-table' => ['players', 'view'],

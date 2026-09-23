@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Category;
 use App\Models\Player;
+use App\Models\Role;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -73,5 +74,44 @@ class ReportPdfTest extends TestCase
 
         $response->assertOk();
         $this->assertSame('application/pdf', $response->headers->get('content-type'));
+    }
+
+    #[Test]
+    public function it_generates_an_academic_report_pdf_for_a_student(): void
+    {
+        $player = Player::create([
+            'membership_id' => '2024000077',
+            'firstname' => 'Amel',
+            'lastname' => 'Haddad',
+            'is_student' => true,
+            'education_level' => 'licence',
+            'institution' => 'Université de Béjaïa',
+        ]);
+        $player->academicRecords()->create(['academic_year' => 2025, 'period' => 'S1', 'gpa' => 12.75]);
+
+        $response = $this->actingAs($this->admin())->get(route('players.academic-report', $player));
+
+        $response->assertOk();
+        $this->assertSame('application/pdf', $response->headers->get('content-type'));
+    }
+
+    #[Test]
+    public function academic_report_is_not_found_for_a_worker(): void
+    {
+        $player = Player::create(['membership_id' => '2024000078', 'firstname' => 'W', 'lastname' => 'K', 'is_student' => false]);
+
+        $this->actingAs($this->admin())->get(route('players.academic-report', $player))->assertNotFound();
+    }
+
+    #[Test]
+    public function academic_report_needs_only_players_view(): void
+    {
+        $viewer = User::factory()->create([
+            'privileges' => ['user'], 'approved' => true, 'email_verified_at' => now(),
+            'role_id' => Role::factory()->create(['permissions' => ['players' => ['view']]])->id,
+        ]);
+        $player = Player::create(['membership_id' => '2024000079', 'firstname' => 'V', 'lastname' => 'K', 'is_student' => true]);
+
+        $this->actingAs($viewer)->get(route('players.academic-report', $player))->assertOk();
     }
 }

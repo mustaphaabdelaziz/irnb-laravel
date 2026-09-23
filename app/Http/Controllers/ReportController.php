@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BoardMeeting;
 use App\Models\InventorySession;
 use App\Models\Player;
+use App\Models\PlayerAcademicRecord;
 use App\Models\Transaction;
 use App\Models\WebsiteConfig;
 use App\Services\Pdf\PdfService;
@@ -56,6 +57,26 @@ class ReportController extends Controller
         ])->render();
 
         return $this->pdf->stream($html, "member-card-{$player->membership_id}.pdf");
+    }
+
+    public function academicReport(Player $player): Response
+    {
+        abort_unless($player->is_student, 404);
+
+        $player->load(['category', 'academicRecords' => fn ($query) => $query->chronological()]);
+        $records = $player->academicRecords;
+
+        $html = view('pdf.academic-report', [
+            'club' => $this->club(),
+            'player' => $player,
+            'photo' => $this->resolveMediaFile($player->picture_url),
+            'records' => $records,
+            'average' => $records->isEmpty() ? null : round($records->avg(fn ($r) => (float) $r->gpa), 2),
+            'latest' => $records->last(),
+            'passMark' => PlayerAcademicRecord::PASS_MARK,
+        ])->render();
+
+        return $this->pdf->stream($html, "academic-report-{$player->membership_id}.pdf");
     }
 
     public function financialSummary(Request $request): Response

@@ -132,6 +132,7 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
     // PDF documents
     Route::get('/players/{player}/card', [ReportController::class, 'playerCard'])->name('players.card');
     Route::get('/players/{player}/label', [PlayerPrintController::class, 'label'])->name('players.label');
+    Route::get('/players/{player}/academic-report', [ReportController::class, 'academicReport'])->name('players.academic-report');
     Route::get('/reports/financial', [ReportController::class, 'financialSummary'])->name('reports.financial');
 
     // Equipment — catalog (equipment list) import/export declared before the resource so the static paths win

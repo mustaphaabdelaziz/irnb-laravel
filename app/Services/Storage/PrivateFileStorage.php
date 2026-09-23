@@ -25,6 +25,24 @@ class PrivateFileStorage
     public const DISK = 'local';
 
     /**
+     * Extensions safe to render in a browser tab, mapped to the exact
+     * Content-Type to send. Never let the storage driver sniff it: a stored
+     * file can be a legacy import whose bytes don't match its name (e.g. an
+     * HTML file saved with a .jpg extension), and finfo-based sniffing would
+     * then serve it as text/html — inline, on the app's own origin, where it
+     * would run as script. Only an extension on this list is ever shown
+     * inline, and only with this exact type; anything else is downloaded.
+     */
+    public const INLINE_MIME_TYPES = [
+        'pdf' => 'application/pdf',
+        'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        'webp' => 'image/webp',
+        'gif' => 'image/gif',
+    ];
+
+    /**
      * @return array{path: string, original_name: string, mime: string, size: int}
      */
     public function store(UploadedFile $file, string $directory): array
@@ -83,6 +101,24 @@ class PrivateFileStorage
             'X-Content-Type-Options' => 'nosniff',
             'Cache-Control' => 'private, no-store',
         ]);
+    }
+
+    /**
+     * Serve a stored file the safe way: inline with the exact Content-Type
+     * from INLINE_MIME_TYPES when its extension is on that list, or a forced
+     * download otherwise. Every "view this private file" route should call
+     * this rather than inline()/download() directly, so a stored file whose
+     * bytes don't match its extension — a mislabelled legacy import, say —
+     * is never sniffed by the storage driver and rendered as something else.
+     */
+    public function serve(string $path, string $name): StreamedResponse
+    {
+        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $mime = self::INLINE_MIME_TYPES[$extension] ?? null;
+
+        return $mime !== null
+            ? $this->inline($path, $name, $mime)
+            : $this->download($path, $name);
     }
 
     /** Only plain relative paths inside the disk: no climbing out, no absolute paths. */

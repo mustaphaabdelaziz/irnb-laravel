@@ -24,13 +24,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TransactionController extends Controller
 {
-    /**
-     * Receipt types a browser may display. The upload rule accepts any file, and
-     * an HTML or SVG file shown inline on the app's own origin would run script,
-     * so everything else is only ever downloaded.
-     */
-    private const INLINE_RECEIPT_TYPES = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'gif'];
-
     public function index(Request $request): Response
     {
         $query = Transaction::query()->where('archived', false);
@@ -192,11 +185,7 @@ class TransactionController extends Controller
 
         abort_unless($path && $receipts->exists($path), 404);
 
-        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-
-        return in_array($extension, self::INLINE_RECEIPT_TYPES, true)
-            ? $receipts->inline($path, basename($path))
-            : $receipts->download($path, basename($path));
+        return $receipts->serve($path, basename($path));
     }
 
     public function destroy(Transaction $transaction): RedirectResponse

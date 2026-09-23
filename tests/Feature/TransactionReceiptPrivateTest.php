@@ -140,6 +140,23 @@ class TransactionReceiptPrivateTest extends TestCase
     }
 
     #[Test]
+    public function a_stored_file_whose_bytes_dont_match_its_extension_is_never_served_as_html(): void
+    {
+        // A legacy import (or a straight rename) can leave a .jpg on disk that is
+        // actually HTML. Content-Type must come from the extension allowlist, never
+        // from sniffing the real bytes — otherwise this would render as text/html,
+        // inline, on the app's own origin, and run as script.
+        Storage::disk('local')->put('receipts/x.jpg', '<script>alert(1)</script>');
+        $transaction = $this->transaction(['receipt_filename' => 'receipts/x.jpg', 'receipt_url' => null]);
+
+        $response = $this->actingAs($this->admin())->get(route('transactions.receipt-file.show', $transaction));
+
+        $response->assertOk();
+        $this->assertNotSame('text/html', $response->headers->get('Content-Type'));
+        $this->assertStringStartsWith('image/jpeg', (string) $response->headers->get('Content-Type'));
+    }
+
+    #[Test]
     public function the_public_media_route_no_longer_serves_receipts(): void
     {
         $transaction = $this->transactionWithReceipt();

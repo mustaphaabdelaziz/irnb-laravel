@@ -78,6 +78,22 @@ class BoardMinutesPrivateTest extends TestCase
     }
 
     #[Test]
+    public function a_stored_attachment_whose_bytes_dont_match_its_extension_is_never_served_as_html(): void
+    {
+        // Same risk as the transaction receipts (see TransactionReceiptPrivateTest):
+        // Content-Type must come from the extension allowlist, never from sniffing
+        // the real bytes of a mislabelled file.
+        Storage::disk('local')->put('minutes/x.jpg', '<script>alert(1)</script>');
+        $meeting = $this->meeting(['attachment_filename' => 'minutes/x.jpg', 'attachment_url' => null]);
+
+        $response = $this->actingAs($this->admin())->get(route('board.meetings.attachment.show', $meeting));
+
+        $response->assertOk();
+        $this->assertNotSame('text/html', $response->headers->get('Content-Type'));
+        $this->assertStringStartsWith('image/jpeg', (string) $response->headers->get('Content-Type'));
+    }
+
+    #[Test]
     public function the_minutes_need_a_login_and_board_rights(): void
     {
         $meeting = $this->meeting();

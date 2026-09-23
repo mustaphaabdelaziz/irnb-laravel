@@ -53,6 +53,17 @@ class PublicMediaRouteTest extends TestCase
             'leading dot segment' => ['/media/./minutes/x.pdf'],
             'doubled slash' => ['/media//minutes/x.pdf'],
             'percent-encoded dot segment' => ['/media/%2e/receipts/x.pdf'],
+            // Windows/NTFS alternate-data-stream syntax: appending
+            // "::$INDEX_ALLOCATION" (or "$I30:$INDEX_ALLOCATION") to a
+            // directory name opens that directory itself — confirmed with a
+            // direct file_exists() probe on this filesystem — so the segment
+            // resolves to "receipts"/"minutes" on disk even though it never
+            // string-equals either name.
+            'ntfs index-allocation stream on receipts' => ['/media/receipts::$INDEX_ALLOCATION/x.pdf'],
+            'ntfs $I30 index-allocation stream on receipts' => ['/media/receipts:$I30:$INDEX_ALLOCATION/x.pdf'],
+            'ntfs index-allocation stream, mixed case' => ['/media/Receipts::$INDEX_ALLOCATION/x.pdf'],
+            'ntfs index-allocation stream on minutes' => ['/media/minutes::$INDEX_ALLOCATION/x.pdf'],
+            'ntfs index-allocation stream, percent-encoded dollar' => ['/media/receipts::%24INDEX_ALLOCATION/x.pdf'],
         ];
     }
 

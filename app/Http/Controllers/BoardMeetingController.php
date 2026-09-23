@@ -95,7 +95,7 @@ class BoardMeetingController extends Controller
 
         abort_unless($path && $storage->exists($path), 404);
 
-        return $storage->inline($path, basename($path));
+        return $storage->serve($path, basename($path));
     }
 
     public function deleteAttachment(BoardMeeting $meeting, PrivateFileStorage $storage, FileStorageService $legacy): RedirectResponse

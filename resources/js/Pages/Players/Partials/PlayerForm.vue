@@ -434,7 +434,16 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
             <Link :href="cancelHref"><SecondaryButton type="button">{{ t('cancel') }}</SecondaryButton></Link>
             <PrimaryButton :disabled="form.processing">{{ isEdit ? t('save_changes') : t('save') }}</PrimaryButton>
         </div>
-
-        <JobQuickCreateModal :show="showJobModal" @close="showJobModal = false" @created="onJobCreated" />
     </form>
+
+    <!--
+        Deliberately OUTSIDE the <form> above. Modal.vue has no Teleport, so
+        its content is a plain DOM descendant of wherever it's mounted — if
+        it were nested inside the player <form>, the nearest form ancestor
+        for its inputs would be THIS form, and pressing Enter in a job-name
+        field would implicitly submit (save) the half-filled player instead
+        of creating the job. Mounting it as a sibling here, and giving it
+        its own <form> internally, gives Enter the right target.
+    -->
+    <JobQuickCreateModal :show="showJobModal" @close="showJobModal = false" @created="onJobCreated" />
 </template>

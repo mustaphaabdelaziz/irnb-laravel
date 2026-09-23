@@ -78,7 +78,17 @@ async function submit() {
 
 <template>
     <Modal :show="show" max-width="md" @close="emit('close')">
-        <div class="p-6">
+        <!--
+            A real <form> here (instead of a plain <div>) is what makes Enter
+            in a name field create the job. Modal.vue renders a plain
+            <dialog> — no Teleport — so this content is a normal DOM
+            descendant of wherever the modal is mounted. As long as the
+            modal is mounted outside any other <form> (see PlayerForm.vue),
+            this <form> is the nearest form ancestor for these inputs, so
+            the browser's implicit-submission-on-Enter targets it instead of
+            some unrelated outer form.
+        -->
+        <form class="p-6" @submit.prevent="submit">
             <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('new_job') }}</h3>
             <div class="mt-4 space-y-3">
                 <div>
@@ -97,8 +107,8 @@ async function submit() {
             </div>
             <div class="mt-6 flex justify-end gap-3">
                 <SecondaryButton type="button" @click="emit('close')">{{ t('cancel') }}</SecondaryButton>
-                <PrimaryButton type="button" :disabled="saving" @click="submit">{{ t('save') }}</PrimaryButton>
+                <PrimaryButton type="submit" :disabled="saving">{{ t('save') }}</PrimaryButton>
             </div>
-        </div>
+        </form>
     </Modal>
 </template>

@@ -315,6 +315,30 @@ class PlayerDocumentActionsTest extends TestCase
     }
 
     #[Test]
+    public function a_stored_file_whose_bytes_dont_match_its_extension_is_never_served_as_html(): void
+    {
+        // Same risk as the board minutes and transaction receipts (see
+        // BoardMinutesPrivateTest / TransactionReceiptPrivateTest): showFile()
+        // must take its Content-Type from the extension allowlist, never from
+        // the stored mime column or by sniffing the real bytes — otherwise a
+        // legacy import mislabelled as .jpg would render as text/html, inline,
+        // on the app's own origin, and run as script.
+        $player = $this->player();
+        $this->markReceived($player, 'birth_certificate', ['files' => [$this->pdf()]]);
+        $document = $player->documents()->firstOrFail();
+        $file = $document->files()->firstOrFail();
+
+        Storage::disk('local')->put($file->path, '<script>alert(1)</script>');
+        $file->update(['mime' => 'text/html']);
+
+        $response = $this->actingAs($this->admin())->get(route('players.documents.files.show', [$player, $file]));
+
+        $response->assertOk();
+        $this->assertNotSame('text/html', $response->headers->get('Content-Type'));
+        $this->assertStringStartsWith('application/pdf', (string) $response->headers->get('Content-Type'));
+    }
+
+    #[Test]
     public function a_file_cannot_be_reached_through_another_player(): void
     {
         $owner = $this->player();

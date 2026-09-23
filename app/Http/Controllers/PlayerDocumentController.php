@@ -113,7 +113,7 @@ class PlayerDocumentController extends Controller
     {
         $this->ensureFileBelongs($player, $file);
 
-        return $storage->inline($file->path, $file->original_name, $file->mime);
+        return $storage->serve($file->path, $file->original_name);
     }
 
     public function downloadFile(Player $player, PlayerDocumentFile $file, PrivateFileStorage $storage): StreamedResponse

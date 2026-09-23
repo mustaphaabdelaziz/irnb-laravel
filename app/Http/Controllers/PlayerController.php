@@ -150,6 +150,12 @@ class PlayerController extends Controller
             'equipmentRentals.equipmentItem.catalog',
         ]);
 
+        // Only students carry an education section; a worker's past records
+        // stay stored but are not sent, so the page has nothing to show.
+        if ($player->is_student) {
+            $player->load(['academicRecords' => fn ($query) => $query->chronological()]);
+        }
+
         // Instance-only append (not $appends on the model): is_overdue re-implements
         // EquipmentRental::getIsOverdueAttribute() so the page doesn't have to, without
         // making every serialized rental elsewhere carry the extra attribute.

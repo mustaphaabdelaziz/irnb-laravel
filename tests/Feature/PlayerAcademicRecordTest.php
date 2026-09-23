@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -198,5 +199,49 @@ class PlayerAcademicRecordTest extends TestCase
         $this->actingAs($viewer)
             ->post(route('players.academic-records.store', $this->makePlayer()), $this->payload())
             ->assertForbidden();
+    }
+
+    #[Test]
+    public function profile_shows_records_in_order_for_students_only(): void
+    {
+        $student = $this->makePlayer();
+        $this->record($student, 2025, 'S2', 13);
+        $this->record($student, 2025, 'S1', 11);
+        $worker = $this->makePlayer(student: false);
+        $this->record($worker, 2025, 'S1', 11); // kept from when they studied
+
+        $this->actingAs($this->admin())->get(route('players.show', $student))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('player.academic_records.0.period', 'S1')
+                ->where('player.academic_records.1.period', 'S2'));
+
+        $this->actingAs($this->admin())->get(route('players.show', $worker))
+            ->assertInertia(fn (Assert $page) => $page->missing('player.academic_records'));
+    }
+
+    #[Test]
+    public function school_info_is_saved_from_the_player_form(): void
+    {
+        $player = $this->makePlayer();
+
+        $this->actingAs($this->admin())->put(route('players.update', $player), [
+            'firstname' => $player->firstname,
+            'lastname' => $player->lastname,
+            'is_student' => true,
+            'education_level' => 'licence',
+            'institution' => 'Université de Béjaïa',
+            'field_of_study' => 'L2 Informatique',
+        ])->assertSessionHasNoErrors();
+
+        $player->refresh();
+        $this->assertSame('licence', $player->education_level);
+        $this->assertSame('Université de Béjaïa', $player->institution);
+        $this->assertSame('L2 Informatique', $player->field_of_study);
+
+        $this->actingAs($this->admin())->put(route('players.update', $player), [
+            'firstname' => $player->firstname,
+            'lastname' => $player->lastname,
+            'education_level' => 'kindergarten',
+        ])->assertSessionHasErrors('education_level');
     }
 }

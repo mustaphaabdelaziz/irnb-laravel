@@ -346,13 +346,14 @@ class PlayerController extends Controller
         $validated = $request->validated();
 
         $emergencyContacts = $validated['emergency_contacts'] ?? null;
-        $branchIds = $validated['branch_ids'] ?? null;
         // The key must be PRESENT (not just non-null) to trigger a sync: Inertia's
         // forceFormData conversion drops empty arrays entirely, so a form that
-        // clears every other position sends other_position_ids as '' — which
-        // ConvertEmptyStringsToNull turns into a present-but-null key. Omitted
-        // entirely (e.g. another client that never touches this field) must
-        // leave the existing other positions untouched.
+        // clears every branch (or every other position) sends the field as '' —
+        // which ConvertEmptyStringsToNull turns into a present-but-null key.
+        // Omitted entirely (e.g. another client that never touches this field)
+        // must leave the existing branches/other positions untouched.
+        $branchIdsPresent = array_key_exists('branch_ids', $validated);
+        $branchIds = $validated['branch_ids'] ?? null;
         $otherPositionIdsPresent = array_key_exists('other_position_ids', $validated);
         $otherPositionIds = $validated['other_position_ids'] ?? null;
         unset($validated['emergency_contacts'], $validated['picture'], $validated['branch_ids'], $validated['other_position_ids']);
@@ -370,8 +371,8 @@ class PlayerController extends Controller
 
         $player->update($validated);
 
-        if ($branchIds !== null) {
-            $player->branches()->sync($branchIds);
+        if ($branchIdsPresent) {
+            $player->branches()->sync($branchIds ?? []);
         }
 
         if ($otherPositionIdsPresent) {

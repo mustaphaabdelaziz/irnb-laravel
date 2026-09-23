@@ -194,7 +194,10 @@ function submit() {
         // clearable value.
         other_position_ids: data.other_position_ids.length ? data.other_position_ids : '',
         member_job_id: data.member_job_id || null,
-        branch_ids: data.branch_ids,
+        // Same reasoning as other_position_ids above: an empty array is dropped
+        // entirely by forceFormData, so clearing every branch must send '' to
+        // reach the server as a present, clearable value.
+        branch_ids: data.branch_ids.length ? data.branch_ids : '',
         join_year: data.join_year || null,
         skill_level: data.skill_level || null,
         picture: data.picture,

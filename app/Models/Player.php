@@ -39,6 +39,9 @@ class Player extends Model
         'wilaya_id',
         'city',
         'is_student',
+        'education_level',
+        'institution',
+        'field_of_study',
         'member_job_id',
         'join_year',
         'archived',
@@ -186,6 +189,11 @@ class Player extends Model
     public function achievements(): HasMany
     {
         return $this->hasMany(PlayerAchievement::class);
+    }
+
+    public function academicRecords(): HasMany
+    {
+        return $this->hasMany(PlayerAcademicRecord::class);
     }
 
     public function equipmentRentals(): MorphMany

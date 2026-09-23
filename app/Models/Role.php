@@ -14,7 +14,7 @@ class Role extends Model
 
     /** Permission-controlled modules. */
     public const MODULES = [
-        'players', 'subscriptions', 'transactions', 'finance', 'reports',
+        'players', 'documents', 'subscriptions', 'transactions', 'finance', 'reports',
         'equipment', 'inventory', 'board', 'users', 'categories', 'settings',
     ];
 

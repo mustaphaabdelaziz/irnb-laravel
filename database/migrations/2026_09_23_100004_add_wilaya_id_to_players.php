@@ -34,10 +34,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('players', function (Blueprint $table) {
-            $table->foreignId('wilaya_id')->nullable()->after('state')
-                ->constrained('country_states')->nullOnDelete();
-        });
+        // Guarded: the desktop build runs `migrate` on every boot. If the
+        // backfill below ever threw after this DDL had already committed,
+        // SQLite won't roll back the column add even though the migration
+        // itself stays unrecorded — every later boot would re-run up() and
+        // die on "duplicate column name" before the app ever starts again.
+        if (! Schema::hasColumn('players', 'wilaya_id')) {
+            Schema::table('players', function (Blueprint $table) {
+                $table->foreignId('wilaya_id')->nullable()->after('state')
+                    ->constrained('country_states')->nullOnDelete();
+            });
+        }
 
         $this->backfillWilayaId();
     }
@@ -69,27 +76,47 @@ return new class extends Migration
         }
 
         $unmatched = [];
+        $placeholderCount = 0;
 
         foreach (DB::table('players')->whereNotNull('state')->select('id', 'state')->get() as $player) {
             $id = $byKey[self::normalise((string) $player->state)] ?? null;
 
             if ($id !== null) {
                 DB::table('players')->where('id', $player->id)->update(['wilaya_id' => $id]);
-            } elseif (trim((string) $player->state) !== '') {
-                $unmatched[trim((string) $player->state)] = true;
+
+                continue;
             }
+
+            $state = trim((string) $player->state);
+
+            if ($state === '') {
+                continue;
+            }
+
+            // The import writes the literal "Unknown" when the wilaya cell was
+            // left blank — that is not a mismatched spelling, just an absent
+            // value, so it is counted separately rather than listed alongside
+            // real unmatched spellings the owner needs to look at.
+            if (mb_strtolower($state) === 'unknown') {
+                $placeholderCount++;
+
+                continue;
+            }
+
+            $unmatched[$state] = true;
         }
 
         // The owner needs to know which player.state values could not be
         // matched to a wilaya, so they can be fixed by hand — the migration
         // deliberately leaves `state` untouched for these rows rather than
         // guessing.
-        if ($unmatched !== []) {
+        if ($unmatched !== [] || $placeholderCount > 0) {
             $values = array_values(array_keys($unmatched));
 
             logger()->warning('Wilaya backfill: unmatched player.state values', [
                 'values' => $values,
                 'count' => count($values),
+                'placeholder_count' => $placeholderCount,
             ]);
 
             if (app()->runningInConsole()) {
@@ -97,15 +124,20 @@ return new class extends Migration
                 foreach ($values as $value) {
                     fwrite(STDERR, '  - '.$value."\n");
                 }
+                if ($placeholderCount > 0) {
+                    fwrite(STDERR, "  (plus {$placeholderCount} row(s) with no state recorded (\"Unknown\"))\n");
+                }
             }
         }
     }
 
     public function down(): void
     {
-        Schema::table('players', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('wilaya_id');
-        });
+        if (Schema::hasColumn('players', 'wilaya_id')) {
+            Schema::table('players', function (Blueprint $table) {
+                $table->dropConstrainedForeignId('wilaya_id');
+            });
+        }
     }
 
     /**

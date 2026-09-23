@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -232,5 +233,73 @@ class PlayerWilayaTest extends TestCase
         $this->assertSame('Not A Real Wilaya', Player::where('membership_id', '202600040')->value('state'));
         $this->assertNull(Player::where('membership_id', '202600041')->value('wilaya_id'));
         $this->assertSame('Also Unknown', Player::where('membership_id', '202600041')->value('state'));
+    }
+
+    /**
+     * "Unknown" is the import's own placeholder for a blank wilaya cell, not
+     * a mismatched spelling — it must not appear in the "please fix these"
+     * list, but it must still be visible to the owner as a count so a
+     * database full of never-set wilayas isn't silently invisible.
+     */
+    #[Test]
+    public function the_backfill_excludes_the_unknown_placeholder_from_the_list_but_counts_it(): void
+    {
+        Player::create(['membership_id' => '202600050', 'firstname' => 'H', 'state' => 'Unknown']);
+        Player::create(['membership_id' => '202600051', 'firstname' => 'I', 'state' => 'UNKNOWN']);
+        Player::create(['membership_id' => '202600052', 'firstname' => 'J', 'state' => 'unknown']);
+        Player::create(['membership_id' => '202600053', 'firstname' => 'K', 'state' => 'Truly Unmatched']);
+
+        Log::spy();
+
+        $migration = require database_path('migrations/2026_09_23_100004_add_wilaya_id_to_players.php');
+        $migration->backfillWilayaId();
+
+        Log::shouldHaveReceived('warning')->once()->withArgs(function (string $message, array $context) {
+            return $message === 'Wilaya backfill: unmatched player.state values'
+                && $context['values'] === ['Truly Unmatched']
+                && $context['count'] === 1
+                && $context['placeholder_count'] === 3;
+        });
+    }
+
+    /**
+     * Only a coded (official) country_states row is a valid wilaya_id — a
+     * stray/duplicate legacy row the wilaya-sync migration left uncoded must
+     * be rejected the same way it's excluded from the form's choices.
+     */
+    #[Test]
+    public function storing_a_player_against_an_uncoded_wilaya_row_fails_validation(): void
+    {
+        $stray = CountryState::query()->create([
+            'country_id' => $this->wilaya('01')->country_id,
+            'external_id' => null,
+            'code' => null,
+            'name' => 'Stray Legacy Row',
+            'ar_name' => null,
+        ]);
+
+        $this->actingAs($this->admin())->post(route('players.store'), [
+            'firstname' => 'Amine',
+            'wilaya_id' => $stray->id,
+        ])->assertSessionHasErrors('wilaya_id');
+
+        $this->assertSame(0, Player::query()->count());
+    }
+
+    /**
+     * The desktop build runs `migrate` on every boot. If up() ever partially
+     * failed after the column-add DDL committed (SQLite doesn't roll back
+     * DDL), the migration would stay unrecorded and every later boot would
+     * re-run up() — which must not throw "duplicate column name" when the
+     * column is already there.
+     */
+    #[Test]
+    public function up_can_be_re_run_after_the_column_already_exists_without_throwing(): void
+    {
+        $migration = require database_path('migrations/2026_09_23_100004_add_wilaya_id_to_players.php');
+
+        $migration->up();
+
+        $this->assertTrue(Schema::hasColumn('players', 'wilaya_id'));
     }
 }

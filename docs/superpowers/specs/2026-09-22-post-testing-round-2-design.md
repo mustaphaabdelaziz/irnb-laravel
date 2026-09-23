@@ -469,6 +469,9 @@ These amend the sections below where they differ.
 - **"Sans wilaya" filter (carried from P2).** The players-list wilaya filter gains a "no wilaya" option
   (`wilaya_id=none` → `whereNull('wilaya_id')`) so the owner can find the players whose wilaya was
   "Unknown".
+- **Transaction receipts are private too (added 2026-09-24).** Uploaded receipts move like the minutes: to
+  the private `local` disk (`receipts/`), served by an authenticated route behind the transactions view
+  permission, existing files migrated. They are part of the backup's private folders.
 
 ## Data model
 

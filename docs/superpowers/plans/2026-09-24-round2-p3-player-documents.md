@@ -7,14 +7,15 @@
 - #11 per-player documents: mark received / renew / exempt, several files per document, phone camera, private storage
 - #12 the checklist on the player page (with "Expires soon"), and a missing-documents column + filters on the players list
 - security found while mapping: board-meeting minutes move behind login onto the private disk
+- owner decision (2026-09-24): uploaded transaction receipts move behind login onto the private disk too
 - carried from P2: a "Sans wilaya" option in the players-list wilaya filter
 
 **Architecture:**
 - **One definition of "missing", in two forms.** `App\Services\Player\DocumentChecklist` computes each document's state in PHP for the player page, and builds the SQL twin (a sum of `CASE WHEN … NOT EXISTS (…)` terms, one per required active type) for the players list. A dedicated test runs both over the same fixture players and asserts they agree.
 - **Half-open date comparisons everywhere.** SQLite stores Eloquent `date` columns as `Y-m-d 00:00:00` text. Every SQL comparison against a date is written as `col >= 'Y-m-d'` or `col < 'Y-m-d'` (never `<=` / `>`), which is correct for both that text form and MySQL `date` columns. The PHP side uses the same boundaries (`lt($today)`, `lt($today + 31 days)`, `gte($earliestBirthdate)`).
-- **Private files never touch `/media`.** A small `App\Services\Storage\PrivateFileStorage` wraps the `local` disk (`storage/app/private`). Player documents and board minutes are stored there and served only through authenticated, permission-checked routes.
+- **Private files never touch `/media`.** A small `App\Services\Storage\PrivateFileStorage` wraps the `local` disk (`storage/app/private`). Player documents, board minutes and transaction receipts are stored there and served only through authenticated, permission-checked routes.
 - **Reference data lives in migrations** (desktop runs `migrate` on boot, never seeders): the seven default document types and the `documents` permission for the admin roles.
-- **Backups carry named private roots** (`player-documents`, `minutes`), each staged, checked and swapped with `rename()` exactly like the media tree.
+- **Backups carry named private roots** (`player-documents`, `minutes`, `receipts`), each staged, checked and swapped with `rename()` exactly like the media tree.
 
 **Tech Stack:** PHP 8.x, Laravel 13, Inertia v2 + Vue 3 `<script setup>`, vue-i18n (flat keys), Tailwind, PHPUnit 12, SQLite (web also MySQL), NativePHP desktop.
 
@@ -103,8 +104,8 @@
 | `app/Http/Controllers/PlayerDocumentController.php` | The per-player document actions and the authenticated file routes |
 | `resources/js/Pages/Settings/DocumentTypes.vue` | The settings page |
 | `resources/js/Components/PlayerDocumentsCard.vue` | The Documents card on the player page |
-| migrations `2026_09_24_100001`–`100004` | admin roles get `documents`; `document_types` + defaults; `player_documents` + `player_document_files`; minutes to the private disk |
-| tests | `DocumentsPermissionTest`, `DocumentTypeModelTest`, `PlayerDocumentModelTest`, `DocumentTypeSettingsTest`, `DocumentChecklistTest`, `PlayerDocumentActionsTest`, `PlayerDocumentFiltersTest`, `PlayerDocumentDeletionTest`, `BoardMinutesPrivateTest`, `Unit/Services/BackupPrivateRootsTest` |
+| migrations `2026_09_24_100001`–`100005` | admin roles get `documents`; `document_types` + defaults; `player_documents` + `player_document_files`; minutes to the private disk; receipts to the private disk |
+| tests | `DocumentsPermissionTest`, `DocumentTypeModelTest`, `PlayerDocumentModelTest`, `DocumentTypeSettingsTest`, `DocumentChecklistTest`, `PlayerDocumentActionsTest`, `PlayerDocumentFiltersTest`, `PlayerDocumentDeletionTest`, `BoardMinutesPrivateTest`, `TransactionReceiptPrivateTest`, `Unit/Services/BackupPrivateRootsTest` |
 
 **Modified**
 
@@ -113,6 +114,7 @@
 | RBAC | `app/Models/Role.php`, `config/permissions.php`, `tests/Unit/RoleModelTest.php` |
 | Players | `app/Models/Player.php`, `app/Http/Controllers/PlayerController.php`, `resources/js/Pages/Players/Index.vue` (BOM), `resources/js/Pages/Players/Show.vue` (BOM) |
 | Board | `app/Http/Controllers/BoardMeetingController.php`, `app/Models/BoardMeeting.php`, `tests/Feature/BoardCalendarTest.php` |
+| Transactions | `app/Http/Controllers/TransactionController.php`, `app/Models/Transaction.php` |
 | Backup | `app/Services/Backup/BackupService.php`, `app/Providers/AppServiceProvider.php` |
 | Shared | `routes/web.php`, `resources/js/Layouts/AuthenticatedLayout.vue`, `config/nativephp.php`, `resources/js/i18n/*.json`, `tests/Feature/ListFilterPartialReloadTest.php` |
 
@@ -148,6 +150,7 @@
 | `players.documents.files.destroy` | documents / delete |
 | `document-types.index` / `.store` / `.update` / `.destroy` | categories / view, add, edit, delete |
 | `board.meetings.attachment.show` (Task 12) | board / view (derived from `show`, no config change) |
+| `transactions.receipt-file.show` (Task 13) | transactions / view (derived from `show`, no config change) |
 
 - i18n key `documents` (the module label in the roles matrix uses `t(module)`).
 
@@ -1317,7 +1320,8 @@ use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * Files that must never be public — player documents, board minutes — on the
+ * Files that must never be public — player documents, board minutes, transaction
+ * receipts — on the
  * private `local` disk (storage/app/private).
  *
  * Nothing here produces a URL: the public `/media/{path}` route only reads
@@ -1421,7 +1425,7 @@ with:
 
 ```php
         'storage/app/mpdf',
-        // Player documents and board minutes of THIS machine: never ship them to
+        // Player documents, board minutes and receipts of THIS machine: never ship them to
         // another club's installer. A new install starts with an empty private disk.
         'storage/app/private',
 ```
@@ -5553,18 +5557,567 @@ git show --stat HEAD
 
 ---
 
-### Task 13: Backups carry the private files
+### Task 13: Transaction receipts move behind login onto the private disk
 
-**Why:** Spec — `BackupService` includes only `storage/app/public`; it must include the player documents, both directions, with a test. The minutes now live on the private disk too (Task 12), so both private folders are carried.
+**Why:** Owner decision (2026-09-24) — uploaded transaction receipts are financial documents. Like the minutes (Task 12), they sit on the public disk and are served by the unauthenticated `GET /media/{path}` route (and, on the web, by the `public/storage` symlink). They move to the private `local` disk, are served by an authenticated route behind `transactions/view`, and the existing files are migrated.
+
+**Mapped facts:**
+- Upload: `TransactionController::store()` / `update()` call `FileStorageService::storeFile($file, 'receipts')` and save `receipt_url` (`/media/receipts/…`) + `receipt_filename` (`receipts/…`). Validation (`StoreTransactionRequest`): `'receipt' => ['nullable', 'file', 'max:10240']` — **no type restriction**.
+- `Transaction::receiptUrl()` accessor normalises the URL through `Media::path()`.
+- The only place that links an uploaded receipt: `resources/js/Pages/Transactions/Partials/TransactionForm.vue:222-223` (`<a :href="transaction.receipt_url" target="_blank">`). No PDF embeds it: `transactions.receipt` / `ReportController::transactionReceipt()` renders `pdf/receipt.blade.php`, the club's own printed receipt, which never reads `receipt_url`. Check with `grep -rn "receipt_url\|receipts/" app resources routes` → only the files touched here plus `ImportMongoJsonData` (legacy import, leaves URLs as imported; the migration below normalises what it can).
+- `transactions.receipt` is already taken (the PDF), so the new route is `transactions.receipt-file.show`. Module prefix `transactions` → module `transactions`; last segment `show` → `view`. No config change.
+
+**Files:**
+- Modify: `app/Http/Controllers/TransactionController.php`
+- Modify: `app/Models/Transaction.php`
+- Modify: `routes/web.php`
+- Create: `database/migrations/2026_09_24_100005_move_transaction_receipts_to_private_disk.php`
+- Test: `tests/Feature/TransactionReceiptPrivateTest.php`
+- No change: `resources/js/Pages/Transactions/Partials/TransactionForm.vue` — it links `transaction.receipt_url`, which now resolves to the authenticated route.
+
+**Interfaces:**
+- Route `GET /transactions/{transaction}/receipt-file` → `TransactionController@receiptFile`, name `transactions.receipt-file.show` (`transactions / view`).
+- Storage: `PrivateFileStorage` (Task 3), folder `receipts/` on the private disk (same relative path as before).
+- `Transaction::receipt_url` (accessor): the host-relative authenticated route whenever `receipt_filename` is a `receipts/…` path; otherwise the stored value through `Media::path()` (legacy imported links).
+- New uploads write `receipt_url = null` and `receipt_filename = receipts/<random>.<ext>`.
+- Serving: PDFs and images (`pdf, jpg, jpeg, png, webp, gif`) open inline; any other stored type is sent as a **download** — the upload rule accepts any file, and an HTML or SVG file shown inline on the app's own origin would run script.
+- Migration `100005`: same idempotent algorithm as the minutes migration (`100004`), on `transactions.receipt_url` / `receipt_filename`, folder `receipts/`.
+
+- [ ] **Step 1: Write the failing test**
+
+Create `tests/Feature/TransactionReceiptPrivateTest.php`:
+
+```php
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\FinanceCategory;
+use App\Models\Role;
+use App\Models\Transaction;
+use App\Models\User;
+use App\Support\PermissionMap;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
+
+class TransactionReceiptPrivateTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private const MIGRATION = 'migrations/2026_09_24_100005_move_transaction_receipts_to_private_disk.php';
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Storage::fake('local');
+        Storage::fake('public');
+    }
+
+    private function admin(): User
+    {
+        return User::factory()->admin()->create(['email_verified_at' => now()]);
+    }
+
+    /** @return array<string, mixed> */
+    private function payload(array $overrides = []): array
+    {
+        // firstOrCreate: the finance migrations already seed a 'Donations' income category.
+        $category = FinanceCategory::firstOrCreate(['type' => 'income', 'name' => 'Donations'], ['is_active' => true]);
+
+        return [
+            'title' => 'Donation',
+            'transaction_type' => 'income',
+            'finance_category_id' => $category->id,
+            'amount' => 500,
+            'transaction_date' => now()->toDateString(),
+            'status' => 'Paid',
+            ...$overrides,
+        ];
+    }
+
+    private function transactionWithReceipt(string $name = 'receipt.pdf', string $mime = 'application/pdf'): Transaction
+    {
+        $this->actingAs($this->admin())->post(route('transactions.store'), $this->payload([
+            'receipt' => UploadedFile::fake()->create($name, 100, $mime),
+        ]))->assertRedirect()->assertSessionHasNoErrors();
+
+        return Transaction::latest('id')->firstOrFail();
+    }
+
+    private function transaction(array $attributes = []): Transaction
+    {
+        return Transaction::create([
+            'amount' => 100,
+            'transaction_date' => now(),
+            'transaction_type' => 'income',
+            'category' => 'donations',
+            'status' => 'Paid',
+            'fiscal_year' => now()->year,
+            ...$attributes,
+        ]);
+    }
+
+    #[Test]
+    public function an_uploaded_receipt_goes_to_the_private_disk(): void
+    {
+        $transaction = $this->transactionWithReceipt();
+
+        $this->assertStringStartsWith('receipts/', $transaction->receipt_filename);
+        Storage::disk('local')->assertExists($transaction->receipt_filename);
+        Storage::disk('public')->assertMissing($transaction->receipt_filename);
+        $this->assertNull($transaction->getAttributes()['receipt_url']);
+        $this->assertSame(route('transactions.receipt-file.show', $transaction, false), $transaction->receipt_url);
+    }
+
+    #[Test]
+    public function replacing_a_receipt_removes_the_previous_file(): void
+    {
+        $transaction = $this->transactionWithReceipt('first.pdf');
+        $first = $transaction->receipt_filename;
+
+        $this->actingAs($this->admin())->put(route('transactions.update', $transaction), $this->payload([
+            'receipt' => UploadedFile::fake()->create('second.pdf', 100, 'application/pdf'),
+        ]))->assertRedirect()->assertSessionHasNoErrors();
+
+        Storage::disk('local')->assertMissing($first);
+        Storage::disk('local')->assertExists($transaction->fresh()->receipt_filename);
+    }
+
+    #[Test]
+    public function a_pdf_or_image_receipt_opens_inline_for_a_transactions_viewer(): void
+    {
+        $transaction = $this->transactionWithReceipt();
+
+        $response = $this->actingAs($this->admin())->get(route('transactions.receipt-file.show', $transaction));
+
+        $response->assertOk();
+        $this->assertStringStartsWith('inline', $response->headers->get('Content-Disposition'));
+        $response->assertHeader('X-Content-Type-Options', 'nosniff');
+    }
+
+    #[Test]
+    public function any_other_file_type_is_downloaded_never_shown(): void
+    {
+        $transaction = $this->transactionWithReceipt('page.html', 'text/html');
+
+        $response = $this->actingAs($this->admin())->get(route('transactions.receipt-file.show', $transaction));
+
+        $response->assertOk();
+        $this->assertStringStartsWith('attachment', $response->headers->get('Content-Disposition'));
+    }
+
+    #[Test]
+    public function the_receipt_needs_a_login_and_transactions_rights(): void
+    {
+        $transaction = $this->transactionWithReceipt();
+
+        // Back to a guest.
+        auth()->forgetGuards();
+        $this->get(route('transactions.receipt-file.show', $transaction))->assertRedirect(route('login'));
+
+        $coach = User::factory()->create([
+            'privileges' => ['user'],
+            'role_id' => Role::create(['key' => 'coach', 'name' => ['en' => 'Coach'], 'permissions' => ['players' => Role::ACTIONS]])->id,
+        ]);
+        $this->actingAs($coach)->get(route('transactions.receipt-file.show', $transaction))->assertForbidden();
+
+        $this->assertSame(['transactions', 'view'], PermissionMap::resolve('transactions.receipt-file.show'));
+    }
+
+    #[Test]
+    public function the_public_media_route_no_longer_serves_receipts(): void
+    {
+        $transaction = $this->transactionWithReceipt();
+
+        $this->get('/media/'.$transaction->receipt_filename)->assertNotFound();
+    }
+
+    #[Test]
+    public function a_transaction_without_a_receipt_has_nothing_to_show(): void
+    {
+        $this->actingAs($this->admin())
+            ->get(route('transactions.receipt-file.show', $this->transaction()))
+            ->assertNotFound();
+    }
+
+    #[Test]
+    public function the_migration_moves_existing_receipts_off_the_public_disk(): void
+    {
+        Storage::disk('public')->put('receipts/old.pdf', 'OLD-RECEIPT');
+        Storage::disk('public')->put('receipts/legacy.jpg', 'LEGACY-RECEIPT');
+        Storage::disk('local')->put('receipts/half.pdf', 'HA'); // an interrupted earlier copy
+        Storage::disk('public')->put('receipts/half.pdf', 'HALF-RECEIPT');
+
+        $current = $this->transaction(['receipt_url' => '/media/receipts/old.pdf', 'receipt_filename' => 'receipts/old.pdf']);
+        // An imported row: absolute URL, and a filename that is not a disk path.
+        $legacy = $this->transaction(['receipt_url' => 'http://localhost:8000/storage/receipts/legacy.jpg', 'receipt_filename' => 'IMG_2044.jpg']);
+        $half = $this->transaction(['receipt_url' => '/media/receipts/half.pdf', 'receipt_filename' => 'receipts/half.pdf']);
+        // Gone from every disk: left exactly as it was.
+        $gone = $this->transaction(['receipt_url' => '/media/receipts/gone.pdf', 'receipt_filename' => 'receipts/gone.pdf']);
+        // A genuinely external link: not ours to move.
+        $external = $this->transaction(['receipt_url' => 'https://drive.example.com/r/123', 'receipt_filename' => null]);
+
+        $migration = require database_path(self::MIGRATION);
+        $migration->up();
+        // Desktop: a re-run after a partial failure must be harmless.
+        $migration->up();
+
+        $this->assertSame('OLD-RECEIPT', Storage::disk('local')->get('receipts/old.pdf'));
+        $this->assertSame('LEGACY-RECEIPT', Storage::disk('local')->get('receipts/legacy.jpg'));
+        $this->assertSame('HALF-RECEIPT', Storage::disk('local')->get('receipts/half.pdf'));
+        foreach (['receipts/old.pdf', 'receipts/legacy.jpg', 'receipts/half.pdf'] as $path) {
+            Storage::disk('public')->assertMissing($path);
+        }
+
+        $rows = DB::table('transactions')->get()->keyBy('id');
+        foreach ([$current, $half] as $transaction) {
+            $this->assertNull($rows[$transaction->id]->receipt_url);
+        }
+        $this->assertSame('receipts/legacy.jpg', $rows[$legacy->id]->receipt_filename);
+        $this->assertNull($rows[$legacy->id]->receipt_url);
+        $this->assertSame('/media/receipts/gone.pdf', $rows[$gone->id]->receipt_url);
+        $this->assertSame('https://drive.example.com/r/123', $rows[$external->id]->receipt_url);
+        $this->assertSame('https://drive.example.com/r/123', $external->fresh()->receipt_url, 'an external link is still offered as is');
+    }
+}
+```
+
+- [ ] **Step 2: Run the test and confirm it fails**
+
+Run: `php artisan config:clear; php artisan test --filter=TransactionReceiptPrivateTest`
+
+Expected: FAIL — `Route [transactions.receipt-file.show] not defined.` and the migration file is missing.
+
+- [ ] **Step 3: Store and serve privately**
+
+In `app/Http/Controllers/TransactionController.php`, add the imports:
+
+```php
+use App\Services\Storage\PrivateFileStorage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+```
+
+Add this constant as the first line inside the class body:
+
+```php
+    /**
+     * Receipt types a browser may display. The upload rule accepts any file, and
+     * an HTML or SVG file shown inline on the app's own origin would run script,
+     * so everything else is only ever downloaded.
+     */
+    private const INLINE_RECEIPT_TYPES = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'gif'];
+```
+
+Replace:
+
+```php
+    public function store(StoreTransactionRequest $request, FileStorageService $files): RedirectResponse
+```
+
+with:
+
+```php
+    public function store(StoreTransactionRequest $request, PrivateFileStorage $receipts): RedirectResponse
+```
+
+Replace (in `store()`):
+
+```php
+        if ($request->hasFile('receipt')) {
+            $stored = $files->storeFile($request->file('receipt'), 'receipts');
+            $validated['receipt_url'] = $stored['url'];
+            $validated['receipt_filename'] = $stored['filename'];
+        }
+
+        $transaction = Transaction::create($validated);
+```
+
+with:
+
+```php
+        if ($request->hasFile('receipt')) {
+            // Receipts are private: only receiptFile() serves them, behind login.
+            $stored = $receipts->store($request->file('receipt'), 'receipts');
+            $validated['receipt_url'] = null;
+            $validated['receipt_filename'] = $stored['path'];
+        }
+
+        $transaction = Transaction::create($validated);
+```
+
+Replace:
+
+```php
+    public function update(StoreTransactionRequest $request, Transaction $transaction, FileStorageService $files): RedirectResponse
+```
+
+with:
+
+```php
+    public function update(StoreTransactionRequest $request, Transaction $transaction, PrivateFileStorage $receipts, FileStorageService $files): RedirectResponse
+```
+
+Replace (in `update()`):
+
+```php
+        if ($request->hasFile('receipt')) {
+            $files->delete($transaction->receipt_filename);
+            $stored = $files->storeFile($request->file('receipt'), 'receipts');
+            $validated['receipt_url'] = $stored['url'];
+            $validated['receipt_filename'] = $stored['filename'];
+        }
+```
+
+with:
+
+```php
+        if ($request->hasFile('receipt')) {
+            // The previous file, wherever it lives: private, or public for a row the
+            // receipts migration could not move.
+            $receipts->delete($transaction->receipt_filename);
+            $files->delete($transaction->receipt_filename);
+
+            $stored = $receipts->store($request->file('receipt'), 'receipts');
+            $validated['receipt_url'] = null;
+            $validated['receipt_filename'] = $stored['path'];
+        }
+```
+
+Add this method directly after `update()`:
+
+```php
+    /** The uploaded receipt file (not the printed PDF receipt, which is transactions.receipt). */
+    public function receiptFile(Transaction $transaction, PrivateFileStorage $receipts): StreamedResponse
+    {
+        $path = $transaction->receipt_filename;
+
+        abort_unless($path && $receipts->exists($path), 404);
+
+        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+
+        return in_array($extension, self::INLINE_RECEIPT_TYPES, true)
+            ? $receipts->inline($path, basename($path))
+            : $receipts->download($path, basename($path));
+    }
+```
+
+(`FileStorageService` stays imported: `update()` still uses it to clean up an unmigrated public file.)
+
+In `app/Models/Transaction.php`, replace:
+
+```php
+    /** Normalise the stored receipt URL to a host-relative /media path (web + desktop). */
+    protected function receiptUrl(): Attribute
+    {
+        return Attribute::make(get: fn ($value) => Media::path($value));
+    }
+```
+
+with:
+
+```php
+    /**
+     * Where the page links the uploaded receipt. A stored file is private and only
+     * reachable through the authenticated route (host-relative, so it works on the
+     * web and in the desktop window). Anything else — a legacy imported link — is
+     * kept as it was.
+     */
+    protected function receiptUrl(): Attribute
+    {
+        return Attribute::make(get: function ($value, array $attributes) {
+            $file = str_replace('\\', '/', (string) ($attributes['receipt_filename'] ?? ''));
+
+            if (str_starts_with($file, 'receipts/') && ! empty($attributes['id'])) {
+                return route('transactions.receipt-file.show', $attributes['id'], false);
+            }
+
+            return Media::path($value);
+        });
+    }
+```
+
+In `routes/web.php`, replace:
+
+```php
+    Route::get('/transactions/{transaction}/receipt', [ReportController::class, 'transactionReceipt'])->name('transactions.receipt');
+```
+
+with:
+
+```php
+    Route::get('/transactions/{transaction}/receipt', [ReportController::class, 'transactionReceipt'])->name('transactions.receipt');
+    // The uploaded receipt file — private: this (auth + transactions/view) is the only way to read it.
+    Route::get('/transactions/{transaction}/receipt-file', [TransactionController::class, 'receiptFile'])->name('transactions.receipt-file.show');
+```
+
+- [ ] **Step 4: Move the existing files**
+
+Create `database/migrations/2026_09_24_100005_move_transaction_receipts_to_private_disk.php`:
+
+```php
+<?php
+
+use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
+
+return new class extends Migration
+{
+    /**
+     * Uploaded transaction receipts used to sit on the public disk, readable by
+     * anyone through /media (and the web server's public/storage symlink). Move
+     * every one of them to the private disk, where only the authenticated
+     * transactions.receipt-file.show route can read them. Same algorithm as the
+     * board-minutes migration (2026_09_24_100004).
+     *
+     * Idempotent, because the desktop build re-runs an unrecorded migration on
+     * the next boot: a file is (re)copied while the private copy is missing or
+     * differs in size, the public copy is deleted only once the private one
+     * matches it, and a row is re-pointed only when its private file exists.
+     * A row whose file is on neither disk, or whose link is external, is left
+     * exactly as it was.
+     */
+    public function up(): void
+    {
+        if (! Schema::hasTable('transactions')) {
+            return;
+        }
+
+        $public = Storage::disk('public');
+        $private = Storage::disk('local');
+
+        $rows = DB::table('transactions')
+            ->where(fn ($query) => $query->whereNotNull('receipt_filename')->orWhereNotNull('receipt_url'))
+            ->orderBy('id')
+            ->get(['id', 'receipt_url', 'receipt_filename']);
+
+        foreach ($rows as $row) {
+            $path = $this->relativePath($row);
+
+            if ($path === null) {
+                continue;
+            }
+
+            if ($public->exists($path) && (! $private->exists($path) || $private->size($path) !== $public->size($path))) {
+                $this->copy($public, $private, $path);
+            }
+
+            if (! $private->exists($path)) {
+                continue;
+            }
+
+            if ($public->exists($path) && $public->size($path) === $private->size($path)) {
+                $public->delete($path);
+            }
+
+            DB::table('transactions')->where('id', $row->id)->update([
+                'receipt_filename' => $path,
+                'receipt_url' => null,
+            ]);
+        }
+    }
+
+    /** Put the files back on the public disk with their /media URL. */
+    public function down(): void
+    {
+        if (! Schema::hasTable('transactions')) {
+            return;
+        }
+
+        $public = Storage::disk('public');
+        $private = Storage::disk('local');
+
+        foreach (DB::table('transactions')->whereNotNull('receipt_filename')->get(['id', 'receipt_filename']) as $row) {
+            $path = $row->receipt_filename;
+
+            if (! str_starts_with($path, 'receipts/') || ! $private->exists($path)) {
+                continue;
+            }
+
+            $this->copy($private, $public, $path);
+            $private->delete($path);
+
+            DB::table('transactions')->where('id', $row->id)->update(['receipt_url' => '/media/'.$path]);
+        }
+    }
+
+    /**
+     * The file's path inside a disk: the filename when it is a receipts/ path,
+     * else the path inside an old /media or /storage URL; null if neither.
+     */
+    private function relativePath(object $row): ?string
+    {
+        $path = ltrim(str_replace('\\', '/', (string) $row->receipt_filename), '/');
+
+        if (! str_starts_with($path, 'receipts/')) {
+            $path = null;
+
+            if ($row->receipt_url
+                && preg_match('#(?:^|/)(?:media|storage)/(receipts/.+)$#i', (string) $row->receipt_url, $match)) {
+                $path = $match[1];
+            }
+        }
+
+        if ($path === null || in_array('..', explode('/', $path), true)) {
+            return null;
+        }
+
+        return $path;
+    }
+
+    private function copy(Filesystem $from, Filesystem $to, string $path): void
+    {
+        $stream = $from->readStream($path);
+
+        try {
+            $to->writeStream($path, $stream);
+        } finally {
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        }
+    }
+};
+```
+
+- [ ] **Step 5: Run the tests and confirm they pass**
+
+Run: `php artisan test --filter="TransactionReceiptPrivateTest|TransactionFinanceCategoryTest|TransactionTitleFlowTest|TransactionTitleTest|CashRegisterManagementTest|ReportPdfTest|DeleteTransactionDebtTest"`
+
+Expected: PASS (TransactionReceiptPrivateTest: 8 tests; the others unchanged).
+
+Manual: edit a transaction, attach a PDF receipt, save; the "View ↗" link in the edit form opens it (web and desktop window); the same link in a private window → the login page; `/media/receipts/<file>` → 404. The printed "Receipt" PDF on the transaction page is unchanged.
+
+- [ ] **Step 6: Commit**
+
+```bash
+php vendor/bin/pint app/Http/Controllers/TransactionController.php app/Models/Transaction.php routes/web.php database/migrations/2026_09_24_100005_move_transaction_receipts_to_private_disk.php tests/Feature/TransactionReceiptPrivateTest.php
+git add app/Http/Controllers/TransactionController.php app/Models/Transaction.php routes/web.php database/migrations/2026_09_24_100005_move_transaction_receipts_to_private_disk.php tests/Feature/TransactionReceiptPrivateTest.php
+git commit -m "fix(transactions): keep uploaded receipts private behind login and move existing files"
+git show --stat HEAD
+```
+
+---
+
+### Task 14: Backups carry the private files
+
+**Why:** Spec — `BackupService` includes only `storage/app/public`; it must include the player documents, both directions, with a test. The minutes (Task 12) and the transaction receipts (Task 13) now live on the private disk too, so all three private folders are carried.
 
 **Read first:** `app/Services/Backup/BackupService.php` in full, and the "database-backup-restore" section of `.superpowers/sdd/progress.md`. The restore is subtle on Windows: the database swap is a single `rename()` after the WAL is checkpointed; the media swap is `rename()` only — **never** a copy fallback (it would merge trees) — with the originals put back on failure; everything that can be checked is checked in staging **before** the pre-restore snapshot, so a bad archive changes nothing. The private folders must follow exactly the same pattern.
 
 **Design (minimal):**
 - `BackupService` takes an optional fourth constructor argument `array $privateRoots` = archive name ⇒ live folder. Default `[]`, so every existing test and caller is unchanged. Names must match `^[a-z0-9][a-z0-9-]*$`.
 - **Backup:** after the media, each root's files go into the zip under `private/<name>/<relative path>`; a failed `addFile()` fails the backup (as for media). The manifest gains `private_roots: { "<name>": <file count> }`.
-- **Restore, in staging (before the snapshot):** for each configured root, `private/<name>` must exist in the archive when the manifest counts files for it (otherwise "That backup is incomplete…", nothing changed); when it counts none — or the manifest predates this feature and has no `private_roots` at all — an empty folder is staged, so the restore leaves the root **empty**, "exactly as it was" (before this release nothing was private: the minutes were in the media tree, which the restore puts back, and the next boot's migrate moves them again).
+- **Restore, in staging (before the snapshot):** for each configured root, `private/<name>` must exist in the archive when the manifest counts files for it (otherwise "That backup is incomplete…", nothing changed); when it counts none — or the manifest predates this feature and has no `private_roots` at all — an empty folder is staged, so the restore leaves the root **empty**, "exactly as it was" (before this release nothing was private: the minutes and receipts were in the media tree, which the restore puts back, and the next boot's migrate moves them again).
 - **Restore, past the point of no return (after the media swap):** for each root: create the parent if needed, `rename(live → live.old-<ts>)`, `rename(staged → live)`; on failure put the original back (or report where it is stranded) and throw. Retired folders are deleted after success; any that cannot be deleted are returned (joined with ` ; `) exactly like the leftover media folder today.
-- `AppServiceProvider` passes `['player-documents' => storage_path('app/private/player-documents'), 'minutes' => storage_path('app/private/minutes')]`. Not the whole private disk: only these two folders are app data.
+- `AppServiceProvider` passes `['player-documents' => storage_path('app/private/player-documents'), 'minutes' => storage_path('app/private/minutes'), 'receipts' => storage_path('app/private/receipts')]`. Not the whole private disk: only these three folders are app data.
 
 **Files:**
 - Modify: `app/Services/Backup/BackupService.php`
@@ -5607,6 +6160,8 @@ class BackupPrivateRootsTest extends TestCase
 
     private string $minutesPath;
 
+    private string $receiptsPath;
+
     private string $destination;
 
     private BackupSettings $settings;
@@ -5624,12 +6179,14 @@ class BackupPrivateRootsTest extends TestCase
         $this->mediaPath = $this->root.DIRECTORY_SEPARATOR.'public';
         $this->documentsPath = $this->root.DIRECTORY_SEPARATOR.'private'.DIRECTORY_SEPARATOR.'player-documents';
         $this->minutesPath = $this->root.DIRECTORY_SEPARATOR.'private'.DIRECTORY_SEPARATOR.'minutes';
+        $this->receiptsPath = $this->root.DIRECTORY_SEPARATOR.'private'.DIRECTORY_SEPARATOR.'receipts';
         $this->destination = $this->root.DIRECTORY_SEPARATOR.'dest';
 
         mkdir(dirname($this->dbPath), 0777, true);
         mkdir($this->mediaPath, 0777, true);
         mkdir($this->documentsPath.DIRECTORY_SEPARATOR.'7', 0777, true);
         mkdir($this->minutesPath, 0777, true);
+        mkdir($this->receiptsPath, 0777, true);
         mkdir($this->destination, 0777, true);
 
         // WAL, as the packaged app always is (see BackupRestoreTest).
@@ -5643,6 +6200,7 @@ class BackupPrivateRootsTest extends TestCase
         file_put_contents($this->mediaPath.DIRECTORY_SEPARATOR.'photo.jpg', 'PHOTO');
         file_put_contents($this->documentsPath.DIRECTORY_SEPARATOR.'7'.DIRECTORY_SEPARATOR.'scan.pdf', 'SCAN');
         file_put_contents($this->minutesPath.DIRECTORY_SEPARATOR.'agm.pdf', 'MINUTES');
+        file_put_contents($this->receiptsPath.DIRECTORY_SEPARATOR.'invoice.jpg', 'RECEIPT');
 
         $this->settings = new BackupSettings;
         $this->settings->put(['destination' => $this->destination]);
@@ -5664,6 +6222,7 @@ class BackupPrivateRootsTest extends TestCase
         return new BackupService($this->settings, $this->dbPath, $this->mediaPath, [
             'player-documents' => $this->documentsPath,
             'minutes' => $this->minutesPath,
+            'receipts' => $this->receiptsPath,
         ]);
     }
 
@@ -5758,11 +6317,12 @@ class BackupPrivateRootsTest extends TestCase
         $zip->open($backup);
         $this->assertSame('SCAN', $zip->getFromName('private/player-documents/7/scan.pdf'));
         $this->assertSame('MINUTES', $zip->getFromName('private/minutes/agm.pdf'));
+        $this->assertSame('RECEIPT', $zip->getFromName('private/receipts/invoice.jpg'));
         $this->assertSame('PHOTO', $zip->getFromName('media/photo.jpg'));
         $zip->close();
 
         $manifest = $this->manifestOf($backup);
-        $this->assertSame(['player-documents' => 1, 'minutes' => 1], $manifest['private_roots']);
+        $this->assertSame(['player-documents' => 1, 'minutes' => 1, 'receipts' => 1], $manifest['private_roots']);
         $this->assertSame(1, $manifest['media_files'], 'private files are not counted as media');
     }
 
@@ -5774,11 +6334,13 @@ class BackupPrivateRootsTest extends TestCase
         file_put_contents($this->documentsPath.DIRECTORY_SEPARATOR.'7'.DIRECTORY_SEPARATOR.'scan.pdf', 'CHANGED');
         file_put_contents($this->documentsPath.DIRECTORY_SEPARATOR.'7'.DIRECTORY_SEPARATOR.'later.pdf', 'ADDED-AFTER');
         unlink($this->minutesPath.DIRECTORY_SEPARATOR.'agm.pdf');
+        file_put_contents($this->receiptsPath.DIRECTORY_SEPARATOR.'invoice.jpg', 'EDITED');
 
         $this->assertNull($this->service()->restore($backup));
 
         $this->assertSame(['7/scan.pdf' => 'SCAN'], $this->tree($this->documentsPath));
         $this->assertSame(['agm.pdf' => 'MINUTES'], $this->tree($this->minutesPath));
+        $this->assertSame(['invoice.jpg' => 'RECEIPT'], $this->tree($this->receiptsPath));
         $this->assertSame(['photo.jpg' => 'PHOTO'], $this->tree($this->mediaPath));
         $this->assertSame([], glob($this->root.DIRECTORY_SEPARATOR.'private'.DIRECTORY_SEPARATOR.'*.old-*') ?: [], 'retired folders are cleaned up');
     }
@@ -5793,6 +6355,7 @@ class BackupPrivateRootsTest extends TestCase
 
         $this->assertSame(['7/scan.pdf' => 'SCAN'], $this->tree($this->documentsPath));
         $this->assertSame(['agm.pdf' => 'MINUTES'], $this->tree($this->minutesPath));
+        $this->assertSame(['invoice.jpg' => 'RECEIPT'], $this->tree($this->receiptsPath));
     }
 
     #[Test]
@@ -5807,6 +6370,7 @@ class BackupPrivateRootsTest extends TestCase
         $this->assertDirectoryExists($this->documentsPath);
         $this->assertSame([], $this->tree($this->documentsPath));
         $this->assertSame([], $this->tree($this->minutesPath));
+        $this->assertSame([], $this->tree($this->receiptsPath));
         $this->assertSame(['Ali'], $this->players());
     }
 
@@ -5829,6 +6393,7 @@ class BackupPrivateRootsTest extends TestCase
         // Caught in staging, before the snapshot: nothing changed.
         $this->assertSame(['7/scan.pdf' => 'SCAN'], $this->tree($this->documentsPath));
         $this->assertSame(['agm.pdf' => 'MINUTES'], $this->tree($this->minutesPath));
+        $this->assertSame(['invoice.jpg' => 'RECEIPT'], $this->tree($this->receiptsPath));
         $this->assertSame([], glob($this->destination.DIRECTORY_SEPARATOR.BackupService::SNAPSHOT_DIR.DIRECTORY_SEPARATOR.'*.zip') ?: []);
     }
 
@@ -5880,7 +6445,7 @@ with:
 ```php
     /**
      * @param  array<string, string>  $privateRoots  archive name => live folder. Files that must
-     *                                               never be public (player documents, board minutes) live outside the
+     *                                               never be public (player documents, board minutes, receipts) live outside the
      *                                               media tree; each root is carried, checked and swapped exactly like
      *                                               the media tree.
      */
@@ -6218,6 +6783,7 @@ with:
                 // on the private disk — and must still come back with a restore.
                 'player-documents' => storage_path('app/private/player-documents'),
                 'minutes' => storage_path('app/private/minutes'),
+                'receipts' => storage_path('app/private/receipts'),
             ],
         ));
 ```
@@ -6233,19 +6799,19 @@ Expected: PASS (BackupPrivateRootsTest: 7 tests; every existing backup test unch
 ```bash
 php vendor/bin/pint app/Services/Backup/BackupService.php app/Providers/AppServiceProvider.php tests/Unit/Services/BackupPrivateRootsTest.php
 git add app/Services/Backup/BackupService.php app/Providers/AppServiceProvider.php tests/Unit/Services/BackupPrivateRootsTest.php
-git commit -m "feat(backup): back up and restore player documents and minutes"
+git commit -m "feat(backup): back up and restore player documents, minutes and receipts"
 git show --stat HEAD
 ```
 
 ---
 
-### Task 14: Full verification, deploy notes and manual check
+### Task 15: Full verification, deploy notes and manual check
 
 - [ ] **Step 1: Everything green**
 
 | Command | Expected |
 |---|---|
-| `composer test` | all pass: **822** (722 before this plan + 100 new: 7 + 10 + 12 + 10 + 14 + 19 + 10 + 3 + 8 + 7); record the exact count |
+| `composer test` | all pass: **830** (722 before this plan + 108 new: 7 + 10 + 12 + 10 + 14 + 19 + 10 + 3 + 8 + 8 + 7); record the exact count |
 | `node scripts/i18n-check.mjs` | `✓ …` |
 | `npm run build` | success |
 | `php vendor/bin/pint --test app tests database routes config` | only files this branch never touched |
@@ -6253,7 +6819,7 @@ git show --stat HEAD
 | `head -c 3 resources/js/Pages/Players/Show.vue \| od -An -tx1` and the same for `Players/Index.vue` | `ef bb bf` for both |
 | `head -c 3 resources/js/Components/PlayerDocumentsCard.vue \| od -An -tx1` and `Settings/DocumentTypes.vue` | `3c 73 63` (`<sc`, no BOM) |
 | `grep -nE "[^a-zA-Z_]te\(" resources/js/Components/PlayerDocumentsCard.vue resources/js/Pages/Settings/DocumentTypes.vue` | nothing |
-| `ls database/migrations \| grep 2026_09_24` | exactly `100001`–`100004` |
+| `ls database/migrations \| grep 2026_09_24` | exactly `100001`–`100005` |
 
 - [ ] **Step 2: Migrate the dev database and check the data**
 
@@ -6263,12 +6829,13 @@ php -r '$p=new PDO("sqlite:database/database.sqlite");
 echo "document types=",$p->query("select count(*) from document_types")->fetchColumn(),"\n";
 echo "parental max_age=",$p->query("select max_age from document_types where code=\"parental_authorization\"")->fetchColumn(),"\n";
 foreach($p->query("select key, permissions from roles") as $r){ $perm=json_decode($r["permissions"],true); echo $r["key"],": documents=",json_encode($perm["documents"]??null),"\n"; }
-echo "minutes still public=",$p->query("select count(*) from board_meetings where attachment_url like \"%/minutes/%\"")->fetchColumn(),"\n";'
+echo "minutes still public=",$p->query("select count(*) from board_meetings where attachment_url like \"%/minutes/%\"")->fetchColumn(),"\n";
+echo "receipts still public=",$p->query("select count(*) from transactions where receipt_url like \"%/receipts/%\"")->fetchColumn(),"\n";'
 ```
 
-Expected: 7 document types; parental `max_age` 17; `superadmin` and `administrator` have `["view","add","edit","delete"]`, other roles `null`; 0 minutes still public.
+Expected: 7 document types; parental `max_age` 17; `superadmin` and `administrator` have `["view","add","edit","delete"]`, other roles `null`; 0 minutes and 0 receipts still public.
 
-Run `php artisan migrate:rollback --step=4` then `php artisan migrate` once more: both succeed (down()s are safe, up()s re-run cleanly).
+Run `php artisan migrate:rollback --step=5` then `php artisan migrate` once more: both succeed (down()s are safe, up()s re-run cleanly).
 
 - [ ] **Step 3: Manual check in the browser, FR then AR**
 
@@ -6284,9 +6851,10 @@ Run `php artisan migrate:rollback --step=4` then `php artisan migrate` once more
 10. **Players list:** the Documents column; "Documents manquants", "Expirant bientôt" and "Un document précis manquant → Certificat médical" each narrow the list and the charts; "Sans wilaya" lists players without a wilaya; the filter survives a page refresh.
 11. **Permissions:** log in as a user whose role has players but not documents → no Documents card; the list column and filters still work; opening a copied file URL → 403.
 12. **Board minutes:** upload minutes to a held meeting; the link opens them; the same link in a private window → login page; `/media/minutes/<file>` → 404.
-13. **Phone browser** (web): the file button on the player page offers the camera.
-14. Switch to Arabic and repeat 3, 5 and 10: every label in Arabic, layout right-to-left, dates readable.
-15. **Desktop (after the build):** make a backup, add a document file, restore the backup → the file added afterwards is gone and the earlier one is back; minutes open in the desktop window.
+13. **Transaction receipts:** attach a receipt photo when editing a transaction; "View ↗" opens it; the same link in a private window → login page; `/media/receipts/<file>` → 404; a user without transactions rights gets 403; the printed Receipt PDF is unchanged.
+14. **Phone browser** (web): the file button on the player page offers the camera.
+15. Switch to Arabic and repeat 3, 5 and 10: every label in Arabic, layout right-to-left, dates readable.
+16. **Desktop (after the build):** make a backup, add a document file, restore the backup → the file added afterwards is gone and the earlier one is back; minutes and receipts open in the desktop window.
 
 - [ ] **Step 4: Desktop build (PowerShell)**
 
@@ -6303,13 +6871,13 @@ Run `php artisan migrate:rollback --step=4` then `php artisan migrate` once more
 
 - [ ] **Step 5: Deploy notes for the PR description**
 
-- Run `php artisan migrate` (four migrations `2026_09_24_100001`–`100004`): `documents` permission for the admin roles; `document_types` + 7 defaults; `player_documents` + `player_document_files`; board minutes moved from the public to the private disk.
-- **Web deploy:** the minutes migration moves files between `storage/app/public/minutes` and `storage/app/private/minutes` — make sure the PHP user can write `storage/app/private`. After it, `/storage/minutes/…` and `/media/minutes/…` return 404 by design.
+- Run `php artisan migrate` (five migrations `2026_09_24_100001`–`100005`): `documents` permission for the admin roles; `document_types` + 7 defaults; `player_documents` + `player_document_files`; board minutes, then transaction receipts, moved from the public to the private disk.
+- **Web deploy:** the minutes and receipts migrations move files from `storage/app/public/{minutes,receipts}` to `storage/app/private/{minutes,receipts}` — make sure the PHP user can write `storage/app/private`. After them, `/storage/minutes/…`, `/storage/receipts/…` and the `/media/…` equivalents return 404 by design. Imported receipt links that point outside the app are left as they were.
 - **Other roles:** only Super Admin and Administrator get documents. Give it to other roles (e.g. a secretary) in Roles.
 - **Refresh `storage/app/seed/database.sqlite`** before building the desktop app (done in Step 4), or new installs miss the new tables.
 - **Version 1.8.0.** Upgrades migrate on first launch (the migration signature changed). A fresh install starts with an empty private disk.
-- **Backups made with 1.8.0** carry `private/player-documents` and `private/minutes`. Restoring an older backup empties both folders (nothing was private before 1.8.0) and the next launch moves that backup's minutes again.
-- **Found in passing, not changed:** transaction receipts (`receipts/` on the public disk, linked from the transaction form) are also financial documents served by the public `/media` route. They were outside the owner's decision; flag them for a follow-up.
+- **Backups made with 1.8.0** carry `private/player-documents`, `private/minutes` and `private/receipts`. Restoring an older backup empties those folders (nothing was private before 1.8.0) and the next launch moves that backup's minutes and receipts again.
+- **Receipt uploads still accept any file type** (unchanged validation). Only PDFs and images open in the browser; anything else is downloaded, so an uploaded HTML/SVG file can never run in the app.
 
 ---
 
@@ -6325,6 +6893,7 @@ Run `php artisan migrate:rollback --step=4` then `php artisan migrate` once more
 | Owner decision: several files per document; `pdf,jpg,jpeg,png,webp`; camera via `accept`, no forced `capture` | 7, 8 |
 | Owner decision: minutes/attachments private — authenticated route, `board/view`, private disk, existing files migrated; logos/branding/player pictures stay public | 12 |
 | Owner decision: "Sans wilaya" filter option (`wilaya_id=none`) | 9, 10 |
+| Owner decision (2026-09-24): transaction receipts private — authenticated route, `transactions/view`, private disk, existing files migrated, linked from the transaction form; backed up | 13, 14 |
 | Data model `document_types` (code, localized names, required, validity, active, order) | 2 |
 | Data model `player_documents` (unique per player+type, state, dates, reason, notes, recorded by) | 3 |
 | Data model `player_document_files` (path, original name, mime, size, uploaded by, created_at) | 3 |
@@ -6334,9 +6903,9 @@ Run `php artisan migrate:rollback --step=4` then `php artisan migrate` once more
 | Players list: missing count column, "has missing", "missing type X", computed in SQL (subquery), agreeing with the checklist | 6, 9, 10 |
 | Uploads: allowed types, 10 MB, random names, original name kept, images unmodified | 3, 7 |
 | Storage and access: private disk `player-documents/{player_id}/`, never `/media`, `files.show` / `download` routes behind auth | 3, 7 |
-| Backup and restore include the private documents (both directions, with a test) — plus the moved minutes | 13 |
+| Backup and restore include the private documents (both directions, with a test) — plus the moved minutes and receipts | 14 |
 | Permanent deletion removes the document files | 11 |
 | Settings → Document types: add/edit names, required, validity, age limit, order; activate/deactivate; delete only while unused; rename never breaks records | 4, 5 |
 | Default types seeded in a migration (desktop) | 2 |
 | Player page Documents card: mark received (date, expiry for date types), upload, view, download, remove (confirm), renew, exempt, undo; "N missing" header | 7, 8 |
-| Cross-cutting: stable codes + translated labels, `t()` only, i18n via script, ConfirmModal, PHPUnit `#[Test]` + RefreshDatabase, reference data in migrations, no enum changes, seed refresh | all; 14 |
+| Cross-cutting: stable codes + translated labels, `t()` only, i18n via script, ConfirmModal, PHPUnit `#[Test]` + RefreshDatabase, reference data in migrations, no enum changes, seed refresh | all; 15 |

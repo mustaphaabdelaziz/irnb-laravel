@@ -5,12 +5,15 @@ import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
+import JobQuickCreateModal from '@/Components/JobQuickCreateModal.vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { formatFileNumber } from '@/lib/fileNumber';
+import { useCan } from '@/Composables/useCan';
 
 const { t } = useI18n();
+const { can } = useCan();
 const props = defineProps({
     player: { type: Object, default: null },
     categories: { type: Array, default: () => [] },
@@ -137,6 +140,20 @@ watch(() => form.wilaya_id, () => { form.city = ''; });
 
 // --- Job gated on worker ---
 watch(() => form.is_student, (student) => { if (student) form.member_job_id = ''; });
+
+// Jobs the form offers: the server list plus anything created in this session.
+// A validation-error round trip on submit() re-renders this same component
+// instance (Inertia defaults preserveState to true for non-GET visits), so
+// this ref — and the session-created job pushed into it — survives that trip
+// without being reset back to props.jobs.
+const jobList = ref([...props.jobs]);
+const showJobModal = ref(false);
+const jobNotice = ref('');
+function onJobCreated(job, notice) {
+    if (!jobList.value.some((item) => item.id === job.id)) jobList.value.push(job);
+    form.member_job_id = job.id;
+    jobNotice.value = notice || '';
+}
 
 // --- Image preview ---
 const previewUrl = ref(null);
@@ -359,11 +376,16 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                     </select>
                 </div>
                 <div v-if="!form.is_student">
-                    <InputLabel :value="t('job')" />
+                    <div class="flex items-center justify-between">
+                        <InputLabel :value="t('job')" />
+                        <button v-if="can('categories', 'add')" type="button" @click="showJobModal = true"
+                            class="text-xs font-semibold text-primary-600 hover:text-primary-700">+ {{ t('new_job') }}</button>
+                    </div>
                     <select v-model="form.member_job_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                         <option value="">-</option>
-                        <option v-for="job in jobs" :key="job.id" :value="job.id">{{ job.name }}</option>
+                        <option v-for="job in jobList" :key="job.id" :value="job.id">{{ job.localized_name || job.name }}</option>
                     </select>
+                    <p v-if="jobNotice" class="mt-1 text-xs text-amber-600 dark:text-amber-400">{{ jobNotice }}</p>
                 </div>
                 <div v-if="isEdit" class="flex items-center gap-2 pt-6">
                     <input type="checkbox" v-model="form.archived" id="archived" class="rounded border-gray-300 text-primary-600 shadow-sm focus:ring-primary-500" />
@@ -412,5 +434,7 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
             <Link :href="cancelHref"><SecondaryButton type="button">{{ t('cancel') }}</SecondaryButton></Link>
             <PrimaryButton :disabled="form.processing">{{ isEdit ? t('save_changes') : t('save') }}</PrimaryButton>
         </div>
+
+        <JobQuickCreateModal :show="showJobModal" @close="showJobModal = false" @created="onJobCreated" />
     </form>
 </template>

@@ -11,8 +11,9 @@ use RuntimeException;
 use ZipArchive;
 
 /**
- * Creates and restores full backups: the SQLite database plus the uploaded media
- * tree, in a single zip.
+ * Creates and restores full backups: the SQLite database, the uploaded media
+ * tree and the configured private folders (player documents, minutes, receipts),
+ * in a single zip.
  *
  * Pure filesystem + zip. No HTTP, no Inertia, and no facades other than through
  * BackupSettings — so it is fully testable against temp directories.
@@ -35,11 +36,24 @@ class BackupService
 
     private const HANDLE_RELEASE_POLL_MS = 100;
 
+    /**
+     * @param  array<string, string>  $privateRoots  archive name => live folder. Files that must
+     *                                               never be public (player documents, board minutes, receipts) live outside the
+     *                                               media tree; each root is carried, checked and swapped exactly like
+     *                                               the media tree.
+     */
     public function __construct(
         private BackupSettings $settings,
         private string $databasePath,
         private string $mediaPath,
-    ) {}
+        private array $privateRoots = [],
+    ) {
+        foreach (array_keys($privateRoots) as $name) {
+            if (! is_string($name) || ! preg_match('/^[a-z0-9][a-z0-9-]*$/', $name)) {
+                throw new \InvalidArgumentException("Not a usable private backup root name: {$name}");
+            }
+        }
+    }
 
     /** Writes a backup to the destination, prunes old ones, returns the new path. */
     public function create(): string
@@ -163,10 +177,11 @@ class BackupService
      *
      * Never queue this: the queue tables live inside the database being replaced.
      *
-     * @return string|null the superseded media folder, when the restore SUCCEEDED but
-     *                     that folder could not be deleted afterwards and has to be
-     *                     removed by hand. null on a clean restore. A failed restore
-     *                     throws — success is never signalled with an exception.
+     * @return string|null the superseded media or private folder(s), when the restore
+     *                     SUCCEEDED but they could not be deleted afterwards and have to
+     *                     be removed by hand (several are joined with ' ; '). null on a
+     *                     clean restore. A failed restore throws — success is never
+     *                     signalled with an exception.
      */
     public function restore(string $zipPath): ?string
     {
@@ -284,12 +299,25 @@ class BackupService
                 throw new RuntimeException("Could not prepare the restored media folder: {$stagedMedia}");
             }
 
-            // 3. Undo point. Still non-destructive.
+            // The private roots get the same two checks as the media tree, here in
+            // staging and before the snapshot, so a truncated archive is still refused
+            // with nothing changed.
+            $stagedPrivate = $this->stagePrivateRoots($staging, is_array($manifest) ? $manifest : []);
+
+            // 3. Undo point. Still non-destructive. It carries the private roots too
+            // (writeArchive() includes them), so it undoes every folder swapped below.
             $snapshot = $this->snapshot();
 
             // 4. Past here, the snapshot is the only way back.
             $strandedMedia = null;
+            $strandedPrivate = [];
             $retiredMedia = null;
+            $retiredPrivate = [];
+
+            // Every folder already swapped: live => [its staged source, the retired
+            // original or null]. A later swap that fails puts ALL of these back, so the
+            // file trees are never left half the backup's and half today's.
+            $swappedFolders = [];
             $incoming = $this->databasePath.'.new';
 
             // The point of no return, tracked explicitly, because the error message that
@@ -416,8 +444,57 @@ class BackupService
                     // to delete it is not a failed restore, and must not be reported as
                     // one: the data is all where it should be.
                     $retiredMedia = $retired;
+                    $swappedFolders[$this->mediaPath] = [$stagedMedia, is_dir($retired) ? $retired : null];
+                }
+
+                // The private roots, one by one, exactly like the media tree above:
+                // rename() only, the originals put back on failure, never a copy that
+                // could merge the backup's files into today's.
+                foreach ($stagedPrivate as $name => $stagedDir) {
+                    $live = $this->privateRoots[$name];
+                    $retired = $live.'.old-'.$this->timestamp();
+                    $parent = dirname($live);
+
+                    if (! is_dir($parent) && ! @mkdir($parent, 0777, true) && ! is_dir($parent)) {
+                        throw new RuntimeException("Could not prepare the folder that holds {$name}: {$parent}");
+                    }
+
+                    if (is_dir($live) && ! @rename($live, $retired)) {
+                        throw new RuntimeException("Could not move the current {$name} folder aside.");
+                    }
+
+                    if (! @rename($stagedDir, $live)) {
+                        if (is_dir($retired) && ! @rename($retired, $live)) {
+                            $strandedPrivate[] = $retired;
+                        }
+
+                        throw new RuntimeException("Could not write the restored {$name} folder into place.");
+                    }
+
+                    $swappedFolders[$live] = [$stagedDir, is_dir($retired) ? $retired : null];
+
+                    if (is_dir($retired)) {
+                        $retiredPrivate[] = $retired;
+                    }
                 }
             } catch (\Throwable $e) {
+                // Put back every folder that was already swapped, newest first: the
+                // restored copy goes back into staging (removed in the finally), then
+                // the original returns to its place. A folder whose original cannot be
+                // put back is named in the message — it is the only copy outside the
+                // snapshot. Empty unless a swap failed after an earlier one succeeded.
+                foreach (array_reverse($swappedFolders, true) as $live => [$source, $original]) {
+                    $restoredMovedOut = @rename($live, $source);
+
+                    if ($original !== null && (! $restoredMovedOut || ! @rename($original, $live))) {
+                        if ($live === $this->mediaPath) {
+                            $strandedMedia = $original;
+                        } else {
+                            $strandedPrivate[] = $original;
+                        }
+                    }
+                }
+
                 // Safe on every path that reaches here, and only because the copy()-over-the-
                 // live-file fallback is gone: the swap is now a single rename(), which is
                 // all-or-nothing. Either it succeeded — and there is nothing left at <db>.new
@@ -479,6 +556,11 @@ class BackupService
                     if ($strandedMedia !== null) {
                         $message .= ' Your media files could not be put back automatically — they are in: '.$strandedMedia;
                     }
+
+                    if ($strandedPrivate !== []) {
+                        $message .= ' Some private files could not be put back automatically — they are in: '
+                            .implode(' ; ', $strandedPrivate);
+                    }
                 } else {
                     // Nothing was swapped, and that is a guarantee rather than a hope: step 4a
                     // only writes to <db>.new, step 4b only ever checkpoints (it deletes
@@ -523,13 +605,23 @@ class BackupService
             // depends on — leaving the app running against a database that has just been
             // swapped out underneath it. The leftover comes back as a return value instead,
             // and the caller decides what to tell the user.
-            if ($retiredMedia !== null && ! $this->deleteDirectory($retiredMedia)) {
-                Log::warning('The restore succeeded, but the superseded media folder could not be deleted.', [
-                    'leftover' => $retiredMedia,
+            $leftovers = [];
+
+            foreach (array_filter([$retiredMedia, ...$retiredPrivate]) as $retired) {
+                if (! $this->deleteDirectory($retired)) {
+                    $leftovers[] = $retired;
+                }
+            }
+
+            if ($leftovers !== []) {
+                Log::warning('The restore succeeded, but a superseded folder could not be deleted.', [
+                    'leftover' => $leftovers,
                     'snapshot' => $snapshot,
                 ]);
 
-                return $retiredMedia;
+                // One folder (the usual case) comes back exactly as before; several are
+                // listed together so the user hears about every one of them.
+                return implode(' ; ', $leftovers);
             }
 
             return null;
@@ -886,6 +978,22 @@ class BackupService
                     $mediaFiles++;
                 }
 
+                $privateFiles = [];
+
+                foreach ($this->privateRoots as $name => $root) {
+                    $privateFiles[$name] = 0;
+
+                    foreach ($this->privateFiles($root) as $absolute => $relative) {
+                        // Same rule as the media: a file that cannot be added fails the
+                        // whole backup rather than producing a silently incomplete one.
+                        if (! @$zip->addFile($absolute, 'private/'.$name.'/'.$relative)) {
+                            throw new RuntimeException("Could not add a file to the backup: {$absolute}");
+                        }
+
+                        $privateFiles[$name]++;
+                    }
+                }
+
                 // Like addFile(), addFromString() reports failure by returning false
                 // rather than throwing. A backup with no manifest is rejected by
                 // restore() as "not a backup", so an unchecked failure here would
@@ -899,6 +1007,9 @@ class BackupService
                     'schema_signature' => $this->schemaSignature(),
                     'db_bytes' => filesize($tempDb) ?: 0,
                     'media_files' => $mediaFiles,
+                    // An object even when empty, so "no private files" ({}) is told apart
+                    // from a backup made before private roots existed (no key at all).
+                    'private_roots' => (object) $privateFiles,
                 ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 
                 if (! $manifestAdded) {
@@ -953,12 +1064,29 @@ class BackupService
      */
     protected function mediaFiles(): iterable
     {
-        if (! is_dir($this->mediaPath)) {
+        yield from $this->filesUnder($this->mediaPath);
+    }
+
+    /**
+     * @return iterable<string, string> absolute path => path relative to $root
+     *
+     * Protected for the same reason as mediaFiles(): a test can stand in for a
+     * file that vanishes between being listed and being archived.
+     */
+    protected function privateFiles(string $root): iterable
+    {
+        yield from $this->filesUnder($root);
+    }
+
+    /** @return iterable<string, string> absolute path => path relative to $root */
+    private function filesUnder(string $root): iterable
+    {
+        if (! is_dir($root)) {
             return;
         }
 
         $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($this->mediaPath, \FilesystemIterator::SKIP_DOTS),
+            new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS),
         );
 
         foreach ($iterator as $file) {
@@ -966,7 +1094,7 @@ class BackupService
                 continue;
             }
 
-            $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($this->mediaPath) + 1));
+            $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($root) + 1));
 
             yield $file->getPathname() => $relative;
         }
@@ -1002,6 +1130,44 @@ class BackupService
                 $e,
             );
         }
+    }
+
+    /**
+     * For every configured private root, the staged folder the swap will move into
+     * place — checked the way the media tree is checked, before anything is touched.
+     *
+     * A root the manifest counts files for must be in the archive, or the backup is
+     * incomplete. A root it counts none for — or every root, for a backup made before
+     * private roots existed (no `private_roots` key) — is staged EMPTY, so the restore
+     * leaves it exactly as it was at backup time rather than keeping today's files
+     * beside a database that knows nothing about them.
+     *
+     * @return array<string, string> name => staged folder
+     */
+    private function stagePrivateRoots(string $staging, array $manifest): array
+    {
+        $counts = is_array($manifest['private_roots'] ?? null) ? $manifest['private_roots'] : [];
+        $staged = [];
+
+        foreach (array_keys($this->privateRoots) as $name) {
+            $dir = $staging.DIRECTORY_SEPARATOR.'private'.DIRECTORY_SEPARATOR.$name;
+            $expected = (int) ($counts[$name] ?? 0);
+
+            if ($expected > 0 && ! is_dir($dir)) {
+                throw new RuntimeException(
+                    "That backup is incomplete: it says it holds {$expected} file(s) in {$name}, "
+                    .'but there are none inside the archive. Nothing was changed.'
+                );
+            }
+
+            if (! is_dir($dir) && ! @mkdir($dir, 0777, true) && ! is_dir($dir)) {
+                throw new RuntimeException("Could not prepare the restored {$name} folder: {$dir}");
+            }
+
+            $staged[$name] = $dir;
+        }
+
+        return $staged;
     }
 
     /**

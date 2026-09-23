@@ -12,6 +12,7 @@ use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\CashRegisterController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\EquipmentCatalogController;
 use App\Http\Controllers\EquipmentCategoryController;
 use App\Http\Controllers\EquipmentItemController;
@@ -186,6 +187,7 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         Route::resource('jobs', MemberJobController::class)->except(['show', 'create', 'edit']);
         Route::resource('positions', PositionController::class)->except(['show', 'create', 'edit']);
         Route::resource('player-statuses', PlayerStatusController::class)->except(['show', 'create', 'edit']);
+        Route::resource('document-types', DocumentTypeController::class)->except(['show', 'create', 'edit']);
 
         // Finance management — fiscal years (close/reopen), budgets, chart of accounts, accounts
         Route::get('/finance/settings', [FinanceController::class, 'settings'])->name('finance.settings');

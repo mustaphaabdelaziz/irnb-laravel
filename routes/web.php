@@ -54,6 +54,18 @@ Route::get('/', [PublicController::class, 'home'])->name('home');
 // "serve" route, which points at the private disk and would 404 these files).
 Route::get('/media/{path}', function (string $path) {
     abort_if(str_contains($path, '..'), 404);
+
+    // minutes/ and receipts/ now live only on the private disk (Tasks 12 and
+    // 13), served solely by their authenticated routes. Refuse every spelling
+    // of those folders here — case, doubled slashes, "./" segments, percent
+    // encoding — so a file an old upload left behind in public/minutes/ or
+    // public/receipts/ (unreferenced by any row, hence never moved by their
+    // migration) can never be served through this public route.
+    $normalised = ltrim(str_replace('\\', '/', rawurldecode($path)), '/');
+    $segments = array_values(array_filter(explode('/', $normalised), fn ($segment) => $segment !== '' && $segment !== '.'));
+    $first = strtolower($segments[0] ?? '');
+    abort_if(in_array($first, ['minutes', 'receipts'], true), 404);
+
     abort_unless(Storage::disk('public')->exists($path), 404);
 
     return response()->file(Storage::disk('public')->path($path));
@@ -128,6 +140,8 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
     Route::post('/transactions/import', [TransactionImportController::class, 'store'])->name('transactions.import.store');
     Route::resource('transactions', TransactionController::class);
     Route::get('/transactions/{transaction}/receipt', [ReportController::class, 'transactionReceipt'])->name('transactions.receipt');
+    // The uploaded receipt file — private: this (auth + transactions/view) is the only way to read it.
+    Route::get('/transactions/{transaction}/receipt-file', [TransactionController::class, 'receiptFile'])->name('transactions.receipt-file.show');
 
     // Finance — year-grouped dashboard (view open to approved members)
     Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');

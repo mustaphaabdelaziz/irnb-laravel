@@ -319,6 +319,10 @@ function runBulk() {
                     <button v-if="!archivedView" @click="bulkAction = 'archive'" class="rounded-lg bg-white dark:bg-slate-900 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-200 ring-1 ring-slate-300 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800">{{ t('archive_selected') }}</button>
                     <button v-if="archivedView" @click="bulkAction = 'restore'" class="rounded-lg bg-white dark:bg-slate-900 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-300 dark:ring-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/30">{{ t('restore_selected') }}</button>
                     <button v-if="archivedView" @click="bulkAction = 'force'" class="rounded-lg bg-white dark:bg-slate-900 px-3 py-1.5 text-sm font-medium text-rose-700 dark:text-rose-300 ring-1 ring-rose-300 dark:ring-rose-800 hover:bg-rose-50 dark:hover:bg-rose-900/30">{{ t('delete_permanently_selected') }}</button>
+                    <a :href="route('players.labels', { ids: selected.join(',') })" target="_blank"
+                        class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800">
+                        <Icon name="print" /> {{ t('print_selected_labels') }}
+                    </a>
                 </div>
             </div>
 

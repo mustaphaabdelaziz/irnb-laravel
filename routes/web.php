@@ -25,6 +25,7 @@ use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\MemberJobController;
 use App\Http\Controllers\PlayerController;
 use App\Http\Controllers\PlayerImportController;
+use App\Http\Controllers\PlayerPrintController;
 use App\Http\Controllers\PlayerStatusController;
 use App\Http\Controllers\PlayerSubscriptionController;
 use App\Http\Controllers\PlayerTransactionController;
@@ -84,6 +85,7 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
     Route::post('/players/bulk-restore', [PlayerController::class, 'bulkRestore'])->name('players.bulkRestore');
     Route::post('/players/bulk-force-delete', [PlayerController::class, 'bulkForceDelete'])->name('players.bulkForceDelete');
     Route::post('/players/bulk-update', [PlayerController::class, 'bulkUpdate'])->name('players.bulkUpdate');
+    Route::get('/players/labels', [PlayerPrintController::class, 'labels'])->name('players.labels');
 
     // Players
     Route::resource('players', PlayerController::class);
@@ -120,6 +122,7 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
 
     // PDF documents
     Route::get('/players/{player}/card', [ReportController::class, 'playerCard'])->name('players.card');
+    Route::get('/players/{player}/label', [PlayerPrintController::class, 'label'])->name('players.label');
     Route::get('/reports/financial', [ReportController::class, 'financialSummary'])->name('reports.financial');
 
     // Equipment — catalog (equipment list) import/export declared before the resource so the static paths win

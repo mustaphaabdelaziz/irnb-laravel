@@ -9,6 +9,7 @@ import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import RentalTypeBadge from '@/Components/RentalTypeBadge.vue';
+import Icon from '@/Components/Icon.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
@@ -373,6 +374,9 @@ function formatDate(val) {
                         </div>
                         <a :href="route('players.card', player.id)" target="_blank" class="mt-2 block w-full rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-center text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                             🪪 {{ t('member_card') }}
+                        </a>
+                        <a :href="route('players.label', player.id)" target="_blank" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
+                            <Icon name="print" /> {{ t('print_folder_label') }}
                         </a>
                         <button
                             @click="showDeleteModal = true"

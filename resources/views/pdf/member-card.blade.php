@@ -34,6 +34,7 @@
 
         <table class="info">
             <tr><td class="label">{{ __('Category') }}</td><td>{{ optional($player->category)->name ?: '—' }}</td></tr>
+            <tr><td class="label">{{ __('File number') }}</td><td>{{ \App\Services\Player\FileNumber::format($player->file_number) ?: '—' }}</td></tr>
             <tr><td class="label">{{ __('Position') }}</td><td>{{ optional($player->position)->name ?: '—' }}</td></tr>
             <tr><td class="label">{{ __('Date of Birth') }}</td><td>{{ optional($player->birthdate)->format('Y-m-d') ?: '—' }}</td></tr>
             <tr><td class="label">{{ __('Phone') }}</td><td>{{ $player->phones[0] ?? '—' }}</td></tr>

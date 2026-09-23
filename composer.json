@@ -16,6 +16,7 @@
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
         "mpdf/mpdf": "^8.3",
+        "mpdf/qrcode": "^1.2",
         "nativephp/desktop": "2.2",
         "phpoffice/phpspreadsheet": "*",
         "tightenco/ziggy": "^2.0"

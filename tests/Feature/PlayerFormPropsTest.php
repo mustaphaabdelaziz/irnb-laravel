@@ -28,7 +28,7 @@ class PlayerFormPropsTest extends TestCase
             ->assertInertia(fn (AssertableInertia $p) => $p
                 ->component('Players/Create')
                 ->has('wilayas', 58)
-                ->has('wilayas.0', fn (AssertableInertia $w) => $w->has('id')->has('name')->has('ar_name'))
+                ->has('wilayas.0', fn (AssertableInertia $w) => $w->has('id')->has('name')->has('ar_name')->etc())
                 ->has('communes')
                 ->where('defaultJoinYear', (int) now()->year)
                 ->where('nextSequenceByYear.'.now()->year, 1));

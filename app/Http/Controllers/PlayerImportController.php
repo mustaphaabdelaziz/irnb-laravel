@@ -7,6 +7,8 @@ use App\Models\MemberJob;
 use App\Models\Position;
 use App\Services\Player\RegisterPlayerService;
 use App\Support\Csv;
+use App\Support\NameNormalizer;
+use App\Support\WilayaMatcher;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -41,6 +43,10 @@ class PlayerImportController extends Controller
         ['blood_group', 'فصيلة الدم', 'O+'],
         ['medical_conditions', 'الحالات الصحية', ''],
         ['join_year', 'سنة الانضمام', ''],
+        // Appended last on purpose: older files simply have no cell here.
+        ['wilaya', 'الولاية (الرمز أو الاسم)', '47'],
+        // Appended last: older files have no cell here.
+        ['other_positions', 'مراكز أخرى (مفصولة بفاصلة)', 'WG, LB'],
     ];
 
     public function template(): StreamedResponse
@@ -76,7 +82,19 @@ class PlayerImportController extends Controller
             }
         }
         $positions = Position::all();
-        $jobs = MemberJob::pluck('id', 'name')->mapWithKeys(fn ($id, $name) => [mb_strtolower(trim($name)) => $id]);
+
+        // Match a job by any of its names (base + per-locale), spelling-insensitively.
+        $jobs = [];
+        foreach (MemberJob::query()->get() as $job) {
+            foreach ([$job->name, $job->name_ar, $job->name_fr, $job->name_en] as $value) {
+                $key = NameNormalizer::key($value);
+                if ($key !== '') {
+                    $jobs[$key] = $job->id;
+                }
+            }
+        }
+
+        $wilayas = WilayaMatcher::lookup();
 
         $imported = 0;
         $errors = [];
@@ -104,7 +122,12 @@ class PlayerImportController extends Controller
                     'state' => $data['state'] ?: 'Unknown',
                     'category_id' => $categories[mb_strtolower((string) $data['category'])] ?? null,
                     'position_id' => $this->resolvePosition($positions, $data['position']),
-                    'member_job_id' => $jobs[mb_strtolower((string) $data['job'])] ?? null,
+                    // Older 19-column files (and anyone who still fills the template's
+                    // legacy "state" column) have no "wilaya" cell at all — fall back
+                    // to "state" so those rows still resolve a wilaya_id. When both are
+                    // given, the newer "wilaya" cell wins.
+                    'wilaya_id' => $wilayas[WilayaMatcher::normalise((string) ($data['wilaya'] ?: $data['state']))] ?? null,
+                    'member_job_id' => $jobs[NameNormalizer::key($data['job'] ?? null)] ?? null,
                     // Default to worker: only an explicit "student" cell marks a student.
                     'is_student' => mb_strtolower((string) $data['status']) === 'student',
                     'skill_level' => $this->clampSkill($data['skill_level']),
@@ -113,7 +136,20 @@ class PlayerImportController extends Controller
                     'join_year' => is_numeric($data['join_year']) ? (int) $data['join_year'] : now()->year,
                 ];
 
-                $service->handle($attributes, $request->user()?->id);
+                $player = $service->handle($attributes, $request->user()?->id);
+
+                $others = collect(explode(',', (string) ($data['other_positions'] ?? '')))
+                    ->map(fn ($value) => $this->resolvePosition($positions, trim($value)))
+                    ->filter()
+                    ->reject(fn ($id) => (int) $id === (int) ($attributes['position_id'] ?? 0))
+                    ->unique()
+                    ->values()
+                    ->all();
+
+                if ($others !== []) {
+                    $player->otherPositions()->sync($others);
+                }
+
                 $imported++;
             } catch (Throwable $e) {
                 $errors[] = __('Row :line: :message', ['line' => $line, 'message' => $e->getMessage()]);

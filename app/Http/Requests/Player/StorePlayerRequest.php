@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Player;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StorePlayerRequest extends FormRequest
 {
@@ -28,12 +30,18 @@ class StorePlayerRequest extends FormRequest
             'status_value' => ['nullable', 'string', 'max:255'],
             'status_id' => ['nullable', 'exists:player_statuses,id'],
             'state' => ['nullable', 'string', 'max:255'],
+            // Only a coded (official) row may be chosen — a stray/duplicate
+            // legacy row the wilaya-sync migration left uncoded is never a
+            // valid choice, same as it's never offered in the form.
+            'wilaya_id' => ['nullable', 'integer', Rule::exists('country_states', 'id')->whereNotNull('code')],
             'city' => ['nullable', 'string', 'max:255'],
             'is_student' => ['nullable', 'boolean'],
             'member_job_id' => ['nullable', 'integer', 'exists:member_jobs,id'],
             'join_year' => ['nullable', 'integer', 'min:1900', 'max:'.(date('Y') + 1)],
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'position_id' => ['nullable', 'integer', 'exists:positions,id'],
+            'other_position_ids' => ['nullable', 'array'],
+            'other_position_ids.*' => ['integer', 'exists:positions,id'],
             'branch_ids' => ['nullable', 'array'],
             'branch_ids.*' => ['integer', 'exists:branches,id'],
             'team' => ['nullable', 'string', 'max:255'],
@@ -46,5 +54,19 @@ class StorePlayerRequest extends FormRequest
             'emergency_contacts.*.relationship' => ['nullable', 'string', 'max:255'],
             'emergency_contacts.*.phones' => ['nullable', 'array'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            $main = $this->input('position_id');
+            $others = (array) $this->input('other_position_ids', []);
+
+            // The main position is already recorded; repeating it would show the
+            // same abbreviation twice on the player's card.
+            if ($main && in_array((int) $main, array_map('intval', $others), true)) {
+                $validator->errors()->add('other_position_ids', __('The main position is already listed.'));
+            }
+        });
     }
 }

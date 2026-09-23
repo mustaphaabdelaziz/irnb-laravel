@@ -34,9 +34,16 @@ return [
         'players.forceDelete' => ['players', 'delete'],
         'players.bulkForceDelete' => ['players', 'delete'],
         'players.bulkArchive' => ['players', 'delete'],
+        // Merging a job deletes the duplicate, so it needs at least what
+        // jobs.destroy needs — without this override, "merge" falls through
+        // deriveAction()'s default and is only gated as 'edit'.
+        'jobs.merge' => ['categories', 'delete'],
         'players.transactions.update' => ['players', 'edit'],
         'players.transactions.destroy' => ['players', 'delete'],
         'players.card' => ['players', 'view'],
+        'players.label' => ['players', 'view'],
+        'players.labels' => ['players', 'view'],
+        'players.board-table' => ['players', 'view'],
         'transactions.receipt' => ['transactions', 'view'],
         'reports.financial' => ['reports', 'view'],
         'finance.index' => ['finance', 'view'],

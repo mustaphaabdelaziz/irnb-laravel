@@ -18,6 +18,9 @@ class Player extends Model
 
     protected $fillable = [
         'membership_id',
+        // file_number is intentionally NOT mass-assignable: it is allocated
+        // once by FileNumber::assign() (via forceFill) and must never be set
+        // through a create()/update() array — see app/Services/Player/FileNumber.php.
         'firstname',
         'lastname',
         'nickname',
@@ -33,6 +36,7 @@ class Player extends Model
         'status_value',
         'status_id',
         'state',
+        'wilaya_id',
         'city',
         'is_student',
         'member_job_id',
@@ -74,7 +78,8 @@ class Player extends Model
     }
 
     /**
-     * Name search across every part of a player's name, plus the membership ID.
+     * Name search across every part of a player's name, plus the membership ID
+     * and the paper-folder file number.
      *
      * The full name is spread over several columns (lastname firstname (nickname)
      * بن father grandfather), so matching the raw term against single columns fails
@@ -109,6 +114,11 @@ class Player extends Model
                     foreach ($columns as $column) {
                         $inner->orWhere($column, 'like', '%'.$token.'%');
                     }
+
+                    // A folder number, typed with or without its leading zeros.
+                    if (ctype_digit((string) $token)) {
+                        $inner->orWhere('file_number', (int) ltrim((string) $token, '0'));
+                    }
                 });
             }
         });
@@ -132,6 +142,11 @@ class Player extends Model
         return $this->belongsTo(Category::class);
     }
 
+    public function wilaya(): BelongsTo
+    {
+        return $this->belongsTo(CountryState::class, 'wilaya_id');
+    }
+
     public function memberJob(): BelongsTo
     {
         return $this->belongsTo(MemberJob::class, 'member_job_id');
@@ -140,6 +155,12 @@ class Player extends Model
     public function position(): BelongsTo
     {
         return $this->belongsTo(Position::class);
+    }
+
+    /** Positions the player also covers; the main one is position_id and is never in here. */
+    public function otherPositions(): BelongsToMany
+    {
+        return $this->belongsToMany(Position::class, 'player_other_positions');
     }
 
     public function status(): BelongsTo

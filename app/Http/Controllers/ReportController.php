@@ -8,12 +8,12 @@ use App\Models\Player;
 use App\Models\Transaction;
 use App\Models\WebsiteConfig;
 use App\Services\Pdf\PdfService;
+use App\Support\Media;
 use App\Support\TransactionTitle;
 use App\Support\UiLang;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File;
 use Symfony\Component\HttpFoundation\Response;
 
 class ReportController extends Controller
@@ -148,21 +148,13 @@ class ReportController extends Controller
      * are host-relative (/media/... or /storage/...) or legacy absolute URLs;
      * resolve any of them to the public-disk file, which works in both the web
      * app and the packaged desktop app. Returns null if the file is missing.
+     *
+     * Delegates to Media::localFile(), shared with PlayerPrintController, which
+     * also guards against `..`/absolute-path traversal and double-checks
+     * containment via realpath().
      */
     private function resolveMediaFile(?string $url): ?string
     {
-        if (! $url) {
-            return null;
-        }
-
-        $rel = preg_replace('#^https?://[^/]+#', '', $url);
-        $rel = preg_replace('#^/?(?:media|storage)/#', '', $rel);
-
-        $candidate = storage_path('app/public/'.$rel);
-        if (! File::exists($candidate)) {
-            $candidate = public_path('storage/'.$rel);
-        }
-
-        return File::exists($candidate) ? $candidate : null;
+        return Media::localFile($url);
     }
 }

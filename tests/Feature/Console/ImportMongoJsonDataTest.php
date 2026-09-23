@@ -49,6 +49,27 @@ class ImportMongoJsonDataTest extends TestCase
         }
     }
 
+    #[Test]
+    public function it_assigns_a_file_number_to_an_imported_player(): void
+    {
+        $directory = storage_path('framework/testing/mongo-import-'.uniqid('', true));
+        File::ensureDirectoryExists($directory);
+
+        try {
+            $this->writeImportFixtures($directory);
+
+            $this->artisan('irnb:import-mongo-json', [
+                'path' => $directory,
+            ])->assertSuccessful();
+
+            $player = Player::query()->where('membership_id', '2024000001')->firstOrFail();
+
+            $this->assertNotNull($player->file_number);
+        } finally {
+            File::deleteDirectory($directory);
+        }
+    }
+
     private function writeImportFixtures(string $directory): void
     {
         $this->writeJson($directory.'/categories.json', [

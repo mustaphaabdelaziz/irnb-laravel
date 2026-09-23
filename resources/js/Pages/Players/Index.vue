@@ -11,6 +11,7 @@ import { ref, watch, computed } from 'vue';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useBulkSelection } from '@/Composables/useBulkSelection';
 import { useListFilters } from '@/Composables/useListFilters';
+import { formatFileNumber } from '@/lib/fileNumber';
 import BulkEditModal from '@/Components/BulkEditModal.vue';
 import StatDoughnut from '@/Components/StatDoughnut.vue';
 import Dropdown from '@/Components/Dropdown.vue';
@@ -26,6 +27,7 @@ const props = defineProps({
     branches: { type: Array, default: () => [] },
     positions: { type: Array, default: () => [] },
     playerStatuses: { type: Array, default: () => [] },
+    wilayas: { type: Array, default: () => [] },
     categoryStats: { type: Array, default: () => [] },
     statusStats: { type: Array, default: () => [] },
     positionStats: { type: Array, default: () => [] },
@@ -41,6 +43,7 @@ const statusFilter = ref(props.filters?.status || '');
 const positionFilter = ref(props.filters?.position_id || '');
 const branchFilter = ref(props.filters?.branch_id || '');
 const ageFilter = ref(props.filters?.age || '');
+const wilayaFilter = ref(props.filters?.wilaya_id || '');
 // Active vs Archived view. Backend defaults to active when no `archived` param.
 const archivedView = ref(!!Number(props.filters?.archived));
 
@@ -53,6 +56,7 @@ const { params: filterParams, loading: filtering } = useListFilters('players.ind
     position_id: positionFilter.value,
     branch_id: branchFilter.value,
     age: ageFilter.value,
+    wilaya_id: wilayaFilter.value,
     archived: archivedView.value ? 1 : undefined,
 }), { only: ['players', 'filters', 'categoryStats', 'statusStats', 'positionStats', 'ageStats'] });
 
@@ -210,6 +214,11 @@ function runBulk() {
                         </component>
                     </div>
 
+                    <a v-if="categoryFilter" :href="route('players.board-table', { category_id: categoryFilter })" target="_blank"
+                        class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800">
+                        <Icon name="print" /> {{ t('print_board_table') }}
+                    </a>
+
                     <!-- ...folded into an overflow menu below xl -->
                     <Dropdown align="right" width="48" class="xl:hidden">
                         <template #trigger>
@@ -287,6 +296,14 @@ function runBulk() {
                     <option value="">{{ t('all_branches') }}</option>
                     <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.localized_name || b.name }}</option>
                 </select>
+                <select
+                    v-if="wilayas.length"
+                    v-model="wilayaFilter"
+                    class="min-w-0 flex-1 rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:max-w-xs sm:flex-none"
+                >
+                    <option value="">{{ t('all_wilayas') }}</option>
+                    <option v-for="w in wilayas" :key="w.id" :value="w.id">{{ w.code }} · {{ w.localized_name || w.name }}</option>
+                </select>
                 <!-- Toggles share a row on phones: status left, view right -->
                 <div class="flex w-full items-center justify-between gap-3 sm:w-auto sm:flex-1">
                     <div class="inline-flex rounded-xl bg-slate-100 p-0.5 dark:bg-slate-800">
@@ -318,6 +335,10 @@ function runBulk() {
                     <button v-if="!archivedView" @click="bulkAction = 'archive'" class="rounded-lg bg-white dark:bg-slate-900 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-200 ring-1 ring-slate-300 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800">{{ t('archive_selected') }}</button>
                     <button v-if="archivedView" @click="bulkAction = 'restore'" class="rounded-lg bg-white dark:bg-slate-900 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-300 dark:ring-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/30">{{ t('restore_selected') }}</button>
                     <button v-if="archivedView" @click="bulkAction = 'force'" class="rounded-lg bg-white dark:bg-slate-900 px-3 py-1.5 text-sm font-medium text-rose-700 dark:text-rose-300 ring-1 ring-rose-300 dark:ring-rose-800 hover:bg-rose-50 dark:hover:bg-rose-900/30">{{ t('delete_permanently_selected') }}</button>
+                    <a :href="route('players.labels', { ids: selected.join(',') })" target="_blank"
+                        class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800">
+                        <Icon name="print" /> {{ t('print_selected_labels') }}
+                    </a>
                 </div>
             </div>
 
@@ -363,6 +384,7 @@ function runBulk() {
                                     <input type="checkbox" :checked="allSelected" @change="toggleAll" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800" />
                                 </th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('membership_id') }}</th>
+                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('file_number') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('name') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('category') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('position') }}</th>
@@ -378,13 +400,20 @@ function runBulk() {
                                     <input type="checkbox" :checked="selected.includes(player.id)" @change="toggleOne(player.id)" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800" />
                                 </td>
                                 <td class="whitespace-nowrap px-4 py-3 text-sm font-mono text-slate-600 dark:text-slate-300">{{ player.membership_id }}</td>
+                                <td class="whitespace-nowrap px-4 py-3 text-sm font-mono text-slate-600 dark:text-slate-300">{{ formatFileNumber(player.file_number) }}</td>
                                 <td class="whitespace-nowrap px-4 py-3">
                                     <Link :href="route('players.show', player.id)" class="text-sm font-medium text-slate-900 dark:text-slate-100 hover:text-primary-600">
                                         {{ player.fullname || `${player.lastname} ${player.firstname}` }}
                                     </Link>
                                 </td>
                                 <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ player.category?.localized_name || player.category?.name || '-' }}</td>
-                                <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ player.position?.abbreviation || '-' }}</td>
+                                <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
+                                    {{ player.position?.abbreviation || '-' }}
+                                    <span v-if="player.other_positions?.length" class="ms-1 rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                                        :title="player.other_positions.map((p) => p.abbreviation).join(', ')">
+                                        +{{ player.other_positions.length }}
+                                    </span>
+                                </td>
                                 <td class="whitespace-nowrap px-4 py-3">
                                     <!-- Membership status (منخرط/معتزل…); the active/archived split is the view toggle. -->
                                     <Badge v-if="player.status" :label="player.status.localized_name || player.status.name" color="primary" />
@@ -405,7 +434,7 @@ function runBulk() {
                                 </td>
                             </tr>
                             <tr v-if="!players.data.length">
-                                <td colspan="8" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
+                                <td colspan="9" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
                             </tr>
                         </tbody>
                     </table>

@@ -7,6 +7,7 @@ use App\Http\Requests\Player\StorePlayerRequest;
 use App\Http\Requests\Player\UpdatePlayerRequest;
 use App\Models\Branch;
 use App\Models\Category;
+use App\Models\CountryState;
 use App\Models\FinanceAccount;
 use App\Models\MemberJob;
 use App\Models\Player;
@@ -18,6 +19,7 @@ use App\Models\Transaction;
 use App\Services\Dashboard\ModuleStats;
 use App\Services\Export\ExcelExporter;
 use App\Services\Finance\DefaultRegisterResolver;
+use App\Services\Player\FileNumber;
 use App\Services\Player\MembershipNumber;
 use App\Services\Player\RegisterPlayerService;
 use App\Services\Storage\FileStorageService;
@@ -40,7 +42,7 @@ class PlayerController extends Controller
         $query = Player::query()
             ->select('players.*')
             ->selectRaw('players.outstanding_debt as total_debt')
-            ->with(['category', 'position', 'memberJob', 'status']);
+            ->with(['category', 'position', 'otherPositions', 'memberJob', 'status', 'wilaya']);
 
         $this->applyPlayerFilters($query, $request);
 
@@ -112,11 +114,21 @@ class PlayerController extends Controller
             // positions feeds the bulk-edit field picker as well as the filter.
             'positions' => fn () => Position::orderBy('name')->get(['id', 'name']),
             'playerStatuses' => fn () => PlayerStatus::orderBy('sort_order')->get(),
+            // Rows with no `code` are stray legacy rows (see algeriaGeo()) and are
+            // excluded so the filter never offers an uncoded wilaya.
+            'wilayas' => fn () => CountryState::query()->whereNotNull('code')->orderBy('code')
+                ->get(['id', 'code', 'name', 'name_fr', 'name_ar'])
+                ->map(fn (CountryState $state) => [
+                    'id' => $state->id,
+                    'code' => $state->code,
+                    'name' => $state->name_fr ?: $state->name,
+                    'localized_name' => $state->localized_name,
+                ]),
             'categoryStats' => $categoryStats,
             'statusStats' => $statusStats,
             'positionStats' => $positionStats,
             'ageStats' => $ageStats,
-            'filters' => $request->only(['search', 'category_id', 'status', 'position_id', 'branch_id', 'age', 'archived']),
+            'filters' => $request->only(['search', 'category_id', 'status', 'position_id', 'branch_id', 'age', 'archived', 'wilaya_id']),
         ]);
     }
 
@@ -124,8 +136,11 @@ class PlayerController extends Controller
     {
         $player->load([
             'category',
+            'wilaya',
             'position',
+            'otherPositions',
             'memberJob',
+            'status',
             'branches',
             'emergencyContacts',
             'achievements',
@@ -159,6 +174,7 @@ class PlayerController extends Controller
             'totalDebt' => $player->calculateTotalDebt(),
             'financeAccounts' => $financeAccounts,
             'defaultFinanceAccountId' => $registers->forPlayer($player)?->id,
+            'fileDrawerSize' => FileNumber::drawerSize(),
         ]);
     }
 
@@ -203,19 +219,40 @@ class PlayerController extends Controller
     }
 
     /**
-     * Algeria wilayas (bilingual) + communes keyed by wilaya id, from the seed json.
+     * The wilaya list for the player form, from the table the migration owns,
+     * plus the commune lists keyed by the SAME id the form submits.
      *
-     * @return array{wilayas: array<int, array{id:int,name:string,ar_name:string}>, communes: array<int|string, array<int,string>>}
+     * Rows with no `code` are stray/duplicate legacy rows the wilaya-sync
+     * migration could not identify (see 2026_09_23_100003_official_wilayas.php)
+     * — they are excluded so the form never offers an uncoded row.
+     *
+     * @return array{wilayas: array<int, array{id:int,code:?string,name:string,ar_name:?string,localized_name:string}>, communes: array<int, array<int,string>>}
      */
     private function algeriaGeo(): array
     {
+        $states = CountryState::query()->whereNotNull('code')->orderBy('code')->get();
+
+        $wilayas = $states->map(fn (CountryState $state) => [
+            'id' => $state->id,
+            'code' => $state->code,
+            'name' => $state->name_fr ?: $state->name,
+            'ar_name' => $state->name_ar ?: $state->ar_name,
+            'localized_name' => $state->localized_name,
+        ])->values()->all();
+
+        // The commune file is keyed by the official wilaya number; the form works
+        // in row ids, so translate the keys once here.
         $data = json_decode(File::get(database_path('seeders/algeria_wilayas.json')), true);
+        $communes = [];
 
-        $wilayas = collect($data['states'] ?? [])
-            ->map(fn ($s) => ['id' => (int) $s['id'], 'name' => $s['name'], 'ar_name' => $s['ar_name']])
-            ->values()->all();
+        foreach ($states as $state) {
+            $list = $data['communes'][(string) $state->external_id] ?? [];
+            if ($list !== []) {
+                $communes[$state->id] = $list;
+            }
+        }
 
-        return ['wilayas' => $wilayas, 'communes' => $data['communes'] ?? []];
+        return ['wilayas' => $wilayas, 'communes' => $communes];
     }
 
     /**
@@ -258,7 +295,8 @@ class PlayerController extends Controller
         $attributes = $request->validated();
         $emergencyContacts = $attributes['emergency_contacts'] ?? [];
         $branchIds = $attributes['branch_ids'] ?? [];
-        unset($attributes['emergency_contacts'], $attributes['picture'], $attributes['branch_ids']);
+        $otherPositionIds = $attributes['other_position_ids'] ?? [];
+        unset($attributes['emergency_contacts'], $attributes['picture'], $attributes['branch_ids'], $attributes['other_position_ids']);
 
         if ($request->hasFile('picture')) {
             $stored = $files->storeImage($request->file('picture'), 'players', 512);
@@ -269,6 +307,12 @@ class PlayerController extends Controller
         $player = $service->handle($attributes, $request->user()?->id);
 
         $player->branches()->sync($branchIds);
+        $player->otherPositions()->sync($otherPositionIds);
+
+        // The main position can never also sit in the "other positions" pivot.
+        if ($player->position_id) {
+            $player->otherPositions()->detach($player->position_id);
+        }
 
         foreach ($emergencyContacts as $contact) {
             $player->emergencyContacts()->create($contact);
@@ -280,7 +324,7 @@ class PlayerController extends Controller
 
     public function edit(Player $player): Response
     {
-        $player->load(['emergencyContacts', 'branches']);
+        $player->load(['emergencyContacts', 'branches', 'otherPositions']);
         $geo = $this->algeriaGeo();
 
         return Inertia::render('Players/Edit', [
@@ -302,8 +346,17 @@ class PlayerController extends Controller
         $validated = $request->validated();
 
         $emergencyContacts = $validated['emergency_contacts'] ?? null;
+        // The key must be PRESENT (not just non-null) to trigger a sync: Inertia's
+        // forceFormData conversion drops empty arrays entirely, so a form that
+        // clears every branch (or every other position) sends the field as '' —
+        // which ConvertEmptyStringsToNull turns into a present-but-null key.
+        // Omitted entirely (e.g. another client that never touches this field)
+        // must leave the existing branches/other positions untouched.
+        $branchIdsPresent = array_key_exists('branch_ids', $validated);
         $branchIds = $validated['branch_ids'] ?? null;
-        unset($validated['emergency_contacts'], $validated['picture'], $validated['branch_ids']);
+        $otherPositionIdsPresent = array_key_exists('other_position_ids', $validated);
+        $otherPositionIds = $validated['other_position_ids'] ?? null;
+        unset($validated['emergency_contacts'], $validated['picture'], $validated['branch_ids'], $validated['other_position_ids']);
 
         if ($request->hasFile('picture')) {
             $files->delete($player->picture_filename);
@@ -312,17 +365,24 @@ class PlayerController extends Controller
             $validated['picture_filename'] = $stored['filename'];
         }
 
-        // Membership id encodes the enrollment year (YYYYNNNNN). If the year changes,
-        // regenerate the id for the new year so the two stay consistent.
-        if (array_key_exists('join_year', $validated)
-            && (int) $validated['join_year'] !== (int) $player->join_year) {
-            $validated['membership_id'] = MembershipNumber::generateUnique((int) $validated['join_year']);
-        }
+        // The membership id is NOT regenerated when the join year changes: it is
+        // printed on the member card and written on the paper folder. The year it
+        // encodes is the year the member was first enrolled, which never changes.
 
         $player->update($validated);
 
-        if ($branchIds !== null) {
-            $player->branches()->sync($branchIds);
+        if ($branchIdsPresent) {
+            $player->branches()->sync($branchIds ?? []);
+        }
+
+        if ($otherPositionIdsPresent) {
+            $player->otherPositions()->sync($otherPositionIds ?? []);
+        }
+
+        // The main position can never also sit in the "other positions" pivot
+        // (e.g. the main changed from MF to WG while WG was listed as "other").
+        if ($player->position_id) {
+            $player->otherPositions()->detach($player->position_id);
         }
 
         if ($emergencyContacts !== null) {
@@ -396,6 +456,16 @@ class PlayerController extends Controller
             if ($field !== 'branches') {
                 Player::whereIn('id', $ids)->update([$field => $value ?: null]);
 
+                if ($field === 'position_id' && $value) {
+                    // The main position can never also sit in the "other
+                    // positions" pivot — e.g. a player whose "other" was
+                    // already GK must not keep GK there once GK becomes main.
+                    DB::table('player_other_positions')
+                        ->whereIn('player_id', $ids)
+                        ->where('position_id', $value)
+                        ->delete();
+                }
+
                 return;
             }
 
@@ -427,11 +497,15 @@ class PlayerController extends Controller
 
     public function export(Request $request, ExcelExporter $exporter): StreamedResponse
     {
-        $query = Player::query()->with(['category', 'position', 'branches', 'status']);
+        $query = Player::query()->with(['category', 'position', 'otherPositions', 'branches', 'status', 'wilaya']);
         $this->applyPlayerFilters($query, $request);
 
         $rows = $query->orderBy('lastname')->orderBy('firstname')->get()->map(fn (Player $p) => [
             $p->membership_id,
+            FileNumber::format($p->file_number),
+            $p->wilaya?->localized_name,
+            $p->position?->abbreviation,
+            $p->otherPositions->pluck('abbreviation')->implode(', '),
             $p->fullname,
             $p->category?->localized_name,
             $p->status?->localized_name,
@@ -442,7 +516,7 @@ class PlayerController extends Controller
             $p->branches->map(fn (Branch $b) => $b->localized_name)->implode(' / '),
         ]);
 
-        $headers = ['membership_id', 'name', 'category', 'status', 'type', 'join_year', 'debt', 'phones', 'branches'];
+        $headers = ['membership_id', 'File number', 'Wilaya', 'Main position', 'Other positions', 'name', 'category', 'status', 'type', 'join_year', 'debt', 'phones', 'branches'];
 
         return $exporter->download('Players', $headers, $rows->all(), 'players-'.now()->format('Y-m-d').'.csv');
     }
@@ -519,11 +593,21 @@ class PlayerController extends Controller
         }
 
         if ($request->filled('position_id')) {
-            $query->where('position_id', $request->input('position_id'));
+            $positionId = (int) $request->input('position_id');
+
+            // "Plays X" means the main position or one of the others. Wrapped in
+            // its own closure so orWhereHas doesn't escape into an OR against
+            // whatever other filters (category, branch, ...) are ANDed around it.
+            $query->where(fn ($q) => $q->where('position_id', $positionId)
+                ->orWhereHas('otherPositions', fn ($p) => $p->where('positions.id', $positionId)));
         }
 
         if ($request->filled('branch_id')) {
             $query->whereHas('branches', fn ($q) => $q->where('branches.id', $request->input('branch_id')));
+        }
+
+        if ($request->filled('wilaya_id')) {
+            $query->where('wilaya_id', $request->input('wilaya_id'));
         }
 
         if ($request->filled('age')) {

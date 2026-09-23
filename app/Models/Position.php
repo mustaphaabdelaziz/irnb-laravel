@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Position extends Model
@@ -18,6 +19,12 @@ class Position extends Model
     public function players(): HasMany
     {
         return $this->hasMany(Player::class);
+    }
+
+    /** Players who list this position as one of their other positions. */
+    public function otherPlayers(): BelongsToMany
+    {
+        return $this->belongsToMany(Player::class, 'player_other_positions');
     }
 
     public function getDisplayNameAttribute(): string

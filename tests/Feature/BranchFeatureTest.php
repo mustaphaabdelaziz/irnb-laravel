@@ -108,6 +108,40 @@ class BranchFeatureTest extends TestCase
         $this->assertSame([$foot->id], $player->fresh()->branches->pluck('id')->all());
     }
 
+    /**
+     * Inertia's forceFormData conversion drops empty arrays entirely, so
+     * PlayerForm.vue sends '' (not an absent key) when the user clears every
+     * branch — same pattern already used for other_position_ids. The
+     * controller must sync an empty set on '' but leave branches untouched
+     * when the key is omitted entirely.
+     */
+    #[Test]
+    public function an_empty_string_clears_all_branches_but_an_omitted_key_leaves_them(): void
+    {
+        $swim = Branch::create(['name' => 'Swimming']);
+        $player = Player::create(['firstname' => 'Ali', 'membership_id' => '202400004', 'join_year' => 2024]);
+        $player->branches()->sync([$swim->id]);
+
+        $this->actingAs($this->admin())->put(route('players.update', $player), [
+            'firstname' => 'Ali',
+            'join_year' => 2024,
+            'branch_ids' => '',
+        ])->assertRedirect();
+
+        $this->assertSame([], $player->fresh()->branches->pluck('id')->all());
+
+        $player->branches()->sync([$swim->id]);
+
+        // A client that never mentions the key at all must not wipe out what
+        // is already there.
+        $this->actingAs($this->admin())->put(route('players.update', $player), [
+            'firstname' => 'Ali',
+            'join_year' => 2024,
+        ])->assertRedirect();
+
+        $this->assertSame([$swim->id], $player->fresh()->branches->pluck('id')->all());
+    }
+
     #[Test]
     public function the_list_can_be_filtered_by_branch(): void
     {

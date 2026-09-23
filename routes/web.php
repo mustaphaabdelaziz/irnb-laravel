@@ -84,6 +84,14 @@ Route::get('/media/{path}', function (string $path) {
     $first = strtolower(explode(':', $segments[0] ?? '', 2)[0]);
     abort_if(in_array($first, ['minutes', 'receipts'], true), 404);
 
+    // Windows 8.3 short filenames: NTFS also answers to an auto-generated
+    // "~1"-suffixed alias of a long folder name (e.g. "RECEIP~1" for
+    // "receipts"), which opens the same directory as the full name even
+    // though the segment string never equals "receipts". Refuse any first
+    // segment containing "~" outright — no legitimate stored folder name
+    // uses one.
+    abort_if(str_contains($first, '~'), 404);
+
     abort_unless(Storage::disk('public')->exists($path), 404);
 
     return response()->file(Storage::disk('public')->path($path));

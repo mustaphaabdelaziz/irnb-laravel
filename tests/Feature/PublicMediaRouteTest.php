@@ -64,6 +64,12 @@ class PublicMediaRouteTest extends TestCase
             'ntfs index-allocation stream, mixed case' => ['/media/Receipts::$INDEX_ALLOCATION/x.pdf'],
             'ntfs index-allocation stream on minutes' => ['/media/minutes::$INDEX_ALLOCATION/x.pdf'],
             'ntfs index-allocation stream, percent-encoded dollar' => ['/media/receipts::%24INDEX_ALLOCATION/x.pdf'],
+            // Windows 8.3 short filenames: NTFS auto-generates a "~1"-suffixed
+            // alias for a long folder name (e.g. "RECEIP~1" for "receipts")
+            // that opens the same directory on disk, even though the segment
+            // string never equals "receipts".
+            'windows 8.3 short name for receipts' => ['/media/RECEIP~1/x.pdf'],
+            'windows 8.3 short name for minutes' => ['/media/MINUTE~1/x.pdf'],
         ];
     }
 

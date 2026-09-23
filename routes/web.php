@@ -239,6 +239,8 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         Route::put('/board/meetings/{meeting}', [BoardMeetingController::class, 'update'])->name('board.meetings.update');
         Route::put('/board/meetings/{meeting}/attendance', [BoardMeetingController::class, 'attendance'])->name('board.meetings.attendance');
         Route::post('/board/meetings/{meeting}/attachment', [BoardMeetingController::class, 'attachment'])->name('board.meetings.attachment');
+        // Minutes are private: this (auth + board/view) is the only way to read them.
+        Route::get('/board/meetings/{meeting}/attachment', [BoardMeetingController::class, 'showAttachment'])->name('board.meetings.attachment.show');
         Route::delete('/board/meetings/{meeting}/attachment', [BoardMeetingController::class, 'deleteAttachment'])->name('board.meetings.attachment.delete');
         // Meetings are never deleted: cancelling keeps the record (who/when/why).
         Route::post('/board/meetings/{meeting}/cancel', [BoardMeetingController::class, 'cancel'])->name('board.meetings.cancel');

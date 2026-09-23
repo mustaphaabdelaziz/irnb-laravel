@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\BoardMeeting;
 use App\Models\MeetingAttendance;
 use App\Services\Storage\FileStorageService;
+use App\Services\Storage\PrivateFileStorage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class BoardMeetingController extends Controller
 {
@@ -61,10 +63,12 @@ class BoardMeetingController extends Controller
 
     /**
      * Attach the signed minutes document to a meeting (PDF, Word, or a photo).
-     * Stored on the public disk with a host-relative /media URL so it downloads
-     * on both the web app and the desktop app. Replaces any previous file.
+     *
+     * Minutes are private: they go on the private disk and are served only by
+     * showAttachment(), behind login and board/view — never by the public
+     * /media route. Replaces any previous file.
      */
-    public function attachment(Request $request, BoardMeeting $meeting, FileStorageService $storage): RedirectResponse
+    public function attachment(Request $request, BoardMeeting $meeting, PrivateFileStorage $storage, FileStorageService $legacy): RedirectResponse
     {
         if ($meeting->isCancelled()) {
             return back()->with('error', 'flash.meeting_is_cancelled');
@@ -74,27 +78,46 @@ class BoardMeetingController extends Controller
             'attachment' => ['required', 'file', 'mimes:pdf,doc,docx,jpg,jpeg,png,webp', 'max:10240'],
         ]);
 
-        $storage->delete($meeting->attachment_filename);
+        $this->forgetStoredAttachment($meeting, $storage, $legacy);
 
-        $stored = $storage->storeFile($request->file('attachment'), 'minutes');
+        $stored = $storage->store($request->file('attachment'), 'minutes');
         $meeting->update([
-            'attachment_url' => $stored['url'],
-            'attachment_filename' => $stored['filename'],
+            'attachment_url' => null,
+            'attachment_filename' => $stored['path'],
         ]);
 
         return back()->with('success', 'flash.minutes_file_uploaded');
     }
 
-    public function deleteAttachment(BoardMeeting $meeting, FileStorageService $storage): RedirectResponse
+    public function showAttachment(BoardMeeting $meeting, PrivateFileStorage $storage): StreamedResponse
+    {
+        $path = $meeting->attachment_filename;
+
+        abort_unless($path && $storage->exists($path), 404);
+
+        return $storage->inline($path, basename($path));
+    }
+
+    public function deleteAttachment(BoardMeeting $meeting, PrivateFileStorage $storage, FileStorageService $legacy): RedirectResponse
     {
         if ($meeting->isCancelled()) {
             return back()->with('error', 'flash.meeting_is_cancelled');
         }
 
-        $storage->delete($meeting->attachment_filename);
+        $this->forgetStoredAttachment($meeting, $storage, $legacy);
         $meeting->update(['attachment_url' => null, 'attachment_filename' => null]);
 
         return back()->with('success', 'flash.minutes_file_removed');
+    }
+
+    /**
+     * Remove the current file wherever it lives: the private disk, or — for a
+     * row the minutes migration could not move — the public one.
+     */
+    private function forgetStoredAttachment(BoardMeeting $meeting, PrivateFileStorage $storage, FileStorageService $legacy): void
+    {
+        $storage->delete($meeting->attachment_filename);
+        $legacy->delete($meeting->attachment_filename);
     }
 
     /**

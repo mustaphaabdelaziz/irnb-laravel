@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\CountryState;
 use App\Models\Player;
 use App\Models\User;
+use App\Support\WilayaMatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
@@ -328,5 +329,123 @@ class PlayerWilayaTest extends TestCase
         $migration->up();
 
         $this->assertTrue(Schema::hasColumn('players', 'wilaya_id'));
+    }
+
+    /**
+     * Old 19-column files (and anyone who fills the template's legacy
+     * "state" column, index 10, instead of the newer "wilaya" column,
+     * appended at index 19) must still resolve a wilaya_id from the state
+     * cell — not be left null just because the newer column is absent.
+     */
+    #[Test]
+    public function a_legacy_19_column_row_resolves_the_wilaya_from_the_state_cell(): void
+    {
+        $row = function (string $state, string $tag) {
+            $cells = array_fill(0, 19, '');
+            $cells[0] = 'Amine'.$tag;
+            $cells[10] = $state; // legacy "state" column, no "wilaya" cell at all
+
+            return $cells;
+        };
+
+        $fh = fopen('php://temp', 'r+');
+        fwrite($fh, "\xEF\xBB\xBF");
+        fputcsv($fh, array_fill(0, 19, 'h'));
+        fputcsv($fh, $row('الجزائر', 'a'));
+        fputcsv($fh, $row('Ghardaïa', 'b'));
+        rewind($fh);
+        $csv = stream_get_contents($fh);
+        fclose($fh);
+
+        $this->actingAs($this->admin())->post(route('players.import.store'), [
+            'file' => UploadedFile::fake()->createWithContent('players.csv', $csv),
+        ])->assertRedirect();
+
+        $this->assertSame($this->wilaya('16')->id, Player::where('firstname', 'Aminea')->value('wilaya_id'), 'الجزائر -> Alger (16)');
+        $this->assertSame($this->wilaya('47')->id, Player::where('firstname', 'Amineb')->value('wilaya_id'), 'Ghardaïa -> 47');
+    }
+
+    /**
+     * When a row carries both the legacy "state" cell and the newer
+     * "wilaya" cell, the more specific "wilaya" cell wins.
+     */
+    #[Test]
+    public function when_both_the_wilaya_and_legacy_state_cells_are_given_the_wilaya_cell_wins(): void
+    {
+        $cells = array_fill(0, 21, '');
+        $cells[0] = 'Amine';
+        $cells[10] = 'Ghardaïa'; // legacy state cell -> would resolve to 47
+        $cells[19] = '16'; // wilaya cell -> must win, resolves to Alger (16)
+
+        $fh = fopen('php://temp', 'r+');
+        fwrite($fh, "\xEF\xBB\xBF");
+        fputcsv($fh, array_fill(0, 21, 'h'));
+        fputcsv($fh, $cells);
+        rewind($fh);
+        $csv = stream_get_contents($fh);
+        fclose($fh);
+
+        $this->actingAs($this->admin())->post(route('players.import.store'), [
+            'file' => UploadedFile::fake()->createWithContent('players.csv', $csv),
+        ])->assertRedirect();
+
+        $this->assertSame($this->wilaya('16')->id, Player::query()->firstOrFail()->wilaya_id);
+    }
+
+    /**
+     * A user typing a wilaya name by hand rarely matches the official
+     * spelling letter-for-letter: 'الاغواط' (plain alef) for official
+     * 'الأغواط' (hamza-on-alef), and 'عين الدفلي' (ya) for official
+     * 'عين الدفلى' (alef maqsura). normalise() must fold both sides the
+     * same way NameNormalizer folds job names, so these still match.
+     */
+    #[Test]
+    public function normalise_folds_arabic_letter_variants_so_hand_typed_spellings_match_official_names(): void
+    {
+        $this->assertSame(WilayaMatcher::normalise('الأغواط'), WilayaMatcher::normalise('الاغواط'));
+        $this->assertSame(WilayaMatcher::normalise('عين الدفلى'), WilayaMatcher::normalise('عين الدفلي'));
+    }
+
+    #[Test]
+    public function the_import_resolves_hand_typed_arabic_spellings_that_only_differ_by_letter_form(): void
+    {
+        $row = function (string $wilaya, string $tag) {
+            $cells = array_fill(0, 21, '');
+            $cells[0] = 'Amine'.$tag;
+            $cells[19] = $wilaya;
+
+            return $cells;
+        };
+
+        $fh = fopen('php://temp', 'r+');
+        fwrite($fh, "\xEF\xBB\xBF");
+        fputcsv($fh, array_fill(0, 21, 'h'));
+        fputcsv($fh, $row('الاغواط', 'a'));
+        fputcsv($fh, $row('عين الدفلي', 'b'));
+        rewind($fh);
+        $csv = stream_get_contents($fh);
+        fclose($fh);
+
+        $this->actingAs($this->admin())->post(route('players.import.store'), [
+            'file' => UploadedFile::fake()->createWithContent('players.csv', $csv),
+        ])->assertRedirect();
+
+        $this->assertSame($this->wilaya('03')->id, Player::where('firstname', 'Aminea')->value('wilaya_id'), 'الاغواط -> Laghouat (03)');
+        $this->assertSame($this->wilaya('44')->id, Player::where('firstname', 'Amineb')->value('wilaya_id'), 'عين الدفلي -> Aïn Defla (44)');
+    }
+
+    /**
+     * Folding Arabic letter variants must never make two different official
+     * wilayas collide onto the same lookup key — every one of the 58
+     * official Arabic names must still normalise to a distinct key.
+     */
+    #[Test]
+    public function no_two_official_wilaya_names_collide_after_arabic_folding(): void
+    {
+        $names = require database_path('data/algeria_wilayas_official.php');
+
+        $keys = collect($names)->map(fn ($entry) => WilayaMatcher::normalise($entry['ar']))->unique();
+
+        $this->assertCount(58, $keys);
     }
 }

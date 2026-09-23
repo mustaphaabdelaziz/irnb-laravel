@@ -122,7 +122,11 @@ class PlayerImportController extends Controller
                     'state' => $data['state'] ?: 'Unknown',
                     'category_id' => $categories[mb_strtolower((string) $data['category'])] ?? null,
                     'position_id' => $this->resolvePosition($positions, $data['position']),
-                    'wilaya_id' => $wilayas[WilayaMatcher::normalise((string) $data['wilaya'])] ?? null,
+                    // Older 19-column files (and anyone who still fills the template's
+                    // legacy "state" column) have no "wilaya" cell at all — fall back
+                    // to "state" so those rows still resolve a wilaya_id. When both are
+                    // given, the newer "wilaya" cell wins.
+                    'wilaya_id' => $wilayas[WilayaMatcher::normalise((string) ($data['wilaya'] ?: $data['state']))] ?? null,
                     'member_job_id' => $jobs[NameNormalizer::key($data['job'] ?? null)] ?? null,
                     // Default to worker: only an explicit "student" cell marks a student.
                     'is_student' => mb_strtolower((string) $data['status']) === 'student',

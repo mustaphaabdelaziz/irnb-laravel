@@ -35,8 +35,26 @@ class WilayaMatcher
     ];
 
     /**
-     * Lower-cased, accent-free, letters/digits/Arabic only — so "GHARDAIA",
-     * "Ghardaïa" and "SÉTIF" all meet the same key.
+     * Arabic letter variants that are the same letter to a reader but not to
+     * a string comparison — same folding App\Support\NameNormalizer applies
+     * to job names — so a hand-typed 'الاغواط' meets the official 'الأغواط'
+     * and 'عين الدفلي' meets the official 'عين الدفلى'. Applied to BOTH
+     * sides (the keys built from official DB names in lookup(), and every
+     * user-typed value passed in here), so official spellings still match
+     * too.
+     *
+     * @var array<string, string>
+     */
+    private const ARABIC = [
+        'أ' => 'ا', 'إ' => 'ا', 'آ' => 'ا', 'ٱ' => 'ا',
+        'ة' => 'ه', 'ى' => 'ي', 'ؤ' => 'و', 'ئ' => 'ي',
+        'ـ' => '', // tatweel
+    ];
+
+    /**
+     * Lower-cased, accent-free, Arabic-letter-folded, letters/digits/Arabic
+     * only — so "GHARDAIA", "Ghardaïa" and "SÉTIF" all meet the same key,
+     * and so do 'الأغواط' and a hand-typed 'الاغواط'.
      */
     public static function normalise(string $value): string
     {
@@ -52,6 +70,10 @@ class WilayaMatcher
         ];
 
         $value = strtr($value, $accents);
+        $value = strtr($value, self::ARABIC);
+
+        // Harakat (fatha, damma, kasra, shadda, sukun …) are decoration, not spelling.
+        $value = (string) preg_replace('/[\x{0610}-\x{061A}\x{064B}-\x{065F}\x{0670}]/u', '', $value);
 
         return (string) preg_replace('/[^a-z0-9\p{Arabic}]/u', '', $value);
     }

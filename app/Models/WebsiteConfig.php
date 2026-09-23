@@ -84,6 +84,8 @@ class WebsiteConfig extends Model
                     'dateFormat' => 'DD/MM/YYYY',
                     'defaultLanguage' => 'ar',
                     'fiscalYearStart' => '01-01',
+                    'seasonStartMonth' => 9,
+                    'fileDrawerSize' => 100,
                     'enableRegistration' => true,
                     'enableDonations' => true,
                     'maintenanceMode' => false,

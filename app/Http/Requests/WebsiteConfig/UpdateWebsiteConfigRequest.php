@@ -41,6 +41,10 @@ class UpdateWebsiteConfigRequest extends FormRequest
             'primary_color' => ['nullable', 'string', 'regex:/^#?[0-9a-fA-F]{6}$/'],
             'facilities' => ['nullable', 'array'],
             'settings' => ['nullable', 'array'],
+            // The only two settings with a meaning the server must defend: a month
+            // outside 1-12 or a drawer of zero files would break file locations.
+            'settings.seasonStartMonth' => ['nullable', 'integer', 'min:1', 'max:12'],
+            'settings.fileDrawerSize' => ['nullable', 'integer', 'min:10', 'max:1000'],
             'seo' => ['nullable', 'array'],
             'documents' => ['nullable', 'array'],
         ];

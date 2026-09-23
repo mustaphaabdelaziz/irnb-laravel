@@ -8,7 +8,7 @@ import { Head, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref, watch } from 'vue';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const props = defineProps({
     config: Object,
@@ -182,7 +182,14 @@ const settingsForm = useForm({
     enable_registration: props.config?.settings?.enableRegistration ?? props.config?.settings?.enable_registration ?? true,
     enable_donations: props.config?.settings?.enableDonations ?? props.config?.settings?.enable_donations ?? true,
     maintenance_mode: props.config?.settings?.maintenanceMode ?? props.config?.settings?.maintenance_mode ?? false,
+    seasonStartMonth: props.config?.settings?.seasonStartMonth ?? 9,
+    fileDrawerSize: props.config?.settings?.fileDrawerSize ?? 100,
 });
+
+// Month names come from the browser in the active language, so no catalog keys.
+function monthName(month) {
+    return new Date(2000, month - 1, 1).toLocaleString(locale.value === 'ar' ? 'ar' : locale.value, { month: 'long' });
+}
 
 function saveBasic() {
     basicForm.transform(data => ({
@@ -276,6 +283,8 @@ function saveSettings() {
             enableRegistration: data.enable_registration,
             enableDonations: data.enable_donations,
             maintenanceMode: data.maintenance_mode,
+            seasonStartMonth: Number(settingsForm.seasonStartMonth) || 9,
+            fileDrawerSize: Number(settingsForm.fileDrawerSize) || 100,
         },
     })).put(route('settings.update'));
 }
@@ -526,6 +535,23 @@ function saveSettings() {
                                         <option value="fr">Français</option>
                                         <option value="en">English</option>
                                     </select>
+                                </div>
+                                <div class="sm:col-span-2 mt-2 border-t border-slate-100 pt-4 dark:border-slate-800">
+                                    <p class="mb-3 text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('club_files') }}</p>
+                                    <div class="grid gap-4 sm:grid-cols-2">
+                                        <label class="block text-sm">
+                                            <span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('season_start_month') }}</span>
+                                            <select v-model="settingsForm.seasonStartMonth" class="w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
+                                                <option v-for="m in 12" :key="m" :value="m">{{ monthName(m) }}</option>
+                                            </select>
+                                            <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">{{ t('season_start_hint') }}</span>
+                                        </label>
+                                        <label class="block text-sm">
+                                            <span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('file_drawer_size') }}</span>
+                                            <input v-model="settingsForm.fileDrawerSize" type="number" min="10" max="1000" class="w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800" />
+                                            <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">{{ t('file_drawer_hint') }}</span>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                             <div class="space-y-3">

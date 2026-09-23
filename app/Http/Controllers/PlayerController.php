@@ -11,6 +11,7 @@ use App\Models\CountryState;
 use App\Models\FinanceAccount;
 use App\Models\MemberJob;
 use App\Models\Player;
+use App\Models\PlayerAcademicRecord;
 use App\Models\PlayerEmergencyContact;
 use App\Models\PlayerStatus;
 use App\Models\Position;
@@ -128,7 +129,7 @@ class PlayerController extends Controller
             'statusStats' => $statusStats,
             'positionStats' => $positionStats,
             'ageStats' => $ageStats,
-            'filters' => $request->only(['search', 'category_id', 'status', 'position_id', 'branch_id', 'age', 'archived', 'wilaya_id']),
+            'filters' => $request->only(['search', 'category_id', 'status', 'position_id', 'branch_id', 'age', 'archived', 'wilaya_id', 'academic']),
         ]);
     }
 
@@ -614,6 +615,18 @@ class PlayerController extends Controller
 
         if ($request->filled('wilaya_id')) {
             $query->where('wilaya_id', $request->input('wilaya_id'));
+        }
+
+        if ($request->filled('academic')) {
+            $latest = '('.PlayerAcademicRecord::latestGpaSql().')';
+            $pass = PlayerAcademicRecord::PASS_MARK;
+
+            match ($request->input('academic')) {
+                'at_risk' => $query->where('is_student', true)->whereRaw("{$latest} < ?", [$pass]),
+                'good' => $query->where('is_student', true)->whereRaw("{$latest} >= ?", [$pass]),
+                'none' => $query->where('is_student', true)->whereDoesntHave('academicRecords'),
+                default => null,
+            };
         }
 
         if ($request->filled('age')) {

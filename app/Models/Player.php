@@ -155,6 +155,12 @@ class Player extends Model
         return $this->belongsTo(Position::class);
     }
 
+    /** Positions the player also covers; the main one is position_id and is never in here. */
+    public function otherPositions(): BelongsToMany
+    {
+        return $this->belongsToMany(Position::class, 'player_other_positions');
+    }
+
     public function status(): BelongsTo
     {
         return $this->belongsTo(PlayerStatus::class, 'status_id');

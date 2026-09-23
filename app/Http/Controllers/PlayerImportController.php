@@ -44,6 +44,8 @@ class PlayerImportController extends Controller
         ['join_year', 'سنة الانضمام', ''],
         // Appended last on purpose: older files simply have no cell here.
         ['wilaya', 'الولاية (الرمز أو الاسم)', '47'],
+        // Appended last: older files have no cell here.
+        ['other_positions', 'مراكز أخرى (مفصولة بفاصلة)', 'WG, LB'],
     ];
 
     public function template(): StreamedResponse
@@ -118,7 +120,20 @@ class PlayerImportController extends Controller
                     'join_year' => is_numeric($data['join_year']) ? (int) $data['join_year'] : now()->year,
                 ];
 
-                $service->handle($attributes, $request->user()?->id);
+                $player = $service->handle($attributes, $request->user()?->id);
+
+                $others = collect(explode(',', (string) ($data['other_positions'] ?? '')))
+                    ->map(fn ($value) => $this->resolvePosition($positions, trim($value)))
+                    ->filter()
+                    ->reject(fn ($id) => (int) $id === (int) ($attributes['position_id'] ?? 0))
+                    ->unique()
+                    ->values()
+                    ->all();
+
+                if ($others !== []) {
+                    $player->otherPositions()->sync($others);
+                }
+
                 $imported++;
             } catch (Throwable $e) {
                 $errors[] = __('Row :line: :message', ['line' => $line, 'message' => $e->getMessage()]);

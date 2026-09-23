@@ -42,7 +42,7 @@ class PlayerController extends Controller
         $query = Player::query()
             ->select('players.*')
             ->selectRaw('players.outstanding_debt as total_debt')
-            ->with(['category', 'position', 'memberJob', 'status', 'wilaya']);
+            ->with(['category', 'position', 'otherPositions', 'memberJob', 'status', 'wilaya']);
 
         $this->applyPlayerFilters($query, $request);
 
@@ -138,6 +138,7 @@ class PlayerController extends Controller
             'category',
             'wilaya',
             'position',
+            'otherPositions',
             'memberJob',
             'branches',
             'emergencyContacts',
@@ -292,7 +293,8 @@ class PlayerController extends Controller
         $attributes = $request->validated();
         $emergencyContacts = $attributes['emergency_contacts'] ?? [];
         $branchIds = $attributes['branch_ids'] ?? [];
-        unset($attributes['emergency_contacts'], $attributes['picture'], $attributes['branch_ids']);
+        $otherPositionIds = $attributes['other_position_ids'] ?? [];
+        unset($attributes['emergency_contacts'], $attributes['picture'], $attributes['branch_ids'], $attributes['other_position_ids']);
 
         if ($request->hasFile('picture')) {
             $stored = $files->storeImage($request->file('picture'), 'players', 512);
@@ -303,6 +305,12 @@ class PlayerController extends Controller
         $player = $service->handle($attributes, $request->user()?->id);
 
         $player->branches()->sync($branchIds);
+        $player->otherPositions()->sync($otherPositionIds);
+
+        // The main position can never also sit in the "other positions" pivot.
+        if ($player->position_id) {
+            $player->otherPositions()->detach($player->position_id);
+        }
 
         foreach ($emergencyContacts as $contact) {
             $player->emergencyContacts()->create($contact);
@@ -337,7 +345,15 @@ class PlayerController extends Controller
 
         $emergencyContacts = $validated['emergency_contacts'] ?? null;
         $branchIds = $validated['branch_ids'] ?? null;
-        unset($validated['emergency_contacts'], $validated['picture'], $validated['branch_ids']);
+        // The key must be PRESENT (not just non-null) to trigger a sync: Inertia's
+        // forceFormData conversion drops empty arrays entirely, so a form that
+        // clears every other position sends other_position_ids as '' — which
+        // ConvertEmptyStringsToNull turns into a present-but-null key. Omitted
+        // entirely (e.g. another client that never touches this field) must
+        // leave the existing other positions untouched.
+        $otherPositionIdsPresent = array_key_exists('other_position_ids', $validated);
+        $otherPositionIds = $validated['other_position_ids'] ?? null;
+        unset($validated['emergency_contacts'], $validated['picture'], $validated['branch_ids'], $validated['other_position_ids']);
 
         if ($request->hasFile('picture')) {
             $files->delete($player->picture_filename);
@@ -354,6 +370,16 @@ class PlayerController extends Controller
 
         if ($branchIds !== null) {
             $player->branches()->sync($branchIds);
+        }
+
+        if ($otherPositionIdsPresent) {
+            $player->otherPositions()->sync($otherPositionIds ?? []);
+        }
+
+        // The main position can never also sit in the "other positions" pivot
+        // (e.g. the main changed from MF to WG while WG was listed as "other").
+        if ($player->position_id) {
+            $player->otherPositions()->detach($player->position_id);
         }
 
         if ($emergencyContacts !== null) {
@@ -427,6 +453,16 @@ class PlayerController extends Controller
             if ($field !== 'branches') {
                 Player::whereIn('id', $ids)->update([$field => $value ?: null]);
 
+                if ($field === 'position_id' && $value) {
+                    // The main position can never also sit in the "other
+                    // positions" pivot — e.g. a player whose "other" was
+                    // already GK must not keep GK there once GK becomes main.
+                    DB::table('player_other_positions')
+                        ->whereIn('player_id', $ids)
+                        ->where('position_id', $value)
+                        ->delete();
+                }
+
                 return;
             }
 
@@ -458,14 +494,16 @@ class PlayerController extends Controller
 
     public function export(Request $request, ExcelExporter $exporter): StreamedResponse
     {
-        $query = Player::query()->with(['category', 'position', 'branches', 'status', 'wilaya']);
+        $query = Player::query()->with(['category', 'position', 'otherPositions', 'branches', 'status', 'wilaya']);
         $this->applyPlayerFilters($query, $request);
 
         $rows = $query->orderBy('lastname')->orderBy('firstname')->get()->map(fn (Player $p) => [
             $p->membership_id,
             FileNumber::format($p->file_number),
-            $p->fullname,
             $p->wilaya?->localized_name,
+            $p->position?->abbreviation,
+            $p->otherPositions->pluck('abbreviation')->implode(', '),
+            $p->fullname,
             $p->category?->localized_name,
             $p->status?->localized_name,
             $p->is_student ? 'student' : 'worker',
@@ -475,7 +513,7 @@ class PlayerController extends Controller
             $p->branches->map(fn (Branch $b) => $b->localized_name)->implode(' / '),
         ]);
 
-        $headers = ['membership_id', 'File number', 'Wilaya', 'name', 'category', 'status', 'type', 'join_year', 'debt', 'phones', 'branches'];
+        $headers = ['membership_id', 'File number', 'Wilaya', 'Main position', 'Other positions', 'name', 'category', 'status', 'type', 'join_year', 'debt', 'phones', 'branches'];
 
         return $exporter->download('Players', $headers, $rows->all(), 'players-'.now()->format('Y-m-d').'.csv');
     }
@@ -552,7 +590,13 @@ class PlayerController extends Controller
         }
 
         if ($request->filled('position_id')) {
-            $query->where('position_id', $request->input('position_id'));
+            $positionId = (int) $request->input('position_id');
+
+            // "Plays X" means the main position or one of the others. Wrapped in
+            // its own closure so orWhereHas doesn't escape into an OR against
+            // whatever other filters (category, branch, ...) are ANDed around it.
+            $query->where(fn ($q) => $q->where('position_id', $positionId)
+                ->orWhereHas('otherPositions', fn ($p) => $p->where('positions.id', $positionId)));
         }
 
         if ($request->filled('branch_id')) {

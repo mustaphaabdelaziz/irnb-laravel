@@ -4,6 +4,7 @@ namespace App\Http\Requests\Player;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StorePlayerRequest extends FormRequest
 {
@@ -39,6 +40,8 @@ class StorePlayerRequest extends FormRequest
             'join_year' => ['nullable', 'integer', 'min:1900', 'max:'.(date('Y') + 1)],
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'position_id' => ['nullable', 'integer', 'exists:positions,id'],
+            'other_position_ids' => ['nullable', 'array'],
+            'other_position_ids.*' => ['integer', 'exists:positions,id'],
             'branch_ids' => ['nullable', 'array'],
             'branch_ids.*' => ['integer', 'exists:branches,id'],
             'team' => ['nullable', 'string', 'max:255'],
@@ -51,5 +54,19 @@ class StorePlayerRequest extends FormRequest
             'emergency_contacts.*.relationship' => ['nullable', 'string', 'max:255'],
             'emergency_contacts.*.phones' => ['nullable', 'array'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            $main = $this->input('position_id');
+            $others = (array) $this->input('other_position_ids', []);
+
+            // The main position is already recorded; repeating it would show the
+            // same abbreviation twice on the player's card.
+            if ($main && in_array((int) $main, array_map('intval', $others), true)) {
+                $validator->errors()->add('other_position_ids', __('The main position is already listed.'));
+            }
+        });
     }
 }

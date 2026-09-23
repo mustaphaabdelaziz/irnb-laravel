@@ -23,6 +23,7 @@ use App\Services\Finance\DefaultRegisterResolver;
 use App\Services\Player\DocumentChecklist;
 use App\Services\Player\FileNumber;
 use App\Services\Player\MembershipNumber;
+use App\Services\Player\PlayerDocumentService;
 use App\Services\Player\RegisterPlayerService;
 use App\Services\Storage\FileStorageService;
 use App\Support\TransactionTitle;
@@ -701,7 +702,9 @@ class PlayerController extends Controller
      */
     private function permanentlyDelete(Player $player, FileStorageService $files): void
     {
-        DB::transaction(function () use ($player) {
+        $documents = app(PlayerDocumentService::class);
+
+        DB::transaction(function () use ($player, $documents) {
             Transaction::where('related_entity_type', 'Player')
                 ->where('related_entity_id', $player->id)
                 ->update(['archived' => true]);
@@ -710,9 +713,12 @@ class PlayerController extends Controller
             $player->achievements()->delete();
             $player->playerSubscriptions()->delete();
             $player->equipmentRentals()->delete();
+            $documents->purgePlayerRecords($player);
             $player->delete();
         });
 
         $files->delete($player->picture_filename);
+        // After the commit, so a deletion that rolled back never loses the scans.
+        $documents->purgePlayerFiles($player->id);
     }
 }

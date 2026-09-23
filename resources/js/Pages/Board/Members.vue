@@ -32,7 +32,13 @@ function openTermCreate() {
 }
 function openTermEdit(tm) {
     editingTermId.value = tm.id;
-    termForm.name = tm.name; termForm.start_date = tm.start_date || ''; termForm.end_date = tm.end_date || ''; termForm.is_current = !!tm.is_current;
+    termForm.clearErrors();
+    termForm.name = tm.name;
+    // Slice anyway: a stray timestamp would leave <input type="date"> blank
+    // while the old value is silently re-sent on save.
+    termForm.start_date = tm.start_date ? String(tm.start_date).slice(0, 10) : '';
+    termForm.end_date = tm.end_date ? String(tm.end_date).slice(0, 10) : '';
+    termForm.is_current = !!tm.is_current;
     showTermForm.value = true;
 }
 function submitTerm() {
@@ -233,12 +239,15 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                         <button type="button" @click="showTermForm = false" class="text-slate-400 hover:text-slate-600"><Icon name="xcircle" /></button>
                     </div>
                     <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('name') }}</span>
-                        <input v-model="termForm.name" required :placeholder="'2024–2028'" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
+                        <input v-model="termForm.name" required :placeholder="'2024–2028'" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
+                        <span v-if="termForm.errors.name" class="mt-1 block text-xs text-rose-500">{{ termForm.errors.name }}</span></label>
                     <div class="grid grid-cols-2 gap-3">
                         <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('term_start') }}</span>
-                            <input v-model="termForm.start_date" type="date" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
+                            <input v-model="termForm.start_date" type="date" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
+                            <span v-if="termForm.errors.start_date" class="mt-1 block text-xs text-rose-500">{{ termForm.errors.start_date }}</span></label>
                         <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('term_end') }}</span>
-                            <input v-model="termForm.end_date" type="date" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
+                            <input v-model="termForm.end_date" type="date" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
+                            <span v-if="termForm.errors.end_date" class="mt-1 block text-xs text-rose-500">{{ termForm.errors.end_date }}</span></label>
                     </div>
                     <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                         <input v-model="termForm.is_current" type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500" />

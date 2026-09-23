@@ -8,11 +8,12 @@ use App\Models\Player;
 use App\Models\Transaction;
 use App\Models\WebsiteConfig;
 use App\Services\Pdf\PdfService;
+use App\Support\Media;
+use App\Support\TransactionTitle;
+use App\Support\UiLang;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 class ReportController extends Controller
@@ -21,7 +22,7 @@ class ReportController extends Controller
 
     public function transactionReceipt(Transaction $transaction): Response
     {
-        $transaction->load(['recordedBy', 'receivedBy']);
+        $transaction->load(['recordedBy', 'receivedBy', ...TransactionTitle::RELATIONS]);
 
         $relatedName = null;
         if ($transaction->related_entity_type === 'Player' && $transaction->related_entity_id) {
@@ -33,6 +34,12 @@ class ReportController extends Controller
             'transaction' => $transaction,
             'relatedName' => $relatedName,
             'receiptNumber' => str_pad((string) $transaction->id, 6, '0', STR_PAD_LEFT),
+            'title' => TransactionTitle::for($transaction),
+            'categoryLabel' => $transaction->financeCategory?->localized_name ?? $transaction->category,
+            'statusLabel' => UiLang::get(strtolower((string) $transaction->status), (string) $transaction->status),
+            'paymentLabel' => $transaction->payment_method
+                ? UiLang::get(strtolower((string) $transaction->payment_method), (string) $transaction->payment_method)
+                : null,
         ])->render();
 
         return $this->pdf->stream($html, "receipt-{$transaction->id}.pdf");
@@ -141,21 +148,13 @@ class ReportController extends Controller
      * are host-relative (/media/... or /storage/...) or legacy absolute URLs;
      * resolve any of them to the public-disk file, which works in both the web
      * app and the packaged desktop app. Returns null if the file is missing.
+     *
+     * Delegates to Media::localFile(), shared with PlayerPrintController, which
+     * also guards against `..`/absolute-path traversal and double-checks
+     * containment via realpath().
      */
     private function resolveMediaFile(?string $url): ?string
     {
-        if (! $url) {
-            return null;
-        }
-
-        $rel = preg_replace('#^https?://[^/]+#', '', $url);
-        $rel = preg_replace('#^/?(?:media|storage)/#', '', $rel);
-
-        $candidate = storage_path('app/public/'.$rel);
-        if (! File::exists($candidate)) {
-            $candidate = public_path('storage/'.$rel);
-        }
-
-        return File::exists($candidate) ? $candidate : null;
+        return Media::localFile($url);
     }
 }

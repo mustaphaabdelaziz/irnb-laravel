@@ -8,8 +8,6 @@ use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -25,24 +23,24 @@ class PlayerImportTest extends TestCase
         ]);
     }
 
-    private function makeWorkbook(array $dataRows): UploadedFile
+    private function makeCsv(array $dataRows): UploadedFile
     {
-        $spreadsheet = new Spreadsheet;
-        $sheet = $spreadsheet->getActiveSheet();
-
         $header = array_fill(0, 19, 'header');
-        $sheet->fromArray([$header, ...$dataRows], null, 'A1');
 
-        $path = tempnam(sys_get_temp_dir(), 'imp').'.xlsx';
-        (new Xlsx($spreadsheet))->save($path);
+        $fh = fopen('php://temp', 'r+');
+        fwrite($fh, "\xEF\xBB\xBF"); // UTF-8 BOM, matching the real template
+        fputcsv($fh, $header);
+        foreach ($dataRows as $row) {
+            fputcsv($fh, $row);
+        }
+        rewind($fh);
+        $content = stream_get_contents($fh);
+        fclose($fh);
 
-        return new UploadedFile(
-            $path,
-            'players.xlsx',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            null,
-            true,
-        );
+        $path = tempnam(sys_get_temp_dir(), 'imp').'.csv';
+        file_put_contents($path, $content);
+
+        return new UploadedFile($path, 'players.csv', 'text/csv', null, true);
     }
 
     #[Test]
@@ -51,7 +49,7 @@ class PlayerImportTest extends TestCase
         $this->actingAs($this->admin())
             ->get(route('players.import.template'))
             ->assertOk()
-            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            ->assertHeader('content-type', 'text/csv; charset=UTF-8');
     }
 
     #[Test]
@@ -70,7 +68,7 @@ class PlayerImportTest extends TestCase
 
         // firstname, lastname, father, grandfather, nickname, birthdate, gender, phone,
         // email, city, state, category, position, job, status, skill, blood, medical, join_year
-        $file = $this->makeWorkbook([
+        $file = $this->makeCsv([
             ['Ali', 'Brahimi', '', '', '', '2008-05-20', 'Male', '0550000000', '', 'Algiers', 'Algiers', 'U17', 'GK', '', 'student', '6', 'O+', '', (string) now()->year],
             ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''], // blank row ignored
         ]);
@@ -85,6 +83,25 @@ class PlayerImportTest extends TestCase
         $this->assertSame('Ali', $player->firstname);
         $this->assertSame($category->id, $player->category_id);
         $this->assertSame(6, $player->skill_level);
+        $this->assertTrue($player->is_student);
+        $this->assertSame('منخرط', $player->status->name);
         $this->assertDatabaseCount('player_subscriptions', 1);
+    }
+
+    #[Test]
+    public function it_defaults_to_worker_when_status_is_blank_or_not_student(): void
+    {
+        $blank = ['Sami', 'Kaci', '', '', '', '2000-01-01', 'Male', '', '', 'Algiers', 'Algiers', '', '', '', '', '5', '', '', (string) now()->year];
+        $worker = ['Nabil', 'Saidi', '', '', '', '1995-01-01', 'Male', '', '', 'Algiers', 'Algiers', '', '', '', 'worker', '5', '', '', (string) now()->year];
+
+        $file = $this->makeCsv([$blank, $worker]);
+
+        $this->actingAs($this->admin())
+            ->post(route('players.import.store'), ['file' => $file])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertFalse(Player::where('firstname', 'Sami')->firstOrFail()->is_student);
+        $this->assertFalse(Player::where('firstname', 'Nabil')->firstOrFail()->is_student);
     }
 }

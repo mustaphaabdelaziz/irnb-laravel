@@ -2,145 +2,131 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Player;
-use App\Models\Transaction;
+use App\Models\Branch;
 use App\Models\User;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
+use App\Services\Dashboard\DashboardFilters;
+use App\Services\Dashboard\FinanceStats;
+use App\Services\Dashboard\HeroStats;
+use App\Services\Dashboard\MemberStats;
+use App\Services\Dashboard\OperationsStats;
+use App\Services\Dashboard\OverviewStats;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * A resolver, not a calculator.
+ *
+ * Every number on the dashboard comes from a stat provider that can be tested
+ * on its own. Tab payloads are optional props, so switching tabs costs one
+ * partial reload and a first paint never pays for the three tabs nobody is
+ * looking at.
+ */
 class DashboardController extends Controller
 {
-    public function __invoke(): Response
+    /** Which permission module each tab needs before its data will be computed. */
+    private const TAB_MODULES = [
+        'finance' => ['finance'],
+        'members' => ['players'],
+        'operations' => ['equipment', 'subscriptions'],
+    ];
+
+    public function __construct(
+        private readonly HeroStats $hero,
+        private readonly OverviewStats $overview,
+        private readonly FinanceStats $finance,
+        private readonly MemberStats $members,
+        private readonly OperationsStats $operations,
+    ) {}
+
+    public function __invoke(Request $request): Response
     {
-        $startOfMonth = Carbon::now()->startOfMonth();
-        $endOfMonth = Carbon::now()->endOfMonth();
-
-        $totalPlayers = Player::query()->where('archived', false)->count();
-        $unpaidPlayers = Player::query()->where('archived', false)->where('outstanding_debt', '>', 0)->count();
-        $paidPlayers = max(0, $totalPlayers - $unpaidPlayers);
-        $outstandingDebt = (float) Player::query()->where('archived', false)->sum('outstanding_debt');
-
-        $monthlyIncome = (float) Transaction::query()
-            ->where('transaction_type', 'income')
-            ->where('archived', false)
-            ->whereBetween('transaction_date', [$startOfMonth, $endOfMonth])
-            ->sum('amount');
-
-        $monthlyExpense = (float) Transaction::query()
-            ->where('transaction_type', 'expense')
-            ->where('archived', false)
-            ->whereBetween('transaction_date', [$startOfMonth, $endOfMonth])
-            ->sum('amount');
-
-        // All-time financial totals (Express dashboard parity).
-        $year = Carbon::now()->year;
-        $totalIncome = (float) Transaction::query()->where('transaction_type', 'income')->where('archived', false)->sum('amount');
-        $totalExpense = (float) Transaction::query()->where('transaction_type', 'expense')->where('archived', false)->sum('amount');
-        $totalDonations = (float) Transaction::query()->where('category', 'donation')->where('archived', false)->sum('amount');
-        $netBalance = $totalIncome - $totalExpense;
-        $financeStatus = $netBalance > 0 ? 'profit' : ($netBalance < 0 ? 'loss' : 'balanced');
-
-        // Players-by-category distribution (doughnut chart).
-        $categoryDistribution = DB::table('players')
-            ->leftJoin('categories', 'categories.id', '=', 'players.category_id')
-            ->where('players.archived', false)
-            ->groupBy('categories.name')
-            ->selectRaw("COALESCE(categories.name, 'Uncategorized') as name, COUNT(*) as total")
-            ->orderByDesc('total')
-            ->get()
-            ->map(fn ($row): array => ['name' => $row->name, 'count' => (int) $row->total])
-            ->values();
-
-        // Monthly income for the current year (line chart) — bucketed in PHP for DB portability.
-        $monthlyRevenue = array_fill(0, 12, 0.0);
-        Transaction::query()
-            ->where('transaction_type', 'income')
-            ->where('archived', false)
-            ->whereYear('transaction_date', $year)
-            ->get(['transaction_date', 'amount'])
-            ->each(function (Transaction $tx) use (&$monthlyRevenue): void {
-                $monthlyRevenue[(int) $tx->transaction_date->format('n') - 1] += (float) $tx->amount;
-            });
-
-        // Paid vs owed per subscription type (bar chart).
-        $subscriptionSummary = DB::table('player_subscriptions')
-            ->join('subscriptions', 'subscriptions.id', '=', 'player_subscriptions.subscription_id')
-            ->groupBy('subscriptions.id', 'subscriptions.name', 'subscriptions.year')
-            ->selectRaw('subscriptions.name, subscriptions.year, SUM(player_subscriptions.amount_paid) as paid, SUM(player_subscriptions.amount_owed) as owed')
-            ->orderByDesc('subscriptions.year')
-            ->get()
-            ->map(fn ($row): array => [
-                'name' => $row->name,
-                'year' => (int) $row->year,
-                'paid' => (float) $row->paid,
-                'owed' => (float) $row->owed,
-            ])
-            ->values();
-
-        $recentTransactions = Transaction::query()
-            ->where('archived', false)
-            ->latest('transaction_date')
-            ->limit(8)
-            ->get([
-                'id',
-                'transaction_date',
-                'amount',
-                'transaction_type',
-                'category',
-                'status',
-                'description',
-            ])
-            ->map(fn (Transaction $transaction): array => [
-                'id' => $transaction->id,
-                'date' => optional($transaction->transaction_date)?->format('Y-m-d H:i'),
-                'amount' => (float) $transaction->amount,
-                'type' => $transaction->transaction_type,
-                'category' => $transaction->category,
-                'status' => $transaction->status,
-                'description' => $transaction->description,
-            ])
-            ->values();
-
-        $topDebtors = Player::query()
-            ->where('archived', false)
-            ->where('outstanding_debt', '>', 0)
-            ->orderByDesc('outstanding_debt')
-            ->limit(6)
-            ->get(['id', 'firstname', 'lastname', 'membership_id', 'outstanding_debt'])
-            ->map(fn (Player $player): array => [
-                'id' => $player->id,
-                'name' => trim(($player->firstname ?? '').' '.($player->lastname ?? '')),
-                'membership_id' => $player->membership_id,
-                'outstanding' => (float) $player->outstanding_debt,
-            ])
-            ->values();
+        $filters = DashboardFilters::fromRequest($request);
+        $user = $request->user();
 
         return Inertia::render('Dashboard', [
-            'stats' => [
-                'totalPlayers' => $totalPlayers,
-                'paidPlayers' => $paidPlayers,
-                'unpaidPlayers' => $unpaidPlayers,
-                'outstandingDebt' => $outstandingDebt,
-                'monthlyIncome' => $monthlyIncome,
-                'monthlyExpense' => $monthlyExpense,
-                'balance' => $monthlyIncome - $monthlyExpense,
-                'totalIncome' => $totalIncome,
-                'totalExpense' => $totalExpense,
-                'totalDonations' => $totalDonations,
-                'netBalance' => $netBalance,
-                'financeStatus' => $financeStatus,
-                'totalTransactions' => Transaction::query()->count(),
-                'activeUsers' => User::query()->where('is_active', true)->count(),
-            ],
-            'charts' => [
-                'categoryDistribution' => $categoryDistribution,
-                'monthlyRevenue' => $monthlyRevenue,
-                'subscriptionSummary' => $subscriptionSummary,
-            ],
-            'recentTransactions' => $recentTransactions,
-            'topDebtors' => $topDebtors,
+            'filters' => $filters->toArray(),
+
+            // Closures, not values: Inertia skips a closure prop on a partial
+            // reload that did not ask for it. Passing the array directly would
+            // recompute the whole hero row every time someone switches tab.
+            'branches' => fn () => Branch::query()
+                ->orderBy('name')
+                ->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
+            'can' => fn (): array => $this->visibleTabs($user),
+            'hero' => fn (): array => $this->hero->get($filters),
+            ...$this->tabProps($filters, $user),
         ]);
+    }
+
+    /**
+     * Tab payloads: the open one eagerly, the rest on demand.
+     *
+     * An optional prop only resolves when a partial reload names it, so
+     * marking every tab optional left the tab the reader actually opened with
+     * no data until a second request went out. The open tab is a plain closure
+     * — computed on this request — and the others stay optional.
+     *
+     * @return array<string, mixed>
+     */
+    private function tabProps(DashboardFilters $filters, ?User $user): array
+    {
+        // Phase 2 and 3 fill these in. The keys exist now so the client's tab
+        // machinery has one shape to code against from the start.
+        $resolvers = [
+            'overview' => fn (): array => $this->overview->get($filters),
+            'finance' => fn (): ?array => $this->guard($user, 'finance')
+                ? $this->finance->get($filters)
+                : null,
+            'members' => fn (): ?array => $this->guard($user, 'members')
+                ? $this->members->get($filters)
+                : null,
+            'operations' => fn (): ?array => $this->guard($user, 'operations')
+                ? $this->operations->get($filters)
+                : null,
+        ];
+
+        $props = [];
+        foreach ($resolvers as $tab => $resolver) {
+            $props[$tab] = $tab === $filters->tab ? $resolver : Inertia::optional($resolver);
+        }
+
+        return $props;
+    }
+
+    /** @return array<string, bool> */
+    private function visibleTabs(?User $user): array
+    {
+        return [
+            'overview' => true,
+            'finance' => $this->guard($user, 'finance'),
+            'members' => $this->guard($user, 'members'),
+            'operations' => $this->guard($user, 'operations'),
+        ];
+    }
+
+    /**
+     * Whether a tab may be computed for this user.
+     *
+     * Hiding the tab in the client is a courtesy; this is the part that means
+     * a hand-written ?tab=finance returns nothing.
+     */
+    private function guard(?User $user, string $tab): bool
+    {
+        if ($user === null) {
+            return false;
+        }
+
+        if ($user->isSuperadmin()) {
+            return true;
+        }
+
+        foreach (self::TAB_MODULES[$tab] ?? [] as $module) {
+            if ($user->hasPermission($module, 'view')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

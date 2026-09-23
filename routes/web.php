@@ -1,17 +1,21 @@
 <?php
 
+use App\Http\Controllers\BackupController;
 use App\Http\Controllers\BoardController;
 use App\Http\Controllers\BoardMeetingController;
 use App\Http\Controllers\BoardMemberController;
 use App\Http\Controllers\BoardRoleController;
 use App\Http\Controllers\BoardTaskController;
 use App\Http\Controllers\BoardTermController;
+use App\Http\Controllers\BranchController;
 use App\Http\Controllers\BudgetController;
+use App\Http\Controllers\CashRegisterController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EquipmentCatalogController;
 use App\Http\Controllers\EquipmentCategoryController;
 use App\Http\Controllers\EquipmentItemController;
+use App\Http\Controllers\EquipmentOutController;
 use App\Http\Controllers\FinanceAccountController;
 use App\Http\Controllers\FinanceCategoryController;
 use App\Http\Controllers\FinanceController;
@@ -21,6 +25,9 @@ use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\MemberJobController;
 use App\Http\Controllers\PlayerController;
 use App\Http\Controllers\PlayerImportController;
+use App\Http\Controllers\PlayerPrintController;
+use App\Http\Controllers\PlayerStatusController;
+use App\Http\Controllers\PlayerSubscriptionController;
 use App\Http\Controllers\PlayerTransactionController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProfileController;
@@ -70,17 +77,31 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Player bulk import (declared before the resource so the static paths win)
+    // Player bulk import + export + bulk actions (declared before the resource so the static paths win)
     Route::get('/players/import/template', [PlayerImportController::class, 'template'])->name('players.import.template');
     Route::post('/players/import', [PlayerImportController::class, 'store'])->name('players.import.store');
+    Route::get('/players/export', [PlayerController::class, 'export'])->name('players.export');
+    Route::post('/players/bulk-archive', [PlayerController::class, 'bulkArchive'])->name('players.bulkArchive');
+    Route::post('/players/bulk-restore', [PlayerController::class, 'bulkRestore'])->name('players.bulkRestore');
+    Route::post('/players/bulk-force-delete', [PlayerController::class, 'bulkForceDelete'])->name('players.bulkForceDelete');
+    Route::post('/players/bulk-update', [PlayerController::class, 'bulkUpdate'])->name('players.bulkUpdate');
+    Route::get('/players/labels', [PlayerPrintController::class, 'labels'])->name('players.labels');
+    Route::get('/players/board-table', [PlayerPrintController::class, 'boardTable'])->name('players.board-table');
 
     // Players
     Route::resource('players', PlayerController::class);
+    Route::put('/players/{player}/restore', [PlayerController::class, 'restore'])->name('players.restore');
+    Route::delete('/players/{player}/force', [PlayerController::class, 'forceDelete'])->name('players.forceDelete');
 
     // Player transactions (nested)
     Route::post('/players/{player}/transactions', [PlayerTransactionController::class, 'store'])->name('players.transactions.store');
     Route::put('/players/{player}/transactions/{transaction}', [PlayerTransactionController::class, 'update'])->name('players.transactions.update');
     Route::delete('/players/{player}/transactions/{transaction}', [PlayerTransactionController::class, 'destroy'])->name('players.transactions.destroy');
+
+    // Player subscription obligation lines (add manual/previous debt, edit amount/exempt, remove assignment)
+    Route::post('/players/{player}/subscriptions', [PlayerSubscriptionController::class, 'store'])->name('players.subscriptions.store');
+    Route::put('/players/{player}/subscriptions/{playerSubscription}', [PlayerSubscriptionController::class, 'update'])->name('players.subscriptions.update');
+    Route::delete('/players/{player}/subscriptions/{playerSubscription}', [PlayerSubscriptionController::class, 'destroy'])->name('players.subscriptions.destroy');
 
     // Subscriptions
     Route::resource('subscriptions', SubscriptionController::class);
@@ -97,15 +118,28 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
 
     // Finance — year-grouped dashboard (view open to approved members)
     Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');
+    Route::get('/finance/registers', [CashRegisterController::class, 'index'])->name('finance.registers.index');
+    Route::post('/finance/transfers', [CashRegisterController::class, 'transfer'])->name('finance.transfers.store');
 
     // PDF documents
     Route::get('/players/{player}/card', [ReportController::class, 'playerCard'])->name('players.card');
+    Route::get('/players/{player}/label', [PlayerPrintController::class, 'label'])->name('players.label');
     Route::get('/reports/financial', [ReportController::class, 'financialSummary'])->name('reports.financial');
 
-    // Equipment
+    // Equipment — catalog (equipment list) import/export declared before the resource so the static paths win
+    Route::get('/equipment/catalogs/export', [EquipmentCatalogController::class, 'export'])->name('equipment.catalogs.export');
+    Route::get('/equipment/catalogs/import/template', [EquipmentCatalogController::class, 'importTemplate'])->name('equipment.catalogs.import.template');
+    Route::post('/equipment/catalogs/import', [EquipmentCatalogController::class, 'import'])->name('equipment.catalogs.import');
+    Route::post('/equipment/catalogs/bulk-delete', [EquipmentCatalogController::class, 'bulkDestroy'])->name('equipment.catalogs.bulk-destroy');
     Route::resource('equipment/catalogs', EquipmentCatalogController::class)->names('equipment.catalogs');
+    Route::post('/equipment/stock/receive', [EquipmentItemController::class, 'receive'])->name('equipment.stock.receive');
+    Route::post('/equipment/items/{item}/split', [EquipmentItemController::class, 'split'])->name('equipment.stock.split');
     Route::post('/equipment/items', [EquipmentItemController::class, 'store'])->name('equipment.items.store');
     Route::get('/equipment/items/preview-serial', [EquipmentItemController::class, 'previewSerial'])->name('equipment.items.preview-serial');
+    Route::get('/equipment/items/import/template', [EquipmentItemController::class, 'importTemplate'])->name('equipment.items.import.template');
+    Route::get('/equipment/catalogs/{catalog}/items/export', [EquipmentItemController::class, 'export'])->name('equipment.items.export');
+    Route::post('/equipment/catalogs/{catalog}/items/import', [EquipmentItemController::class, 'import'])->name('equipment.items.import');
+    Route::post('/equipment/items/bulk-delete', [EquipmentItemController::class, 'bulkDestroy'])->name('equipment.items.bulk-destroy');
     Route::put('/equipment/items/{item}', [EquipmentItemController::class, 'update'])->name('equipment.items.update');
     Route::delete('/equipment/items/{item}', [EquipmentItemController::class, 'destroy'])->name('equipment.items.destroy');
     Route::post('/equipment/items/rent', [EquipmentItemController::class, 'rent'])->name('equipment.items.rent');
@@ -113,7 +147,9 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
     Route::post('/equipment/items/{item}/repair', [EquipmentItemController::class, 'repair'])->name('equipment.items.repair');
     Route::post('/equipment/items/{item}/complete-repair', [EquipmentItemController::class, 'completeRepair'])->name('equipment.items.complete-repair');
     Route::post('/equipment/items/{item}/mark-lost', [EquipmentItemController::class, 'markLost'])->name('equipment.items.mark-lost');
+    Route::post('/equipment/items/{item}/mark-found', [EquipmentItemController::class, 'markFound'])->name('equipment.items.mark-found');
     Route::get('/equipment/inventory', [EquipmentItemController::class, 'inventory'])->name('equipment.inventory');
+    Route::get('/equipment/out', EquipmentOutController::class)->name('equipment.out');
     Route::get('/equipment/items/{item}/history', [EquipmentItemController::class, 'history'])->name('equipment.items.history');
 
     // Periodic inventory / stock-take sessions (count -> reconcile -> report)
@@ -136,13 +172,20 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
         Route::post('/users/{user}/approve', [UserController::class, 'approve'])->name('users.approve');
+        Route::post('/users/{user}/password', [UserController::class, 'resetPassword'])->name('users.password');
+        Route::post('/users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggleActive');
 
         // Settings - lookup tables
         Route::resource('categories', CategoryController::class)->except(['show', 'create', 'edit']);
+        Route::resource('branches', BranchController::class)->except(['show', 'create', 'edit']);
+        Route::post('/branches/{branch}/players', [BranchController::class, 'syncPlayers'])->name('branches.players.sync');
         Route::resource('equipment-categories', EquipmentCategoryController::class)->except(['show', 'create', 'edit']);
         Route::resource('storage-locations', StorageLocationController::class)->except(['show', 'create', 'edit']);
+        Route::post('/jobs/quick', [MemberJobController::class, 'quickStore'])->name('jobs.quick.store');
+        Route::post('/jobs/{job}/merge', [MemberJobController::class, 'merge'])->name('jobs.merge');
         Route::resource('jobs', MemberJobController::class)->except(['show', 'create', 'edit']);
         Route::resource('positions', PositionController::class)->except(['show', 'create', 'edit']);
+        Route::resource('player-statuses', PlayerStatusController::class)->except(['show', 'create', 'edit']);
 
         // Finance management — fiscal years (close/reopen), budgets, chart of accounts, accounts
         Route::get('/finance/settings', [FinanceController::class, 'settings'])->name('finance.settings');
@@ -183,7 +226,8 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         Route::put('/board/meetings/{meeting}/attendance', [BoardMeetingController::class, 'attendance'])->name('board.meetings.attendance');
         Route::post('/board/meetings/{meeting}/attachment', [BoardMeetingController::class, 'attachment'])->name('board.meetings.attachment');
         Route::delete('/board/meetings/{meeting}/attachment', [BoardMeetingController::class, 'deleteAttachment'])->name('board.meetings.attachment.delete');
-        Route::delete('/board/meetings/{meeting}', [BoardMeetingController::class, 'destroy'])->name('board.meetings.destroy');
+        // Meetings are never deleted: cancelling keeps the record (who/when/why).
+        Route::post('/board/meetings/{meeting}/cancel', [BoardMeetingController::class, 'cancel'])->name('board.meetings.cancel');
 
         Route::get('/board/tasks', [BoardController::class, 'tasks'])->name('board.tasks');
         Route::get('/board/tasks/export', [BoardController::class, 'exportTasks'])->name('board.tasks.export');
@@ -204,6 +248,27 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         Route::post('/roles', [RoleController::class, 'store'])->name('roles.store');
         Route::put('/roles/{role}', [RoleController::class, 'update'])->name('roles.update');
         Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
+    });
+
+    // Database backup & restore — desktop app only, superadmin only.
+    // Route names are intentionally unmapped in config/permissions.php: the
+    // `permission` middleware passes unmapped names through, and `superadmin` gates them.
+    Route::middleware(['desktop', 'superadmin'])->group(function () {
+        Route::get('/backups', [BackupController::class, 'index'])->name('backups.index');
+        Route::post('/backups', [BackupController::class, 'store'])->name('backups.store');
+        Route::post('/backups/tick', [BackupController::class, 'tick'])->name('backups.tick');
+        Route::put('/backups/settings', [BackupController::class, 'updateSettings'])->name('backups.settings');
+        Route::post('/backups/folder', [BackupController::class, 'chooseFolder'])->name('backups.folder');
+        Route::post('/backups/restore', [BackupController::class, 'restore'])->name('backups.restore');
+        Route::post('/backups/reveal', [BackupController::class, 'reveal'])->name('backups.reveal');
+
+        // Dismisses the persistent restore banner (the `lastRestore` page prop). MUST stay
+        // above /backups/{name}: that route would otherwise match this URL first and try to
+        // delete a backup called "last-restore".
+        Route::delete('/backups/last-restore', [BackupController::class, 'dismissLastRestore'])
+            ->name('backups.last-restore.dismiss');
+
+        Route::delete('/backups/{name}', [BackupController::class, 'destroy'])->name('backups.destroy');
     });
 });
 

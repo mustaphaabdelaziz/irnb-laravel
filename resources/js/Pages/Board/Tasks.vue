@@ -125,7 +125,7 @@ function openCreate() {
 function openEdit(tk) {
     editingId.value = tk.id;
     form.title = tk.title; form.description = tk.description || ''; form.board_member_id = tk.board_member_id;
-    form.board_meeting_id = tk.board_meeting_id; form.due_date = tk.due_date || ''; form.status = tk.status;
+    form.board_meeting_id = tk.board_meeting_id; form.due_date = tk.due_date ? String(tk.due_date).slice(0, 10) : ''; form.status = tk.status;
     form.progress = tk.progress || 0; form.priority = tk.priority;
     showModal.value = true;
 }
@@ -176,7 +176,7 @@ function onDrop(col) {
         description: tk.description,
         board_member_id: tk.board_member_id,
         board_meeting_id: tk.board_meeting_id,
-        due_date: tk.due_date,
+        due_date: tk.due_date ? String(tk.due_date).slice(0, 10) : null,
         priority: tk.priority,
         status: col,
         progress,

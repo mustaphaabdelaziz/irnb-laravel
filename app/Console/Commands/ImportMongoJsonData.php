@@ -11,12 +11,14 @@ use App\Models\EquipmentHistory;
 use App\Models\EquipmentItem;
 use App\Models\MemberJob;
 use App\Models\Player;
+use App\Models\PlayerStatus;
 use App\Models\PlayerSubscription;
 use App\Models\Position;
 use App\Models\Subscription;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Models\WebsiteConfig;
+use App\Services\Player\FileNumber;
 use App\Services\Player\MembershipNumber;
 use Carbon\Carbon;
 use Illuminate\Console\Attributes\Description;
@@ -453,6 +455,9 @@ class ImportMongoJsonData extends Command
                     'email' => $this->nullableString($row['email'] ?? null),
                     'status_class' => $this->nullableString($status['class'] ?? null),
                     'status_value' => $this->nullableString($status['value'] ?? null),
+                    // Resolve the imported status string to the lookup FK so it
+                    // shows up in the status-based UI; keep the raw string too.
+                    'status_id' => $this->resolveStatusId($this->nullableString($status['value'] ?? null)),
                     'state' => $this->nullableString($row['state'] ?? null) ?? 'Unknown',
                     'city' => $this->nullableString($row['city'] ?? null) ?? 'Unknown',
                     'is_student' => $this->toBoolean($row['isStudent'] ?? true),
@@ -468,6 +473,12 @@ class ImportMongoJsonData extends Command
                     'outstanding_debt' => (float) ($row['outstandingDebt'] ?? 0),
                 ]
             );
+
+            // Legacy imports bypass RegisterPlayerService, which is where a file
+            // number is normally assigned; do it here too, so re-running the
+            // command never leaves an imported player without one (a no-op once
+            // they already have one).
+            FileNumber::assign($player);
 
             $player->emergencyContacts()->delete();
             foreach ($this->ensureArray($health['emergencyContact'] ?? []) as $contact) {
@@ -674,7 +685,6 @@ class ImportMongoJsonData extends Command
                     'purchase_price' => isset($row['purchasePrice']) ? (float) $row['purchasePrice'] : (isset($row['purchase_price']) ? (float) $row['purchase_price'] : null),
                     'picture_url' => $this->nullableString($row['picture']['url'] ?? $row['picture_url'] ?? null),
                     'picture_filename' => $this->nullableString($row['picture']['filename'] ?? $row['picture_filename'] ?? null),
-                    'item_count' => max(0, (int) ($row['itemCount'] ?? $row['item_count'] ?? 0)),
                 ]
             );
 
@@ -740,11 +750,8 @@ class ImportMongoJsonData extends Command
             $count++;
         }
 
-        EquipmentCatalog::query()->each(function (EquipmentCatalog $catalog): void {
-            $catalog->update([
-                'item_count' => $catalog->items()->count(),
-            ]);
-        });
+        // No item_count reconciliation: catalog counts derive from
+        // SUM(quantity) over their lots, so there is nothing to backfill.
 
         $this->info('Equipment items imported: '.$count);
 
@@ -1275,6 +1282,34 @@ class ImportMongoJsonData extends Command
 
         return $string === '' ? null : $string;
     }
+
+    /**
+     * Map an imported status string to the player_statuses lookup, creating an
+     * inactive row for anything unrecognised so the value survives and can be
+     * cleaned up in Settings — mirroring the backfill migration.
+     */
+    private function resolveStatusId(?string $value): ?int
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $this->statusCache ??= PlayerStatus::pluck('id', 'name')->all();
+
+        if (! isset($this->statusCache[$value])) {
+            $this->statusCache[$value] = PlayerStatus::create([
+                'name' => $value,
+                'name_ar' => $value,
+                'sort_order' => 99,
+                'is_active' => false,
+            ])->id;
+        }
+
+        return $this->statusCache[$value];
+    }
+
+    /** @var array<string, int>|null */
+    private ?array $statusCache = null;
 
     private function toBoolean(mixed $value): bool
     {

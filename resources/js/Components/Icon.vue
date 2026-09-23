@@ -37,6 +37,7 @@ const icons = {
     menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
     chevron: '<path d="m6 9 6 6 6-6"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
+    more: '<circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/>',
     arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
     logout: '<path d="M14 4H6.5A1.5 1.5 0 0 0 5 5.5v13A1.5 1.5 0 0 0 6.5 20H14"/><path d="M10 12h10M16.5 8.5 20 12l-3.5 3.5"/>',
     user: '<circle cx="12" cy="8.5" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/>',
@@ -64,6 +65,9 @@ const icons = {
     task: '<rect x="4" y="4" width="16" height="16" rx="2.5"/><path d="m8.5 12 2.2 2.2 4.8-5"/>',
     clipboard: '<rect x="5" y="4.5" width="14" height="16" rx="2"/><rect x="9" y="3" width="6" height="3.2" rx="1"/><path d="M8.5 11h7M8.5 14.5h5"/>',
     flag: '<path d="M6 21V4"/><path d="M6 5h11l-2 3 2 3H6"/>',
+    idcard: '<rect x="2.5" y="5" width="19" height="14" rx="2"/><circle cx="8.5" cy="11" r="2"/><path d="M5 16c.7-1.4 2-2.2 3.5-2.2S11.3 14.6 12 16"/><path d="M14.5 10h5M14.5 13.5h3.5"/>',
+    folder: '<path d="M3 7.5c0-1 .8-1.8 1.8-1.8h3.9l1.8 2.1h7.7c1 0 1.8.8 1.8 1.8v7.6c0 1-.8 1.8-1.8 1.8H4.8c-1 0-1.8-.8-1.8-1.8z"/>',
+    drop: '<path d="M12 3.5c3 3.6 5.5 6.4 5.5 9.4a5.5 5.5 0 0 1-11 0c0-3 2.5-5.8 5.5-9.4z"/>',
 };
 
 const body = computed(() => icons[props.name] ?? icons.dot);

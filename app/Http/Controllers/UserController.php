@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\Storage\FileStorageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -61,7 +62,11 @@ class UserController extends Controller
         return Inertia::render('Users/Index', [
             'users' => $users,
             'filters' => $request->only(['search', 'status', 'role']),
-            'pendingCount' => User::where('is_user', true)->where('approved', false)->count(),
+            // Closure so filter reloads (partial) skip the count query.
+            'pendingCount' => fn () => User::where('is_user', true)->where('approved', false)->count(),
+            // Password reset and superadmin actions are gated to a superadmin.
+            'canManageAccess' => $request->user()->isSuperadmin(),
+            'currentUserId' => $request->user()->id,
         ]);
     }
 
@@ -121,30 +126,77 @@ class UserController extends Controller
         $user->update($validated);
 
         return redirect()->route('users.index')
-            ->with('success', 'User updated successfully.');
+            ->with('success', 'flash.user_updated');
     }
 
     public function approve(User $user): RedirectResponse
     {
         $user->update(['approved' => true, 'is_active' => true]);
 
-        return back()->with('success', 'Member approved successfully.');
+        return back()->with('success', 'flash.member_approved');
+    }
+
+    /**
+     * Set a user's password without knowing the old one. Restricted to a
+     * superadmin: setting a password is equivalent to becoming that user, so
+     * it must never be reachable through the ordinary users.edit permission.
+     */
+    public function resetPassword(Request $request, User $user): RedirectResponse
+    {
+        abort_unless($request->user()->isSuperadmin(), 403);
+
+        $validated = $request->validate([
+            'password' => ['required', 'confirmed', Password::defaults()],
+        ]);
+
+        // 'password' => 'hashed' on the model hashes it; null the remember
+        // token so any "remember me" session for the target is invalidated.
+        $user->forceFill([
+            'password' => $validated['password'],
+            'remember_token' => null,
+        ])->save();
+
+        return back()->with('success', 'flash.password_reset');
+    }
+
+    /** Enable or disable a user's ability to sign in. */
+    public function toggleActive(Request $request, User $user): RedirectResponse
+    {
+        if ($user->id === $request->user()->id) {
+            return back()->with('error', 'flash.cannot_disable_self');
+        }
+
+        // A superadmin may only be disabled by another superadmin.
+        $this->guardSuperadmin($request, $user);
+
+        $user->update(['is_active' => ! $user->is_active]);
+
+        return back()->with('success', $user->is_active ? 'flash.user_enabled' : 'flash.user_disabled');
     }
 
     public function destroy(Request $request, User $user): RedirectResponse
     {
         if ($user->id === $request->user()->id) {
-            return back()->with('error', 'You cannot delete your own account.');
+            return back()->with('error', 'flash.cannot_delete_self');
         }
 
         if (in_array('superadmin', $user->privileges ?? [], true)) {
-            return back()->with('error', 'Super administrators cannot be deleted.');
+            // Only a superadmin can delete a superadmin, and never the last one
+            // — that would leave the club with no one holding full access.
+            if (! $request->user()->isSuperadmin()) {
+                return back()->with('error', 'flash.superadmin_undeletable');
+            }
+
+            $remaining = User::whereJsonContains('privileges', 'superadmin')->count();
+            if ($remaining <= 1) {
+                return back()->with('error', 'flash.last_superadmin');
+            }
         }
 
         $user->delete();
 
         return redirect()->route('users.index')
-            ->with('success', 'User deleted successfully.');
+            ->with('success', 'flash.user_deleted');
     }
 
     private function guardSuperadmin(Request $request, User $user): void

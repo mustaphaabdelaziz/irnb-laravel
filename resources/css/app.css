@@ -16,6 +16,47 @@
         --color-primary-800: 6 95 70;
         --color-primary-900: 6 78 59;
         --color-primary-950: 2 44 34;
+
+        /* shadcn-vue semantic tokens. primary/ring alias the club brand color
+           (RGB triplets, overridden at runtime) so shadcn components follow it. */
+        --background: 210 40% 98%;
+        --foreground: 222.2 47.4% 11.2%;
+        --card: 0 0% 100%;
+        --card-foreground: 222.2 47.4% 11.2%;
+        --primary: var(--color-primary-600);
+        --primary-foreground: 0 0% 100%;
+        --secondary: 210 40% 96.1%;
+        --secondary-foreground: 222.2 47.4% 11.2%;
+        --muted: 210 40% 96.1%;
+        --muted-foreground: 215.4 16.3% 46.9%;
+        --accent: 210 40% 96.1%;
+        --accent-foreground: 222.2 47.4% 11.2%;
+        --destructive: 0 72% 51%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 214.3 31.8% 91.4%;
+        --input: 214.3 31.8% 91.4%;
+        --ring: var(--color-primary-600);
+        --radius: 0.75rem;
+    }
+
+    .dark {
+        --background: 150 20% 4%;
+        --foreground: 210 40% 98%;
+        --card: 150 14% 7%;
+        --card-foreground: 210 40% 98%;
+        --primary: var(--color-primary-400);
+        --primary-foreground: 150 30% 6%;
+        --secondary: 150 10% 13%;
+        --secondary-foreground: 210 40% 98%;
+        --muted: 150 10% 13%;
+        --muted-foreground: 215 20.2% 65.1%;
+        --accent: 150 10% 13%;
+        --accent-foreground: 210 40% 98%;
+        --destructive: 0 62.8% 42%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 150 10% 17%;
+        --input: 150 10% 17%;
+        --ring: var(--color-primary-400);
     }
 
     html {

@@ -16,6 +16,9 @@ defineProps({ equipmentCategories: { type: Array, default: () => [] } });
 const form = useForm({
     name: '',
     category: '',
+    // Most club equipment is counted, not serialized, so count-tracking is
+    // the default. Ticking this gives every unit its own serial and history.
+    requires_serial: false,
     brand: '',
     description: '',
     purchase_price: '',
@@ -34,7 +37,7 @@ function submit() {
         <template #header>
             <div class="flex items-center gap-3">
                 <Link :href="route('equipment.catalogs.index')" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                    <svg class="h-5 w-5 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
                 </Link>
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('add_equipment') }}</h1>
             </div>
@@ -69,6 +72,14 @@ function submit() {
                             <InputError :message="form.errors.purchase_price" class="mt-1" />
                         </div>
                     </div>
+                    <label class="flex items-start gap-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 p-3">
+                        <input type="checkbox" v-model="form.requires_serial"
+                            class="mt-0.5 rounded border-slate-300 dark:border-slate-600 text-primary-600 focus:ring-primary-500" />
+                        <span>
+                            <span class="block text-sm font-medium text-slate-900 dark:text-slate-100">{{ t('equipment.track_each_unit') }}</span>
+                            <span class="block text-xs text-slate-500 dark:text-slate-400">{{ t('equipment.track_each_unit_hint') }}</span>
+                        </span>
+                    </label>
                     <div>
                         <InputLabel :value="t('description')" />
                         <textarea v-model="form.description" rows="3" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500" />

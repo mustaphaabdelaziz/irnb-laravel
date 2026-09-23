@@ -1,26 +1,51 @@
 <script setup>
 import { usePage } from '@inertiajs/vue3';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 
+const { t } = useI18n();
 const page = usePage();
 const show = ref(false);
 const message = ref('');
 const type = ref('success');
+let dismissTimer = null;
 
 const flash = computed(() => page.props.flash);
 
-onMounted(() => {
-    checkFlash();
-});
+/**
+ * Controllers flash a translation key ('flash.player_created'), optionally
+ * as { key, params } when the message interpolates data.
+ *
+ * t() returns the translation when the key exists and returns the input
+ * unchanged when it does not, so a controller still flashing a literal
+ * English sentence keeps working. te() is deliberately NOT used as a guard:
+ * it wrongly reports flat dotted keys (our whole flash.* namespace) as
+ * missing, which is what rendered raw "flash.player_updated" on screen.
+ */
+function translate(payload) {
+    if (payload && typeof payload === 'object' && payload.key) {
+        return t(payload.key, payload.params ?? {});
+    }
+
+    return typeof payload === 'string' ? t(payload) : payload;
+}
+
+// This component mounts once in the layout, so checking on mount alone meant
+// every flash after the first Inertia visit was silently dropped.
+watch(flash, checkFlash, { deep: true });
+onMounted(checkFlash);
 
 function checkFlash() {
-    if (flash.value?.success) {
-        message.value = flash.value.success;
+    // 'status' is what Breeze's auth flows flash (password reset, verification).
+    const success = flash.value?.success ?? flash.value?.status;
+
+    if (success) {
+        message.value = translate(success);
         type.value = 'success';
         show.value = true;
         autoDismiss();
     } else if (flash.value?.error) {
-        message.value = flash.value.error;
+        message.value = translate(flash.value.error);
         type.value = 'error';
         show.value = true;
         autoDismiss();
@@ -28,7 +53,8 @@ function checkFlash() {
 }
 
 function autoDismiss() {
-    setTimeout(() => { show.value = false; }, 4000);
+    clearTimeout(dismissTimer);
+    dismissTimer = setTimeout(() => { show.value = false; }, 2000);
 }
 </script>
 
@@ -41,9 +67,9 @@ function autoDismiss() {
         leave-from-class="opacity-100 translate-y-0"
         leave-to-class="opacity-0 translate-y-[-1rem]"
     >
-        <div v-if="show" class="fixed top-4 inset-x-0 z-50 flex justify-center px-4">
+        <div v-if="show" class="pointer-events-none fixed top-4 inset-x-0 z-50 flex justify-center px-4">
             <div
-                class="flex items-center gap-3 rounded-lg px-4 py-3 shadow-lg"
+                class="pointer-events-auto flex items-center gap-3 rounded-lg px-4 py-3 shadow-lg"
                 :class="type === 'success'
                     ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-200 dark:ring-emerald-500/30'
                     : 'bg-rose-50 text-rose-800 ring-1 ring-rose-200 dark:bg-rose-500/15 dark:text-rose-200 dark:ring-rose-500/30'"

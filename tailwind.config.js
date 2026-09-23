@@ -21,7 +21,34 @@ export default {
                 display: ['Cairo', 'Inter', ...defaultTheme.fontFamily.sans],
             },
             colors: {
+                border: 'hsl(var(--border) / <alpha-value>)',
+                input: 'hsl(var(--input) / <alpha-value>)',
+                ring: 'rgb(var(--ring) / <alpha-value>)',
+                background: 'hsl(var(--background) / <alpha-value>)',
+                foreground: 'hsl(var(--foreground) / <alpha-value>)',
+                card: {
+                    DEFAULT: 'hsl(var(--card) / <alpha-value>)',
+                    foreground: 'hsl(var(--card-foreground) / <alpha-value>)',
+                },
+                secondary: {
+                    DEFAULT: 'hsl(var(--secondary) / <alpha-value>)',
+                    foreground: 'hsl(var(--secondary-foreground) / <alpha-value>)',
+                },
+                muted: {
+                    DEFAULT: 'hsl(var(--muted) / <alpha-value>)',
+                    foreground: 'hsl(var(--muted-foreground) / <alpha-value>)',
+                },
+                accent: {
+                    DEFAULT: 'hsl(var(--accent) / <alpha-value>)',
+                    foreground: 'hsl(var(--accent-foreground) / <alpha-value>)',
+                },
+                destructive: {
+                    DEFAULT: 'hsl(var(--destructive) / <alpha-value>)',
+                    foreground: 'hsl(var(--destructive-foreground) / <alpha-value>)',
+                },
                 primary: {
+                    DEFAULT: 'rgb(var(--primary) / <alpha-value>)',
+                    foreground: 'hsl(var(--primary-foreground) / <alpha-value>)',
                     50: 'rgb(var(--color-primary-50) / <alpha-value>)',
                     100: 'rgb(var(--color-primary-100) / <alpha-value>)',
                     200: 'rgb(var(--color-primary-200) / <alpha-value>)',
@@ -42,17 +69,6 @@ export default {
                     700: '#1b2d26',
                     600: '#274037',
                     500: '#35564a',
-                },
-                // Championship gold accent.
-                accent: {
-                    50: '#fffbeb',
-                    100: '#fef3c7',
-                    200: '#fde68a',
-                    300: '#fcd34d',
-                    400: '#fbbf24',
-                    500: '#f59e0b',
-                    600: '#d97706',
-                    700: '#b45309',
                 },
             },
             boxShadow: {

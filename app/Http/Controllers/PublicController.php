@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\WebsiteConfig;
+use App\Support\ClubIdentity;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -27,8 +28,8 @@ class PublicController extends Controller
 
         return Inertia::render('Public/Home', [
             'club' => [
-                'name' => $pick($config->club_name),
-                'shortName' => $config->club_short_name,
+                'name' => $pick(ClubIdentity::name($config)),
+                'shortName' => ClubIdentity::shortName($config),
                 'tagline' => $pick($config->tagline),
                 'description' => $pick($config->description),
                 'motto' => $pick($config->motto),

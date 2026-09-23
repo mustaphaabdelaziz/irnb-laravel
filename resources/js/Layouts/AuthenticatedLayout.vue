@@ -1,6 +1,7 @@
 <script>
 // Module scope: survives layout remounts across Inertia navigations.
 let sidebarScrollTop = 0;
+let backupHeartbeat = null;
 </script>
 
 <script setup>
@@ -9,6 +10,7 @@ import { Link, usePage, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import SidebarLink from '@/Components/SidebarLink.vue';
 import { useCan } from '@/Composables/useCan.js';
+import { useClubIdentity } from '@/Composables/useClubIdentity';
 import FlashMessages from '@/Components/FlashMessages.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
@@ -29,20 +31,55 @@ const navEl = ref(null);
 function rememberNavScroll() {
     sidebarScrollTop = navEl.value?.scrollTop ?? 0;
 }
+
+// A desktop app only runs when it is open, and there is no scheduler. So the
+// automatic backup is driven from here: once per app launch, then every 30
+// minutes while the window stays open. The server decides whether one is
+// actually due — this just knocks on the door.
+function tickBackup(trigger) {
+    window.axios.post('/backups/tick', { trigger }).catch(() => {});
+}
+
+function stopBackupHeartbeat() {
+    if (backupHeartbeat !== null) {
+        clearInterval(backupHeartbeat);
+        backupHeartbeat = null;
+    }
+}
+
 onMounted(() => {
     if (navEl.value) navEl.value.scrollTop = sidebarScrollTop;
+
+    if (!isDesktop.value || !isSuperadmin.value) {
+        // The interval is module-scoped so it survives the layout remounting on every
+        // Inertia visit — but that means it also survives a change of USER. A superadmin
+        // logging out and someone else logging in happens without a full page reload, so
+        // an interval started for the superadmin would keep POSTing /backups/tick every
+        // 30 minutes as a user who is not allowed to, collecting a 403 that .catch()
+        // swallows. Tear it down when the gate that opened it no longer holds.
+        stopBackupHeartbeat();
+
+        return;
+    }
+
+    // sessionStorage is cleared when the Electron window closes, so this fires
+    // exactly once per app launch — not on every Inertia navigation.
+    if (!sessionStorage.getItem('backupLaunchTick')) {
+        sessionStorage.setItem('backupLaunchTick', '1');
+        tickBackup('launch');
+    }
+
+    if (backupHeartbeat === null) {
+        backupHeartbeat = setInterval(() => tickBackup('heartbeat'), 30 * 60 * 1000);
+    }
 });
 
 const user = computed(() => page.props.auth.user);
 const isAdmin = computed(() => page.props.auth?.isAdmin ?? false);
+const isDesktop = computed(() => page.props.isDesktop ?? false);
 const pendingApprovals = computed(() => page.props.pendingApprovals ?? 0);
 const currentLocale = computed(() => page.props.locale || 'en');
-const appName = computed(() => {
-    const name = page.props.appName;
-    const loc = currentLocale.value;
-    return typeof name === 'object' ? (name[loc] || name.en || 'IRNB') : (name || 'IRNB');
-});
-const appShortName = computed(() => page.props.appShortName ?? 'IRNB');
+const { appName, appShortName } = useClubIdentity();
 const appLogo = computed(() => page.props.branding?.logo ?? null);
 const currentUrl = computed(() => page.url);
 
@@ -75,6 +112,7 @@ const sections = computed(() => {
         ] },
         { label: t('nav_equipment'), items: [
             { label: t('equipments'), href: '/equipment/catalogs', icon: 'equipment', prefix: '/equipment/catalogs', module: 'equipment' },
+            { label: t('equipment_out'), href: '/equipment/out', icon: 'box', prefix: '/equipment/out', module: 'equipment' },
             { label: t('inventory'), href: '/equipment/stocktake', icon: 'clipboard', prefix: '/equipment/stocktake', module: 'inventory' },
             { label: t('equipment_categories'), href: '/equipment-categories', icon: 'equipment', prefix: '/equipment-categories', module: 'categories' },
             { label: t('storage_locations'), href: '/storage-locations', icon: 'equipment', prefix: '/storage-locations', module: 'categories' },
@@ -91,10 +129,13 @@ const sections = computed(() => {
         ] },
         { label: t('administration'), items: [
             { label: t('categories'), href: '/categories', icon: 'categories', prefix: '/categories', module: 'categories' },
+            { label: t('branches'), href: '/branches', icon: 'categories', prefix: '/branches', module: 'categories' },
             { label: t('board_roles'), href: '/board-roles', icon: 'board', prefix: '/board-roles', module: 'board' },
             { label: t('jobs'), href: '/jobs', icon: 'jobs', prefix: '/jobs', module: 'categories' },
             { label: t('positions'), href: '/positions', icon: 'positions', prefix: '/positions', module: 'categories' },
+            { label: t('player_statuses'), href: '/player-statuses', icon: 'positions', prefix: '/player-statuses', module: 'categories' },
             { label: t('settings'), href: '/settings', icon: 'settings', prefix: '/settings', module: 'settings' },
+            { label: t('backup'), href: '/backups', icon: 'archive', prefix: '/backups', superadminOnly: true, desktopOnly: true },
         ] },
     ];
 
@@ -102,7 +143,8 @@ const sections = computed(() => {
         .map((section) => ({
             ...section,
             items: section.items.filter((i) =>
-                i.always || (i.superadminOnly ? isSuperadmin.value : can(i.module, 'view'))),
+                (!i.desktopOnly || isDesktop.value)
+                && (i.always || (i.superadminOnly ? isSuperadmin.value : can(i.module, 'view')))),
         }))
         .filter((section) => section.items.length > 0);
 });
@@ -199,7 +241,7 @@ function switchLocale(code) {
                 <button
                     @click="mobileMenuOpen = !mobileMenuOpen"
                     class="-ms-1 rounded-lg p-2 text-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 lg:hidden"
-                    aria-label="Toggle menu"
+                    :aria-label="t('toggle_menu')"
                 >
                     <Icon name="menu" />
                 </button>

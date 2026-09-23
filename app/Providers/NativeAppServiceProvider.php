@@ -64,10 +64,26 @@ class NativeAppServiceProvider implements ProvidesPhpIni
             @file_put_contents($marker, (string) time());
         }
 
-        // 3. Keep the runtime schema current across app updates. Wrapped so a
-        //    migration hiccup can never block the app from opening.
+        // 3. Keep the runtime schema current across app updates — but only when
+        //    the bundled migration set actually changed, so ordinary launches
+        //    skip the migrate cost and the window opens faster. The signature is
+        //    derived from the migration filenames shipped in the app bundle
+        //    (base_path, read-only), so it changes exactly when a new release
+        //    adds migrations — no dependency on a runtime version env var, which
+        //    isn't reliably present in the packaged app. Wrapped so a migration
+        //    hiccup can never block the app from opening.
         try {
-            Artisan::call('migrate', ['--force' => true]);
+            $files = glob(base_path('database/migrations/*.php')) ?: [];
+            sort($files);
+            $signature = md5(implode('|', array_map('basename', $files)));
+
+            $migratedMarker = dirname($dbPath).DIRECTORY_SEPARATOR.'.migrated';
+            $lastSignature = is_file($migratedMarker) ? trim((string) @file_get_contents($migratedMarker)) : null;
+
+            if ($lastSignature !== $signature) {
+                Artisan::call('migrate', ['--force' => true]);
+                @file_put_contents($migratedMarker, $signature);
+            }
         } catch (\Throwable $e) {
             report($e);
         }

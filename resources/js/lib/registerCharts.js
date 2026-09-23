@@ -10,6 +10,9 @@ import {
     Tooltip,
     Legend,
     Filler,
+    BarController,
+    LineController,
+    DoughnutController,
 } from 'chart.js';
 
 Chart.register(
@@ -22,4 +25,9 @@ Chart.register(
     Tooltip,
     Legend,
     Filler,
+    // Controllers, so a mixed chart can put a net line over income/expense
+    // columns in a single canvas rather than stacking two charts.
+    BarController,
+    LineController,
+    DoughnutController,
 );

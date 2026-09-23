@@ -2,9 +2,12 @@
 
 namespace App\Models;
 
+use App\Services\Equipment\EquipmentStockService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -14,9 +17,12 @@ class EquipmentItem extends Model
 
     protected $fillable = [
         'catalog_id',
+        'quantity',
+        'unit_price',
         'unique_identifier',
         'designation',
         'purchase_date',
+        'received_via',
         'status',
         'condition',
         'location',
@@ -28,6 +34,8 @@ class EquipmentItem extends Model
     {
         return [
             'purchase_date' => 'date',
+            'quantity' => 'integer',
+            'unit_price' => 'decimal:2',
         ];
     }
 
@@ -51,9 +59,48 @@ class EquipmentItem extends Model
         return $this->hasOne(EquipmentRental::class)->whereNull('return_date')->latest('checkout_date');
     }
 
+    /** Every rental of this lot still out — a lot can be out with several people at once. */
+    public function openRentals(): HasMany
+    {
+        return $this->hasMany(EquipmentRental::class)->whereNull('return_date')->orderBy('checkout_date')->orderBy('id');
+    }
+
     public function histories(): HasMany
     {
         return $this->hasMany(EquipmentHistory::class, 'item_id');
+    }
+
+    public function branches(): BelongsToMany
+    {
+        return $this->belongsToMany(Branch::class, 'branch_equipment_item');
+    }
+
+    /**
+     * Lots usable by a branch: those tagged with it, plus untagged lots,
+     * which are club-wide and genuinely usable by everyone.
+     */
+    public function scopeForBranch(Builder $query, ?int $branchId): Builder
+    {
+        if (! $branchId) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $q) use ($branchId) {
+            $q->whereHas('branches', fn (Builder $b) => $b->where('branches.id', $branchId))
+                ->orWhereDoesntHave('branches');
+        });
+    }
+
+    /** Out on loan, so it must not be deleted. */
+    public function isRented(): bool
+    {
+        return $this->status === 'Rented' || $this->activeRental !== null;
+    }
+
+    /** Units of this lot that can be issued right now. */
+    public function getAvailableQuantityAttribute(): int
+    {
+        return app(EquipmentStockService::class)->availableQuantity($this);
     }
 
     public function getIsOverdueAttribute(): bool

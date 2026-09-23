@@ -17,8 +17,8 @@ const props = defineProps({
 const editingId = ref(null);
 const deleteId = ref(null);
 
-const form = useForm({ name: '', abbreviation: '', description: '' });
-const editForm = useForm({ name: '', abbreviation: '', description: '' });
+const form = useForm({ name: '', abbreviation: '' });
+const editForm = useForm({ name: '', abbreviation: '' });
 
 function addPosition() {
     form.post(route('positions.store'), {
@@ -30,7 +30,6 @@ function startEdit(pos) {
     editingId.value = pos.id;
     editForm.name = pos.name;
     editForm.abbreviation = pos.abbreviation || '';
-    editForm.description = pos.description || '';
 }
 
 function saveEdit(id) {
@@ -66,10 +65,6 @@ function destroy() {
                     <TextInput v-model="form.name" class="mt-1 w-full" :placeholder="t('name')" required />
                     <InputError :message="form.errors.name" class="mt-1" />
                 </div>
-                <div class="flex-1">
-                    <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('description') }}</label>
-                    <TextInput v-model="form.description" class="mt-1 w-full" />
-                </div>
                 <PrimaryButton :disabled="form.processing">{{ t('add') }}</PrimaryButton>
             </form>
 
@@ -80,7 +75,6 @@ function destroy() {
                         <tr>
                             <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('abbreviation') }}</th>
                             <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('name') }}</th>
-                            <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('description') }}</th>
                             <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('actions') }}</th>
                         </tr>
                     </thead>
@@ -94,10 +88,6 @@ function destroy() {
                                 <TextInput v-if="editingId === pos.id" v-model="editForm.name" class="w-full" />
                                 <span v-else class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ pos.name }}</span>
                             </td>
-                            <td class="px-4 py-3">
-                                <TextInput v-if="editingId === pos.id" v-model="editForm.description" class="w-full" />
-                                <span v-else class="text-sm text-slate-600 dark:text-slate-300">{{ pos.description || '-' }}</span>
-                            </td>
                             <td class="px-4 py-3 text-end">
                                 <div v-if="editingId === pos.id" class="flex justify-end gap-2">
                                     <button @click="saveEdit(pos.id)" class="text-sm text-primary-600 hover:text-primary-800">{{ t('save') }}</button>
@@ -110,7 +100,7 @@ function destroy() {
                             </td>
                         </tr>
                         <tr v-if="!positions?.length">
-                            <td colspan="4" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
+                            <td colspan="3" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
                         </tr>
                     </tbody>
                 </table>

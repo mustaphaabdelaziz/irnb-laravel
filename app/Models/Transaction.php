@@ -16,7 +16,15 @@ class Transaction extends Model
 {
     use HasFactory;
 
+    /** Eager loads that let the UI label a transaction's cash register. */
+    public const FINANCE_ACCOUNT_LABEL = [
+        'financeAccount:id,name,branch_id,category_id,is_treasury',
+        'financeAccount.branch:id,name,name_ar,name_fr,name_en',
+        'financeAccount.category:id,name,name_ar,name_fr,name_en',
+    ];
+
     protected $fillable = [
+        'title',
         'amount',
         'transaction_date',
         'transaction_type',
@@ -83,6 +91,16 @@ class Transaction extends Model
     public function receivedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'received_by_user_id');
+    }
+
+    /**
+     * The player a transaction is about. Only meaningful when
+     * related_entity_type is 'Player' — callers check the type first
+     * (see TransactionTitle::player()).
+     */
+    public function relatedPlayer(): BelongsTo
+    {
+        return $this->belongsTo(Player::class, 'related_entity_id');
     }
 
     public function playerSubscription(): BelongsTo

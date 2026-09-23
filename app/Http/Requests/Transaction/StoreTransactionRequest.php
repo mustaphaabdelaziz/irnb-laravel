@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Transaction;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreTransactionRequest extends FormRequest
 {
@@ -14,12 +15,13 @@ class StoreTransactionRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'title' => ['required', 'string', 'max:150'],
             'amount' => ['required', 'numeric', 'min:0'],
             'transaction_date' => ['nullable', 'date'],
             'transaction_type' => ['required', 'in:income,expense'],
             'finance_category_id' => [
                 'required',
-                \Illuminate\Validation\Rule::exists('finance_categories', 'id')
+                Rule::exists('finance_categories', 'id')
                     ->where('type', $this->input('transaction_type')),
             ],
             'sub_category' => ['nullable', 'string', 'max:255'],
@@ -29,8 +31,14 @@ class StoreTransactionRequest extends FormRequest
             'payment_bank_name' => ['nullable', 'string', 'max:255'],
             'payment_holder' => ['nullable', 'string', 'max:255'],
             'payment_reference' => ['nullable', 'string', 'max:255'],
-            'related_entity_type' => ['nullable', 'string', 'max:255'],
-            'related_entity_id' => ['nullable', 'integer'],
+            'finance_account_id' => [
+                'nullable',
+                Rule::exists('finance_accounts', 'id')
+                    ->where('is_active', true),
+            ],
+            // A transaction points at a player by id, never by name — and the id must exist.
+            'related_entity_type' => ['nullable', 'required_with:related_entity_id', 'in:Player'],
+            'related_entity_id' => ['nullable', 'integer', Rule::exists('players', 'id')],
             'description' => ['nullable', 'string'],
             'status' => ['nullable', 'in:Paid,Partial,Unpaid,Exempt'],
             'receipt' => ['nullable', 'file', 'max:10240'],

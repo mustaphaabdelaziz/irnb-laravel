@@ -5,16 +5,22 @@ import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
+import JobQuickCreateModal from '@/Components/JobQuickCreateModal.vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { formatFileNumber } from '@/lib/fileNumber';
+import { useCan } from '@/Composables/useCan';
 
 const { t } = useI18n();
+const { can } = useCan();
 const props = defineProps({
     player: { type: Object, default: null },
     categories: { type: Array, default: () => [] },
     positions: { type: Array, default: () => [] },
+    playerStatuses: { type: Array, default: () => [] },
     jobs: { type: Array, default: () => [] },
+    branches: { type: Array, default: () => [] },
     wilayas: { type: Array, default: () => [] },
     communes: { type: Object, default: () => ({}) },
     nextSequenceByYear: { type: Object, default: () => ({}) },
@@ -35,13 +41,17 @@ const form = useForm({
     health_blood_group_rhesus: p.health_blood_group_rhesus || '',
     phone: p.phones?.[0] || '',
     email: p.email || '',
-    state: p.state || '',
+    wilaya_id: p.wilaya_id || '',
     city: p.city || '',
-    is_student: p.is_student ?? true,
-    status_value: p.status_value || '',
+    // New players default to "worker"; edits keep the stored value.
+    is_student: isEdit ? (p.is_student ?? true) : false,
+    // New players default to "enrolled" (منخرط); edits keep the stored value.
+    status_id: isEdit ? (p.status_id || null) : (props.playerStatuses[0]?.id ?? null),
     category_id: p.category_id || '',
     position_id: p.position_id || '',
+    other_position_ids: (p.other_positions || []).map((pos) => pos.id),
     member_job_id: p.member_job_id || '',
+    branch_ids: (p.branches || []).map((b) => b.id),
     join_year: p.join_year || props.defaultJoinYear,
     skill_level: p.skill_level || '',
     picture: null,
@@ -52,22 +62,73 @@ const form = useForm({
     archived: p.archived || false,
 });
 
+// --- Branch multiselect (searchable add + removable chips) ---
+const branchPick = ref('');
+const branchesById = computed(() => Object.fromEntries(props.branches.map((b) => [b.id, b])));
+const branchOptions = computed(() => {
+    const taken = new Set(form.branch_ids);
+    return props.branches
+        .filter((b) => !taken.has(b.id))
+        .map((b) => ({ value: b.id, label: b.localized_name || b.name }));
+});
+function addBranch() {
+    if (!branchPick.value) return;
+    const id = Number(branchPick.value);
+    if (!form.branch_ids.includes(id)) form.branch_ids.push(id);
+    branchPick.value = '';
+}
+function removeBranch(id) {
+    form.branch_ids = form.branch_ids.filter((x) => x !== id);
+}
+function branchLabel(id) {
+    const b = branchesById.value[id];
+    return b ? (b.localized_name || b.name) : `#${id}`;
+}
+
+// --- Other positions (searchable add + removable chips) ---
+// Same add-picker + chips pattern as branches. The main position is never
+// offered here — it is already recorded on its own field. Ids can arrive as
+// either numbers (fresh from `positions`/`other_position_ids`) or strings
+// (e.g. bounced back through a validation error round-trip), so every
+// comparison below normalizes with Number() before matching.
+const otherPositionOptions = computed(() => props.positions
+    .filter((pos) => String(pos.id) !== String(form.position_id)
+        && !form.other_position_ids.some((id) => Number(id) === Number(pos.id)))
+    .map((pos) => ({ value: pos.id, label: `${pos.abbreviation} - ${pos.name}` })));
+const chosenOtherPositions = computed(() => form.other_position_ids
+    .map((id) => props.positions.find((pos) => Number(pos.id) === Number(id)))
+    .filter(Boolean));
+function addOtherPosition(id) {
+    if (id === '' || id === null || id === undefined) return;
+    const numId = Number(id);
+    if (!form.other_position_ids.some((value) => Number(value) === numId)) form.other_position_ids.push(numId);
+}
+function removeOtherPosition(id) {
+    const numId = Number(id);
+    form.other_position_ids = form.other_position_ids.filter((value) => Number(value) !== numId);
+}
+// Promoting a position to main drops it from the extras.
+watch(() => form.position_id, (id) => { form.other_position_ids = form.other_position_ids.filter((value) => String(value) !== String(id)); });
+
 // --- Membership id preview ---
 const pad5 = (n) => String(n).padStart(5, '0');
 const membershipPreview = computed(() => {
-    if (isEdit) return p.membership_id || '';
+    // On edit the id is stable unless the enrollment year changes, in which case it is
+    // regenerated server-side for the new year — show the projected value.
+    if (isEdit && Number(form.join_year) === Number(p.join_year)) return p.membership_id || '';
     const seq = props.nextSequenceByYear[form.join_year] ?? 1;
     return `${form.join_year}-${pad5(seq)}`;
 });
 
 // --- Wilaya -> city dependency ---
-const wilayaOptions = computed(() => {
-    const opts = props.wilayas.map((w) => ({ value: w.name, label: `${w.name} — ${w.ar_name}` }));
-    if (form.state && !opts.some((o) => o.value === form.state)) opts.unshift({ value: form.state, label: form.state });
-    return opts;
-});
-const selectedWilayaId = computed(() => props.wilayas.find((w) => w.name === form.state)?.id ?? null);
-const cityList = computed(() => (selectedWilayaId.value != null ? (props.communes[selectedWilayaId.value] || []) : []));
+// The wilaya is chosen by id; the label follows the app language, and the
+// code is searchable so "47" finds Ghardaïa.
+const wilayaOptions = computed(() => props.wilayas.map((w) => ({
+    value: w.id,
+    label: `${w.code} · ${w.localized_name || w.name}`,
+    keywords: [w.name, w.ar_name, w.code].filter(Boolean).join(' '),
+})));
+const cityList = computed(() => (form.wilaya_id ? (props.communes[form.wilaya_id] || []) : []));
 const hasCityList = computed(() => cityList.value.length > 0);
 const cityOptions = computed(() => {
     const opts = cityList.value.map((c) => ({ value: c, label: c }));
@@ -75,10 +136,24 @@ const cityOptions = computed(() => {
     return opts;
 });
 // reset city when wilaya changes (fires only on change, not initial mount)
-watch(() => form.state, () => { form.city = ''; });
+watch(() => form.wilaya_id, () => { form.city = ''; });
 
 // --- Job gated on worker ---
 watch(() => form.is_student, (student) => { if (student) form.member_job_id = ''; });
+
+// Jobs the form offers: the server list plus anything created in this session.
+// A validation-error round trip on submit() re-renders this same component
+// instance (Inertia defaults preserveState to true for non-GET visits), so
+// this ref — and the session-created job pushed into it — survives that trip
+// without being reset back to props.jobs.
+const jobList = ref([...props.jobs]);
+const showJobModal = ref(false);
+const jobNotice = ref('');
+function onJobCreated(job, notice) {
+    if (!jobList.value.some((item) => item.id === job.id)) jobList.value.push(job);
+    form.member_job_id = job.id;
+    jobNotice.value = notice || '';
+}
 
 // --- Image preview ---
 const previewUrl = ref(null);
@@ -106,13 +181,23 @@ function submit() {
         health_blood_group_rhesus: data.health_blood_group_rhesus || null,
         phones: data.phone ? [data.phone] : [],
         email: data.email || null,
-        state: data.state || null,
+        wilaya_id: data.wilaya_id || null,
         city: data.city || null,
         is_student: data.is_student,
-        status_value: data.status_value || null,
+        status_id: data.status_id || null,
         category_id: data.category_id || null,
         position_id: data.position_id || null,
+        // Inertia's FormData conversion (forceFormData: true, below) drops empty
+        // arrays entirely, so an omitted key would leave the server-side list
+        // untouched instead of clearing it. Sending '' when empty makes the
+        // "remove all other positions" case reach the server as a present,
+        // clearable value.
+        other_position_ids: data.other_position_ids.length ? data.other_position_ids : '',
         member_job_id: data.member_job_id || null,
+        // Same reasoning as other_position_ids above: an empty array is dropped
+        // entirely by forceFormData, so clearing every branch must send '' to
+        // reach the server as a present, clearable value.
+        branch_ids: data.branch_ids.length ? data.branch_ids : '',
         join_year: data.join_year || null,
         skill_level: data.skill_level || null,
         picture: data.picture,
@@ -187,8 +272,8 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                 </div>
                 <div>
                     <InputLabel :value="t('state')" />
-                    <SearchableSelect v-model="form.state" :options="wilayaOptions" :placeholder="t('search_wilaya')" />
-                    <InputError :message="form.errors.state" class="mt-1" />
+                    <SearchableSelect v-model="form.wilaya_id" :options="wilayaOptions" :placeholder="t('search_wilaya')" />
+                    <InputError :message="form.errors.wilaya_id" class="mt-1" />
                 </div>
                 <div>
                     <InputLabel :value="t('city')" />
@@ -209,6 +294,13 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                     <p class="mt-1 text-xs text-slate-400">{{ t('auto_generated') }}</p>
                 </div>
                 <div>
+                    <InputLabel :value="t('file_number')" />
+                    <div class="mt-1 flex items-center rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
+                        {{ p?.file_number ? formatFileNumber(p.file_number) : '—' }}
+                    </div>
+                    <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">{{ t('file_number_assigned_on_save') }}</p>
+                </div>
+                <div>
                     <InputLabel :value="t('join_year')" />
                     <TextInput v-model="form.join_year" type="number" min="1900" :max="defaultJoinYear + 1" class="mt-1 w-full" />
                     <InputError :message="form.errors.join_year" class="mt-1" />
@@ -217,16 +309,50 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                     <InputLabel :value="t('category')" />
                     <select v-model="form.category_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                         <option value="">{{ t('select_category') }}</option>
-                        <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+                        <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.localized_name || cat.name }}</option>
                     </select>
                     <InputError :message="form.errors.category_id" class="mt-1" />
                 </div>
                 <div>
-                    <InputLabel :value="t('position')" />
+                    <InputLabel :value="t('main_position')" />
                     <select v-model="form.position_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                         <option value="">-</option>
                         <option v-for="pos in positions" :key="pos.id" :value="pos.id">{{ pos.abbreviation }} - {{ pos.name }}</option>
                     </select>
+                </div>
+                <div>
+                    <InputLabel :value="t('other_positions')" />
+                    <div v-if="chosenOtherPositions.length" class="mt-1 flex flex-wrap gap-1.5">
+                        <span v-for="pos in chosenOtherPositions" :key="pos.id"
+                            class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                            {{ pos.abbreviation }}
+                            <button type="button" @click="removeOtherPosition(pos.id)" :aria-label="t('remove')" class="text-slate-400 hover:text-rose-500">&times;</button>
+                        </span>
+                    </div>
+                    <SearchableSelect v-if="otherPositionOptions.length" :model-value="''" :options="otherPositionOptions"
+                        :placeholder="t('add_position')" class="mt-1" @update:modelValue="addOtherPosition" />
+                    <InputError :message="form.errors.other_position_ids" class="mt-1" />
+                </div>
+                <div class="sm:col-span-2 lg:col-span-3">
+                    <InputLabel :value="t('branches')" />
+                    <SearchableSelect
+                        v-if="branches.length"
+                        v-model="branchPick"
+                        :options="branchOptions"
+                        :placeholder="t('add_branch')"
+                        class="mt-1"
+                        @update:modelValue="addBranch"
+                    />
+                    <div v-if="form.branch_ids.length" class="mt-2 flex flex-wrap gap-2">
+                        <span v-for="id in form.branch_ids" :key="id" class="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-3 py-1 text-sm text-primary-700 dark:bg-primary-900/30 dark:text-primary-200">
+                            {{ branchLabel(id) }}
+                            <button type="button" @click="removeBranch(id)" class="text-primary-400 hover:text-rose-600">×</button>
+                        </span>
+                    </div>
+                    <p v-if="!branches.length" class="mt-1 text-xs text-slate-400">
+                        {{ t('no_branches_hint') }}
+                        <Link :href="route('branches.index')" class="text-primary-600 hover:underline">{{ t('branches') }}</Link>
+                    </p>
                 </div>
                 <div>
                     <InputLabel :value="t('skill_level')" />
@@ -237,16 +363,13 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                 </div>
                 <div>
                     <InputLabel :value="t('membership_status')" />
-                    <select v-model="form.status_value" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                        <option value="">-</option>
-                        <option value="منخرط">{{ t('status_enrolled') }}</option>
-                        <option value="معتزل">{{ t('status_retired') }}</option>
-                        <option value="متوقف">{{ t('status_stopped') }}</option>
-                        <option value="غادر الفريق">{{ t('status_left_team') }}</option>
-                        <option value="غير واضح">{{ t('status_unclear') }}</option>
-                        <option value="معاقب">{{ t('status_sanctioned') }}</option>
+                    <!-- Options come from the player_statuses lookup, so they are
+                         managed in Settings and translate with the interface. -->
+                    <select v-model="form.status_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                        <option :value="null">-</option>
+                        <option v-for="s in playerStatuses" :key="s.id" :value="s.id">{{ s.localized_name }}</option>
                     </select>
-                    <InputError :message="form.errors.status_value" class="mt-1" />
+                    <InputError :message="form.errors.status_id" class="mt-1" />
                 </div>
                 <div>
                     <InputLabel :value="t('status')" />
@@ -256,11 +379,16 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                     </select>
                 </div>
                 <div v-if="!form.is_student">
-                    <InputLabel :value="t('job')" />
+                    <div class="flex items-center justify-between">
+                        <InputLabel :value="t('job')" />
+                        <button v-if="can('categories', 'add')" type="button" @click="showJobModal = true"
+                            class="text-xs font-semibold text-primary-600 hover:text-primary-700">+ {{ t('new_job') }}</button>
+                    </div>
                     <select v-model="form.member_job_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                         <option value="">-</option>
-                        <option v-for="job in jobs" :key="job.id" :value="job.id">{{ job.name }}</option>
+                        <option v-for="job in jobList" :key="job.id" :value="job.id">{{ job.localized_name || job.name }}</option>
                     </select>
+                    <p v-if="jobNotice" class="mt-1 text-xs text-amber-600 dark:text-amber-400">{{ jobNotice }}</p>
                 </div>
                 <div v-if="isEdit" class="flex items-center gap-2 pt-6">
                     <input type="checkbox" v-model="form.archived" id="archived" class="rounded border-gray-300 text-primary-600 shadow-sm focus:ring-primary-500" />
@@ -310,4 +438,15 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
             <PrimaryButton :disabled="form.processing">{{ isEdit ? t('save_changes') : t('save') }}</PrimaryButton>
         </div>
     </form>
+
+    <!--
+        Deliberately OUTSIDE the <form> above. Modal.vue has no Teleport, so
+        its content is a plain DOM descendant of wherever it's mounted — if
+        it were nested inside the player <form>, the nearest form ancestor
+        for its inputs would be THIS form, and pressing Enter in a job-name
+        field would implicitly submit (save) the half-filled player instead
+        of creating the job. Mounting it as a sibling here, and giving it
+        its own <form> internally, gives Enter the right target.
+    -->
+    <JobQuickCreateModal :show="showJobModal" @close="showJobModal = false" @created="onJobCreated" />
 </template>

@@ -2,15 +2,36 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasLocalizedName;
+use App\Support\FinanceCategoryTranslations;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class FinanceCategory extends Model
 {
+    use HasLocalizedName;
+
     protected $fillable = [
-        'type', 'name', 'code', 'parent_id', 'color', 'sort_order', 'is_active', 'is_system',
+        'type', 'name', 'name_ar', 'name_fr', 'name_en', 'code', 'parent_id', 'color', 'sort_order', 'is_active', 'is_system',
     ];
+
+    protected $appends = [
+        'localized_name',
+    ];
+
+    protected static function booted(): void
+    {
+        // Categories created later (TransactionObserver, finance:backfill, the UI)
+        // get the stock ar/fr names for a known base name; values already set win.
+        static::creating(function (FinanceCategory $category) {
+            foreach (FinanceCategoryTranslations::for((string) $category->name) ?? [] as $column => $value) {
+                if ($category->{$column} === null) {
+                    $category->{$column} = $value;
+                }
+            }
+        });
+    }
 
     protected function casts(): array
     {

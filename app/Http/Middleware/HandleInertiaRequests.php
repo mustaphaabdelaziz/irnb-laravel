@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\User;
 use App\Models\WebsiteConfig;
+use App\Support\ClubIdentity;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -35,8 +36,10 @@ class HandleInertiaRequests extends Middleware
                 'permissions' => $permissions,
             ],
             'locale' => app()->getLocale(),
-            'appName' => $config->club_name ?? ['ar' => 'Sports Club', 'fr' => 'Club Sportif', 'en' => 'Sports Club'],
-            'appShortName' => $config->club_short_name ?? 'IRNB',
+            // Gates desktop-only UI (the Backup page) — there is no folder picker on the web.
+            'isDesktop' => (bool) config('nativephp-internal.running'),
+            'appName' => ClubIdentity::name($config),
+            'appShortName' => ClubIdentity::shortName($config),
             'branding' => $config->branding,
             // Lazily evaluated so the count query only runs for admins.
             'pendingApprovals' => $isAdmin
@@ -45,6 +48,9 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
+                // Breeze's auth flows flash 'status'; without this it was
+                // set on every password reset and never reached the toast.
+                'status' => fn () => $request->session()->get('status'),
             ],
         ];
     }

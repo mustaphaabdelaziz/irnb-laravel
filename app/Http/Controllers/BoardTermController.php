@@ -17,7 +17,7 @@ class BoardTermController extends Controller
             $this->makeCurrent($term);
         }
 
-        return back()->with('success', 'Term created.');
+        return back()->with('success', 'flash.term_created');
     }
 
     public function update(Request $request, BoardTerm $boardTerm): RedirectResponse
@@ -29,18 +29,18 @@ class BoardTermController extends Controller
             $this->makeCurrent($boardTerm);
         }
 
-        return back()->with('success', 'Term updated.');
+        return back()->with('success', 'flash.term_updated');
     }
 
     public function destroy(BoardTerm $boardTerm): RedirectResponse
     {
         if ($boardTerm->members()->exists()) {
-            return back()->with('error', 'Cannot delete: term has board members.');
+            return back()->with('error', 'flash.term_in_use');
         }
 
         $boardTerm->delete();
 
-        return back()->with('success', 'Term deleted.');
+        return back()->with('success', 'flash.term_deleted');
     }
 
     /** Only one term can be current. */

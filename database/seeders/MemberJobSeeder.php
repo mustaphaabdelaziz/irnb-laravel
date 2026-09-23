@@ -35,7 +35,10 @@ class MemberJobSeeder extends Seeder
         ];
 
         foreach ($jobs as $job) {
-            MemberJob::firstOrCreate(['name' => $job['name']], $job);
+            // These names are French. On a fresh install, migrations (including
+            // 2026_09_23_100006's name_fr backfill) run before this seeder, so
+            // that backfill never sees these rows — name_fr is set here instead.
+            MemberJob::firstOrCreate(['name' => $job['name']], $job + ['name_fr' => $job['name']]);
         }
     }
 }

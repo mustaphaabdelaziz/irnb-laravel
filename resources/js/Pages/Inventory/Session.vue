@@ -29,18 +29,27 @@ props.session.items.forEach((line) => {
 });
 
 const participantPick = ref('');
+const participantLabel = (name, membershipId, fallbackId) => {
+    const full = (name || '').trim() || `#${fallbackId}`;
+    return membershipId ? `${full} — ${membershipId}` : full;
+};
+
 const participants = ref(
     (props.session.participants || []).map((p) => ({
         type: 'Player',
         id: p.participant_id,
-        label: `${p.participant?.firstname ?? ''} ${p.participant?.lastname ?? ''}`.trim() || `#${p.participant_id}`,
+        label: participantLabel(
+            p.participant?.fullname ?? `${p.participant?.firstname ?? ''} ${p.participant?.lastname ?? ''}`,
+            p.participant?.membership_id,
+            p.participant_id,
+        ),
     }))
 );
 
 const participantOptions = computed(() => {
     const taken = new Set(participants.value.map((p) => p.id));
     return props.players
-        .map((pl) => ({ value: pl.id, label: `${pl.firstname} ${pl.lastname ?? ''}`.trim() }))
+        .map((pl) => ({ value: pl.id, label: participantLabel(pl.fullname, pl.membership_id, pl.id) }))
         .filter((o) => !taken.has(o.value));
 });
 

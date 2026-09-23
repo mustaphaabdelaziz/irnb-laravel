@@ -1,18 +1,22 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import StatStrip from '@/Components/Dashboard/StatStrip.vue';
 import SearchInput from '@/Components/SearchInput.vue';
 import Badge from '@/Components/Badge.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import Pagination from '@/Components/Pagination.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
-import { ref, watch } from 'vue';
+import { useBulkSelection } from '@/Composables/useBulkSelection';
+import { computed, ref } from 'vue';
+import { useListFilters } from '@/Composables/useListFilters';
 
 const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
 
 const props = defineProps({
+    strip: { type: Array, default: () => [] },
     catalogs: Object,
     filters: Object,
     // Managed in Settings > Equipment Categories.
@@ -22,20 +26,66 @@ const props = defineProps({
 const search = ref(props.filters?.search || '');
 const categoryFilter = ref(props.filters?.category || '');
 
-function applyFilters() {
-    router.get(route('equipment.catalogs.index'), {
-        search: search.value || undefined,
-        category: categoryFilter.value || undefined,
-    }, { preserveState: true, replace: true });
-}
+const { params: filterParams, loading: filtering } = useListFilters('equipment.catalogs.index', () => ({
+    search: search.value,
+    category: categoryFilter.value,
+}), { only: ['catalogs', 'filters'] });
 
-watch([search, categoryFilter], applyFilters);
+const catalogRows = computed(() => props.catalogs?.data ?? []);
+const {
+    selected,
+    allSelected,
+    toggleAll,
+    toggleOne,
+    clear: clearSelection,
+} = useBulkSelection(catalogRows, filterParams);
 
 const deleteId = ref(null);
+const bulkDeletePending = ref(false);
 
 function destroy() {
     router.delete(route('equipment.catalogs.destroy', deleteId.value), {
         onSuccess: () => { deleteId.value = null; },
+    });
+}
+
+function bulkDestroy() {
+    router.post(route('equipment.catalogs.bulk-destroy'), { ids: selected.value }, {
+        onSuccess: () => {
+            bulkDeletePending.value = false;
+            clearSelection();
+        },
+    });
+}
+
+// --- Equipment (catalog) import (CSV + Excel; Excel converted in-browser) ---
+const showImport = ref(false);
+const importForm = useForm({ file: null });
+const importConverting = ref(false);
+
+async function onImportFile(e) {
+    const file = e.target.files?.[0];
+    importForm.clearErrors();
+    if (!file) { importForm.file = null; return; }
+    if (!/\.(xlsx|xls)$/i.test(file.name)) { importForm.file = file; return; }
+    importConverting.value = true;
+    try {
+        const XLSX = await import('xlsx');
+        const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+        const csv = XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]]);
+        importForm.file = new File([csv], file.name.replace(/\.(xlsx|xls)$/i, '.csv'), { type: 'text/csv' });
+    } catch (err) {
+        importForm.file = null;
+        importForm.setError('file', t('excel_parse_failed'));
+    } finally {
+        importConverting.value = false;
+    }
+}
+
+function submitImport() {
+    importForm.post(route('equipment.catalogs.import'), {
+        forceFormData: true,
+        onSuccess: () => { showImport.value = false; importForm.reset(); },
     });
 }
 
@@ -48,11 +98,17 @@ function destroy() {
         <template #header>
             <div class="flex items-center justify-between">
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('equipments') }}</h1>
-                <div class="flex gap-2">
+                <div class="flex flex-wrap gap-2">
                     <Link :href="route('equipment.catalogs.create')" class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 transition-colors">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                         {{ t('add_equipment') }}
                     </Link>
+                    <button @click="showImport = true" class="inline-flex items-center rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                        {{ t('import') }}
+                    </button>
+                    <a :href="route('equipment.catalogs.export')" class="inline-flex items-center rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                        {{ t('export') }}
+                    </a>
                     <Link :href="route('equipment.inventory')" class="inline-flex items-center rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                         {{ t('inventory_report') }}
                     </Link>
@@ -60,11 +116,13 @@ function destroy() {
             </div>
         </template>
 
+        <StatStrip :tiles="strip || []" class="mb-4" />
+
         <div class="space-y-4">
             <!-- Filters -->
             <div class="flex flex-wrap items-center gap-3">
                 <div class="w-full sm:w-64">
-                    <SearchInput v-model="search" :placeholder="t('search')" />
+                    <SearchInput v-model="search" :loading="filtering" :placeholder="t('search')" />
                 </div>
                 <select v-model="categoryFilter" class="rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500">
                     <option value="">{{ t('all_categories') }}</option>
@@ -72,12 +130,34 @@ function destroy() {
                 </select>
             </div>
 
+            <div v-if="selected.length" class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-primary-50 px-4 py-2.5 ring-1 ring-primary-200 dark:bg-primary-900/20 dark:ring-primary-800">
+                <span class="text-sm font-medium text-primary-800 dark:text-primary-200">
+                    {{ t('selected_count', { count: selected.length }) }}
+                </span>
+                <button
+                    type="button"
+                    class="rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-rose-700 ring-1 ring-rose-300 transition-colors hover:bg-rose-50 dark:bg-slate-900 dark:text-rose-300 dark:ring-rose-800 dark:hover:bg-rose-900/30"
+                    @click="bulkDeletePending = true"
+                >
+                    {{ t('delete_selected') }}
+                </button>
+            </div>
+
             <!-- Catalog table -->
-            <div class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+            <div :class="{ 'opacity-60': filtering }" :aria-busy="filtering" class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 transition-opacity dark:ring-slate-800">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
                         <thead class="bg-slate-50 dark:bg-slate-950">
                             <tr>
+                                <th class="w-12 px-4 py-3 text-start">
+                                    <input
+                                        type="checkbox"
+                                        :checked="allSelected"
+                                        :aria-label="t('select_all')"
+                                        class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800"
+                                        @change="toggleAll"
+                                    />
+                                </th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('name') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('category') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('brand') }}</th>
@@ -87,14 +167,35 @@ function destroy() {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                            <tr v-for="cat in catalogs.data" :key="cat.id" class="hover:bg-slate-50 dark:hover:bg-slate-800">
+                            <tr
+                                v-for="cat in catalogs.data"
+                                :key="cat.id"
+                                class="hover:bg-slate-50 dark:hover:bg-slate-800"
+                                :class="selected.includes(cat.id) ? 'bg-primary-50/50 dark:bg-primary-900/10' : ''"
+                            >
+                                <td class="w-12 px-4 py-3">
+                                    <input
+                                        type="checkbox"
+                                        :checked="selected.includes(cat.id)"
+                                        :aria-label="t('select_item', { name: cat.name })"
+                                        class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800"
+                                        @change="toggleOne(cat.id)"
+                                    />
+                                </td>
                                 <td class="px-4 py-3">
                                     <Link :href="route('equipment.catalogs.show', cat.id)" class="text-sm font-medium text-primary-600 hover:text-primary-800">{{ cat.name }}</Link>
                                 </td>
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ cat.category }}</td>
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ cat.brand || '-' }}</td>
                                 <td class="px-4 py-3 text-end text-sm">{{ formatMoney(cat.purchase_price) }}</td>
-                                <td class="px-4 py-3 text-end text-sm font-semibold">{{ cat.items_count ?? 0 }}</td>
+                                <!-- Units is the figure that means something; a lot row can hold 100 dossards. -->
+                                <td class="px-4 py-3 text-end text-sm">
+                                    <span class="font-semibold">{{ cat.units_total ?? 0 }}</span>
+                                    <span class="ms-1 text-xs text-slate-400">{{ t('equipment.units') }}</span>
+                                    <span v-if="(cat.items_count ?? 0) > 1" class="block text-xs text-slate-400">
+                                        {{ cat.items_count }} {{ t('equipment.lots') }}
+                                    </span>
+                                </td>
                                 <td class="px-4 py-3 text-end">
                                     <div class="flex items-center justify-end gap-2">
                                         <Link :href="route('equipment.catalogs.show', cat.id)" class="text-sm text-primary-600 hover:text-primary-800">{{ t('details') }}</Link>
@@ -104,7 +205,7 @@ function destroy() {
                                 </td>
                             </tr>
                             <tr v-if="!catalogs.data?.length">
-                                <td colspan="6" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
+                                <td colspan="7" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -114,5 +215,40 @@ function destroy() {
         </div>
 
         <ConfirmModal :show="!!deleteId" :message="t('are_you_sure')" @confirm="destroy" @cancel="deleteId = null" />
+        <ConfirmModal
+            :show="bulkDeletePending"
+            :message="t('confirm_bulk_material_delete', { count: selected.length })"
+            :confirm-label="t('delete_selected')"
+            @confirm="bulkDestroy"
+            @cancel="bulkDeletePending = false"
+        />
+
+        <!-- Import equipments modal -->
+        <Teleport to="body">
+            <div v-if="showImport" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" @click.self="showImport = false">
+                <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
+                    <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('import') }} — {{ t('equipments') }}</h3>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ t('import_equipments_hint') }}</p>
+                    <form @submit.prevent="submitImport" class="mt-4 space-y-4">
+                        <input
+                            type="file"
+                            accept=".csv,.xlsx,.xls,text/csv"
+                            @change="onImportFile"
+                            required
+                            class="w-full text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 hover:file:bg-primary-100"
+                        />
+                        <p v-if="importConverting" class="text-sm text-slate-500 dark:text-slate-400">{{ t('converting_excel') }}</p>
+                        <p v-if="importForm.errors.file" class="text-sm text-rose-600">{{ importForm.errors.file }}</p>
+                        <div class="flex items-center justify-between gap-3 pt-2">
+                            <a :href="route('equipment.catalogs.import.template')" class="text-sm font-medium text-primary-600 hover:underline">{{ t('download_template') }}</a>
+                            <div class="flex gap-2">
+                                <button type="button" @click="showImport = false" class="rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">{{ t('cancel') }}</button>
+                                <button type="submit" :disabled="importForm.processing || importConverting || !importForm.file" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">{{ t('import') }}</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </Teleport>
     </AuthenticatedLayout>
 </template>

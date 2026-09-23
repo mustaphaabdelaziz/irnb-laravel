@@ -21,6 +21,9 @@ class CountrySeeder extends Seeder
             ]
         );
 
+        // The wilaya rows and their official names come from the migration
+        // (database/data/algeria_wilayas_official.php). firstOrCreate below
+        // therefore finds them and only fills in the communes.
         foreach ($data['states'] as $stateData) {
             $state = CountryState::firstOrCreate(
                 ['country_id' => $country->id, 'external_id' => $stateData['id']],

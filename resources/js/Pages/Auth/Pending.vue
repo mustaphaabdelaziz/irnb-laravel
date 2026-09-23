@@ -1,15 +1,10 @@
 <script setup>
-import { Head, Link, usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { Head, Link } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
+import { useClubIdentity } from '@/Composables/useClubIdentity';
 
 const { t } = useI18n();
-const page = usePage();
-const appName = computed(() => {
-    const name = page.props.appName;
-    const loc = page.props.locale || 'en';
-    return typeof name === 'object' ? (name[loc] || name.en || 'IRNB') : (name || 'IRNB');
-});
+const { appName } = useClubIdentity();
 </script>
 
 <template>

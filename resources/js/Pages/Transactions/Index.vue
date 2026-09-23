@@ -10,9 +10,13 @@ import CategoryManager from '@/Components/CategoryManager.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
-import { ref, watch, computed } from 'vue';
+import { ref, computed } from 'vue';
+import { useListFilters } from '@/Composables/useListFilters';
+import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
+import { useStatusLabel } from '@/Composables/useStatusLabel';
 
 const { t } = useI18n();
+const { statusLabel } = useStatusLabel();
 const { formatMoney } = useFormatMoney();
 
 const props = defineProps({
@@ -20,21 +24,33 @@ const props = defineProps({
     filters: Object,
     stats: Object,
     financeCategories: { type: Array, default: () => [] },
+    financeAccounts: { type: Array, default: () => [] },
 });
 
 const search = ref(props.filters?.search || '');
 const typeFilter = ref(props.filters?.type || '');
 const financeCategoryFilter = ref(props.filters?.finance_category_id || '');
+const financeAccountFilter = ref(props.filters?.finance_account_id || '');
 const showCategories = ref(false);
+const { accountLabel } = useFinanceAccountLabel();
+
+// fiscal_year/status/category/dates have no control on this page but can
+// arrive in the URL (e.g. from Finance); carry them through so searching
+// doesn't silently widen the list.
+const { params: filterParams, loading: filtering } = useListFilters('transactions.index', () => ({
+    search: search.value,
+    type: typeFilter.value,
+    finance_category_id: financeCategoryFilter.value,
+    finance_account_id: financeAccountFilter.value,
+    category: props.filters?.category,
+    fiscal_year: props.filters?.fiscal_year,
+    status: props.filters?.status,
+    date_from: props.filters?.date_from,
+    date_to: props.filters?.date_to,
+}), { only: ['transactions', 'filters', 'stats'] });
 
 // Export the current view (respects the active filters).
-const exportUrl = computed(() => route('transactions.export', {
-    search: search.value || undefined,
-    type: typeFilter.value || undefined,
-    finance_category_id: financeCategoryFilter.value || undefined,
-    fiscal_year: props.filters?.fiscal_year || undefined,
-    status: props.filters?.status || undefined,
-}));
+const exportUrl = computed(() => route('transactions.export', filterParams.value));
 
 const importInput = ref(null);
 function onImport(e) {
@@ -45,16 +61,6 @@ function onImport(e) {
         onFinish: () => { if (importInput.value) importInput.value.value = ''; },
     });
 }
-
-function applyFilters() {
-    router.get(route('transactions.index'), {
-        search: search.value || undefined,
-        type: typeFilter.value || undefined,
-        finance_category_id: financeCategoryFilter.value || undefined,
-    }, { preserveState: true, replace: true });
-}
-
-watch([search, typeFilter, financeCategoryFilter], applyFilters);
 
 const deleteId = ref(null);
 
@@ -75,7 +81,7 @@ function destroy() {
                 <div class="flex flex-wrap items-center gap-2">
                     <a :href="route('transactions.import.template')" class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-500 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-400 dark:ring-slate-800" :title="t('template') ? t('template') : 'Template'"><Icon name="document" /></a>
                     <button @click="importInput?.click()" class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800"><Icon name="upload" /> {{ t('import') }}</button>
-                    <input ref="importInput" type="file" accept=".xlsx,.xls,.csv" class="hidden" @change="onImport" />
+                    <input ref="importInput" type="file" accept=".csv,text/csv" class="hidden" @change="onImport" />
                     <a :href="exportUrl" class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800"><Icon name="download" /> {{ t('export') }}</a>
                     <button @click="showCategories = true" class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800"><Icon name="settings" /> {{ t('manage_categories') }}</button>
                     <Link :href="route('transactions.create')" class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 transition-colors">
@@ -97,7 +103,7 @@ function destroy() {
             <!-- Filters -->
             <div class="flex flex-wrap items-center gap-3">
                 <div class="w-full sm:w-64">
-                    <SearchInput v-model="search" :placeholder="t('search')" />
+                    <SearchInput v-model="search" :loading="filtering" :placeholder="t('search')" />
                 </div>
                 <select v-model="typeFilter" class="rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500">
                     <option value="">{{ t('all') }}</option>
@@ -107,16 +113,22 @@ function destroy() {
                 <select v-model="financeCategoryFilter" class="rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500">
                     <option value="">{{ t('all_categories') }}</option>
                     <optgroup :label="t('income')">
-                        <option v-for="c in financeCategories.filter((x) => x.type === 'income')" :key="c.id" :value="c.id">{{ c.name }}</option>
+                        <option v-for="c in financeCategories.filter((x) => x.type === 'income')" :key="c.id" :value="c.id">{{ c.localized_name || c.name }}</option>
                     </optgroup>
                     <optgroup :label="t('expense')">
-                        <option v-for="c in financeCategories.filter((x) => x.type === 'expense')" :key="c.id" :value="c.id">{{ c.name }}</option>
+                        <option v-for="c in financeCategories.filter((x) => x.type === 'expense')" :key="c.id" :value="c.id">{{ c.localized_name || c.name }}</option>
                     </optgroup>
+                </select>
+                <select v-model="financeAccountFilter" class="rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                    <option value="">{{ t('all_cash_registers') }}</option>
+                    <option v-for="account in financeAccounts" :key="account.id" :value="account.id">
+                        {{ accountLabel(account) }}
+                    </option>
                 </select>
             </div>
 
             <!-- Table -->
-            <div class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+            <div :class="{ 'opacity-60': filtering }" :aria-busy="filtering" class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 transition-opacity dark:ring-slate-800">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
                         <thead class="bg-slate-50 dark:bg-slate-950">
@@ -124,7 +136,9 @@ function destroy() {
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('date') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('type') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('category') }}</th>
-                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('description') }}</th>
+                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('cash_register') }}</th>
+                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('title') }}</th>
+                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('player') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('status') }}</th>
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('amount') }}</th>
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('actions') }}</th>
@@ -139,13 +153,26 @@ function destroy() {
                                 <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-700 dark:text-slate-200">
                                     <span v-if="tx.finance_category" class="inline-flex items-center gap-1.5">
                                         <span class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: tx.finance_category.color || '#94a3b8' }"></span>
-                                        {{ tx.finance_category.name }}
+                                        {{ tx.finance_category.localized_name || tx.finance_category.name }}
                                     </span>
                                     <span v-else>{{ tx.category }}</span>
                                 </td>
-                                <td class="max-w-xs truncate px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ tx.description || '-' }}</td>
+                                <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
+                                    {{ accountLabel(tx.finance_account) }}
+                                </td>
+                                <td class="max-w-xs px-4 py-3 text-sm">
+                                    <Link :href="route('transactions.show', tx.id)" class="block truncate font-medium text-slate-900 hover:text-primary-600 dark:text-slate-100">{{ tx.display_title }}</Link>
+                                    <span v-if="tx.description" class="block truncate text-xs text-slate-500 dark:text-slate-400">{{ tx.description }}</span>
+                                </td>
+                                <td class="whitespace-nowrap px-4 py-3 text-sm">
+                                    <template v-if="tx.player_summary">
+                                        <Link :href="route('players.show', tx.player_summary.id)" class="text-primary-600 hover:underline">{{ tx.player_summary.name }}</Link>
+                                        <span class="block font-mono text-xs text-slate-400">{{ tx.player_summary.membership_id }}</span>
+                                    </template>
+                                    <span v-else class="text-slate-400">—</span>
+                                </td>
                                 <td class="whitespace-nowrap px-4 py-3">
-                                    <Badge :label="tx.status || '-'" :color="tx.status === 'Paid' ? 'emerald' : tx.status === 'Partial' ? 'amber' : tx.status === 'Exempt' ? 'slate' : 'rose'" />
+                                    <Badge :label="statusLabel('payment', tx.status)" :color="tx.status === 'Paid' ? 'emerald' : tx.status === 'Partial' ? 'amber' : tx.status === 'Exempt' ? 'slate' : 'rose'" />
                                 </td>
                                 <td class="whitespace-nowrap px-4 py-3 text-end text-sm font-semibold"
                                     :class="tx.transaction_type === 'income' ? 'text-emerald-700' : 'text-rose-700'">
@@ -159,7 +186,7 @@ function destroy() {
                                 </td>
                             </tr>
                             <tr v-if="!transactions.data?.length">
-                                <td colspan="7" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
+                                <td colspan="9" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
                             </tr>
                         </tbody>
                     </table>

@@ -30,7 +30,7 @@ class PositionController extends Controller
 
         Position::create($validated);
 
-        return back()->with('success', 'Position created successfully.');
+        return back()->with('success', 'flash.position_created');
     }
 
     public function update(Request $request, Position $position): RedirectResponse
@@ -44,13 +44,13 @@ class PositionController extends Controller
 
         $position->update($validated);
 
-        return back()->with('success', 'Position updated successfully.');
+        return back()->with('success', 'flash.position_updated');
     }
 
     public function destroy(Position $position): RedirectResponse
     {
         $position->delete();
 
-        return back()->with('success', 'Position deleted successfully.');
+        return back()->with('success', 'flash.position_deleted');
     }
 }

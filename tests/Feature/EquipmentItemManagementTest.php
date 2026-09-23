@@ -187,6 +187,64 @@ class EquipmentItemManagementTest extends TestCase
     }
 
     #[Test]
+    public function a_lost_item_can_be_restored_to_available(): void
+    {
+        $item = $this->item($this->catalog(), ['status' => 'Lost']);
+
+        $this->actingAs($this->user())
+            ->post(route('equipment.items.mark-found', $item))
+            ->assertRedirect();
+
+        $item->refresh();
+        $this->assertSame('Available', $item->status);
+        $this->assertSame(1, EquipmentHistory::where('item_id', $item->id)->where('event_type', 'Found')->count());
+    }
+
+    #[Test]
+    public function an_item_under_repair_can_be_marked_fixed(): void
+    {
+        $item = $this->item($this->catalog(), ['status' => 'Under Repair']);
+
+        $this->actingAs($this->user())
+            ->post(route('equipment.items.complete-repair', $item), ['condition' => 'Good'])
+            ->assertRedirect();
+
+        $item->refresh();
+        $this->assertSame('Available', $item->status);
+        $this->assertSame('Good', $item->condition);
+    }
+
+    #[Test]
+    public function the_catalog_page_exposes_players_for_the_rent_dropdown(): void
+    {
+        $catalog = $this->catalog();
+        \App\Models\Player::create(['firstname' => 'Ali', 'lastname' => 'B', 'membership_id' => '202400009', 'join_year' => 2024]);
+
+        $this->actingAs($this->user())
+            ->get(route('equipment.catalogs.show', $catalog))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Equipment/Catalog/Show')
+                ->has('players', 1, fn (AssertableInertia $p) => $p
+                    ->where('membership_id', '202400009')
+                    ->has('fullname')
+                    ->has('id')
+                    ->etc()));
+    }
+
+    #[Test]
+    public function restoring_a_non_lost_item_is_refused(): void
+    {
+        $item = $this->item($this->catalog(), ['status' => 'Available']);
+
+        $this->actingAs($this->user())
+            ->post(route('equipment.items.mark-found', $item));
+
+        $item->refresh();
+        $this->assertSame('Available', $item->status);
+        $this->assertSame(0, EquipmentHistory::where('item_id', $item->id)->where('event_type', 'Found')->count());
+    }
+
+    #[Test]
     public function the_catalog_page_exposes_storage_locations(): void
     {
         StorageLocation::create(['name' => 'Storage 01']);

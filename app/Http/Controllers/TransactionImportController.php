@@ -3,16 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Transaction;
+use App\Support\Csv;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use PhpOffice\PhpSpreadsheet\Cell\DataType;
-use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
@@ -27,39 +21,24 @@ class TransactionImportController extends Controller
         ['status', 'Status (Paid/Partial/Unpaid/Exempt)', 'Paid'],
         ['payment_method', 'Payment Method', 'cash'],
         ['description', 'Description', ''],
+        // Last so files made from the old 7-column template still import.
+        ['title', 'Title', ''],
     ];
 
     public function template(): StreamedResponse
     {
-        $spreadsheet = new Spreadsheet;
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Transactions');
+        $headers = array_map(fn ($column) => $column[1], self::COLUMNS);
+        $example = array_map(fn ($column) => $column[2], self::COLUMNS);
 
-        foreach (self::COLUMNS as $index => [$key, $header, $example]) {
-            $column = chr(65 + $index);
-            $sheet->setCellValue($column.'1', $header);
-            $sheet->setCellValueExplicit($column.'2', $example, DataType::TYPE_STRING);
-            $sheet->getColumnDimension($column)->setWidth(24);
-        }
-        $style = $sheet->getStyle('A1:'.chr(65 + count(self::COLUMNS) - 1).'1');
-        $style->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
-        $style->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('1E40AF');
-        $style->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-        return response()->streamDownload(function () use ($spreadsheet) {
-            (new Xlsx($spreadsheet))->save('php://output');
-        }, 'transactions-import-template.xlsx', [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        ]);
+        return Csv::download('transactions-import-template.csv', $headers, [$example]);
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $request->validate(['file' => ['required', 'file', 'mimes:xlsx,xls,csv,txt', 'max:10240']]);
+        $request->validate(['file' => ['required', 'file', 'max:10240']]);
 
         try {
-            $rows = IOFactory::load($request->file('file')->getRealPath())
-                ->getActiveSheet()->toArray(null, true, true, false);
+            $rows = Csv::readRows($request->file('file')->getRealPath());
         } catch (Throwable $e) {
             return back()->with('error', __('Could not read the file. Please use the provided template.'));
         }
@@ -88,6 +67,7 @@ class TransactionImportController extends Controller
                     'status' => in_array($data['status'], ['Paid', 'Partial', 'Unpaid', 'Exempt'], true) ? $data['status'] : 'Paid',
                     'payment_method' => $data['payment_method'] ?: 'cash',
                     'description' => $data['description'] ?: null,
+                    'title' => $data['title'] ? mb_substr($data['title'], 0, 150) : null,
                     'recorded_by_user_id' => $request->user()?->id,
                 ]);
                 $imported++;
@@ -109,10 +89,6 @@ class TransactionImportController extends Controller
             return null;
         }
         try {
-            if (is_numeric($value)) {
-                return ExcelDate::excelToDateTimeObject((float) $value)->format('Y-m-d');
-            }
-
             return Carbon::parse($value)->format('Y-m-d');
         } catch (Throwable) {
             return null;

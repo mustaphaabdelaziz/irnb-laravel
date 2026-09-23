@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Branch;
+use App\Models\Player;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia;
@@ -26,10 +28,26 @@ class PlayerFormPropsTest extends TestCase
             ->assertInertia(fn (AssertableInertia $p) => $p
                 ->component('Players/Create')
                 ->has('wilayas', 58)
-                ->has('wilayas.0', fn (AssertableInertia $w) => $w->has('id')->has('name')->has('ar_name'))
+                ->has('wilayas.0', fn (AssertableInertia $w) => $w->has('id')->has('name')->has('ar_name')->etc())
                 ->has('communes')
                 ->where('defaultJoinYear', (int) now()->year)
                 ->where('nextSequenceByYear.'.now()->year, 1));
+    }
+
+    #[Test]
+    public function create_and_edit_pages_expose_branches_for_the_multiselect(): void
+    {
+        Branch::create(['name' => 'Swimming']);
+        Branch::create(['name' => 'Football']);
+        $player = Player::create(['firstname' => 'A', 'membership_id' => '202400001', 'join_year' => 2024]);
+
+        $this->actingAs($this->admin())
+            ->get(route('players.create'))
+            ->assertInertia(fn (AssertableInertia $p) => $p->component('Players/Create')->has('branches', 2));
+
+        $this->actingAs($this->admin())
+            ->get(route('players.edit', $player))
+            ->assertInertia(fn (AssertableInertia $p) => $p->component('Players/Edit')->has('branches', 2));
     }
 
     #[Test]

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\FinanceAccount;
+use App\Models\FinanceTransfer;
 use App\Models\FiscalYear;
 use App\Models\Transaction;
 use App\Models\User;
@@ -41,18 +42,50 @@ class FinanceService
     }
 
     /**
-     * Recompute each account's running balance from its transactions.
+     * Recompute each account's running balance from transactions and internal
+     * transfers. Transfers change register balances but never income/expense.
      */
     public function recomputeAccountBalances(): void
     {
-        FinanceAccount::query()->each(function (FinanceAccount $account) {
-            $income = (float) Transaction::where('finance_account_id', $account->id)
-                ->where('archived', false)->where('transaction_type', 'income')->sum('amount');
-            $expense = (float) Transaction::where('finance_account_id', $account->id)
-                ->where('archived', false)->where('transaction_type', 'expense')->sum('amount');
-            $account->current_balance = (float) $account->opening_balance + $income - $expense;
+        $accounts = FinanceAccount::query()->orderBy('id')->get();
+
+        // Three grouped queries for every account at once, not four per account.
+        $ledger = Transaction::query()
+            ->where('archived', false)
+            ->whereNotNull('finance_account_id')
+            ->groupBy('finance_account_id')
+            ->selectRaw("finance_account_id, SUM(CASE transaction_type WHEN 'income' THEN amount WHEN 'expense' THEN -amount ELSE 0 END) AS net")
+            ->pluck('net', 'finance_account_id');
+        $incoming = FinanceTransfer::query()->groupBy('to_account_id')
+            ->selectRaw('to_account_id, SUM(amount) AS total')->pluck('total', 'to_account_id');
+        $outgoing = FinanceTransfer::query()->groupBy('from_account_id')
+            ->selectRaw('from_account_id, SUM(amount) AS total')->pluck('total', 'from_account_id');
+
+        $own = $accounts->mapWithKeys(fn (FinanceAccount $account) => [
+            $account->id => (float) $account->opening_balance
+                + (float) ($ledger[$account->id] ?? 0)
+                + (float) ($incoming[$account->id] ?? 0)
+                - (float) ($outgoing[$account->id] ?? 0),
+        ]);
+
+        // A treasury is a roll-up, not a duplicate ledger entry. Its displayed
+        // balance is its own cash plus every child category register. Moving
+        // money between a child and its treasury therefore preserves the branch
+        // total while changing where the cash is held.
+        $childrenByParent = $accounts->whereNotNull('parent_account_id')->groupBy('parent_account_id');
+
+        foreach ($accounts as $account) {
+            $balance = $own[$account->id];
+
+            if ($account->is_treasury) {
+                $balance += $childrenByParent->get($account->id, collect())
+                    ->sum(fn (FinanceAccount $child) => $own[$child->id]);
+            }
+
+            // save() writes nothing when the balance did not change.
+            $account->current_balance = $balance;
             $account->save();
-        });
+        }
     }
 
     /**

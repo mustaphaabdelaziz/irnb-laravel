@@ -8,7 +8,7 @@ import { Head, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref, watch } from 'vue';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const props = defineProps({
     config: Object,
@@ -182,7 +182,14 @@ const settingsForm = useForm({
     enable_registration: props.config?.settings?.enableRegistration ?? props.config?.settings?.enable_registration ?? true,
     enable_donations: props.config?.settings?.enableDonations ?? props.config?.settings?.enable_donations ?? true,
     maintenance_mode: props.config?.settings?.maintenanceMode ?? props.config?.settings?.maintenance_mode ?? false,
+    seasonStartMonth: props.config?.settings?.seasonStartMonth ?? 9,
+    fileDrawerSize: props.config?.settings?.fileDrawerSize ?? 100,
 });
+
+// Month names come from the browser in the active language, so no catalog keys.
+function monthName(month) {
+    return new Date(2000, month - 1, 1).toLocaleString(locale.value === 'ar' ? 'ar' : locale.value, { month: 'long' });
+}
 
 function saveBasic() {
     basicForm.transform(data => ({
@@ -276,6 +283,8 @@ function saveSettings() {
             enableRegistration: data.enable_registration,
             enableDonations: data.enable_donations,
             maintenanceMode: data.maintenance_mode,
+            seasonStartMonth: Number(settingsForm.seasonStartMonth),
+            fileDrawerSize: Number(settingsForm.fileDrawerSize),
         },
     })).put(route('settings.update'));
 }
@@ -326,10 +335,10 @@ function saveSettings() {
                             </div>
                             <div>
                                 <InputLabel :value="t('abbreviation')" />
-                                <TextInput v-model="basicForm.club_short_name" class="mt-1 w-48" placeholder="e.g. IRNB" />
+                                <TextInput v-model="basicForm.club_short_name" class="mt-1 w-48" placeholder="e.g. FCB" />
                             </div>
                             <div>
-                                <InputLabel value="Tagline" />
+                                <InputLabel :value="t('tagline')" />
                                 <TextInput v-model="basicForm.tagline" class="mt-1 w-full" />
                             </div>
                             <div>
@@ -342,7 +351,7 @@ function saveSettings() {
                                     <TextInput v-model="basicForm.founding_date" type="date" class="mt-1 w-full" />
                                 </div>
                                 <div>
-                                    <InputLabel value="Motto" />
+                                    <InputLabel :value="t('motto')" />
                                     <TextInput v-model="basicForm.motto" class="mt-1 w-full" />
                                 </div>
                             </div>
@@ -359,15 +368,15 @@ function saveSettings() {
                             <div class="grid gap-4 sm:grid-cols-2">
                                 <div><InputLabel :value="t('email')" /><TextInput v-model="contactForm.contact_email" type="email" class="mt-1 w-full" /></div>
                                 <div><InputLabel :value="t('phone')" /><TextInput v-model="contactForm.contact_phone" type="tel" class="mt-1 w-full" /></div>
-                                <div><InputLabel value="Mobile" /><TextInput v-model="contactForm.contact_mobile" type="tel" class="mt-1 w-full" /></div>
-                                <div><InputLabel value="Website" /><TextInput v-model="contactForm.contact_website" type="url" class="mt-1 w-full" /></div>
+                                <div><InputLabel :value="t('mobile')" /><TextInput v-model="contactForm.contact_mobile" type="tel" class="mt-1 w-full" /></div>
+                                <div><InputLabel :value="t('website')" /><TextInput v-model="contactForm.contact_website" type="url" class="mt-1 w-full" /></div>
                             </div>
                             <hr class="border-slate-200 dark:border-slate-800" />
                             <div class="grid gap-4 sm:grid-cols-2">
                                 <div><InputLabel :value="t('address')" /><TextInput v-model="contactForm.address_street" class="mt-1 w-full" /></div>
                                 <div><InputLabel :value="t('city')" /><TextInput v-model="contactForm.address_city" class="mt-1 w-full" /></div>
                                 <div><InputLabel :value="t('state')" /><TextInput v-model="contactForm.address_state" class="mt-1 w-full" /></div>
-                                <div><InputLabel value="Code Postal" /><TextInput v-model="contactForm.address_postal_code" class="mt-1 w-full" /></div>
+                                <div><InputLabel :value="t('postal_code')" /><TextInput v-model="contactForm.address_postal_code" class="mt-1 w-full" /></div>
                             </div>
                         </div>
                     </div>
@@ -394,18 +403,18 @@ function saveSettings() {
                         <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('banking_info') }}</h2>
                         <div class="space-y-4">
                             <div class="grid gap-4 sm:grid-cols-2">
-                                <div><InputLabel value="Bank" /><TextInput v-model="bankingForm.bank_name" class="mt-1 w-full" /></div>
+                                <div><InputLabel :value="t('bank')" /><TextInput v-model="bankingForm.bank_name" class="mt-1 w-full" /></div>
                                 <div><InputLabel :value="t('name')" /><TextInput v-model="bankingForm.account_holder" class="mt-1 w-full" /></div>
-                                <div><InputLabel value="Numéro de compte" /><TextInput v-model="bankingForm.account_number" class="mt-1 w-full" /></div>
+                                <div><InputLabel :value="t('account_number')" /><TextInput v-model="bankingForm.account_number" class="mt-1 w-full" /></div>
                                 <div><InputLabel value="IBAN" /><TextInput v-model="bankingForm.iban" class="mt-1 w-full" /></div>
                                 <div><InputLabel value="RIB" /><TextInput v-model="bankingForm.rib" class="mt-1 w-full" /></div>
                             </div>
                             <hr class="border-slate-200 dark:border-slate-800" />
                             <h3 class="text-sm font-medium text-slate-700 dark:text-slate-200">CCP</h3>
                             <div class="grid gap-4 sm:grid-cols-3">
-                                <div><InputLabel value="Numéro" /><TextInput v-model="bankingForm.ccp_account" class="mt-1 w-full" /></div>
-                                <div><InputLabel value="Titulaire" /><TextInput v-model="bankingForm.ccp_holder" class="mt-1 w-full" /></div>
-                                <div><InputLabel value="Clé" /><TextInput v-model="bankingForm.ccp_key" class="mt-1 w-full" /></div>
+                                <div><InputLabel :value="t('number')" /><TextInput v-model="bankingForm.ccp_account" class="mt-1 w-full" /></div>
+                                <div><InputLabel :value="t('holder')" /><TextInput v-model="bankingForm.ccp_holder" class="mt-1 w-full" /></div>
+                                <div><InputLabel :value="t('key')" /><TextInput v-model="bankingForm.ccp_key" class="mt-1 w-full" /></div>
                             </div>
                         </div>
                     </div>
@@ -417,10 +426,10 @@ function saveSettings() {
                     <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                         <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('legal_info') }}</h2>
                         <div class="grid gap-4 sm:grid-cols-2">
-                            <div><InputLabel value="N° d'enregistrement" /><TextInput v-model="legalForm.registration_number" class="mt-1 w-full" /></div>
+                            <div><InputLabel :value="t('registration_number')" /><TextInput v-model="legalForm.registration_number" class="mt-1 w-full" /></div>
                             <div><InputLabel value="NIF" /><TextInput v-model="legalForm.nif" class="mt-1 w-full" /></div>
                             <div><InputLabel value="NIS" /><TextInput v-model="legalForm.nis" class="mt-1 w-full" /></div>
-                            <div><InputLabel value="Forme juridique" /><TextInput v-model="legalForm.legal_form" class="mt-1 w-full" /></div>
+                            <div><InputLabel :value="t('legal_form')" /><TextInput v-model="legalForm.legal_form" class="mt-1 w-full" /></div>
                         </div>
                     </div>
                     <div class="flex justify-end"><PrimaryButton :disabled="legalForm.processing">{{ t('save') }}</PrimaryButton></div>
@@ -488,7 +497,7 @@ function saveSettings() {
                         <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('branding') }}</h2>
                         <div class="space-y-4">
                             <div>
-                                <InputLabel value="Logo" />
+                                <InputLabel :value="t('logo')" />
                                 <div v-if="config?.branding?.logo" class="mb-2">
                                     <img :src="config.branding.logo" alt="Logo" class="h-16 w-16 rounded-lg object-contain" />
                                 </div>
@@ -496,7 +505,7 @@ function saveSettings() {
                                     class="text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700" />
                             </div>
                             <div>
-                                <InputLabel value="Favicon" />
+                                <InputLabel :value="t('favicon')" />
                                 <input type="file" accept="image/*" @change="brandingForm.favicon = $event.target.files[0]"
                                     class="text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700" />
                             </div>
@@ -526,6 +535,25 @@ function saveSettings() {
                                         <option value="fr">Français</option>
                                         <option value="en">English</option>
                                     </select>
+                                </div>
+                                <div class="sm:col-span-2 mt-2 border-t border-slate-100 pt-4 dark:border-slate-800">
+                                    <p class="mb-3 text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('club_files') }}</p>
+                                    <div class="grid gap-4 sm:grid-cols-2">
+                                        <label class="block text-sm">
+                                            <span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('season_start_month') }}</span>
+                                            <select v-model="settingsForm.seasonStartMonth" class="w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
+                                                <option v-for="m in 12" :key="m" :value="m">{{ monthName(m) }}</option>
+                                            </select>
+                                            <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">{{ t('season_start_hint') }}</span>
+                                            <span v-if="settingsForm.errors['settings.seasonStartMonth']" class="mt-1 block text-xs text-rose-500">{{ settingsForm.errors['settings.seasonStartMonth'] }}</span>
+                                        </label>
+                                        <label class="block text-sm">
+                                            <span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('file_drawer_size') }}</span>
+                                            <input v-model="settingsForm.fileDrawerSize" type="number" min="10" max="1000" class="w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800" />
+                                            <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">{{ t('file_drawer_hint') }}</span>
+                                            <span v-if="settingsForm.errors['settings.fileDrawerSize']" class="mt-1 block text-xs text-rose-500">{{ settingsForm.errors['settings.fileDrawerSize'] }}</span>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                             <div class="space-y-3">

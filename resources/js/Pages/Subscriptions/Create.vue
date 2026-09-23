@@ -12,6 +12,7 @@ const { t } = useI18n();
 
 const props = defineProps({
     categories: Array,
+    branches: { type: Array, default: () => [] },
     subscription: { type: Object, default: null },
 });
 
@@ -24,6 +25,7 @@ const form = useForm({
     amount_worker: props.subscription?.amount_worker || '',
     is_mandatory: props.subscription?.is_mandatory ?? true,
     category_ids: props.subscription?.categories?.map(c => c.id) || [],
+    branch_ids: props.subscription?.branches?.map(b => b.id) || [],
 });
 
 function submit() {
@@ -84,10 +86,22 @@ function submit() {
                             <label v-for="cat in categories" :key="cat.id" class="flex items-center gap-2">
                                 <input type="checkbox" :value="cat.id" v-model="form.category_ids"
                                     class="rounded border-gray-300 text-primary-600 shadow-sm focus:ring-primary-500" />
-                                <span class="text-sm">{{ cat.name }}</span>
+                                <span class="text-sm">{{ cat.localized_name || cat.name }}</span>
                             </label>
                         </div>
                         <InputError :message="form.errors.category_ids" class="mt-1" />
+                    </div>
+                    <div v-if="branches.length">
+                        <InputLabel :value="t('branches')" />
+                        <p class="mb-2 text-xs text-slate-500 dark:text-slate-400">{{ t('subscription_branch_hint') }}</p>
+                        <div class="flex flex-wrap gap-3">
+                            <label v-for="b in branches" :key="b.id" class="flex items-center gap-2">
+                                <input type="checkbox" :value="b.id" v-model="form.branch_ids"
+                                    class="rounded border-gray-300 text-primary-600 shadow-sm focus:ring-primary-500" />
+                                <span class="text-sm">{{ b.localized_name || b.name }}</span>
+                            </label>
+                        </div>
+                        <InputError :message="form.errors.branch_ids" class="mt-1" />
                     </div>
                 </div>
             </div>

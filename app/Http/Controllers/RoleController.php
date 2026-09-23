@@ -28,7 +28,7 @@ class RoleController extends Controller
 
         Role::create($validated);
 
-        return back()->with('success', 'Role created successfully.');
+        return back()->with('success', 'flash.role_created');
     }
 
     public function update(Request $request, Role $role): RedirectResponse
@@ -44,19 +44,19 @@ class RoleController extends Controller
 
         $role->update($validated);
 
-        return back()->with('success', 'Role updated successfully.');
+        return back()->with('success', 'flash.role_updated');
     }
 
     public function destroy(Role $role): RedirectResponse
     {
         if ($role->is_system) {
-            return back()->with('error', 'System roles cannot be deleted.');
+            return back()->with('error', 'flash.system_role_undeletable');
         }
 
         // Detaching happens via nullOnDelete on users.role_id.
         $role->delete();
 
-        return back()->with('success', 'Role deleted successfully.');
+        return back()->with('success', 'flash.role_deleted');
     }
 
     private function validateRole(Request $request): array

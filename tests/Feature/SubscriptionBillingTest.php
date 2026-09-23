@@ -75,7 +75,7 @@ class SubscriptionBillingTest extends TestCase
     }
 
     #[Test]
-    public function optional_subscriptions_are_excluded_from_debt(): void
+    public function optional_subscriptions_are_included_in_debt_once_assigned(): void
     {
         $player = $this->makePlayer();
         $mandatory = $this->makeSub($player, 2000, true);
@@ -83,8 +83,8 @@ class SubscriptionBillingTest extends TestCase
 
         app(RecalculatePlayerDebtService::class)->forPlayer($player->fresh());
 
-        // only the mandatory 2000 counts
-        $this->assertSame(2000.0, (float) $player->fresh()->outstanding_debt);
+        // Assigning an obligation means it is owed, optional or not: 2000 + 1500.
+        $this->assertSame(3500.0, (float) $player->fresh()->outstanding_debt);
     }
 
     #[Test]
@@ -186,7 +186,7 @@ class SubscriptionBillingTest extends TestCase
     }
 
     #[Test]
-    public function assigning_optional_subscription_does_not_add_debt_or_income(): void
+    public function assigning_optional_subscription_adds_debt_but_no_income(): void
     {
         $admin = User::factory()->create(['privileges' => ['admin'], 'is_active' => true, 'email_verified_at' => now()]);
         $player = $this->makePlayer();
@@ -200,10 +200,12 @@ class SubscriptionBillingTest extends TestCase
             ->post(route('subscriptions.assignOne', $optional), ['player_id' => $player->id])
             ->assertRedirect();
 
+        // Still cash-basis: assigning bills nobody, so no income transaction...
         $this->assertDatabaseCount('transactions', 0);
         $this->assertDatabaseCount('player_subscriptions', 1);
         $this->assertFalse((bool) PlayerSubscription::first()->is_mandatory);
-        $this->assertSame(0.0, (float) $player->fresh()->outstanding_debt);
+        // ...but the optional obligation is now owed.
+        $this->assertSame(1500.0, (float) $player->fresh()->outstanding_debt);
     }
 
     #[Test]

@@ -6,16 +6,12 @@ use App\Models\Category;
 use App\Models\MemberJob;
 use App\Models\Position;
 use App\Services\Player\RegisterPlayerService;
+use App\Support\Csv;
+use App\Support\NameNormalizer;
+use App\Support\WilayaMatcher;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use PhpOffice\PhpSpreadsheet\Cell\DataType;
-use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
@@ -42,51 +38,33 @@ class PlayerImportController extends Controller
         ['category', 'الفئة', 'Senior'],
         ['position', 'المركز (الاختصار أو الاسم)', 'GK'],
         ['job', 'المهنة', 'طالب'],
-        ['status', 'الحالة (student/worker)', 'student'],
+        ['status', 'الحالة (student/worker)', 'worker'],
         ['skill_level', 'المستوى (1-10)', '5'],
         ['blood_group', 'فصيلة الدم', 'O+'],
         ['medical_conditions', 'الحالات الصحية', ''],
         ['join_year', 'سنة الانضمام', ''],
+        // Appended last on purpose: older files simply have no cell here.
+        ['wilaya', 'الولاية (الرمز أو الاسم)', '47'],
+        // Appended last: older files have no cell here.
+        ['other_positions', 'مراكز أخرى (مفصولة بفاصلة)', 'WG, LB'],
     ];
 
     public function template(): StreamedResponse
     {
-        $spreadsheet = new Spreadsheet;
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Players');
-        $sheet->setRightToLeft(true);
+        $headers = array_map(fn ($column) => $column[1], self::COLUMNS);
+        $example = array_map(fn ($column) => $column[2], self::COLUMNS);
 
-        foreach (self::COLUMNS as $index => [$key, $header, $example]) {
-            $column = chr(65 + $index); // A, B, C ...
-            $sheet->setCellValue($column.'1', $header);
-            $sheet->setCellValueExplicit($column.'2', $example, DataType::TYPE_STRING);
-            $sheet->getColumnDimension($column)->setWidth(20);
-        }
-
-        $headerStyle = $sheet->getStyle('A1:'.chr(65 + count(self::COLUMNS) - 1).'1');
-        $headerStyle->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
-        $headerStyle->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('02A85C');
-        $headerStyle->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-        $filename = 'players-import-template.xlsx';
-
-        return response()->streamDownload(function () use ($spreadsheet) {
-            (new Xlsx($spreadsheet))->save('php://output');
-        }, $filename, [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        ]);
+        return Csv::download('players-import-template.csv', $headers, [$example]);
     }
 
     public function store(Request $request, RegisterPlayerService $service): RedirectResponse
     {
         $request->validate([
-            'file' => ['required', 'file', 'mimes:xlsx,xls,csv,txt', 'max:10240'],
+            'file' => ['required', 'file', 'max:10240'],
         ]);
 
         try {
-            $rows = IOFactory::load($request->file('file')->getRealPath())
-                ->getActiveSheet()
-                ->toArray(null, true, true, false);
+            $rows = Csv::readRows($request->file('file')->getRealPath());
         } catch (Throwable $e) {
             return back()->with('error', __('Could not read the file. Please use the provided template.'));
         }
@@ -94,9 +72,29 @@ class PlayerImportController extends Controller
         // Drop the header row.
         array_shift($rows);
 
-        $categories = Category::pluck('id', 'name')->mapWithKeys(fn ($id, $name) => [mb_strtolower(trim($name)) => $id]);
+        // Match a category by any of its names (base + per-locale), case-insensitively.
+        $categories = [];
+        foreach (Category::all(['id', 'name', 'name_ar', 'name_fr', 'name_en']) as $category) {
+            foreach ([$category->name, $category->name_ar, $category->name_fr, $category->name_en] as $variant) {
+                if ($variant !== null && $variant !== '') {
+                    $categories[mb_strtolower(trim($variant))] = $category->id;
+                }
+            }
+        }
         $positions = Position::all();
-        $jobs = MemberJob::pluck('id', 'name')->mapWithKeys(fn ($id, $name) => [mb_strtolower(trim($name)) => $id]);
+
+        // Match a job by any of its names (base + per-locale), spelling-insensitively.
+        $jobs = [];
+        foreach (MemberJob::query()->get() as $job) {
+            foreach ([$job->name, $job->name_ar, $job->name_fr, $job->name_en] as $value) {
+                $key = NameNormalizer::key($value);
+                if ($key !== '') {
+                    $jobs[$key] = $job->id;
+                }
+            }
+        }
+
+        $wilayas = WilayaMatcher::lookup();
 
         $imported = 0;
         $errors = [];
@@ -124,15 +122,34 @@ class PlayerImportController extends Controller
                     'state' => $data['state'] ?: 'Unknown',
                     'category_id' => $categories[mb_strtolower((string) $data['category'])] ?? null,
                     'position_id' => $this->resolvePosition($positions, $data['position']),
-                    'member_job_id' => $jobs[mb_strtolower((string) $data['job'])] ?? null,
-                    'is_student' => mb_strtolower((string) $data['status']) !== 'worker',
+                    // Older 19-column files (and anyone who still fills the template's
+                    // legacy "state" column) have no "wilaya" cell at all — fall back
+                    // to "state" so those rows still resolve a wilaya_id. When both are
+                    // given, the newer "wilaya" cell wins.
+                    'wilaya_id' => $wilayas[WilayaMatcher::normalise((string) ($data['wilaya'] ?: $data['state']))] ?? null,
+                    'member_job_id' => $jobs[NameNormalizer::key($data['job'] ?? null)] ?? null,
+                    // Default to worker: only an explicit "student" cell marks a student.
+                    'is_student' => mb_strtolower((string) $data['status']) === 'student',
                     'skill_level' => $this->clampSkill($data['skill_level']),
                     'health_blood_group_rhesus' => $data['blood_group'] ?: null,
                     'health_medical_conditions' => $data['medical_conditions'] ?: null,
                     'join_year' => is_numeric($data['join_year']) ? (int) $data['join_year'] : now()->year,
                 ];
 
-                $service->handle($attributes, $request->user()?->id);
+                $player = $service->handle($attributes, $request->user()?->id);
+
+                $others = collect(explode(',', (string) ($data['other_positions'] ?? '')))
+                    ->map(fn ($value) => $this->resolvePosition($positions, trim($value)))
+                    ->filter()
+                    ->reject(fn ($id) => (int) $id === (int) ($attributes['position_id'] ?? 0))
+                    ->unique()
+                    ->values()
+                    ->all();
+
+                if ($others !== []) {
+                    $player->otherPositions()->sync($others);
+                }
+
                 $imported++;
             } catch (Throwable $e) {
                 $errors[] = __('Row :line: :message', ['line' => $line, 'message' => $e->getMessage()]);
@@ -193,10 +210,6 @@ class PlayerImportController extends Controller
         }
 
         try {
-            if (is_numeric($value)) {
-                return ExcelDate::excelToDateTimeObject((float) $value)->format('Y-m-d');
-            }
-
             return Carbon::parse($value)->format('Y-m-d');
         } catch (Throwable) {
             return null;

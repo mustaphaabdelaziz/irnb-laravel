@@ -14,6 +14,7 @@ class PlayerSubscription extends Model
     protected $fillable = [
         'player_id',
         'subscription_id',
+        'label',
         'transaction_id',
         'year',
         'status_at_time',
@@ -21,11 +22,15 @@ class PlayerSubscription extends Model
         'is_exempt',
         'amount_owed',
         'amount_paid',
+        'discount_type',
+        'discount_value',
         'is_legacy',
         'due_date',
     ];
 
     protected $appends = [
+        'discount_amount',
+        'net_owed',
         'remaining_amount',
         'payment_status',
     ];
@@ -36,6 +41,7 @@ class PlayerSubscription extends Model
             'year' => 'integer',
             'amount_owed' => 'decimal:2',
             'amount_paid' => 'decimal:2',
+            'discount_value' => 'decimal:2',
             'is_legacy' => 'boolean',
             'is_mandatory' => 'boolean',
             'is_exempt' => 'boolean',
@@ -68,13 +74,38 @@ class PlayerSubscription extends Model
         return (bool) $this->is_exempt;
     }
 
+    /**
+     * The discount expressed in money. Clamped to [0, amount_owed] so a stored
+     * percentage over 100, a negative value, or a fixed amount bigger than the
+     * price can never turn into negative debt.
+     */
+    public function getDiscountAmountAttribute(): float
+    {
+        $owed = (float) $this->amount_owed;
+        $value = (float) $this->discount_value;
+
+        $discount = match ($this->discount_type) {
+            'percent' => $owed * $value / 100,
+            'amount' => $value,
+            default => 0.0,
+        };
+
+        return round(max(0.0, min($discount, $owed)), 2);
+    }
+
+    /** What the player actually owes once the discount is applied. */
+    public function getNetOwedAttribute(): float
+    {
+        return round(max(0.0, (float) $this->amount_owed - $this->getDiscountAmountAttribute()), 2);
+    }
+
     public function getRemainingAmountAttribute(): float
     {
         if ($this->isExempt()) {
             return 0.0;
         }
 
-        return max(0.0, (float) $this->amount_owed - (float) $this->amount_paid);
+        return max(0.0, $this->getNetOwedAttribute() - (float) $this->amount_paid);
     }
 
     public function getPaymentStatusAttribute(): string
@@ -82,10 +113,15 @@ class PlayerSubscription extends Model
         if ($this->isExempt()) {
             return 'exempt';
         }
-        if ($this->getRemainingAmountAttribute() <= 0 && (float) $this->amount_paid > 0) {
+
+        $paid = (float) $this->amount_paid;
+
+        // Nothing left to pay. A fully-discounted obligation settles with no
+        // payment at all, so a discount counts as settling it too.
+        if ($this->getRemainingAmountAttribute() <= 0 && ($paid > 0 || $this->getDiscountAmountAttribute() > 0)) {
             return 'paid';
         }
-        if ((float) $this->amount_paid > 0) {
+        if ($paid > 0) {
             return 'partial';
         }
 

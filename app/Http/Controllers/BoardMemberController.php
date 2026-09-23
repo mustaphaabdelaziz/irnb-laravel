@@ -22,7 +22,7 @@ class BoardMemberController extends Controller
         unset($data['photo']);
         BoardMember::create($data);
 
-        return back()->with('success', 'Board member added.');
+        return back()->with('success', 'flash.board_member_added');
     }
 
     public function update(Request $request, BoardMember $boardMember, FileStorageService $files): RedirectResponse
@@ -37,7 +37,7 @@ class BoardMemberController extends Controller
         unset($data['photo']);
         $boardMember->update($data);
 
-        return back()->with('success', 'Board member updated.');
+        return back()->with('success', 'flash.board_member_updated');
     }
 
     public function destroy(BoardMember $boardMember, FileStorageService $files): RedirectResponse
@@ -45,7 +45,7 @@ class BoardMemberController extends Controller
         $files->delete($boardMember->photo_filename);
         $boardMember->delete();
 
-        return back()->with('success', 'Board member removed.');
+        return back()->with('success', 'flash.board_member_removed');
     }
 
     /**

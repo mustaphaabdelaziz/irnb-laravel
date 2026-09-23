@@ -9,7 +9,8 @@ class InventorySessionItem extends Model
 {
     protected $fillable = [
         'inventory_session_id', 'equipment_item_id', 'expected_status',
-        'expected_condition', 'expected_location', 'counted', 'found',
+        'expected_condition', 'expected_location', 'expected_quantity',
+        'counted', 'found', 'found_quantity',
         'actual_condition', 'actual_location', 'note',
     ];
 
@@ -18,7 +19,15 @@ class InventorySessionItem extends Model
         return [
             'counted' => 'boolean',
             'found' => 'boolean',
+            'expected_quantity' => 'integer',
+            'found_quantity' => 'integer',
         ];
+    }
+
+    /** Units expected but not accounted for. An uncounted line is all missing. */
+    public function getMissingQuantityAttribute(): int
+    {
+        return max(0, $this->expected_quantity - (int) $this->found_quantity);
     }
 
     public function session(): BelongsTo

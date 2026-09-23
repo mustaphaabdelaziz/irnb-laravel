@@ -338,17 +338,17 @@
     },
     {
       "id": 49,
-      "name": "El M'ghair",
-      "ar_name": "المغير",
-      "longitude": "33.947222",
-      "latitude": "5.922222"
+      "name": "Timimoun",
+      "ar_name": "تيميمون",
+      "longitude": "29.258333",
+      "latitude": "0.230556"
     },
     {
       "id": 50,
-      "name": "El Menia",
-      "ar_name": "المنيعة",
-      "longitude": "30.579167",
-      "latitude": "2.879167"
+      "name": "Bordj Baji Mokhtar",
+      "ar_name": "برج باجي مختار",
+      "longitude": "21.327778",
+      "latitude": "0.955556"
     },
     {
       "id": 51,
@@ -359,24 +359,24 @@
     },
     {
       "id": 52,
-      "name": "Bordj Baji Mokhtar",
-      "ar_name": "برج باجي مختار",
-      "longitude": "21.327778",
-      "latitude": "0.955556"
-    },
-    {
-      "id": 53,
       "name": "Béni Abbès",
       "ar_name": "بني عباس",
       "longitude": "30.133333",
       "latitude": "-2.166667"
     },
     {
+      "id": 53,
+      "name": "In Salah",
+      "ar_name": "عين صالح",
+      "longitude": "27.197222",
+      "latitude": "2.483333"
+    },
+    {
       "id": 54,
-      "name": "Timimoun",
-      "ar_name": "تيميمون",
-      "longitude": "29.258333",
-      "latitude": "0.230556"
+      "name": "In Guezzam",
+      "ar_name": "عين قزام",
+      "longitude": "19.572222",
+      "latitude": "5.769444"
     },
     {
       "id": 55,
@@ -394,17 +394,17 @@
     },
     {
       "id": 57,
-      "name": "In Salah",
-      "ar_name": "عين صالح",
-      "longitude": "27.197222",
-      "latitude": "2.483333"
+      "name": "El M'ghair",
+      "ar_name": "المغير",
+      "longitude": "33.947222",
+      "latitude": "5.922222"
     },
     {
       "id": 58,
-      "name": "In Guezzam",
-      "ar_name": "عين قزام",
-      "longitude": "19.572222",
-      "latitude": "5.769444"
+      "name": "El Menia",
+      "ar_name": "المنيعة",
+      "longitude": "30.579167",
+      "latitude": "2.879167"
     }
   ],
   "communes": {

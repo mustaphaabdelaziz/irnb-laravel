@@ -2,11 +2,12 @@
 
 namespace App\Observers;
 
-use App\Models\FinanceAccount;
 use App\Models\FinanceCategory;
 use App\Models\FiscalYear;
+use App\Models\Player;
 use App\Models\PlayerSubscription;
 use App\Models\Transaction;
+use App\Services\Finance\DefaultRegisterResolver;
 use App\Services\Finance\RecalculatePlayerDebtService;
 use App\Services\FinanceService;
 use Carbon\Carbon;
@@ -40,7 +41,14 @@ class TransactionObserver
         }
 
         if (empty($transaction->finance_account_id)) {
-            $transaction->finance_account_id = FinanceAccount::where('type', 'cash')->orderBy('id')->value('id');
+            $player = $transaction->related_entity_type === 'Player' && $transaction->related_entity_id
+                ? Player::with('branches:id')->find($transaction->related_entity_id)
+                : null;
+            $registers = DefaultRegisterResolver::load();
+
+            $transaction->finance_account_id = ($player
+                ? $registers->forPlayer($player)
+                : $registers->for(null, null))?->id;
         }
     }
 

@@ -25,7 +25,7 @@ class StorageLocationController extends Controller
 
         StorageLocation::create($data);
 
-        return back()->with('success', 'Storage location created successfully.');
+        return back()->with('success', 'flash.storage_location_created');
     }
 
     public function update(Request $request, StorageLocation $storageLocation): RedirectResponse
@@ -36,13 +36,13 @@ class StorageLocationController extends Controller
 
         $storageLocation->update($data);
 
-        return back()->with('success', 'Storage location updated successfully.');
+        return back()->with('success', 'flash.storage_location_updated');
     }
 
     public function destroy(StorageLocation $storageLocation): RedirectResponse
     {
         $storageLocation->delete();
 
-        return back()->with('success', 'Storage location deleted successfully.');
+        return back()->with('success', 'flash.storage_location_deleted');
     }
 }

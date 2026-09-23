@@ -17,8 +17,8 @@ const props = defineProps({
 const editingId = ref(null);
 const deleteId = ref(null);
 
-const form = useForm({ name: '', description: '' });
-const editForm = useForm({ name: '', description: '' });
+const form = useForm({ name: '', name_ar: '', name_fr: '', name_en: '', description: '' });
+const editForm = useForm({ name: '', name_ar: '', name_fr: '', name_en: '', description: '' });
 
 function addCategory() {
     form.post(route('categories.store'), {
@@ -29,6 +29,9 @@ function addCategory() {
 function startEdit(cat) {
     editingId.value = cat.id;
     editForm.name = cat.name;
+    editForm.name_ar = cat.name_ar || '';
+    editForm.name_fr = cat.name_fr || '';
+    editForm.name_en = cat.name_en || '';
     editForm.description = cat.description || '';
 }
 
@@ -55,17 +58,33 @@ function destroy() {
 
         <div class="mx-auto max-w-2xl space-y-6">
             <!-- Add form -->
-            <form @submit.prevent="addCategory" class="flex items-end gap-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
-                <div class="flex-1">
-                    <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('name') }}</label>
-                    <TextInput v-model="form.name" class="mt-1 w-full" :placeholder="t('name')" required />
-                    <InputError :message="form.errors.name" class="mt-1" />
+            <form @submit.prevent="addCategory" class="space-y-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <div>
+                        <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('name') }} <span class="text-xs text-slate-400">({{ t('default') }})</span></label>
+                        <TextInput v-model="form.name" class="mt-1 w-full" :placeholder="t('name')" required />
+                        <InputError :message="form.errors.name" class="mt-1" />
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('description') }}</label>
+                        <TextInput v-model="form.description" class="mt-1 w-full" :placeholder="t('description')" />
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('name') }} (العربية)</label>
+                        <TextInput v-model="form.name_ar" class="mt-1 w-full" placeholder="الاسم" />
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('name') }} (Français)</label>
+                        <TextInput v-model="form.name_fr" class="mt-1 w-full" placeholder="Nom" />
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('name') }} (English)</label>
+                        <TextInput v-model="form.name_en" class="mt-1 w-full" placeholder="Name" />
+                    </div>
                 </div>
-                <div class="flex-1">
-                    <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('description') }}</label>
-                    <TextInput v-model="form.description" class="mt-1 w-full" :placeholder="t('description')" />
+                <div class="flex justify-end">
+                    <PrimaryButton :disabled="form.processing">{{ t('add') }}</PrimaryButton>
                 </div>
-                <PrimaryButton :disabled="form.processing">{{ t('add') }}</PrimaryButton>
             </form>
 
             <!-- List -->
@@ -81,8 +100,14 @@ function destroy() {
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                         <tr v-for="cat in categories" :key="cat.id">
                             <td class="px-4 py-3">
-                                <TextInput v-if="editingId === cat.id" v-model="editForm.name" class="w-full" />
-                                <span v-else class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ cat.name }}</span>
+                                <div v-if="editingId === cat.id" class="space-y-1.5">
+                                    <TextInput v-model="editForm.name" class="w-full" :placeholder="t('name')" />
+                                    <TextInput v-model="editForm.name_ar" class="w-full" placeholder="العربية" />
+                                    <TextInput v-model="editForm.name_fr" class="w-full" placeholder="Français" />
+                                    <TextInput v-model="editForm.name_en" class="w-full" placeholder="English" />
+                                    <InputError :message="editForm.errors.name" class="mt-1" />
+                                </div>
+                                <span v-else class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ cat.localized_name || cat.name }}</span>
                             </td>
                             <td class="px-4 py-3">
                                 <TextInput v-if="editingId === cat.id" v-model="editForm.description" class="w-full" />

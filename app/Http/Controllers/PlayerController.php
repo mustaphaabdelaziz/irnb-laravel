@@ -8,6 +8,7 @@ use App\Http\Requests\Player\UpdatePlayerRequest;
 use App\Models\Branch;
 use App\Models\Category;
 use App\Models\CountryState;
+use App\Models\DocumentType;
 use App\Models\FinanceAccount;
 use App\Models\MemberJob;
 use App\Models\Player;
@@ -40,9 +41,14 @@ class PlayerController extends Controller
 {
     public function index(Request $request): Response
     {
+        // Missing documents per row, computed in SQL — the twin of the player
+        // page's checklist (DocumentChecklist; the two are tested to agree).
+        [$missingSql, $missingBindings] = DocumentChecklist::missingCountSql();
+
         $query = Player::query()
             ->select('players.*')
             ->selectRaw('players.outstanding_debt as total_debt')
+            ->selectRaw("{$missingSql} as missing_documents_count", $missingBindings)
             ->with(['category', 'position', 'otherPositions', 'memberJob', 'status', 'wilaya']);
 
         $this->applyPlayerFilters($query, $request);
@@ -125,11 +131,17 @@ class PlayerController extends Controller
                     'name' => $state->name_fr ?: $state->name,
                     'localized_name' => $state->localized_name,
                 ]),
+            // The "missing type X" options: only types that can be missing.
+            'documentTypes' => fn () => DocumentType::query()
+                ->where('is_active', true)
+                ->where('is_required', true)
+                ->ordered()
+                ->get(['id', 'code', 'name', 'name_ar', 'name_fr', 'name_en']),
             'categoryStats' => $categoryStats,
             'statusStats' => $statusStats,
             'positionStats' => $positionStats,
             'ageStats' => $ageStats,
-            'filters' => $request->only(['search', 'category_id', 'status', 'position_id', 'branch_id', 'age', 'archived', 'wilaya_id']),
+            'filters' => $request->only(['search', 'category_id', 'status', 'position_id', 'branch_id', 'age', 'archived', 'wilaya_id', 'documents']),
         ]);
     }
 
@@ -613,7 +625,16 @@ class PlayerController extends Controller
         }
 
         if ($request->filled('wilaya_id')) {
-            $query->where('wilaya_id', $request->input('wilaya_id'));
+            // "none" finds the players whose wilaya was never set or was "Unknown"
+            // before the P2 migration (the list's filter drops empty values, so
+            // "no wilaya" needs a value of its own).
+            $request->input('wilaya_id') === 'none'
+                ? $query->whereNull('wilaya_id')
+                : $query->where('wilaya_id', $request->input('wilaya_id'));
+        }
+
+        if ($request->filled('documents')) {
+            $this->applyDocumentsFilter($query, (string) $request->input('documents'));
         }
 
         if ($request->filled('age')) {
@@ -633,6 +654,33 @@ class PlayerController extends Controller
             $query->where('archived', $request->boolean('archived'));
         } else {
             $query->where('archived', false);
+        }
+    }
+
+    /**
+     * missing | expiring | missing-{typeId}. Uses the SQL twin of the
+     * checklist, so the list, its charts and the export agree with the
+     * player page. An unknown value filters nothing.
+     */
+    private function applyDocumentsFilter($query, string $filter): void
+    {
+        if ($filter === 'missing') {
+            [$sql, $bindings] = DocumentChecklist::missingCountSql();
+            $query->whereRaw("{$sql} > 0", $bindings);
+
+            return;
+        }
+
+        if ($filter === 'expiring') {
+            [$sql, $bindings] = DocumentChecklist::expiringSoonSql();
+            $query->whereRaw($sql, $bindings);
+
+            return;
+        }
+
+        if (preg_match('/^missing-(\d+)$/', $filter, $match)) {
+            [$sql, $bindings] = DocumentChecklist::missingCountSql(null, (int) $match[1]);
+            $query->whereRaw("{$sql} > 0", $bindings);
         }
     }
 

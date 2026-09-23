@@ -57,6 +57,7 @@ class ListFilterPartialReloadTest extends TestCase
                 ->has('branches')
                 ->has('positions')
                 ->has('playerStatuses')
+                ->has('documentTypes')
                 ->has('players.data', 2));
     }
 
@@ -78,6 +79,7 @@ class ListFilterPartialReloadTest extends TestCase
                     ->missing('categories')
                     ->missing('branches')
                     ->missing('positions')
-                    ->missing('playerStatuses')));
+                    ->missing('playerStatuses')
+                    ->missing('documentTypes')));
     }
 }

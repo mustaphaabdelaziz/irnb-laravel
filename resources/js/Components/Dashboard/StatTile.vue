@@ -44,6 +44,7 @@ const display = computed(() => {
     if (props.value === null || props.value === undefined || props.value === '') return '—';
     if (props.format === 'money') return formatMoney(props.value);
     if (props.format === 'percent') return `${Number(props.value).toFixed(1).replace(/\.0$/, '')}%`;
+    if (props.format === 'text') return String(props.value);
 
     return new Intl.NumberFormat().format(props.value);
 });

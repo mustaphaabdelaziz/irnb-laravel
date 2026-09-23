@@ -25,6 +25,7 @@ const byAge = computed(() => props.data?.byAge ?? []);
 const debtBands = computed(() => props.data?.debtBands ?? []);
 const split = computed(() => props.data?.split ?? { students: 0, workers: 0, male: 0, female: 0 });
 const topCities = computed(() => props.data?.topCities ?? []);
+const academic = computed(() => props.data?.academic ?? null);
 
 const TILE_STYLE = {
     total_members: { icon: 'players', tone: 'primary' },
@@ -146,6 +147,16 @@ const genderTotal = computed(() => (split.value.male + split.value.female) || 1)
                 :icon="tile.icon"
                 :tone="tile.tone"
             />
+        </section>
+
+        <section v-if="academic && academic.students" class="space-y-3" :aria-label="t('dashboard.mem_academic')">
+            <h3 class="text-sm font-semibold text-muted-foreground">{{ t('dashboard.mem_academic') }}</h3>
+            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <StatTile :label="t('dashboard.mem_students')" :value="academic.students" icon="players" tone="primary" />
+                <StatTile :label="t('dashboard.mem_academic_average')" :value="academic.average === null ? null : `${academic.average.toFixed(2)} / 20`" format="text" icon="check" tone="positive" />
+                <StatTile :label="t('dashboard.mem_at_risk')" :value="academic.at_risk" icon="alert" tone="negative" :href="route('players.index', { academic: 'at_risk' })" />
+                <StatTile :label="t('dashboard.mem_missing_gpa')" :value="academic.missing" icon="dot" tone="warning" :href="route('players.index', { academic: 'none' })" />
+            </div>
         </section>
 
         <ChartCard

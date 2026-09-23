@@ -283,8 +283,8 @@ function saveSettings() {
             enableRegistration: data.enable_registration,
             enableDonations: data.enable_donations,
             maintenanceMode: data.maintenance_mode,
-            seasonStartMonth: Number(settingsForm.seasonStartMonth) || 9,
-            fileDrawerSize: Number(settingsForm.fileDrawerSize) || 100,
+            seasonStartMonth: Number(settingsForm.seasonStartMonth),
+            fileDrawerSize: Number(settingsForm.fileDrawerSize),
         },
     })).put(route('settings.update'));
 }
@@ -545,11 +545,13 @@ function saveSettings() {
                                                 <option v-for="m in 12" :key="m" :value="m">{{ monthName(m) }}</option>
                                             </select>
                                             <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">{{ t('season_start_hint') }}</span>
+                                            <span v-if="settingsForm.errors['settings.seasonStartMonth']" class="mt-1 block text-xs text-rose-500">{{ settingsForm.errors['settings.seasonStartMonth'] }}</span>
                                         </label>
                                         <label class="block text-sm">
                                             <span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('file_drawer_size') }}</span>
                                             <input v-model="settingsForm.fileDrawerSize" type="number" min="10" max="1000" class="w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800" />
                                             <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">{{ t('file_drawer_hint') }}</span>
+                                            <span v-if="settingsForm.errors['settings.fileDrawerSize']" class="mt-1 block text-xs text-rose-500">{{ settingsForm.errors['settings.fileDrawerSize'] }}</span>
                                         </label>
                                     </div>
                                 </div>

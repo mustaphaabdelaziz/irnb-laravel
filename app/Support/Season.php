@@ -21,7 +21,7 @@ final class Season
     /** The month a season starts in, 1-12. Falls back to September when unset or out of range. */
     public static function startMonth(): int
     {
-        $month = (int) (WebsiteConfig::singleton()->settings['seasonStartMonth'] ?? self::DEFAULT_START_MONTH);
+        $month = (int) ((WebsiteConfig::singleton()->settings ?? [])['seasonStartMonth'] ?? self::DEFAULT_START_MONTH);
 
         return ($month >= 1 && $month <= 12) ? $month : self::DEFAULT_START_MONTH;
     }

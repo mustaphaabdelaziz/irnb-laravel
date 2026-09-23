@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\WebsiteConfig;
 use App\Support\Season;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -94,5 +95,28 @@ class SeasonTest extends TestCase
         $this->actingAs($admin)
             ->put(route('settings.update'), ['settings' => ['fileDrawerSize' => 0]])
             ->assertSessionHasErrors('settings.fileDrawerSize');
+    }
+
+    #[Test]
+    public function a_null_settings_column_never_throws(): void
+    {
+        WebsiteConfig::singleton();
+
+        // Written directly so the model's array cast cannot turn this back into [].
+        DB::table('website_configs')->update(['settings' => null]);
+
+        $this->assertSame(9, Season::startMonth());
+    }
+
+    #[Test]
+    public function for_start_year_builds_a_season_from_a_year_alone(): void
+    {
+        $this->startMonth(9);
+        $season = Season::forStartYear(2025);
+
+        $this->assertSame(2025, $season->startYear);
+        $this->assertSame('2025-09-01', $season->start()->toDateString());
+        $this->assertSame('2026-08-31', $season->end()->toDateString());
+        $this->assertSame('2025/26', $season->label());
     }
 }

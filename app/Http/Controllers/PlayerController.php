@@ -18,6 +18,7 @@ use App\Models\Transaction;
 use App\Services\Dashboard\ModuleStats;
 use App\Services\Export\ExcelExporter;
 use App\Services\Finance\DefaultRegisterResolver;
+use App\Services\Player\FileNumber;
 use App\Services\Player\MembershipNumber;
 use App\Services\Player\RegisterPlayerService;
 use App\Services\Storage\FileStorageService;
@@ -429,6 +430,7 @@ class PlayerController extends Controller
 
         $rows = $query->orderBy('lastname')->orderBy('firstname')->get()->map(fn (Player $p) => [
             $p->membership_id,
+            FileNumber::format($p->file_number),
             $p->fullname,
             $p->category?->localized_name,
             $p->status?->localized_name,
@@ -439,7 +441,7 @@ class PlayerController extends Controller
             $p->branches->map(fn (Branch $b) => $b->localized_name)->implode(' / '),
         ]);
 
-        $headers = ['membership_id', 'name', 'category', 'status', 'type', 'join_year', 'debt', 'phones', 'branches'];
+        $headers = ['membership_id', 'File number', 'name', 'category', 'status', 'type', 'join_year', 'debt', 'phones', 'branches'];
 
         return $exporter->download('Players', $headers, $rows->all(), 'players-'.now()->format('Y-m-d').'.csv');
     }

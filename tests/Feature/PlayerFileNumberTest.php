@@ -101,4 +101,27 @@ class PlayerFileNumberTest extends TestCase
 
         $this->assertSame(2, FileNumber::drawer(51));
     }
+
+    #[Test]
+    public function the_export_carries_the_file_number(): void
+    {
+        $this->register('Amine');
+
+        $csv = $this->actingAs($this->admin())->get(route('players.export'))
+            ->assertOk()->streamedContent();
+
+        $this->assertStringContainsString('File number', $csv);
+        $this->assertStringContainsString('0001', $csv);
+    }
+
+    #[Test]
+    public function the_player_page_receives_the_file_number(): void
+    {
+        $player = $this->register('Amine');
+
+        $props = $this->actingAs($this->admin())->get(route('players.show', $player))
+            ->assertOk()->viewData('page')['props'];
+
+        $this->assertSame(1, $props['player']['file_number']);
+    }
 }

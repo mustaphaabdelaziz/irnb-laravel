@@ -15,6 +15,7 @@ import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 import { ref, computed, watch } from 'vue';
 import { useStatusLabel } from '@/Composables/useStatusLabel';
+import { formatFileNumber } from '@/lib/fileNumber';
 
 const { t } = useI18n();
 const { statusLabel } = useStatusLabel();
@@ -320,6 +321,10 @@ function formatDate(val) {
                     </div>
                     <dl class="mt-4 grid gap-3 sm:grid-cols-2">
                         <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('membership_id') }}</dt><dd class="font-mono text-sm">{{ player.membership_id }}</dd></div>
+                        <div>
+                            <dt class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('file_number') }}</dt>
+                            <dd class="font-mono text-sm text-slate-900 dark:text-slate-100">{{ formatFileNumber(player.file_number) }}</dd>
+                        </div>
                         <div>
                             <dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('date_of_birth') }}</dt>
                             <dd class="text-sm">

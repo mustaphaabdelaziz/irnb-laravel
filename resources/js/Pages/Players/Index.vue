@@ -11,6 +11,7 @@ import { ref, watch, computed } from 'vue';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useBulkSelection } from '@/Composables/useBulkSelection';
 import { useListFilters } from '@/Composables/useListFilters';
+import { formatFileNumber } from '@/lib/fileNumber';
 import BulkEditModal from '@/Components/BulkEditModal.vue';
 import StatDoughnut from '@/Components/StatDoughnut.vue';
 import Dropdown from '@/Components/Dropdown.vue';
@@ -363,6 +364,7 @@ function runBulk() {
                                     <input type="checkbox" :checked="allSelected" @change="toggleAll" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800" />
                                 </th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('membership_id') }}</th>
+                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('file_number') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('name') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('category') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('position') }}</th>
@@ -378,6 +380,7 @@ function runBulk() {
                                     <input type="checkbox" :checked="selected.includes(player.id)" @change="toggleOne(player.id)" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800" />
                                 </td>
                                 <td class="whitespace-nowrap px-4 py-3 text-sm font-mono text-slate-600 dark:text-slate-300">{{ player.membership_id }}</td>
+                                <td class="whitespace-nowrap px-4 py-3 text-sm font-mono text-slate-600 dark:text-slate-300">{{ formatFileNumber(player.file_number) }}</td>
                                 <td class="whitespace-nowrap px-4 py-3">
                                     <Link :href="route('players.show', player.id)" class="text-sm font-medium text-slate-900 dark:text-slate-100 hover:text-primary-600">
                                         {{ player.fullname || `${player.lastname} ${player.firstname}` }}
@@ -405,7 +408,7 @@ function runBulk() {
                                 </td>
                             </tr>
                             <tr v-if="!players.data.length">
-                                <td colspan="8" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
+                                <td colspan="9" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
                             </tr>
                         </tbody>
                     </table>

@@ -8,6 +8,7 @@ import SearchableSelect from '@/Components/SearchableSelect.vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { formatFileNumber } from '@/lib/fileNumber';
 
 const { t } = useI18n();
 const props = defineProps({
@@ -238,6 +239,13 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                     <InputLabel :value="t('membership_id')" />
                     <TextInput :model-value="membershipPreview" class="mt-1 w-full bg-slate-50 dark:bg-slate-950" readonly disabled />
                     <p class="mt-1 text-xs text-slate-400">{{ t('auto_generated') }}</p>
+                </div>
+                <div>
+                    <InputLabel :value="t('file_number')" />
+                    <div class="mt-1 flex items-center rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
+                        {{ p?.file_number ? formatFileNumber(p.file_number) : '—' }}
+                    </div>
+                    <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">{{ t('file_number_assigned_on_save') }}</p>
                 </div>
                 <div>
                     <InputLabel :value="t('join_year')" />

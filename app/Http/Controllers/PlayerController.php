@@ -140,6 +140,7 @@ class PlayerController extends Controller
             'position',
             'otherPositions',
             'memberJob',
+            'status',
             'branches',
             'emergencyContacts',
             'achievements',
@@ -173,6 +174,7 @@ class PlayerController extends Controller
             'totalDebt' => $player->calculateTotalDebt(),
             'financeAccounts' => $financeAccounts,
             'defaultFinanceAccountId' => $registers->forPlayer($player)?->id,
+            'fileDrawerSize' => FileNumber::drawerSize(),
         ]);
     }
 

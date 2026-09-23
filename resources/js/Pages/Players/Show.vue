@@ -10,13 +10,14 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import RentalTypeBadge from '@/Components/RentalTypeBadge.vue';
 import Icon from '@/Components/Icon.vue';
+import PlayerFieldRow from '@/Components/PlayerFieldRow.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 import { ref, computed, watch } from 'vue';
 import { useStatusLabel } from '@/Composables/useStatusLabel';
-import { formatFileNumber } from '@/lib/fileNumber';
+import { formatFileNumber, fileDrawer } from '@/lib/fileNumber';
 
 const { t } = useI18n();
 const { statusLabel } = useStatusLabel();
@@ -29,6 +30,7 @@ const props = defineProps({
     availableSubscriptions: { type: Array, default: () => [] },
     financeAccounts: { type: Array, default: () => [] },
     defaultFinanceAccountId: { type: [Number, String], default: '' },
+    fileDrawerSize: { type: Number, default: 100 },
 });
 
 const subscriptions = computed(() => props.player?.player_subscriptions ?? []);
@@ -320,43 +322,56 @@ function formatDate(val) {
                             <p class="font-mono text-sm text-slate-500 dark:text-slate-400">{{ player.membership_id }}</p>
                         </div>
                     </div>
-                    <dl class="mt-4 grid gap-3 sm:grid-cols-2">
-                        <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('membership_id') }}</dt><dd class="font-mono text-sm">{{ player.membership_id }}</dd></div>
-                        <div>
-                            <dt class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('file_number') }}</dt>
-                            <dd class="font-mono text-sm text-slate-900 dark:text-slate-100">{{ formatFileNumber(player.file_number) }}</dd>
-                        </div>
-                        <div>
-                            <dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('date_of_birth') }}</dt>
-                            <dd class="text-sm">
-                                {{ formatDate(player.birthdate) }}
-                                <span v-if="player.age !== null && player.age !== undefined" class="ms-1 text-slate-500 dark:text-slate-400">({{ t('age_years', { age: player.age }) }})</span>
-                            </dd>
-                        </div>
-                        <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('gender') }}</dt><dd class="text-sm">{{ player.gender?.toLowerCase() === 'female' ? t('female') : t('male') }}</dd></div>
-                        <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('blood_group') }}</dt><dd class="text-sm">{{ player.health_blood_group_rhesus || '-' }}</dd></div>
-                        <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('phone') }}</dt><dd class="text-sm">{{ player.phones?.[0] || '-' }}</dd></div>
-                        <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('email') }}</dt><dd class="text-sm">{{ player.email || '-' }}</dd></div>
-                        <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('city') }}, {{ t('state') }}</dt><dd class="text-sm">{{ [player.city, player.wilaya?.localized_name || player.wilaya?.name || player.state].filter(Boolean).join(', ') || '-' }}</dd></div>
-                        <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('category') }}</dt><dd class="text-sm">{{ player.category?.localized_name || player.category?.name || '-' }}</dd></div>
-                        <div>
-                            <dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('position') }}</dt>
-                            <dd class="text-sm">
-                                {{ player.position?.abbreviation || '-' }} {{ player.position?.name || '' }}
-                                <span v-if="player.other_positions?.length" class="text-slate-500 dark:text-slate-400">
-                                    · {{ player.other_positions.map((p) => p.abbreviation).join(', ') }}
-                                </span>
-                            </dd>
-                        </div>
-                        <div><dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('status') }}</dt><dd class="text-sm">{{ player.is_student ? t('student') : t('worker') }}</dd></div>
-                        <div class="sm:col-span-2">
-                            <dt class="text-xs text-slate-500 dark:text-slate-400">{{ t('branches') }}</dt>
-                            <dd class="mt-1 flex flex-wrap gap-1.5">
-                                <span v-for="b in (player.branches || [])" :key="b.id" class="rounded-md bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-200">{{ b.localized_name || b.name }}</span>
-                                <span v-if="!player.branches?.length" class="text-sm text-slate-400">-</span>
-                            </dd>
-                        </div>
+                    <dl class="mt-5 grid gap-x-6 gap-y-4 sm:grid-cols-2">
+                        <PlayerFieldRow icon="idcard" :label="t('membership_id')" :value="player.membership_id" mono />
+                        <PlayerFieldRow icon="folder" :label="t('file_number')" mono>
+                            {{ formatFileNumber(player.file_number) }}
+                            <span v-if="player.file_number" class="text-xs font-sans text-slate-500 dark:text-slate-400">
+                                · {{ t('drawer') }} {{ fileDrawer(player.file_number, fileDrawerSize) }}
+                            </span>
+                        </PlayerFieldRow>
+                        <PlayerFieldRow icon="calendar" :label="t('birthdate')">
+                            {{ formatDate(player.birthdate) }}
+                            <span v-if="player.age" class="text-slate-500 dark:text-slate-400">({{ player.age }})</span>
+                        </PlayerFieldRow>
+                        <PlayerFieldRow icon="user" :label="t('gender')" :value="player.gender ? t(player.gender.toLowerCase()) : ''" />
+                        <PlayerFieldRow icon="positions" :label="t('main_position')">
+                            {{ player.position?.abbreviation || '—' }}
+                            <span v-if="player.other_positions?.length" class="text-slate-500 dark:text-slate-400">
+                                · {{ player.other_positions.map((p) => p.abbreviation).join(', ') }}
+                            </span>
+                        </PlayerFieldRow>
+                        <PlayerFieldRow icon="categories" :label="t('category')" :value="player.category?.localized_name || player.category?.name" />
+                        <PlayerFieldRow icon="flag" :label="t('membership_status')" :value="player.status?.localized_name || player.status?.name" />
+                        <PlayerFieldRow icon="location" :label="t('state')" :value="[player.city, player.wilaya?.localized_name || player.wilaya?.name || player.state].filter(Boolean).join(', ')" />
+                        <PlayerFieldRow icon="phone" :label="t('phone')" :value="player.phones?.[0]" />
+                        <PlayerFieldRow icon="mail" :label="t('email')" :value="player.email" />
+                        <PlayerFieldRow icon="jobs" :label="t('job')" :value="player.is_student ? t('student') : (player.member_job?.localized_name || player.member_job?.name)" />
+                        <PlayerFieldRow icon="drop" :label="t('blood_group')" :value="player.health_blood_group_rhesus" />
+                        <PlayerFieldRow icon="calendar" :label="t('join_year')" :value="player.join_year" />
+                        <PlayerFieldRow icon="home" :label="t('branches')">
+                            <span v-if="player.branches?.length" class="flex flex-wrap gap-1">
+                                <span v-for="b in player.branches" :key="b.id" class="rounded bg-slate-100 px-1.5 py-0.5 text-xs dark:bg-slate-800">{{ b.localized_name || b.name }}</span>
+                            </span>
+                            <span v-else>—</span>
+                        </PlayerFieldRow>
                     </dl>
+
+                    <div v-if="player.emergency_contacts?.length || player.health_medical_conditions" class="mt-5 border-t border-slate-100 pt-4 dark:border-slate-800">
+                        <p class="mb-2 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('emergency_contacts') }}</p>
+                        <ul class="space-y-1">
+                            <li v-for="contact in player.emergency_contacts" :key="contact.id" class="flex flex-wrap items-center gap-2 text-sm">
+                                <Icon name="phone" class="text-slate-400" />
+                                <span class="font-medium text-slate-800 dark:text-slate-200">{{ contact.name }}</span>
+                                <span v-if="contact.relationship" class="text-xs text-slate-500">{{ contact.relationship }}</span>
+                                <span class="font-mono text-xs text-slate-600 dark:text-slate-300">{{ (contact.phones || [])[0] }}</span>
+                            </li>
+                        </ul>
+                        <p v-if="player.health_medical_conditions" class="mt-3 text-sm">
+                            <span class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('medical_notes') }}:</span>
+                            {{ player.health_medical_conditions }}
+                        </p>
+                    </div>
                 </div>
 
                 <!-- Debt summary -->
@@ -381,7 +396,7 @@ function formatDate(val) {
                             </Link>
                         </div>
                         <a :href="route('players.card', player.id)" target="_blank" class="mt-2 block w-full rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-center text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                            🪪 {{ t('member_card') }}
+                            <Icon name="idcard" /> {{ t('member_card') }}
                         </a>
                         <a :href="route('players.label', player.id)" target="_blank" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
                             <Icon name="print" /> {{ t('print_folder_label') }}

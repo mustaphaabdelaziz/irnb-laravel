@@ -124,4 +124,17 @@ class PlayerFileNumberTest extends TestCase
 
         $this->assertSame(1, $props['player']['file_number']);
     }
+
+    #[Test]
+    public function the_player_page_loads_everything_it_shows(): void
+    {
+        $player = $this->register('Amine');
+
+        $props = $this->actingAs($this->admin())->get(route('players.show', $player))
+            ->assertOk()->viewData('page')['props'];
+
+        foreach (['status', 'wilaya', 'other_positions', 'member_job', 'emergency_contacts'] as $key) {
+            $this->assertArrayHasKey($key, $props['player'], $key.' is not loaded');
+        }
+    }
 }

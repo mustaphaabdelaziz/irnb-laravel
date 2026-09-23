@@ -6,10 +6,12 @@ use App\Models\BoardMeeting;
 use App\Models\Role;
 use App\Models\User;
 use App\Support\PermissionMap;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -185,5 +187,48 @@ class BoardMinutesPrivateTest extends TestCase
         $this->assertSame('OLD-MINUTES', Storage::disk('local')->get('minutes/old.pdf'));
         Storage::disk('public')->assertMissing('minutes/old.pdf');
         $this->assertNull(DB::table('board_meetings')->where('id', $meeting->id)->value('attachment_url'));
+    }
+
+    #[Test]
+    public function a_row_whose_public_file_cannot_be_read_does_not_stop_the_others(): void
+    {
+        Storage::disk('public')->put('minutes/good.pdf', 'GOOD-MINUTES');
+        Storage::disk('public')->put('minutes/bad.pdf', 'BAD-MINUTES');
+
+        $good = $this->meeting(['attachment_url' => '/media/minutes/good.pdf', 'attachment_filename' => 'minutes/good.pdf']);
+        $bad = $this->meeting(['attachment_url' => '/media/minutes/bad.pdf', 'attachment_filename' => 'minutes/bad.pdf']);
+
+        // Swap in a disk that behaves exactly like the real fake for every
+        // path except "minutes/bad.pdf", where readStream() returns null —
+        // reproducing the real failure mode (an OS-level read error) without
+        // needing an actually-unreadable file on disk.
+        $realPublic = Storage::disk('public');
+        $flaky = Mockery::mock(Filesystem::class);
+        $flaky->shouldReceive('exists')->andReturnUsing(fn ($path) => $realPublic->exists($path));
+        $flaky->shouldReceive('size')->andReturnUsing(fn ($path) => $realPublic->size($path));
+        $flaky->shouldReceive('delete')->andReturnUsing(fn ($path) => $realPublic->delete($path));
+        $flaky->shouldReceive('readStream')->andReturnUsing(
+            fn ($path) => $path === 'minutes/bad.pdf' ? null : $realPublic->readStream($path)
+        );
+        Storage::set('public', $flaky);
+
+        // The migration must not throw: it completes (and so is recorded),
+        // even though one row's copy failed.
+        (require database_path(self::MIGRATION))->up();
+
+        $this->assertSame('GOOD-MINUTES', Storage::disk('local')->get('minutes/good.pdf'));
+
+        $rows = DB::table('board_meetings')->get()->keyBy('id');
+        $this->assertSame('minutes/good.pdf', $rows[$good->id]->attachment_filename);
+        $this->assertNull($rows[$good->id]->attachment_url);
+
+        // The bad row is left exactly as it was: file still on the public
+        // disk (never copied, so never deleted from there either), and the
+        // row still points at it — acceptable, because the /media guard
+        // already refuses to serve minutes/ paths.
+        Storage::disk('local')->assertMissing('minutes/bad.pdf');
+        $this->assertSame('BAD-MINUTES', $realPublic->get('minutes/bad.pdf'));
+        $this->assertSame('minutes/bad.pdf', $rows[$bad->id]->attachment_filename);
+        $this->assertSame('/media/minutes/bad.pdf', $rows[$bad->id]->attachment_url);
     }
 }

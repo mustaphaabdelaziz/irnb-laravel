@@ -21,6 +21,15 @@ return new class extends Migration
      * matches it, and a row is re-pointed only when its private file exists.
      * A row whose file is on neither disk, or whose link is external, is left
      * exactly as it was.
+     *
+     * A row whose public file cannot be read (readStream() returns null, then
+     * writeStream() throws) must never abort the whole migration — that would
+     * re-run it, and re-fail on the same row, on every boot. Each row runs in
+     * its own try/catch: a failure is logged and that row is left exactly as
+     * it was — still pointing at its public file, which is fine, because the
+     * /media guard already refuses to serve minutes/ and receipts/ paths —
+     * while the migration still completes (and is recorded) so every other
+     * row still moves.
      */
     public function up(): void
     {
@@ -37,28 +46,32 @@ return new class extends Migration
             ->get(['id', 'receipt_url', 'receipt_filename']);
 
         foreach ($rows as $row) {
-            $path = $this->relativePath($row);
+            try {
+                $path = $this->relativePath($row);
 
-            if ($path === null) {
-                continue;
+                if ($path === null) {
+                    continue;
+                }
+
+                if ($public->exists($path) && (! $private->exists($path) || $private->size($path) !== $public->size($path))) {
+                    $this->copy($public, $private, $path);
+                }
+
+                if (! $private->exists($path)) {
+                    continue;
+                }
+
+                if ($public->exists($path) && $public->size($path) === $private->size($path)) {
+                    $public->delete($path);
+                }
+
+                DB::table('transactions')->where('id', $row->id)->update([
+                    'receipt_filename' => $path,
+                    'receipt_url' => null,
+                ]);
+            } catch (Throwable $e) {
+                report($e);
             }
-
-            if ($public->exists($path) && (! $private->exists($path) || $private->size($path) !== $public->size($path))) {
-                $this->copy($public, $private, $path);
-            }
-
-            if (! $private->exists($path)) {
-                continue;
-            }
-
-            if ($public->exists($path) && $public->size($path) === $private->size($path)) {
-                $public->delete($path);
-            }
-
-            DB::table('transactions')->where('id', $row->id)->update([
-                'receipt_filename' => $path,
-                'receipt_url' => null,
-            ]);
         }
     }
 

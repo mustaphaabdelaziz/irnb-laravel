@@ -7,10 +7,12 @@ use App\Models\Role;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Support\PermissionMap;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -210,5 +212,48 @@ class TransactionReceiptPrivateTest extends TestCase
         $this->assertSame('/media/receipts/gone.pdf', $rows[$gone->id]->receipt_url);
         $this->assertSame('https://drive.example.com/r/123', $rows[$external->id]->receipt_url);
         $this->assertSame('https://drive.example.com/r/123', $external->fresh()->receipt_url, 'an external link is still offered as is');
+    }
+
+    #[Test]
+    public function a_row_whose_public_file_cannot_be_read_does_not_stop_the_others(): void
+    {
+        Storage::disk('public')->put('receipts/good.pdf', 'GOOD-RECEIPT');
+        Storage::disk('public')->put('receipts/bad.pdf', 'BAD-RECEIPT');
+
+        $good = $this->transaction(['receipt_url' => '/media/receipts/good.pdf', 'receipt_filename' => 'receipts/good.pdf']);
+        $bad = $this->transaction(['receipt_url' => '/media/receipts/bad.pdf', 'receipt_filename' => 'receipts/bad.pdf']);
+
+        // Swap in a disk that behaves exactly like the real fake for every
+        // path except "receipts/bad.pdf", where readStream() returns null —
+        // reproducing the real failure mode (an OS-level read error) without
+        // needing an actually-unreadable file on disk.
+        $realPublic = Storage::disk('public');
+        $flaky = Mockery::mock(Filesystem::class);
+        $flaky->shouldReceive('exists')->andReturnUsing(fn ($path) => $realPublic->exists($path));
+        $flaky->shouldReceive('size')->andReturnUsing(fn ($path) => $realPublic->size($path));
+        $flaky->shouldReceive('delete')->andReturnUsing(fn ($path) => $realPublic->delete($path));
+        $flaky->shouldReceive('readStream')->andReturnUsing(
+            fn ($path) => $path === 'receipts/bad.pdf' ? null : $realPublic->readStream($path)
+        );
+        Storage::set('public', $flaky);
+
+        // The migration must not throw: it completes (and so is recorded),
+        // even though one row's copy failed.
+        (require database_path(self::MIGRATION))->up();
+
+        $this->assertSame('GOOD-RECEIPT', Storage::disk('local')->get('receipts/good.pdf'));
+
+        $rows = DB::table('transactions')->get()->keyBy('id');
+        $this->assertSame('receipts/good.pdf', $rows[$good->id]->receipt_filename);
+        $this->assertNull($rows[$good->id]->receipt_url);
+
+        // The bad row is left exactly as it was: file still on the public
+        // disk (never copied, so never deleted from there either), and the
+        // row still points at it — acceptable, because the /media guard
+        // already refuses to serve receipts/ paths.
+        Storage::disk('local')->assertMissing('receipts/bad.pdf');
+        $this->assertSame('BAD-RECEIPT', $realPublic->get('receipts/bad.pdf'));
+        $this->assertSame('receipts/bad.pdf', $rows[$bad->id]->receipt_filename);
+        $this->assertSame('/media/receipts/bad.pdf', $rows[$bad->id]->receipt_url);
     }
 }

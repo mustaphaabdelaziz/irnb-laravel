@@ -181,6 +181,8 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         Route::post('/branches/{branch}/players', [BranchController::class, 'syncPlayers'])->name('branches.players.sync');
         Route::resource('equipment-categories', EquipmentCategoryController::class)->except(['show', 'create', 'edit']);
         Route::resource('storage-locations', StorageLocationController::class)->except(['show', 'create', 'edit']);
+        Route::post('/jobs/quick', [MemberJobController::class, 'quickStore'])->name('jobs.quick.store');
+        Route::post('/jobs/{job}/merge', [MemberJobController::class, 'merge'])->name('jobs.merge');
         Route::resource('jobs', MemberJobController::class)->except(['show', 'create', 'edit']);
         Route::resource('positions', PositionController::class)->except(['show', 'create', 'edit']);
         Route::resource('player-statuses', PlayerStatusController::class)->except(['show', 'create', 'edit']);

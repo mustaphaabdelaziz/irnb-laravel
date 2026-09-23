@@ -7,6 +7,7 @@ use App\Models\MemberJob;
 use App\Models\Position;
 use App\Services\Player\RegisterPlayerService;
 use App\Support\Csv;
+use App\Support\NameNormalizer;
 use App\Support\WilayaMatcher;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -81,7 +82,18 @@ class PlayerImportController extends Controller
             }
         }
         $positions = Position::all();
-        $jobs = MemberJob::pluck('id', 'name')->mapWithKeys(fn ($id, $name) => [mb_strtolower(trim($name)) => $id]);
+
+        // Match a job by any of its names (base + per-locale), spelling-insensitively.
+        $jobs = [];
+        foreach (MemberJob::query()->get() as $job) {
+            foreach ([$job->name, $job->name_ar, $job->name_fr, $job->name_en] as $value) {
+                $key = NameNormalizer::key($value);
+                if ($key !== '') {
+                    $jobs[$key] = $job->id;
+                }
+            }
+        }
+
         $wilayas = WilayaMatcher::lookup();
 
         $imported = 0;
@@ -111,7 +123,7 @@ class PlayerImportController extends Controller
                     'category_id' => $categories[mb_strtolower((string) $data['category'])] ?? null,
                     'position_id' => $this->resolvePosition($positions, $data['position']),
                     'wilaya_id' => $wilayas[WilayaMatcher::normalise((string) $data['wilaya'])] ?? null,
-                    'member_job_id' => $jobs[mb_strtolower((string) $data['job'])] ?? null,
+                    'member_job_id' => $jobs[NameNormalizer::key($data['job'] ?? null)] ?? null,
                     // Default to worker: only an explicit "student" cell marks a student.
                     'is_student' => mb_strtolower((string) $data['status']) === 'student',
                     'skill_level' => $this->clampSkill($data['skill_level']),

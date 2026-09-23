@@ -568,6 +568,8 @@
     "flash.item_is_rented": "لا يمكن حذف معدات مُعارة. أرجعها أولاً.",
     "flash.job_created": "تم إنشاء الوظيفة بنجاح.",
     "flash.job_deleted": "تم حذف الوظيفة بنجاح.",
+    "flash.job_in_use": "هذه المهنة لا تزال مُسندة إلى أعضاء، لذا لا يمكن حذفها.",
+    "flash.job_merged": "تم دمج المهنتين.",
     "flash.job_updated": "تم تحديث الوظيفة بنجاح.",
     "flash.last_superadmin": "لا يمكن حذف آخر مدير عام.",
     "flash.meeting_cancelled": "تم إلغاء الاجتماع.",

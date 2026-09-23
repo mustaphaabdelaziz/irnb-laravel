@@ -568,6 +568,8 @@
     "flash.item_is_rented": "Impossible de supprimer un matériel prêté. Faites-le rendre d'abord.",
     "flash.job_created": "Fonction créée avec succès.",
     "flash.job_deleted": "Fonction supprimée avec succès.",
+    "flash.job_in_use": "Ce métier est encore attribué à des membres : il ne peut pas être supprimé.",
+    "flash.job_merged": "Les métiers ont été fusionnés.",
     "flash.job_updated": "Fonction mise à jour avec succès.",
     "flash.last_superadmin": "Impossible de supprimer le dernier super administrateur.",
     "flash.meeting_cancelled": "Réunion annulée.",

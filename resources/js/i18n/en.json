@@ -568,6 +568,8 @@
     "flash.item_is_rented": "Cannot delete a rented item. Return it first.",
     "flash.job_created": "Job created successfully.",
     "flash.job_deleted": "Job deleted successfully.",
+    "flash.job_in_use": "This job is still assigned to members, so it cannot be deleted.",
+    "flash.job_merged": "The jobs were merged.",
     "flash.job_updated": "Job updated successfully.",
     "flash.last_superadmin": "Cannot delete the last super administrator.",
     "flash.meeting_cancelled": "Meeting cancelled.",

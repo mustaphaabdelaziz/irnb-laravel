@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\Player;
 use App\Models\WebsiteConfig;
 use App\Services\Pdf\PdfService;
 use App\Support\Media;
+use App\Support\Season;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\Response;
@@ -56,6 +58,40 @@ class PlayerPrintController extends Controller
         }
 
         return $this->renderLabels($players, 'folder-labels.pdf');
+    }
+
+    /**
+     * The sheet pinned next to the cabinet: everyone in one category this
+     * season, with the folder number to pull. Folders never move — only this
+     * list is reprinted when players change category.
+     */
+    public function boardTable(Request $request): Response
+    {
+        $validated = $request->validate([
+            'category_id' => ['required', 'integer', 'exists:categories,id'],
+            'season' => ['nullable', 'integer', 'min:2000', 'max:2100'],
+        ]);
+
+        $category = Category::findOrFail($validated['category_id']);
+        $season = isset($validated['season'])
+            ? Season::forStartYear((int) $validated['season'])
+            : Season::current();
+
+        $players = Player::query()
+            ->where('category_id', $category->id)
+            ->where('archived', false)
+            ->orderBy('lastname')
+            ->orderBy('firstname')
+            ->get();
+
+        $html = view('pdf.board-table', [
+            'club' => $this->club(),
+            'category' => $category,
+            'season' => $season,
+            'players' => $players,
+        ])->render();
+
+        return $this->pdf->stream($html, 'board-table-'.$category->id.'-'.$season->startYear.'.pdf');
     }
 
     private function renderLabels(Collection $players, string $filename): Response

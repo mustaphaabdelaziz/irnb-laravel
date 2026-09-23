@@ -861,6 +861,8 @@
     "previous_debts": "الديون السابقة",
     "price": "السعر",
     "print": "طباعة",
+    "print_board_table": "جدول الفئة",
+    "print_board_table_hint": "اختر فئة أولاً",
     "print_folder_label": "ملصق الملف",
     "print_selected_labels": "ملصقات للمحدَّدين",
     "priority": "الأولوية",

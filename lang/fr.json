@@ -20,7 +20,9 @@
     "Join Year": "Année d'adhésion",
     "Member": "Membre",
     "Member Card": "Carte de membre",
+    "Membership ID": "N° d'adhérent",
     "Net Balance": "Solde net",
+    "No members in this category.": "Aucun membre dans cette catégorie.",
     "No player matched that selection.": "Aucun joueur ne correspond à cette sélection.",
     "Payment Method": "Mode de paiement",
     "Payment Receipt": "Reçu de paiement",
@@ -31,11 +33,13 @@
     "Row :line: \":name\" already exists — skipped.": "Ligne :line : « :name » existe déjà — ignoré.",
     "Row :line: :message": "Ligne :line : :message",
     "Row :line: unknown category \":category\".": "Ligne :line : catégorie inconnue « :category ».",
+    "Season": "Saison",
     "Select :count players or fewer at a time.": "Sélectionnez :count joueurs ou moins à la fois.",
     "Status": "Statut",
     "This subscription does not apply to this player's category.": "Cet abonnement ne s'applique pas à la catégorie de ce joueur.",
     "Title": "Intitulé",
     "Total Expense": "Dépenses totales",
     "Total Income": "Revenus totaux",
-    "Type": "Type"
+    "Type": "Type",
+    "members": "membres"
 }

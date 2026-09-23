@@ -20,7 +20,9 @@
     "Join Year": "سنة الانضمام",
     "Member": "العضو",
     "Member Card": "بطاقة العضوية",
+    "Membership ID": "رقم العضوية",
     "Net Balance": "الرصيد الصافي",
+    "No members in this category.": "لا يوجد أعضاء في هذه الفئة.",
     "No player matched that selection.": "لا يوجد لاعب مطابق لهذا الاختيار.",
     "Payment Method": "طريقة الدفع",
     "Payment Receipt": "وصل دفع",
@@ -31,11 +33,13 @@
     "Row :line: \":name\" already exists — skipped.": "السطر :line: \":name\" موجود مسبقاً — تم تخطيه.",
     "Row :line: :message": "السطر :line: :message",
     "Row :line: unknown category \":category\".": "السطر :line: فئة غير معروفة \":category\".",
+    "Season": "الموسم",
     "Select :count players or fewer at a time.": "اختر :count لاعب أو أقل في المرة الواحدة.",
     "Status": "الحالة",
     "This subscription does not apply to this player's category.": "هذا الاشتراك لا يخص فئة هذا اللاعب.",
     "Title": "العنوان",
     "Total Expense": "إجمالي المصاريف",
     "Total Income": "إجمالي المداخيل",
-    "Type": "النوع"
+    "Type": "النوع",
+    "members": "عضو"
 }

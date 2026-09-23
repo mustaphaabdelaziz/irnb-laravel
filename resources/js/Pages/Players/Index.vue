@@ -211,6 +211,11 @@ function runBulk() {
                         </component>
                     </div>
 
+                    <a v-if="categoryFilter" :href="route('players.board-table', { category_id: categoryFilter })" target="_blank"
+                        class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800">
+                        <Icon name="print" /> {{ t('print_board_table') }}
+                    </a>
+
                     <!-- ...folded into an overflow menu below xl -->
                     <Dropdown align="right" width="48" class="xl:hidden">
                         <template #trigger>

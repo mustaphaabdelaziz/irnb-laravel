@@ -861,6 +861,8 @@
     "previous_debts": "Previous Debts",
     "price": "Price",
     "print": "Print",
+    "print_board_table": "Board table",
+    "print_board_table_hint": "Pick a category first",
     "print_folder_label": "Folder label",
     "print_selected_labels": "Labels for selection",
     "priority": "Priority",

@@ -861,6 +861,8 @@
     "previous_debts": "Dettes précédentes",
     "price": "Prix",
     "print": "Imprimer",
+    "print_board_table": "Tableau par catégorie",
+    "print_board_table_hint": "Choisissez d'abord une catégorie",
     "print_folder_label": "Étiquette de dossier",
     "print_selected_labels": "Étiquettes pour la sélection",
     "priority": "Priorité",

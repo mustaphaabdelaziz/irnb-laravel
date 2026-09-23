@@ -86,6 +86,7 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
     Route::post('/players/bulk-force-delete', [PlayerController::class, 'bulkForceDelete'])->name('players.bulkForceDelete');
     Route::post('/players/bulk-update', [PlayerController::class, 'bulkUpdate'])->name('players.bulkUpdate');
     Route::get('/players/labels', [PlayerPrintController::class, 'labels'])->name('players.labels');
+    Route::get('/players/board-table', [PlayerPrintController::class, 'boardTable'])->name('players.board-table');
 
     // Players
     Route::resource('players', PlayerController::class);

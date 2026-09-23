@@ -34,6 +34,7 @@ class Player extends Model
         'status_value',
         'status_id',
         'state',
+        'wilaya_id',
         'city',
         'is_student',
         'member_job_id',
@@ -137,6 +138,11 @@ class Player extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function wilaya(): BelongsTo
+    {
+        return $this->belongsTo(CountryState::class, 'wilaya_id');
     }
 
     public function memberJob(): BelongsTo

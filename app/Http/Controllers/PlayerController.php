@@ -7,6 +7,7 @@ use App\Http\Requests\Player\StorePlayerRequest;
 use App\Http\Requests\Player\UpdatePlayerRequest;
 use App\Models\Branch;
 use App\Models\Category;
+use App\Models\CountryState;
 use App\Models\FinanceAccount;
 use App\Models\MemberJob;
 use App\Models\Player;
@@ -41,7 +42,7 @@ class PlayerController extends Controller
         $query = Player::query()
             ->select('players.*')
             ->selectRaw('players.outstanding_debt as total_debt')
-            ->with(['category', 'position', 'memberJob', 'status']);
+            ->with(['category', 'position', 'memberJob', 'status', 'wilaya']);
 
         $this->applyPlayerFilters($query, $request);
 
@@ -117,7 +118,7 @@ class PlayerController extends Controller
             'statusStats' => $statusStats,
             'positionStats' => $positionStats,
             'ageStats' => $ageStats,
-            'filters' => $request->only(['search', 'category_id', 'status', 'position_id', 'branch_id', 'age', 'archived']),
+            'filters' => $request->only(['search', 'category_id', 'status', 'position_id', 'branch_id', 'age', 'archived', 'wilaya_id']),
         ]);
     }
 
@@ -204,19 +205,40 @@ class PlayerController extends Controller
     }
 
     /**
-     * Algeria wilayas (bilingual) + communes keyed by wilaya id, from the seed json.
+     * The wilaya list for the player form, from the table the migration owns,
+     * plus the commune lists keyed by the SAME id the form submits.
      *
-     * @return array{wilayas: array<int, array{id:int,name:string,ar_name:string}>, communes: array<int|string, array<int,string>>}
+     * Rows with no `code` are stray/duplicate legacy rows the wilaya-sync
+     * migration could not identify (see 2026_09_23_100003_official_wilayas.php)
+     * — they are excluded so the form never offers an uncoded row.
+     *
+     * @return array{wilayas: array<int, array{id:int,code:?string,name:string,ar_name:?string,localized_name:string}>, communes: array<int, array<int,string>>}
      */
     private function algeriaGeo(): array
     {
+        $states = CountryState::query()->whereNotNull('code')->orderBy('code')->get();
+
+        $wilayas = $states->map(fn (CountryState $state) => [
+            'id' => $state->id,
+            'code' => $state->code,
+            'name' => $state->name_fr ?: $state->name,
+            'ar_name' => $state->name_ar ?: $state->ar_name,
+            'localized_name' => $state->localized_name,
+        ])->values()->all();
+
+        // The commune file is keyed by the official wilaya number; the form works
+        // in row ids, so translate the keys once here.
         $data = json_decode(File::get(database_path('seeders/algeria_wilayas.json')), true);
+        $communes = [];
 
-        $wilayas = collect($data['states'] ?? [])
-            ->map(fn ($s) => ['id' => (int) $s['id'], 'name' => $s['name'], 'ar_name' => $s['ar_name']])
-            ->values()->all();
+        foreach ($states as $state) {
+            $list = $data['communes'][(string) $state->external_id] ?? [];
+            if ($list !== []) {
+                $communes[$state->id] = $list;
+            }
+        }
 
-        return ['wilayas' => $wilayas, 'communes' => $data['communes'] ?? []];
+        return ['wilayas' => $wilayas, 'communes' => $communes];
     }
 
     /**
@@ -425,13 +447,14 @@ class PlayerController extends Controller
 
     public function export(Request $request, ExcelExporter $exporter): StreamedResponse
     {
-        $query = Player::query()->with(['category', 'position', 'branches', 'status']);
+        $query = Player::query()->with(['category', 'position', 'branches', 'status', 'wilaya']);
         $this->applyPlayerFilters($query, $request);
 
         $rows = $query->orderBy('lastname')->orderBy('firstname')->get()->map(fn (Player $p) => [
             $p->membership_id,
             FileNumber::format($p->file_number),
             $p->fullname,
+            $p->wilaya?->localized_name,
             $p->category?->localized_name,
             $p->status?->localized_name,
             $p->is_student ? 'student' : 'worker',
@@ -441,7 +464,7 @@ class PlayerController extends Controller
             $p->branches->map(fn (Branch $b) => $b->localized_name)->implode(' / '),
         ]);
 
-        $headers = ['membership_id', 'File number', 'name', 'category', 'status', 'type', 'join_year', 'debt', 'phones', 'branches'];
+        $headers = ['membership_id', 'File number', 'Wilaya', 'name', 'category', 'status', 'type', 'join_year', 'debt', 'phones', 'branches'];
 
         return $exporter->download('Players', $headers, $rows->all(), 'players-'.now()->format('Y-m-d').'.csv');
     }
@@ -523,6 +546,10 @@ class PlayerController extends Controller
 
         if ($request->filled('branch_id')) {
             $query->whereHas('branches', fn ($q) => $q->where('branches.id', $request->input('branch_id')));
+        }
+
+        if ($request->filled('wilaya_id')) {
+            $query->where('wilaya_id', $request->input('wilaya_id'));
         }
 
         if ($request->filled('age')) {

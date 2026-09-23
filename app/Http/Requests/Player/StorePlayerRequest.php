@@ -28,6 +28,7 @@ class StorePlayerRequest extends FormRequest
             'status_value' => ['nullable', 'string', 'max:255'],
             'status_id' => ['nullable', 'exists:player_statuses,id'],
             'state' => ['nullable', 'string', 'max:255'],
+            'wilaya_id' => ['nullable', 'integer', 'exists:country_states,id'],
             'city' => ['nullable', 'string', 'max:255'],
             'is_student' => ['nullable', 'boolean'],
             'member_job_id' => ['nullable', 'integer', 'exists:member_jobs,id'],

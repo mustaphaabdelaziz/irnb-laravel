@@ -7,6 +7,7 @@ use App\Models\MemberJob;
 use App\Models\Position;
 use App\Services\Player\RegisterPlayerService;
 use App\Support\Csv;
+use App\Support\WilayaMatcher;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -41,6 +42,8 @@ class PlayerImportController extends Controller
         ['blood_group', 'فصيلة الدم', 'O+'],
         ['medical_conditions', 'الحالات الصحية', ''],
         ['join_year', 'سنة الانضمام', ''],
+        // Appended last on purpose: older files simply have no cell here.
+        ['wilaya', 'الولاية (الرمز أو الاسم)', '47'],
     ];
 
     public function template(): StreamedResponse
@@ -77,6 +80,7 @@ class PlayerImportController extends Controller
         }
         $positions = Position::all();
         $jobs = MemberJob::pluck('id', 'name')->mapWithKeys(fn ($id, $name) => [mb_strtolower(trim($name)) => $id]);
+        $wilayas = WilayaMatcher::lookup();
 
         $imported = 0;
         $errors = [];
@@ -104,6 +108,7 @@ class PlayerImportController extends Controller
                     'state' => $data['state'] ?: 'Unknown',
                     'category_id' => $categories[mb_strtolower((string) $data['category'])] ?? null,
                     'position_id' => $this->resolvePosition($positions, $data['position']),
+                    'wilaya_id' => $wilayas[WilayaMatcher::normalise((string) $data['wilaya'])] ?? null,
                     'member_job_id' => $jobs[mb_strtolower((string) $data['job'])] ?? null,
                     // Default to worker: only an explicit "student" cell marks a student.
                     'is_student' => mb_strtolower((string) $data['status']) === 'student',

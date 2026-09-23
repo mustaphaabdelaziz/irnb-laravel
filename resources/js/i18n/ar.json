@@ -411,7 +411,7 @@
     "doc_exempt_reason": "السبب",
     "doc_expiring_count": "{count} تنتهي قريباً",
     "doc_files": "الملفات",
-    "doc_files_hint": "PDF أو صورة، 10 ميغابايت كحد أقصى لكل ملف. على الهاتف يمكنك التقاط صورة.",
+    "doc_files_hint": "PDF أو صورة، 10 ميغابايت كحد أقصى لكل ملف، بحد أقصى 10 ملفات. على الهاتف يمكنك التقاط صورة.",
     "doc_filter_all": "كل الوثائق",
     "doc_filter_expiring": "تنتهي قريباً",
     "doc_filter_missing": "وثائق ناقصة",

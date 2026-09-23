@@ -411,7 +411,7 @@
     "doc_exempt_reason": "Motif",
     "doc_expiring_count": "{count} expire(nt) bientôt",
     "doc_files": "Fichiers",
-    "doc_files_hint": "PDF ou photo, 10 Mo maximum chacun. Sur un téléphone, vous pouvez prendre une photo.",
+    "doc_files_hint": "PDF ou photo, 10 Mo maximum chacun, 10 fichiers maximum. Sur un téléphone, vous pouvez prendre une photo.",
     "doc_filter_all": "Tous les documents",
     "doc_filter_expiring": "Expirant bientôt",
     "doc_filter_missing": "Documents manquants",

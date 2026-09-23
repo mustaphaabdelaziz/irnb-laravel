@@ -57,6 +57,34 @@ class PlayerLabelTest extends TestCase
     }
 
     #[Test]
+    public function a_selection_over_the_cap_is_rejected(): void
+    {
+        $ids = collect(range(1, 501))->implode(',');
+
+        $response = $this->actingAs($this->admin())->get(route('players.labels', ['ids' => $ids]));
+
+        $response->assertSessionHasErrors('ids');
+        // Distinguishes this from the generic "no player matched" rejection:
+        // the flashed message must actually name the cap.
+        $this->assertStringContainsString('500', session('errors')->first('ids'));
+    }
+
+    #[Test]
+    public function a_selection_at_exactly_the_cap_is_not_rejected_by_the_cap_check(): void
+    {
+        // The one real player created here has a low id (a fresh test DB), so
+        // it falls inside 1..500 — proving 500 ids is let through the cap
+        // check (only 501+ is rejected) rather than merely failing to match.
+        $this->player();
+        $ids = collect(range(1, 500))->implode(',');
+
+        $response = $this->actingAs($this->admin())->get(route('players.labels', ['ids' => $ids]));
+
+        $response->assertOk();
+        $this->assertStringStartsWith('%PDF', $response->getContent());
+    }
+
+    #[Test]
     public function the_label_markup_carries_the_numbers_and_the_drawer(): void
     {
         $player = $this->player();
@@ -69,7 +97,10 @@ class PlayerLabelTest extends TestCase
 
         $this->assertStringContainsString('0001', $html);
         $this->assertStringContainsString($player->membership_id, $html);
-        $this->assertStringContainsString('type="QR"', $html);
+        // Ties the id to the QR tag itself, not just to somewhere on the page
+        // (the membership id also appears in the .mid div) and not just to
+        // some unrelated type="QR" element.
+        $this->assertStringContainsString('code="'.$player->membership_id.'" type="QR"', $html);
     }
 
     #[Test]

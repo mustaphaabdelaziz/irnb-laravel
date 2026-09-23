@@ -16,6 +16,13 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class PlayerPrintController extends Controller
 {
+    /**
+     * Capped so a crafted link cannot force a giant, slow-to-render sheet —
+     * same limit `BulkUpdatePlayersRequest` and the equipment bulk actions
+     * already use for a selection of ids.
+     */
+    private const MAX_IDS = 500;
+
     public function __construct(private PdfService $pdf) {}
 
     public function label(Player $player): Response
@@ -26,7 +33,10 @@ class PlayerPrintController extends Controller
     public function labels(Request $request): Response
     {
         $validated = $request->validate([
-            'ids' => ['required', 'string'],
+            // The string-length cap is a cheap first line of defence against a
+            // pathologically long query string; the real cap is the count
+            // check below, which runs after junk is filtered out.
+            'ids' => ['required', 'string', 'max:8000'],
         ]);
 
         $ids = collect(explode(',', $validated['ids']))
@@ -34,6 +44,10 @@ class PlayerPrintController extends Controller
             ->filter()
             ->unique()
             ->values();
+
+        if ($ids->count() > self::MAX_IDS) {
+            return back()->withErrors(['ids' => __('Select :count players or fewer at a time.', ['count' => self::MAX_IDS])]);
+        }
 
         $players = Player::query()->with('category')->whereIn('id', $ids)->orderBy('file_number')->get();
 
@@ -63,24 +77,11 @@ class PlayerPrintController extends Controller
 
         return [
             'name' => is_array($name) ? ($name[$locale] ?? $name['en'] ?? $name['ar'] ?? '') : $name,
-            'logo' => $this->mediaFile($config->branding['logo'] ?? null),
+            'logo' => Media::localFile($config->branding['logo'] ?? null),
             'address' => $config->full_address ?: null,
             'phone' => $config->contact_phone,
             'email' => $config->contact_email,
             'currency' => $config->settings['currencySymbol'] ?? 'DZD',
         ];
-    }
-
-    /** mPDF needs a path on disk, never a /media URL. */
-    private function mediaFile(?string $url): ?string
-    {
-        if (! $url) {
-            return null;
-        }
-
-        $path = ltrim(str_replace('/media/', '', Media::path($url)), '/');
-        $full = storage_path('app/public/'.$path);
-
-        return is_file($full) ? $full : null;
     }
 }

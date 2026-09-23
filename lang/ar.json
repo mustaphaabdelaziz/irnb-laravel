@@ -31,6 +31,7 @@
     "Row :line: \":name\" already exists — skipped.": "السطر :line: \":name\" موجود مسبقاً — تم تخطيه.",
     "Row :line: :message": "السطر :line: :message",
     "Row :line: unknown category \":category\".": "السطر :line: فئة غير معروفة \":category\".",
+    "Select :count players or fewer at a time.": "اختر :count لاعب أو أقل في المرة الواحدة.",
     "Status": "الحالة",
     "This subscription does not apply to this player's category.": "هذا الاشتراك لا يخص فئة هذا اللاعب.",
     "Title": "العنوان",

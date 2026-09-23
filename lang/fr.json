@@ -31,6 +31,7 @@
     "Row :line: \":name\" already exists — skipped.": "Ligne :line : « :name » existe déjà — ignoré.",
     "Row :line: :message": "Ligne :line : :message",
     "Row :line: unknown category \":category\".": "Ligne :line : catégorie inconnue « :category ».",
+    "Select :count players or fewer at a time.": "Sélectionnez :count joueurs ou moins à la fois.",
     "Status": "Statut",
     "This subscription does not apply to this player's category.": "Cet abonnement ne s'applique pas à la catégorie de ce joueur.",
     "Title": "Intitulé",

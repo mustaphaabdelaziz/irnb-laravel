@@ -37,6 +37,15 @@ const subscriptions = computed(() => props.player?.player_subscriptions ?? []);
 const transactions = computed(() => props.transactions ?? []);
 const { accountLabel } = useFinanceAccountLabel();
 
+// Only translate a known value — an unexpected gender string (legacy data,
+// a future value the interface hasn't been taught yet) is shown as-is
+// rather than silently rendered blank by an unmatched t() key.
+const genderLabel = computed(() => {
+    const g = (props.player?.gender || '').toLowerCase();
+
+    return ['male', 'female'].includes(g) ? t(g) : props.player?.gender;
+});
+
 // Equipment the player holds or held. Assignments (work kit) and rentals are
 // listed apart so a loan is never mistaken for kit given to work with.
 const equipmentRentals = computed(() => [...(props.player?.equipment_rentals ?? [])]
@@ -332,9 +341,9 @@ function formatDate(val) {
                         </PlayerFieldRow>
                         <PlayerFieldRow icon="calendar" :label="t('birthdate')">
                             {{ formatDate(player.birthdate) }}
-                            <span v-if="player.age" class="text-slate-500 dark:text-slate-400">({{ player.age }})</span>
+                            <span v-if="player.age != null" class="ms-1 text-slate-500 dark:text-slate-400">({{ t('age_years', { age: player.age }) }})</span>
                         </PlayerFieldRow>
-                        <PlayerFieldRow icon="user" :label="t('gender')" :value="player.gender ? t(player.gender.toLowerCase()) : ''" />
+                        <PlayerFieldRow icon="user" :label="t('gender')" :value="genderLabel" />
                         <PlayerFieldRow icon="positions" :label="t('main_position')">
                             {{ player.position?.abbreviation || '—' }}
                             <span v-if="player.position?.name" class="text-slate-500 dark:text-slate-400">{{ player.position.name }}</span>
@@ -360,15 +369,17 @@ function formatDate(val) {
                     </dl>
 
                     <div v-if="player.emergency_contacts?.length || player.health_medical_conditions" class="mt-5 border-t border-slate-100 pt-4 dark:border-slate-800">
-                        <p class="mb-2 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('emergency_contacts') }}</p>
-                        <ul class="space-y-1">
-                            <li v-for="contact in player.emergency_contacts" :key="contact.id" class="flex flex-wrap items-center gap-2 text-sm">
-                                <Icon name="phone" class="text-slate-400" />
-                                <span class="font-medium text-slate-800 dark:text-slate-200">{{ contact.name }}</span>
-                                <span v-if="contact.relationship" class="text-xs text-slate-500">{{ contact.relationship }}</span>
-                                <span class="font-mono text-xs text-slate-600 dark:text-slate-300">{{ (contact.phones || [])[0] }}</span>
-                            </li>
-                        </ul>
+                        <template v-if="player.emergency_contacts?.length">
+                            <p class="mb-2 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('emergency_contacts') }}</p>
+                            <ul class="space-y-1">
+                                <li v-for="contact in player.emergency_contacts" :key="contact.id" class="flex flex-wrap items-center gap-2 text-sm">
+                                    <Icon name="phone" class="text-slate-400" />
+                                    <span class="font-medium text-slate-800 dark:text-slate-200">{{ contact.name }}</span>
+                                    <span v-if="contact.relationship" class="text-xs text-slate-500">{{ contact.relationship }}</span>
+                                    <span class="font-mono text-xs text-slate-600 dark:text-slate-300">{{ (contact.phones || [])[0] }}</span>
+                                </li>
+                            </ul>
+                        </template>
                         <p v-if="player.health_medical_conditions" class="mt-3 text-sm">
                             <span class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('medical_notes') }}:</span>
                             {{ player.health_medical_conditions }}

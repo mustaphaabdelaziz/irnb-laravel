@@ -68,15 +68,21 @@ class PlayerFileNumberTest extends TestCase
     #[Test]
     public function the_search_finds_a_player_by_file_number_with_or_without_leading_zeros(): void
     {
-        // A join year without a '2' in it: the default (this year, 2026) would make
-        // both players' membership_id contain '2' too, and this test would then pass
-        // by coincidence via the pre-existing membership_id match rather than the
-        // file_number match it is meant to exercise.
+        // Three 1999 players soak up file numbers 1-3 and membership ids
+        // 199900001-199900003, so the target lands on file number 4 with
+        // membership id 199800001 (join year 1998, its own first member).
+        // Neither the target's own membership id nor any of the other
+        // players' membership ids contains the digit '4' anywhere, so
+        // 'search("4")'/'search("0004")' can only find the target through
+        // the file_number branch of scopeSearch — the membership_id LIKE
+        // match cannot produce this result by coincidence.
         $this->register('Amine', 1999);
-        $target = $this->register('Yanis', 1999); // file number 2
+        $this->register('Yanis', 1999);
+        $this->register('Sami', 1999);
+        $target = $this->register('Nadia', 1998); // file number 4, membership id 199800001
 
-        $this->assertSame([$target->id], Player::query()->search('2')->pluck('id')->all());
-        $this->assertSame([$target->id], Player::query()->search('0002')->pluck('id')->all());
+        $this->assertSame([$target->id], Player::query()->search('4')->pluck('id')->all());
+        $this->assertSame([$target->id], Player::query()->search('0004')->pluck('id')->all());
     }
 
     #[Test]

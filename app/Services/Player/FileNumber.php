@@ -5,6 +5,7 @@ namespace App\Services\Player;
 use App\Models\Player;
 use App\Models\WebsiteConfig;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 /**
@@ -40,7 +41,8 @@ final class FileNumber
             $candidate = self::next();
 
             try {
-                $player->forceFill(['file_number' => $candidate])->save();
+                // Each attempt is its own savepoint (Laravel nests DB::transaction() into a SAVEPOINT on every driver) so a duplicate on PostgreSQL, which aborts the enclosing transaction on error, only rolls back this attempt.
+                DB::transaction(fn () => $player->forceFill(['file_number' => $candidate])->save());
 
                 return $candidate;
             } catch (QueryException $exception) {
@@ -76,7 +78,7 @@ final class FileNumber
 
     private static function isDuplicate(QueryException $exception): bool
     {
-        return $exception->getCode() === '23000'
+        return in_array($exception->getCode(), ['23000', '23505'], true)
             || str_contains(strtoupper($exception->getMessage()), 'UNIQUE');
     }
 }

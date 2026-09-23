@@ -1,0 +1,197 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
+
+return new class extends Migration
+{
+    /**
+     * Legacy spellings from the old seed data (database/seeders/algeria_wilayas.json
+     * before this migration), keyed by the official wilaya code they actually belong
+     * to. The old JSON's `id` field did not track the official numbering for 7 of the
+     * 10 southern wilayas (added 2019), so installed databases seeded from it have
+     * those rows filed under the wrong external_id. This map lets the migration find
+     * them by name instead, so the upsert loop below renames the correct row rather
+     * than a random one that happens to share a stale external_id.
+     *
+     * @var array<string, string>
+     */
+    private const LEGACY_SOUTHERN_ALIASES = [
+        "El M'ghair" => '57',
+        'El Menia' => '58',
+        'Ouled Djellal' => '51',
+        'Bordj Baji Mokhtar' => '50',
+        'Béni Abbès' => '52',
+        'Timimoun' => '49',
+        'Touggourt' => '55',
+        'Djanet' => '56',
+        'In Salah' => '53',
+        'In Guezzam' => '54',
+    ];
+
+    /**
+     * The 58 wilayas, with their official French and Arabic names.
+     *
+     * They arrive through a migration rather than a seeder because the desktop
+     * build runs migrate on boot and never runs seeders — an installed copy
+     * would otherwise keep the old misspelt names forever.
+     */
+    public function up(): void
+    {
+        Schema::table('country_states', function (Blueprint $table) {
+            $table->char('code', 2)->nullable()->after('external_id');
+            $table->string('name_fr')->nullable()->after('name');
+            $table->string('name_ar')->nullable()->after('name_fr');
+        });
+
+        $this->syncOfficialWilayas();
+    }
+
+    /**
+     * The actual data sync, split out from up() so a test can re-run it
+     * against a hand-built "legacy" row set without trying to re-add the
+     * columns up() already added.
+     */
+    public function syncOfficialWilayas(): void
+    {
+        $official = require database_path('data/algeria_wilayas_official.php');
+        $now = now();
+
+        $countryId = DB::table('countries')->where('code', 'DZ')->value('id');
+
+        if ($countryId === null) {
+            $countryId = DB::table('countries')->insertGetId([
+                'name' => 'Algeria',
+                'code' => 'DZ',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
+
+        $this->rekeyLegacySouthernWilayas($countryId, $official);
+
+        foreach ($official as $code => $names) {
+            $number = (int) $code;
+
+            $existing = DB::table('country_states')
+                ->where('country_id', $countryId)
+                ->where('external_id', $number)
+                ->first();
+
+            $values = [
+                'code' => $code,
+                'name' => $names['fr'],
+                'name_fr' => $names['fr'],
+                'name_ar' => $names['ar'],
+                'ar_name' => $names['ar'],
+                'updated_at' => $now,
+            ];
+
+            if ($existing) {
+                DB::table('country_states')->where('id', $existing->id)->update($values);
+
+                continue;
+            }
+
+            DB::table('country_states')->insert($values + [
+                'country_id' => $countryId,
+                'external_id' => $number,
+                'created_at' => $now,
+            ]);
+        }
+    }
+
+    /**
+     * Some installed databases have the ten southern wilayas filed under the
+     * wrong external_id (see the class doc-comment on LEGACY_SOUTHERN_ALIASES).
+     * Matching the upsert loop above purely by external_id would silently
+     * rename the wrong row on those installs, so re-key any existing row in
+     * the southern range (or with no external_id at all) by its normalized
+     * name first, moving it onto the correct official external_id.
+     */
+    private function rekeyLegacySouthernWilayas(int $countryId, array $official): void
+    {
+        $lookup = [];
+
+        foreach ($official as $code => $names) {
+            $lookup[$this->normalizeWilayaName($names['fr'])] = $code;
+        }
+
+        foreach (self::LEGACY_SOUTHERN_ALIASES as $legacyName => $code) {
+            $lookup[$this->normalizeWilayaName($legacyName)] ??= $code;
+        }
+
+        $rows = DB::table('country_states')
+            ->where('country_id', $countryId)
+            ->where(function ($query) {
+                $query->whereBetween('external_id', [49, 58])->orWhereNull('external_id');
+            })
+            ->orderBy('id')
+            ->get();
+
+        $claimedBy = [];
+        $moves = [];
+
+        foreach ($rows as $row) {
+            $code = $lookup[$this->normalizeWilayaName($row->name)] ?? null;
+
+            if ($code === null) {
+                if ($row->external_id !== null) {
+                    DB::table('country_states')->where('id', $row->id)->update(['external_id' => null]);
+                }
+
+                logger()->warning(sprintf(
+                    'official_wilayas migration: could not identify wilaya row id=%d name="%s" (external_id=%s); cleared external_id so the official row is inserted fresh instead of overwriting it.',
+                    $row->id,
+                    $row->name,
+                    $row->external_id ?? 'null'
+                ));
+
+                continue;
+            }
+
+            if (isset($claimedBy[$code])) {
+                DB::table('country_states')->where('id', $row->id)->update(['external_id' => null]);
+
+                logger()->warning(sprintf(
+                    'official_wilayas migration: row id=%d name="%s" also matches code %s, already claimed by row id=%d; cleared external_id to avoid a duplicate.',
+                    $row->id,
+                    $row->name,
+                    $code,
+                    $claimedBy[$code]
+                ));
+
+                continue;
+            }
+
+            $claimedBy[$code] = $row->id;
+            $moves[$row->id] = (int) $code;
+        }
+
+        // Two phases so we never collide with unique(country_id, external_id):
+        // land every matched row on a temporary offset clear of the 1-58
+        // range first, then on its final official number.
+        foreach ($moves as $rowId => $targetCode) {
+            DB::table('country_states')->where('id', $rowId)->update(['external_id' => $targetCode + 1000]);
+        }
+
+        foreach ($moves as $rowId => $targetCode) {
+            DB::table('country_states')->where('id', $rowId)->update(['external_id' => $targetCode]);
+        }
+    }
+
+    private function normalizeWilayaName(string $value): string
+    {
+        return preg_replace('/[^a-z0-9]/', '', mb_strtolower(Str::ascii($value))) ?? '';
+    }
+
+    public function down(): void
+    {
+        Schema::table('country_states', function (Blueprint $table) {
+            $table->dropColumn(['code', 'name_fr', 'name_ar']);
+        });
+    }
+};

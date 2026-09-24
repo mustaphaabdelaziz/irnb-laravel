@@ -77,17 +77,32 @@ class ReportPdfTest extends TestCase
     }
 
     #[Test]
-    public function it_generates_an_academic_report_pdf_for_a_student(): void
+    public function it_generates_an_academic_report_pdf_for_a_student_with_a_20_year_and_a_10_year(): void
     {
         $player = Player::create([
             'membership_id' => '2024000077',
             'firstname' => 'Amel',
             'lastname' => 'Haddad',
             'is_student' => true,
-            'education_level' => 'licence',
-            'institution' => 'Université de Béjaïa',
         ]);
-        $player->academicRecords()->create(['academic_year' => 2025, 'period' => 'T1', 'gpa' => 12.75]);
+
+        $secondary = $player->academicYears()->create([
+            'academic_year' => 2025,
+            'education_level' => 'secondary',
+            'institution' => 'Lycée Ibn Khaldoun',
+            'field_of_study' => 'Terminale',
+        ]);
+        $secondary->records()->create(['period' => 'T1', 'gpa' => 12.75, 'certificate' => 'encouragement']);
+        $secondary->records()->create(['period' => 'T2', 'gpa' => 15.50]);
+
+        $primary = $player->academicYears()->create([
+            'academic_year' => 2024,
+            'education_level' => 'primary',
+            'institution' => 'École El Fath',
+        ]);
+        $primary->records()->create(['period' => 'T1', 'gpa' => 4.5]);
+        $primary->records()->create(['period' => 'T2', 'gpa' => 8, 'certificate' => 'excellence']);
+        $primary->records()->create(['period' => 'T3', 'gpa' => 7]);
 
         $response = $this->actingAs($this->admin())->get(route('players.academic-report', $player));
 
@@ -113,5 +128,16 @@ class ReportPdfTest extends TestCase
         $player = Player::create(['membership_id' => '2024000079', 'firstname' => 'V', 'lastname' => 'K', 'is_student' => true]);
 
         $this->actingAs($viewer)->get(route('players.academic-report', $player))->assertOk();
+    }
+
+    #[Test]
+    public function academic_report_renders_for_a_student_with_no_years_yet(): void
+    {
+        $player = Player::create(['membership_id' => '2024000080', 'firstname' => 'N', 'lastname' => 'Y', 'is_student' => true]);
+
+        $response = $this->actingAs($this->admin())->get(route('players.academic-report', $player));
+
+        $response->assertOk();
+        $this->assertSame('application/pdf', $response->headers->get('content-type'));
     }
 }

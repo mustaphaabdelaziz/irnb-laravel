@@ -1145,5 +1145,8 @@
     "no_certificate": "No certificate",
     "flash.academic_year_updated": "School year updated.",
     "flash.academic_year_deleted": "School year deleted.",
-    "academic_level_scale_conflict": "Cannot change the level: some grades exceed the new scale."
+    "academic_level_scale_conflict": "Cannot change the level: some grades exceed the new scale.",
+    "current_school": "Current school",
+    "provisional": "provisional",
+    "year_average": "Year average"
 }

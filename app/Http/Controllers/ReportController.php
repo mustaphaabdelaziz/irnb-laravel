@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EducationLevel;
 use App\Models\BoardMeeting;
 use App\Models\InventorySession;
 use App\Models\Player;
-use App\Models\PlayerAcademicRecord;
 use App\Models\Transaction;
 use App\Models\WebsiteConfig;
 use App\Services\Pdf\PdfService;
@@ -63,17 +63,19 @@ class ReportController extends Controller
     {
         abort_unless($player->is_student, 404);
 
-        $player->load(['category', 'academicRecords' => fn ($query) => $query->chronological()]);
-        $records = $player->academicRecords;
+        $player->load(['category', 'academicYears.records']);
+
+        // Pass mark per scale in use (primary /10, everything else /20), for the legend at the bottom.
+        $scalePassMarks = collect(EducationLevel::cases())
+            ->mapWithKeys(fn (EducationLevel $level) => [$level->scale() => $level->passMark()])
+            ->sortKeys();
 
         $html = view('pdf.academic-report', [
             'club' => $this->club(),
             'player' => $player,
             'photo' => $this->resolveMediaFile($player->picture_url),
-            'records' => $records,
-            'average' => $records->isEmpty() ? null : round($records->avg(fn ($r) => (float) $r->gpa), 2),
-            'latest' => $records->last(),
-            'passMark' => PlayerAcademicRecord::PASS_MARK,
+            'academicYears' => $player->academicYears,
+            'scalePassMarks' => $scalePassMarks,
         ])->render();
 
         return $this->pdf->stream($html, "academic-report-{$player->membership_id}.pdf");

@@ -1145,5 +1145,8 @@
     "no_certificate": "Aucune distinction",
     "flash.academic_year_updated": "Année scolaire mise à jour.",
     "flash.academic_year_deleted": "Année scolaire supprimée.",
-    "academic_level_scale_conflict": "Impossible de changer le niveau : certaines moyennes dépassent le nouveau barème."
+    "academic_level_scale_conflict": "Impossible de changer le niveau : certaines moyennes dépassent le nouveau barème.",
+    "current_school": "Établissement actuel",
+    "provisional": "provisoire",
+    "year_average": "Moyenne annuelle"
 }

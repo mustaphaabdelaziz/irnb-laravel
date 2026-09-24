@@ -1145,5 +1145,8 @@
     "no_certificate": "بدون شهادة",
     "flash.academic_year_updated": "تم تحديث السنة الدراسية.",
     "flash.academic_year_deleted": "تم حذف السنة الدراسية.",
-    "academic_level_scale_conflict": "لا يمكن تغيير المستوى: بعض المعدلات تتجاوز سلم التنقيط الجديد."
+    "academic_level_scale_conflict": "لا يمكن تغيير المستوى: بعض المعدلات تتجاوز سلم التنقيط الجديد.",
+    "current_school": "المؤسسة الحالية",
+    "provisional": "مؤقت",
+    "year_average": "معدل السنة"
 }

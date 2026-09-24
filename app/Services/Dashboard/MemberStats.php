@@ -412,9 +412,10 @@ class MemberStats
     }
 
     /**
-     * How many trimester records carried each certificate this school year, among
+     * How many distinct students earned each certificate this school year, among
      * branch-scoped active students. A student with two excellence trimesters in
-     * the same year counts as 2 — this is a count of awards, not of students.
+     * the same year still counts as 1 — this is a count of students, matching the
+     * list the dashboard chip opens, not a count of trimester awards.
      *
      * @return array<string, int>
      */
@@ -428,7 +429,7 @@ class MemberStats
             ->where('player_academic_years.academic_year', $currentYear)
             ->whereIn('player_academic_records.certificate', AcademicCertificate::values())
             ->groupBy('player_academic_records.certificate')
-            ->selectRaw('player_academic_records.certificate as certificate, COUNT(*) as total')
+            ->selectRaw('player_academic_records.certificate as certificate, COUNT(DISTINCT players.id) as total')
             ->pluck('total', 'certificate');
 
         return collect(AcademicCertificate::values())

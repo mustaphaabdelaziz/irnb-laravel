@@ -95,6 +95,9 @@ watch(() => props.show, (open) => {
         form.gpa = record.gpa;
         form.certificate = record.certificate ?? '';
         form.remark = record.remark ?? '';
+        // Editing an existing record: never auto-replace the certificate the
+        // school actually awarded just because the grade changed.
+        certificateTouched.value = true;
     } else {
         editingId.value = null;
         if (academicYear) form.academic_year = Number(academicYear);

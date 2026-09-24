@@ -193,20 +193,24 @@ const certificateRows = [
 ];
 
 function saveCertificates() {
+    // A cleared input is '' in the form; Number('') is 0, which would silently
+    // pass validation as a real threshold. Map it to null so the server's
+    // required_with rule reports the field as missing instead.
+    const n = (v) => (v === '' || v === null ? null : Number(v));
     certificatesForm.transform(data => ({
         settings: {
             academicCertificates: {
                 '20': {
-                    excellence: Number(data['20'].excellence),
-                    congratulations: Number(data['20'].congratulations),
-                    encouragement: Number(data['20'].encouragement),
-                    honor_roll: Number(data['20'].honor_roll),
+                    excellence: n(data['20'].excellence),
+                    congratulations: n(data['20'].congratulations),
+                    encouragement: n(data['20'].encouragement),
+                    honor_roll: n(data['20'].honor_roll),
                 },
                 '10': {
-                    excellence: Number(data['10'].excellence),
-                    congratulations: Number(data['10'].congratulations),
-                    encouragement: Number(data['10'].encouragement),
-                    honor_roll: Number(data['10'].honor_roll),
+                    excellence: n(data['10'].excellence),
+                    congratulations: n(data['10'].congratulations),
+                    encouragement: n(data['10'].encouragement),
+                    honor_roll: n(data['10'].honor_roll),
                 },
             },
         },

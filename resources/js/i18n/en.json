@@ -1156,6 +1156,6 @@
     "certificate_short_congratulations": "Congratulations",
     "certificate_short_encouragement": "Encouragement",
     "certificate_short_honor_roll": "Honor roll",
-    "certificate_filter_all": "Certificates: all",
-    "dashboard.mem_certificates_year": "Certificates this school year"
+    "certificate_filter_all": "Certificates (this school year)",
+    "dashboard.mem_certificates_year": "Students with certificates this school year"
 }

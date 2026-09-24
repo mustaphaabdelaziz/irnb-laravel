@@ -307,13 +307,13 @@ class MemberStatsTest extends TestCase
     }
 
     #[Test]
-    public function academic_block_counts_certificates_awarded_in_the_current_school_year(): void
+    public function academic_block_counts_distinct_students_per_certificate_in_the_current_school_year(): void
     {
         // setUp() has already travelled to 2026-05-14, so the current school year is 2025.
         $a = $this->player(['is_student' => true]);
         $ay = $this->year($a, 2025);
         $ay->records()->create(['period' => 'T1', 'gpa' => 14, 'certificate' => 'excellence']);
-        $ay->records()->create(['period' => 'T2', 'gpa' => 15, 'certificate' => 'excellence']); // 2 trimesters -> counts 2
+        $ay->records()->create(['period' => 'T2', 'gpa' => 15, 'certificate' => 'excellence']); // 2 trimesters, same student -> still counts 1
 
         $b = $this->player(['is_student' => true]);
         $this->year($b, 2025, 'primary')->records()->create(['period' => 'T1', 'gpa' => 6, 'certificate' => 'honor_roll']);
@@ -325,7 +325,7 @@ class MemberStatsTest extends TestCase
         $this->year($w, 2025)->records()->create(['period' => 'T1', 'gpa' => 17, 'certificate' => 'excellence']);
 
         $this->assertSame(
-            ['excellence' => 2, 'congratulations' => 0, 'encouragement' => 0, 'honor_roll' => 1],
+            ['excellence' => 1, 'congratulations' => 0, 'encouragement' => 0, 'honor_roll' => 1],
             $this->members()['academic']['certificates'],
         );
     }

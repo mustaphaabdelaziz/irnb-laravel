@@ -15,8 +15,6 @@ import { useCan } from '@/Composables/useCan';
 const { t } = useI18n();
 const { can } = useCan();
 
-const EDUCATION_LEVELS = ['primary', 'middle', 'secondary', 'vocational', 'licence', 'master', 'doctorate'];
-
 const props = defineProps({
     player: { type: Object, default: null },
     categories: { type: Array, default: () => [] },
@@ -48,9 +46,6 @@ const form = useForm({
     city: p.city || '',
     // New players default to "worker"; edits keep the stored value.
     is_student: isEdit ? (p.is_student ?? true) : false,
-    education_level: p.education_level || '',
-    institution: p.institution || '',
-    field_of_study: p.field_of_study || '',
     // New players default to "enrolled" (منخرط); edits keep the stored value.
     status_id: isEdit ? (p.status_id || null) : (props.playerStatuses[0]?.id ?? null),
     category_id: p.category_id || '',
@@ -190,12 +185,6 @@ function submit() {
         wilaya_id: data.wilaya_id || null,
         city: data.city || null,
         is_student: data.is_student,
-        // Workers keep whatever school info is stored; only a student edits it.
-        ...(data.is_student ? {
-            education_level: data.education_level || null,
-            institution: data.institution || null,
-            field_of_study: data.field_of_study || null,
-        } : {}),
         status_id: data.status_id || null,
         category_id: data.category_id || null,
         position_id: data.position_id || null,
@@ -402,26 +391,6 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                     </select>
                     <p v-if="jobNotice" class="mt-1 text-xs text-amber-600 dark:text-amber-400">{{ jobNotice }}</p>
                 </div>
-                <template v-if="form.is_student">
-                    <div>
-                        <InputLabel :value="t('education_level')" />
-                        <select v-model="form.education_level" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                            <option value="">-</option>
-                            <option v-for="level in EDUCATION_LEVELS" :key="level" :value="level">{{ t(`education_level_${level}`) }}</option>
-                        </select>
-                        <InputError :message="form.errors.education_level" class="mt-1" />
-                    </div>
-                    <div>
-                        <InputLabel :value="t('institution')" />
-                        <TextInput v-model="form.institution" type="text" class="mt-1 w-full" maxlength="255" />
-                        <InputError :message="form.errors.institution" class="mt-1" />
-                    </div>
-                    <div>
-                        <InputLabel :value="t('field_of_study')" />
-                        <TextInput v-model="form.field_of_study" type="text" class="mt-1 w-full" maxlength="255" />
-                        <InputError :message="form.errors.field_of_study" class="mt-1" />
-                    </div>
-                </template>
                 <div v-if="isEdit" class="flex items-center gap-2 pt-6">
                     <input type="checkbox" v-model="form.archived" id="archived" class="rounded border-gray-300 text-primary-600 shadow-sm focus:ring-primary-500" />
                     <label for="archived" class="text-sm text-slate-700 dark:text-slate-200">{{ t('archived') }}</label>

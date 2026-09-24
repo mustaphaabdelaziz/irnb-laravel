@@ -1,57 +1,73 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { router, useForm } from '@inertiajs/vue3';
+import { router } from '@inertiajs/vue3';
 import { Line } from 'vue-chartjs';
 import { useI18n } from 'vue-i18n';
 import '@/lib/registerCharts';
 import { baseOptions, lineDataset, mutedInk } from '@/lib/chartTheme';
+import { PERIODS, yearLabel } from '@/lib/academic';
 import { useCan } from '@/Composables/useCan';
-import Badge from '@/Components/Badge.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import Icon from '@/Components/Icon.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import Modal from '@/Components/Modal.vue';
-import PlayerFieldRow from '@/Components/PlayerFieldRow.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import SecondaryButton from '@/Components/SecondaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
+import AcademicGradeModal from '@/Pages/Players/Partials/AcademicGradeModal.vue';
+import AcademicYearModal from '@/Pages/Players/Partials/AcademicYearModal.vue';
 
 const props = defineProps({
     player: { type: Object, required: true },
+    certificateThresholds: { type: Object, default: () => ({}) },
 });
-
-const PASS_MARK = 10;
-const PERIODS = ['T1', 'T2', 'T3'];
 
 const { t, locale } = useI18n();
 const { can } = useCan();
 const rtl = computed(() => locale.value === 'ar');
 
-// Server sends them oldest first (year, then period rank).
-const records = computed(() => props.player.academic_records ?? []);
-const gpa = (r) => Number(r.gpa);
-const yearLabel = (year) => `${year}/${Number(year) + 1}`;
-const passed = (r) => gpa(r) >= PASS_MARK;
+// Server sends years oldest first, each with its trimesters T1 → T3.
+const years = computed(() => props.player.academic_years ?? []);
+const newestFirst = computed(() => [...years.value].reverse());
+const hasRecords = computed(() => years.value.some((y) => y.records?.length));
 
-const latest = computed(() => records.value.at(-1) ?? null);
-const previous = computed(() => records.value.at(-2) ?? null);
-const average = computed(() => (records.value.length
-    ? records.value.reduce((sum, r) => sum + gpa(r), 0) / records.value.length
-    : null));
-const delta = computed(() => (latest.value && previous.value ? gpa(latest.value) - gpa(previous.value) : null));
-const fmt = (value) => (value === null ? '—' : Number(value).toFixed(2));
+const fmt = (value) => (value === null || value === undefined ? '—' : Number(value).toFixed(2));
+const passes = (grade, scale) => Number(grade) >= Number(scale) / 2;
+const hasAverage = (y) => y.average !== null && y.average !== undefined;
 
-// Newest first in the table; the chart reads left-to-right in time.
-const tableRows = computed(() => [...records.value].reverse());
+// One cell per trimester: the year's record for it, or null.
+const rows = computed(() => newestFirst.value.map((year) => ({
+    year,
+    cells: PERIODS.map((period) => ({ period, record: year.records?.find((r) => r.period === period) ?? null })),
+})));
+
+// Current school = the latest year's school info.
+const currentSchool = computed(() => {
+    const y = years.value.at(-1);
+    if (!y) return '';
+    return [y.education_level ? t(`education_level_${y.education_level}`) : null, y.institution, y.field_of_study]
+        .filter(Boolean).join(' · ');
+});
+
+// Latest trimester: newest year that has grades, its last trimester.
+const latest = computed(() => {
+    const year = newestFirst.value.find((y) => y.records?.length);
+    return year ? { record: year.records.at(-1), scale: year.scale } : null;
+});
+
+const averaged = computed(() => years.value.filter(hasAverage));
+const currentAverage = computed(() => averaged.value.at(-1) ?? null);
+const percent = (y) => (Number(y.average) / Number(y.scale)) * 100;
+// Change between the last two year averages, compared in % of their scale, shown on /20.
+const yearChange = computed(() => {
+    const [prev, last] = averaged.value.slice(-2);
+    if (!prev || !last) return null;
+    const delta = ((percent(last) - percent(prev)) / 100) * 20;
+    return Math.abs(delta) < 0.005 ? 0 : delta;
+});
 
 const chartData = computed(() => ({
-    labels: records.value.map((r) => `${yearLabel(r.academic_year)} ${t(`period_${r.period}`)}`),
+    labels: averaged.value.map((y) => yearLabel(y.academic_year)),
     datasets: [
-        { ...lineDataset(t('gpa'), records.value.map(gpa), 0), pointRadius: 3 },
+        { ...lineDataset(t('year_average'), averaged.value.map((y) => Number(percent(y).toFixed(1))), 0), pointRadius: 3 },
         {
             label: t('pass_mark'),
-            data: records.value.map(() => PASS_MARK),
+            data: averaged.value.map(() => 50),
             borderColor: mutedInk(),
             borderDash: [6, 4],
             borderWidth: 1,
@@ -64,66 +80,57 @@ const chartData = computed(() => ({
 
 const chartOptions = computed(() => {
     const options = baseOptions({ rtl: rtl.value });
-    options.scales.y = { ...options.scales.y, min: 0, max: 20, ticks: { ...options.scales.y.ticks, stepSize: 5 } };
+    options.scales.y = {
+        ...options.scales.y,
+        min: 0,
+        max: 100,
+        ticks: { ...options.scales.y.ticks, stepSize: 25, callback: (v) => `${v}%` },
+    };
     return options;
 });
 
-// --- add / edit ---
-const showForm = ref(false);
-const editingId = ref(null);
-const form = useForm({
-    academic_year: new Date().getMonth() >= 8 ? new Date().getFullYear() : new Date().getFullYear() - 1,
-    period: 'T1',
-    gpa: '',
-    remark: '',
-});
+const CERTIFICATE_CLASSES = {
+    excellence: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-500/15 dark:text-emerald-300',
+    congratulations: 'bg-sky-50 text-sky-700 ring-sky-600/20 dark:bg-sky-500/15 dark:text-sky-300',
+    encouragement: 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-500/15 dark:text-amber-300',
+    honor_roll: 'bg-violet-50 text-violet-700 ring-violet-600/20 dark:bg-violet-500/15 dark:text-violet-300',
+};
 
-const yearOptions = computed(() => {
-    const top = new Date().getFullYear();
-    const years = Array.from({ length: 12 }, (_, i) => top - i);
-    if (form.academic_year && !years.includes(Number(form.academic_year))) years.push(Number(form.academic_year));
-    return years.sort((a, b) => b - a);
-});
-
-function openAdd() {
-    editingId.value = null;
-    form.reset();
-    form.clearErrors();
-    showForm.value = true;
+// --- grade modal (add / edit / delete a trimester) ---
+const gradeOpen = ref(false);
+const gradePreset = ref({});
+function openAdd(academicYear = null, period = null) {
+    gradePreset.value = { academicYear, period };
+    gradeOpen.value = true;
+}
+const canEdit = computed(() => can('players', 'edit'));
+function openEdit(year, record) {
+    if (!canEdit.value) return;
+    gradePreset.value = { record: { ...record, academic_year: year.academic_year } };
+    gradeOpen.value = true;
 }
 
-function openEdit(record) {
-    editingId.value = record.id;
-    form.academic_year = record.academic_year;
-    form.period = record.period;
-    form.gpa = record.gpa;
-    form.remark = record.remark ?? '';
-    form.clearErrors();
-    showForm.value = true;
+// --- school year: edit info / delete ---
+const yearOpen = ref(false);
+const editingYear = ref(null);
+function openYear(year) {
+    editingYear.value = year;
+    yearOpen.value = true;
 }
 
-function submit() {
-    const options = {
+const removingYearId = ref(null);
+const removingYear = ref(false);
+function confirmRemoveYear() {
+    removingYear.value = true;
+    router.delete(route('players.academic-years.destroy', [props.player.id, removingYearId.value]), {
         preserveScroll: true,
-        onSuccess: () => { showForm.value = false; form.reset(); editingId.value = null; },
-    };
-    form.transform((data) => ({ ...data, remark: data.remark || null }));
-    if (editingId.value) {
-        form.put(route('players.academic-records.update', [props.player.id, editingId.value]), options);
-    } else {
-        form.post(route('players.academic-records.store', props.player.id), options);
-    }
-}
-
-// --- delete ---
-const removingId = ref(null);
-
-function confirmRemove() {
-    router.delete(route('players.academic-records.destroy', [props.player.id, removingId.value]), {
-        preserveScroll: true,
-        onSuccess: () => { removingId.value = null; },
+        onSuccess: () => { removingYearId.value = null; },
+        onFinish: () => { removingYear.value = false; },
     });
 }
+
+const th = 'px-3 py-3 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400';
+const gradeClass = (grade, scale) => (passes(grade, scale) ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400');
 </script>
 
 <template>
@@ -134,115 +141,126 @@ function confirmRemove() {
                 <a :href="route('players.academic-report', player.id)" target="_blank" class="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-800">
                     <Icon name="print" /> {{ t('print_academic_report') }}
                 </a>
-                <button v-if="can('players', 'add')" type="button" @click="openAdd" class="rounded-md px-3 py-1.5 text-xs font-medium text-primary-700 ring-1 ring-inset ring-primary-300 hover:bg-primary-50 dark:text-primary-300 dark:ring-primary-700 dark:hover:bg-primary-900/30">
-                    {{ t('add_gpa') }}
+                <button v-if="can('players', 'add')" type="button" @click="openAdd()" class="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-primary-700 ring-1 ring-inset ring-primary-300 hover:bg-primary-50 dark:text-primary-300 dark:ring-primary-700 dark:hover:bg-primary-900/30">
+                    <Icon name="plus" /> {{ t('add_gpa') }}
                 </button>
             </div>
         </div>
 
-        <div class="space-y-5 px-5 py-4">
-            <dl class="grid gap-x-6 gap-y-4 sm:grid-cols-3">
-                <PlayerFieldRow icon="clipboard" :label="t('education_level')" :value="player.education_level ? t(`education_level_${player.education_level}`) : null" />
-                <PlayerFieldRow icon="home" :label="t('institution')" :value="player.institution" />
-                <PlayerFieldRow icon="document" :label="t('field_of_study')" :value="player.field_of_study" />
-            </dl>
+        <div v-if="currentSchool || hasRecords" class="space-y-5 px-5 py-4">
+            <p v-if="currentSchool" class="text-sm">
+                <span class="text-slate-500 dark:text-slate-400">{{ t('current_school') }}:</span>
+                <span class="ms-1 font-medium text-slate-900 dark:text-slate-100">{{ currentSchool }}</span>
+            </p>
 
-            <div v-if="records.length" class="grid gap-3 sm:grid-cols-3">
+            <div v-if="hasRecords" class="grid gap-3 sm:grid-cols-3">
                 <div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-800/60">
                     <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('latest_gpa') }}</p>
-                    <p class="mt-1 text-2xl font-bold tabular-nums" :class="passed(latest) ? 'text-emerald-600' : 'text-rose-600'"><bdi dir="ltr">{{ fmt(latest.gpa) }}<span class="text-sm font-normal text-slate-400"> / 20</span></bdi></p>
+                    <p class="mt-1 text-2xl font-bold tabular-nums" :class="passes(latest.record.gpa, latest.scale) ? 'text-emerald-600' : 'text-rose-600'">
+                        <bdi dir="ltr">{{ fmt(latest.record.gpa) }}<span class="text-sm font-normal text-slate-400"> / {{ latest.scale }}</span></bdi>
+                    </p>
                 </div>
                 <div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-800/60">
-                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('average_gpa') }}</p>
-                    <p class="mt-1 text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100"><bdi dir="ltr">{{ fmt(average) }}<span class="text-sm font-normal text-slate-400"> / 20</span></bdi></p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('year_average') }}</p>
+                    <p class="mt-1 flex flex-wrap items-baseline gap-2 text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100">
+                        <template v-if="currentAverage">
+                            <bdi dir="ltr">{{ fmt(currentAverage.average) }}<span class="text-sm font-normal text-slate-400"> / {{ currentAverage.scale }}</span></bdi>
+                            <span v-if="currentAverage.is_provisional" class="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">{{ t('provisional') }}</span>
+                        </template>
+                        <template v-else>—</template>
+                    </p>
                 </div>
                 <div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-800/60">
-                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('gpa_change') }}</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('year_change') }}</p>
                     <p class="mt-1 text-2xl font-bold tabular-nums"
-                       :class="delta === null || delta === 0 ? 'text-slate-400' : delta > 0 ? 'text-emerald-600' : 'text-rose-600'">
-                        <template v-if="delta === null">—</template>
-                        <template v-else>{{ delta > 0 ? `▲ +${delta.toFixed(2)}` : delta < 0 ? `▼ ${Math.abs(delta).toFixed(2)}` : '0.00' }}</template>
+                       :class="!yearChange ? 'text-slate-400' : yearChange > 0 ? 'text-emerald-600' : 'text-rose-600'">
+                        <template v-if="yearChange === null">—</template>
+                        <bdi v-else dir="ltr">{{ yearChange > 0 ? `▲ +${yearChange.toFixed(2)}` : yearChange < 0 ? `▼ ${Math.abs(yearChange).toFixed(2)}` : '0.00' }}<span class="text-sm font-normal text-slate-400"> / 20</span></bdi>
                     </p>
                 </div>
             </div>
 
-            <div v-if="records.length >= 2" class="h-64">
+            <div v-if="averaged.length >= 2" class="h-64">
                 <Line :data="chartData" :options="chartOptions" />
             </div>
         </div>
 
-        <div v-if="!records.length" class="border-t border-slate-100 px-5 py-8 text-center text-sm text-slate-500 dark:border-slate-800 dark:text-slate-400">{{ t('no_gpa_records') }}</div>
+        <div v-if="!years.length" class="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_gpa_records') }}</div>
         <div v-else class="overflow-x-auto border-t border-slate-100 dark:border-slate-800">
             <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
                 <thead class="bg-slate-50 dark:bg-slate-950">
                     <tr>
-                        <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('academic_year') }}</th>
-                        <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('period') }}</th>
-                        <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('gpa') }}</th>
-                        <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('status') }}</th>
-                        <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('remark') }}</th>
-                        <th class="px-4 py-3"></th>
+                        <th :class="[th, 'text-start']">{{ t('academic_year') }}</th>
+                        <th :class="[th, 'text-start']">{{ t('education_level') }}</th>
+                        <th :class="[th, 'text-start']">{{ t('institution') }}</th>
+                        <th :class="[th, 'text-start']">{{ t('field_of_study') }}</th>
+                        <th v-for="p in PERIODS" :key="p" :class="[th, 'text-center']">{{ t(`period_${p}`) }}</th>
+                        <th :class="[th, 'text-center']">{{ t('year_average') }}</th>
+                        <th class="px-3 py-3"></th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                    <tr v-for="r in tableRows" :key="r.id">
-                        <td class="px-4 py-3 text-sm tabular-nums text-slate-600 dark:text-slate-300"><bdi dir="ltr">{{ yearLabel(r.academic_year) }}</bdi></td>
-                        <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">{{ t(`period_${r.period}`) }}</td>
-                        <td class="px-4 py-3 text-end text-sm font-semibold tabular-nums" :class="passed(r) ? 'text-emerald-700' : 'text-rose-700'">{{ fmt(r.gpa) }}</td>
-                        <td class="px-4 py-3"><Badge :label="t(passed(r) ? 'gpa_pass' : 'gpa_fail')" :color="passed(r) ? 'emerald' : 'rose'" /></td>
-                        <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ r.remark || '—' }}</td>
-                        <td class="px-4 py-3 text-end whitespace-nowrap">
-                            <button v-if="can('players', 'edit')" type="button" @click="openEdit(r)" class="rounded-md px-2 py-1 text-xs font-medium text-primary-700 ring-1 ring-inset ring-primary-300 hover:bg-primary-50 dark:text-primary-300 dark:ring-primary-700 dark:hover:bg-primary-900/30">{{ t('edit') }}</button>
-                            <button v-if="can('players', 'delete')" type="button" @click="removingId = r.id" class="ms-2 rounded-md px-2 py-1 text-xs font-medium text-rose-700 ring-1 ring-inset ring-rose-300 hover:bg-rose-50 dark:text-rose-300 dark:ring-rose-800 dark:hover:bg-rose-900/30">{{ t('remove') }}</button>
+                    <tr v-for="{ year: y, cells } in rows" :key="y.id" class="align-top">
+                        <td class="whitespace-nowrap px-3 py-3 text-sm font-medium tabular-nums text-slate-700 dark:text-slate-200"><bdi dir="ltr">{{ yearLabel(y.academic_year) }}</bdi></td>
+                        <td class="whitespace-nowrap px-3 py-3 text-sm text-slate-700 dark:text-slate-200">{{ y.education_level ? t(`education_level_${y.education_level}`) : '—' }}</td>
+                        <td class="px-3 py-3 text-sm text-slate-600 dark:text-slate-300">{{ y.institution || '—' }}</td>
+                        <td class="px-3 py-3 text-sm text-slate-600 dark:text-slate-300">{{ y.field_of_study || '—' }}</td>
+                        <td v-for="cell in cells" :key="cell.period" class="px-2 py-2 text-center">
+                            <component :is="canEdit ? 'button' : 'div'" v-if="cell.record" :type="canEdit ? 'button' : undefined"
+                                :title="cell.record.remark || undefined"
+                                class="flex w-full min-w-[6.5rem] flex-col items-center gap-1 rounded-lg px-2 py-1"
+                                :class="{ 'hover:bg-slate-50 dark:hover:bg-slate-800': canEdit }"
+                                @click="openEdit(y, cell.record)">
+                                <bdi dir="ltr" class="text-sm font-semibold tabular-nums" :class="gradeClass(cell.record.gpa, y.scale)">
+                                    {{ fmt(cell.record.gpa) }}<span class="text-xs font-normal text-slate-400"> / {{ y.scale }}</span>
+                                </bdi>
+                                <span v-if="cell.record.certificate"
+                                    class="rounded-full px-2 py-0.5 text-[10px] font-semibold leading-tight ring-1 ring-inset"
+                                    :class="CERTIFICATE_CLASSES[cell.record.certificate]">{{ t(`certificate_${cell.record.certificate}`) }}</span>
+                            </component>
+                            <button v-else-if="can('players', 'add')" type="button" @click="openAdd(y.academic_year, cell.period)"
+                                :aria-label="t('add_gpa')" :title="t('add_gpa')"
+                                class="rounded-md border border-dashed border-slate-300 px-2 py-1 text-slate-400 hover:bg-slate-50 hover:text-primary-600 dark:border-slate-700 dark:hover:bg-slate-800">
+                                <Icon name="plus" />
+                            </button>
+                            <span v-else class="text-sm text-slate-400">—</span>
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-3 text-center">
+                            <template v-if="hasAverage(y)">
+                                <bdi dir="ltr" class="text-sm font-semibold tabular-nums" :class="gradeClass(y.average, y.scale)">
+                                    {{ fmt(y.average) }}<span class="text-xs font-normal text-slate-400"> / {{ y.scale }}</span>
+                                </bdi>
+                                <span v-if="y.is_provisional" class="mt-1 block text-[10px] font-medium text-amber-600 dark:text-amber-400">{{ t('provisional') }}</span>
+                            </template>
+                            <span v-else class="text-sm text-slate-400">—</span>
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-3 text-end">
+                            <button v-if="can('players', 'edit')" type="button" @click="openYear(y)"
+                                class="rounded-md px-2 py-1 text-xs font-medium text-primary-700 ring-1 ring-inset ring-primary-300 hover:bg-primary-50 dark:text-primary-300 dark:ring-primary-700 dark:hover:bg-primary-900/30">{{ t('edit_year') }}</button>
+                            <button v-if="can('players', 'delete')" type="button" @click="removingYearId = y.id"
+                                class="ms-2 rounded-md px-2 py-1 text-xs font-medium text-rose-700 ring-1 ring-inset ring-rose-300 hover:bg-rose-50 dark:text-rose-300 dark:ring-rose-800 dark:hover:bg-rose-900/30">{{ t('delete_year') }}</button>
                         </td>
                     </tr>
                 </tbody>
             </table>
         </div>
 
-        <Modal :show="showForm" @close="showForm = false" max-width="md">
-            <form @submit.prevent="submit" class="p-6">
-                <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ editingId ? t('edit_gpa') : t('add_gpa') }}</h3>
-                <InputError :message="form.errors.student" class="mt-2" />
-                <div class="mt-4 grid gap-4 sm:grid-cols-2">
-                    <div>
-                        <InputLabel :value="t('academic_year')" />
-                        <select v-model.number="form.academic_year" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                            <option v-for="y in yearOptions" :key="y" :value="y">{{ yearLabel(y) }}</option>
-                        </select>
-                        <InputError :message="form.errors.academic_year" class="mt-1" />
-                    </div>
-                    <div>
-                        <InputLabel :value="t('period')" />
-                        <select v-model="form.period" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                            <option v-for="p in PERIODS" :key="p" :value="p">{{ t(`period_${p}`) }}</option>
-                        </select>
-                        <InputError :message="form.errors.period" class="mt-1" />
-                    </div>
-                    <div class="sm:col-span-2">
-                        <InputLabel>{{ t('gpa') }} <bdi dir="ltr">/ 20</bdi></InputLabel>
-                        <TextInput v-model="form.gpa" type="number" step="0.01" min="0" max="20" class="mt-1 w-full" required />
-                        <InputError :message="form.errors.gpa" class="mt-1" />
-                    </div>
-                    <div class="sm:col-span-2">
-                        <InputLabel :value="t('remark')" />
-                        <textarea v-model="form.remark" rows="2" maxlength="1000" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500"></textarea>
-                        <InputError :message="form.errors.remark" class="mt-1" />
-                    </div>
-                </div>
-                <div class="mt-6 flex justify-end gap-3">
-                    <SecondaryButton type="button" @click="showForm = false">{{ t('cancel') }}</SecondaryButton>
-                    <PrimaryButton :disabled="form.processing">{{ t('save') }}</PrimaryButton>
-                </div>
-            </form>
-        </Modal>
-
+        <AcademicGradeModal
+            :show="gradeOpen"
+            :player="player"
+            :years="years"
+            :certificate-thresholds="certificateThresholds"
+            :preset="gradePreset"
+            @close="gradeOpen = false"
+        />
+        <AcademicYearModal :show="yearOpen" :player="player" :year="editingYear" @close="yearOpen = false" />
         <ConfirmModal
-            :show="removingId !== null"
-            :title="t('delete')"
-            :message="t('delete_gpa_warning')"
-            @confirm="confirmRemove"
-            @cancel="removingId = null"
+            :show="removingYearId !== null"
+            :title="t('delete_year')"
+            :message="t('delete_year_warning')"
+            :busy="removingYear"
+            @confirm="confirmRemoveYear"
+            @cancel="removingYearId = null"
         />
     </div>
 </template>

@@ -32,6 +32,7 @@ const props = defineProps({
     financeAccounts: { type: Array, default: () => [] },
     defaultFinanceAccountId: { type: [Number, String], default: '' },
     fileDrawerSize: { type: Number, default: 100 },
+    certificateThresholds: { type: Object, default: () => ({}) },
 });
 
 const subscriptions = computed(() => props.player?.player_subscriptions ?? []);
@@ -426,7 +427,7 @@ function formatDate(val) {
             </div>
 
             <!-- Studies: only students carry an education section -->
-            <AcademicSection v-if="player.is_student" :player="player" />
+            <AcademicSection v-if="player.is_student" :player="player" :certificate-thresholds="certificateThresholds" />
 
             <!-- Subscriptions -->
             <div class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">

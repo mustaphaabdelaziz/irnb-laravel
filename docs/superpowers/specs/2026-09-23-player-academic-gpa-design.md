@@ -1,137 +1,86 @@
-# Player Academic Tracking (Semester GPAs) — Design
+# Player Academic Tracking — Design (v2: school years, trimesters, certificates)
 
-Date: 2026-09-23
+Date: 2026-09-23 (v2 2026-09-24)
 Status: Approved
 
 ## Goal
 
 Track study progress of student players. Every player with `is_student = true`
-gets an education section on their profile holding school info and semester
-GPAs, with a trend chart, a printable academic report, a players-list filter
-and a dashboard widget.
+gets an education section on their profile. Each **school year** is its own
+record holding that year's school info (level, institution, class) and its
+trimester grades, so the history of schools and classes is kept and each year
+is averaged separately. Each trimester may carry a certificate (Excellence,
+Congratulations, Encouragement, Honor Roll). Also: a printable academic report,
+players-list filters and dashboard figures.
 
 ## Decisions
 
 | Topic | Decision |
 |---|---|
-| Grade scale | Fixed /20, pass mark 10 |
-| Record content | Academic year + period + GPA + optional remark |
-| School info | Stored on player: level, institution, field/class |
-| Display | Table + trend chart + stats (latest, average, delta) |
-| Workers | Section always hidden when `is_student = false` (records kept in DB) |
-| Periods | T1, T2, T3 |
-| Permissions | Reuse `players` module (view/add/edit/delete) |
-| Print | New A4 "academic report" PDF; member card untouched |
-| List filter | `academic` = `at_risk` / `good` / `none`, students only |
-| Dashboard | Members tab card: students, club average, at-risk, missing GPA |
-| Education level | Fixed list |
+| School info | Per school year (not on the player): level (required), institution, class/field |
+| Periods | Trimesters T1, T2, T3 only |
+| Grade scale | From the year's level: `primary` → /10 (pass 5), every other level → /20 (pass 10) |
+| Year average | Mean of the trimesters entered; "provisional" until all three exist |
+| Add GPA flow | One window: academic year → (if the year is new: level, institution, class) → trimester → grade → certificate |
+| Certificate | One per trimester or none: `excellence`, `congratulations`, `encouragement`, `honor_roll`. Auto-suggested from the grade, editable |
+| Thresholds | Editable in Settings; defaults /20: 16, 15, 14, 12 — /10: 8, 7.5, 7, 6 |
+| Profile display | One line per school year: year · level · institution · class · T1 · T2 · T3 (grade + certificate badge) · year average |
+| Chart | One point per year: year average as % of the scale |
+| Stats | Latest trimester, current year average, change vs previous year's average |
+| At risk | Latest trimester below half its scale |
+| Club average (dashboard) | Mean of each student's latest trimester converted to /20 |
+| Current school year | `App\Support\Season::current()->startYear` (club setting `seasonStartMonth`, default September) |
+| Certificates elsewhere | Profile badge, PDF, dashboard counts (current school year), players-list filter (current school year) |
+| Workers | Section hidden when `is_student = false`; data kept |
+| Permissions | Reuse `players` module; `players.academic-report` → view |
 
 ## Data model
 
-### `players` — new nullable columns
+Never deployed before v2, so the original migration
+`2026_09_23_110000_add_academic_tracking.php` is rewritten in place.
 
-- `education_level` string(20): one of `primary`, `middle`, `secondary`,
-  `vocational`, `licence`, `master`, `doctorate`
-- `institution` string(255)
-- `field_of_study` string(255) — class or speciality
-
-### New table `player_academic_records`
-
+### `player_academic_years`
 | Column | Type |
 |---|---|
-| id | bigint PK |
-| player_id | FK → players, cascade on delete |
-| academic_year | unsigned smallint — start year (2025 means "2025/2026") |
+| id | PK |
+| player_id | FK → players, cascade |
+| academic_year | unsigned smallint — start year (2025 = "2025/2026"), 1990–2100 |
+| education_level | string(20): `primary`, `middle`, `secondary`, `vocational`, `licence`, `master`, `doctorate` |
+| institution | string(255) nullable |
+| field_of_study | string(255) nullable — class or speciality |
+| timestamps | |
+
+Unique `(player_id, academic_year)`.
+
+### `player_academic_records` (one trimester)
+| Column | Type |
+|---|---|
+| id | PK |
+| player_academic_year_id | FK → player_academic_years, cascade |
 | period | string(10): `T1`, `T2`, `T3` |
-| gpa | decimal(4,2), 0–20 |
+| gpa | decimal(4,2), 0 – scale of the year |
+| certificate | string(20) nullable: `excellence`, `congratulations`, `encouragement`, `honor_roll` |
 | remark | text nullable |
 | timestamps | |
 
-Unique index `(player_id, academic_year, period)`.
+Unique `(player_academic_year_id, period)`.
 
-### Ordering and "latest"
+`players` gets **no** school columns (removed from v1).
 
-Chronological order: `academic_year` asc, then period rank
-`T1=1, T2=2, T3=3`.
-**Latest GPA** = the last record in that order. **Average** = mean of all the
-player's GPAs. **Delta** = latest minus the previous record's GPA (null when
-fewer than two records).
+### Thresholds
+Stored in `website_configs.settings.academicCertificates`:
+`{"20": {"excellence":16,"congratulations":15,"encouragement":14,"honor_roll":12}, "10": {"excellence":8,"congratulations":7.5,"encouragement":7,"honor_roll":6}}`.
+Missing keys fall back to these defaults. Suggestion = highest certificate whose threshold ≤ grade.
 
-Period rank lives in one place: a `AcademicPeriod` enum (PHP) exposing
-`rank()`, plus a SQL `CASE` expression helper used by the filter and dashboard
-subqueries.
-
-## Backend
-
-- `App\Enums\AcademicPeriod`, `App\Enums\EducationLevel`.
-- `App\Models\PlayerAcademicRecord` (fillable, casts `gpa` decimal:2,
-  `academic_year` int); `Player::academicRecords()` hasMany.
-- `PlayerAcademicRecordController` — `store`, `update`, `destroy`.
-  Routes: `players.academic-records.store|update|destroy`
-  (`/players/{player}/academic-records[/{record}]`), permissions derived
-  automatically (add/edit/delete). Record must belong to the route player (404
-  otherwise).
-- Form requests `StoreAcademicRecordRequest` / `UpdateAcademicRecordRequest`:
-  `academic_year` integer 1990–2100, `period` in enum, `gpa` numeric 0–20,
-  `remark` nullable string max 1000, uniqueness per player+year+period
-  (ignoring self on update). Store/update rejected with a validation error when
-  the player is not a student.
-- Flash keys: `flash.academic_record_added|updated|deleted`.
-- `PlayerController@show`: when student, pass `academicRecords` (chronological)
-  and the three school fields. `Store/UpdatePlayerRequest` validate the three
-  fields (`education_level` in enum).
-- Players list filter in the shared filter method (index + export):
-  `academic=at_risk` → students whose latest GPA < 10; `good` → latest ≥ 10;
-  `none` → students with no record. Implemented with a latest-GPA subquery.
-- `MemberStats`: academic block — `students`, `average` (mean of each
-  student's latest GPA, null if none), `at_risk`, `missing`.
-- `ReportController@academicReport` → `resources/views/pdf/academic-report.blade.php`
-  (A4: club header, player identity + photo, school info, semester table with
-  pass/fail marking, average, latest). Route `players.academic-report`, mapped
-  to `['players', 'view']` in `config/permissions.php`. 404 when not a student.
-
-## Frontend
-
-- `PlayerForm.vue`: education level select, institution, field of study —
-  shown only when student.
-- `Players/Partials/AcademicSection.vue` rendered in `Show.vue` when
-  `player.is_student`:
-  - School info rows.
-  - Stat row: latest GPA, average, delta badge (green up / red down).
-  - Line chart (vue-chartjs, already installed): x = "2025/2026 S1", y 0–20,
-    dashed reference line at 10. Hidden when fewer than 2 records.
-  - Table: year, period, GPA (green ≥ 10, red < 10), remark, edit/delete
-    actions gated by permissions.
-  - Add/edit modal; delete with confirm.
-  - "Print academic report" button.
-- `Players/Index.vue`: "Academic" filter select (All / At risk / Good / No GPA).
-- `Dashboard/Partials/MembersTab.vue`: academic card with the four stats;
-  at-risk and missing link to the filtered players list.
-- Translations in `lang/ar.json` and `lang/fr.json` (flat keys); run
-  `npm run i18n:check`.
-
-## Error handling
-
-- Duplicate year+period → validation error on the field.
-- GPA outside 0–20 → validation error.
-- Non-student player → validation error on store/update; PDF returns 404.
-- Switching a player to worker keeps records; they reappear if switched back.
-
-## Testing (PHPUnit feature tests)
-
-- Create, update, delete record; flash messages.
-- Uniqueness and GPA range validation; non-student rejection.
-- Record of another player → 404.
-- Latest-GPA ordering (T3 after T2 within a year, later year wins).
-- List filter buckets `at_risk`, `good`, `none`; workers excluded.
-- Dashboard academic stats values.
-- Academic report route returns 200 for student, 404 for worker.
-- Permission: user without `players.add` gets 403 on store.
+## Rules
+- Store a grade: player must be a student; grade ≤ the year's scale; one grade per trimester per year; a new year requires `education_level`.
+- Changing a year's level is refused if any of its grades exceeds the new scale.
+- Deleting a year deletes its trimesters.
+- "Latest trimester" = highest `academic_year`, then highest period rank, then highest id.
 
 ## Out of scope
-
-Per-subject grades, non-/20 scales, notifications, bulk GPA import.
+Per-subject grades, weighted trimesters, notifications, bulk import.
 
 ## Changelog
-
 - 2026-09-23: periods reduced to trimesters T1–T3 (semesters and yearly average removed) at user request.
+- 2026-09-24: v2 — school info moved from the player to a per-year record; /10 scale for primary; year average; certificates with editable thresholds.

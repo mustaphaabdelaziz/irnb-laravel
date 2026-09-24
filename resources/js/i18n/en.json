@@ -1220,5 +1220,21 @@
     "certificate_short_encouragement": "Encouragement",
     "certificate_short_honor_roll": "Honor roll",
     "certificate_filter_all": "Certificates (this school year)",
-    "dashboard.mem_certificates_year": "Students with certificates this school year"
+    "dashboard.mem_certificates_year": "Students with certificates this school year",
+    "season": "Season",
+    "subscription_kind": "Type",
+    "subscription_kind_annual": "Annual subscription",
+    "subscription_kind_annual_hint": "Tied to a season, e.g. 2025/2026.",
+    "subscription_kind_exceptional": "Exceptional",
+    "subscription_kind_exceptional_hint": "One-off charge with no season, e.g. a club t-shirt.",
+    "subscription_exceptional_not_debt": "Exceptional charges are assigned by hand and are never counted in a player's debt.",
+    "category_prices": "Price per category",
+    "category_price_hint": "Optional: set a different price for a category. Leave blank to use the default price.",
+    "select_row": "Select row",
+    "confirm_bulk_transaction_delete": "Delete {count} selected transaction(s)? Those in a closed fiscal year will be skipped.",
+    "delete_fiscal_year_confirm": "Delete fiscal year {year}? Its budget and archived transactions will be removed too.",
+    "flash.transactions_archived": "{count} transaction(s) deleted.",
+    "flash.transactions_archived_some_skipped": "{count} transaction(s) deleted, {skipped} skipped (closed fiscal year).",
+    "flash.fiscal_year_deleted": "Fiscal year {year} deleted.",
+    "flash.fiscal_year_not_empty": "Fiscal year {year} cannot be deleted: it is closed or still has transactions."
 }

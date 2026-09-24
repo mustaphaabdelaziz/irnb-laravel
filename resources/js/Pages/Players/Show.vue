@@ -82,7 +82,7 @@ const payableOptions = computed(() => [
         subscription_id: s.subscription_id,
         default_finance_account_id: s.default_finance_account_id,
         is_exempt: !!s.is_exempt,
-        text: `${s.name} (${s.year})${s.is_mandatory ? '' : ' — ' + t('optional')} — ${t('remaining')}: ${formatMoney(s.remaining_amount)}`,
+        text: `${s.name} (${s.year_label || t('subscription_kind_exceptional')})${s.is_mandatory ? '' : ' — ' + t('optional')} — ${t('remaining')}: ${formatMoney(s.remaining_amount)}`,
     })),
     ...manualDebts.value
         .filter(d => parseFloat(d.remaining_amount ?? 0) > 0)
@@ -465,7 +465,7 @@ function formatDate(val) {
                                     {{ sub.subscription?.name || sub.label || '-' }}
                                     <span v-if="sub.is_legacy" class="ms-1 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium uppercase text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('previous_debt') }}</span>
                                 </td>
-                                <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ sub.subscription?.year || sub.year || '-' }}</td>
+                                <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ sub.subscription ? (sub.subscription.year_label || t('subscription_kind_exceptional')) : (sub.year || '-') }}</td>
                                 <td class="px-4 py-3 text-end text-sm">{{ formatMoney(sub.amount_owed) }}</td>
                                 <td class="px-4 py-3 text-end text-sm">
                                     <span v-if="discountLabel(sub)" class="text-amber-700 dark:text-amber-400">{{ discountLabel(sub) }}</span>

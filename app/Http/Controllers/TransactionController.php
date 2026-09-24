@@ -7,16 +7,20 @@ use App\Models\FinanceAccount;
 use App\Models\FinanceCategory;
 use App\Models\FiscalYear;
 use App\Models\Player;
+use App\Models\PlayerSubscription;
 use App\Models\Transaction;
 use App\Models\WebsiteConfig;
 use App\Services\Export\ExcelExporter;
 use App\Services\Finance\DefaultRegisterResolver;
+use App\Services\Finance\RecalculatePlayerDebtService;
+use App\Services\FinanceService;
 use App\Services\Storage\FileStorageService;
 use App\Services\Storage\PrivateFileStorage;
 use App\Support\TransactionTitle;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -198,6 +202,48 @@ class TransactionController extends Controller
 
         return redirect()->route('transactions.index')
             ->with('success', 'flash.transaction_archived');
+    }
+
+    /**
+     * Archive several transactions at once, like destroy() does one. Rows in a
+     * closed fiscal year are skipped (and counted) rather than failing the batch.
+     */
+    public function bulkDestroy(Request $request, FinanceService $finance, RecalculatePlayerDebtService $debts): RedirectResponse
+    {
+        $validated = $request->validate([
+            // exists on the array itself: one whereIn query, not one per id.
+            'ids' => ['required', 'array', 'min:1', 'max:500', 'exists:transactions,id'],
+            'ids.*' => ['integer', 'distinct'],
+        ]);
+
+        $transactions = Transaction::whereIn('id', $validated['ids'])->where('archived', false)->get();
+        $closedYears = FiscalYear::where('status', 'closed')
+            ->whereIn('year', $transactions->pluck('fiscal_year')->filter()->unique())
+            ->pluck('year')
+            ->all();
+        [$skipped, $archivable] = $transactions->partition(fn (Transaction $tx) => in_array((int) $tx->fiscal_year, $closedYears, true));
+
+        DB::transaction(function () use ($archivable, $finance, $debts) {
+            // One query instead of one observer round per row: the observer would
+            // recompute every account balance for each transaction. The same
+            // recomputations run once below instead.
+            Transaction::whereIn('id', $archivable->modelKeys())->update(['archived' => true]);
+
+            $finance->recomputeAccountBalances();
+            FiscalYear::whereIn('id', $archivable->pluck('fiscal_year_id')->filter()->unique())
+                ->get()
+                ->each(fn (FiscalYear $year) => $finance->recomputeYear($year));
+            PlayerSubscription::whereIn('id', $archivable->pluck('player_subscription_id')->filter()->unique())
+                ->get()
+                ->each(fn (PlayerSubscription $sub) => $debts->forSubscription($sub));
+        });
+
+        $params = ['count' => $archivable->count(), 'skipped' => $skipped->count()];
+
+        return back()->with(
+            $archivable->isEmpty() ? 'error' : 'success',
+            ['key' => $skipped->isEmpty() ? 'flash.transactions_archived' : 'flash.transactions_archived_some_skipped', 'params' => $params],
+        );
     }
 
     /**

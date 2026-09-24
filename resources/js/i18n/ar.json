@@ -1220,5 +1220,21 @@
     "certificate_short_encouragement": "تشجيع",
     "certificate_short_honor_roll": "لوحة الشرف",
     "certificate_filter_all": "الشهادات (هذه السنة الدراسية)",
-    "dashboard.mem_certificates_year": "طلبة نالوا شهادات هذه السنة"
+    "dashboard.mem_certificates_year": "طلبة نالوا شهادات هذه السنة",
+    "season": "الموسم",
+    "subscription_kind": "النوع",
+    "subscription_kind_annual": "اشتراك سنوي",
+    "subscription_kind_annual_hint": "مرتبط بموسم، مثل 2025/2026.",
+    "subscription_kind_exceptional": "استثنائي",
+    "subscription_kind_exceptional_hint": "مبلغ لمرة واحدة بدون موسم، مثل قميص النادي.",
+    "subscription_exceptional_not_debt": "تُسند المبالغ الاستثنائية يدويًا ولا تُحتسب أبدًا ضمن ديون اللاعب.",
+    "category_prices": "السعر حسب الفئة",
+    "category_price_hint": "اختياري: سعر مختلف لفئة معينة. اتركه فارغًا لاستخدام السعر الافتراضي.",
+    "select_row": "تحديد السطر",
+    "confirm_bulk_transaction_delete": "حذف {count} معاملة محددة؟ سيتم تجاوز المعاملات التابعة لسنة مالية مغلقة.",
+    "delete_fiscal_year_confirm": "حذف السنة المالية {year}؟ ستُحذف ميزانيتها ومعاملاتها المؤرشفة أيضًا.",
+    "flash.transactions_archived": "تم حذف {count} معاملة.",
+    "flash.transactions_archived_some_skipped": "تم حذف {count} معاملة، وتم تجاوز {skipped} (سنة مالية مغلقة).",
+    "flash.fiscal_year_deleted": "تم حذف السنة المالية {year}.",
+    "flash.fiscal_year_not_empty": "لا يمكن حذف السنة المالية {year}: إنها مغلقة أو ما زالت تحتوي على معاملات."
 }

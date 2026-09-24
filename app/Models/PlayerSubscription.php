@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 
 class PlayerSubscription extends Model
 {
@@ -67,6 +69,21 @@ class PlayerSubscription extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Transaction::class, 'player_subscription_id');
+    }
+
+    /**
+     * Keep only lines that are debt: everything except one-off charges (an
+     * exceptional subscription such as a club t-shirt), which are tracked as
+     * paid/unpaid but never owed to the club as a membership debt. Manual debts
+     * (no subscription) stay in. Takes an Eloquent or a plain query builder so
+     * the dashboard's raw queries share the rule.
+     */
+    public static function whereCountsAsDebt(EloquentBuilder|QueryBuilder $query): EloquentBuilder|QueryBuilder
+    {
+        return $query->where(fn ($q) => $q
+            ->whereNull('player_subscriptions.subscription_id')
+            ->orWhereNotIn('player_subscriptions.subscription_id', fn ($ids) => $ids
+                ->select('id')->from('subscriptions')->where('kind', Subscription::KIND_EXCEPTIONAL)));
     }
 
     public function isExempt(): bool

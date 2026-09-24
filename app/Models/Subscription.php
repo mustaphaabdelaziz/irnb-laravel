@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Season;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,8 +13,17 @@ class Subscription extends Model
 {
     use HasFactory;
 
+    /** Bound to a season; `year` holds the season's END year (2026 = 2025/2026). */
+    public const KIND_ANNUAL = 'annual';
+
+    /** A one-off charge (a club t-shirt): no year, never counted as debt. */
+    public const KIND_EXCEPTIONAL = 'exceptional';
+
+    public const KINDS = [self::KIND_ANNUAL, self::KIND_EXCEPTIONAL];
+
     protected $fillable = [
         'name',
+        'kind',
         'year',
         'amount_student',
         'amount_worker',
@@ -21,6 +31,12 @@ class Subscription extends Model
         'is_mandatory',
         'is_active',
     ];
+
+    protected $attributes = [
+        'kind' => self::KIND_ANNUAL,
+    ];
+
+    protected $appends = ['year_label'];
 
     protected function casts(): array
     {
@@ -33,9 +49,11 @@ class Subscription extends Model
         ];
     }
 
+    /** Categories this subscription is open to, each with an optional price override. */
     public function categories(): BelongsToMany
     {
-        return $this->belongsToMany(Category::class, 'category_subscription');
+        return $this->belongsToMany(Category::class, 'category_subscription')
+            ->withPivot(['amount_student', 'amount_worker']);
     }
 
     public function branches(): BelongsToMany
@@ -46,6 +64,11 @@ class Subscription extends Model
     public function playerSubscriptions(): HasMany
     {
         return $this->hasMany(PlayerSubscription::class);
+    }
+
+    public function isExceptional(): bool
+    {
+        return $this->kind === self::KIND_EXCEPTIONAL;
     }
 
     /**
@@ -70,10 +93,19 @@ class Subscription extends Model
         return $categoryIds->isEmpty() || ($categoryId !== null && $categoryIds->contains($categoryId));
     }
 
-    /** What this subscription charges the player: the student or the worker rate. */
+    /**
+     * What this subscription charges the player: the student or the worker rate,
+     * taken from their category's override when it sets one.
+     */
     public function amountFor(Player $player): float
     {
-        return $player->is_student ? (float) $this->amount_student : (float) $this->amount_worker;
+        $column = $player->is_student ? 'amount_student' : 'amount_worker';
+
+        $override = $player->category_id
+            ? $this->categories->firstWhere('id', $player->category_id)?->pivot?->{$column}
+            : null;
+
+        return (float) ($override ?? $this->{$column});
     }
 
     /** Put a player on this subscription, owing the rate for their status. */
@@ -82,16 +114,48 @@ class Subscription extends Model
         return $this->playerSubscriptions()->create([
             'player_id' => $player->id,
             'transaction_id' => null,
-            'year' => $this->year,
+            // The obligation row always needs a year (dashboards group by it):
+            // a one-off charge takes the year it was assigned in.
+            'year' => $this->year ?? (int) now()->year,
             'status_at_time' => $player->is_student ? 'student' : 'worker',
-            'is_mandatory' => (bool) $this->is_mandatory,
+            // A one-off charge is never debt.
+            'is_mandatory' => ! $this->isExceptional() && (bool) $this->is_mandatory,
             'amount_owed' => $this->amountFor($player),
             'amount_paid' => 0,
         ]);
     }
 
+    /** "2025/2026" for an annual subscription, null for an exceptional one. */
+    public function getYearLabelAttribute(): ?string
+    {
+        return $this->year ? self::seasonLabel((int) $this->year) : null;
+    }
+
+    /**
+     * The season that ends in the given year, spelled in full ("2025/2026"),
+     * or just "2026" when the club's season is the calendar year.
+     */
+    public static function seasonLabel(int $endYear): string
+    {
+        return self::calendarSeason() ? (string) $endYear : ($endYear - 1).'/'.$endYear;
+    }
+
+    /** The end year of the season running today — the default for a new annual subscription. */
+    public static function currentSeasonEndYear(): int
+    {
+        $season = Season::current();
+
+        return self::calendarSeason() ? $season->startYear : $season->startYear + 1;
+    }
+
     public function getDesignationAttribute(): string
     {
-        return trim($this->name.' - '.$this->year);
+        return $this->year_label ? $this->name.' - '.$this->year_label : $this->name;
+    }
+
+    /** Whether the club's season is the calendar year — read once per request, not once per row. */
+    private static function calendarSeason(): bool
+    {
+        return once(fn () => Season::startMonth() === 1);
     }
 }

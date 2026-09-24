@@ -1135,5 +1135,12 @@
     "dashboard.mem_academic": "النتائج الدراسية",
     "dashboard.mem_academic_average": "متوسط آخر المعدلات",
     "dashboard.mem_at_risk": "طلبة في خطر",
-    "dashboard.mem_missing_gpa": "بدون معدل"
+    "dashboard.mem_missing_gpa": "بدون معدل",
+    "academic_certificates": "الشهادات المدرسية",
+    "academic_certificates_hint": "أدنى معدل للحصول على كل شهادة. يُقترح تلقائيًا عند إدخال المعدل ويمكن تغييره.",
+    "certificate_excellence": "شهادة الامتياز",
+    "certificate_congratulations": "شهادة التهنئة",
+    "certificate_encouragement": "شهادة التشجيع",
+    "certificate_honor_roll": "لوحة الشرف",
+    "no_certificate": "بدون شهادة"
 }

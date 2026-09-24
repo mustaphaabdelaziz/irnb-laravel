@@ -1135,5 +1135,12 @@
     "dashboard.mem_academic": "Academic results",
     "dashboard.mem_academic_average": "Average latest GPA",
     "dashboard.mem_at_risk": "Students at risk",
-    "dashboard.mem_missing_gpa": "No GPA"
+    "dashboard.mem_missing_gpa": "No GPA",
+    "academic_certificates": "Academic certificates",
+    "academic_certificates_hint": "Minimum grade for each certificate. Suggested automatically when a grade is entered; can be changed.",
+    "certificate_excellence": "Certificate of Excellence",
+    "certificate_congratulations": "Certificate of Congratulations",
+    "certificate_encouragement": "Certificate of Encouragement",
+    "certificate_honor_roll": "Honor Roll",
+    "no_certificate": "No certificate"
 }

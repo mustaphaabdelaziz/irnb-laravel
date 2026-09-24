@@ -1135,5 +1135,12 @@
     "dashboard.mem_academic": "Résultats scolaires",
     "dashboard.mem_academic_average": "Moyenne des dernières moyennes",
     "dashboard.mem_at_risk": "Étudiants en difficulté",
-    "dashboard.mem_missing_gpa": "Sans moyenne"
+    "dashboard.mem_missing_gpa": "Sans moyenne",
+    "academic_certificates": "Distinctions scolaires",
+    "academic_certificates_hint": "Moyenne minimale pour chaque distinction. Proposée automatiquement à la saisie ; modifiable.",
+    "certificate_excellence": "Tableau d'excellence",
+    "certificate_congratulations": "Félicitations",
+    "certificate_encouragement": "Encouragements",
+    "certificate_honor_roll": "Tableau d'honneur",
+    "no_certificate": "Aucune distinction"
 }

@@ -175,6 +175,44 @@ watch(customColor, (val) => {
     }
 });
 
+const CERTIFICATE_DEFAULTS = {
+    '20': { excellence: 16, congratulations: 15, encouragement: 14, honor_roll: 12 },
+    '10': { excellence: 8, congratulations: 7.5, encouragement: 7, honor_roll: 6 },
+};
+
+const certificatesForm = useForm({
+    '20': { ...CERTIFICATE_DEFAULTS['20'], ...(props.config?.settings?.academicCertificates?.['20'] || {}) },
+    '10': { ...CERTIFICATE_DEFAULTS['10'], ...(props.config?.settings?.academicCertificates?.['10'] || {}) },
+});
+
+const certificateRows = [
+    { key: 'excellence', label: 'certificate_excellence' },
+    { key: 'congratulations', label: 'certificate_congratulations' },
+    { key: 'encouragement', label: 'certificate_encouragement' },
+    { key: 'honor_roll', label: 'certificate_honor_roll' },
+];
+
+function saveCertificates() {
+    certificatesForm.transform(data => ({
+        settings: {
+            academicCertificates: {
+                '20': {
+                    excellence: Number(data['20'].excellence),
+                    congratulations: Number(data['20'].congratulations),
+                    encouragement: Number(data['20'].encouragement),
+                    honor_roll: Number(data['20'].honor_roll),
+                },
+                '10': {
+                    excellence: Number(data['10'].excellence),
+                    congratulations: Number(data['10'].congratulations),
+                    encouragement: Number(data['10'].encouragement),
+                    honor_roll: Number(data['10'].honor_roll),
+                },
+            },
+        },
+    })).put(route('settings.update'), { preserveScroll: true });
+}
+
 const settingsForm = useForm({
     currency: props.config?.settings?.currency || 'DZD',
     timezone: props.config?.settings?.timezone || 'Africa/Algiers',
@@ -573,6 +611,33 @@ function saveSettings() {
                         </div>
                     </div>
                     <div class="flex justify-end"><PrimaryButton :disabled="settingsForm.processing">{{ t('save') }}</PrimaryButton></div>
+                </form>
+
+                <!-- Academic certificate thresholds -->
+                <form v-if="activeTab === 'settings'" @submit.prevent="saveCertificates" class="mt-6 space-y-6">
+                    <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+                        <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('academic_certificates') }}</h2>
+                        <p class="mb-4 -mt-2 text-sm text-slate-500 dark:text-slate-400">{{ t('academic_certificates_hint') }}</p>
+                        <div class="grid grid-cols-3 gap-3 text-sm">
+                            <div></div>
+                            <div class="font-medium text-slate-600 dark:text-slate-300">/ 20</div>
+                            <div class="font-medium text-slate-600 dark:text-slate-300">/ 10</div>
+                            <template v-for="row in certificateRows" :key="row.key">
+                                <div class="flex items-center text-slate-700 dark:text-slate-200">{{ t(row.label) }}</div>
+                                <div>
+                                    <input v-model="certificatesForm['20'][row.key]" type="number" step="0.25" min="0" max="20"
+                                        class="w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800" />
+                                    <span v-if="certificatesForm.errors[`settings.academicCertificates.20.${row.key}`]" class="mt-1 block text-xs text-rose-500">{{ certificatesForm.errors[`settings.academicCertificates.20.${row.key}`] }}</span>
+                                </div>
+                                <div>
+                                    <input v-model="certificatesForm['10'][row.key]" type="number" step="0.25" min="0" max="10"
+                                        class="w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800" />
+                                    <span v-if="certificatesForm.errors[`settings.academicCertificates.10.${row.key}`]" class="mt-1 block text-xs text-rose-500">{{ certificatesForm.errors[`settings.academicCertificates.10.${row.key}`] }}</span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                    <div class="flex justify-end"><PrimaryButton :disabled="certificatesForm.processing">{{ t('save') }}</PrimaryButton></div>
                 </form>
             </div>
         </div>

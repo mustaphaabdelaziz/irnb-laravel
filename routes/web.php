@@ -12,6 +12,7 @@ use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\CashRegisterController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\EquipmentCatalogController;
 use App\Http\Controllers\EquipmentCategoryController;
 use App\Http\Controllers\EquipmentItemController;
@@ -24,6 +25,7 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\MemberJobController;
 use App\Http\Controllers\PlayerController;
+use App\Http\Controllers\PlayerDocumentController;
 use App\Http\Controllers\PlayerImportController;
 use App\Http\Controllers\PlayerPrintController;
 use App\Http\Controllers\PlayerStatusController;
@@ -51,7 +53,45 @@ Route::get('/', [PublicController::class, 'home'])->name('home');
 // Uses /media (not /storage — that path is taken by the framework's local-disk
 // "serve" route, which points at the private disk and would 404 these files).
 Route::get('/media/{path}', function (string $path) {
+    $decoded = str_replace('\\', '/', rawurldecode($path));
+
+    // Reject NTFS alternate-data-stream / drive-letter syntax and raw control
+    // characters up front, before any other check, on both the path as routed
+    // and its decoded form. On Windows, "receipts::$INDEX_ALLOCATION/a.pdf"
+    // (or "receipts:$I30:$INDEX_ALLOCATION/a.pdf") opens the receipts/
+    // directory itself and resolves "a.pdf" inside it — confirmed with a
+    // direct file_exists() probe — even though the segment string
+    // "receipts::$INDEX_ALLOCATION" never equals "receipts", so a plain
+    // equality check against the folder-name list below would miss it. No
+    // legitimate stored path contains a colon or a control character.
+    foreach ([$path, $decoded] as $candidate) {
+        abort_if(str_contains($candidate, ':'), 404);
+        abort_if((bool) preg_match('/[\x00-\x1F]/', $candidate), 404);
+    }
     abort_if(str_contains($path, '..'), 404);
+
+    // minutes/ and receipts/ now live only on the private disk (Tasks 12 and
+    // 13), served solely by their authenticated routes. Refuse every spelling
+    // of those folders here — case, doubled slashes, "./" segments, percent
+    // encoding — so a file an old upload left behind in public/minutes/ or
+    // public/receipts/ (unreferenced by any row, hence never moved by their
+    // migration) can never be served through this public route.
+    $normalised = ltrim($decoded, '/');
+    $segments = array_values(array_filter(explode('/', $normalised), fn ($segment) => $segment !== '' && $segment !== '.'));
+    // Defence in depth: cut at the first ':' before comparing, so even
+    // without the guard above, "receipts::$INDEX_ALLOCATION" still reduces
+    // to "receipts".
+    $first = strtolower(explode(':', $segments[0] ?? '', 2)[0]);
+    abort_if(in_array($first, ['minutes', 'receipts'], true), 404);
+
+    // Windows 8.3 short filenames: NTFS also answers to an auto-generated
+    // "~1"-suffixed alias of a long folder name (e.g. "RECEIP~1" for
+    // "receipts"), which opens the same directory as the full name even
+    // though the segment string never equals "receipts". Refuse any first
+    // segment containing "~" outright — no legitimate stored folder name
+    // uses one.
+    abort_if(str_contains($first, '~'), 404);
+
     abort_unless(Storage::disk('public')->exists($path), 404);
 
     return response()->file(Storage::disk('public')->path($path));
@@ -103,6 +143,17 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
     Route::put('/players/{player}/subscriptions/{playerSubscription}', [PlayerSubscriptionController::class, 'update'])->name('players.subscriptions.update');
     Route::delete('/players/{player}/subscriptions/{playerSubscription}', [PlayerSubscriptionController::class, 'destroy'])->name('players.subscriptions.destroy');
 
+    // Player documents — every name is players.documents.*, gated by the `documents`
+    // module (config/permissions.php). Files are served from the private disk only.
+    Route::post('/players/{player}/documents', [PlayerDocumentController::class, 'store'])->name('players.documents.store');
+    Route::post('/players/{player}/documents/exempt', [PlayerDocumentController::class, 'exempt'])->name('players.documents.exempt');
+    Route::put('/players/{player}/documents/{document}', [PlayerDocumentController::class, 'update'])->name('players.documents.update');
+    Route::delete('/players/{player}/documents/{document}/exempt', [PlayerDocumentController::class, 'unexempt'])->name('players.documents.unexempt');
+    Route::post('/players/{player}/documents/{document}/files', [PlayerDocumentController::class, 'storeFiles'])->name('players.documents.files.store');
+    Route::get('/players/{player}/documents/files/{file}', [PlayerDocumentController::class, 'showFile'])->name('players.documents.files.show');
+    Route::get('/players/{player}/documents/files/{file}/download', [PlayerDocumentController::class, 'downloadFile'])->name('players.documents.files.download');
+    Route::delete('/players/{player}/documents/files/{file}', [PlayerDocumentController::class, 'destroyFile'])->name('players.documents.files.destroy');
+
     // Subscriptions
     Route::resource('subscriptions', SubscriptionController::class);
     Route::post('/subscriptions/{subscription}/assign', [SubscriptionController::class, 'assign'])->name('subscriptions.assign');
@@ -115,6 +166,8 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
     Route::post('/transactions/import', [TransactionImportController::class, 'store'])->name('transactions.import.store');
     Route::resource('transactions', TransactionController::class);
     Route::get('/transactions/{transaction}/receipt', [ReportController::class, 'transactionReceipt'])->name('transactions.receipt');
+    // The uploaded receipt file — private: this (auth + transactions/view) is the only way to read it.
+    Route::get('/transactions/{transaction}/receipt-file', [TransactionController::class, 'receiptFile'])->name('transactions.receipt-file.show');
 
     // Finance — year-grouped dashboard (view open to approved members)
     Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');
@@ -186,6 +239,7 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         Route::resource('jobs', MemberJobController::class)->except(['show', 'create', 'edit']);
         Route::resource('positions', PositionController::class)->except(['show', 'create', 'edit']);
         Route::resource('player-statuses', PlayerStatusController::class)->except(['show', 'create', 'edit']);
+        Route::resource('document-types', DocumentTypeController::class)->except(['show', 'create', 'edit']);
 
         // Finance management — fiscal years (close/reopen), budgets, chart of accounts, accounts
         Route::get('/finance/settings', [FinanceController::class, 'settings'])->name('finance.settings');
@@ -225,6 +279,8 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         Route::put('/board/meetings/{meeting}', [BoardMeetingController::class, 'update'])->name('board.meetings.update');
         Route::put('/board/meetings/{meeting}/attendance', [BoardMeetingController::class, 'attendance'])->name('board.meetings.attendance');
         Route::post('/board/meetings/{meeting}/attachment', [BoardMeetingController::class, 'attachment'])->name('board.meetings.attachment');
+        // Minutes are private: this (auth + board/view) is the only way to read them.
+        Route::get('/board/meetings/{meeting}/attachment', [BoardMeetingController::class, 'showAttachment'])->name('board.meetings.attachment.show');
         Route::delete('/board/meetings/{meeting}/attachment', [BoardMeetingController::class, 'deleteAttachment'])->name('board.meetings.attachment.delete');
         // Meetings are never deleted: cancelling keeps the record (who/when/why).
         Route::post('/board/meetings/{meeting}/cancel', [BoardMeetingController::class, 'cancel'])->name('board.meetings.cancel');

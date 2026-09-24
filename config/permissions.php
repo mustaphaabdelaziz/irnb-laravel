@@ -5,6 +5,10 @@ return [
     // A route name matches a prefix when it equals it or starts with "prefix.".
     'modules' => [
         'players' => 'players',
+        // Longest prefix wins, so every players.documents.* route lands here and
+        // never on the players module: documents are more sensitive than the
+        // player record (medical certificates, ID copies).
+        'players.documents' => 'documents',
         'subscriptions' => 'subscriptions',
         'transactions' => 'transactions',
         'finance' => 'finance',
@@ -19,6 +23,7 @@ return [
         'jobs' => 'categories',
         'positions' => 'categories',
         'player-statuses' => 'categories',
+        'document-types' => 'categories',
         'equipment-categories' => 'categories',
         'storage-locations' => 'categories',
         'settings' => 'settings',
@@ -52,6 +57,9 @@ return [
         // "out" is not a view verb, so without this the list would need edit rights.
         'equipment.out' => ['equipment', 'view'],
         'board.meetings.minutes' => ['board', 'view'],
+        // "download" is not a view verb: without this, fetching a file the user
+        // may already open inline would need edit rights.
+        'players.documents.files.download' => ['documents', 'view'],
     ],
 
     // Route names that need no permission once authenticated.

@@ -188,6 +188,11 @@ class Player extends Model
         return $this->hasMany(PlayerAchievement::class);
     }
 
+    public function documents(): HasMany
+    {
+        return $this->hasMany(PlayerDocument::class);
+    }
+
     public function equipmentRentals(): MorphMany
     {
         return $this->morphMany(EquipmentRental::class, 'rentable');

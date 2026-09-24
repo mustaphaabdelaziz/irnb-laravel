@@ -12,6 +12,7 @@ use App\Models\WebsiteConfig;
 use App\Services\Export\ExcelExporter;
 use App\Services\Finance\DefaultRegisterResolver;
 use App\Services\Storage\FileStorageService;
+use App\Services\Storage\PrivateFileStorage;
 use App\Support\TransactionTitle;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -19,6 +20,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TransactionController extends Controller
 {
@@ -106,7 +108,7 @@ class TransactionController extends Controller
         return Inertia::render('Transactions/Create', $this->formOptions());
     }
 
-    public function store(StoreTransactionRequest $request, FileStorageService $files): RedirectResponse
+    public function store(StoreTransactionRequest $request, PrivateFileStorage $receipts): RedirectResponse
     {
         $validated = $request->validated();
         unset($validated['receipt']);
@@ -124,9 +126,10 @@ class TransactionController extends Controller
         }
 
         if ($request->hasFile('receipt')) {
-            $stored = $files->storeFile($request->file('receipt'), 'receipts');
-            $validated['receipt_url'] = $stored['url'];
-            $validated['receipt_filename'] = $stored['filename'];
+            // Receipts are private: only receiptFile() serves them, behind login.
+            $stored = $receipts->store($request->file('receipt'), 'receipts');
+            $validated['receipt_url'] = null;
+            $validated['receipt_filename'] = $stored['path'];
         }
 
         $transaction = Transaction::create($validated);
@@ -146,7 +149,7 @@ class TransactionController extends Controller
         ]);
     }
 
-    public function update(StoreTransactionRequest $request, Transaction $transaction, FileStorageService $files): RedirectResponse
+    public function update(StoreTransactionRequest $request, Transaction $transaction, PrivateFileStorage $receipts, FileStorageService $files): RedirectResponse
     {
         if ($this->yearClosed((int) $transaction->fiscal_year)) {
             return back()->with('error', ['key' => 'flash.year_closed_edit', 'params' => ['year' => $transaction->fiscal_year]]);
@@ -159,16 +162,30 @@ class TransactionController extends Controller
         $validated['category'] = Str::slug($financeCategory->name, '_');
 
         if ($request->hasFile('receipt')) {
+            // The previous file, wherever it lives: private, or public for a row the
+            // receipts migration could not move.
+            $receipts->delete($transaction->receipt_filename);
             $files->delete($transaction->receipt_filename);
-            $stored = $files->storeFile($request->file('receipt'), 'receipts');
-            $validated['receipt_url'] = $stored['url'];
-            $validated['receipt_filename'] = $stored['filename'];
+
+            $stored = $receipts->store($request->file('receipt'), 'receipts');
+            $validated['receipt_url'] = null;
+            $validated['receipt_filename'] = $stored['path'];
         }
 
         $transaction->update($validated);
 
         return redirect()->route('transactions.show', $transaction)
             ->with('success', 'flash.transaction_updated');
+    }
+
+    /** The uploaded receipt file (not the printed PDF receipt, which is transactions.receipt). */
+    public function receiptFile(Transaction $transaction, PrivateFileStorage $receipts): StreamedResponse
+    {
+        $path = $transaction->receipt_filename;
+
+        abort_unless($path && $receipts->exists($path), 404);
+
+        return $receipts->serve($path, basename($path));
     }
 
     public function destroy(Transaction $transaction): RedirectResponse

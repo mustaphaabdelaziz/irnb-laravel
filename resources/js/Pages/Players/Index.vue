@@ -32,6 +32,7 @@ const props = defineProps({
     statusStats: { type: Array, default: () => [] },
     positionStats: { type: Array, default: () => [] },
     ageStats: { type: Array, default: () => [] },
+    documentTypes: { type: Array, default: () => [] },
     filters: Object,
 });
 
@@ -44,6 +45,8 @@ const positionFilter = ref(props.filters?.position_id || '');
 const branchFilter = ref(props.filters?.branch_id || '');
 const ageFilter = ref(props.filters?.age || '');
 const wilayaFilter = ref(props.filters?.wilaya_id || '');
+// missing | expiring | missing-<typeId> — one select, one query parameter.
+const documentsFilter = ref(props.filters?.documents || '');
 // Active vs Archived view. Backend defaults to active when no `archived` param.
 const archivedView = ref(!!Number(props.filters?.archived));
 
@@ -57,6 +60,7 @@ const { params: filterParams, loading: filtering } = useListFilters('players.ind
     branch_id: branchFilter.value,
     age: ageFilter.value,
     wilaya_id: wilayaFilter.value,
+    documents: documentsFilter.value,
     archived: archivedView.value ? 1 : undefined,
 }), { only: ['players', 'filters', 'categoryStats', 'statusStats', 'positionStats', 'ageStats'] });
 
@@ -302,7 +306,20 @@ function runBulk() {
                     class="min-w-0 flex-1 rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:max-w-xs sm:flex-none"
                 >
                     <option value="">{{ t('all_wilayas') }}</option>
+                    <!-- A value of its own: useListFilters drops empty values. -->
+                    <option value="none">{{ t('no_wilaya') }}</option>
                     <option v-for="w in wilayas" :key="w.id" :value="w.id">{{ w.code }} · {{ w.localized_name || w.name }}</option>
+                </select>
+                <select
+                    v-model="documentsFilter"
+                    class="min-w-0 flex-1 rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:max-w-xs sm:flex-none"
+                >
+                    <option value="">{{ t('doc_filter_all') }}</option>
+                    <option value="missing">{{ t('doc_filter_missing') }}</option>
+                    <option value="expiring">{{ t('doc_filter_expiring') }}</option>
+                    <optgroup v-if="documentTypes.length" :label="t('doc_filter_missing_type')">
+                        <option v-for="dt in documentTypes" :key="dt.id" :value="`missing-${dt.id}`">{{ dt.localized_name || dt.name }}</option>
+                    </optgroup>
                 </select>
                 <!-- Toggles share a row on phones: status left, view right -->
                 <div class="flex w-full items-center justify-between gap-3 sm:w-auto sm:flex-1">
@@ -389,6 +406,7 @@ function runBulk() {
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('category') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('position') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('status') }}</th>
+                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('documents') }}</th>
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('debt') }}</th>
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('actions') }}</th>
                             </tr>
@@ -419,6 +437,10 @@ function runBulk() {
                                     <Badge v-if="player.status" :label="player.status.localized_name || player.status.name" color="primary" />
                                     <span v-else class="text-sm text-slate-400">-</span>
                                 </td>
+                                <td class="whitespace-nowrap px-4 py-3">
+                                    <Badge v-if="Number(player.missing_documents_count) > 0" :label="t('doc_missing_count', { count: Number(player.missing_documents_count) })" color="rose" />
+                                    <Icon v-else name="check" class="text-emerald-500" :title="t('doc_complete')" />
+                                </td>
                                 <td class="whitespace-nowrap px-4 py-3 text-end text-sm font-semibold"
                                     :class="player.total_debt > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'">
                                     {{ formatMoney(player.total_debt || 0) }}
@@ -434,7 +456,7 @@ function runBulk() {
                                 </td>
                             </tr>
                             <tr v-if="!players.data.length">
-                                <td colspan="9" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
+                                <td colspan="10" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
                             </tr>
                         </tbody>
                     </table>

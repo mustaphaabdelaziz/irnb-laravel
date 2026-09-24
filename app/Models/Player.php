@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Player extends Model
@@ -39,9 +40,6 @@ class Player extends Model
         'wilaya_id',
         'city',
         'is_student',
-        'education_level',
-        'institution',
-        'field_of_study',
         'member_job_id',
         'join_year',
         'archived',
@@ -191,9 +189,15 @@ class Player extends Model
         return $this->hasMany(PlayerAchievement::class);
     }
 
-    public function academicRecords(): HasMany
+    /** School years, oldest first. */
+    public function academicYears(): HasMany
     {
-        return $this->hasMany(PlayerAcademicRecord::class);
+        return $this->hasMany(PlayerAcademicYear::class)->orderBy('academic_year');
+    }
+
+    public function academicRecords(): HasManyThrough
+    {
+        return $this->hasManyThrough(PlayerAcademicRecord::class, PlayerAcademicYear::class);
     }
 
     public function equipmentRentals(): MorphMany

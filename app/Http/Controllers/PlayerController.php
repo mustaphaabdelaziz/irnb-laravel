@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AcademicCertificate;
 use App\Http\Requests\Player\BulkUpdatePlayersRequest;
 use App\Http\Requests\Player\StorePlayerRequest;
 use App\Http\Requests\Player\UpdatePlayerRequest;
@@ -25,6 +26,7 @@ use App\Services\Player\MembershipNumber;
 use App\Services\Player\RegisterPlayerService;
 use App\Services\Storage\FileStorageService;
 use App\Support\CertificateThresholds;
+use App\Support\Season;
 use App\Support\TransactionTitle;
 use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
@@ -130,7 +132,7 @@ class PlayerController extends Controller
             'statusStats' => $statusStats,
             'positionStats' => $positionStats,
             'ageStats' => $ageStats,
-            'filters' => $request->only(['search', 'category_id', 'status', 'position_id', 'branch_id', 'age', 'archived', 'wilaya_id', 'academic']),
+            'filters' => $request->only(['search', 'category_id', 'status', 'position_id', 'branch_id', 'age', 'archived', 'wilaya_id', 'academic', 'certificate']),
         ]);
     }
 
@@ -621,8 +623,8 @@ class PlayerController extends Controller
         }
 
         if ($request->filled('academic')) {
-            $latest = '('.PlayerAcademicRecord::latestGpaSql().')';
-            $pass = PlayerAcademicRecord::PASS_MARK;
+            $latest = '('.PlayerAcademicRecord::latestOn20Sql().')';
+            $pass = PlayerAcademicRecord::PASS_MARK_ON_20;
 
             match ($request->input('academic')) {
                 'at_risk' => $query->where('is_student', true)->whereRaw("{$latest} < ?", [$pass]),
@@ -630,6 +632,20 @@ class PlayerController extends Controller
                 'none' => $query->where('is_student', true)->whereDoesntHave('academicRecords'),
                 default => null,
             };
+        }
+
+        if ($request->filled('certificate')) {
+            $certificate = $request->input('certificate');
+
+            if (in_array($certificate, AcademicCertificate::values(), true)) {
+                $currentYear = Season::current()->startYear;
+
+                $query->whereHas(
+                    'academicYears',
+                    fn ($year) => $year->where('academic_year', $currentYear)
+                        ->whereHas('records', fn ($records) => $records->where('certificate', $certificate)),
+                );
+            }
         }
 
         if ($request->filled('age')) {

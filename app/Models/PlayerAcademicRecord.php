@@ -9,6 +9,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /** One graded trimester of a school year, on that year's scale (/10 primary, /20 otherwise). */
 class PlayerAcademicRecord extends Model
 {
+    /** Pass mark once a grade is converted to /20 (latestOn20Sql's scale). Half of 20. */
+    public const PASS_MARK_ON_20 = 10;
+
     protected $fillable = ['player_academic_year_id', 'period', 'gpa', 'certificate', 'remark'];
 
     protected function casts(): array

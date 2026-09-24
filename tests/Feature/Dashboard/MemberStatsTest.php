@@ -5,6 +5,7 @@ namespace Tests\Feature\Dashboard;
 use App\Models\Branch;
 use App\Models\Category;
 use App\Models\Player;
+use App\Models\PlayerAcademicYear;
 use App\Models\PlayerStatus;
 use App\Models\PlayerSubscription;
 use App\Services\Dashboard\DashboardFilters;
@@ -265,20 +266,34 @@ class MemberStatsTest extends TestCase
         $this->assertNull($this->summary()['renewal_rate']['value']);
     }
 
-    #[Test]
-    public function academic_block_averages_each_students_latest_gpa(): void
+    private function year(Player $player, int $academicYear, string $level = 'secondary'): PlayerAcademicYear
     {
+        return $player->academicYears()->create(['academic_year' => $academicYear, 'education_level' => $level]);
+    }
+
+    private function noCertificates(): array
+    {
+        return ['excellence' => 0, 'congratulations' => 0, 'encouragement' => 0, 'honor_roll' => 0];
+    }
+
+    #[Test]
+    public function academic_block_averages_each_students_latest_grade_converted_to_20(): void
+    {
+        // setUp() has already travelled to 2026-05-14, so the current school year is 2025.
         $a = $this->player(['is_student' => true]);
-        $a->academicRecords()->create(['academic_year' => 2024, 'period' => 'T1', 'gpa' => 6]);
-        $a->academicRecords()->create(['academic_year' => 2025, 'period' => 'T1', 'gpa' => 14]); // latest 14
+        $this->year($a, 2024)->records()->create(['period' => 'T1', 'gpa' => 6]);
+        $this->year($a, 2025)->records()->create(['period' => 'T1', 'gpa' => 14]); // latest year wins -> good
+
         $b = $this->player(['is_student' => true]);
-        $b->academicRecords()->create(['academic_year' => 2025, 'period' => 'T1', 'gpa' => 9]);  // at risk
-        $this->player(['is_student' => true]);                                                     // missing
+        $this->year($b, 2025, 'primary')->records()->create(['period' => 'T1', 'gpa' => 4]); // 4/10 -> 8/20, at risk
+
+        $this->player(['is_student' => true]); // missing
+
         $w = $this->player(['is_student' => false]);
-        $w->academicRecords()->create(['academic_year' => 2025, 'period' => 'T1', 'gpa' => 2]);  // ignored
+        $this->year($w, 2025)->records()->create(['period' => 'T1', 'gpa' => 2]); // not a student, ignored
 
         $this->assertSame(
-            ['students' => 3, 'average' => 11.5, 'at_risk' => 1, 'missing' => 1],
+            ['students' => 3, 'average' => 11.0, 'at_risk' => 1, 'missing' => 1, 'certificates' => $this->noCertificates()],
             $this->members()['academic'],
         );
     }
@@ -289,5 +304,29 @@ class MemberStatsTest extends TestCase
         $this->player(['is_student' => true]);
 
         $this->assertNull($this->members()['academic']['average']);
+    }
+
+    #[Test]
+    public function academic_block_counts_certificates_awarded_in_the_current_school_year(): void
+    {
+        // setUp() has already travelled to 2026-05-14, so the current school year is 2025.
+        $a = $this->player(['is_student' => true]);
+        $ay = $this->year($a, 2025);
+        $ay->records()->create(['period' => 'T1', 'gpa' => 14, 'certificate' => 'excellence']);
+        $ay->records()->create(['period' => 'T2', 'gpa' => 15, 'certificate' => 'excellence']); // 2 trimesters -> counts 2
+
+        $b = $this->player(['is_student' => true]);
+        $this->year($b, 2025, 'primary')->records()->create(['period' => 'T1', 'gpa' => 6, 'certificate' => 'honor_roll']);
+
+        $c = $this->player(['is_student' => true]); // past year, excluded
+        $this->year($c, 2024)->records()->create(['period' => 'T1', 'gpa' => 16, 'certificate' => 'excellence']);
+
+        $w = $this->player(['is_student' => false]); // not a student, excluded
+        $this->year($w, 2025)->records()->create(['period' => 'T1', 'gpa' => 17, 'certificate' => 'excellence']);
+
+        $this->assertSame(
+            ['excellence' => 2, 'congratulations' => 0, 'encouragement' => 0, 'honor_roll' => 1],
+            $this->members()['academic']['certificates'],
+        );
     }
 }

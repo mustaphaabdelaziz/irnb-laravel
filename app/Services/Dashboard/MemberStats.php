@@ -2,11 +2,13 @@
 
 namespace App\Services\Dashboard;
 
+use App\Enums\AcademicCertificate;
 use App\Models\Player;
 use App\Models\PlayerAcademicRecord;
 use App\Services\Dashboard\Support\BranchScope;
 use App\Services\Dashboard\Support\DeltaCalculator;
 use App\Services\Dashboard\Support\MonthBucket;
+use App\Support\Season;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -386,23 +388,52 @@ class MemberStats
             ->all();
     }
 
-    /** How the club's students are doing at school, judged on each one's latest GPA. */
+    /** How the club's students are doing at school, judged on each one's latest trimester converted to /20. */
     private function academic(DashboardFilters $filters): array
     {
         $latest = $this->active($filters)
             ->where('players.is_student', true)
             ->toBase()
-            ->selectRaw('('.PlayerAcademicRecord::latestGpaSql().') as latest_gpa')
-            ->pluck('latest_gpa');
+            ->selectRaw('('.PlayerAcademicRecord::latestOn20Sql().') as latest_on20')
+            ->pluck('latest_on20');
 
-        $graded = $latest->filter(fn ($gpa) => $gpa !== null)->map(fn ($gpa) => (float) $gpa);
+        $graded = $latest->filter(fn ($grade) => $grade !== null)->map(fn ($grade) => (float) $grade);
 
         return [
             'students' => $latest->count(),
             'average' => $graded->isEmpty() ? null : round($graded->avg(), 2),
-            'at_risk' => $graded->filter(fn (float $gpa) => $gpa < PlayerAcademicRecord::PASS_MARK)->count(),
+            'at_risk' => $graded->filter(fn (float $grade) => $grade < PlayerAcademicRecord::PASS_MARK_ON_20)->count(),
             'missing' => $latest->count() - $graded->count(),
+            // Computed once and passed down: Season::current() reads website_configs on
+            // every call by design (no caching), so a second call here would cost an
+            // extra query for no reason — the two blocks share the same school year.
+            'certificates' => $this->certificateCounts($filters, Season::current()->startYear),
         ];
+    }
+
+    /**
+     * How many trimester records carried each certificate this school year, among
+     * branch-scoped active students. A student with two excellence trimesters in
+     * the same year counts as 2 — this is a count of awards, not of students.
+     *
+     * @return array<string, int>
+     */
+    private function certificateCounts(DashboardFilters $filters, int $currentYear): array
+    {
+        $counts = $this->active($filters)
+            ->where('players.is_student', true)
+            ->toBase()
+            ->join('player_academic_years', 'player_academic_years.player_id', '=', 'players.id')
+            ->join('player_academic_records', 'player_academic_records.player_academic_year_id', '=', 'player_academic_years.id')
+            ->where('player_academic_years.academic_year', $currentYear)
+            ->whereIn('player_academic_records.certificate', AcademicCertificate::values())
+            ->groupBy('player_academic_records.certificate')
+            ->selectRaw('player_academic_records.certificate as certificate, COUNT(*) as total')
+            ->pluck('total', 'certificate');
+
+        return collect(AcademicCertificate::values())
+            ->mapWithKeys(fn (string $certificate) => [$certificate => (int) ($counts[$certificate] ?? 0)])
+            ->all();
     }
 
     private function active(DashboardFilters $filters): Builder

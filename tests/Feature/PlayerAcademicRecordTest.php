@@ -7,6 +7,7 @@ use App\Models\PlayerAcademicRecord;
 use App\Models\PlayerAcademicYear;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\Season;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -315,6 +316,7 @@ class PlayerAcademicRecordTest extends TestCase
                 ->where('player.academic_years.0.records.1.period', 'T2')
                 ->where('player.academic_years.0.average', 12)
                 ->where('certificateThresholds.20.excellence', 16)
+                ->where('currentSchoolYear', Season::current()->startYear)
                 ->missing('player.academic_records'));
 
         $this->actingAs($this->admin())->get(route('players.show', $worker))

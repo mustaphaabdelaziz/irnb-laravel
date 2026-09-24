@@ -187,6 +187,8 @@ class PlayerController extends Controller
             'defaultFinanceAccountId' => $registers->forPlayer($player)?->id,
             'fileDrawerSize' => FileNumber::drawerSize(),
             'certificateThresholds' => CertificateThresholds::all(),
+            // Default school year for a new grade: the club's season, not the browser's clock.
+            'currentSchoolYear' => Season::current()->startYear,
         ]);
     }
 

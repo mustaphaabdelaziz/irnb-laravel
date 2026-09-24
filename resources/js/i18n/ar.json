@@ -1150,5 +1150,10 @@
     "new_year_school_info": "سنة جديدة: أدخل معلومات المؤسسة لهذه السنة.",
     "certificate": "الشهادة",
     "trimester": "الفصل",
-    "year_change": "التغير عن السنة الماضية"
+    "year_change": "التغير عن السنة الماضية",
+    "academic_year_complete": "كل فصول هذه السنة مسجلة.",
+    "certificate_short_excellence": "امتياز",
+    "certificate_short_congratulations": "تهنئة",
+    "certificate_short_encouragement": "تشجيع",
+    "certificate_short_honor_roll": "لوحة الشرف"
 }

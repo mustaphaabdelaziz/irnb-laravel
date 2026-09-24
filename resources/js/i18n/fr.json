@@ -1150,5 +1150,10 @@
     "new_year_school_info": "Nouvelle année : saisissez l'établissement de cette année.",
     "certificate": "Distinction",
     "trimester": "Trimestre",
-    "year_change": "Évolution sur un an"
+    "year_change": "Évolution sur un an",
+    "academic_year_complete": "Tous les trimestres de cette année sont saisis.",
+    "certificate_short_excellence": "Excellence",
+    "certificate_short_congratulations": "Félicitations",
+    "certificate_short_encouragement": "Encouragements",
+    "certificate_short_honor_roll": "Tableau d'honneur"
 }

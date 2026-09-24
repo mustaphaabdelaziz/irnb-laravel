@@ -20,17 +20,21 @@ const props = defineProps({
     years: { type: Array, default: () => [] },
     certificateThresholds: { type: Object, default: () => ({}) },
     preset: { type: Object, default: () => ({}) },
+    // The club's current season start year, from the server.
+    currentSchoolYear: { type: Number, default: null },
 });
 
 const emit = defineEmits(['close']);
 const { t } = useI18n();
 const { can } = useCan();
 
-const seasonStart = () => (new Date().getMonth() >= 8 ? new Date().getFullYear() : new Date().getFullYear() - 1);
+const defaultYear = () => props.currentSchoolYear
+    ?? (new Date().getMonth() >= 8 ? new Date().getFullYear() : new Date().getFullYear() - 1);
 
-const editingId = ref(null);
-const form = useForm({
-    academic_year: seasonStart(),
+// A blank grade form. Re-applied as the form's defaults on every open: after a
+// successful submit Inertia makes the submitted data the new defaults.
+const blank = () => ({
+    academic_year: defaultYear(),
     period: 'T1',
     gpa: '',
     certificate: '',
@@ -39,6 +43,9 @@ const form = useForm({
     institution: '',
     field_of_study: '',
 });
+
+const editingId = ref(null);
+const form = useForm(blank());
 
 const existingYear = computed(() => props.years.find((y) => Number(y.academic_year) === Number(form.academic_year)) ?? null);
 const isNewYear = computed(() => !editingId.value && !existingYear.value);
@@ -62,17 +69,24 @@ function suggest() {
 
 const confirmingDelete = ref(false);
 const deleting = ref(false);
+const deleteError = ref('');
 
+// Adding to a year whose three trimesters are all entered: nothing to add.
+const yearComplete = computed(() => !editingId.value && filledPeriods.value.length >= PERIODS.length);
+
+// The first trimester the year still lacks; keeps the current one when none is free.
 function firstFreePeriod() {
-    return PERIODS.find((p) => !filledPeriods.value.includes(p)) ?? 'T1';
+    return PERIODS.find((p) => !filledPeriods.value.includes(p)) ?? form.period;
 }
 
 watch(() => props.show, (open) => {
     if (!open) return;
+    form.defaults(blank());
     form.reset();
     form.clearErrors();
     certificateTouched.value = false;
     confirmingDelete.value = false;
+    deleteError.value = '';
     const { record, academicYear, period } = props.preset ?? {};
     if (record) {
         editingId.value = record.id;
@@ -88,9 +102,11 @@ watch(() => props.show, (open) => {
     }
 });
 
-// Switching year while adding: move off a trimester that year already has.
+// Switching year while adding: move off a trimester that year already has, and
+// re-suggest the certificate since the year's scale may differ.
 watch(() => form.academic_year, () => {
     if (!editingId.value && filledPeriods.value.includes(form.period)) form.period = firstFreePeriod();
+    if (!editingId.value && form.gpa !== '') suggest();
 });
 
 function submit() {
@@ -123,9 +139,11 @@ function submit() {
 
 function destroy() {
     deleting.value = true;
+    deleteError.value = '';
     router.delete(route('players.academic-records.destroy', [props.player.id, editingId.value]), {
         preserveScroll: true,
         onSuccess: () => { confirmingDelete.value = false; emit('close'); },
+        onError: (errors) => { deleteError.value = errors.student || Object.values(errors)[0] || t('save_failed'); },
         onFinish: () => { deleting.value = false; },
     });
 }
@@ -152,6 +170,7 @@ const selectClass = 'mt-1 w-full rounded-lg border-slate-300 dark:border-slate-7
                         <option v-for="p in PERIODS" :key="p" :value="p" :disabled="filledPeriods.includes(p)">{{ t(`period_${p}`) }}</option>
                     </select>
                     <InputError :message="form.errors.period" class="mt-1" />
+                    <p v-if="yearComplete" class="mt-1 text-xs text-amber-600 dark:text-amber-400">{{ t('academic_year_complete') }}</p>
                 </div>
 
                 <template v-if="isNewYear">
@@ -196,6 +215,7 @@ const selectClass = 'mt-1 w-full rounded-lg border-slate-300 dark:border-slate-7
                 </div>
             </div>
 
+            <InputError v-if="deleteError" :message="deleteError" class="mt-4" />
             <div v-if="confirmingDelete" class="mt-6 flex flex-wrap items-center justify-end gap-3 rounded-lg bg-rose-50 p-3 dark:bg-rose-900/20">
                 <p class="me-auto text-sm text-rose-700 dark:text-rose-300">{{ t('delete_gpa_warning') }}</p>
                 <SecondaryButton type="button" @click="confirmingDelete = false">{{ t('cancel') }}</SecondaryButton>
@@ -205,7 +225,7 @@ const selectClass = 'mt-1 w-full rounded-lg border-slate-300 dark:border-slate-7
                 <button v-if="editingId && can('players', 'delete')" type="button" @click="confirmingDelete = true"
                     class="me-auto rounded-md px-3 py-1.5 text-xs font-medium text-rose-700 ring-1 ring-inset ring-rose-300 hover:bg-rose-50 dark:text-rose-300 dark:ring-rose-800 dark:hover:bg-rose-900/30">{{ t('delete') }}</button>
                 <SecondaryButton type="button" @click="emit('close')">{{ t('cancel') }}</SecondaryButton>
-                <PrimaryButton :disabled="form.processing">{{ t('save') }}</PrimaryButton>
+                <PrimaryButton :disabled="form.processing || yearComplete">{{ t('save') }}</PrimaryButton>
             </div>
         </form>
     </Modal>

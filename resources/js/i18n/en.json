@@ -1150,5 +1150,10 @@
     "new_year_school_info": "New year: enter this year's school info.",
     "certificate": "Certificate",
     "trimester": "Trimester",
-    "year_change": "Change vs last year"
+    "year_change": "Change vs last year",
+    "academic_year_complete": "All trimesters of this year are already entered.",
+    "certificate_short_excellence": "Excellence",
+    "certificate_short_congratulations": "Congratulations",
+    "certificate_short_encouragement": "Encouragement",
+    "certificate_short_honor_roll": "Honor roll"
 }

@@ -15,6 +15,7 @@ import AcademicYearModal from '@/Pages/Players/Partials/AcademicYearModal.vue';
 const props = defineProps({
     player: { type: Object, required: true },
     certificateThresholds: { type: Object, default: () => ({}) },
+    currentSchoolYear: { type: Number, default: null },
 });
 
 const { t, locale } = useI18n();
@@ -60,6 +61,8 @@ const yearChange = computed(() => {
     const delta = ((percent(last) - percent(prev)) / 100) * 20;
     return Math.abs(delta) < 0.005 ? 0 : delta;
 });
+// "2024/2025 → 2025/2026": the two years the change compares.
+const changeYears = computed(() => averaged.value.slice(-2).map((y) => yearLabel(y.academic_year)).join(' → '));
 
 const chartData = computed(() => ({
     labels: averaged.value.map((y) => yearLabel(y.academic_year)),
@@ -169,6 +172,7 @@ const gradeClass = (grade, scale) => (passes(grade, scale) ? 'text-emerald-700 d
                         </template>
                         <template v-else>—</template>
                     </p>
+                    <p v-if="currentAverage" class="mt-1 text-xs tabular-nums text-slate-500 dark:text-slate-400"><bdi dir="ltr">{{ yearLabel(currentAverage.academic_year) }}</bdi></p>
                 </div>
                 <div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-800/60">
                     <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('year_change') }}</p>
@@ -177,6 +181,7 @@ const gradeClass = (grade, scale) => (passes(grade, scale) ? 'text-emerald-700 d
                         <template v-if="yearChange === null">—</template>
                         <bdi v-else dir="ltr">{{ yearChange > 0 ? `▲ +${yearChange.toFixed(2)}` : yearChange < 0 ? `▼ ${Math.abs(yearChange).toFixed(2)}` : '0.00' }}<span class="text-sm font-normal text-slate-400"> / 20</span></bdi>
                     </p>
+                    <p v-if="yearChange !== null" class="mt-1 text-xs tabular-nums text-slate-500 dark:text-slate-400"><bdi dir="ltr">{{ changeYears }}</bdi></p>
                 </div>
             </div>
 
@@ -216,7 +221,7 @@ const gradeClass = (grade, scale) => (passes(grade, scale) ? 'text-emerald-700 d
                                 </bdi>
                                 <span v-if="cell.record.certificate"
                                     class="rounded-full px-2 py-0.5 text-[10px] font-semibold leading-tight ring-1 ring-inset"
-                                    :class="CERTIFICATE_CLASSES[cell.record.certificate]">{{ t(`certificate_${cell.record.certificate}`) }}</span>
+                                    :class="CERTIFICATE_CLASSES[cell.record.certificate]">{{ t(`certificate_short_${cell.record.certificate}`) }}</span>
                             </component>
                             <button v-else-if="can('players', 'add')" type="button" @click="openAdd(y.academic_year, cell.period)"
                                 :aria-label="t('add_gpa')" :title="t('add_gpa')"
@@ -251,6 +256,7 @@ const gradeClass = (grade, scale) => (passes(grade, scale) ? 'text-emerald-700 d
             :years="years"
             :certificate-thresholds="certificateThresholds"
             :preset="gradePreset"
+            :current-school-year="currentSchoolYear"
             @close="gradeOpen = false"
         />
         <AcademicYearModal :show="yearOpen" :player="player" :year="editingYear" @close="yearOpen = false" />

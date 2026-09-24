@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { Bar } from 'vue-chartjs';
+import { Link } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import ChartCard from '@/Components/Dashboard/ChartCard.vue';
 import Meter from '@/Components/Dashboard/Meter.vue';
@@ -40,11 +41,30 @@ const academicAverageDisplay = computed(() => (academic.value?.average === null 
 // filter (see MemberStats::academic), so the drill-down into the players
 // list must carry that same branch along or it lands on an unfiltered,
 // club-wide list that no longer matches the number just clicked.
+//
+// Accepts either the original shorthand (a bucket name, for the "academic"
+// filter) or a params object, e.g. `academicLink({ certificate: 'excellence' })`.
 function academicLink(bucket) {
-    const params = { academic: bucket };
+    const params = typeof bucket === 'string' ? { academic: bucket } : { ...bucket };
     if (props.branchId) params.branch_id = props.branchId;
     return route('players.index', params);
 }
+
+const CERTIFICATE_CLASSES = {
+    excellence: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-500/15 dark:text-emerald-300',
+    congratulations: 'bg-sky-50 text-sky-700 ring-sky-600/20 dark:bg-sky-500/15 dark:text-sky-300',
+    encouragement: 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-500/15 dark:text-amber-300',
+    honor_roll: 'bg-violet-50 text-violet-700 ring-violet-600/20 dark:bg-violet-500/15 dark:text-violet-300',
+};
+
+const CERTIFICATE_ORDER = ['excellence', 'congratulations', 'encouragement', 'honor_roll'];
+
+const certificateRows = computed(() => CERTIFICATE_ORDER.map((key) => ({
+    key,
+    count: academic.value?.certificates?.[key] ?? 0,
+})));
+
+const hasCertificates = computed(() => certificateRows.value.some((row) => row.count > 0));
 
 const TILE_STYLE = {
     total_members: { icon: 'players', tone: 'primary' },
@@ -175,6 +195,20 @@ const genderTotal = computed(() => (split.value.male + split.value.female) || 1)
                 <StatTile :label="t('dashboard.mem_academic_average')" :value="academicAverageDisplay" format="text" icon="check" tone="positive" />
                 <StatTile :label="t('dashboard.mem_at_risk')" :value="academic.at_risk" icon="alert" tone="negative" :href="academicLink('at_risk')" />
                 <StatTile :label="t('dashboard.mem_missing_gpa')" :value="academic.missing" icon="dot" tone="warning" :href="academicLink('none')" />
+            </div>
+
+            <div v-if="hasCertificates" class="flex flex-wrap items-center gap-2">
+                <span class="text-xs font-medium text-muted-foreground">{{ t('dashboard.mem_certificates_year') }}</span>
+                <Link
+                    v-for="cert in certificateRows"
+                    :key="cert.key"
+                    :href="academicLink({ certificate: cert.key })"
+                    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset transition-colors hover:opacity-80"
+                    :class="CERTIFICATE_CLASSES[cert.key]"
+                >
+                    {{ t(`certificate_short_${cert.key}`) }}
+                    <span class="tabular-nums">{{ cert.count }}</span>
+                </Link>
             </div>
         </section>
 

@@ -1155,5 +1155,7 @@
     "certificate_short_excellence": "امتياز",
     "certificate_short_congratulations": "تهنئة",
     "certificate_short_encouragement": "تشجيع",
-    "certificate_short_honor_roll": "لوحة الشرف"
+    "certificate_short_honor_roll": "لوحة الشرف",
+    "certificate_filter_all": "كل الشهادات",
+    "dashboard.mem_certificates_year": "شهادات هذه السنة الدراسية"
 }

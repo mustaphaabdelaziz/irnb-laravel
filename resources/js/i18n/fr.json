@@ -1155,5 +1155,7 @@
     "certificate_short_excellence": "Excellence",
     "certificate_short_congratulations": "Félicitations",
     "certificate_short_encouragement": "Encouragements",
-    "certificate_short_honor_roll": "Tableau d'honneur"
+    "certificate_short_honor_roll": "Tableau d'honneur",
+    "certificate_filter_all": "Distinctions : toutes",
+    "dashboard.mem_certificates_year": "Distinctions de l'année scolaire"
 }

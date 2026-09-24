@@ -45,6 +45,7 @@ const branchFilter = ref(props.filters?.branch_id || '');
 const ageFilter = ref(props.filters?.age || '');
 const wilayaFilter = ref(props.filters?.wilaya_id || '');
 const academicFilter = ref(props.filters?.academic || '');
+const certificateFilter = ref(props.filters?.certificate || '');
 // Active vs Archived view. Backend defaults to active when no `archived` param.
 const archivedView = ref(!!Number(props.filters?.archived));
 
@@ -59,6 +60,7 @@ const { params: filterParams, loading: filtering } = useListFilters('players.ind
     age: ageFilter.value,
     wilaya_id: wilayaFilter.value,
     academic: academicFilter.value,
+    certificate: certificateFilter.value,
     archived: archivedView.value ? 1 : undefined,
 }), { only: ['players', 'filters', 'categoryStats', 'statusStats', 'positionStats', 'ageStats'] });
 
@@ -314,6 +316,16 @@ function runBulk() {
                     <option value="at_risk">{{ t('academic_at_risk') }}</option>
                     <option value="good">{{ t('academic_good') }}</option>
                     <option value="none">{{ t('academic_none') }}</option>
+                </select>
+                <select
+                    v-model="certificateFilter"
+                    class="min-w-0 flex-1 rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:max-w-xs sm:flex-none"
+                >
+                    <option value="">{{ t('certificate_filter_all') }}</option>
+                    <option value="excellence">{{ t('certificate_excellence') }}</option>
+                    <option value="congratulations">{{ t('certificate_congratulations') }}</option>
+                    <option value="encouragement">{{ t('certificate_encouragement') }}</option>
+                    <option value="honor_roll">{{ t('certificate_honor_roll') }}</option>
                 </select>
                 <!-- Toggles share a row on phones: status left, view right -->
                 <div class="flex w-full items-center justify-between gap-3 sm:w-auto sm:flex-1">

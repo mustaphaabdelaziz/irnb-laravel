@@ -48,6 +48,7 @@ const form = useForm({
     is_student: isEdit ? (p.is_student ?? true) : false,
     // New players default to "enrolled" (منخرط); edits keep the stored value.
     status_id: isEdit ? (p.status_id || null) : (props.playerStatuses[0]?.id ?? null),
+    left_at: p.left_at || '',
     category_id: p.category_id || '',
     position_id: p.position_id || '',
     other_position_ids: (p.other_positions || []).map((pos) => pos.id),
@@ -186,6 +187,8 @@ function submit() {
         city: data.city || null,
         is_student: data.is_student,
         status_id: data.status_id || null,
+        // Only a "left" member has a leave date; empty lets the server stamp today.
+        left_at: isLeftStatus.value ? (data.left_at || null) : null,
         category_id: data.category_id || null,
         position_id: data.position_id || null,
         // Inertia's FormData conversion (forceFormData: true, below) drops empty
@@ -211,6 +214,16 @@ function submit() {
         ...(isEdit ? { archived: data.archived } : {}),
     })).post(isEdit ? route('players.update', p.id) : route('players.store'), { forceFormData: true });
 }
+
+// The built-in "left the club" status is found by its code, never its editable name.
+const isLeftStatus = computed(() => props.playerStatuses.find((s) => s.id === form.status_id)?.code === 'left');
+
+// Picking "left" pre-fills today; the date stays editable for a past departure.
+watch(isLeftStatus, (left) => {
+    if (!left || form.left_at) return;
+    const d = new Date();
+    form.left_at = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+});
 
 const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route('players.index')));
 </script>
@@ -371,6 +384,11 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                         <option v-for="s in playerStatuses" :key="s.id" :value="s.id">{{ s.localized_name }}</option>
                     </select>
                     <InputError :message="form.errors.status_id" class="mt-1" />
+                </div>
+                <div v-if="isLeftStatus">
+                    <InputLabel :value="t('left_at')" />
+                    <TextInput v-model="form.left_at" type="date" class="mt-1 w-full" />
+                    <InputError :message="form.errors.left_at" class="mt-1" />
                 </div>
                 <div>
                     <InputLabel :value="t('status')" />

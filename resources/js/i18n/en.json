@@ -285,7 +285,7 @@
     "dashboard.kpi_outstanding_debt": "Outstanding debt",
     "dashboard.kpi_treasury": "Treasury",
     "dashboard.last_12_months": "Last 12 months",
-    "dashboard.mem_archived": "Left the club",
+    "dashboard.mem_archived": "Archived",
     "dashboard.mem_by_age": "By age",
     "dashboard.mem_by_age_hint": "From recorded birthdates",
     "dashboard.mem_by_category": "By category",
@@ -1220,5 +1220,12 @@
     "certificate_short_encouragement": "Encouragement",
     "certificate_short_honor_roll": "Honor roll",
     "certificate_filter_all": "Certificates (this school year)",
-    "dashboard.mem_certificates_year": "Students with certificates this school year"
+    "dashboard.mem_certificates_year": "Students with certificates this school year",
+    "left_at": "Leave date",
+    "dashboard.mem_left": "Left the club",
+    "dashboard.mem_left_by_category": "Departures by category",
+    "dashboard.mem_left_by_category_hint": "Members who left in the selected period",
+    "dashboard.mem_no_leavers": "No member left the club in this period.",
+    "strip.players_left": "Left this season",
+    "clear_filters": "Clear filters"
 }

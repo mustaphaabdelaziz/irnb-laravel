@@ -285,7 +285,7 @@
     "dashboard.kpi_outstanding_debt": "Impayés",
     "dashboard.kpi_treasury": "Trésorerie",
     "dashboard.last_12_months": "12 derniers mois",
-    "dashboard.mem_archived": "Départs",
+    "dashboard.mem_archived": "Archivés",
     "dashboard.mem_by_age": "Par âge",
     "dashboard.mem_by_age_hint": "D’après les dates de naissance saisies",
     "dashboard.mem_by_category": "Par catégorie",
@@ -1220,5 +1220,12 @@
     "certificate_short_encouragement": "Encouragements",
     "certificate_short_honor_roll": "Tableau d'honneur",
     "certificate_filter_all": "Distinctions (année en cours)",
-    "dashboard.mem_certificates_year": "Élèves distingués cette année"
+    "dashboard.mem_certificates_year": "Élèves distingués cette année",
+    "left_at": "Date de départ",
+    "dashboard.mem_left": "Départs",
+    "dashboard.mem_left_by_category": "Départs par catégorie",
+    "dashboard.mem_left_by_category_hint": "Membres partis sur la période choisie",
+    "dashboard.mem_no_leavers": "Aucun départ sur cette période.",
+    "strip.players_left": "Départs cette saison",
+    "clear_filters": "Effacer les filtres"
 }

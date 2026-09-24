@@ -53,7 +53,7 @@ class PlayerImportTest extends TestCase
     }
 
     #[Test]
-    public function it_imports_players_and_assigns_mandatory_subscriptions(): void
+    public function it_imports_players_without_attaching_subscriptions(): void
     {
         $category = Category::create(['name' => 'U17']);
         $subscription = Subscription::create([
@@ -85,7 +85,8 @@ class PlayerImportTest extends TestCase
         $this->assertSame(6, $player->skill_level);
         $this->assertTrue($player->is_student);
         $this->assertSame('منخرط', $player->status->name);
-        $this->assertDatabaseCount('player_subscriptions', 1);
+        // Owner decision: registration (import included) attaches no subscription.
+        $this->assertDatabaseCount('player_subscriptions', 0);
     }
 
     #[Test]

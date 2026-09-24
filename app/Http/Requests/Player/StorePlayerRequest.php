@@ -29,6 +29,8 @@ class StorePlayerRequest extends FormRequest
             'status_class' => ['nullable', 'string', 'max:255'],
             'status_value' => ['nullable', 'string', 'max:255'],
             'status_id' => ['nullable', 'exists:player_statuses,id'],
+            // Kept only while the status is "left" — Player clears it otherwise.
+            'left_at' => ['nullable', 'date', 'before_or_equal:today', 'after:1900-01-01'],
             'state' => ['nullable', 'string', 'max:255'],
             // Only a coded (official) row may be chosen — a stray/duplicate
             // legacy row the wilaya-sync migration left uncoded is never a

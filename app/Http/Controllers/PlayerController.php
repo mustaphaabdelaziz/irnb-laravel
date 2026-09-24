@@ -487,7 +487,15 @@ class PlayerController extends Controller
 
         DB::transaction(function () use ($ids, $field, $value, $data) {
             if ($field !== 'branches') {
-                Player::whereIn('id', $ids)->update([$field => $value ?: null]);
+                $changes = [$field => $value ?: null];
+
+                // A query update skips Player's saving hook, so the leave date
+                // follows the status here by the same rule.
+                if ($field === 'status_id') {
+                    $changes['left_at'] = Player::leaveDateUpdate($value);
+                }
+
+                Player::whereIn('id', $ids)->update($changes);
 
                 if ($field === 'position_id' && $value) {
                     // The main position can never also sit in the "other

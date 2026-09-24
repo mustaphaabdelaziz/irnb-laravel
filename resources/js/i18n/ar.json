@@ -285,7 +285,7 @@
     "dashboard.kpi_outstanding_debt": "الديون المستحقة",
     "dashboard.kpi_treasury": "الخزينة",
     "dashboard.last_12_months": "آخر 12 شهرًا",
-    "dashboard.mem_archived": "مغادرون",
+    "dashboard.mem_archived": "مؤرشفون",
     "dashboard.mem_by_age": "حسب السن",
     "dashboard.mem_by_age_hint": "حسب تواريخ الميلاد المسجّلة",
     "dashboard.mem_by_category": "حسب الفئة",
@@ -1220,5 +1220,12 @@
     "certificate_short_encouragement": "تشجيع",
     "certificate_short_honor_roll": "لوحة الشرف",
     "certificate_filter_all": "الشهادات (هذه السنة الدراسية)",
-    "dashboard.mem_certificates_year": "طلبة نالوا شهادات هذه السنة"
+    "dashboard.mem_certificates_year": "طلبة نالوا شهادات هذه السنة",
+    "left_at": "تاريخ المغادرة",
+    "dashboard.mem_left": "غادروا النادي",
+    "dashboard.mem_left_by_category": "المغادرون حسب الفئة",
+    "dashboard.mem_left_by_category_hint": "الأعضاء الذين غادروا خلال الفترة المحددة",
+    "dashboard.mem_no_leavers": "لم يغادر أي عضو خلال هذه الفترة.",
+    "strip.players_left": "غادروا هذا الموسم",
+    "clear_filters": "مسح الفلاتر"
 }

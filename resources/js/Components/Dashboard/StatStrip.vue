@@ -22,6 +22,7 @@ const STYLE = {
     players_with_debt: { icon: 'alert', tone: 'warning' },
     players_debt_total: { icon: 'money', tone: 'negative' },
     players_new: { icon: 'plus', tone: 'positive' },
+    players_left: { icon: 'logout', tone: 'negative' },
 
     subs_enrolled: { icon: 'subscriptions', tone: 'primary' },
     subs_collected: { icon: 'check', tone: 'positive' },
@@ -48,7 +49,7 @@ const decorated = computed(() => props.tiles.map((tile) => ({
 </script>
 
 <template>
-    <section v-if="decorated.length" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <section v-if="decorated.length" class="grid gap-3 sm:grid-cols-2" :class="decorated.length > 4 ? 'lg:grid-cols-3 xl:grid-cols-5' : 'xl:grid-cols-4'">
         <StatTile
             v-for="tile in decorated"
             :key="tile.key"

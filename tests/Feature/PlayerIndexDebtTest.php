@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Category;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Services\Finance\RecalculatePlayerDebtService;
 use App\Services\Player\RegisterPlayerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia;
@@ -31,12 +32,15 @@ class PlayerIndexDebtTest extends TestCase
         ]);
         $subscription->categories()->attach($category->id);
 
-        app(RegisterPlayerService::class)->handle([
+        // Registration attaches no subscription (owner decision); assign by hand.
+        $player = app(RegisterPlayerService::class)->handle([
             'firstname' => 'Sami',
             'lastname' => 'Khelifi',
             'category_id' => $category->id,
             'is_student' => true,
         ], $admin->id);
+        $subscription->assignTo($player);
+        app(RecalculatePlayerDebtService::class)->forPlayer($player);
 
         $this->actingAs($admin)
             ->get(route('players.index'))

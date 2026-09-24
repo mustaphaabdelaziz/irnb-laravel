@@ -68,6 +68,44 @@ const { params: filterParams, loading: filtering } = useListFilters('players.ind
     archived: archivedView.value ? 1 : undefined,
 }), { only: ['players', 'filters', 'categoryStats', 'statusStats', 'positionStats', 'ageStats'] });
 
+// --- Remembered filters ---
+// The filters stick until the user clears them, even after leaving the page or
+// restarting the app. A visit with its own query string (a dashboard drill-down,
+// a bookmark) wins; a bare visit (the sidebar link) restores the last filters.
+// Setting the refs here, before the first render, lets useListFilters' watcher
+// reload the list with them.
+const FILTERS_KEY = 'players.filters';
+const filterRefs = {
+    search, category_id: categoryFilter, status: statusFilter, position_id: positionFilter,
+    branch_id: branchFilter, age: ageFilter, wilaya_id: wilayaFilter, academic: academicFilter,
+    certificate: certificateFilter, documents: documentsFilter,
+};
+
+if (!window.location.search) {
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(FILTERS_KEY) || 'null'); } catch { saved = null; }
+    if (saved && typeof saved === 'object') {
+        for (const [key, r] of Object.entries(filterRefs)) {
+            if (saved[key] !== undefined) r.value = String(saved[key]);
+        }
+        if (saved.archived) archivedView.value = true;
+    }
+}
+
+watch(filterParams, (params) => {
+    try {
+        if (Object.keys(params).length) localStorage.setItem(FILTERS_KEY, JSON.stringify(params));
+        else localStorage.removeItem(FILTERS_KEY);
+    } catch { /* storage unavailable: filters just aren't remembered */ }
+}, { immediate: true });
+
+const hasActiveFilters = computed(() => Object.keys(filterParams.value).length > 0);
+
+function clearFilters() {
+    for (const r of Object.values(filterRefs)) r.value = '';
+    archivedView.value = false;
+}
+
 const exportHref = computed(() => route('players.export', filterParams.value));
 
 // Secondary header actions: shown inline on wide screens, folded into a
@@ -344,6 +382,14 @@ function runBulk() {
                         <option v-for="dt in documentTypes" :key="dt.id" :value="`missing-${dt.id}`">{{ dt.localized_name || dt.name }}</option>
                     </optgroup>
                 </select>
+                <button
+                    v-if="hasActiveFilters"
+                    type="button"
+                    @click="clearFilters"
+                    class="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-rose-700 ring-1 ring-rose-200 hover:bg-rose-50 dark:text-rose-300 dark:ring-rose-800 dark:hover:bg-rose-900/30"
+                >
+                    <Icon name="xcircle" class="text-sm" /> {{ t('clear_filters') }}
+                </button>
                 <!-- Toggles share a row on phones: status left, view right -->
                 <div class="flex w-full items-center justify-between gap-3 sm:w-auto sm:flex-1">
                     <div class="inline-flex rounded-xl bg-slate-100 p-0.5 dark:bg-slate-800">

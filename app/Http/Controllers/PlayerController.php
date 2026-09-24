@@ -240,6 +240,7 @@ class PlayerController extends Controller
                     'player_subscription_id' => $ps?->id,
                     'name' => $s->name,
                     'year' => $s->year,
+                    'year_label' => $s->year_label,
                     'is_mandatory' => (bool) $s->is_mandatory,
                     'is_exempt' => (bool) ($ps?->is_exempt ?? false),
                     'amount_owed' => $ps ? (float) $ps->amount_owed : $owed,

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive, computed, watch } from 'vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
@@ -33,9 +33,14 @@ function saveOpening(y) {
 }
 function closeYear(y) { if (window.confirm(t('close_year_confirm'))) router.post(route('finance.years.close', y.id), {}, { preserveScroll: true }); }
 function reopenYear(y) { if (window.confirm(t('reopen_year_confirm'))) router.post(route('finance.years.reopen', y.id), {}, { preserveScroll: true }); }
+function deleteYear(y) { if (window.confirm(t('delete_fiscal_year_confirm', { year: y.year }))) router.delete(route('finance.years.destroy', y.id), { preserveScroll: true }); }
 
 /* ----- Budgets ----- */
 const budgetYearId = ref(props.years[0]?.id ?? null);
+// Deleting the year being budgeted must not leave the picker on a missing id.
+watch(() => props.years, (years) => {
+    if (!years.some((y) => y.id === budgetYearId.value)) budgetYearId.value = years[0]?.id ?? null;
+});
 const budgetDraft = reactive({});
 function plannedFor(catId) {
     if (budgetDraft[catId] !== undefined) return budgetDraft[catId];
@@ -108,8 +113,15 @@ function deleteAccount(a) {
                                     <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold" :class="y.status === 'closed' ? 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'">{{ y.status === 'closed' ? t('closed') : t('open') }}</span>
                                 </td>
                                 <td class="px-5 py-2.5 text-end">
-                                    <button v-if="y.status !== 'closed'" @click="closeYear(y)" class="text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-slate-300">{{ t('close_year') }}</button>
-                                    <button v-else @click="reopenYear(y)" class="text-xs font-bold text-primary-600 hover:text-primary-700">{{ t('reopen_year') }}</button>
+                                    <div class="flex items-center justify-end gap-3">
+                                        <button v-if="y.status !== 'closed'" @click="closeYear(y)" class="text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-slate-300">{{ t('close_year') }}</button>
+                                        <button v-else @click="reopenYear(y)" class="text-xs font-bold text-primary-600 hover:text-primary-700">{{ t('reopen_year') }}</button>
+                                        <!-- Only an open year with no active transaction can go. -->
+                                        <button v-if="y.can_delete" type="button" @click="deleteYear(y)" :title="t('delete_year')" :aria-label="t('delete_year')"
+                                            class="rounded-lg p-1 text-base text-rose-500 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-900/30">
+                                            <Icon name="trash" />
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>

@@ -14,6 +14,7 @@ use App\Support\Csv;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -23,6 +24,10 @@ class SubscriptionController extends Controller
     public function index(Request $request): Response
     {
         $query = Subscription::query()->with(['categories', 'branches']);
+
+        if (in_array($request->input('kind'), Subscription::KINDS, true)) {
+            $query->where('kind', $request->input('kind'));
+        }
 
         if ($request->filled('year')) {
             $query->where('year', $request->input('year'));
@@ -42,7 +47,8 @@ class SubscriptionController extends Controller
             // Closures so filter reloads (partial) skip these queries.
             'branches' => fn () => Branch::orderBy('name')->get(),
             'branchStats' => fn () => $this->branchStats(),
-            'filters' => $request->only(['year', 'branch_id']),
+            'filters' => $request->only(['year', 'kind', 'branch_id']),
+            'seasons' => fn () => $this->seasonOptions(Subscription::query()->whereNotNull('year')->distinct()->pluck('year')),
         ]);
     }
 
@@ -118,6 +124,24 @@ class SubscriptionController extends Controller
         return $stats;
     }
 
+    /**
+     * Seasons offered by the year picker, keyed by END year ("2026" => "2025/2026"):
+     * a few past seasons for late entries and two ahead for planning, plus any
+     * season already in use ($keep) that falls outside that window.
+     *
+     * @return array<int, array{value:int, label:string}>
+     */
+    private function seasonOptions(iterable $keep = []): array
+    {
+        $current = Subscription::currentSeasonEndYear();
+        $years = range($current + 2, $current - 4);
+
+        $years = array_values(array_unique([...$years, ...array_map('intval', array_filter([...$keep]))]));
+        rsort($years);
+
+        return array_map(fn (int $year) => ['value' => $year, 'label' => Subscription::seasonLabel($year)], $years);
+    }
+
     public function show(Subscription $subscription): Response
     {
         $subscription->load(['categories', 'branches']);
@@ -142,7 +166,9 @@ class SubscriptionController extends Controller
             ->whereNotIn('id', $assignedPlayerIds)
             ->with('category')
             ->orderBy('lastname')
-            ->get(['id', 'firstname', 'lastname', 'nickname', 'is_student', 'category_id', 'membership_id']);
+            ->get(['id', 'firstname', 'lastname', 'nickname', 'is_student', 'category_id', 'membership_id'])
+            // What each would owe, category price override included.
+            ->each(fn (Player $player) => $player->setAttribute('price', $subscription->amountFor($player)));
 
         return Inertia::render('Subscriptions/Show', [
             'subscription' => $subscription,
@@ -163,6 +189,8 @@ class SubscriptionController extends Controller
     public function create(): Response
     {
         return Inertia::render('Subscriptions/Create', [
+            'seasons' => $this->seasonOptions(),
+            'currentSeason' => Subscription::currentSeasonEndYear(),
             'categories' => Category::orderBy('name')->get(),
             'branches' => Branch::orderBy('name')->get(),
         ]);
@@ -170,19 +198,15 @@ class SubscriptionController extends Controller
 
     public function store(StoreSubscriptionRequest $request): RedirectResponse
     {
-        $validated = $request->validated();
-        $categoryIds = $validated['category_ids'] ?? [];
-        $branchIds = $validated['branch_ids'] ?? [];
-        unset($validated['category_ids'], $validated['branch_ids']);
+        $branchIds = $request->validated('branch_ids') ?? [];
 
-        $subscription = Subscription::create($validated);
-
-        if (! empty($categoryIds)) {
-            $subscription->categories()->attach($categoryIds);
-        }
-        if (! empty($branchIds)) {
+        $subscription = DB::transaction(function () use ($request, $branchIds) {
+            $subscription = Subscription::create($request->subscriptionAttributes());
+            $subscription->categories()->attach($request->categorySync());
             $subscription->branches()->attach($branchIds);
-        }
+
+            return $subscription;
+        });
 
         return redirect()->route('subscriptions.show', $subscription)
             ->with('success', 'flash.subscription_created');
@@ -194,6 +218,8 @@ class SubscriptionController extends Controller
 
         return Inertia::render('Subscriptions/Edit', [
             'subscription' => $subscription,
+            'seasons' => $this->seasonOptions([$subscription->year]),
+            'currentSeason' => Subscription::currentSeasonEndYear(),
             'categories' => Category::orderBy('name')->get(),
             'branches' => Branch::orderBy('name')->get(),
         ]);
@@ -201,14 +227,19 @@ class SubscriptionController extends Controller
 
     public function update(StoreSubscriptionRequest $request, Subscription $subscription): RedirectResponse
     {
-        $validated = $request->validated();
-        $categoryIds = $validated['category_ids'] ?? [];
-        $branchIds = $validated['branch_ids'] ?? [];
-        unset($validated['category_ids'], $validated['branch_ids']);
+        $attributes = $request->subscriptionAttributes();
 
-        $subscription->update($validated);
-        $subscription->categories()->sync($categoryIds);
-        $subscription->branches()->sync($branchIds);
+        // Existing obligations were written under the old kind (debt or not,
+        // with or without a season); flipping it would leave them contradicting it.
+        if ($attributes['kind'] !== $subscription->kind && $subscription->playerSubscriptions()->exists()) {
+            throw ValidationException::withMessages(['kind' => __('The kind cannot change once players are assigned.')]);
+        }
+
+        DB::transaction(function () use ($request, $subscription, $attributes) {
+            $subscription->update($attributes);
+            $subscription->categories()->sync($request->categorySync());
+            $subscription->branches()->sync($request->validated('branch_ids') ?? []);
+        });
 
         return redirect()->route('subscriptions.show', $subscription)
             ->with('success', 'flash.subscription_updated');
@@ -316,7 +347,7 @@ class SubscriptionController extends Controller
             $playerSubscriptions = $playerSubscriptions->filter(fn ($ps) => $ps->payment_status === 'partial');
         }
 
-        $title = $subscription->name.' - '.$subscription->year.' ('.ucfirst($filter).')';
+        $title = $subscription->designation.' ('.ucfirst($filter).')';
         $headers = ['#', 'Membership ID', 'Player Name', 'Category', 'Amount Owed', 'Amount Paid', 'Status'];
 
         $rows = [];
@@ -344,7 +375,7 @@ class SubscriptionController extends Controller
             '',
         ];
 
-        $filename = 'subscription_'.str_replace(' ', '_', $subscription->name).'_'.$subscription->year.'_'.$filter.'.csv';
+        $filename = 'subscription_'.str_replace([' ', '/'], '_', $subscription->designation).'_'.$filter.'.csv';
 
         return Csv::download($filename, $headers, $rows, $title);
     }

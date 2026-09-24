@@ -20,6 +20,21 @@ const props = defineProps({
     stats: Object,
 });
 
+// "2025/2026", or the kind for a one-off charge that has no season.
+const periodLabel = computed(() => props.subscription.year_label || t('subscription_kind_exceptional'));
+
+// What each category actually pays, shown only when one of them overrides the default.
+const categoryPrices = computed(() => {
+    const cats = props.subscription.categories ?? [];
+    if (!cats.some((c) => c.pivot?.amount_student != null || c.pivot?.amount_worker != null)) return [];
+    return cats.map((c) => ({
+        id: c.id,
+        name: c.localized_name || c.name,
+        student: c.pivot?.amount_student ?? props.subscription.amount_student,
+        worker: c.pivot?.amount_worker ?? props.subscription.amount_worker,
+    }));
+});
+
 // ── Tabs ─────────────────────────────────────────────────────────────
 const activeTab = ref('all'); // all | paid | unpaid | partial
 
@@ -106,7 +121,7 @@ const tabCount = (tab) => {
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                         </svg>
                     </Link>
-                    <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ subscription.name }} ({{ subscription.year }})</h1>
+                    <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ subscription.name }} ({{ periodLabel }})</h1>
                     <div v-if="subscription.branches?.length" class="flex flex-wrap gap-1">
                         <Badge v-for="b in subscription.branches" :key="b.id" :label="b.localized_name || b.name" color="emerald" />
                     </div>
@@ -174,6 +189,29 @@ const tabCount = (tab) => {
                 </div>
             </div>
 
+            <!-- Category prices (only when a category overrides the default) -->
+            <div v-if="categoryPrices.length" class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+                <p class="border-b border-slate-100 px-5 py-3 text-sm font-semibold text-slate-900 dark:border-slate-800 dark:text-slate-100">{{ t('category_prices') }}</p>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-950 dark:text-slate-400">
+                            <tr>
+                                <th class="px-5 py-2 text-start font-semibold">{{ t('category') }}</th>
+                                <th class="px-5 py-2 text-end font-semibold">{{ t('student_pricing') }}</th>
+                                <th class="px-5 py-2 text-end font-semibold">{{ t('worker_pricing') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                            <tr v-for="row in categoryPrices" :key="row.id">
+                                <td class="px-5 py-2 font-medium text-slate-700 dark:text-slate-200">{{ row.name }}</td>
+                                <td class="px-5 py-2 text-end">{{ formatMoney(row.student) }}</td>
+                                <td class="px-5 py-2 text-end">{{ formatMoney(row.worker) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- Payment percentage bar -->
             <div class="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div class="flex items-center justify-between mb-2">
@@ -219,7 +257,7 @@ const tabCount = (tab) => {
 
                 <!-- Print header (only shown when printing) -->
                 <div class="hidden px-5 py-4 print:block">
-                    <h2 class="text-lg font-bold">{{ subscription.name }} — {{ subscription.year }}</h2>
+                    <h2 class="text-lg font-bold">{{ subscription.name }} — {{ periodLabel }}</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">{{ t(activeTab) }} — {{ new Date().toLocaleDateString() }}</p>
                 </div>
 
@@ -295,7 +333,7 @@ const tabCount = (tab) => {
             <div v-if="showAssignModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50" @click.self="showAssignModal = false">
                 <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
                     <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('assign_subscription') }}</h3>
-                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ subscription.name }} ({{ subscription.year }})</p>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ subscription.name }} ({{ periodLabel }})</p>
                     <form @submit.prevent="assign" class="mt-4 space-y-4">
                         <div>
                             <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('category') }}</label>
@@ -318,7 +356,7 @@ const tabCount = (tab) => {
             <div v-if="showAddPlayerModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50" @click.self="showAddPlayerModal = false">
                 <div class="w-full max-w-lg rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
                     <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('add_player_to_subscription') }}</h3>
-                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ subscription.name }} ({{ subscription.year }})</p>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ subscription.name }} ({{ periodLabel }})</p>
 
                     <!-- Search -->
                     <div class="mt-4">
@@ -350,7 +388,7 @@ const tabCount = (tab) => {
 
                     <div v-if="addPlayerForm.player_id" class="mt-3 rounded-lg bg-slate-50 dark:bg-slate-950 px-4 py-2 text-sm text-slate-600 dark:text-slate-300">
                         {{ t('amount_will_be') }}
-                        <strong>{{ formatMoney(availablePlayers?.find(p => p.id === addPlayerForm.player_id)?.is_student ? subscription.amount_student : subscription.amount_worker) }}</strong>
+                        <strong>{{ formatMoney(availablePlayers?.find(p => p.id === addPlayerForm.player_id)?.price ?? 0) }}</strong>
                         ({{ availablePlayers?.find(p => p.id === addPlayerForm.player_id)?.is_student ? t('student') : t('worker') }} {{ t('rate') }})
                     </div>
 

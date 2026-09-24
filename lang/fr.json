@@ -1,4 +1,5 @@
 {
+    "The kind cannot change once players are assigned.": "Le type ne peut plus changer une fois des joueurs affectés.",
     ":count equipments imported successfully.": ":count équipements importés avec succès.",
     ":count items imported successfully.": ":count articles importés avec succès.",
     ":count players imported successfully.": ":count joueurs importés avec succès.",

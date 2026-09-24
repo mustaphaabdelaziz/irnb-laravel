@@ -298,7 +298,7 @@ class Player extends Model
      */
     public function calculateTotalDebt(): float
     {
-        return (float) $this->playerSubscriptions()
+        return (float) PlayerSubscription::whereCountsAsDebt($this->playerSubscriptions()->getQuery())
             ->with('payments')
             ->get()
             ->sum(fn (PlayerSubscription $sub) => $sub->remaining_amount);

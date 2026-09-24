@@ -14,6 +14,7 @@ import { ref, computed } from 'vue';
 import { useListFilters } from '@/Composables/useListFilters';
 import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 import { useStatusLabel } from '@/Composables/useStatusLabel';
+import { useBulkSelection } from '@/Composables/useBulkSelection';
 
 const { t } = useI18n();
 const { statusLabel } = useStatusLabel();
@@ -66,7 +67,23 @@ const deleteId = ref(null);
 
 function destroy() {
     router.delete(route('transactions.destroy', deleteId.value), {
+        preserveScroll: true,
         onSuccess: () => { deleteId.value = null; },
+    });
+}
+
+// Bulk delete — the selection resets whenever the filters replace the rows.
+const { selected, allSelected, toggleAll, toggleOne, clear } = useBulkSelection(
+    computed(() => props.transactions.data),
+    filterParams,
+);
+const bulkDeletePending = ref(false);
+
+function bulkDestroy() {
+    router.post(route('transactions.bulkDestroy'), { ids: selected.value }, {
+        preserveScroll: true,
+        onSuccess: () => clear(),
+        onFinish: () => { bulkDeletePending.value = false; },
     });
 }
 </script>
@@ -127,12 +144,34 @@ function destroy() {
                 </select>
             </div>
 
+            <div v-if="selected.length" class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-primary-50 px-4 py-2.5 ring-1 ring-primary-200 dark:bg-primary-900/20 dark:ring-primary-800">
+                <span class="text-sm font-medium text-primary-800 dark:text-primary-200">
+                    {{ t('selected_count', { count: selected.length }) }}
+                </span>
+                <div class="flex items-center gap-2">
+                    <button type="button" class="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-white/60 dark:text-slate-300 dark:hover:bg-slate-800" @click="clear">
+                        {{ t('cancel') }}
+                    </button>
+                    <button
+                        type="button"
+                        class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-rose-700 ring-1 ring-rose-300 transition-colors hover:bg-rose-50 dark:bg-slate-900 dark:text-rose-300 dark:ring-rose-800 dark:hover:bg-rose-900/30"
+                        @click="bulkDeletePending = true"
+                    >
+                        <Icon name="trash" /> {{ t('delete_selected') }}
+                    </button>
+                </div>
+            </div>
+
             <!-- Table -->
             <div :class="{ 'opacity-60': filtering }" :aria-busy="filtering" class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 transition-opacity dark:ring-slate-800">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
                         <thead class="bg-slate-50 dark:bg-slate-950">
                             <tr>
+                                <th class="w-10 px-4 py-3">
+                                    <input type="checkbox" :checked="allSelected" @change="toggleAll" :aria-label="t('select_all')"
+                                        class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800" />
+                                </th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('date') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('type') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('category') }}</th>
@@ -141,11 +180,17 @@ function destroy() {
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('player') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('status') }}</th>
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('amount') }}</th>
-                                <th class="px-4 py-3 text-end text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('actions') }}</th>
+                                <!-- Pinned to the end edge so edit/delete stay reachable however far the row scrolls. -->
+                                <th class="sticky end-0 bg-slate-50 px-3 py-3 text-end text-xs font-semibold uppercase tracking-wide text-slate-500 shadow-[-8px_0_8px_-8px_rgba(15,23,42,0.15)] rtl:shadow-[8px_0_8px_-8px_rgba(15,23,42,0.15)] dark:bg-slate-950 dark:text-slate-400">{{ t('actions') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                            <tr v-for="tx in transactions.data" :key="tx.id" class="hover:bg-slate-50 dark:hover:bg-slate-800">
+                            <tr v-for="tx in transactions.data" :key="tx.id" class="group"
+                                :class="selected.includes(tx.id) ? 'bg-primary-50/50 dark:bg-primary-900/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800'">
+                                <td class="w-10 px-4 py-3">
+                                    <input type="checkbox" :checked="selected.includes(tx.id)" @change="toggleOne(tx.id)" :aria-label="t('select_row')"
+                                        class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800" />
+                                </td>
                                 <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ tx.transaction_date ? new Date(tx.transaction_date).toLocaleDateString() : '-' }}</td>
                                 <td class="whitespace-nowrap px-4 py-3">
                                     <Badge :label="tx.transaction_type === 'income' ? t('income') : t('expense')" :color="tx.transaction_type === 'income' ? 'emerald' : 'rose'" />
@@ -178,15 +223,21 @@ function destroy() {
                                     :class="tx.transaction_type === 'income' ? 'text-emerald-700' : 'text-rose-700'">
                                     {{ tx.transaction_type === 'income' ? '+' : '-' }}{{ formatMoney(tx.amount) }}
                                 </td>
-                                <td class="whitespace-nowrap px-4 py-3 text-end">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <Link :href="route('transactions.edit', tx.id)" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">{{ t('edit') }}</Link>
-                                        <button @click="deleteId = tx.id" class="text-sm text-rose-500 hover:text-rose-700">{{ t('delete') }}</button>
+                                <td class="sticky end-0 whitespace-nowrap bg-white px-3 py-2 text-end shadow-[-8px_0_8px_-8px_rgba(15,23,42,0.15)] group-hover:bg-slate-50 rtl:shadow-[8px_0_8px_-8px_rgba(15,23,42,0.15)] dark:bg-slate-900 dark:group-hover:bg-slate-800">
+                                    <div class="flex items-center justify-end gap-1">
+                                        <Link :href="route('transactions.edit', tx.id)" :title="t('edit')" :aria-label="t('edit')"
+                                            class="rounded-lg p-1.5 text-base text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-100">
+                                            <Icon name="pencil" />
+                                        </Link>
+                                        <button type="button" @click="deleteId = tx.id" :title="t('delete')" :aria-label="t('delete')"
+                                            class="rounded-lg p-1.5 text-base text-rose-500 transition-colors hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-900/30">
+                                            <Icon name="trash" />
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
                             <tr v-if="!transactions.data?.length">
-                                <td colspan="9" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
+                                <td colspan="10" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -202,6 +253,13 @@ function destroy() {
             :message="t('are_you_sure')"
             @confirm="destroy"
             @cancel="deleteId = null"
+        />
+
+        <ConfirmModal
+            :show="bulkDeletePending"
+            :message="t('confirm_bulk_transaction_delete', { count: selected.length })"
+            @confirm="bulkDestroy"
+            @cancel="bulkDeletePending = false"
         />
 
         <CategoryManager :show="showCategories" :categories="financeCategories" @close="showCategories = false" />

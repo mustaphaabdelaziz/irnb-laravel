@@ -7,7 +7,7 @@ import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { useListFilters } from '@/Composables/useListFilters';
 
 const { t } = useI18n();
@@ -19,14 +19,20 @@ const props = defineProps({
     branches: { type: Array, default: () => [] },
     branchStats: { type: Array, default: () => [] },
     filters: { type: Object, default: () => ({}) },
+    seasons: { type: Array, default: () => [] },
 });
 
 const branchFilter = ref(props.filters?.branch_id || '');
-const yearFilter = ref(props.filters?.year || '');
+// Numbers, so the season option from the URL shows as selected.
+const yearFilter = ref(props.filters?.year ? Number(props.filters.year) : '');
+const kindFilter = ref(props.filters?.kind || '');
+// A one-off charge has no season, so a season filter would hide them all.
+watch(kindFilter, (kind) => { if (kind === 'exceptional') yearFilter.value = ''; });
 
 const { loading: filtering } = useListFilters('subscriptions.index', () => ({
     branch_id: branchFilter.value,
     year: yearFilter.value,
+    kind: kindFilter.value,
 }), { only: ['subscriptions', 'filters'] });
 
 const branchName = (row) => row.branch_id === null ? t('no_branch') : row.name;
@@ -103,8 +109,19 @@ function destroy() {
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('year') }}</label>
-                    <input v-model="yearFilter" type="number" min="2020" max="2050" :placeholder="t('all')" class="mt-1 w-28 rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-900 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500" />
+                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('subscription_kind') }}</label>
+                    <select v-model="kindFilter" class="mt-1 rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-900 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                        <option value="">{{ t('all') }}</option>
+                        <option value="annual">{{ t('subscription_kind_annual') }}</option>
+                        <option value="exceptional">{{ t('subscription_kind_exceptional') }}</option>
+                    </select>
+                </div>
+                <div v-if="kindFilter !== 'exceptional'">
+                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('season') }}</label>
+                    <select v-model="yearFilter" class="mt-1 rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-900 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                        <option value="">{{ t('all') }}</option>
+                        <option v-for="s in seasons" :key="s.value" :value="s.value">{{ s.label }}</option>
+                    </select>
                 </div>
             </div>
 
@@ -114,7 +131,7 @@ function destroy() {
                         <thead class="bg-slate-50 dark:bg-slate-950">
                             <tr>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('name') }}</th>
-                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('year') }}</th>
+                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('season') }}</th>
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('student_pricing') }}</th>
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('worker_pricing') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('categories') }}</th>
@@ -125,7 +142,10 @@ function destroy() {
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                             <tr v-for="sub in subscriptions.data" :key="sub.id" class="hover:bg-slate-50 dark:hover:bg-slate-800">
                                 <td class="px-4 py-3 text-sm font-medium text-slate-900 dark:text-slate-100">{{ sub.name }}</td>
-                                <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ sub.year }}</td>
+                                <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
+                                    <Badge v-if="sub.kind === 'exceptional'" :label="t('subscription_kind_exceptional')" color="amber" />
+                                    <template v-else>{{ sub.year_label }}</template>
+                                </td>
                                 <td class="px-4 py-3 text-end text-sm">{{ formatMoney(sub.amount_student) }}</td>
                                 <td class="px-4 py-3 text-end text-sm">{{ formatMoney(sub.amount_worker) }}</td>
                                 <td class="px-4 py-3">

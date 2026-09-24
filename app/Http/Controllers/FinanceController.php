@@ -9,6 +9,7 @@ use App\Models\FinanceCategory;
 use App\Models\FiscalYear;
 use App\Models\Transaction;
 use App\Services\FinanceService;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -73,9 +74,28 @@ class FinanceController extends Controller
             'branches' => Branch::orderBy('name')->get([
                 'id', 'name', 'name_ar', 'name_fr', 'name_en',
             ]),
-            'years' => FiscalYear::orderByDesc('year')->get(),
+            'years' => $this->yearsWithDeletability(),
             'budgets' => $budgets,
         ]);
+    }
+
+    /**
+     * The fiscal years, each flagged `can_delete` by the same rule as
+     * FiscalYear::isDeletable(), from one query rather than one per year.
+     */
+    private function yearsWithDeletability(): Collection
+    {
+        $active = Transaction::where('archived', false)
+            ->select('fiscal_year', 'fiscal_year_id')
+            ->distinct()
+            ->get();
+        $busyIds = $active->pluck('fiscal_year_id')->filter()->flip();
+        $busyYears = $active->pluck('fiscal_year')->filter()->flip();
+
+        return FiscalYear::orderByDesc('year')->get()
+            ->each(fn (FiscalYear $fy) => $fy->setAttribute('can_delete', ! $fy->isClosed()
+                && ! $busyIds->has($fy->id)
+                && ! $busyYears->has($fy->year)));
     }
 
     /**

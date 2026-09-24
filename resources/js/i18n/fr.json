@@ -1227,5 +1227,21 @@
     "dashboard.mem_left_by_category_hint": "Membres partis sur la période choisie",
     "dashboard.mem_no_leavers": "Aucun départ sur cette période.",
     "strip.players_left": "Départs cette saison",
-    "clear_filters": "Effacer les filtres"
+    "clear_filters": "Effacer les filtres",
+    "season": "Saison",
+    "subscription_kind": "Type",
+    "subscription_kind_annual": "Cotisation annuelle",
+    "subscription_kind_annual_hint": "Liée à une saison, ex. 2025/2026.",
+    "subscription_kind_exceptional": "Exceptionnelle",
+    "subscription_kind_exceptional_hint": "Achat ponctuel sans saison, ex. un t-shirt du club.",
+    "subscription_exceptional_not_debt": "Les achats exceptionnels sont affectés à la main et ne comptent jamais dans la dette du joueur.",
+    "category_prices": "Tarif par catégorie",
+    "category_price_hint": "Facultatif : un tarif différent pour une catégorie. Laisser vide pour le tarif par défaut.",
+    "select_row": "Sélectionner la ligne",
+    "confirm_bulk_transaction_delete": "Supprimer {count} transaction(s) sélectionnée(s) ? Celles d'un exercice clôturé seront ignorées.",
+    "delete_fiscal_year_confirm": "Supprimer l'exercice {year} ? Son budget et ses transactions archivées seront aussi supprimés.",
+    "flash.transactions_archived": "{count} transaction(s) supprimée(s).",
+    "flash.transactions_archived_some_skipped": "{count} transaction(s) supprimée(s), {skipped} ignorée(s) (exercice clôturé).",
+    "flash.fiscal_year_deleted": "Exercice {year} supprimé.",
+    "flash.fiscal_year_not_empty": "L'exercice {year} ne peut pas être supprimé : il est clôturé ou contient encore des transactions."
 }

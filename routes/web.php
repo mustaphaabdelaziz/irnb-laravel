@@ -176,6 +176,8 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
     Route::get('/transactions/export', [TransactionController::class, 'export'])->name('transactions.export');
     Route::get('/transactions/import/template', [TransactionImportController::class, 'template'])->name('transactions.import.template');
     Route::post('/transactions/import', [TransactionImportController::class, 'store'])->name('transactions.import.store');
+    // Before the resource so "bulk-destroy" is not read as a {transaction} id.
+    Route::post('/transactions/bulk-destroy', [TransactionController::class, 'bulkDestroy'])->name('transactions.bulkDestroy');
     Route::resource('transactions', TransactionController::class);
     Route::get('/transactions/{transaction}/receipt', [ReportController::class, 'transactionReceipt'])->name('transactions.receipt');
     // The uploaded receipt file — private: this (auth + transactions/view) is the only way to read it.
@@ -260,6 +262,7 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         Route::put('/finance/years/{fiscalYear}', [FiscalYearController::class, 'update'])->name('finance.years.update');
         Route::post('/finance/years/{fiscalYear}/close', [FiscalYearController::class, 'close'])->name('finance.years.close');
         Route::post('/finance/years/{fiscalYear}/reopen', [FiscalYearController::class, 'reopen'])->name('finance.years.reopen');
+        Route::delete('/finance/years/{fiscalYear}', [FiscalYearController::class, 'destroy'])->name('finance.years.destroy');
         Route::put('/finance/years/{fiscalYear}/budget', [BudgetController::class, 'update'])->name('finance.budget.update');
         Route::post('/finance/categories', [FinanceCategoryController::class, 'store'])->name('finance.categories.store');
         Route::put('/finance/categories/{financeCategory}', [FinanceCategoryController::class, 'update'])->name('finance.categories.update');

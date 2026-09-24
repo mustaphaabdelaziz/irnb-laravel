@@ -6,6 +6,7 @@ use App\Models\FiscalYear;
 use App\Services\FinanceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class FiscalYearController extends Controller
 {
@@ -58,5 +59,26 @@ class FiscalYearController extends Controller
         $this->finance->reopenYear($fiscalYear);
 
         return back()->with('success', ['key' => 'flash.fiscal_year_reopened', 'params' => ['year' => $fiscalYear->year]]);
+    }
+
+    /**
+     * Remove an empty year (typically one created by mistake). Only an open
+     * year with no active transaction qualifies; its archived transactions are
+     * purged with it and its budget lines go by FK cascade.
+     */
+    public function destroy(FiscalYear $fiscalYear): RedirectResponse
+    {
+        if (! $fiscalYear->isDeletable()) {
+            return back()->with('error', ['key' => 'flash.fiscal_year_not_empty', 'params' => ['year' => $fiscalYear->year]]);
+        }
+
+        DB::transaction(function () use ($fiscalYear) {
+            // Archived rows are already out of every total, so a query delete
+            // (no observer) changes no balance or debt.
+            $fiscalYear->ownTransactions()->where('archived', true)->delete();
+            $fiscalYear->delete();
+        });
+
+        return back()->with('success', ['key' => 'flash.fiscal_year_deleted', 'params' => ['year' => $fiscalYear->year]]);
     }
 }

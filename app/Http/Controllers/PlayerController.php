@@ -640,7 +640,7 @@ class PlayerController extends Controller
             if (in_array($certificate, AcademicCertificate::values(), true)) {
                 $currentYear = Season::current()->startYear;
 
-                $query->whereHas(
+                $query->where('is_student', true)->whereHas(
                     'academicYears',
                     fn ($year) => $year->where('academic_year', $currentYear)
                         ->whereHas('records', fn ($records) => $records->where('certificate', $certificate)),

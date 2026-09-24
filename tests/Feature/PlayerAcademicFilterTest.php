@@ -93,6 +93,9 @@ class PlayerAcademicFilterTest extends TestCase
         $otherCertificate = $this->player('OtherCertificate');
         $this->year($otherCertificate, 2025)->records()->create(['period' => 'T1', 'gpa' => 13, 'certificate' => 'honor_roll']);
 
+        $worker = $this->player('WorkerHolder', student: false);
+        $this->year($worker, 2025)->records()->create(['period' => 'T1', 'gpa' => 18, 'certificate' => 'excellence']);
+
         $this->assertSame(['CurrentHolder'], $this->listed(['certificate' => 'excellence']));
     }
 

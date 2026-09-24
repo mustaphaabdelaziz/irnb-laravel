@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AcademicCertificate;
 use App\Http\Requests\Player\BulkUpdatePlayersRequest;
 use App\Http\Requests\Player\StorePlayerRequest;
 use App\Http\Requests\Player\UpdatePlayerRequest;
@@ -12,6 +13,7 @@ use App\Models\DocumentType;
 use App\Models\FinanceAccount;
 use App\Models\MemberJob;
 use App\Models\Player;
+use App\Models\PlayerAcademicRecord;
 use App\Models\PlayerEmergencyContact;
 use App\Models\PlayerStatus;
 use App\Models\Position;
@@ -26,6 +28,8 @@ use App\Services\Player\MembershipNumber;
 use App\Services\Player\PlayerDocumentService;
 use App\Services\Player\RegisterPlayerService;
 use App\Services\Storage\FileStorageService;
+use App\Support\CertificateThresholds;
+use App\Support\Season;
 use App\Support\TransactionTitle;
 use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
@@ -142,7 +146,7 @@ class PlayerController extends Controller
             'statusStats' => $statusStats,
             'positionStats' => $positionStats,
             'ageStats' => $ageStats,
-            'filters' => $request->only(['search', 'category_id', 'status', 'position_id', 'branch_id', 'age', 'archived', 'wilaya_id', 'documents']),
+            'filters' => $request->only(['search', 'category_id', 'status', 'position_id', 'branch_id', 'age', 'archived', 'wilaya_id', 'academic', 'certificate', 'documents']),
         ]);
     }
 
@@ -163,6 +167,13 @@ class PlayerController extends Controller
             'playerSubscriptions.payments',
             'equipmentRentals.equipmentItem.catalog',
         ]);
+
+        // Only students carry an education section; a worker's past school years
+        // stay stored but are not sent, so the page has nothing to show.
+        // Years come oldest first, each with its trimesters T1 → T3.
+        if ($player->is_student) {
+            $player->load('academicYears.records');
+        }
 
         // Instance-only append (not $appends on the model): is_overdue re-implements
         // EquipmentRental::getIsOverdueAttribute() so the page doesn't have to, without
@@ -189,6 +200,9 @@ class PlayerController extends Controller
             'financeAccounts' => $financeAccounts,
             'defaultFinanceAccountId' => $registers->forPlayer($player)?->id,
             'fileDrawerSize' => FileNumber::drawerSize(),
+            'certificateThresholds' => CertificateThresholds::all(),
+            // Default school year for a new grade: the club's season, not the browser's clock.
+            'currentSchoolYear' => Season::current()->startYear,
             // Owner decision: documents have their own permission. Without
             // documents/view the checklist is not even sent to the page.
             'documents' => $request->user()?->hasPermission('documents', 'view')
@@ -636,6 +650,32 @@ class PlayerController extends Controller
 
         if ($request->filled('documents')) {
             $this->applyDocumentsFilter($query, (string) $request->input('documents'));
+        }
+
+        if ($request->filled('academic')) {
+            $latest = '('.PlayerAcademicRecord::latestOn20Sql().')';
+            $pass = PlayerAcademicRecord::PASS_MARK_ON_20;
+
+            match ($request->input('academic')) {
+                'at_risk' => $query->where('is_student', true)->whereRaw("{$latest} < ?", [$pass]),
+                'good' => $query->where('is_student', true)->whereRaw("{$latest} >= ?", [$pass]),
+                'none' => $query->where('is_student', true)->whereDoesntHave('academicRecords'),
+                default => null,
+            };
+        }
+
+        if ($request->filled('certificate')) {
+            $certificate = $request->input('certificate');
+
+            if (in_array($certificate, AcademicCertificate::values(), true)) {
+                $currentYear = Season::current()->startYear;
+
+                $query->where('is_student', true)->whereHas(
+                    'academicYears',
+                    fn ($year) => $year->where('academic_year', $currentYear)
+                        ->whereHas('records', fn ($records) => $records->where('certificate', $certificate)),
+                );
+            }
         }
 
         if ($request->filled('age')) {

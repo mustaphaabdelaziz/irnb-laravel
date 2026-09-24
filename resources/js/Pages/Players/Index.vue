@@ -45,6 +45,8 @@ const positionFilter = ref(props.filters?.position_id || '');
 const branchFilter = ref(props.filters?.branch_id || '');
 const ageFilter = ref(props.filters?.age || '');
 const wilayaFilter = ref(props.filters?.wilaya_id || '');
+const academicFilter = ref(props.filters?.academic || '');
+const certificateFilter = ref(props.filters?.certificate || '');
 // missing | expiring | missing-<typeId> — one select, one query parameter.
 const documentsFilter = ref(props.filters?.documents || '');
 // Active vs Archived view. Backend defaults to active when no `archived` param.
@@ -60,6 +62,8 @@ const { params: filterParams, loading: filtering } = useListFilters('players.ind
     branch_id: branchFilter.value,
     age: ageFilter.value,
     wilaya_id: wilayaFilter.value,
+    academic: academicFilter.value,
+    certificate: certificateFilter.value,
     documents: documentsFilter.value,
     archived: archivedView.value ? 1 : undefined,
 }), { only: ['players', 'filters', 'categoryStats', 'statusStats', 'positionStats', 'ageStats'] });
@@ -309,6 +313,25 @@ function runBulk() {
                     <!-- A value of its own: useListFilters drops empty values. -->
                     <option value="none">{{ t('no_wilaya') }}</option>
                     <option v-for="w in wilayas" :key="w.id" :value="w.id">{{ w.code }} · {{ w.localized_name || w.name }}</option>
+                </select>
+                <select
+                    v-model="academicFilter"
+                    class="min-w-0 flex-1 rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:max-w-xs sm:flex-none"
+                >
+                    <option value="">{{ t('academic_all') }}</option>
+                    <option value="at_risk">{{ t('academic_at_risk') }}</option>
+                    <option value="good">{{ t('academic_good') }}</option>
+                    <option value="none">{{ t('academic_none') }}</option>
+                </select>
+                <select
+                    v-model="certificateFilter"
+                    class="min-w-0 flex-1 rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:max-w-xs sm:flex-none"
+                >
+                    <option value="">{{ t('certificate_filter_all') }}</option>
+                    <option value="excellence">{{ t('certificate_excellence') }}</option>
+                    <option value="congratulations">{{ t('certificate_congratulations') }}</option>
+                    <option value="encouragement">{{ t('certificate_encouragement') }}</option>
+                    <option value="honor_roll">{{ t('certificate_honor_roll') }}</option>
                 </select>
                 <select
                     v-model="documentsFilter"

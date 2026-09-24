@@ -24,6 +24,8 @@ use App\Http\Controllers\FiscalYearController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\MemberJobController;
+use App\Http\Controllers\PlayerAcademicRecordController;
+use App\Http\Controllers\PlayerAcademicYearController;
 use App\Http\Controllers\PlayerController;
 use App\Http\Controllers\PlayerDocumentController;
 use App\Http\Controllers\PlayerImportController;
@@ -143,6 +145,16 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
     Route::put('/players/{player}/subscriptions/{playerSubscription}', [PlayerSubscriptionController::class, 'update'])->name('players.subscriptions.update');
     Route::delete('/players/{player}/subscriptions/{playerSubscription}', [PlayerSubscriptionController::class, 'destroy'])->name('players.subscriptions.destroy');
 
+    // Student players' school years and their trimester grades. {academicRecord}
+    // resolves through Player::academicRecords() (has-many-through the years).
+    Route::scopeBindings()->group(function () {
+        Route::post('/players/{player}/academic-records', [PlayerAcademicRecordController::class, 'store'])->name('players.academic-records.store');
+        Route::put('/players/{player}/academic-records/{academicRecord}', [PlayerAcademicRecordController::class, 'update'])->name('players.academic-records.update');
+        Route::delete('/players/{player}/academic-records/{academicRecord}', [PlayerAcademicRecordController::class, 'destroy'])->name('players.academic-records.destroy');
+        Route::put('/players/{player}/academic-years/{academicYear}', [PlayerAcademicYearController::class, 'update'])->name('players.academic-years.update');
+        Route::delete('/players/{player}/academic-years/{academicYear}', [PlayerAcademicYearController::class, 'destroy'])->name('players.academic-years.destroy');
+    });
+
     // Player documents — every name is players.documents.*, gated by the `documents`
     // module (config/permissions.php). Files are served from the private disk only.
     Route::post('/players/{player}/documents', [PlayerDocumentController::class, 'store'])->name('players.documents.store');
@@ -177,6 +189,7 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
     // PDF documents
     Route::get('/players/{player}/card', [ReportController::class, 'playerCard'])->name('players.card');
     Route::get('/players/{player}/label', [PlayerPrintController::class, 'label'])->name('players.label');
+    Route::get('/players/{player}/academic-report', [ReportController::class, 'academicReport'])->name('players.academic-report');
     Route::get('/reports/financial', [ReportController::class, 'financialSummary'])->name('reports.financial');
 
     // Equipment — catalog (equipment list) import/export declared before the resource so the static paths win

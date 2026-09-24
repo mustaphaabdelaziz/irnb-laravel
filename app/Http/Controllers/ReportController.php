@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EducationLevel;
 use App\Models\BoardMeeting;
 use App\Models\InventorySession;
 use App\Models\Player;
@@ -56,6 +57,28 @@ class ReportController extends Controller
         ])->render();
 
         return $this->pdf->stream($html, "member-card-{$player->membership_id}.pdf");
+    }
+
+    public function academicReport(Player $player): Response
+    {
+        abort_unless($player->is_student, 404);
+
+        $player->load(['category', 'academicYears.records']);
+
+        // Pass mark per scale in use (primary /10, everything else /20), for the legend at the bottom.
+        $scalePassMarks = collect(EducationLevel::cases())
+            ->mapWithKeys(fn (EducationLevel $level) => [$level->scale() => $level->passMark()])
+            ->sortKeys();
+
+        $html = view('pdf.academic-report', [
+            'club' => $this->club(),
+            'player' => $player,
+            'photo' => $this->resolveMediaFile($player->picture_url),
+            'academicYears' => $player->academicYears,
+            'scalePassMarks' => $scalePassMarks,
+        ])->render();
+
+        return $this->pdf->stream($html, "academic-report-{$player->membership_id}.pdf");
     }
 
     public function financialSummary(Request $request): Response

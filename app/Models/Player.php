@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Player extends Model
@@ -186,6 +187,17 @@ class Player extends Model
     public function achievements(): HasMany
     {
         return $this->hasMany(PlayerAchievement::class);
+    }
+
+    /** School years, oldest first. */
+    public function academicYears(): HasMany
+    {
+        return $this->hasMany(PlayerAcademicYear::class)->orderBy('academic_year');
+    }
+
+    public function academicRecords(): HasManyThrough
+    {
+        return $this->hasManyThrough(PlayerAcademicRecord::class, PlayerAcademicYear::class);
     }
 
     public function documents(): HasMany

@@ -11,6 +11,7 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 import RentalTypeBadge from '@/Components/RentalTypeBadge.vue';
 import Icon from '@/Components/Icon.vue';
 import PlayerFieldRow from '@/Components/PlayerFieldRow.vue';
+import AcademicSection from '@/Pages/Players/Partials/AcademicSection.vue';
 import PlayerDocumentsCard from '@/Components/PlayerDocumentsCard.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
@@ -32,6 +33,8 @@ const props = defineProps({
     financeAccounts: { type: Array, default: () => [] },
     defaultFinanceAccountId: { type: [Number, String], default: '' },
     fileDrawerSize: { type: Number, default: 100 },
+    certificateThresholds: { type: Object, default: () => ({}) },
+    currentSchoolYear: { type: Number, default: null },
     // null when the viewer lacks documents/view (the server does not send it).
     documents: { type: Object, default: null },
 });
@@ -426,6 +429,9 @@ function formatDate(val) {
                     </div>
                 </div>
             </div>
+
+            <!-- Studies: only students carry an education section -->
+            <AcademicSection v-if="player.is_student" :player="player" :certificate-thresholds="certificateThresholds" :current-school-year="currentSchoolYear" />
 
             <!-- Documents: checklist + actions (absent without the documents permission) -->
             <PlayerDocumentsCard v-if="documents" :player-id="player.id" :checklist="documents" />

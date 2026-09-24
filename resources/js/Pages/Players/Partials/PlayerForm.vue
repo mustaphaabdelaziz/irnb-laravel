@@ -14,6 +14,7 @@ import { useCan } from '@/Composables/useCan';
 
 const { t } = useI18n();
 const { can } = useCan();
+
 const props = defineProps({
     player: { type: Object, default: null },
     categories: { type: Array, default: () => [] },

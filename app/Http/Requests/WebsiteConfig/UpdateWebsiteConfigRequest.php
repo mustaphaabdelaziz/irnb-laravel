@@ -45,6 +45,20 @@ class UpdateWebsiteConfigRequest extends FormRequest
             // outside 1-12 or a drawer of zero files would break file locations.
             'settings.seasonStartMonth' => ['nullable', 'integer', 'min:1', 'max:12'],
             'settings.fileDrawerSize' => ['nullable', 'integer', 'min:10', 'max:1000'],
+            'settings.academicCertificates' => ['nullable', 'array'],
+            'settings.academicCertificates.20' => ['required_with:settings.academicCertificates', 'array'],
+            'settings.academicCertificates.10' => ['required_with:settings.academicCertificates', 'array'],
+            // Chained low-to-high with `lte` (rather than high-to-low with `gte`) so a
+            // descending-order violation is reported against the field that is out of
+            // step with the one above it, not against the higher field itself.
+            'settings.academicCertificates.20.excellence' => ['required_with:settings.academicCertificates', 'numeric', 'min:0', 'max:20'],
+            'settings.academicCertificates.20.congratulations' => ['required_with:settings.academicCertificates', 'numeric', 'min:0', 'max:20', 'lte:settings.academicCertificates.20.excellence'],
+            'settings.academicCertificates.20.encouragement' => ['required_with:settings.academicCertificates', 'numeric', 'min:0', 'max:20', 'lte:settings.academicCertificates.20.congratulations'],
+            'settings.academicCertificates.20.honor_roll' => ['required_with:settings.academicCertificates', 'numeric', 'min:0', 'max:20', 'lte:settings.academicCertificates.20.encouragement'],
+            'settings.academicCertificates.10.excellence' => ['required_with:settings.academicCertificates', 'numeric', 'min:0', 'max:10'],
+            'settings.academicCertificates.10.congratulations' => ['required_with:settings.academicCertificates', 'numeric', 'min:0', 'max:10', 'lte:settings.academicCertificates.10.excellence'],
+            'settings.academicCertificates.10.encouragement' => ['required_with:settings.academicCertificates', 'numeric', 'min:0', 'max:10', 'lte:settings.academicCertificates.10.congratulations'],
+            'settings.academicCertificates.10.honor_roll' => ['required_with:settings.academicCertificates', 'numeric', 'min:0', 'max:10', 'lte:settings.academicCertificates.10.encouragement'],
             'seo' => ['nullable', 'array'],
             'documents' => ['nullable', 'array'],
         ];

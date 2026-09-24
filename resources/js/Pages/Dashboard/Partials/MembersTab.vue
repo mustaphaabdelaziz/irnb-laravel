@@ -20,8 +20,9 @@ const props = defineProps({
 const { t } = useI18n();
 
 const summary = computed(() => props.data?.summary ?? []);
-const growth = computed(() => props.data?.growth ?? { labels: [], joined: [], cumulative: [] });
+const growth = computed(() => props.data?.growth ?? { labels: [], joined: [], left: [], cumulative: [] });
 const byCategory = computed(() => props.data?.byCategory ?? []);
+const leftByCategory = computed(() => props.data?.leftByCategory ?? []);
 const byStatus = computed(() => props.data?.byStatus ?? []);
 const byAge = computed(() => props.data?.byAge ?? []);
 const debtBands = computed(() => props.data?.debtBands ?? []);
@@ -71,6 +72,7 @@ const TILE_STYLE = {
     new_members: { icon: 'plus', tone: 'positive' },
     renewal_rate: { icon: 'refresh', tone: 'positive' },
     median_debt: { icon: 'money', tone: 'warning' },
+    left: { icon: 'logout', tone: 'negative' },
     archived: { icon: 'archive', tone: 'neutral' },
 };
 
@@ -89,7 +91,8 @@ const statusLabel = (row) => (row.labelKey ? t('dashboard.mem_no_status') : row.
 
 const monthLabel = (key) => key?.slice(5) ?? '';
 
-const hasGrowth = computed(() => growth.value.joined.some((v) => v > 0));
+const growthLeft = computed(() => growth.value.left ?? []);
+const hasGrowth = computed(() => growth.value.joined.some((v) => v > 0) || growthLeft.value.some((v) => v > 0));
 
 /**
  * Joins per month as columns with the running total as a line.
@@ -106,6 +109,14 @@ const growthChart = computed(() => ({
             label: t('dashboard.mem_joined'),
             data: growth.value.joined,
             backgroundColor: seriesColor(0),
+            borderRadius: 4,
+            maxBarThickness: 24,
+        },
+        {
+            type: 'bar',
+            label: t('dashboard.mem_left'),
+            data: growthLeft.value,
+            backgroundColor: seriesColor(1),
             borderRadius: 4,
             maxBarThickness: 24,
         },
@@ -145,6 +156,7 @@ function magnitudeChart(rows, labelFor) {
 }
 
 const categoryChart = computed(() => magnitudeChart(byCategory.value, rowLabel));
+const leftCategoryChart = computed(() => magnitudeChart(leftByCategory.value, rowLabel));
 
 /** Age is an ordered scale, so it wears the ordinal ramp rather than magnitude. */
 const ageChart = computed(() => {
@@ -175,7 +187,7 @@ const genderTotal = computed(() => (split.value.male + split.value.female) || 1)
 
 <template>
     <div class="space-y-5">
-        <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5" :aria-label="t('dashboard.tab_members')">
+        <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6" :aria-label="t('dashboard.tab_members')">
             <StatTile
                 v-for="tile in tiles"
                 :key="tile.key"
@@ -229,6 +241,7 @@ const genderTotal = computed(() => (split.value.male + split.value.female) || 1)
                         <tr>
                             <th class="px-3 py-2 text-start font-medium">{{ t('dashboard.month') }}</th>
                             <th class="px-3 py-2 text-end font-medium">{{ t('dashboard.mem_joined') }}</th>
+                            <th class="px-3 py-2 text-end font-medium">{{ t('dashboard.mem_left') }}</th>
                             <th class="px-3 py-2 text-end font-medium">{{ t('dashboard.mem_total') }}</th>
                         </tr>
                     </thead>
@@ -236,6 +249,7 @@ const genderTotal = computed(() => (split.value.male + split.value.female) || 1)
                         <tr v-for="(label, index) in growth.labels" :key="label">
                             <td class="px-3 py-2">{{ label }}</td>
                             <td class="px-3 py-2 text-end tabular-nums">{{ growth.joined[index] }}</td>
+                            <td class="px-3 py-2 text-end tabular-nums">{{ growthLeft[index] ?? 0 }}</td>
                             <td class="px-3 py-2 text-end tabular-nums">{{ growth.cumulative[index] }}</td>
                         </tr>
                     </tbody>
@@ -277,6 +291,29 @@ const genderTotal = computed(() => (split.value.male + split.value.female) || 1)
                 <Bar :data="ageChart" :options="ageOptions" />
             </ChartCard>
         </section>
+
+        <ChartCard
+            :title="t('dashboard.mem_left_by_category')"
+            :subtitle="t('dashboard.mem_left_by_category_hint')"
+            :loading="loading"
+            :empty="!leftByCategory.length"
+            :empty-hint="t('dashboard.mem_no_leavers')"
+            has-table
+            height="h-64"
+        >
+            <Bar :data="leftCategoryChart" :options="barOptions" />
+
+            <template #table>
+                <table class="w-full text-sm">
+                    <tbody class="divide-y divide-border/70">
+                        <tr v-for="row in leftByCategory" :key="row.labelKey || row.name">
+                            <td class="px-3 py-2">{{ rowLabel(row) }}</td>
+                            <td class="px-3 py-2 text-end tabular-nums">{{ row.count }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </template>
+        </ChartCard>
 
         <section class="grid gap-5 lg:grid-cols-3">
             <Card class="border-border/70 shadow-none">

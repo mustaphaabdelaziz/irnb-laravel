@@ -360,6 +360,7 @@ function formatDate(val) {
                         </PlayerFieldRow>
                         <PlayerFieldRow icon="categories" :label="t('category')" :value="player.category?.localized_name || player.category?.name" />
                         <PlayerFieldRow icon="flag" :label="t('membership_status')" :value="player.status?.localized_name || player.status?.name" />
+                        <PlayerFieldRow v-if="player.left_at" icon="calendar" :label="t('left_at')" :value="formatDate(player.left_at)" />
                         <PlayerFieldRow icon="location" :label="t('state')" :value="[player.city, player.wilaya?.localized_name || player.wilaya?.name || player.state].filter(Boolean).join(', ')" />
                         <PlayerFieldRow icon="phone" :label="t('phone')" :value="player.phones?.[0]" />
                         <PlayerFieldRow icon="mail" :label="t('email')" :value="player.email" />

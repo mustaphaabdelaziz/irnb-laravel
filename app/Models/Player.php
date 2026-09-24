@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Facades\DB;
 
 class Player extends Model
 {
@@ -36,6 +37,7 @@ class Player extends Model
         'status_class',
         'status_value',
         'status_id',
+        'left_at',
         'state',
         'wilaya_id',
         'city',
@@ -57,6 +59,48 @@ class Player extends Model
         'fullname',
         'age',
     ];
+
+    /**
+     * Keep the leave date in step with the status: only a member whose status
+     * is "left" (code `left`) has one. Moving to "left" without a date stamps
+     * today; moving to any other status clears it. Bulk status changes bypass
+     * model events and apply the same rule in SQL (see leaveDateUpdate()).
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (Player $player) {
+            if (! $player->isDirty(['status_id', 'left_at'])) {
+                return;
+            }
+
+            if (! static::isLeftStatus($player->status_id)) {
+                $player->left_at = null;
+            } elseif ($player->left_at === null) {
+                $player->left_at = now()->toDateString();
+            }
+        });
+    }
+
+    public static function leftStatusId(): ?int
+    {
+        return PlayerStatus::where('code', 'left')->value('id');
+    }
+
+    public static function isLeftStatus(mixed $statusId): bool
+    {
+        return $statusId !== null && $statusId !== '' && (int) $statusId === static::leftStatusId();
+    }
+
+    /**
+     * The left_at column value for a bulk status change to $statusId: keep an
+     * existing date (or stamp today) when moving to "left", clear otherwise.
+     */
+    public static function leaveDateUpdate(mixed $statusId): mixed
+    {
+        return static::isLeftStatus($statusId)
+            ? DB::raw('COALESCE(left_at, '.DB::getPdo()->quote(now()->toDateString()).')')
+            : null;
+    }
 
     /** Normalise the stored photo URL to a host-relative /media path (web + desktop). */
     protected function pictureUrl(): Attribute
@@ -129,6 +173,7 @@ class Player extends Model
     {
         return [
             'birthdate' => 'date',
+            'left_at' => 'date:Y-m-d',
             'phones' => 'array',
             'is_student' => 'boolean',
             'join_year' => 'integer',

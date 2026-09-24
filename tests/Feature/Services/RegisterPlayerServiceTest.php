@@ -4,7 +4,6 @@ namespace Tests\Feature\Services;
 
 use App\Models\Category;
 use App\Models\Player;
-use App\Models\PlayerSubscription;
 use App\Models\Subscription;
 use App\Services\Player\RegisterPlayerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -16,12 +15,14 @@ class RegisterPlayerServiceTest extends TestCase
     use RefreshDatabase;
 
     #[Test]
-    public function it_creates_player_and_assigns_mandatory_subscription_for_matching_category(): void
+    public function it_creates_a_player_without_attaching_any_subscription(): void
     {
         $category = Category::query()->create([
             'name' => 'U17',
         ]);
 
+        // A mandatory, active subscription for the player's category: owner
+        // decision — registration still attaches nothing.
         $subscription = Subscription::query()->create([
             'name' => 'Annual Membership',
             'year' => (int) now()->year,
@@ -49,13 +50,8 @@ class RegisterPlayerServiceTest extends TestCase
             'first player of the year gets sequence 00001',
         );
         $this->assertDatabaseCount('players', 1);
-        $this->assertDatabaseCount('player_subscriptions', 1);
+        $this->assertDatabaseCount('player_subscriptions', 0);
         $this->assertDatabaseCount('transactions', 0);
-
-        $playerSubscription = PlayerSubscription::query()->firstOrFail();
-
-        $this->assertSame((float) $subscription->amount_student, (float) $playerSubscription->amount_owed);
-        $this->assertTrue((bool) $playerSubscription->is_mandatory);
-        $this->assertSame(2000.0, (float) $player->fresh()->outstanding_debt);
+        $this->assertSame(0.0, (float) $player->fresh()->outstanding_debt);
     }
 }

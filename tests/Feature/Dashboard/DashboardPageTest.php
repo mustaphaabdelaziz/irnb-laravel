@@ -208,7 +208,8 @@ class DashboardPageTest extends TestCase
 
         $this->assertArrayHasKey('growth', $members);
         $this->assertArrayHasKey('byAge', $members);
-        $this->assertCount(5, $members['summary']);
+        $this->assertCount(6, $members['summary']);
+        $this->assertArrayHasKey('leftByCategory', $members);
 
         $operations = $this->actingAs($admin)
             ->get(route('dashboard'), $this->partialHeaders('operations'))
@@ -233,7 +234,9 @@ class DashboardPageTest extends TestCase
         // members: +1 over the old 17 for the certificate-award counts MemberStats::academic()
         // now reports — one query for Season::current()'s website_configs lookup (uncached by
         // design) and one for the certificate counts themselves.
-        foreach (['members' => 18, 'operations' => 12] as $tab => $budget) {
+        // members: +3 for leavers — the "left" tile, left-per-month on the growth
+        // chart, and departures by category.
+        foreach (['members' => 21, 'operations' => 12] as $tab => $budget) {
             $recorder = new \ArrayObject;
             DB::listen(function ($query) use ($recorder): void {
                 $recorder->append($query->sql);

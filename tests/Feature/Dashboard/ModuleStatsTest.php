@@ -133,12 +133,13 @@ class ModuleStatsTest extends TestCase
     }
 
     #[Test]
-    public function every_strip_is_four_tiles_with_a_key_and_a_format(): void
+    public function every_strip_has_its_tiles_with_a_key_and_a_format(): void
     {
         foreach (['players', 'subscriptions', 'equipment'] as $module) {
             $tiles = app(ModuleStats::class)->{$module}();
 
-            $this->assertCount(4, $tiles, "{$module} strip should have four tiles");
+            // players carries a fifth tile: members who left this season.
+            $this->assertCount($module === 'players' ? 5 : 4, $tiles, "{$module} strip tile count");
 
             foreach ($tiles as $tile) {
                 $this->assertArrayHasKey('key', $tile);

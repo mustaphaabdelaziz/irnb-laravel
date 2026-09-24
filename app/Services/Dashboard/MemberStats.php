@@ -42,6 +42,7 @@ class MemberStats
             'summary' => $this->summary($filters),
             'growth' => $this->growth($filters),
             'byCategory' => $this->byCategory($filters),
+            'leftByCategory' => $this->leftByCategory($filters),
             'byStatus' => $this->byStatus($filters),
             'byAge' => $this->byAge($filters),
             'debtBands' => $this->debtBands($filters),
@@ -57,6 +58,7 @@ class MemberStats
 
         $joins = $this->joinsPerWindow($filters);
         $archived = $this->archivedInWindow($filters);
+        $left = $this->leftPerWindow($filters);
         $renewal = $this->renewalRate($filters);
 
         return [
@@ -92,8 +94,17 @@ class MemberStats
             ],
             [
                 // Leaving is as much a fact about the club as joining, so it
-                // gets a figure of its own rather than being silently dropped
-                // from the active headcount.
+                // gets a figure of its own: members whose status became "left"
+                // in the window, by their recorded leave date.
+                'key' => 'left',
+                'value' => $left['current'],
+                'format' => 'number',
+                'delta' => $filters->hasComparison()
+                    ? DeltaCalculator::compute((float) $left['current'], (float) $left['previous'])
+                    : null,
+                'meta' => null,
+            ],
+            [
                 'key' => 'archived',
                 'value' => $archived,
                 'format' => 'number',
@@ -123,6 +134,72 @@ class MemberStats
             'current' => (int) ($row->current_window ?? 0),
             'previous' => (int) ($row->previous_window ?? 0),
         ];
+    }
+
+    /** @return array{current: int, previous: int} */
+    private function leftPerWindow(DashboardFilters $filters): array
+    {
+        if ($filters->from === null) {
+            return ['current' => (int) $this->leavers($filters)->count(), 'previous' => 0];
+        }
+
+        $row = $this->leavers($filters)
+            ->toBase()
+            ->selectRaw(
+                'COUNT(CASE WHEN players.left_at BETWEEN ? AND ? THEN 1 END) as current_window, '
+                .'COUNT(CASE WHEN players.left_at BETWEEN ? AND ? THEN 1 END) as previous_window',
+                [
+                    $filters->from->toDateString(), $filters->to->toDateString(),
+                    $filters->prevFrom?->toDateString(), $filters->prevTo?->toDateString(),
+                ],
+            )
+            ->first();
+
+        return [
+            'current' => (int) ($row->current_window ?? 0),
+            'previous' => (int) ($row->previous_window ?? 0),
+        ];
+    }
+
+    /**
+     * Members who left in the window, per category — which teams lose players.
+     */
+    private function leftByCategory(DashboardFilters $filters): array
+    {
+        $query = $this->leavers($filters);
+
+        if ($filters->from !== null) {
+            $query->whereBetween('players.left_at', [$filters->from->toDateString(), $filters->to->toDateString()]);
+        }
+
+        $localeColumn = 'categories.name_'.app()->getLocale();
+
+        return $query->toBase()
+            ->leftJoin('categories', 'categories.id', '=', 'players.category_id')
+            ->groupBy('categories.id', 'categories.name', $localeColumn)
+            ->orderByDesc('total')
+            ->selectRaw("COALESCE(NULLIF({$localeColumn}, ''), categories.name) as name, COUNT(*) as total")
+            ->get()
+            ->map(fn (object $row): array => [
+                'name' => $row->name ?: null,
+                'labelKey' => $row->name ? null : 'uncategorised',
+                'count' => (int) $row->total,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Every member with a recorded leave date, archived or not: a leaver who
+     * was later archived still left. Members marked "left" before leave dates
+     * were recorded have none, and are not counted.
+     */
+    private function leavers(DashboardFilters $filters): Builder
+    {
+        return BranchScope::players(
+            Player::query()->whereNotNull('players.left_at'),
+            $filters->branchId,
+        );
     }
 
     private function archivedInWindow(DashboardFilters $filters): int
@@ -226,9 +303,19 @@ class MemberStats
             $cumulative[] = $running;
         }
 
+        $leftBucket = MonthBucket::expression('players.left_at');
+        $leftByMonth = $this->leavers($filters)
+            ->where('players.left_at', '>=', CarbonImmutable::parse($labels[0].'-01')->toDateString())
+            ->toBase()
+            ->selectRaw("{$leftBucket} as bucket, COUNT(*) as total")
+            ->groupBy('bucket')
+            ->pluck('total', 'bucket')
+            ->all();
+
         return [
             'labels' => $labels,
             'joined' => $joined,
+            'left' => MonthBucket::series($leftByMonth, $labels),
             'cumulative' => $cumulative,
         ];
     }

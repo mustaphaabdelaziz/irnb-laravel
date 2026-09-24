@@ -2,6 +2,7 @@
 
 namespace App\Services\Dashboard;
 
+use App\Support\Season;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -38,7 +39,21 @@ class ModuleStats
             $this->tile('players_with_debt', (int) ($row->with_debt ?? 0)),
             $this->tile('players_debt_total', round((float) ($row->debt_total ?? 0), 2), 'money'),
             $this->tile('players_new', (int) ($row->joined_this_month ?? 0)),
+            $this->tile('players_left', $this->playersLeftThisSeason()),
         ];
+    }
+
+    /**
+     * Members who left during the current season, by their leave date —
+     * archived or not, since a leaver who was later archived still left.
+     */
+    private function playersLeftThisSeason(): int
+    {
+        $season = Season::current();
+
+        return DB::table('players')
+            ->whereBetween('left_at', [$season->start()->toDateString(), $season->end()->toDateString()])
+            ->count();
     }
 
     /** @return list<array<string, mixed>> */

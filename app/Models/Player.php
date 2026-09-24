@@ -200,6 +200,11 @@ class Player extends Model
         return $this->hasManyThrough(PlayerAcademicRecord::class, PlayerAcademicYear::class);
     }
 
+    public function documents(): HasMany
+    {
+        return $this->hasMany(PlayerDocument::class);
+    }
+
     public function equipmentRentals(): MorphMany
     {
         return $this->morphMany(EquipmentRental::class, 'rentable');

@@ -12,6 +12,7 @@ import RentalTypeBadge from '@/Components/RentalTypeBadge.vue';
 import Icon from '@/Components/Icon.vue';
 import PlayerFieldRow from '@/Components/PlayerFieldRow.vue';
 import AcademicSection from '@/Pages/Players/Partials/AcademicSection.vue';
+import PlayerDocumentsCard from '@/Components/PlayerDocumentsCard.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
@@ -34,6 +35,8 @@ const props = defineProps({
     fileDrawerSize: { type: Number, default: 100 },
     certificateThresholds: { type: Object, default: () => ({}) },
     currentSchoolYear: { type: Number, default: null },
+    // null when the viewer lacks documents/view (the server does not send it).
+    documents: { type: Object, default: null },
 });
 
 const subscriptions = computed(() => props.player?.player_subscriptions ?? []);
@@ -429,6 +432,9 @@ function formatDate(val) {
 
             <!-- Studies: only students carry an education section -->
             <AcademicSection v-if="player.is_student" :player="player" :certificate-thresholds="certificateThresholds" :current-school-year="currentSchoolYear" />
+
+            <!-- Documents: checklist + actions (absent without the documents permission) -->
+            <PlayerDocumentsCard v-if="documents" :player-id="player.id" :checklist="documents" />
 
             <!-- Subscriptions -->
             <div class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">

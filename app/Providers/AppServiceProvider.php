@@ -19,6 +19,13 @@ class AppServiceProvider extends ServiceProvider
             $app->make(BackupSettings::class),
             config('nativephp-internal.database_path') ?: database_path('database.sqlite'),
             storage_path('app/public'),
+            [
+                // Private (P3): served only through authenticated routes, so they live
+                // on the private disk — and must still come back with a restore.
+                'player-documents' => storage_path('app/private/player-documents'),
+                'minutes' => storage_path('app/private/minutes'),
+                'receipts' => storage_path('app/private/receipts'),
+            ],
         ));
     }
 

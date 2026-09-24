@@ -443,6 +443,36 @@ The page stays within the existing card, badge and spacing conventions.
 
 # P3 — Player documents
 
+## Owner decisions (2026-09-23, before planning)
+
+These amend the sections below where they differ.
+
+- **Photo = profile picture.** The seeded "Photo" type (`code = photo`) counts as received whenever the
+  player has a profile picture. The checklist flags only players without one; there is no second upload.
+- **Own permission.** Documents get their own RBAC module, `documents` (view / add / edit / delete),
+  instead of riding on players/view and players/edit. Admins/god get it by default. Viewing, downloading,
+  marking, uploading, exempting and removing all check this module; the players list's missing column and
+  filters need players/view only (they show counts, not files).
+- **Age limit instead of category limit.** A document type may be marked "only for players under 18"
+  (`max_age` nullable uint, e.g. 17 = applies while age ≤ 17), computed from the birth date. The
+  `document_type_category` pivot is dropped. Parental authorization is seeded **required** with
+  `max_age = 17`. A player with no birth date is treated as not limited (the type applies).
+- **Expires soon.** A received document whose `valid_until` is within 30 days shows as "Expires soon"
+  (orange). It is not counted as missing. The players list gains an "expiring soon" filter.
+- **Capture.** Several files per document; the upload input accepts `pdf,jpg,jpeg,png,webp` and offers
+  the camera on phone browsers (`accept` with image types, no forced `capture`).
+- **Protect existing private uploads (security, found while mapping).** Every upload today lands on the
+  public disk and is served by the unauthenticated `GET /media/{path}` route. Board-meeting minutes and
+  attachments move behind login + their module's view permission (served by an authenticated route,
+  stored on the private `local` disk, existing files migrated). Club logos/branding and player pictures
+  stay public (PDFs and pages need them).
+- **"Sans wilaya" filter (carried from P2).** The players-list wilaya filter gains a "no wilaya" option
+  (`wilaya_id=none` → `whereNull('wilaya_id')`) so the owner can find the players whose wilaya was
+  "Unknown".
+- **Transaction receipts are private too (added 2026-09-24).** Uploaded receipts move like the minutes: to
+  the private `local` disk (`receipts/`), served by an authenticated route behind the transactions view
+  permission, existing files migrated. They are part of the backup's private folders.
+
 ## Data model
 
 **`document_types`**

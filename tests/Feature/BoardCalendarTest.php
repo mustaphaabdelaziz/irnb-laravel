@@ -47,6 +47,7 @@ class BoardCalendarTest extends TestCase
     #[Test]
     public function admin_can_upload_and_remove_a_minutes_file(): void
     {
+        Storage::fake('local');
         Storage::fake('public');
         $meeting = BoardMeeting::create([
             'title' => 'AGM', 'type' => 'general_assembly',
@@ -60,8 +61,10 @@ class BoardCalendarTest extends TestCase
 
         $meeting->refresh();
         $this->assertStringStartsWith('minutes/', (string) $meeting->attachment_filename);
-        $this->assertStringStartsWith('/media/minutes/', (string) $meeting->attachment_url);
-        Storage::disk('public')->assertExists($meeting->attachment_filename);
+        // Minutes are private (P3): an authenticated route, never a /media URL.
+        $this->assertSame(route('board.meetings.attachment.show', $meeting, false), $meeting->attachment_url);
+        Storage::disk('local')->assertExists($meeting->attachment_filename);
+        Storage::disk('public')->assertMissing($meeting->attachment_filename);
 
         $stored = $meeting->attachment_filename;
 
@@ -71,7 +74,7 @@ class BoardCalendarTest extends TestCase
 
         $meeting->refresh();
         $this->assertNull($meeting->attachment_url);
-        Storage::disk('public')->assertMissing($stored);
+        Storage::disk('local')->assertMissing($stored);
     }
 
     #[Test]

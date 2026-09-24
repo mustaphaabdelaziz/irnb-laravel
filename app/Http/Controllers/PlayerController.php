@@ -9,6 +9,7 @@ use App\Http\Requests\Player\UpdatePlayerRequest;
 use App\Models\Branch;
 use App\Models\Category;
 use App\Models\CountryState;
+use App\Models\DocumentType;
 use App\Models\FinanceAccount;
 use App\Models\MemberJob;
 use App\Models\Player;
@@ -21,8 +22,10 @@ use App\Models\Transaction;
 use App\Services\Dashboard\ModuleStats;
 use App\Services\Export\ExcelExporter;
 use App\Services\Finance\DefaultRegisterResolver;
+use App\Services\Player\DocumentChecklist;
 use App\Services\Player\FileNumber;
 use App\Services\Player\MembershipNumber;
+use App\Services\Player\PlayerDocumentService;
 use App\Services\Player\RegisterPlayerService;
 use App\Services\Storage\FileStorageService;
 use App\Support\CertificateThresholds;
@@ -43,9 +46,14 @@ class PlayerController extends Controller
 {
     public function index(Request $request): Response
     {
+        // Missing documents per row, computed in SQL — the twin of the player
+        // page's checklist (DocumentChecklist; the two are tested to agree).
+        [$missingSql, $missingBindings] = DocumentChecklist::missingCountSql();
+
         $query = Player::query()
             ->select('players.*')
             ->selectRaw('players.outstanding_debt as total_debt')
+            ->selectRaw("{$missingSql} as missing_documents_count", $missingBindings)
             ->with(['category', 'position', 'otherPositions', 'memberJob', 'status', 'wilaya']);
 
         $this->applyPlayerFilters($query, $request);
@@ -128,15 +136,21 @@ class PlayerController extends Controller
                     'name' => $state->name_fr ?: $state->name,
                     'localized_name' => $state->localized_name,
                 ]),
+            // The "missing type X" options: only types that can be missing.
+            'documentTypes' => fn () => DocumentType::query()
+                ->where('is_active', true)
+                ->where('is_required', true)
+                ->ordered()
+                ->get(['id', 'code', 'name', 'name_ar', 'name_fr', 'name_en']),
             'categoryStats' => $categoryStats,
             'statusStats' => $statusStats,
             'positionStats' => $positionStats,
             'ageStats' => $ageStats,
-            'filters' => $request->only(['search', 'category_id', 'status', 'position_id', 'branch_id', 'age', 'archived', 'wilaya_id', 'academic', 'certificate']),
+            'filters' => $request->only(['search', 'category_id', 'status', 'position_id', 'branch_id', 'age', 'archived', 'wilaya_id', 'academic', 'certificate', 'documents']),
         ]);
     }
 
-    public function show(Player $player): Response
+    public function show(Request $request, Player $player): Response
     {
         $player->load([
             'category',
@@ -189,6 +203,11 @@ class PlayerController extends Controller
             'certificateThresholds' => CertificateThresholds::all(),
             // Default school year for a new grade: the club's season, not the browser's clock.
             'currentSchoolYear' => Season::current()->startYear,
+            // Owner decision: documents have their own permission. Without
+            // documents/view the checklist is not even sent to the page.
+            'documents' => $request->user()?->hasPermission('documents', 'view')
+                ? DocumentChecklist::for($player)
+                : null,
         ]);
     }
 
@@ -621,7 +640,16 @@ class PlayerController extends Controller
         }
 
         if ($request->filled('wilaya_id')) {
-            $query->where('wilaya_id', $request->input('wilaya_id'));
+            // "none" finds the players whose wilaya was never set or was "Unknown"
+            // before the P2 migration (the list's filter drops empty values, so
+            // "no wilaya" needs a value of its own).
+            $request->input('wilaya_id') === 'none'
+                ? $query->whereNull('wilaya_id')
+                : $query->where('wilaya_id', $request->input('wilaya_id'));
+        }
+
+        if ($request->filled('documents')) {
+            $this->applyDocumentsFilter($query, (string) $request->input('documents'));
         }
 
         if ($request->filled('academic')) {
@@ -671,6 +699,33 @@ class PlayerController extends Controller
     }
 
     /**
+     * missing | expiring | missing-{typeId}. Uses the SQL twin of the
+     * checklist, so the list, its charts and the export agree with the
+     * player page. An unknown value filters nothing.
+     */
+    private function applyDocumentsFilter($query, string $filter): void
+    {
+        if ($filter === 'missing') {
+            [$sql, $bindings] = DocumentChecklist::missingCountSql();
+            $query->whereRaw("{$sql} > 0", $bindings);
+
+            return;
+        }
+
+        if ($filter === 'expiring') {
+            [$sql, $bindings] = DocumentChecklist::expiringSoonSql();
+            $query->whereRaw($sql, $bindings);
+
+            return;
+        }
+
+        if (preg_match('/^missing-(\d+)$/', $filter, $match)) {
+            [$sql, $bindings] = DocumentChecklist::missingCountSql(null, (int) $match[1]);
+            $query->whereRaw("{$sql} > 0", $bindings);
+        }
+    }
+
+    /**
      * @return array<int, int>
      */
     private function validatedIds(Request $request): array
@@ -687,7 +742,9 @@ class PlayerController extends Controller
      */
     private function permanentlyDelete(Player $player, FileStorageService $files): void
     {
-        DB::transaction(function () use ($player) {
+        $documents = app(PlayerDocumentService::class);
+
+        DB::transaction(function () use ($player, $documents) {
             Transaction::where('related_entity_type', 'Player')
                 ->where('related_entity_id', $player->id)
                 ->update(['archived' => true]);
@@ -696,9 +753,12 @@ class PlayerController extends Controller
             $player->achievements()->delete();
             $player->playerSubscriptions()->delete();
             $player->equipmentRentals()->delete();
+            $documents->purgePlayerRecords($player);
             $player->delete();
         });
 
         $files->delete($player->picture_filename);
+        // After the commit, so a deletion that rolled back never loses the scans.
+        $documents->purgePlayerFiles($player->id);
     }
 }

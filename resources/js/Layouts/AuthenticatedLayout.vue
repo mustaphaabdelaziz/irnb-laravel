@@ -134,6 +134,7 @@ const sections = computed(() => {
             { label: t('jobs'), href: '/jobs', icon: 'jobs', prefix: '/jobs', module: 'categories' },
             { label: t('positions'), href: '/positions', icon: 'positions', prefix: '/positions', module: 'categories' },
             { label: t('player_statuses'), href: '/player-statuses', icon: 'positions', prefix: '/player-statuses', module: 'categories' },
+            { label: t('document_types'), href: '/document-types', icon: 'document', prefix: '/document-types', module: 'categories' },
             { label: t('settings'), href: '/settings', icon: 'settings', prefix: '/settings', module: 'settings' },
             { label: t('backup'), href: '/backups', icon: 'archive', prefix: '/backups', superadminOnly: true, desktopOnly: true },
         ] },

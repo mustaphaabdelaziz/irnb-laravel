@@ -52,10 +52,23 @@ class Transaction extends Model
         'finance_account_id',
     ];
 
-    /** Normalise the stored receipt URL to a host-relative /media path (web + desktop). */
+    /**
+     * Where the page links the uploaded receipt. A stored file is private and only
+     * reachable through the authenticated route (host-relative, so it works on the
+     * web and in the desktop window). Anything else — a legacy imported link — is
+     * kept as it was.
+     */
     protected function receiptUrl(): Attribute
     {
-        return Attribute::make(get: fn ($value) => Media::path($value));
+        return Attribute::make(get: function ($value, array $attributes) {
+            $file = str_replace('\\', '/', (string) ($attributes['receipt_filename'] ?? ''));
+
+            if (str_starts_with($file, 'receipts/') && ! empty($attributes['id'])) {
+                return route('transactions.receipt-file.show', $attributes['id'], false);
+            }
+
+            return Media::path($value);
+        });
     }
 
     protected function casts(): array

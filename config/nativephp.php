@@ -1,5 +1,7 @@
 <?php
 
+use App\Providers\NativeAppServiceProvider;
+
 return [
     /**
      * The version of your app.
@@ -51,7 +53,7 @@ return [
      * takes care of bootstrapping your application and configuring
      * any global hotkeys, menus, windows, etc.
      */
-    'provider' => \App\Providers\NativeAppServiceProvider::class,
+    'provider' => NativeAppServiceProvider::class,
 
     /**
      * A list of environment keys that should be removed from the
@@ -88,6 +90,9 @@ return [
         '*/tests',
         'installers',
         'storage/app/mpdf',
+        // Player documents, board minutes and receipts of THIS machine: never ship them to
+        // another club's installer. A new install starts with an empty private disk.
+        'storage/app/private',
         'db-lagacy',
         'public/hot',
     ],

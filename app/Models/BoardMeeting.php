@@ -17,10 +17,20 @@ class BoardMeeting extends Model
         'cancelled_at', 'cancelled_by_user_id', 'cancel_reason',
     ];
 
-    /** Normalise the stored attachment URL to a host-relative /media path (web + desktop). */
+    /**
+     * Where the page links the minutes file. A stored file is private and only
+     * reachable through the authenticated route (host-relative, so it works on
+     * the web and in the desktop window). A legacy external link is kept as is.
+     */
     protected function attachmentUrl(): Attribute
     {
-        return Attribute::make(get: fn ($value) => Media::path($value));
+        return Attribute::make(get: function ($value, array $attributes) {
+            if (! empty($attributes['attachment_filename']) && ! empty($attributes['id'])) {
+                return route('board.meetings.attachment.show', $attributes['id'], false);
+            }
+
+            return Media::path($value);
+        });
     }
 
     protected function casts(): array

@@ -27,6 +27,7 @@ const tabs = [
     { key: 'leadership', label: 'leadership' },
     { key: 'branding', label: 'branding' },
     { key: 'settings', label: 'settings' },
+    { key: 'certificates', label: 'academic_certificates' },
 ];
 
 // Helper to get a date string from a potential Date object or ISO string
@@ -618,7 +619,7 @@ function saveSettings() {
                 </form>
 
                 <!-- Academic certificate thresholds -->
-                <form v-if="activeTab === 'settings'" @submit.prevent="saveCertificates" class="mt-6 space-y-6">
+                <form v-if="activeTab === 'certificates'" @submit.prevent="saveCertificates" class="space-y-6">
                     <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                         <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('academic_certificates') }}</h2>
                         <p class="mb-4 -mt-2 text-sm text-slate-500 dark:text-slate-400">{{ t('academic_certificates_hint') }}</p>

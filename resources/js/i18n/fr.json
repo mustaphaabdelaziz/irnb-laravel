@@ -1142,5 +1142,8 @@
     "certificate_congratulations": "Félicitations",
     "certificate_encouragement": "Encouragements",
     "certificate_honor_roll": "Tableau d'honneur",
-    "no_certificate": "Aucune distinction"
+    "no_certificate": "Aucune distinction",
+    "flash.academic_year_updated": "Année scolaire mise à jour.",
+    "flash.academic_year_deleted": "Année scolaire supprimée.",
+    "academic_level_scale_conflict": "Impossible de changer le niveau : certaines moyennes dépassent le nouveau barème."
 }

@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Player;
 
-use App\Enums\EducationLevel;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -37,9 +36,6 @@ class StorePlayerRequest extends FormRequest
             'wilaya_id' => ['nullable', 'integer', Rule::exists('country_states', 'id')->whereNotNull('code')],
             'city' => ['nullable', 'string', 'max:255'],
             'is_student' => ['nullable', 'boolean'],
-            'education_level' => ['nullable', Rule::in(EducationLevel::values())],
-            'institution' => ['nullable', 'string', 'max:255'],
-            'field_of_study' => ['nullable', 'string', 'max:255'],
             'member_job_id' => ['nullable', 'integer', 'exists:member_jobs,id'],
             'join_year' => ['nullable', 'integer', 'min:1900', 'max:'.(date('Y') + 1)],
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],

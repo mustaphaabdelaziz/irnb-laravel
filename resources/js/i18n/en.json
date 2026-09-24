@@ -1142,5 +1142,8 @@
     "certificate_congratulations": "Certificate of Congratulations",
     "certificate_encouragement": "Certificate of Encouragement",
     "certificate_honor_roll": "Honor Roll",
-    "no_certificate": "No certificate"
+    "no_certificate": "No certificate",
+    "flash.academic_year_updated": "School year updated.",
+    "flash.academic_year_deleted": "School year deleted.",
+    "academic_level_scale_conflict": "Cannot change the level: some grades exceed the new scale."
 }

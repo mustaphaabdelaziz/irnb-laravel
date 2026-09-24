@@ -24,6 +24,7 @@ use App\Services\Player\FileNumber;
 use App\Services\Player\MembershipNumber;
 use App\Services\Player\RegisterPlayerService;
 use App\Services\Storage\FileStorageService;
+use App\Support\CertificateThresholds;
 use App\Support\TransactionTitle;
 use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
@@ -151,10 +152,11 @@ class PlayerController extends Controller
             'equipmentRentals.equipmentItem.catalog',
         ]);
 
-        // Only students carry an education section; a worker's past records
+        // Only students carry an education section; a worker's past school years
         // stay stored but are not sent, so the page has nothing to show.
+        // Years come oldest first, each with its trimesters T1 → T3.
         if ($player->is_student) {
-            $player->load(['academicRecords' => fn ($query) => $query->chronological()]);
+            $player->load('academicYears.records');
         }
 
         // Instance-only append (not $appends on the model): is_overdue re-implements
@@ -182,6 +184,7 @@ class PlayerController extends Controller
             'financeAccounts' => $financeAccounts,
             'defaultFinanceAccountId' => $registers->forPlayer($player)?->id,
             'fileDrawerSize' => FileNumber::drawerSize(),
+            'certificateThresholds' => CertificateThresholds::all(),
         ]);
     }
 

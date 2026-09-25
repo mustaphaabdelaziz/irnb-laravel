@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Player;
 use App\Models\WebsiteConfig;
 use App\Services\Pdf\PdfService;
+use App\Services\Player\AcademicResultsSheet;
 use App\Services\Player\FileNumber;
 use App\Support\Media;
 use App\Support\Season;
@@ -97,6 +98,29 @@ class PlayerPrintController extends Controller
         ])->render();
 
         return $this->pdf->stream($html, 'board-table-'.$category->id.'-'.$season->startYear.'.pdf');
+    }
+
+    /**
+     * One school year's grades for every active student, one section per
+     * category (or just the chosen one), best year average first.
+     */
+    public function academicResults(Request $request): Response
+    {
+        $validated = $request->validate([
+            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'school_year' => ['nullable', 'integer', 'min:1990', 'max:2100'],
+        ]);
+
+        $schoolYear = (int) ($validated['school_year'] ?? Season::current()->startYear);
+        $categoryId = isset($validated['category_id']) ? (int) $validated['category_id'] : null;
+
+        $html = view('pdf.academic-results', [
+            'club' => $this->club(),
+            'schoolYear' => $schoolYear,
+            'sections' => AcademicResultsSheet::build($schoolYear, $categoryId),
+        ])->render();
+
+        return $this->pdf->stream($html, 'academic-results-'.$schoolYear.'-'.($categoryId ?? 'all').'.pdf');
     }
 
     private function renderLabels(Collection $players, string $filename): Response

@@ -20,6 +20,7 @@ use App\Http\Controllers\EquipmentOutController;
 use App\Http\Controllers\FinanceAccountController;
 use App\Http\Controllers\FinanceCategoryController;
 use App\Http\Controllers\FinanceController;
+use App\Http\Controllers\FinanceResetController;
 use App\Http\Controllers\FiscalYearController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LanguageController;
@@ -321,6 +322,9 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         Route::post('/roles', [RoleController::class, 'store'])->name('roles.store');
         Route::put('/roles/{role}', [RoleController::class, 'update'])->name('roles.update');
         Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
+
+        // Wipes every financial record (backup first) — see FinanceResetService.
+        Route::post('/finance/reset', [FinanceResetController::class, 'store'])->name('finance.reset');
     });
 
     // Database backup & restore — desktop app only, superadmin only.

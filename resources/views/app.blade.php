@@ -31,9 +31,7 @@
             <link rel="apple-touch-icon" href="{{ $logoUrl }}">
         @endif
 
-        <!-- Fonts: Inter (Latin) + Cairo (Arabic), with Noto Sans Arabic fallback -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800,900|cairo:400,500,600,700,800,900|noto-sans-arabic:400,500,600,700&display=swap" rel="stylesheet" />
+        <!-- Fonts (Inter, Cairo, Noto Sans Arabic) are bundled by Vite from app.js — no CDN, works offline. -->
         <meta name="theme-color" content="{{ $themeColor }}">
         <meta name="color-scheme" content="light dark">
 

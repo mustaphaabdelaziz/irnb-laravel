@@ -1,6 +1,11 @@
 ﻿import '../css/app.css';
 import './bootstrap';
 
+// Fonts are bundled by Vite (no CDN), so the desktop app renders them offline.
+import '@fontsource-variable/inter';
+import '@fontsource-variable/cairo';
+import '@fontsource-variable/noto-sans-arabic';
+
 import { createInertiaApp, router } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createApp, h } from 'vue';

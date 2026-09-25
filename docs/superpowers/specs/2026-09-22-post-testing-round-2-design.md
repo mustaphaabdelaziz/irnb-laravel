@@ -600,6 +600,20 @@ The card header shows "3 missing" at a glance.
 
 # P4 — Exports and templates (.xlsx and .csv)
 
+## Owner decisions (2026-09-25, before planning)
+
+- **Offline only:** nothing at runtime may need the internet (no CDN, no remote API), especially on desktop.
+- **.xlsx imports are read on the server** (pure PHP: ZipArchive + SimpleXML) for all four importers.
+  The SheetJS browser conversion and the `xlsx` npm package are removed. This replaces the
+  "transactions import gets the SheetJS conversion" line below.
+- **Garbled CSV investigated:** the server output is correct (starts `EF BB BF`, valid UTF-8, no stray
+  bytes, BOM predates the report), so the cause is how Excel opened the file. .xlsx becomes the default;
+  CSV keeps the BOM and switches to CRLF; the owner is asked in QA how the file was opened.
+- **Transactions import reads the Cash Register column** by name in any language. With no match, the
+  observer's default register is used and the row gets a warning.
+- **`phpoffice/phpspreadsheet` is removed** (unused).
+- Plan: `docs/superpowers/plans/2026-09-25-round2-p4-exports.md`.
+
 ## Constraint
 
 The desktop PHP has no `ext-xmlwriter` / `ext-xmlreader`, so PhpSpreadsheet 500s there. That is why

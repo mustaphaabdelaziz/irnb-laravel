@@ -2,7 +2,6 @@
 
 namespace App\Support;
 
-use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -17,8 +16,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class Csv
 {
-    private const BOM = "\xEF\xBB\xBF";
-
     /**
      * Stream $rows as a downloadable UTF-8 CSV. Any .xls/.xlsx filename is
      * coerced to .csv so the extension matches the real content.
@@ -34,47 +31,14 @@ class Csv
     }
 
     /**
-     * Parse an uploaded CSV into 0-indexed rows (BOM stripped, delimiter
-     * auto-detected between "," and ";"). Throws if the upload is a binary
-     * spreadsheet (.xlsx/.xls) — which cannot be read on the desktop build —
-     * so the caller can show "use the provided template" instead of 500ing.
+     * Parse an uploaded .xlsx or CSV into 0-indexed rows. The file's first
+     * bytes (never its name) decide the format; legacy .xls (OLE) throws so
+     * the caller can show "use the provided template" instead of 500ing.
      *
      * @return list<array<int, string|null>>
      */
     public static function readRows(string $path): array
     {
-        $handle = fopen($path, 'r');
-        if ($handle === false) {
-            return [];
-        }
-
-        // .xlsx is a zip ("PK\x03\x04"); legacy .xls is OLE ("\xD0\xCF\x11\xE0").
-        // Both are binary and unreadable as CSV — reject rather than yield junk.
-        $magic = (string) fread($handle, 4);
-        if (str_starts_with($magic, "PK\x03\x04") || str_starts_with($magic, "\xD0\xCF\x11\xE0")) {
-            fclose($handle);
-            throw new RuntimeException('Binary spreadsheet uploaded; expected CSV.');
-        }
-        rewind($handle);
-
-        // Sniff the delimiter from the first line (Excel in some locales writes ";").
-        $firstLine = ltrim((string) fgets($handle), self::BOM);
-        $delimiter = substr_count($firstLine, ';') > substr_count($firstLine, ',') ? ';' : ',';
-        rewind($handle);
-
-        $rows = [];
-        $isFirst = true;
-        while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
-            if ($isFirst) {
-                $isFirst = false;
-                if (isset($row[0]) && is_string($row[0])) {
-                    $row[0] = ltrim($row[0], self::BOM); // strip BOM off the first cell
-                }
-            }
-            $rows[] = $row;
-        }
-        fclose($handle);
-
-        return $rows;
+        return Spreadsheet::readRows($path);
     }
 }

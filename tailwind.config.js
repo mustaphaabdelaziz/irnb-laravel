@@ -17,8 +17,9 @@ export default {
             fontFamily: {
                 // Inter renders Latin, Cairo/Noto cover Arabic glyphs — the browser
                 // picks per-glyph, so a single stack works for the mixed-script UI.
-                sans: ['Inter', 'Cairo', '"Noto Sans Arabic"', ...defaultTheme.fontFamily.sans],
-                display: ['Cairo', 'Inter', ...defaultTheme.fontFamily.sans],
+                // Self-hosted @fontsource-variable packages (imported in app.js).
+                sans: ['"Inter Variable"', '"Cairo Variable"', '"Noto Sans Arabic Variable"', ...defaultTheme.fontFamily.sans],
+                display: ['"Cairo Variable"', '"Inter Variable"', ...defaultTheme.fontFamily.sans],
             },
             colors: {
                 border: 'hsl(var(--border) / <alpha-value>)',

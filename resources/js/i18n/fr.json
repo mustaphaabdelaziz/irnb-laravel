@@ -1243,5 +1243,10 @@
     "flash.transactions_archived": "{count} transaction(s) supprimée(s).",
     "flash.transactions_archived_some_skipped": "{count} transaction(s) supprimée(s), {skipped} ignorée(s) (exercice clôturé).",
     "flash.fiscal_year_deleted": "Exercice {year} supprimé.",
-    "flash.fiscal_year_not_empty": "L'exercice {year} ne peut pas être supprimé : il est clôturé ou contient encore des transactions."
+    "flash.fiscal_year_not_empty": "L'exercice {year} ne peut pas être supprimé : il est clôturé ou contient encore des transactions.",
+    "academic_results": "Résultats scolaires",
+    "academic_results_students": "élèves",
+    "academic_results_empty": "Aucun élève pour cette sélection.",
+    "print_academic_results": "Imprimer les résultats scolaires",
+    "print_academic_results_hint": "Une feuille par catégorie, élèves classés par moyenne annuelle."
 }

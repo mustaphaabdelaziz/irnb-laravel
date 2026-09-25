@@ -52,6 +52,7 @@ return [
         'players.label' => ['players', 'view'],
         'players.labels' => ['players', 'view'],
         'players.board-table' => ['players', 'view'],
+        'players.academic-results' => ['players', 'view'],
         'transactions.receipt' => ['transactions', 'view'],
         'reports.financial' => ['reports', 'view'],
         'finance.index' => ['finance', 'view'],

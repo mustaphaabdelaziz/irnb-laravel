@@ -16,6 +16,7 @@ import BulkEditModal from '@/Components/BulkEditModal.vue';
 import StatDoughnut from '@/Components/StatDoughnut.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import Icon from '@/Components/Icon.vue';
+import AcademicResultsPrint from '@/Pages/Players/Partials/AcademicResultsPrint.vue';
 
 const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
@@ -34,6 +35,7 @@ const props = defineProps({
     ageStats: { type: Array, default: () => [] },
     documentTypes: { type: Array, default: () => [] },
     filters: Object,
+    currentSchoolYear: { type: Number, default: null },
 });
 
 const search = ref(props.filters?.search || '');
@@ -264,6 +266,7 @@ function runBulk() {
                         class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800">
                         <Icon name="print" /> {{ t('print_board_table') }}
                     </a>
+                    <AcademicResultsPrint :categories="categories" :category-id="categoryFilter" :current-school-year="currentSchoolYear" />
 
                     <!-- ...folded into an overflow menu below xl -->
                     <Dropdown align="right" width="48" class="xl:hidden">

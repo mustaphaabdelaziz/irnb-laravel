@@ -129,6 +129,7 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
     Route::post('/players/bulk-update', [PlayerController::class, 'bulkUpdate'])->name('players.bulkUpdate');
     Route::get('/players/labels', [PlayerPrintController::class, 'labels'])->name('players.labels');
     Route::get('/players/board-table', [PlayerPrintController::class, 'boardTable'])->name('players.board-table');
+    Route::get('/players/academic-results', [PlayerPrintController::class, 'academicResults'])->name('players.academic-results');
 
     // Players
     Route::resource('players', PlayerController::class);

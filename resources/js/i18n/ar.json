@@ -1243,5 +1243,10 @@
     "flash.transactions_archived": "تم حذف {count} معاملة.",
     "flash.transactions_archived_some_skipped": "تم حذف {count} معاملة، وتم تجاوز {skipped} (سنة مالية مغلقة).",
     "flash.fiscal_year_deleted": "تم حذف السنة المالية {year}.",
-    "flash.fiscal_year_not_empty": "لا يمكن حذف السنة المالية {year}: إنها مغلقة أو ما زالت تحتوي على معاملات."
+    "flash.fiscal_year_not_empty": "لا يمكن حذف السنة المالية {year}: إنها مغلقة أو ما زالت تحتوي على معاملات.",
+    "academic_results": "النتائج الدراسية",
+    "academic_results_students": "طالب",
+    "academic_results_empty": "لا يوجد طلبة لهذا الاختيار.",
+    "print_academic_results": "طباعة النتائج الدراسية",
+    "print_academic_results_hint": "ورقة لكل فئة، الطلبة مرتبون حسب معدل السنة."
 }

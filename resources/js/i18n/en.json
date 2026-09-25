@@ -1243,5 +1243,10 @@
     "flash.transactions_archived": "{count} transaction(s) deleted.",
     "flash.transactions_archived_some_skipped": "{count} transaction(s) deleted, {skipped} skipped (closed fiscal year).",
     "flash.fiscal_year_deleted": "Fiscal year {year} deleted.",
-    "flash.fiscal_year_not_empty": "Fiscal year {year} cannot be deleted: it is closed or still has transactions."
+    "flash.fiscal_year_not_empty": "Fiscal year {year} cannot be deleted: it is closed or still has transactions.",
+    "academic_results": "Academic results",
+    "academic_results_students": "students",
+    "academic_results_empty": "No students for this selection.",
+    "print_academic_results": "Print academic results",
+    "print_academic_results_hint": "One sheet per category, students ranked by year average."
 }

@@ -9,13 +9,15 @@ use App\Models\Player;
 use App\Models\StorageLocation;
 use App\Models\User;
 use App\Services\Equipment\EquipmentStockService;
-use App\Services\Export\ExcelExporter;
+use App\Support\Export;
+use App\Support\UiLang;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class InventoryController extends Controller
 {
@@ -210,22 +212,26 @@ class InventoryController extends Controller
         return back()->with('success', ['key' => 'flash.inventory_completed', 'params' => ['reference' => $session->reference]]);
     }
 
-    public function export(InventorySession $session, ExcelExporter $exporter)
+    public function export(Request $request, InventorySession $session): SymfonyResponse
     {
         $session->load('items.item.catalog:id,name');
         $rows = $session->items->map(function (InventorySessionItem $l) {
-            $found = $l->counted ? ($l->found ? 'Found' : 'Missing') : '-';
+            $found = $l->counted ? UiLang::get($l->found ? 'col.found' : 'col.missing') : '-';
 
             return [
-                $l->item?->unique_identifier, $l->item?->catalog?->name, $l->expected_status,
-                $l->expected_condition, $l->expected_location, $found,
-                $l->actual_condition, $l->actual_location, $l->note,
+                $l->item?->unique_identifier, $l->item?->catalog?->name, EquipmentItem::stateLabel($l->expected_status),
+                EquipmentItem::stateLabel($l->expected_condition), $l->expected_location, $found,
+                EquipmentItem::stateLabel($l->actual_condition), $l->actual_location, $l->note,
             ];
         })->all();
 
-        $headers = ['Item', 'Catalog', 'Expected Status', 'Expected Condition', 'Expected Location', 'Result', 'Actual Condition', 'Actual Location', 'Note'];
+        $headers = array_map(fn (string $key) => UiLang::get($key), [
+            'col.item', 'col.catalog', 'col.expected_status', 'col.expected_condition', 'col.expected_location',
+            'col.result', 'col.actual_condition', 'col.actual_location', 'col.note',
+        ]);
 
-        return $exporter->download('Inventory '.$session->reference, $headers, $rows, 'inventory-'.$session->reference.'.csv');
+        return Export::download(Export::format($request), 'inventory-'.$session->reference, $headers, $rows,
+            UiLang::get('inventory', 'Inventory').' '.$session->reference);
     }
 
     public function destroy(InventorySession $session): RedirectResponse

@@ -11,14 +11,16 @@ use App\Models\FinanceAccount;
 use App\Models\Player;
 use App\Models\StorageLocation;
 use App\Services\Dashboard\ModuleStats;
-use App\Services\Export\ExcelExporter;
 use App\Services\Storage\FileStorageService;
 use App\Support\Csv;
+use App\Support\Export;
+use App\Support\UiLang;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
@@ -202,25 +204,28 @@ class EquipmentCatalogController extends Controller
         return Csv::download('equipment-catalogs-template.csv', $headers, [$example]);
     }
 
-    public function export(ExcelExporter $exporter): StreamedResponse
+    public function export(Request $request): SymfonyResponse
     {
         $rows = EquipmentCatalog::query()
             ->withSum('items as units_total', 'quantity')
             ->orderBy('name')->get()
             ->map(fn (EquipmentCatalog $c) => [
                 $c->name,
+                // Catalogs store the category name as free text (no localized name).
                 $c->category,
                 $c->brand,
-                (string) $c->purchase_price,
+                $c->purchase_price !== null ? (float) $c->purchase_price : null,
                 (int) $c->units_total,
                 $c->description,
             ]);
 
         // Units, not rows: one lot row can hold 100 dossards.
-        $headers = ['name', 'category', 'brand', 'purchase_price', 'total_units', 'description'];
+        $headers = array_map(fn (string $key) => UiLang::get($key), [
+            'col.name', 'col.category', 'col.brand', 'col.purchase_price', 'col.total_units', 'col.description',
+        ]);
 
-        return $exporter->download('Equipment catalogs', $headers, $rows->all(),
-            'equipment-catalogs-'.now()->format('Y-m-d').'.csv');
+        return Export::download(Export::format($request), 'equipment-catalogs-'.now()->format('Y-m-d'),
+            $headers, $rows->all(), UiLang::get('equipments', 'Equipment catalogs'));
     }
 
     public function import(Request $request): RedirectResponse

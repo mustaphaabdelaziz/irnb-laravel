@@ -154,7 +154,7 @@ class BranchFeatureTest extends TestCase
             ->get(route('players.export', ['branch_id' => $swim->id]))
             ->assertOk();
 
-        $content = $this->get(route('players.export', ['branch_id' => $swim->id]))->streamedContent();
+        $content = $this->get(route('players.export', ['branch_id' => $swim->id, 'format' => 'csv']))->streamedContent();
         $this->assertStringContainsString('202400001', $content);
         $this->assertStringNotContainsString('202400002', $content);
     }

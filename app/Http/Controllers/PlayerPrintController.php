@@ -7,8 +7,10 @@ use App\Models\Player;
 use App\Models\WebsiteConfig;
 use App\Services\Pdf\PdfService;
 use App\Services\Player\FileNumber;
+use App\Support\Export;
 use App\Support\Media;
 use App\Support\Season;
+use App\Support\UiLang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\Response;
@@ -84,6 +86,25 @@ class PlayerPrintController extends Controller
             ->orderBy('lastname')
             ->orderBy('firstname')
             ->get();
+
+        // PDF stays the default (it is the printed sheet); xlsx/csv are extras.
+        $format = $request->query('format');
+        if (in_array($format, [Export::XLSX, Export::CSV], true)) {
+            $drawerSize = FileNumber::drawerSize();
+            $rows = $players->values()->map(fn (Player $player, int $i) => [
+                $i + 1,
+                $player->fullname,
+                (string) $player->membership_id,
+                FileNumber::format($player->file_number) ?: '—',
+                $player->file_number ? FileNumber::drawer($player->file_number, $drawerSize) : '—',
+            ]);
+            $headers = ['#', ...array_map(fn (string $key) => UiLang::get($key), [
+                'col.member', 'col.membership_id', 'col.file_number', 'col.drawer',
+            ])];
+
+            return Export::download($format, 'board-table-'.$category->id.'-'.$season->startYear, $headers, $rows->all(),
+                ($category->localized_name ?: $category->name).' — '.$season->label());
+        }
 
         $html = view('pdf.board-table', [
             'club' => $this->club(),

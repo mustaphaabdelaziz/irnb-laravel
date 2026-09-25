@@ -139,7 +139,7 @@ class PlayerWilayaTest extends TestCase
         // here — a French-speaking user is what "the user's language" means.
         $frenchAdmin = User::factory()->admin()->create(['email_verified_at' => now(), 'preferred_lng' => 'fr']);
 
-        $csv = $this->actingAs($frenchAdmin)->get(route('players.export'))
+        $csv = $this->actingAs($frenchAdmin)->get(route('players.export', ['format' => 'csv']))
             ->assertOk()->streamedContent();
 
         $this->assertStringContainsString('Ghardaïa', $csv);

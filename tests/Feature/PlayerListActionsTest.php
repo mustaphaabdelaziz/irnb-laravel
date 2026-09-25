@@ -108,7 +108,7 @@ class PlayerListActionsTest extends TestCase
     {
         $player = $this->player(['firstname' => 'Exported', 'lastname' => 'Player']);
 
-        $response = $this->actingAs($this->admin())->get(route('players.export'));
+        $response = $this->actingAs($this->admin())->get(route('players.export', ['format' => 'csv']));
 
         $response->assertOk();
         $response->assertHeader('content-type', 'text/csv; charset=UTF-8');
@@ -121,7 +121,7 @@ class PlayerListActionsTest extends TestCase
         $active = $this->player(['membership_id' => '202400001']);
         $archived = $this->player(['membership_id' => '202400002', 'archived' => true]);
 
-        $response = $this->actingAs($this->admin())->get(route('players.export', ['archived' => 1]));
+        $response = $this->actingAs($this->admin())->get(route('players.export', ['archived' => 1, 'format' => 'csv']));
 
         $content = $response->streamedContent();
         $this->assertStringContainsString('202400002', $content);

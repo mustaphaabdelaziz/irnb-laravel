@@ -15,8 +15,9 @@ use App\Models\Transaction;
 use App\Services\Equipment\EquipmentLifecycleService;
 use App\Services\Equipment\EquipmentStockService;
 use App\Services\Equipment\SerialNumberService;
-use App\Services\Export\ExcelExporter;
 use App\Support\Csv;
+use App\Support\Export;
+use App\Support\UiLang;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -24,6 +25,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
@@ -455,22 +457,25 @@ class EquipmentItemController extends Controller
         return Csv::download('equipment-items-template.csv', $headers, [$example]);
     }
 
-    public function export(EquipmentCatalog $catalog, ExcelExporter $exporter): StreamedResponse
+    public function export(Request $request, EquipmentCatalog $catalog): SymfonyResponse
     {
         $rows = $catalog->items()->orderBy('unique_identifier')->get()->map(fn (EquipmentItem $item) => [
             $item->unique_identifier,
             $item->designation,
-            $item->condition,
+            EquipmentItem::stateLabel($item->condition),
             $item->location,
-            $item->status,
-            $item->purchase_date?->toDateString(),
+            EquipmentItem::stateLabel($item->status),
+            $item->purchase_date,
             $item->notes,
         ]);
 
-        $headers = ['serial', 'designation', 'condition', 'location', 'status', 'purchase_date', 'notes'];
+        $headers = array_map(fn (string $key) => UiLang::get($key), [
+            'col.serial', 'col.designation', 'col.condition', 'col.location', 'col.status', 'col.purchase_date', 'col.notes',
+        ]);
 
-        return $exporter->download('Equipment '.$catalog->name, $headers, $rows->all(),
-            'equipment-'.$catalog->id.'-'.now()->format('Y-m-d').'.csv');
+        // The catalog page's own title is the catalog name.
+        return Export::download(Export::format($request), 'equipment-'.$catalog->id.'-'.now()->format('Y-m-d'),
+            $headers, $rows->all(), $catalog->name);
     }
 
     public function import(Request $request, EquipmentCatalog $catalog): RedirectResponse

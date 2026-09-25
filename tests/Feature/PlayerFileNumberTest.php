@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\WebsiteConfig;
 use App\Services\Player\FileNumber;
 use App\Services\Player\RegisterPlayerService;
+use App\Support\UiLang;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -109,10 +110,11 @@ class PlayerFileNumberTest extends TestCase
     {
         $this->register('Amine');
 
-        $csv = $this->actingAs($this->admin())->get(route('players.export'))
+        $csv = $this->actingAs($this->admin())->get(route('players.export', ['format' => 'csv']))
             ->assertOk()->streamedContent();
 
-        $this->assertStringContainsString('File number', $csv);
+        // The admin's preferred_lng defaults to 'ar'.
+        $this->assertStringContainsString(UiLang::get('col.file_number', null, 'ar'), $csv);
         $this->assertStringContainsString('0001', $csv);
     }
 

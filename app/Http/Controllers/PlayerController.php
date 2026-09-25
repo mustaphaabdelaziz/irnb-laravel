@@ -20,7 +20,6 @@ use App\Models\Position;
 use App\Models\Subscription;
 use App\Models\Transaction;
 use App\Services\Dashboard\ModuleStats;
-use App\Services\Export\ExcelExporter;
 use App\Services\Finance\DefaultRegisterResolver;
 use App\Services\Player\DocumentChecklist;
 use App\Services\Player\FileNumber;
@@ -29,8 +28,10 @@ use App\Services\Player\PlayerDocumentService;
 use App\Services\Player\RegisterPlayerService;
 use App\Services\Storage\FileStorageService;
 use App\Support\CertificateThresholds;
+use App\Support\Export;
 use App\Support\Season;
 use App\Support\TransactionTitle;
+use App\Support\UiLang;
 use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -40,7 +41,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Inertia\Inertia;
 use Inertia\Response;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class PlayerController extends Controller
 {
@@ -537,9 +538,9 @@ class PlayerController extends Controller
         return back()->with('success', ['key' => 'flash.players_deleted', 'params' => ['count' => count($ids)]]);
     }
 
-    public function export(Request $request, ExcelExporter $exporter): StreamedResponse
+    public function export(Request $request): SymfonyResponse
     {
-        $query = Player::query()->with(['category', 'position', 'otherPositions', 'branches', 'status', 'wilaya']);
+        $query = Player::query()->with(['category', 'position', 'otherPositions', 'branches', 'status', 'wilaya', 'memberJob']);
         $this->applyPlayerFilters($query, $request);
 
         $rows = $query->orderBy('lastname')->orderBy('firstname')->get()->map(fn (Player $p) => [
@@ -551,16 +552,21 @@ class PlayerController extends Controller
             $p->fullname,
             $p->category?->localized_name,
             $p->status?->localized_name,
-            $p->is_student ? 'student' : 'worker',
-            $p->join_year,
-            (string) $p->outstanding_debt,
+            $p->is_student ? UiLang::get('student', 'student') : UiLang::get('worker', 'worker'),
+            $p->join_year !== null ? (int) $p->join_year : null,
+            (float) $p->outstanding_debt,
             collect($p->phones ?? [])->implode(' / '),
             $p->branches->map(fn (Branch $b) => $b->localized_name)->implode(' / '),
+            $p->memberJob?->localized_name,
         ]);
 
-        $headers = ['membership_id', 'File number', 'Wilaya', 'Main position', 'Other positions', 'name', 'category', 'status', 'type', 'join_year', 'debt', 'phones', 'branches'];
+        $headers = array_map(fn (string $key) => UiLang::get($key), [
+            'col.membership_id', 'col.file_number', 'col.wilaya', 'col.main_position', 'col.other_positions',
+            'col.full_name', 'col.category', 'col.status', 'col.player_type', 'col.join_year', 'col.debt',
+            'col.phones', 'col.branches', 'col.job',
+        ]);
 
-        return $exporter->download('Players', $headers, $rows->all(), 'players-'.now()->format('Y-m-d').'.csv');
+        return Export::download(Export::format($request), 'players-'.now()->format('Y-m-d'), $headers, $rows->all(), UiLang::get('players', 'Players'));
     }
 
     /**

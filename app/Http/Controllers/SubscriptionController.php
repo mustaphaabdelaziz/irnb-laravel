@@ -10,14 +10,15 @@ use App\Models\PlayerSubscription;
 use App\Models\Subscription;
 use App\Services\Dashboard\ModuleStats;
 use App\Services\Finance\RecalculatePlayerDebtService;
-use App\Support\Csv;
+use App\Support\Export;
+use App\Support\UiLang;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class SubscriptionController extends Controller
 {
@@ -330,7 +331,7 @@ class SubscriptionController extends Controller
             ->with('success', ['key' => 'flash.player_added_to_subscription', 'params' => ['name' => $player->firstname.' '.$player->lastname]]);
     }
 
-    public function export(Request $request, Subscription $subscription): StreamedResponse
+    public function export(Request $request, Subscription $subscription): SymfonyResponse
     {
         $playerSubscriptions = PlayerSubscription::query()
             ->where('subscription_id', $subscription->id)
@@ -347,8 +348,14 @@ class SubscriptionController extends Controller
             $playerSubscriptions = $playerSubscriptions->filter(fn ($ps) => $ps->payment_status === 'partial');
         }
 
-        $title = $subscription->designation.' ('.ucfirst($filter).')';
-        $headers = ['#', 'Membership ID', 'Player Name', 'Category', 'Amount Owed', 'Amount Paid', 'Status'];
+        // The tab labels the page uses (t(tab)); anything else stays as typed.
+        $filterLabel = in_array($filter, ['all', 'paid', 'unpaid', 'partial'], true)
+            ? UiLang::get($filter, ucfirst($filter))
+            : ucfirst((string) $filter);
+        $title = $subscription->designation.' ('.$filterLabel.')';
+        $headers = ['#', ...array_map(fn (string $key) => UiLang::get($key), [
+            'col.membership_id', 'col.player_name', 'col.category', 'col.amount_owed', 'col.amount_paid', 'col.status',
+        ])];
 
         $rows = [];
         $rowNum = 1;
@@ -358,25 +365,26 @@ class SubscriptionController extends Controller
 
             $rows[] = [
                 $rowNum++,
-                $player?->membership_id ?? '-',
+                $player?->membership_id !== null ? (string) $player->membership_id : '-',
                 $name,
-                $player?->category?->name ?? '-',
+                $player?->category?->localized_name ?? '-',
                 (float) $ps->amount_owed,
                 (float) $ps->amount_paid,
-                strtoupper($ps->payment_status),
+                // Same key the page's statusLabel('payment', ...) resolves to.
+                UiLang::get((string) $ps->payment_status, strtoupper((string) $ps->payment_status)),
             ];
         }
 
         // Summary row.
         $rows[] = [
-            '', '', '', 'TOTAL',
-            $playerSubscriptions->sum('amount_owed'),
-            $playerSubscriptions->sum('amount_paid'),
-            '',
+            null, null, null, UiLang::get('col.total'),
+            (float) $playerSubscriptions->sum('amount_owed'),
+            (float) $playerSubscriptions->sum('amount_paid'),
+            null,
         ];
 
-        $filename = 'subscription_'.str_replace([' ', '/'], '_', $subscription->designation).'_'.$filter.'.csv';
+        $filename = 'subscription_'.str_replace([' ', '/'], '_', $subscription->designation).'_'.$filter;
 
-        return Csv::download($filename, $headers, $rows, $title);
+        return Export::download(Export::format($request), $filename, $headers, $rows, $title);
     }
 }

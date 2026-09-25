@@ -10,13 +10,14 @@ use App\Models\Player;
 use App\Models\PlayerSubscription;
 use App\Models\Transaction;
 use App\Models\WebsiteConfig;
-use App\Services\Export\ExcelExporter;
 use App\Services\Finance\DefaultRegisterResolver;
 use App\Services\Finance\RecalculatePlayerDebtService;
 use App\Services\FinanceService;
 use App\Services\Storage\FileStorageService;
 use App\Services\Storage\PrivateFileStorage;
+use App\Support\Export;
 use App\Support\TransactionTitle;
+use App\Support\UiLang;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,10 +25,14 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TransactionController extends Controller
 {
+    /** Stored payment-method code => the i18n key the screens use (resources/js/lib/statusLabels.js). */
+    private const PAYMENT_METHOD_KEYS = ['bank' => 'bank_transfer'];
+
     public function index(Request $request): Response
     {
         $query = Transaction::query()->where('archived', false);
@@ -63,27 +68,30 @@ class TransactionController extends Controller
         ]);
     }
 
-    public function export(Request $request, ExcelExporter $exporter)
+    public function export(Request $request): SymfonyResponse
     {
         $query = Transaction::query()->with(['recordedBy', 'financeAccount', ...TransactionTitle::RELATIONS])->where('archived', false);
         $this->applyFilters($query, $request);
 
         $rows = $query->latest('transaction_date')->get()->map(fn (Transaction $t) => [
-            $t->transaction_date?->format('Y-m-d'),
+            $t->transaction_date,
             TransactionTitle::for($t),
-            ucfirst($t->transaction_type),
+            UiLang::get((string) $t->transaction_type, $t->transaction_type),
             $t->financeCategory?->localized_name ?? $t->category,
             (float) $t->amount,
-            $t->status,
-            $t->payment_method,
+            $t->status ? UiLang::get(strtolower($t->status), $t->status) : null,
+            $t->payment_method ? UiLang::get(self::PAYMENT_METHOD_KEYS[$t->payment_method] ?? $t->payment_method, $t->payment_method) : null,
             $t->financeAccount?->name,
             $t->description,
             $t->recordedBy?->name,
         ])->all();
 
-        $headers = ['Date', 'Title', 'Type', 'Category', 'Amount', 'Status', 'Payment', 'Cash Register', 'Description', 'Recorded By'];
+        $headers = array_map(fn (string $key) => UiLang::get($key), [
+            'col.date', 'col.title', 'col.type', 'col.category', 'col.amount', 'col.status',
+            'col.payment_method', 'col.cash_register', 'col.description', 'col.recorded_by',
+        ]);
 
-        return $exporter->download('Transactions', $headers, $rows, 'transactions-'.now()->format('Y-m-d').'.csv');
+        return Export::download(Export::format($request), 'transactions-'.now()->format('Y-m-d'), $headers, $rows, UiLang::get('transactions', 'Transactions'));
     }
 
     public function show(Transaction $transaction): Response

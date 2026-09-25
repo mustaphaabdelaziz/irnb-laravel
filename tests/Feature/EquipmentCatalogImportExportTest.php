@@ -78,7 +78,7 @@ class EquipmentCatalogImportExportTest extends TestCase
     {
         EquipmentCatalog::create(['name' => 'Exported Kit', 'category' => 'Kits', 'brand' => 'Nike']);
 
-        $response = $this->actingAs($this->user())->get(route('equipment.catalogs.export'));
+        $response = $this->actingAs($this->user())->get(route('equipment.catalogs.export', ['format' => 'csv']));
 
         $response->assertOk();
         $response->assertHeader('content-type', 'text/csv; charset=UTF-8');

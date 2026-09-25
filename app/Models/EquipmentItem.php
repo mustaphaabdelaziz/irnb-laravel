@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\Equipment\EquipmentStockService;
+use App\Support\UiLang;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -89,6 +90,20 @@ class EquipmentItem extends Model
             $q->whereHas('branches', fn (Builder $b) => $b->where('branches.id', $branchId))
                 ->orWhereDoesntHave('branches');
         });
+    }
+
+    /**
+     * A stored status/condition code ("Under Repair", "Good") in the user's
+     * language — the same lowercased, underscored key the equipment screen's
+     * stateLabel() uses; the raw code when no key exists.
+     */
+    public static function stateLabel(?string $code): ?string
+    {
+        if ($code === null || $code === '') {
+            return null;
+        }
+
+        return UiLang::get(str_replace(' ', '_', strtolower($code)), $code);
     }
 
     /** Out on loan, so it must not be deleted. */

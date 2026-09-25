@@ -107,7 +107,7 @@ class EquipmentImportExportTest extends TestCase
             'designation' => 'Exported Ball',
         ]);
 
-        $response = $this->actingAs($this->user())->get(route('equipment.items.export', $catalog));
+        $response = $this->actingAs($this->user())->get(route('equipment.items.export', [$catalog, 'format' => 'csv']));
 
         $response->assertOk();
         $response->assertHeader('content-type', 'text/csv; charset=UTF-8');

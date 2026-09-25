@@ -9,12 +9,14 @@ use App\Models\BoardTask;
 use App\Models\BoardTerm;
 use App\Models\Player;
 use App\Models\PlayerSubscription;
-use App\Services\Export\ExcelExporter;
+use App\Support\Export;
+use App\Support\UiLang;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class BoardController extends Controller
 {
@@ -261,23 +263,38 @@ class BoardController extends Controller
         ];
     }
 
-    public function exportMembers(ExcelExporter $exporter)
+    public function exportMembers(Request $request): SymfonyResponse
     {
+        // Role and status render on the page as t(code) (Board/Members.vue).
         $rows = BoardMember::orderBy('sort_order')->get()->map(fn (BoardMember $m) => [
-            $m->name, $m->role, $m->email, $m->phone,
-            $m->term_start?->format('Y-m-d'), $m->term_end?->format('Y-m-d'), $m->status,
+            $m->name, self::codeLabel($m->role), $m->email, $m->phone !== null ? (string) $m->phone : null,
+            $m->term_start, $m->term_end, self::codeLabel($m->status),
         ])->all();
 
-        return $exporter->download('Board Members', ['Name', 'Role', 'Email', 'Phone', 'Term Start', 'Term End', 'Status'], $rows, 'board-members.csv');
+        $headers = array_map(fn (string $key) => UiLang::get($key), [
+            'col.name', 'col.role', 'col.email', 'col.phone', 'col.term_start', 'col.term_end', 'col.status',
+        ]);
+
+        return Export::download(Export::format($request), 'board-members', $headers, $rows, UiLang::get('board_members', 'Board Members'));
     }
 
-    public function exportTasks(ExcelExporter $exporter)
+    public function exportTasks(Request $request): SymfonyResponse
     {
+        // Priority and status render on the page as t(code) (Board/Tasks.vue).
         $rows = BoardTask::with(['member:id,name', 'meeting:id,title'])->orderByDesc('id')->get()->map(fn (BoardTask $t) => [
-            $t->title, $t->member?->name, $t->meeting?->title, $t->priority, $t->status,
-            $t->progress.'%', $t->due_date?->format('Y-m-d'),
+            $t->title, $t->member?->name, $t->meeting?->title, self::codeLabel($t->priority), self::codeLabel($t->status),
+            (int) $t->progress, $t->due_date,
         ])->all();
 
-        return $exporter->download('Board Tasks', ['Title', 'Assignee', 'Meeting', 'Priority', 'Status', 'Progress', 'Due Date'], $rows, 'board-tasks.csv');
+        $headers = array_map(fn (string $key) => UiLang::get($key), [
+            'col.title', 'col.assignee', 'col.meeting', 'col.priority', 'col.status', 'col.progress', 'col.due_date',
+        ]);
+
+        return Export::download(Export::format($request), 'board-tasks', $headers, $rows, UiLang::get('tasks', 'Board Tasks'));
+    }
+
+    private static function codeLabel(?string $code): ?string
+    {
+        return $code === null || $code === '' ? null : UiLang::get($code, $code);
     }
 }

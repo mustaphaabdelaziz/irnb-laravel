@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Player;
 use App\Models\Position;
 use App\Models\User;
+use App\Support\UiLang;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use PHPUnit\Framework\Attributes\Test;
@@ -149,10 +150,11 @@ class PlayerPositionsTest extends TestCase
         $player = Player::create(['membership_id' => '202600005', 'firstname' => 'Amine', 'position_id' => $mid->id]);
         $player->otherPositions()->sync([$wing->id]);
 
-        $csv = $this->actingAs($this->admin())->get(route('players.export'))->assertOk()->streamedContent();
+        $csv = $this->actingAs($this->admin())->get(route('players.export', ['format' => 'csv']))->assertOk()->streamedContent();
 
-        $this->assertStringContainsString('Main position', $csv);
-        $this->assertStringContainsString('Other positions', $csv);
+        // The admin's preferred_lng defaults to 'ar'.
+        $this->assertStringContainsString(UiLang::get('col.main_position', null, 'ar'), $csv);
+        $this->assertStringContainsString(UiLang::get('col.other_positions', null, 'ar'), $csv);
         $this->assertStringContainsString('WG', $csv);
     }
 

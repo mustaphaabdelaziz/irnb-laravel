@@ -28,33 +28,9 @@ class Csv
      */
     public static function download(string $filename, array $headers, iterable $rows, ?string $title = null): StreamedResponse
     {
-        $filename = (string) preg_replace('/\.(xlsx|xls)$/i', '.csv', $filename);
-        if (! str_ends_with(strtolower($filename), '.csv')) {
-            $filename .= '.csv';
-        }
+        $base = (string) preg_replace('/\.(csv|xlsx|xls)$/i', '', $filename);
 
-        return response()->streamDownload(function () use ($headers, $rows, $title) {
-            $out = fopen('php://output', 'w');
-            fwrite($out, self::BOM);
-
-            if ($title !== null && $title !== '') {
-                fputcsv($out, [$title]);
-                fputcsv($out, []); // spacer row
-            }
-
-            if ($headers !== []) {
-                fputcsv($out, $headers);
-            }
-
-            foreach ($rows as $row) {
-                fputcsv($out, array_map(self::stringify(...), array_values((array) $row)));
-            }
-
-            fclose($out);
-        }, $filename, [
-            'Content-Type' => 'text/csv; charset=UTF-8',
-            'Cache-Control' => 'no-cache, no-store, must-revalidate',
-        ]);
+        return Export::download(Export::CSV, $base, $headers, $rows, $title);
     }
 
     /**
@@ -100,18 +76,5 @@ class Csv
         fclose($handle);
 
         return $rows;
-    }
-
-    private static function stringify(mixed $value): string
-    {
-        if ($value === null) {
-            return '';
-        }
-
-        if (is_bool($value)) {
-            return $value ? '1' : '0';
-        }
-
-        return (string) $value;
     }
 }

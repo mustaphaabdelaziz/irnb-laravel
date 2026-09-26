@@ -15,8 +15,9 @@ use App\Models\Transaction;
 use App\Services\Equipment\EquipmentLifecycleService;
 use App\Services\Equipment\EquipmentStockService;
 use App\Services\Equipment\SerialNumberService;
-use App\Support\Csv;
 use App\Support\Export;
+use App\Support\Import\ImportColumns;
+use App\Support\Spreadsheet;
 use App\Support\UiLang;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -26,7 +27,6 @@ use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
 class EquipmentItemController extends Controller
@@ -435,26 +435,34 @@ class EquipmentItemController extends Controller
 
     /**
      * Import columns shared by the template and the importer.
-     * Each entry: [field key, Arabic header, example value]. The catalog is implicit
+     * Found by header (ar / fr / en, or `legacy`: the old Arabic template's
+     * header), else by this position — so keep the order. `example` is the
+     * template's example cell; an i18n key when `localized`. The catalog is implicit
      * (the page the file is uploaded from); serials + status are assigned automatically.
      *
-     * @var list<array{0:string,1:string,2:string}>
+     * @var list<array{key:string, label:string, hint?:string, legacy:list<string>, example:string, localized?:bool}>
      */
     private const IMPORT_COLUMNS = [
-        ['designation', 'التسمية', 'قميص رقم 10'],
-        ['purchase_date', 'تاريخ الشراء (YYYY-MM-DD)', '2026-05-01'],
-        ['condition', 'الحالة (New/Good/Fair/Poor/Damaged)', 'New'],
-        ['location', 'الموقع', 'المخزن A'],
-        ['purchase_price', 'سعر الشراء', ''],
-        ['notes', 'ملاحظات', ''],
+        ['key' => 'designation', 'label' => 'col.designation', 'legacy' => ['التسمية'], 'example' => 'قميص رقم 10'],
+        ['key' => 'purchase_date', 'label' => 'col.purchase_date', 'hint' => 'col.hint.date', 'legacy' => ['تاريخ الشراء (YYYY-MM-DD)'], 'example' => '2026-05-01'],
+        ['key' => 'condition', 'label' => 'col.condition', 'legacy' => ['الحالة (New/Good/Fair/Poor/Damaged)'], 'example' => 'new', 'localized' => true],
+        ['key' => 'location', 'label' => 'col.location', 'legacy' => ['الموقع'], 'example' => 'المخزن A'],
+        ['key' => 'purchase_price', 'label' => 'col.purchase_price', 'legacy' => ['سعر الشراء'], 'example' => ''],
+        ['key' => 'notes', 'label' => 'col.notes', 'legacy' => ['ملاحظات'], 'example' => ''],
     ];
 
-    public function importTemplate(): StreamedResponse
-    {
-        $headers = array_map(fn ($column) => $column[1], self::IMPORT_COLUMNS);
-        $example = array_map(fn ($column) => $column[2], self::IMPORT_COLUMNS);
+    /** Stored condition code => UI label key (the one stateLabel() shows). */
+    private const CONDITIONS = ['New' => 'new', 'Good' => 'good', 'Fair' => 'fair', 'Poor' => 'poor', 'Damaged' => 'damaged'];
 
-        return Csv::download('equipment-items-template.csv', $headers, [$example]);
+    public function importTemplate(Request $request): SymfonyResponse
+    {
+        $example = array_map(
+            fn (array $c) => ($c['localized'] ?? false) ? UiLang::get($c['example']) : $c['example'],
+            self::IMPORT_COLUMNS,
+        );
+
+        return Export::download(Export::format($request), 'equipment-items-template',
+            (new ImportColumns(self::IMPORT_COLUMNS))->headers(), [$example]);
     }
 
     public function export(Request $request, EquipmentCatalog $catalog): SymfonyResponse
@@ -480,22 +488,24 @@ class EquipmentItemController extends Controller
 
     public function import(Request $request, EquipmentCatalog $catalog): RedirectResponse
     {
-        $request->validate(['file' => ['required', 'file', 'max:10240']]);
+        $request->validate(['file' => ['required', 'file', 'mimes:csv,txt,xlsx', 'max:10240']]);
 
         try {
-            $rows = Csv::readRows($request->file('file')->getRealPath());
+            $rows = Spreadsheet::readRows($request->file('file')->getRealPath());
         } catch (Throwable $e) {
             return back()->with('error', __('Could not read the file. Please use the provided template.'));
         }
 
-        array_shift($rows); // drop the header row
+        // Skip an export's title/spacer rows and the header row itself.
+        [$headerRow, $map] = (new ImportColumns(self::IMPORT_COLUMNS))->locate($rows);
+        $rows = array_values(array_slice($rows, $headerRow + 1));
 
         $imported = 0;
         $errors = [];
 
         foreach ($rows as $i => $row) {
-            $line = $i + 2;
-            $data = $this->mapImportRow($row);
+            $line = $headerRow + $i + 2; // the real spreadsheet row number
+            $data = $this->mapImportRow($row, $map);
 
             // Skip fully-blank lines (an item needs no designation, but an empty row is noise).
             if (collect($data)->every(fn ($v) => $v === null || $v === '')) {
@@ -508,8 +518,7 @@ class EquipmentItemController extends Controller
                         'catalog_id' => $catalog->id,
                         'designation' => $data['designation'] ?: null,
                         'purchase_date' => $this->parseDate($data['purchase_date']) ?? now()->toDateString(),
-                        'condition' => in_array($data['condition'], ['New', 'Good', 'Fair', 'Poor', 'Damaged'], true)
-                            ? $data['condition'] : 'New',
+                        'condition' => ImportColumns::value($data['condition'], self::CONDITIONS) ?? 'New',
                         'location' => $data['location'] ?: null,
                         'notes' => $data['notes'] ?: null,
                     ]);
@@ -549,13 +558,14 @@ class EquipmentItemController extends Controller
 
     /**
      * @param  array<int, mixed>  $row
+     * @param  array<string, int>  $map  column key => cell index (a column may be absent)
      * @return array<string, string|null>
      */
-    private function mapImportRow(array $row): array
+    private function mapImportRow(array $row, array $map): array
     {
         $data = [];
-        foreach (self::IMPORT_COLUMNS as $index => [$key]) {
-            $value = $row[$index] ?? null;
+        foreach (self::IMPORT_COLUMNS as ['key' => $key]) {
+            $value = $row[$map[$key] ?? -1] ?? null;
             $data[$key] = is_string($value) ? trim($value) : ($value === null ? null : trim((string) $value));
         }
 

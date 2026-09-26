@@ -49,7 +49,7 @@ class EquipmentImportExportTest extends TestCase
     public function the_template_can_be_downloaded(): void
     {
         $this->actingAs($this->user())
-            ->get(route('equipment.items.import.template'))
+            ->get(route('equipment.items.import.template', ['format' => 'csv']))
             ->assertOk()
             ->assertHeader('content-type', 'text/csv; charset=UTF-8');
     }

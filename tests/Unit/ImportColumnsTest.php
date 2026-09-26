@@ -70,6 +70,41 @@ class ImportColumnsTest extends TestCase
     }
 
     #[Test]
+    public function headers_carry_the_hint_in_the_same_language(): void
+    {
+        $cols = new ImportColumns([
+            ['key' => 'transaction_date', 'label' => 'col.date', 'hint' => 'col.hint.date'],
+            ['key' => 'title', 'label' => 'col.title'],
+        ]);
+
+        foreach (['ar', 'fr', 'en'] as $locale) {
+            $this->assertSame([
+                UiLang::get('col.date', null, $locale).' ('.UiLang::get('col.hint.date', null, $locale).')',
+                UiLang::get('col.title', null, $locale),
+            ], $cols->headers($locale), $locale);
+        }
+        $this->assertSame(['Date (AAAA-MM-JJ)', 'Intitulé'], $cols->headers('fr'));
+    }
+
+    #[Test]
+    public function a_hinted_header_matches_its_own_column_before_a_look_alike(): void
+    {
+        // "Wilaya (ancien texte)" strips to "Wilaya" too: the hinted
+        // "Wilaya (code ou nom)" must still land on wilaya, not state.
+        $cols = new ImportColumns([
+            ['key' => 'firstname', 'label' => 'col.firstname'],
+            ['key' => 'state', 'label' => 'col.state'],
+            ['key' => 'wilaya', 'label' => 'col.wilaya', 'hint' => 'col.hint.code_or_name'],
+        ]);
+
+        [, $map] = $cols->locate([[$cols->headers('fr')[2], $cols->headers('fr')[0]]]);
+
+        $this->assertSame(0, $map['wilaya']);
+        $this->assertSame(1, $map['firstname']);
+        $this->assertNotContains(0, array_diff_key($map, ['wilaya' => true]));
+    }
+
+    #[Test]
     public function values_match_codes_or_labels_in_any_language(): void
     {
         $codes = ['income' => 'income', 'expense' => 'expense'];

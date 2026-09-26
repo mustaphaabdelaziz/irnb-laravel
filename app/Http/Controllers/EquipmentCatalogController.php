@@ -12,8 +12,9 @@ use App\Models\Player;
 use App\Models\StorageLocation;
 use App\Services\Dashboard\ModuleStats;
 use App\Services\Storage\FileStorageService;
-use App\Support\Csv;
 use App\Support\Export;
+use App\Support\Import\ImportColumns;
+use App\Support\Spreadsheet;
 use App\Support\UiLang;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,7 +22,6 @@ use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
 class EquipmentCatalogController extends Controller
@@ -184,24 +184,24 @@ class EquipmentCatalogController extends Controller
     }
 
     /**
-     * Import columns shared by the template and the importer.
+     * Import columns shared by the template and the importer. Found by header
+     * (ar / fr / en, or `legacy`: the old Arabic template's header), else by
+     * this position — so keep the order.
      *
-     * @var list<array{0:string,1:string,2:string}>
+     * @var list<array{key:string, label:string, legacy:list<string>, example:string}>
      */
     private const IMPORT_COLUMNS = [
-        ['name', 'الاسم', 'كرة مباراة'],
-        ['category', 'الفئة', 'Balls'],
-        ['brand', 'العلامة التجارية', 'Adidas'],
-        ['purchase_price', 'سعر الشراء', ''],
-        ['description', 'الوصف', ''],
+        ['key' => 'name', 'label' => 'col.name', 'legacy' => ['الاسم'], 'example' => 'كرة مباراة'],
+        ['key' => 'category', 'label' => 'col.category', 'legacy' => ['الفئة'], 'example' => 'Balls'],
+        ['key' => 'brand', 'label' => 'col.brand', 'legacy' => ['العلامة التجارية'], 'example' => 'Adidas'],
+        ['key' => 'purchase_price', 'label' => 'col.purchase_price', 'legacy' => ['سعر الشراء'], 'example' => ''],
+        ['key' => 'description', 'label' => 'col.description', 'legacy' => ['الوصف'], 'example' => ''],
     ];
 
-    public function importTemplate(): StreamedResponse
+    public function importTemplate(Request $request): SymfonyResponse
     {
-        $headers = array_map(fn ($column) => $column[1], self::IMPORT_COLUMNS);
-        $example = array_map(fn ($column) => $column[2], self::IMPORT_COLUMNS);
-
-        return Csv::download('equipment-catalogs-template.csv', $headers, [$example]);
+        return Export::download(Export::format($request), 'equipment-catalogs-template',
+            (new ImportColumns(self::IMPORT_COLUMNS))->headers(), [array_column(self::IMPORT_COLUMNS, 'example')]);
     }
 
     public function export(Request $request): SymfonyResponse
@@ -230,15 +230,17 @@ class EquipmentCatalogController extends Controller
 
     public function import(Request $request): RedirectResponse
     {
-        $request->validate(['file' => ['required', 'file', 'max:10240']]);
+        $request->validate(['file' => ['required', 'file', 'mimes:csv,txt,xlsx', 'max:10240']]);
 
         try {
-            $rows = Csv::readRows($request->file('file')->getRealPath());
+            $rows = Spreadsheet::readRows($request->file('file')->getRealPath());
         } catch (Throwable $e) {
             return back()->with('error', __('Could not read the file. Please use the provided template.'));
         }
 
-        array_shift($rows); // drop the header row
+        // Skip an export's title/spacer rows and the header row itself.
+        [$headerRow, $map] = (new ImportColumns(self::IMPORT_COLUMNS))->locate($rows);
+        $rows = array_values(array_slice($rows, $headerRow + 1));
 
         // Resolve categories case-insensitively to their canonical name.
         $categories = EquipmentCategory::pluck('name')
@@ -248,8 +250,8 @@ class EquipmentCatalogController extends Controller
         $errors = [];
 
         foreach ($rows as $i => $row) {
-            $line = $i + 2;
-            $data = $this->mapImportRow($row);
+            $line = $headerRow + $i + 2; // the real spreadsheet row number
+            $data = $this->mapImportRow($row, $map);
 
             if (($data['name'] ?? '') === '') {
                 continue; // blank line
@@ -289,13 +291,14 @@ class EquipmentCatalogController extends Controller
 
     /**
      * @param  array<int, mixed>  $row
+     * @param  array<string, int>  $map  column key => cell index (a column may be absent)
      * @return array<string, string|null>
      */
-    private function mapImportRow(array $row): array
+    private function mapImportRow(array $row, array $map): array
     {
         $data = [];
-        foreach (self::IMPORT_COLUMNS as $index => [$key]) {
-            $value = $row[$index] ?? null;
+        foreach (self::IMPORT_COLUMNS as ['key' => $key]) {
+            $value = $row[$map[$key] ?? -1] ?? null;
             $data[$key] = is_string($value) ? trim($value) : ($value === null ? null : trim((string) $value));
         }
 

@@ -47,7 +47,7 @@ class PlayerImportTest extends TestCase
     public function the_template_can_be_downloaded(): void
     {
         $this->actingAs($this->admin())
-            ->get(route('players.import.template'))
+            ->get(route('players.import.template', ['format' => 'csv']))
             ->assertOk()
             ->assertHeader('content-type', 'text/csv; charset=UTF-8');
     }

@@ -16,13 +16,17 @@ final class ImportColumns
 
     private const SCAN_ROWS = 5;
 
-    /** @param  list<array{key:string, label:string, legacy?:list<string>}>  $columns */
+    /** @param  list<array{key:string, label:string, hint?:string, legacy?:list<string>}>  $columns */
     public function __construct(private readonly array $columns) {}
 
-    /** @return list<string> */
+    /**
+     * Template headers: "Label (hint)" when the column has a hint.
+     *
+     * @return list<string>
+     */
     public function headers(?string $locale = null): array
     {
-        return array_map(fn (array $c) => UiLang::get($c['label'], null, $locale), $this->columns);
+        return array_map(fn (array $c) => self::header($c, $locale), $this->columns);
     }
 
     /**
@@ -74,6 +78,9 @@ final class ImportColumns
             $texts = $c['legacy'] ?? [];
             foreach (self::LOCALES as $locale) {
                 $texts[] = UiLang::get($c['label'], null, $locale);
+                // The hinted header too, so it matches exactly — ahead of a sibling
+                // whose header only looks the same once hints are stripped.
+                $texts[] = self::header($c, $locale);
             }
             $known[$c['key']] = [
                 'exact' => array_unique(array_map(NameNormalizer::key(...), $texts)),
@@ -114,6 +121,14 @@ final class ImportColumns
         }
 
         return $map;
+    }
+
+    /** "Label (hint)" in $locale, or just the label when the column has no hint. */
+    private static function header(array $column, ?string $locale): string
+    {
+        $label = UiLang::get($column['label'], null, $locale);
+
+        return isset($column['hint']) ? $label.' ('.UiLang::get($column['hint'], null, $locale).')' : $label;
     }
 
     private static function strip(string $text): string

@@ -6,71 +6,86 @@ use App\Models\Category;
 use App\Models\MemberJob;
 use App\Models\Position;
 use App\Services\Player\RegisterPlayerService;
-use App\Support\Csv;
+use App\Support\Export;
+use App\Support\Import\ImportColumns;
 use App\Support\NameNormalizer;
+use App\Support\Spreadsheet;
+use App\Support\UiLang;
 use App\Support\WilayaMatcher;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Throwable;
 
 class PlayerImportController extends Controller
 {
     /**
      * Ordered columns shared by the downloadable template and the importer.
-     * Each entry: [field key, Arabic header, example value].
+     * Columns are found by header (ar / fr / en, or `legacy`: the old Arabic
+     * template's header), else by this position — so keep the order.
+     * `example` is the template's example cell; an i18n key when `localized`.
      *
-     * @var list<array{0:string,1:string,2:string}>
+     * @var list<array{key:string, label:string, hint?:string, legacy:list<string>, example:string, localized?:bool}>
      */
     private const COLUMNS = [
-        ['firstname', 'الاسم', 'محمد'],
-        ['lastname', 'اللقب', 'بن علي'],
-        ['father', 'اسم الأب', 'أحمد'],
-        ['grandfather', 'اسم الجد', 'عمر'],
-        ['nickname', 'الكنية', ''],
-        ['birthdate', 'تاريخ الميلاد (YYYY-MM-DD)', '2008-05-20'],
-        ['gender', 'الجنس (Male/Female)', 'Male'],
-        ['phone', 'الهاتف', '0550000000'],
-        ['email', 'البريد الإلكتروني', ''],
-        ['city', 'المدينة', 'الجزائر'],
-        ['state', 'الولاية', 'الجزائر'],
-        ['category', 'الفئة', 'Senior'],
-        ['position', 'المركز (الاختصار أو الاسم)', 'GK'],
-        ['job', 'المهنة', 'طالب'],
-        ['status', 'الحالة (student/worker)', 'worker'],
-        ['skill_level', 'المستوى (1-10)', '5'],
-        ['blood_group', 'فصيلة الدم', 'O+'],
-        ['medical_conditions', 'الحالات الصحية', ''],
-        ['join_year', 'سنة الانضمام', ''],
+        ['key' => 'firstname', 'label' => 'col.firstname', 'legacy' => ['الاسم'], 'example' => 'محمد'],
+        ['key' => 'lastname', 'label' => 'col.lastname', 'legacy' => ['اللقب'], 'example' => 'بن علي'],
+        ['key' => 'father', 'label' => 'col.father', 'legacy' => ['اسم الأب'], 'example' => 'أحمد'],
+        ['key' => 'grandfather', 'label' => 'col.grandfather', 'legacy' => ['اسم الجد'], 'example' => 'عمر'],
+        ['key' => 'nickname', 'label' => 'col.nickname', 'legacy' => ['الكنية'], 'example' => ''],
+        ['key' => 'birthdate', 'label' => 'col.birthdate', 'hint' => 'col.hint.date', 'legacy' => ['تاريخ الميلاد (YYYY-MM-DD)'], 'example' => '2008-05-20'],
+        ['key' => 'gender', 'label' => 'col.gender', 'legacy' => ['الجنس (Male/Female)'], 'example' => 'male', 'localized' => true],
+        ['key' => 'phone', 'label' => 'col.phone', 'legacy' => ['الهاتف'], 'example' => '0550000000'],
+        ['key' => 'email', 'label' => 'col.email', 'legacy' => ['البريد الإلكتروني'], 'example' => ''],
+        ['key' => 'city', 'label' => 'col.city', 'legacy' => ['المدينة'], 'example' => 'الجزائر'],
+        ['key' => 'state', 'label' => 'col.state', 'legacy' => ['الولاية'], 'example' => 'الجزائر'],
+        ['key' => 'category', 'label' => 'col.category', 'legacy' => ['الفئة'], 'example' => 'Senior'],
+        ['key' => 'position', 'label' => 'col.position', 'hint' => 'col.hint.abbr_or_name', 'legacy' => ['المركز (الاختصار أو الاسم)'], 'example' => 'GK'],
+        ['key' => 'job', 'label' => 'col.job', 'legacy' => ['المهنة'], 'example' => 'طالب'],
+        ['key' => 'status', 'label' => 'col.player_type', 'legacy' => ['الحالة (student/worker)'], 'example' => 'worker', 'localized' => true],
+        ['key' => 'skill_level', 'label' => 'col.skill_level', 'hint' => 'col.hint.one_to_ten', 'legacy' => ['المستوى (1-10)'], 'example' => '5'],
+        ['key' => 'blood_group', 'label' => 'col.blood_group', 'legacy' => ['فصيلة الدم'], 'example' => 'O+'],
+        ['key' => 'medical_conditions', 'label' => 'col.medical_conditions', 'legacy' => ['الحالات الصحية'], 'example' => ''],
+        ['key' => 'join_year', 'label' => 'col.join_year', 'legacy' => ['سنة الانضمام'], 'example' => ''],
         // Appended last on purpose: older files simply have no cell here.
-        ['wilaya', 'الولاية (الرمز أو الاسم)', '47'],
+        ['key' => 'wilaya', 'label' => 'col.wilaya', 'hint' => 'col.hint.code_or_name', 'legacy' => ['الولاية (الرمز أو الاسم)'], 'example' => '47'],
         // Appended last: older files have no cell here.
-        ['other_positions', 'مراكز أخرى (مفصولة بفاصلة)', 'WG, LB'],
+        ['key' => 'other_positions', 'label' => 'col.other_positions', 'hint' => 'col.hint.comma_separated', 'legacy' => ['مراكز أخرى (مفصولة بفاصلة)'], 'example' => 'WG, LB'],
     ];
 
-    public function template(): StreamedResponse
-    {
-        $headers = array_map(fn ($column) => $column[1], self::COLUMNS);
-        $example = array_map(fn ($column) => $column[2], self::COLUMNS);
+    /** Stored gender code => UI label key. */
+    private const GENDERS = ['Male' => 'male', 'Female' => 'female'];
 
-        return Csv::download('players-import-template.csv', $headers, [$example]);
+    /** Student / worker cell => UI label key. */
+    private const STATUSES = ['student' => 'student', 'worker' => 'worker'];
+
+    public function template(Request $request): SymfonyResponse
+    {
+        $example = array_map(
+            fn (array $c) => ($c['localized'] ?? false) ? UiLang::get($c['example']) : $c['example'],
+            self::COLUMNS,
+        );
+
+        return Export::download(Export::format($request), 'players-import-template',
+            (new ImportColumns(self::COLUMNS))->headers(), [$example]);
     }
 
     public function store(Request $request, RegisterPlayerService $service): RedirectResponse
     {
         $request->validate([
-            'file' => ['required', 'file', 'max:10240'],
+            'file' => ['required', 'file', 'mimes:csv,txt,xlsx', 'max:10240'],
         ]);
 
         try {
-            $rows = Csv::readRows($request->file('file')->getRealPath());
+            $rows = Spreadsheet::readRows($request->file('file')->getRealPath());
         } catch (Throwable $e) {
             return back()->with('error', __('Could not read the file. Please use the provided template.'));
         }
 
-        // Drop the header row.
-        array_shift($rows);
+        // Skip an export's title/spacer rows and the header row itself.
+        [$headerRow, $map] = (new ImportColumns(self::COLUMNS))->locate($rows);
+        $rows = array_values(array_slice($rows, $headerRow + 1));
 
         // Match a category by any of its names (base + per-locale), case-insensitively.
         $categories = [];
@@ -100,8 +115,8 @@ class PlayerImportController extends Controller
         $errors = [];
 
         foreach ($rows as $i => $row) {
-            $line = $i + 2; // human-friendly spreadsheet row number
-            $data = $this->mapRow($row);
+            $line = $headerRow + $i + 2; // the real spreadsheet row number
+            $data = $this->mapRow($row, $map);
 
             if ($data['firstname'] === null || $data['firstname'] === '') {
                 continue; // blank line
@@ -115,7 +130,7 @@ class PlayerImportController extends Controller
                     'grandfather' => $data['grandfather'],
                     'nickname' => $data['nickname'],
                     'birthdate' => $this->parseDate($data['birthdate']),
-                    'gender' => in_array($data['gender'], ['Male', 'Female'], true) ? $data['gender'] : 'Male',
+                    'gender' => ImportColumns::value($data['gender'], self::GENDERS) ?? 'Male',
                     'phones' => $data['phone'] ? [$data['phone']] : [],
                     'email' => $data['email'] ?: null,
                     'city' => $data['city'] ?: 'Unknown',
@@ -128,8 +143,8 @@ class PlayerImportController extends Controller
                     // given, the newer "wilaya" cell wins.
                     'wilaya_id' => $wilayas[WilayaMatcher::normalise((string) ($data['wilaya'] ?: $data['state']))] ?? null,
                     'member_job_id' => $jobs[NameNormalizer::key($data['job'] ?? null)] ?? null,
-                    // Default to worker: only an explicit "student" cell marks a student.
-                    'is_student' => mb_strtolower((string) $data['status']) === 'student',
+                    // Default to worker: only an explicit "student" cell (any language) marks a student.
+                    'is_student' => ImportColumns::value($data['status'], self::STATUSES) === 'student',
                     'skill_level' => $this->clampSkill($data['skill_level']),
                     'health_blood_group_rhesus' => $data['blood_group'] ?: null,
                     'health_medical_conditions' => $data['medical_conditions'] ?: null,
@@ -169,13 +184,14 @@ class PlayerImportController extends Controller
 
     /**
      * @param  array<int, mixed>  $row
+     * @param  array<string, int>  $map  column key => cell index (a column may be absent)
      * @return array<string, string|null>
      */
-    private function mapRow(array $row): array
+    private function mapRow(array $row, array $map): array
     {
         $data = [];
-        foreach (self::COLUMNS as $index => [$key]) {
-            $value = $row[$index] ?? null;
+        foreach (self::COLUMNS as ['key' => $key]) {
+            $value = $row[$map[$key] ?? -1] ?? null;
             $data[$key] = is_string($value) ? trim($value) : ($value === null ? null : trim((string) $value));
         }
 

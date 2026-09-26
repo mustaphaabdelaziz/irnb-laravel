@@ -5,16 +5,17 @@ namespace App\Http\Controllers;
 use App\Models\FinanceAccount;
 use App\Models\FinanceCategory;
 use App\Models\Transaction;
-use App\Support\Csv;
+use App\Support\Export;
 use App\Support\Import\ImportColumns;
 use App\Support\NameNormalizer;
 use App\Support\Spreadsheet;
+use App\Support\UiLang;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Throwable;
 
 class TransactionImportController extends Controller
@@ -24,10 +25,10 @@ class TransactionImportController extends Controller
      * is ignored here). `legacy` are the headers of the old CSV template, so
      * files made from it still import by header.
      *
-     * @var list<array{key:string, label:string, legacy?:list<string>}>
+     * @var list<array{key:string, label:string, hint?:string, legacy?:list<string>}>
      */
     public const COLUMNS = [
-        ['key' => 'transaction_date', 'label' => 'col.date', 'legacy' => ['Date (YYYY-MM-DD)']],
+        ['key' => 'transaction_date', 'label' => 'col.date', 'hint' => 'col.hint.date', 'legacy' => ['Date (YYYY-MM-DD)']],
         ['key' => 'title', 'label' => 'col.title', 'legacy' => ['Title']],
         ['key' => 'transaction_type', 'label' => 'col.type', 'legacy' => ['Type (income/expense)']],
         ['key' => 'category', 'label' => 'col.category', 'legacy' => ['Category']],
@@ -47,25 +48,13 @@ class TransactionImportController extends Controller
     /** The codes the transaction form offers => UI label key (see resources/js/lib/statusLabels.js). */
     private const PAYMENT_METHODS = ['cash' => 'cash', 'bank' => 'bank_transfer', 'ccp' => 'ccp', 'baridimob' => 'baridimob', 'other' => 'other'];
 
-    /** Today's CSV template, unchanged until the template is rewritten. */
-    private const LEGACY_TEMPLATE = [
-        ['Date (YYYY-MM-DD)', '2026-01-15'],
-        ['Type (income/expense)', 'income'],
-        ['Category', 'subscription'],
-        ['Amount', '1000'],
-        ['Status (Paid/Partial/Unpaid/Exempt)', 'Paid'],
-        ['Payment Method', 'cash'],
-        ['Description', ''],
-        ['Title', ''],
-    ];
-
-    public function template(): StreamedResponse
+    public function template(Request $request): SymfonyResponse
     {
-        return Csv::download(
-            'transactions-import-template.csv',
-            array_column(self::LEGACY_TEMPLATE, 0),
-            [array_column(self::LEGACY_TEMPLATE, 1)],
-        );
+        // One example row in COLUMNS order; enum cells in the user's language.
+        $example = ['2026-01-15', '', UiLang::get('income'), 'subscription', '1000', UiLang::get('paid'), UiLang::get('cash'), '', ''];
+
+        return Export::download(Export::format($request), 'transactions-import-template',
+            (new ImportColumns(self::COLUMNS))->headers(), [$example]);
     }
 
     public function store(Request $request): RedirectResponse

@@ -12,7 +12,7 @@ inventory with a rental lifecycle, and a database-backed website/branding config
 - **Images:** local `public` disk via `App\Services\Storage\FileStorageService` (resize/compress with `intervention/image`).
 - **Charts:** Chart.js (`vue-chartjs`) on the dashboard.
 - **PDF:** `mpdf/mpdf` (chosen for correct Arabic/RTL shaping) via `App\Services\Pdf\PdfService`.
-- **Excel:** `phpoffice/phpspreadsheet` (player import template + subscription export).
+- **Excel:** in-house `App\Support\Export\XlsxWriter` — exports and templates are .xlsx (default) or CSV; imports read .xlsx and CSV (UTF-8 or Windows-1256) on the server.
 
 ## Setup
 

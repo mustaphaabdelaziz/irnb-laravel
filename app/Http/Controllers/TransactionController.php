@@ -217,13 +217,16 @@ class TransactionController extends Controller
             return back()->with('error', ['key' => 'flash.year_closed_delete', 'params' => ['year' => $transaction->fiscal_year]]);
         }
 
-        DB::transaction(function () use ($request, $transaction) {
-            $transaction->update(['archived' => true]);
+        // Already archived: nothing changes, so no second cancellation is recorded.
+        if (! $transaction->archived) {
+            DB::transaction(function () use ($request, $transaction) {
+                $transaction->update(['archived' => true]);
 
-            ActivityRecorder::record($request->user(), ActivityAction::TRANSACTION_CANCELLED, $transaction, [
-                'amount' => (float) $transaction->amount,
-            ]);
-        });
+                ActivityRecorder::record($request->user(), ActivityAction::TRANSACTION_CANCELLED, $transaction, [
+                    'amount' => (float) $transaction->amount,
+                ]);
+            });
+        }
 
         return redirect()->route('transactions.index')
             ->with('success', 'flash.transaction_archived');

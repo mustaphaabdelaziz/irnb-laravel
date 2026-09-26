@@ -347,6 +347,37 @@ class ActivityMoneyEventsTest extends TestCase
     }
 
     #[Test]
+    public function archiving_an_already_archived_transaction_records_one_cancellation(): void
+    {
+        $admin = $this->admin();
+        $tx = $this->tx(400, (int) now()->year);
+
+        $this->actingAs($admin)->delete(route('transactions.destroy', $tx))
+            ->assertRedirect(route('transactions.index'))->assertSessionHas('success', 'flash.transaction_archived');
+        $this->actingAs($admin)->delete(route('transactions.destroy', $tx))
+            ->assertRedirect(route('transactions.index'))->assertSessionHas('success', 'flash.transaction_archived');
+
+        $this->assertTrue($tx->fresh()->archived);
+        $this->assertCount(1, $this->events(ActivityAction::TRANSACTION_CANCELLED));
+    }
+
+    #[Test]
+    public function removing_an_already_removed_payment_records_one_cancellation(): void
+    {
+        $admin = $this->admin();
+        $player = $this->makePlayer();
+        $tx = $this->tx(300, (int) now()->year, ['related_entity_type' => 'Player', 'related_entity_id' => $player->id]);
+
+        $this->actingAs($admin)->delete(route('players.transactions.destroy', [$player, $tx]))
+            ->assertRedirect(route('players.show', $player))->assertSessionHas('success', 'flash.payment_removed');
+        $this->actingAs($admin)->delete(route('players.transactions.destroy', [$player, $tx]))
+            ->assertRedirect(route('players.show', $player))->assertSessionHas('success', 'flash.payment_removed');
+
+        $this->assertTrue($tx->fresh()->archived);
+        $this->assertCount(1, $this->events(ActivityAction::TRANSACTION_CANCELLED));
+    }
+
+    #[Test]
     public function permanently_deleting_a_player_records_no_cancellation(): void
     {
         Storage::fake('local');

@@ -141,13 +141,16 @@ class PlayerTransactionController extends Controller
     {
         $this->assertTransactionBelongsToPlayer($transaction, $player);
 
-        DB::transaction(function () use ($request, $transaction) {
-            $transaction->update(['archived' => true]);
+        // Already archived: nothing changes, so no second cancellation is recorded.
+        if (! $transaction->archived) {
+            DB::transaction(function () use ($request, $transaction) {
+                $transaction->update(['archived' => true]);
 
-            ActivityRecorder::record($request->user(), ActivityAction::TRANSACTION_CANCELLED, $transaction, [
-                'amount' => (float) $transaction->amount,
-            ]);
-        });
+                ActivityRecorder::record($request->user(), ActivityAction::TRANSACTION_CANCELLED, $transaction, [
+                    'amount' => (float) $transaction->amount,
+                ]);
+            });
+        }
 
         app(RecalculatePlayerDebtService::class)->forPlayer($player);
 

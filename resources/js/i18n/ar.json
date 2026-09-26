@@ -30,6 +30,8 @@
     "active": "نشط",
     "active_registers": "الصناديق النشطة",
     "active_rentals": "الإيجارات النشطة",
+    "activity.record_deleted": "سجل محذوف",
+    "activity.rows_count": "{count} سطر",
     "actual": "الفعلي",
     "ad_hoc": "عند الحاجة",
     "add": "إضافة",

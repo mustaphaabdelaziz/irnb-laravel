@@ -30,6 +30,8 @@
     "active": "Actif",
     "active_registers": "Caisses actives",
     "active_rentals": "Locations actives",
+    "activity.record_deleted": "Enregistrement supprimé",
+    "activity.rows_count": "{count} lignes",
     "actual": "Réel",
     "ad_hoc": "Ponctuel",
     "add": "Ajouter",

@@ -30,6 +30,8 @@
     "active": "Active",
     "active_registers": "Active registers",
     "active_rentals": "Active Rentals",
+    "activity.record_deleted": "Record deleted",
+    "activity.rows_count": "{count} rows",
     "actual": "Actual",
     "ad_hoc": "Ad-hoc",
     "add": "Add",

@@ -19,6 +19,22 @@ final class XlsxReader
     /** Built-in numFmt ids that are dates. */
     private const DATE_FORMAT_IDS = [14, 15, 16, 17, 18, 19, 20, 21, 22, 45, 46, 47];
 
+    /**
+     * Largest uncompressed part (sheet, shared strings, styles, workbook,
+     * rels) we inflate: a tiny zip can hold a gigantic part, and running out
+     * of memory is a fatal error no importer can catch.
+     */
+    public const MAX_PART_BYTES = 50 * 1024 * 1024;
+
+    /** Highest row number accepted; beyond it the file is refused, not padded. */
+    public const MAX_ROWS = 100000;
+
+    /** Excel's last column (XFD). */
+    private const MAX_COLUMNS = 16384;
+
+    /** The part-size cap in force; tests lower it, production never changes it. */
+    public static int $maxPartBytes = self::MAX_PART_BYTES;
+
     /** @return list<list<string|null>> */
     public static function read(string $path): array
     {
@@ -41,6 +57,9 @@ final class XlsxReader
 
         foreach ($sheet->sheetData->row as $row) {
             $r = (int) ($row['r'] ?? $expected);
+            if ($r > self::MAX_ROWS) {
+                throw new RuntimeException('The .xlsx file has too many rows.');
+            }
             while ($expected < $r) {
                 $rows[] = [];
                 $expected++;
@@ -50,6 +69,9 @@ final class XlsxReader
             $next = 0;
             foreach ($row->c as $c) {
                 $index = isset($c['r']) ? self::columnIndex((string) $c['r']) : $next;
+                if ($index >= self::MAX_COLUMNS) {
+                    throw new RuntimeException('The .xlsx file has too many columns.');
+                }
                 while (count($cells) < $index) {
                     $cells[] = null;
                 }
@@ -117,8 +139,8 @@ final class XlsxReader
     private static function firstSheet(ZipArchive $zip): string
     {
         $target = 'xl/worksheets/sheet1.xml';
-        $workbook = $zip->getFromName('xl/workbook.xml');
-        $rels = $zip->getFromName('xl/_rels/workbook.xml.rels');
+        $workbook = self::part($zip, 'xl/workbook.xml');
+        $rels = self::part($zip, 'xl/_rels/workbook.xml.rels');
         if ($workbook !== false && $rels !== false) {
             $wb = self::xml($workbook);
             $first = $wb->sheets->sheet[0] ?? null;
@@ -134,7 +156,7 @@ final class XlsxReader
             }
         }
 
-        $xml = $zip->getFromName($target);
+        $xml = self::part($zip, $target);
         if ($xml === false) {
             throw new RuntimeException('The .xlsx file has no worksheet.');
         }
@@ -145,7 +167,7 @@ final class XlsxReader
     /** @return list<string> */
     private static function sharedStrings(ZipArchive $zip): array
     {
-        $xml = $zip->getFromName('xl/sharedStrings.xml');
+        $xml = self::part($zip, 'xl/sharedStrings.xml');
         if ($xml === false) {
             return [];
         }
@@ -160,7 +182,7 @@ final class XlsxReader
     /** @return array<int, true> style index => is a date */
     private static function dateStyles(ZipArchive $zip): array
     {
-        $xml = $zip->getFromName('xl/styles.xml');
+        $xml = self::part($zip, 'xl/styles.xml');
         if ($xml === false) {
             return [];
         }
@@ -168,7 +190,11 @@ final class XlsxReader
 
         $custom = [];
         foreach ($styles->numFmts->numFmt ?? [] as $fmt) {
-            $code = strtolower(preg_replace('/"[^"]*"|\[[^\]]*\]/', '', (string) $fmt['formatCode']));
+            // Drop everything shown literally or that is not a date token:
+            // "quoted text", [colour / locale / condition], \x escapes, _x
+            // padding and *x fill — so "#,##0.00\ \D\A" (a currency) is not
+            // taken for a date because of its "D".
+            $code = strtolower((string) preg_replace('/"[^"]*"|\[[^\]]*\]|\\\\.|_.|\*./su', '', (string) $fmt['formatCode']));
             if (preg_match('/[dy]/', $code) || (str_contains($code, 'm') && ! str_contains($code, '0'))) {
                 $custom[(int) $fmt['numFmtId']] = true;
             }
@@ -186,6 +212,20 @@ final class XlsxReader
         }
 
         return $out;
+    }
+
+    /** A part's contents, or false when absent; a part over the size cap is refused before it is inflated. */
+    private static function part(ZipArchive $zip, string $name): string|false
+    {
+        $stat = $zip->statName($name);
+        if ($stat === false) {
+            return false;
+        }
+        if ($stat['size'] > self::$maxPartBytes) {
+            throw new RuntimeException('The .xlsx file is too large to read.');
+        }
+
+        return $zip->getFromName($name);
     }
 
     /** "C12" → 2 */

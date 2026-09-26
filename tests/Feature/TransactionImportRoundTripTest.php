@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\FinanceAccount;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Support\Import\XlsxReader;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -119,6 +120,28 @@ class TransactionImportRoundTripTest extends TestCase
         $this->assertSame('Unpaid', $t->status);
         $this->assertSame('desc', $t->description);
         $this->assertSame('Old title', $t->title);
+    }
+
+    #[Test]
+    public function an_xlsx_with_an_oversized_part_gets_the_friendly_error_not_a_500(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'rt').'.xlsx';
+        $zip = new \ZipArchive;
+        $zip->open($path, \ZipArchive::CREATE);
+        $zip->addFromString('xl/worksheets/sheet1.xml', '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData/></worksheet>');
+        $zip->addFromString('xl/sharedStrings.xml', str_repeat('a', 70 * 1024));
+        $zip->close();
+
+        XlsxReader::$maxPartBytes = 64 * 1024;
+        try {
+            $this->actingAs($this->admin('en'))
+                ->post(route('transactions.import.store'), ['file' => new UploadedFile($path, 't.xlsx', null, null, true)])
+                ->assertRedirect()
+                ->assertSessionHas('error', 'Could not read the file. Please use the provided template.');
+        } finally {
+            XlsxReader::$maxPartBytes = XlsxReader::MAX_PART_BYTES;
+        }
+        $this->assertSame(0, Transaction::query()->count());
     }
 
     private function importRow(string $date, string $amount): void

@@ -702,6 +702,43 @@ import template:
 
 # P5 — User activity tracking
 
+## Owner decisions (2026-09-26, before planning) — these amend the sections below
+
+- **History outlives its records.** Finance reset, fiscal-year delete, equipment purge, player
+  permanent delete and every other hard delete leave `activity_logs` untouched. Work done stays
+  counted; a drill-through to a missing subject shows "record deleted".
+- **Extra events** (modules built after this spec): `subscription_created`, `players_assigned`
+  (count), `transfer_recorded` (amount), `academic_record_added`, `document_exempted`,
+  `document_renewed`.
+- **Editing a player payment** (stored as cancel + recreate) records one `payment_edited`; it adds
+  neither a payment nor a cancellation.
+- **Stocktake** records two events: `stocktake_started` (when a session is created, by its creator)
+  and `stocktake_completed` (when completed, by whoever completes it, with found/missing counts).
+  They replace `stocktake_conducted`.
+
+Defaults chosen with these decisions (not owner-asked):
+- Imports record one event per import with a count, and never per-row registrations:
+  `player_imported`, `transaction_imported`, `equipment_imported`.
+- `player_archived` and `transaction_cancelled` are recorded per record, bulk actions included, so the
+  "later archived / cancelled" quality column can join on the subject.
+- `transaction_recorded` = a manual transaction (TransactionController::store) or the expense created
+  by a stock receipt. `payment_recorded` = a player payment (subscription or player-level); an
+  overpayment split into a donation is one event with the total amount.
+- `task_completed` fires only on the transition to completed (create-as-completed counts too).
+- `document_file_uploaded` is one event per upload action, with the file count.
+- `job_created` covers both the Jobs settings page and the player-form quick-create.
+- Backfill maps: transactions → `payment_recorded` when linked to a player or a player subscription,
+  else `transaction_recorded`; equipment history Received/Checkout/Assigned/Return →
+  stock_received/equipment_rented/equipment_assigned/equipment_returned; meetings →
+  `meeting_created` and, when cancelled, `meeting_cancelled` (cancelled_by); tasks → `task_created`;
+  inventory sessions → `stocktake_started` and, when completed, `stocktake_completed` (credited to the
+  conductor, since the completer was never stored); transfers → `transfer_recorded`; document files →
+  `document_file_uploaded`. Archived transactions have no recorded canceller and are not backfilled
+  as cancellations.
+- "My activity" is its own page (`profile.activity`, unguarded, self only), linked from the profile
+  page and the user menu. `users.activity.index` / `.show` resolve to users/view through the existing
+  route-name mapping.
+
 Adopts the July D2 design (`2026-07-20-post-testing-enhancements-design.md`, D2), with the owner's
 decisions: **counts now, points later**; **own stats for everyone, all users for users/view**.
 

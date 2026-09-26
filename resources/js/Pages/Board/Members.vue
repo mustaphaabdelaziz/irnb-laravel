@@ -4,6 +4,7 @@ import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Icon from '@/Components/Icon.vue';
+import ExportMenu from '@/Components/ExportMenu.vue';
 
 const props = defineProps({
     members: { type: Array, default: () => [] },
@@ -145,7 +146,7 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                     <input v-model="search" :placeholder="t('search')" class="w-56 rounded-xl border-slate-200 bg-white ps-9 text-sm dark:border-slate-700 dark:bg-slate-800" />
                 </div>
                 <div class="flex gap-2">
-                    <a :href="route('board.members.export')" class="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800"><Icon name="download" /> {{ t('export') }}</a>
+                    <ExportMenu :href="route('board.members.export')" :label="t('export')"><template #icon><Icon name="download" /></template></ExportMenu>
                     <button @click="openCreate" class="inline-flex items-center gap-1.5 rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><Icon name="plus" /> {{ t('add_member') }}</button>
                 </div>
             </div>

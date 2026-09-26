@@ -9,6 +9,7 @@ import ConfirmModal from '@/Components/ConfirmModal.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import RentalTypeBadge from '@/Components/RentalTypeBadge.vue';
 import ReturnRentalModal from '@/Components/ReturnRentalModal.vue';
+import ExportMenu from '@/Components/ExportMenu.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
@@ -347,28 +348,13 @@ const stateLabel = (v) => {
     return translated === key ? v : translated;
 };
 
-// --- Item import (CSV + Excel; Excel converted in-browser, then the CSV pipeline) ---
+// --- Item import (.xlsx or .csv, read on the server) ---
 const showImport = ref(false);
 const importForm = useForm({ file: null });
-const importConverting = ref(false);
 
-async function onImportFile(e) {
-    const file = e.target.files?.[0];
+function onImportFile(e) {
     importForm.clearErrors();
-    if (!file) { importForm.file = null; return; }
-    if (!/\.(xlsx|xls)$/i.test(file.name)) { importForm.file = file; return; }
-    importConverting.value = true;
-    try {
-        const XLSX = await import('xlsx');
-        const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
-        const csv = XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]]);
-        importForm.file = new File([csv], file.name.replace(/\.(xlsx|xls)$/i, '.csv'), { type: 'text/csv' });
-    } catch (err) {
-        importForm.file = null;
-        importForm.setError('file', t('excel_parse_failed'));
-    } finally {
-        importConverting.value = false;
-    }
+    importForm.file = e.target.files?.[0] ?? null;
 }
 
 function submitImport() {
@@ -402,9 +388,7 @@ function submitImport() {
                     <button @click="showImport = true" class="inline-flex items-center rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                         {{ t('import') }}
                     </button>
-                    <a :href="route('equipment.items.export', catalog.id)" class="inline-flex items-center rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                        {{ t('export') }}
-                    </a>
+                    <ExportMenu :href="route('equipment.items.export', catalog.id)" :label="t('export')" />
                     <Link :href="route('equipment.catalogs.edit', catalog.id)" class="inline-flex items-center rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                         {{ t('edit') }}
                     </Link>
@@ -755,24 +739,24 @@ function submitImport() {
         <!-- Import items modal -->
         <Teleport to="body">
             <div v-if="showImport" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" @click.self="showImport = false">
-                <div class="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
+                <!-- No overflow-y-auto: it would clip the template format menu; the form is short. -->
+                <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
                     <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('import') }} — {{ catalog.name }}</h3>
                     <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ t('import_items_hint') }}</p>
                     <form @submit.prevent="submitImport" class="mt-4 space-y-4">
                         <input
                             type="file"
-                            accept=".csv,.xlsx,.xls,text/csv"
+                            accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                             @change="onImportFile"
                             required
                             class="w-full text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 hover:file:bg-primary-100"
                         />
-                        <p v-if="importConverting" class="text-sm text-slate-500 dark:text-slate-400">{{ t('converting_excel') }}</p>
                         <p v-if="importForm.errors.file" class="text-sm text-rose-600">{{ importForm.errors.file }}</p>
                         <div class="flex items-center justify-between gap-3 pt-2">
-                            <a :href="route('equipment.items.import.template')" class="text-sm font-medium text-primary-600 hover:underline">{{ t('download_template') }}</a>
+                            <ExportMenu :href="route('equipment.items.import.template')" :label="t('download_template')" align="left" />
                             <div class="flex gap-2">
                                 <button type="button" @click="showImport = false" class="rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">{{ t('cancel') }}</button>
-                                <button type="submit" :disabled="importForm.processing || importConverting || !importForm.file" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">{{ t('import') }}</button>
+                                <button type="submit" :disabled="importForm.processing || !importForm.file" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">{{ t('import') }}</button>
                             </div>
                         </div>
                     </form>

@@ -2,6 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Badge from '@/Components/Badge.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
+import ExportMenu from '@/Components/ExportMenu.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
@@ -84,9 +85,8 @@ function addSinglePlayer() {
 }
 
 // ── Export ────────────────────────────────────────────────────────────
-function exportExcel(filter) {
-    window.location.href = route('subscriptions.export', props.subscription.id) + '?filter=' + filter;
-}
+// The current tab's list; ExportMenu adds the format.
+const exportHref = computed(() => route('subscriptions.export', { subscription: props.subscription.id, filter: activeTab.value }));
 
 // ── Print ─────────────────────────────────────────────────────────────
 function printList() {
@@ -138,14 +138,12 @@ const tabCount = (tab) => {
                         class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 transition-colors">
                         {{ t('assign_subscription') }}
                     </button>
-                    <!-- Export dropdown -->
-                    <div class="relative" x-data="{ open: false }">
-                        <button @click="exportExcel(activeTab)"
-                            class="inline-flex items-center gap-2 rounded-lg border border-emerald-300 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-emerald-700 shadow-sm hover:bg-emerald-50 transition-colors">
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                            {{ t('export_csv') }}
-                        </button>
-                    </div>
+                    <!-- Export (current tab) -->
+                    <ExportMenu :href="exportHref" :label="t('export')">
+                        <template #icon>
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        </template>
+                    </ExportMenu>
                     <!-- Print -->
                     <button @click="printList"
                         class="inline-flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
@@ -230,7 +228,8 @@ const tabCount = (tab) => {
             </div>
 
             <!-- Tabs + Player subscriptions table -->
-            <div class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 print-area">
+            <!-- No overflow-hidden here: it would clip the export menu when the list is short; the table wrapper rounds its own bottom corners. -->
+            <div class="rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 print-area">
                 <!-- Tab bar -->
                 <div class="no-print flex border-b border-slate-100 dark:border-slate-800">
                     <button v-for="tab in ['all','paid','unpaid','partial']" :key="tab"
@@ -247,11 +246,11 @@ const tabCount = (tab) => {
                     </button>
                     <!-- Export current tab -->
                     <div class="no-print ml-auto flex items-center pr-4 gap-2">
-                        <button @click="exportExcel(activeTab)"
-                            class="inline-flex items-center gap-1 rounded-md border border-slate-200 dark:border-slate-800 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">
-                            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                            {{ t('export') }} {{ t(activeTab) }}
-                        </button>
+                        <ExportMenu :href="exportHref" :label="`${t('export')} ${t(activeTab)}`">
+                            <template #icon>
+                                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            </template>
+                        </ExportMenu>
                     </div>
                 </div>
 
@@ -264,7 +263,7 @@ const tabCount = (tab) => {
                 <div v-if="!filteredList.length" class="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
                     {{ t('no_players_in_list') }}
                 </div>
-                <div v-else class="overflow-x-auto">
+                <div v-else class="overflow-x-auto rounded-b-2xl">
                     <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
                         <thead class="bg-slate-50 dark:bg-slate-950">
                             <tr>

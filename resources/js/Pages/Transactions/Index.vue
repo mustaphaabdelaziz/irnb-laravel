@@ -5,6 +5,7 @@ import SearchInput from '@/Components/SearchInput.vue';
 import Badge from '@/Components/Badge.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import Icon from '@/Components/Icon.vue';
+import ExportMenu from '@/Components/ExportMenu.vue';
 import StatCard from '@/Components/StatCard.vue';
 import CategoryManager from '@/Components/CategoryManager.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
@@ -96,10 +97,14 @@ function bulkDestroy() {
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('transactions') }}</h1>
                 <div class="flex flex-wrap items-center gap-2">
-                    <a :href="route('transactions.import.template')" class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-500 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-400 dark:ring-slate-800" :title="t('template') ? t('template') : 'Template'"><Icon name="document" /></a>
+                    <ExportMenu :href="route('transactions.import.template')" :label="t('template')" collapse>
+                        <template #icon><Icon name="document" /></template>
+                    </ExportMenu>
                     <button @click="importInput?.click()" class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800"><Icon name="upload" /> {{ t('import') }}</button>
-                    <input ref="importInput" type="file" accept=".csv,text/csv" class="hidden" @change="onImport" />
-                    <a :href="exportUrl" class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800"><Icon name="download" /> {{ t('export') }}</a>
+                    <input ref="importInput" type="file" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="hidden" @change="onImport" />
+                    <ExportMenu :href="exportUrl" :label="t('export')">
+                        <template #icon><Icon name="download" /></template>
+                    </ExportMenu>
                     <button @click="showCategories = true" class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800"><Icon name="settings" /> {{ t('manage_categories') }}</button>
                     <Link :href="route('transactions.create')" class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 transition-colors">
                         <Icon name="plus" /> {{ t('add_transaction') }}

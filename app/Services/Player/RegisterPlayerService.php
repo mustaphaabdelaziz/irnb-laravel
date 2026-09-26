@@ -16,7 +16,7 @@ class RegisterPlayerService
      *
      * @param  array<string, mixed>  $attributes
      */
-    public function handle(array $attributes, ?int $recordedByUserId = null): Player
+    public function handle(array $attributes): Player
     {
         return DB::transaction(function () use ($attributes) {
             $joinYear = (int) ($attributes['join_year'] ?? now()->year);

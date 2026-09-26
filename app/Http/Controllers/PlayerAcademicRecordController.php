@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Player\SaveAcademicRecordRequest;
 use App\Models\Player;
 use App\Models\PlayerAcademicRecord;
+use App\Services\Activity\ActivityAction;
+use App\Services\Activity\ActivityRecorder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -17,13 +19,15 @@ class PlayerAcademicRecordController extends Controller
     {
         $data = $request->validated();
 
-        DB::transaction(function () use ($player, $data) {
+        DB::transaction(function () use ($request, $player, $data) {
             $year = $player->academicYears()->firstOrCreate(
                 ['academic_year' => (int) $data['academic_year']],
                 Arr::only($data, ['education_level', 'institution', 'field_of_study']),
             );
 
-            $year->records()->create(Arr::only($data, ['period', 'gpa', 'certificate', 'remark']));
+            $record = $year->records()->create(Arr::only($data, ['period', 'gpa', 'certificate', 'remark']));
+
+            ActivityRecorder::record($request->user(), ActivityAction::ACADEMIC_RECORD_ADDED, $record);
         });
 
         return back()->with('success', 'flash.academic_record_added');

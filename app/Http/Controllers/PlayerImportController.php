@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\MemberJob;
 use App\Models\Position;
+use App\Services\Activity\ActivityAction;
+use App\Services\Activity\ActivityRecorder;
 use App\Services\Player\RegisterPlayerService;
 use App\Support\Export;
 use App\Support\Import\ImportColumns;
@@ -151,7 +153,7 @@ class PlayerImportController extends Controller
                     'join_year' => is_numeric($data['join_year']) ? (int) $data['join_year'] : now()->year,
                 ];
 
-                $player = $service->handle($attributes, $request->user()?->id);
+                $player = $service->handle($attributes);
 
                 $others = collect(explode(',', (string) ($data['other_positions'] ?? '')))
                     ->map(fn ($value) => $this->resolvePosition($positions, trim($value)))
@@ -169,6 +171,11 @@ class PlayerImportController extends Controller
             } catch (Throwable $e) {
                 $errors[] = __('Row :line: :message', ['line' => $line, 'message' => $e->getMessage()]);
             }
+        }
+
+        // One summary event for the whole file, never one per row.
+        if ($imported > 0) {
+            ActivityRecorder::record($request->user(), ActivityAction::PLAYER_IMPORTED, null, ['count' => $imported]);
         }
 
         $message = __(':count players imported successfully.', ['count' => $imported]);

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\MemberJob;
+use App\Services\Activity\ActivityAction;
+use App\Services\Activity\ActivityRecorder;
 use App\Services\Lookup\JobDuplicateFinder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -33,7 +35,8 @@ class MemberJobController extends Controller
             ])->withInput();
         }
 
-        MemberJob::create($validated);
+        $job = MemberJob::create($validated);
+        ActivityRecorder::record($request->user(), ActivityAction::JOB_CREATED, $job);
 
         return back()->with('success', 'flash.job_created');
     }
@@ -51,6 +54,7 @@ class MemberJobController extends Controller
         }
 
         $job = MemberJob::create($validated);
+        ActivityRecorder::record($request->user(), ActivityAction::JOB_CREATED, $job);
 
         return response()->json([
             'job' => $job,

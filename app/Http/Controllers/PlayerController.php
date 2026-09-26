@@ -19,6 +19,8 @@ use App\Models\PlayerStatus;
 use App\Models\Position;
 use App\Models\Subscription;
 use App\Models\Transaction;
+use App\Services\Activity\ActivityAction;
+use App\Services\Activity\ActivityRecorder;
 use App\Services\Dashboard\ModuleStats;
 use App\Services\Finance\DefaultRegisterResolver;
 use App\Services\Player\DocumentChecklist;
@@ -341,7 +343,7 @@ class PlayerController extends Controller
             $attributes['picture_filename'] = $stored['filename'];
         }
 
-        $player = $service->handle($attributes, $request->user()?->id);
+        $player = $service->handle($attributes);
 
         $player->branches()->sync($branchIds);
         $player->otherPositions()->sync($otherPositionIds);
@@ -354,6 +356,8 @@ class PlayerController extends Controller
         foreach ($emergencyContacts as $contact) {
             $player->emergencyContacts()->create($contact);
         }
+
+        ActivityRecorder::record($request->user(), ActivityAction::PLAYER_REGISTERED, $player);
 
         return redirect()->route('players.show', $player)
             ->with('success', 'flash.player_created');
@@ -436,9 +440,15 @@ class PlayerController extends Controller
             ->with('success', 'flash.player_updated');
     }
 
-    public function destroy(Player $player): RedirectResponse
+    public function destroy(Request $request, Player $player): RedirectResponse
     {
-        $player->update(['archived' => true]);
+        // Archiving an already archived member changes nothing: no event then.
+        if (! $player->archived) {
+            DB::transaction(function () use ($request, $player) {
+                $player->update(['archived' => true]);
+                ActivityRecorder::record($request->user(), ActivityAction::PLAYER_ARCHIVED, $player);
+            });
+        }
 
         return redirect()->route('players.index')
             ->with('success', 'flash.player_archived');
@@ -462,7 +472,18 @@ class PlayerController extends Controller
     public function bulkArchive(Request $request): RedirectResponse
     {
         $ids = $this->validatedIds($request);
-        Player::whereIn('id', $ids)->update(['archived' => true]);
+
+        // A query update loads no models: pick out the members this call really
+        // archives (not already archived) first, so each gets one event.
+        DB::transaction(function () use ($request, $ids) {
+            $archiving = Player::whereIn('id', $ids)->where('archived', false)->get(['id']);
+
+            Player::whereIn('id', $ids)->update(['archived' => true]);
+
+            foreach ($archiving as $player) {
+                ActivityRecorder::record($request->user(), ActivityAction::PLAYER_ARCHIVED, $player);
+            }
+        });
 
         return back()->with('success', ['key' => 'flash.players_archived', 'params' => ['count' => count($ids)]]);
     }

@@ -148,6 +148,8 @@ class TransactionImportRoundTripTest extends TestCase
             'bad grouping' => ['1,50,0', null],
             'text' => ['abc', null],
             'blank' => ['', null],
+            'trailing nbsp' => ["100\u{00A0}", 100.0],
+            'leading narrow nbsp' => ["\u{202F}1,500", 1500.0],
         ];
     }
 
@@ -173,6 +175,10 @@ class TransactionImportRoundTripTest extends TestCase
             'day first' => ['03/02/2026', '2026-02-03'],
             'day first no rollover' => ['31/02/2026', null],
             'iso no rollover' => ['2026-02-31', null],
+            'iso datetime no rollover' => ['2026-02-30T10:00:00', null],
+            'iso zulu no rollover' => ['2026-02-30T00:00:00.000Z', null],
+            'iso datetime' => ['2026-02-28T10:00:00', '2026-02-28'],
+            'iso space time no rollover' => ['2026-02-30 10:00:00', null],
             'text' => ['someday', null],
         ];
     }

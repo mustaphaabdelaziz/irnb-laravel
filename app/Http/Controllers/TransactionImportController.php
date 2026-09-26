@@ -162,7 +162,7 @@ class TransactionImportController extends Controller
      */
     private function parseAmount(string $value): ?float
     {
-        $value = trim($value);
+        $value = (string) preg_replace('/^[\s\x{00A0}\x{202F}]+|[\s\x{00A0}\x{202F}]+$/u', '', $value);
         $decimal = null;
         $fraction = '';
 
@@ -194,7 +194,7 @@ class TransactionImportController extends Controller
         if (preg_match('#^(\d{1,2})/(\d{1,2})/(\d{4})$#', $value, $m)) {
             return checkdate((int) $m[2], (int) $m[1], (int) $m[3]) ? sprintf('%04d-%02d-%02d', $m[3], $m[2], $m[1]) : null;
         }
-        if (preg_match('#^(\d{4})-(\d{1,2})-(\d{1,2})\b#', $value, $m) && ! checkdate((int) $m[2], (int) $m[3], (int) $m[1])) {
+        if (preg_match('#^(\d{4})-(\d{1,2})-(\d{1,2})(?=\D|$)#', $value, $m) && ! checkdate((int) $m[2], (int) $m[3], (int) $m[1])) {
             return null;
         }
         try {

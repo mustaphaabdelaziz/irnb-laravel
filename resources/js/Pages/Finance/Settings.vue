@@ -6,6 +6,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Icon from '@/Components/Icon.vue';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
+import { useCan } from '@/Composables/useCan';
 
 const props = defineProps({
     categories: { type: Array, default: () => [] },
@@ -67,6 +68,16 @@ function addAccount() {
 }
 function deleteAccount(a) {
     if (window.confirm(t('confirm_delete'))) router.delete(route('finance.accounts.destroy', a.id), { preserveScroll: true });
+}
+
+/* ----- Reset (superadmin) ----- */
+const { isSuperadmin } = useCan();
+function resetFinance() {
+    // Typed word, not a click: this wipes every financial record.
+    const typed = window.prompt(t('finance_reset_prompt'));
+    if (typed === null) return;
+    if (typed.trim() !== 'RESET') { window.alert(t('finance_reset_mismatch')); return; }
+    router.post(route('finance.reset'), { confirm: 'RESET' }, { preserveScroll: true });
 }
 </script>
 
@@ -237,6 +248,15 @@ function deleteAccount(a) {
                         <input v-model="accForm.opening_balance" type="number" step="0.01" class="w-32 rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
                     <button class="inline-flex items-center gap-1.5 rounded-xl bg-primary-600 px-3.5 py-2 text-sm font-bold text-white hover:bg-primary-700"><Icon name="plus" /> {{ t('add_account') }}</button>
                 </form>
+            </section>
+
+            <!-- Danger zone: start the books fresh -->
+            <section v-if="isSuperadmin" class="card p-5 ring-1 ring-rose-200 dark:ring-rose-900/60">
+                <p class="text-sm font-bold text-rose-700 dark:text-rose-400">{{ t('finance_reset_title') }}</p>
+                <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">{{ t('finance_reset_desc') }}</p>
+                <button @click="resetFinance" class="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-3.5 py-2 text-sm font-bold text-white hover:bg-rose-700">
+                    <Icon name="xcircle" /> {{ t('finance_reset_button') }}
+                </button>
             </section>
         </div>
     </AuthenticatedLayout>

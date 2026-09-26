@@ -17,6 +17,7 @@ import StatDoughnut from '@/Components/StatDoughnut.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import ExportMenu from '@/Components/ExportMenu.vue';
 import Icon from '@/Components/Icon.vue';
+import AcademicResultsPrint from '@/Pages/Players/Partials/AcademicResultsPrint.vue';
 
 const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
@@ -35,6 +36,7 @@ const props = defineProps({
     ageStats: { type: Array, default: () => [] },
     documentTypes: { type: Array, default: () => [] },
     filters: Object,
+    currentSchoolYear: { type: Number, default: null },
 });
 
 const search = ref(props.filters?.search || '');
@@ -250,6 +252,7 @@ function runBulk() {
                         :label="t('print_board_table')" :formats="['pdf', 'xlsx', 'csv']" collapse>
                         <template #icon><Icon name="print" /></template>
                     </ExportMenu>
+                    <AcademicResultsPrint :categories="categories" :category-id="categoryFilter" :current-school-year="currentSchoolYear" />
 
                     <!-- ...folded into an overflow menu below xl -->
                     <Dropdown align="right" width="48" class="xl:hidden">

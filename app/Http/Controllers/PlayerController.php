@@ -148,6 +148,8 @@ class PlayerController extends Controller
             'positionStats' => $positionStats,
             'ageStats' => $ageStats,
             'filters' => $request->only(['search', 'category_id', 'status', 'position_id', 'branch_id', 'age', 'archived', 'wilaya_id', 'academic', 'certificate', 'documents']),
+            // Default school year of the academic results printout.
+            'currentSchoolYear' => Season::current()->startYear,
         ]);
     }
 

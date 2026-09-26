@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -59,10 +60,11 @@ return new class extends Migration
 
         DB::table('transactions')
             ->select(['id', 'amount', 'transaction_type', 'recorded_by_user_id', 'related_entity_type', 'player_subscription_id', 'created_at', 'updated_at'])
-            ->whereNotNull('recorded_by_user_id')
+            ->whereIn('recorded_by_user_id', $this->users())
             ->chunkById(self::CHUNK, function ($rows) use ($type) {
                 $this->insert($rows->map(function ($row) use ($type) {
-                    $isPayment = $row->player_subscription_id !== null || $row->related_entity_type === 'Player';
+                    $isPayment = $row->transaction_type === 'income'
+                        && ($row->player_subscription_id !== null || $row->related_entity_type === 'Player');
                     $properties = ['amount' => (float) $row->amount];
                     if (! $isPayment) {
                         $properties['type'] = $row->transaction_type;
@@ -71,7 +73,7 @@ return new class extends Migration
                     return $this->entry(
                         $isPayment ? 'payment_recorded' : 'transaction_recorded',
                         $row->recorded_by_user_id, $type, $row->id, $properties,
-                        $row->created_at ?? $row->updated_at,
+                        $this->moment($row->created_at, $row->updated_at),
                     );
                 }));
             });
@@ -84,7 +86,7 @@ return new class extends Migration
 
         DB::table('equipment_histories')
             ->select(['id', 'item_id', 'user_id', 'event_type', 'details', 'event_timestamp', 'created_at'])
-            ->whereNotNull('user_id')
+            ->whereIn('user_id', $this->users())
             ->whereIn('event_type', array_keys(self::EQUIPMENT_EVENTS))
             ->chunkById(self::CHUNK, function ($rows) use ($type) {
                 $this->insert($rows->map(function ($row) use ($type) {
@@ -94,7 +96,7 @@ return new class extends Migration
                         self::EQUIPMENT_EVENTS[$row->event_type],
                         $row->user_id, $type, $row->item_id,
                         is_numeric($quantity) ? ['quantity' => (int) $quantity] : [],
-                        $row->event_timestamp ?? $row->created_at,
+                        $this->moment($row->event_timestamp, $row->created_at),
                         true,
                     );
                 }));
@@ -106,20 +108,23 @@ return new class extends Migration
         $type = 'App\Models\BoardMeeting';
         $this->loadExisting(['meeting_created', 'meeting_cancelled'], $type, false);
 
+        // One pass per attribution column: each keeps only its own existing users.
         DB::table('board_meetings')
-            ->select(['id', 'created_by_user_id', 'created_at', 'updated_at', 'cancelled_at', 'cancelled_by_user_id'])
-            ->where(fn ($q) => $q->whereNotNull('created_by_user_id')->orWhereNotNull('cancelled_by_user_id'))
+            ->select(['id', 'created_by_user_id', 'created_at', 'updated_at'])
+            ->whereIn('created_by_user_id', $this->users())
             ->chunkById(self::CHUNK, function ($rows) use ($type) {
-                $entries = collect();
-                foreach ($rows as $row) {
-                    if ($row->created_by_user_id !== null) {
-                        $entries->push($this->entry('meeting_created', $row->created_by_user_id, $type, $row->id, [], $row->created_at ?? $row->updated_at));
-                    }
-                    if ($row->cancelled_by_user_id !== null) {
-                        $entries->push($this->entry('meeting_cancelled', $row->cancelled_by_user_id, $type, $row->id, [], $row->cancelled_at ?? $row->updated_at));
-                    }
-                }
-                $this->insert($entries);
+                $this->insert($rows->map(fn ($row) => $this->entry(
+                    'meeting_created', $row->created_by_user_id, $type, $row->id, [], $this->moment($row->created_at, $row->updated_at),
+                )));
+            });
+
+        DB::table('board_meetings')
+            ->select(['id', 'cancelled_by_user_id', 'cancelled_at', 'updated_at'])
+            ->whereIn('cancelled_by_user_id', $this->users())
+            ->chunkById(self::CHUNK, function ($rows) use ($type) {
+                $this->insert($rows->map(fn ($row) => $this->entry(
+                    'meeting_cancelled', $row->cancelled_by_user_id, $type, $row->id, [], $this->moment($row->cancelled_at, $row->updated_at),
+                )));
             });
     }
 
@@ -130,10 +135,10 @@ return new class extends Migration
 
         DB::table('board_tasks')
             ->select(['id', 'created_by_user_id', 'created_at', 'updated_at'])
-            ->whereNotNull('created_by_user_id')
+            ->whereIn('created_by_user_id', $this->users())
             ->chunkById(self::CHUNK, function ($rows) use ($type) {
                 $this->insert($rows->map(fn ($row) => $this->entry(
-                    'task_created', $row->created_by_user_id, $type, $row->id, [], $row->created_at ?? $row->updated_at,
+                    'task_created', $row->created_by_user_id, $type, $row->id, [], $this->moment($row->created_at, $row->updated_at),
                 )));
             });
     }
@@ -146,16 +151,16 @@ return new class extends Migration
 
         DB::table('inventory_sessions')
             ->select(['id', 'conducted_by_user_id', 'created_at', 'updated_at', 'completed_at', 'total_found', 'total_missing'])
-            ->whereNotNull('conducted_by_user_id')
+            ->whereIn('conducted_by_user_id', $this->users())
             ->chunkById(self::CHUNK, function ($rows) use ($type) {
                 $entries = collect();
                 foreach ($rows as $row) {
-                    $entries->push($this->entry('stocktake_started', $row->conducted_by_user_id, $type, $row->id, [], $row->created_at ?? $row->updated_at));
+                    $entries->push($this->entry('stocktake_started', $row->conducted_by_user_id, $type, $row->id, [], $this->moment($row->created_at, $row->updated_at)));
                     if ($row->completed_at !== null) {
                         $entries->push($this->entry('stocktake_completed', $row->conducted_by_user_id, $type, $row->id, [
                             'found' => (int) $row->total_found,
                             'missing' => (int) $row->total_missing,
-                        ], $row->completed_at));
+                        ], $this->moment($row->completed_at, $row->updated_at)));
                     }
                 }
                 $this->insert($entries);
@@ -169,11 +174,11 @@ return new class extends Migration
 
         DB::table('finance_transfers')
             ->select(['id', 'amount', 'created_by_user_id', 'created_at', 'updated_at'])
-            ->whereNotNull('created_by_user_id')
+            ->whereIn('created_by_user_id', $this->users())
             ->chunkById(self::CHUNK, function ($rows) use ($type) {
                 $this->insert($rows->map(fn ($row) => $this->entry(
                     'transfer_recorded', $row->created_by_user_id, $type, $row->id,
-                    ['amount' => (float) $row->amount], $row->created_at ?? $row->updated_at,
+                    ['amount' => (float) $row->amount], $this->moment($row->created_at, $row->updated_at),
                 )));
             });
     }
@@ -186,11 +191,11 @@ return new class extends Migration
 
         DB::table('player_document_files')
             ->select(['id', 'player_document_id', 'uploaded_by_user_id', 'created_at'])
-            ->whereNotNull('uploaded_by_user_id')
+            ->whereIn('uploaded_by_user_id', $this->users())
             ->chunkById(self::CHUNK, function ($rows) use ($type) {
                 $this->insert($rows->map(fn ($row) => $this->entry(
                     'document_file_uploaded', $row->uploaded_by_user_id, $type, $row->player_document_id,
-                    ['count' => 1], $row->created_at, true,
+                    ['count' => 1], $this->moment($row->created_at), true,
                 )));
             });
     }
@@ -217,11 +222,40 @@ return new class extends Migration
             }, 1000);
     }
 
-    /** @return array<string, mixed>|null the row to insert, or null when it is already logged */
-    private function entry(string $action, int|string $userId, string $subjectType, int|string $subjectId, array $properties, ?string $at, bool $keyedByMoment = false): ?array
+    /**
+     * Existing user ids, as a subquery: activity_logs.user_id is a foreign key,
+     * and an attribution column can still hold a user that is gone (rows written
+     * with foreign keys off, restores, imports). Those rows are skipped.
+     */
+    private function users(): Builder
     {
-        $occurredAt = $at === null ? $this->now : Carbon::parse($at)->format('Y-m-d H:i:s');
+        return DB::table('users')->select('id');
+    }
 
+    /**
+     * The first candidate that parses as a date, normalised; otherwise now.
+     * Legacy imported rows can hold malformed timestamps, and this migration
+     * runs on every desktop boot, so it must never throw on them.
+     */
+    private function moment(?string ...$candidates): string
+    {
+        foreach ($candidates as $candidate) {
+            if ($candidate === null || trim($candidate) === '') {
+                continue;
+            }
+            try {
+                return Carbon::parse($candidate)->format('Y-m-d H:i:s');
+            } catch (Throwable) {
+                // try the next candidate
+            }
+        }
+
+        return $this->now;
+    }
+
+    /** @return array<string, mixed>|null the row to insert, or null when it is already logged */
+    private function entry(string $action, int|string $userId, string $subjectType, int|string $subjectId, array $properties, string $occurredAt, bool $keyedByMoment = false): ?array
+    {
         if (isset($this->existing[$this->key($action, $subjectType, $subjectId, $keyedByMoment ? $occurredAt : null)])) {
             return null;
         }
@@ -241,7 +275,7 @@ return new class extends Migration
     {
         $key = $action.'|'.$subjectType.'|'.(int) $subjectId;
 
-        return $moment === null ? $key : $key.'|'.Carbon::parse($moment)->format('Y-m-d H:i:s');
+        return $moment === null ? $key : $key.'|'.$this->moment($moment);
     }
 
     private function insert($entries): void

@@ -278,4 +278,126 @@ class ActivityBackfillTest extends TestCase
 
         $this->assertEqualsCanonicalizing([$live->id, $liveWithProps->id], ActivityLog::pluck('id')->all());
     }
+
+    private function history(?string $details, string $at): void
+    {
+        DB::table('equipment_histories')->insert([
+            'item_id' => $this->itemId, 'user_id' => $this->user->id, 'event_type' => 'Return',
+            'details' => $details, 'event_timestamp' => $at, 'created_at' => $at,
+        ]);
+    }
+
+    /** @return array<string, array|null> occurred_at => properties of the backfilled returns after the seeded one */
+    private function extraReturns(): array
+    {
+        return ActivityLog::where('action', 'equipment_returned')->where('occurred_at', '>', '2026-03-05 10:00:00')
+            ->orderBy('occurred_at')->get()
+            ->mapWithKeys(fn (ActivityLog $log) => [$log->occurred_at->format('Y-m-d H:i:s') => $log->properties])->all();
+    }
+
+    #[Test]
+    public function malformed_history_details_never_throw_and_yield_no_quantity(): void
+    {
+        $this->history('not json {', '2026-09-01 10:00:00');
+        $this->history(json_encode('still not json'), '2026-09-02 10:00:00');
+        $this->history(json_encode(json_encode(['quantity' => 4])), '2026-09-03 10:00:00');
+        $this->history(null, '2026-09-04 10:00:00');
+        $this->history('', '2026-09-05 10:00:00');
+        $this->history(json_encode(['quantity' => 'many']), '2026-09-06 10:00:00');
+
+        $this->backfill();
+
+        $this->assertEquals([
+            '2026-09-01 10:00:00' => ['backfilled' => true],
+            '2026-09-02 10:00:00' => ['backfilled' => true],
+            '2026-09-03 10:00:00' => ['backfilled' => true, 'quantity' => 4],
+            '2026-09-04 10:00:00' => ['backfilled' => true],
+            '2026-09-05 10:00:00' => ['backfilled' => true],
+            '2026-09-06 10:00:00' => ['backfilled' => true],
+        ], $this->extraReturns());
+    }
+
+    #[Test]
+    public function a_malformed_timestamp_falls_back_to_the_next_candidate_then_to_now(): void
+    {
+        $tx = fn (int $id, string $created, string $updated) => DB::table('transactions')->insert([
+            'id' => $id, 'amount' => 50, 'transaction_type' => 'expense', 'category' => 'misc', 'transaction_date' => now(),
+            'recorded_by_user_id' => $this->user->id, 'created_at' => $created, 'updated_at' => $updated,
+        ]);
+        $tx(111, 'not-a-date', '2026-02-11 09:00:00');
+        $tx(112, 'garbage', 'also garbage');
+        DB::table('equipment_histories')->insert([
+            'item_id' => $this->itemId, 'user_id' => $this->user->id, 'event_type' => 'Return',
+            'details' => null, 'event_timestamp' => '31/31/2026 99:99', 'created_at' => '2026-09-10 10:00:00',
+        ]);
+
+        $this->backfill();
+        $this->backfill();
+
+        $at = fn (int $id) => ActivityLog::where('action', 'transaction_recorded')->where('subject_id', $id)
+            ->sole()->occurred_at->format('Y-m-d H:i:s');
+        $this->assertSame('2026-02-11 09:00:00', $at(111));
+        $this->assertSame('2026-10-05 12:00:00', $at(112));
+        $this->assertEquals(['2026-09-10 10:00:00' => ['backfilled' => true]], $this->extraReturns());
+    }
+
+    #[Test]
+    public function a_row_attributed_to_a_user_that_no_longer_exists_is_skipped(): void
+    {
+        $ghost = 987654;
+        // Written as if by an import/restore with foreign keys off; deferral lets the rows in
+        // inside the test transaction (which is rolled back, so the violation is never committed).
+        DB::statement('PRAGMA defer_foreign_keys = ON');
+        DB::table('transactions')->insert([
+            'id' => 121, 'amount' => 80, 'transaction_type' => 'income', 'category' => 'misc', 'transaction_date' => now(),
+            'recorded_by_user_id' => $ghost, 'created_at' => '2026-02-21 09:00:00', 'updated_at' => now(),
+        ]);
+        DB::table('equipment_histories')->insert([
+            'item_id' => $this->itemId, 'user_id' => $ghost, 'event_type' => 'Return',
+            'details' => null, 'event_timestamp' => '2026-09-20 10:00:00', 'created_at' => '2026-09-20 10:00:00',
+        ]);
+        DB::table('board_meetings')->insert([
+            'id' => 221, 'title' => 'Ghost', 'type' => 'ordinary', 'meeting_date' => '2026-05-01 18:00:00',
+            'created_by_user_id' => $this->user->id, 'created_at' => '2026-04-21 08:00:00', 'updated_at' => now(),
+            'status' => 'cancelled', 'cancelled_at' => '2026-04-22 08:00:00', 'cancelled_by_user_id' => $ghost,
+        ]);
+        DB::table('board_tasks')->insert(['id' => 321, 'title' => 'Ghost', 'created_by_user_id' => $ghost, 'created_at' => '2026-04-21 08:00:00', 'updated_at' => now()]);
+        DB::table('inventory_sessions')->insert(['id' => 421, 'reference' => 'INV-G', 'type' => 'ad_hoc', 'session_date' => '2026-06-01',
+            'conducted_by_user_id' => $ghost, 'created_at' => '2026-06-21 08:00:00', 'updated_at' => now()]);
+        $account = DB::table('finance_accounts')->value('id');
+        DB::table('finance_transfers')->insert(['id' => 521, 'from_account_id' => $account, 'to_account_id' => $account, 'amount' => 5,
+            'transfer_date' => '2026-07-21', 'created_by_user_id' => $ghost, 'created_at' => '2026-07-21 09:00:00', 'updated_at' => now()]);
+        DB::table('player_document_files')->insert(['player_document_id' => 601, 'path' => 'docs/g.pdf', 'original_name' => 'g.pdf',
+            'mime' => 'application/pdf', 'size' => 1, 'uploaded_by_user_id' => $ghost, 'created_at' => '2026-08-21 09:00:00']);
+        DB::statement('PRAGMA defer_foreign_keys = OFF');
+
+        $this->backfill();
+
+        $this->assertSame(0, ActivityLog::where('user_id', $ghost)->count());
+        $this->assertSame(1, ActivityLog::where('action', 'meeting_created')->where('subject_id', 221)->count(),
+            'the valid creator of a meeting is still credited when its canceller is gone');
+        $this->assertEquals($this->expected(), array_values(array_filter(
+            $this->logs(), fn (array $log) => ! ($log['action'] === 'meeting_created' && $log['subject_id'] === 221),
+        )));
+    }
+
+    #[Test]
+    public function only_an_income_for_a_player_is_backfilled_as_a_payment(): void
+    {
+        $subscriptionId = DB::table('player_subscriptions')->value('id');
+        $tx = fn (array $a) => DB::table('transactions')->insert($a + [
+            'amount' => 60, 'category' => 'misc', 'transaction_date' => now(), 'recorded_by_user_id' => $this->user->id, 'updated_at' => now(),
+        ]);
+        $tx(['id' => 131, 'transaction_type' => 'expense', 'related_entity_type' => 'Player', 'related_entity_id' => $this->playerId, 'created_at' => '2026-02-25 09:00:00']);
+        $tx(['id' => 132, 'transaction_type' => 'expense', 'player_subscription_id' => $subscriptionId, 'created_at' => '2026-02-26 09:00:00']);
+        $tx(['id' => 133, 'transaction_type' => 'income', 'created_at' => '2026-02-27 09:00:00']);
+
+        $this->backfill();
+
+        $event = fn (int $id) => ActivityLog::where('subject_type', Transaction::class)->where('subject_id', $id)->sole();
+        foreach ([131 => 'expense', 132 => 'expense', 133 => 'income'] as $id => $type) {
+            $this->assertSame('transaction_recorded', $event($id)->action, "transaction $id");
+            $this->assertEquals(['backfilled' => true, 'amount' => 60, 'type' => $type], $event($id)->properties);
+        }
+    }
 }

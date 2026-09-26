@@ -16,6 +16,7 @@ use App\Models\PlayerAcademicRecord;
 use App\Models\PlayerDocument;
 use App\Models\Subscription;
 use App\Models\Transaction;
+use App\Models\User;
 use App\Support\UiLang;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -37,6 +38,27 @@ final class ActivitySubjectLink
         PlayerAcademicRecord::class => ['academicYear.player'],
         EquipmentRental::class => ['equipmentItem.catalog'],
         EquipmentItem::class => ['catalog'],
+    ];
+
+    /**
+     * The modules whose view right a viewer needs to see a subject's label and
+     * link (the module guarding the linked page, plus players when the label
+     * names a player). Subject types not listed are shown as is.
+     */
+    private const MODULES = [
+        Player::class => ['players'],
+        PlayerAcademicRecord::class => ['players'],
+        PlayerDocument::class => ['documents', 'players'],
+        Transaction::class => ['transactions'],
+        FinanceTransfer::class => ['finance'],
+        Subscription::class => ['subscriptions'],
+        MemberJob::class => ['categories'],
+        EquipmentCatalog::class => ['equipment'],
+        EquipmentItem::class => ['equipment'],
+        EquipmentRental::class => ['equipment'],
+        InventorySession::class => ['inventory'],
+        BoardMeeting::class => ['board'],
+        BoardTask::class => ['board'],
     ];
 
     /**
@@ -71,7 +93,7 @@ final class ActivitySubjectLink
     }
 
     /** @return array{label: string, url: ?string, deleted: bool} */
-    public static function for(ActivityLog $log): array
+    public static function for(ActivityLog $log, ?User $viewer = null): array
     {
         if ($log->subject_type === null || $log->subject_id === null) {
             return ['label' => self::propertiesLabel($log->properties ?? []), 'url' => null, 'deleted' => false];
@@ -87,9 +109,38 @@ final class ActivitySubjectLink
             return ['label' => UiLang::get('activity.record_deleted', 'Record deleted'), 'url' => null, 'deleted' => true];
         }
 
+        // A subject from a module the viewer cannot view comes back neutral —
+        // the action's label and the record's id, no link — so the activity
+        // pages never reveal another module's data (or link to a 403).
+        if ($viewer !== null && ! self::canSee($viewer, $subject)) {
+            return [
+                'label' => UiLang::get('activity.action.'.$log->action, $log->action).' #'.$log->subject_id,
+                'url' => null,
+                'deleted' => false,
+                'neutral' => true,
+            ];
+        }
+
         [$label, $url] = self::describe($subject);
 
         return ['label' => $label, 'url' => $url, 'deleted' => false];
+    }
+
+    private static function canSee(User $viewer, Model $subject): bool
+    {
+        foreach (self::MODULES as $class => $modules) {
+            if ($subject instanceof $class) {
+                foreach ($modules as $module) {
+                    if (! $viewer->hasPermission($module, 'view')) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        }
+
+        return true;
     }
 
     /** @return class-string<Model>|null */

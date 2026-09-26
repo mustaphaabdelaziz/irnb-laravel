@@ -53,7 +53,7 @@ const groups = computed(() => Object.keys(props.areas)
     .filter((g) => g.items.length > 0));
 
 function formatDate(iso) {
-    return new Date(iso).toLocaleString(locale.value === 'ar' ? 'ar' : locale.value, {
+    return new Date(iso).toLocaleString(locale.value, {
         day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
     });
 }
@@ -67,7 +67,7 @@ function chips(entry) {
     if (p.type === 'income' || p.type === 'expense') out.push(t(p.type));
     if (p.kind === 'annual' || p.kind === 'exceptional') out.push(t(`subscription_kind_${p.kind}`));
     // An import's count is already its subject label ("{count} rows").
-    const hasSubject = entry.subject.url || entry.subject.deleted;
+    const hasSubject = entry.subject.url || entry.subject.deleted || entry.subject.neutral;
     if (p.count !== undefined && hasSubject) out.push(`${t('count')}: ${p.count}`);
     if (p.quantity !== undefined) out.push(`${t('quantity')}: ${p.quantity}`);
     if (p.found !== undefined) out.push(`${t('found')}: ${p.found}`);

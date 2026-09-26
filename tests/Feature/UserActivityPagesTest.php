@@ -3,10 +3,13 @@
 namespace Tests\Feature;
 
 use App\Models\ActivityLog;
+use App\Models\Player;
 use App\Models\Role;
+use App\Models\Transaction;
 use App\Models\User;
 use App\Services\Activity\ActivityAction;
 use App\Support\PermissionMap;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -31,11 +34,13 @@ class UserActivityPagesTest extends TestCase
         parent::tearDown();
     }
 
-    private function log(User $user, string $action, string $at = '2026-10-10 09:00:00', ?array $properties = null): ActivityLog
+    private function log(User $user, string $action, string $at = '2026-10-10 09:00:00', ?array $properties = null, ?Model $subject = null): ActivityLog
     {
         return ActivityLog::create([
             'user_id' => $user->id,
             'action' => $action,
+            'subject_type' => $subject?->getMorphClass(),
+            'subject_id' => $subject?->getKey(),
             'properties' => $properties,
             'occurred_at' => $at,
         ]);
@@ -190,6 +195,119 @@ class UserActivityPagesTest extends TestCase
         $this->actingAs($member)->get(route('profile.activity', ['user' => $other->id, 'action' => ActivityAction::PAYMENT_RECORDED]))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page->has('entries.data', 0));
+    }
+
+    private function memberWithRole(array $permissions): User
+    {
+        $role = Role::factory()->create(['permissions' => $permissions]);
+
+        return User::factory()->create(['privileges' => ['user'], 'role_id' => $role->id]);
+    }
+
+    private function player(): Player
+    {
+        return Player::create(['membership_id' => '7700000001', 'firstname' => 'Yacine', 'lastname' => 'Brahimi']);
+    }
+
+    private function transaction(): Transaction
+    {
+        return Transaction::create([
+            'title' => 'Cotisation secrète',
+            'amount' => 1500,
+            'transaction_date' => '2026-10-10',
+            'transaction_type' => 'income',
+            'category' => 'donation',
+            'payment_method' => 'cash',
+            'status' => 'Paid',
+            'fiscal_year' => 2026,
+        ]);
+    }
+
+    #[Test]
+    public function a_non_god_role_with_users_view_opens_both_pages(): void
+    {
+        $viewer = $this->memberWithRole(['users' => ['view']]);
+        $other = User::factory()->create();
+
+        $this->actingAs($viewer)->get(route('users.activity.index'))->assertOk();
+        $this->actingAs($viewer)->get(route('users.activity.show', $other))->assertOk();
+    }
+
+    #[Test]
+    public function entry_labels_and_links_are_neutral_for_modules_the_viewer_cannot_view(): void
+    {
+        $clerk = User::factory()->create();
+        $player = $this->player();
+        $tx = $this->transaction();
+        $this->log($clerk, ActivityAction::PLAYER_REGISTERED, subject: $player);
+        $this->log($clerk, ActivityAction::TRANSACTION_RECORDED, properties: ['amount' => 1500], subject: $tx);
+
+        $usersOnly = $this->memberWithRole(['users' => ['view']]);
+
+        $this->actingAs($usersOnly)->get(route('users.activity.show', ['user' => $clerk->id, 'action' => ActivityAction::PLAYER_REGISTERED]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('entries.data.0.subject.url', null)
+                ->where('entries.data.0.subject.neutral', true)
+                ->where('entries.data.0.subject.label', fn (string $label) => ! str_contains($label, 'Yacine') && str_ends_with($label, '#'.$player->id))
+            );
+
+        $this->actingAs($usersOnly)->get(route('users.activity.show', ['user' => $clerk->id, 'action' => ActivityAction::TRANSACTION_RECORDED]))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('entries.data.0.subject.url', null)
+                ->where('entries.data.0.subject.label', fn (string $label) => ! str_contains($label, 'secrète'))
+            );
+
+        $withPlayers = $this->memberWithRole(['users' => ['view'], 'players' => ['view']]);
+
+        $this->actingAs($withPlayers)->get(route('users.activity.show', ['user' => $clerk->id, 'action' => ActivityAction::PLAYER_REGISTERED]))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('entries.data.0.subject.label', $player->fullname)
+                ->where('entries.data.0.subject.url', route('players.show', $player))
+                ->missing('entries.data.0.subject.neutral')
+            );
+
+        $this->actingAs($withPlayers)->get(route('users.activity.show', ['user' => $clerk->id, 'action' => ActivityAction::TRANSACTION_RECORDED]))
+            ->assertInertia(fn (Assert $page) => $page->where('entries.data.0.subject.url', null)->where('entries.data.0.subject.neutral', true));
+    }
+
+    #[Test]
+    public function my_activity_is_neutral_for_modules_the_member_cannot_view(): void
+    {
+        $member = $this->memberWithRole(['board' => ['view']]);
+        $player = $this->player();
+        $this->log($member, ActivityAction::PLAYER_REGISTERED, subject: $player);
+
+        $this->actingAs($member)->get(route('profile.activity', ['action' => ActivityAction::PLAYER_REGISTERED]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('entries.data.0.subject.url', null)
+                ->where('entries.data.0.subject.neutral', true)
+                ->where('entries.data.0.subject.label', fn (string $label) => ! str_contains($label, 'Yacine'))
+            );
+    }
+
+    #[Test]
+    public function entries_pagination_links_keep_the_period_and_the_action(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $clerk = User::factory()->create();
+        foreach (range(1, 30) as $i) {
+            $this->log($clerk, ActivityAction::TASK_CREATED, '2026-09-10 09:00:00');
+        }
+
+        $query = ['user' => $clerk->id, 'period' => 'custom', 'from' => '2026-09-01', 'to' => '2026-09-30', 'action' => ActivityAction::TASK_CREATED];
+
+        $this->actingAs($admin)->get(route('users.activity.show', $query))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('entries.data', 25)
+                ->where('entries.next_page_url', function (string $url) {
+                    parse_str((string) parse_url($url, PHP_URL_QUERY), $q);
+
+                    return $q['period'] === 'custom' && $q['from'] === '2026-09-01' && $q['to'] === '2026-09-30'
+                        && $q['action'] === ActivityAction::TASK_CREATED && $q['page'] === '2';
+                })
+            );
     }
 
     #[Test]

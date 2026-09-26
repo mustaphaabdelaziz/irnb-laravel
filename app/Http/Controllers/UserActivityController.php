@@ -55,8 +55,10 @@ class UserActivityController extends Controller
         ];
 
         // Entries only for a known action code; anything else shows the summary alone.
+        // Subject labels and links are gated by what the VIEWER may see.
         if ($action !== null) {
-            $props['entries'] = ActivityReport::entries($user->id, $action, $period)->withQueryString();
+            $props['entries'] = ActivityReport::entries($user->id, $action, $period, viewer: $request->user())
+                ->withQueryString();
         }
 
         return Inertia::render('Users/Activity/Show', $props);

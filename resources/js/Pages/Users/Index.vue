@@ -76,9 +76,9 @@ function initial(user) {
 
     <AuthenticatedLayout>
         <template #header>
-            <div class="flex items-center justify-between">
+            <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('members') }}</h1>
-                <div class="flex items-center gap-3">
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <Badge v-if="pendingCount" :label="`${pendingCount} ${t('pending_approval')}`" color="amber" />
                     <Link :href="route('users.activity.index')" class="text-sm font-medium text-primary-700 hover:underline dark:text-primary-300">{{ t('activity.title') }}</Link>
                 </div>

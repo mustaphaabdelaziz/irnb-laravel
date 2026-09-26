@@ -152,9 +152,12 @@ final class ActivityReport
      * The user's events of one action in the period, newest first, each with
      * its subject resolved (one query per subject type on the page).
      *
-     * @return LengthAwarePaginator<int, array{id: int, occurred_at: string, properties: array, subject: array{label: string, url: ?string, deleted: bool}}>
+     * With a $viewer, subjects from modules they cannot view are neutral
+     * (see ActivitySubjectLink::for()).
+     *
+     * @return LengthAwarePaginator<int, array{id: int, occurred_at: string, properties: array, subject: array{label: string, url: ?string, deleted: bool, neutral?: true}}>
      */
-    public static function entries(int $userId, string $action, ActivityPeriod $period, int $perPage = 25, ?int $page = null): LengthAwarePaginator
+    public static function entries(int $userId, string $action, ActivityPeriod $period, int $perPage = 25, ?int $page = null, ?User $viewer = null): LengthAwarePaginator
     {
         $paginator = ActivityLog::query()
             ->where('user_id', $userId)
@@ -170,7 +173,7 @@ final class ActivityReport
             'id' => $log->id,
             'occurred_at' => $log->occurred_at->toIso8601String(),
             'properties' => $log->properties ?? [],
-            'subject' => ActivitySubjectLink::for($log),
+            'subject' => ActivitySubjectLink::for($log, $viewer),
         ]);
     }
 

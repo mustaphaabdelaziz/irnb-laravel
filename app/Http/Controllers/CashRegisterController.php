@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Branch;
 use App\Models\FinanceAccount;
 use App\Models\FinanceTransfer;
+use App\Services\Activity\ActivityAction;
+use App\Services\Activity\ActivityRecorder;
 use App\Services\FinanceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -96,9 +98,13 @@ class CashRegisterController extends Controller
                 ]);
             }
 
-            FinanceTransfer::create([
+            $transfer = FinanceTransfer::create([
                 ...$validated,
                 'created_by_user_id' => $request->user()?->id,
+            ]);
+
+            ActivityRecorder::record($request->user(), ActivityAction::TRANSFER_RECORDED, $transfer, [
+                'amount' => (float) $transfer->amount,
             ]);
 
             $this->finance->recomputeAccountBalances();

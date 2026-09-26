@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\FinanceAccount;
 use App\Models\FinanceCategory;
 use App\Models\Transaction;
+use App\Services\Activity\ActivityAction;
+use App\Services\Activity\ActivityRecorder;
 use App\Support\Export;
 use App\Support\Import\ImportColumns;
 use App\Support\NameNormalizer;
@@ -76,6 +78,7 @@ class TransactionImportController extends Controller
         $registers = FinanceAccount::query()->orderByDesc('is_active')->orderBy('sort_order')->orderBy('id')->get(['id', 'name']);
 
         $imported = 0;
+        $importedAmount = 0.0;
         $errors = [];
 
         foreach (array_values(array_slice($rows, $headerRow + 1)) as $offset => $row) {
@@ -125,6 +128,7 @@ class TransactionImportController extends Controller
                     'recorded_by_user_id' => $request->user()?->id,
                 ]);
                 $imported++;
+                $importedAmount += $amount;
 
                 if ($date === null && $rawDate !== '') {
                     $errors[] = __('Row :line: date ":value" is not valid, today\'s date was used.', ['line' => $line, 'value' => $rawDate]);
@@ -135,6 +139,14 @@ class TransactionImportController extends Controller
             } catch (Throwable $e) {
                 $errors[] = __('Row :line: :message', ['line' => $line, 'message' => $e->getMessage()]);
             }
+        }
+
+        if ($imported > 0) {
+            // One summary event for the whole file, never one per row.
+            ActivityRecorder::record($request->user(), ActivityAction::TRANSACTION_IMPORTED, null, [
+                'count' => $imported,
+                'amount' => round($importedAmount, 2),
+            ]);
         }
 
         $message = __(':count transactions imported successfully.', ['count' => $imported]);

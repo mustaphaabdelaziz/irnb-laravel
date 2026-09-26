@@ -6,6 +6,9 @@ use App\Exceptions\Equipment\StockException;
 use App\Models\EquipmentHistory;
 use App\Models\EquipmentItem;
 use App\Models\Transaction;
+use App\Models\User;
+use App\Services\Activity\ActivityAction;
+use App\Services\Activity\ActivityRecorder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -184,9 +187,9 @@ class EquipmentStockService
      * recording what the equipment is worth. Unticked covers donations,
      * found items and opening balances.
      */
-    public function receive(array $data, ?int $userId = null): EquipmentItem
+    public function receive(array $data, ?int $userId = null, ?User $actor = null): EquipmentItem
     {
-        return DB::transaction(function () use ($data, $userId) {
+        return DB::transaction(function () use ($data, $userId, $actor) {
             $quantity = (int) $data['quantity'];
             $unitPrice = isset($data['unit_price']) && $data['unit_price'] !== null
                 ? (float) $data['unit_price']
@@ -196,7 +199,7 @@ class EquipmentStockService
             $transactionId = null;
 
             if (! empty($data['record_expense']) && $unitPrice > 0) {
-                $transactionId = Transaction::create([
+                $expense = Transaction::create([
                     'amount' => $unitPrice * $quantity,
                     'transaction_date' => $purchaseDate,
                     'transaction_type' => 'expense',
@@ -208,7 +211,16 @@ class EquipmentStockService
                     // The purchase date's year, not today's — a backdated
                     // purchase belongs to the year it happened.
                     'fiscal_year' => Carbon::parse($purchaseDate)->year,
-                ])->id;
+                ]);
+                $transactionId = $expense->id;
+
+                // Only when a caller names who acted: internal callers record nothing.
+                if ($actor) {
+                    ActivityRecorder::record($actor, ActivityAction::TRANSACTION_RECORDED, $expense, [
+                        'amount' => (float) $expense->amount,
+                        'type' => $expense->transaction_type,
+                    ]);
+                }
             }
 
             $item = EquipmentItem::create([

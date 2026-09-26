@@ -39,7 +39,7 @@ class EquipmentItemController extends Controller
     /** Bring stock into the club. The only path that can spend money. */
     public function receive(ReceiveStockRequest $request, EquipmentStockService $stock): RedirectResponse
     {
-        $item = $stock->receive($request->validated(), $request->user()?->id);
+        $item = $stock->receive($request->validated(), $request->user()?->id, $request->user());
 
         return redirect()->route('equipment.catalogs.show', $item->catalog_id)
             ->with('success', 'flash.equipment_stock_received');

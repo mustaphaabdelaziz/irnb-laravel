@@ -10,6 +10,8 @@ use App\Models\Player;
 use App\Models\PlayerSubscription;
 use App\Models\Transaction;
 use App\Models\WebsiteConfig;
+use App\Services\Activity\ActivityAction;
+use App\Services\Activity\ActivityRecorder;
 use App\Services\Finance\DefaultRegisterResolver;
 use App\Services\Finance\RecalculatePlayerDebtService;
 use App\Services\FinanceService;
@@ -144,7 +146,16 @@ class TransactionController extends Controller
             $validated['receipt_filename'] = $stored['path'];
         }
 
-        $transaction = Transaction::create($validated);
+        $transaction = DB::transaction(function () use ($validated, $request) {
+            $transaction = Transaction::create($validated);
+
+            ActivityRecorder::record($request->user(), ActivityAction::TRANSACTION_RECORDED, $transaction, [
+                'amount' => (float) $transaction->amount,
+                'type' => $transaction->transaction_type,
+            ]);
+
+            return $transaction;
+        });
 
         return redirect()->route('transactions.show', $transaction)
             ->with('success', 'flash.transaction_created');
@@ -200,13 +211,19 @@ class TransactionController extends Controller
         return $receipts->serve($path, basename($path));
     }
 
-    public function destroy(Transaction $transaction): RedirectResponse
+    public function destroy(Request $request, Transaction $transaction): RedirectResponse
     {
         if ($this->yearClosed((int) $transaction->fiscal_year)) {
             return back()->with('error', ['key' => 'flash.year_closed_delete', 'params' => ['year' => $transaction->fiscal_year]]);
         }
 
-        $transaction->update(['archived' => true]);
+        DB::transaction(function () use ($request, $transaction) {
+            $transaction->update(['archived' => true]);
+
+            ActivityRecorder::record($request->user(), ActivityAction::TRANSACTION_CANCELLED, $transaction, [
+                'amount' => (float) $transaction->amount,
+            ]);
+        });
 
         return redirect()->route('transactions.index')
             ->with('success', 'flash.transaction_archived');
@@ -231,11 +248,17 @@ class TransactionController extends Controller
             ->all();
         [$skipped, $archivable] = $transactions->partition(fn (Transaction $tx) => in_array((int) $tx->fiscal_year, $closedYears, true));
 
-        DB::transaction(function () use ($archivable, $finance, $debts) {
+        DB::transaction(function () use ($archivable, $finance, $debts, $request) {
             // One query instead of one observer round per row: the observer would
             // recompute every account balance for each transaction. The same
             // recomputations run once below instead.
             Transaction::whereIn('id', $archivable->modelKeys())->update(['archived' => true]);
+
+            foreach ($archivable as $transaction) {
+                ActivityRecorder::record($request->user(), ActivityAction::TRANSACTION_CANCELLED, $transaction, [
+                    'amount' => (float) $transaction->amount,
+                ]);
+            }
 
             $finance->recomputeAccountBalances();
             FiscalYear::whereIn('id', $archivable->pluck('fiscal_year_id')->filter()->unique())

@@ -6,6 +6,8 @@ use App\Models\Player;
 use App\Models\PlayerSubscription;
 use App\Models\Subscription;
 use App\Models\Transaction;
+use App\Services\Activity\ActivityAction;
+use App\Services\Activity\ActivityRecorder;
 use App\Services\Finance\DefaultRegisterResolver;
 use App\Services\Finance\RecalculatePlayerDebtService;
 use App\Services\Finance\ResolvePaymentStatusService;
@@ -53,22 +55,29 @@ class PlayerTransactionController extends Controller
             // Exempt waives the subscription — no payment is recorded.
             if (! $exempt && ! empty($validated['amount'])) {
                 $financeAccountId = $submittedFinanceAccountId ?? $this->defaultRegisterId($player, $sub);
-                $this->createSubscriptionPayment($sub, $player, (float) $validated['amount'], $method, $description, $userId, $financeAccountId);
+
+                DB::transaction(fn () => $this->recordPayment(
+                    $request,
+                    ActivityAction::PAYMENT_RECORDED,
+                    $this->createSubscriptionPayment($sub, $player, (float) $validated['amount'], $method, $description, $userId, $financeAccountId),
+                ));
             }
 
             app(RecalculatePlayerDebtService::class)->forPlayer($player);
         } else {
             $financeAccountId = $submittedFinanceAccountId ?? $this->defaultRegisterId($player);
 
-            DB::transaction(fn () => $this->createPlayerLevelPayment(
-                $player,
-                $validated['category'],
-                (float) $validated['amount'],
-                $method,
-                $description,
-                $userId,
-                $financeAccountId,
-            ));
+            DB::transaction(fn () => $this->recordPayment($request, ActivityAction::PAYMENT_RECORDED, [
+                $this->createPlayerLevelPayment(
+                    $player,
+                    $validated['category'],
+                    (float) $validated['amount'],
+                    $method,
+                    $description,
+                    $userId,
+                    $financeAccountId,
+                ),
+            ]));
         }
 
         return redirect()->route('players.show', $player)
@@ -101,19 +110,24 @@ class PlayerTransactionController extends Controller
             ? (int) $validated['finance_account_id']
             : $transaction->finance_account_id;
 
-        DB::transaction(function () use ($transaction, $player, $validated, $method, $description, $userId, $financeAccountId) {
+        DB::transaction(function () use ($request, $transaction, $player, $validated, $method, $description, $userId, $financeAccountId) {
             $transaction->update(['archived' => true]);
+            $created = [];
 
             if ($transaction->category === 'subscription' && $transaction->player_subscription_id) {
                 $sub = PlayerSubscription::find($transaction->player_subscription_id);
                 if ($sub) {
                     // amount_paid was recomputed (minus the archived tx) by the observer.
                     $sub->refresh();
-                    $this->createSubscriptionPayment($sub, $player, (float) $validated['amount'], $method, $description, $userId, $financeAccountId);
+                    $created = $this->createSubscriptionPayment($sub, $player, (float) $validated['amount'], $method, $description, $userId, $financeAccountId);
                 }
             } else {
-                $this->createPlayerLevelPayment($player, $transaction->category, (float) $validated['amount'], $method, $description, $userId, $financeAccountId);
+                $created = [$this->createPlayerLevelPayment($player, $transaction->category, (float) $validated['amount'], $method, $description, $userId, $financeAccountId)];
             }
+
+            // One event for the edit: the archive-and-recreate is not a
+            // cancellation plus a new payment.
+            $this->recordPayment($request, ActivityAction::PAYMENT_EDITED, $created);
         });
 
         app(RecalculatePlayerDebtService::class)->forPlayer($player);
@@ -123,11 +137,17 @@ class PlayerTransactionController extends Controller
     }
 
     /** Remove = archive (soft): the row leaves the table but stays for audit. */
-    public function destroy(Player $player, Transaction $transaction): RedirectResponse
+    public function destroy(Request $request, Player $player, Transaction $transaction): RedirectResponse
     {
         $this->assertTransactionBelongsToPlayer($transaction, $player);
 
-        $transaction->update(['archived' => true]);
+        DB::transaction(function () use ($request, $transaction) {
+            $transaction->update(['archived' => true]);
+
+            ActivityRecorder::record($request->user(), ActivityAction::TRANSACTION_CANCELLED, $transaction, [
+                'amount' => (float) $transaction->amount,
+            ]);
+        });
 
         app(RecalculatePlayerDebtService::class)->forPlayer($player);
 
@@ -136,8 +156,30 @@ class PlayerTransactionController extends Controller
     }
 
     /**
+     * One payment event for the transactions a request created: the subject is
+     * the main one (listed first), the amount is their total. Nothing created →
+     * nothing recorded.
+     *
+     * @param  list<Transaction>  $created
+     */
+    private function recordPayment(Request $request, string $action, array $created): void
+    {
+        if ($created === []) {
+            return;
+        }
+
+        $total = array_sum(array_map(fn (Transaction $t) => (float) $t->amount, $created));
+
+        ActivityRecorder::record($request->user(), $action, $created[0], [
+            'amount' => round($total, 2),
+        ]);
+    }
+
+    /**
      * Record a subscription payment. Any amount beyond the subscription's remaining
      * balance is split off into a separate player-level donation.
+     *
+     * @return list<Transaction> the created transactions, the subscription payment first
      */
     private function createSubscriptionPayment(
         PlayerSubscription $sub,
@@ -147,8 +189,9 @@ class PlayerTransactionController extends Controller
         ?string $description,
         ?int $userId,
         ?int $financeAccountId,
-    ): void {
-        DB::transaction(function () use ($sub, $player, $amount, $method, $description, $userId, $financeAccountId) {
+    ): array {
+        return DB::transaction(function () use ($sub, $player, $amount, $method, $description, $userId, $financeAccountId) {
+            $created = [];
             // remaining_amount is discount- and exemption-aware: only what is
             // genuinely still owed may land on the subscription, the rest is a donation.
             $remaining = (float) $sub->remaining_amount;
@@ -178,11 +221,14 @@ class PlayerTransactionController extends Controller
                 ]);
 
                 $sub->update(['transaction_id' => $transaction->id]);
+                $created[] = $transaction;
             }
 
             if ($donationPortion > 0) {
-                $this->createPlayerLevelPayment($player, 'donation', $donationPortion, $method, $description, $userId, $financeAccountId);
+                $created[] = $this->createPlayerLevelPayment($player, 'donation', $donationPortion, $method, $description, $userId, $financeAccountId);
             }
+
+            return $created;
         });
     }
 
@@ -234,8 +280,8 @@ class PlayerTransactionController extends Controller
         ?string $description,
         ?int $userId,
         ?int $financeAccountId,
-    ): void {
-        Transaction::create([
+    ): Transaction {
+        return Transaction::create([
             'amount' => $amount,
             'transaction_date' => now(),
             'transaction_type' => 'income',

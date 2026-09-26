@@ -8,6 +8,8 @@ use App\Models\Category;
 use App\Models\Player;
 use App\Models\PlayerSubscription;
 use App\Models\Subscription;
+use App\Services\Activity\ActivityAction;
+use App\Services\Activity\ActivityRecorder;
 use App\Services\Dashboard\ModuleStats;
 use App\Services\Finance\RecalculatePlayerDebtService;
 use App\Support\Export;
@@ -206,6 +208,10 @@ class SubscriptionController extends Controller
             $subscription->categories()->attach($request->categorySync());
             $subscription->branches()->attach($branchIds);
 
+            ActivityRecorder::record($request->user(), ActivityAction::SUBSCRIPTION_CREATED, $subscription, [
+                'kind' => $subscription->kind,
+            ]);
+
             return $subscription;
         });
 
@@ -283,7 +289,9 @@ class SubscriptionController extends Controller
 
         $newPlayerIds = $playerIds->diff($existingPlayerIds);
 
-        DB::transaction(function () use ($newPlayerIds, $subscription) {
+        DB::transaction(function () use ($newPlayerIds, $subscription, $request) {
+            $assigned = 0;
+
             foreach ($newPlayerIds as $playerId) {
                 $player = Player::find($playerId);
                 if (! $player) {
@@ -292,6 +300,13 @@ class SubscriptionController extends Controller
 
                 $subscription->assignTo($player);
                 app(RecalculatePlayerDebtService::class)->forPlayer($player);
+                $assigned++;
+            }
+
+            if ($assigned > 0) {
+                ActivityRecorder::record($request->user(), ActivityAction::PLAYERS_ASSIGNED, $subscription, [
+                    'count' => $assigned,
+                ]);
             }
         });
 
@@ -322,9 +337,13 @@ class SubscriptionController extends Controller
                 ->with('error', 'flash.player_not_eligible_for_subscription');
         }
 
-        DB::transaction(function () use ($player, $subscription) {
+        DB::transaction(function () use ($player, $subscription, $request) {
             $subscription->assignTo($player);
             app(RecalculatePlayerDebtService::class)->forPlayer($player);
+
+            ActivityRecorder::record($request->user(), ActivityAction::PLAYERS_ASSIGNED, $subscription, [
+                'count' => 1,
+            ]);
         });
 
         return redirect()->route('subscriptions.show', $subscription)

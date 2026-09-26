@@ -128,6 +128,25 @@ class LocalizedExportsTest extends TestCase
     }
 
     #[Test]
+    public function the_subscription_export_survives_a_bad_filter_and_slashes_in_the_designation(): void
+    {
+        $admin = $this->admin('en');
+        $subscription = Subscription::create(['name' => 'Saison A\\B/C', 'year' => 2026, 'amount_student' => 1000, 'amount_worker' => 2000]);
+
+        foreach (['a\\b', ['x'], '../x', 'paid'] as $filter) {
+            $response = $this->actingAs($admin)->get(route('subscriptions.export', [$subscription, 'format' => 'csv', 'filter' => $filter]));
+
+            $response->assertOk();
+            $disposition = (string) $response->headers->get('content-disposition');
+            $expected = $filter === 'paid' ? 'paid' : 'all';
+            $this->assertStringContainsString('_'.$expected.'.csv', $disposition, json_encode($filter));
+            $this->assertStringNotContainsString('\\', $disposition);
+            $this->assertStringNotContainsString('/', $disposition);
+            $this->assertStringContainsString('('.UiLang::get($expected, null, 'en').')', $response->streamedContent());
+        }
+    }
+
+    #[Test]
     public function equipment_items_and_board_rows_carry_localized_codes_dates_and_numbers(): void
     {
         $admin = $this->admin('fr');

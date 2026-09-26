@@ -27,15 +27,15 @@ const items = computed(() => props.formats.map((format) => {
 <template>
     <Dropdown :align="align" width="48">
         <template #trigger>
-            <button type="button" class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-white px-3.5 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800" aria-haspopup="menu" :title="label">
+            <button type="button" class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-white px-3.5 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800" :title="label">
                 <slot name="icon" />
                 <span :class="collapse ? 'sr-only sm:not-sr-only' : null">{{ label }}</span>
                 <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 111.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg>
             </button>
         </template>
         <template #content>
-            <div role="menu">
-                <a v-for="item in items" :key="item.format" :href="item.url" role="menuitem"
+            <div>
+                <a v-for="item in items" :key="item.format" :href="item.url"
                    :target="item.format === 'pdf' ? '_blank' : null"
                    :download="item.format === 'pdf' ? null : ''"
                    class="block w-full px-4 py-2 text-start text-sm text-slate-700 hover:bg-slate-100 focus:bg-slate-100 focus:outline-none dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:bg-slate-700">

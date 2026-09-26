@@ -338,7 +338,11 @@ class SubscriptionController extends Controller
             ->with(['player.category', 'transaction'])
             ->get();
 
-        $filter = $request->query('filter', 'all'); // all | paid | unpaid | partial
+        // all | paid | unpaid | partial; anything else (an array, a path…) → all.
+        $filter = $request->query('filter', 'all');
+        if (! in_array($filter, ['all', 'paid', 'unpaid', 'partial'], true)) {
+            $filter = 'all';
+        }
 
         if ($filter === 'paid') {
             $playerSubscriptions = $playerSubscriptions->filter(fn ($ps) => in_array($ps->payment_status, ['paid', 'exempt']));
@@ -348,11 +352,8 @@ class SubscriptionController extends Controller
             $playerSubscriptions = $playerSubscriptions->filter(fn ($ps) => $ps->payment_status === 'partial');
         }
 
-        // The tab labels the page uses (t(tab)); anything else stays as typed.
-        $filterLabel = in_array($filter, ['all', 'paid', 'unpaid', 'partial'], true)
-            ? UiLang::get($filter, ucfirst($filter))
-            : ucfirst((string) $filter);
-        $title = $subscription->designation.' ('.$filterLabel.')';
+        // The tab label the page uses (t(tab)).
+        $title = $subscription->designation.' ('.UiLang::get($filter, ucfirst($filter)).')';
         $headers = ['#', ...array_map(fn (string $key) => UiLang::get($key), [
             'col.membership_id', 'col.player_name', 'col.category', 'col.amount_owed', 'col.amount_paid', 'col.status',
         ])];
@@ -383,7 +384,7 @@ class SubscriptionController extends Controller
             null,
         ];
 
-        $filename = 'subscription_'.str_replace([' ', '/'], '_', $subscription->designation).'_'.$filter;
+        $filename = 'subscription_'.str_replace([' ', '/', '\\'], '_', $subscription->designation).'_'.$filter;
 
         return Export::download(Export::format($request), $filename, $headers, $rows, $title);
     }

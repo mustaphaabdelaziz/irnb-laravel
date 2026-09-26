@@ -140,6 +140,9 @@ final class XlsxWriter
 
     private static function escape(string $text): string
     {
+        // Invalid UTF-8 would make the /u regex below return null and blank
+        // the whole cell: replace just the bad bytes first.
+        $text = mb_scrub($text, 'UTF-8');
         // Control characters other than tab/newline are invalid in XML 1.0.
         $text = (string) preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/u', '', $text);
 

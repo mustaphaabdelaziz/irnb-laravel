@@ -83,6 +83,17 @@ class XlsxWriterTest extends TestCase
     }
 
     #[Test]
+    public function invalid_utf8_keeps_the_valid_text_of_the_cell(): void
+    {
+        $sheet = $this->unzip(XlsxWriter::build(['a'], [["Caf\xE9 محمد \xFF ok"]], null, false))['xl/worksheets/sheet1.xml'];
+
+        $this->assertNotFalse(simplexml_load_string($sheet));
+        $this->assertStringContainsString('محمد', $sheet);
+        $this->assertStringContainsString(' ok</t>', $sheet);
+        $this->assertStringContainsString('Caf', $sheet);
+    }
+
+    #[Test]
     public function column_widths_follow_the_longest_cell(): void
     {
         $sheet = $this->unzip(XlsxWriter::build(['id', 'name'], [['1', str_repeat('x', 40)]], null, false))['xl/worksheets/sheet1.xml'];

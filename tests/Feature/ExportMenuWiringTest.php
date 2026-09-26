@@ -80,6 +80,7 @@ class ExportMenuWiringTest extends TestCase
         $this->assertSame(self::XLSX, $default->headers->get('content-type'), "$route (no format)");
 
         $xlsx = $this->actingAs($admin)->get(route($route, $params + ['format' => 'xlsx']));
+        $xlsx->assertOk();
         $this->assertSame(self::XLSX, $xlsx->headers->get('content-type'), "$route?format=xlsx");
     }
 
@@ -93,7 +94,7 @@ class ExportMenuWiringTest extends TestCase
         $pdf->assertOk();
         $this->assertStringStartsWith('application/pdf', (string) $pdf->headers->get('content-type'));
 
-        $this->assertSame(self::XLSX, $this->actingAs($admin)->get(route('players.board-table', $params + ['format' => 'xlsx']))->headers->get('content-type'));
-        $this->assertSame(self::CSV, $this->actingAs($admin)->get(route('players.board-table', $params + ['format' => 'csv']))->headers->get('content-type'));
+        $this->assertSame(self::XLSX, $this->actingAs($admin)->get(route('players.board-table', $params + ['format' => 'xlsx']))->assertOk()->headers->get('content-type'));
+        $this->assertSame(self::CSV, $this->actingAs($admin)->get(route('players.board-table', $params + ['format' => 'csv']))->assertOk()->headers->get('content-type'));
     }
 }

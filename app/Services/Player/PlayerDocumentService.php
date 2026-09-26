@@ -7,6 +7,8 @@ use App\Models\Player;
 use App\Models\PlayerDocument;
 use App\Models\PlayerDocumentFile;
 use App\Models\User;
+use App\Services\Activity\ActivityAction;
+use App\Services\Activity\ActivityRecorder;
 use App\Services\Storage\PrivateFileStorage;
 use Illuminate\Http\UploadedFile;
 use Throwable;
@@ -35,7 +37,10 @@ class PlayerDocumentService
             'recorded_by_user_id' => $by?->id,
         ]);
 
-        $this->attach($document, $files, $by);
+        $attached = $this->storeFiles($document, $files, $by);
+
+        ActivityRecorder::record($by, ActivityAction::DOCUMENT_RECEIVED, $document);
+        $this->recordUpload($document, $attached, $by);
 
         return $document;
     }
@@ -56,7 +61,10 @@ class PlayerDocumentService
             'recorded_by_user_id' => $by?->id,
         ]);
 
-        $this->attach($document, $files, $by);
+        $attached = $this->storeFiles($document, $files, $by);
+
+        ActivityRecorder::record($by, ActivityAction::DOCUMENT_RENEWED, $document);
+        $this->recordUpload($document, $attached, $by);
     }
 
     /** With or without an existing row; a received row keeps its dates and files. */
@@ -72,6 +80,8 @@ class PlayerDocumentService
             'exempt_reason' => $reason,
             'recorded_by_user_id' => $by?->id,
         ])->save();
+
+        ActivityRecorder::record($by, ActivityAction::DOCUMENT_EXEMPTED, $document);
 
         return $document;
     }
@@ -91,8 +101,22 @@ class PlayerDocumentService
         $paths->each(fn (string $path) => $this->storage->delete($path));
     }
 
-    /** @param  list<UploadedFile>  $files */
+    /**
+     * Add files to a document: one document_file_uploaded event for the
+     * whole request, whatever the number of files.
+     *
+     * @param  list<UploadedFile>  $files
+     */
     public function attach(PlayerDocument $document, array $files, ?User $by): void
+    {
+        $this->recordUpload($document, $this->storeFiles($document, $files, $by), $by);
+    }
+
+    /**
+     * @param  list<UploadedFile>  $files
+     * @return int how many files were attached
+     */
+    private function storeFiles(PlayerDocument $document, array $files, ?User $by): int
     {
         foreach ($files as $file) {
             $stored = $this->storage->store($file, PlayerDocument::directoryFor($document->player_id));
@@ -108,6 +132,16 @@ class PlayerDocumentService
 
                 throw $e;
             }
+        }
+
+        return count($files);
+    }
+
+    /** One event per request that attached files; only the count, never file names. */
+    private function recordUpload(PlayerDocument $document, int $count, ?User $by): void
+    {
+        if ($count > 0) {
+            ActivityRecorder::record($by, ActivityAction::DOCUMENT_FILE_UPLOADED, $document, ['count' => $count]);
         }
     }
 

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\BoardTask;
+use App\Services\Activity\ActivityAction;
+use App\Services\Activity\ActivityRecorder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -14,7 +16,12 @@ class BoardTaskController extends Controller
         $data = $this->validateData($request);
         $data['created_by_user_id'] = $request->user()?->id;
         $this->syncCompletion($data);
-        BoardTask::create($data);
+        $task = BoardTask::create($data);
+
+        ActivityRecorder::record($request->user(), ActivityAction::TASK_CREATED, $task);
+        if ($task->status === 'completed') {
+            ActivityRecorder::record($request->user(), ActivityAction::TASK_COMPLETED, $task);
+        }
 
         return back()->with('success', 'flash.task_created');
     }
@@ -23,7 +30,14 @@ class BoardTaskController extends Controller
     {
         $data = $this->validateData($request);
         $this->syncCompletion($data);
+        // syncCompletion() re-stamps completed_at on every save, so the
+        // transition is read from the status before the update.
+        $wasCompleted = $boardTask->status === 'completed';
         $boardTask->update($data);
+
+        if (! $wasCompleted && $boardTask->status === 'completed') {
+            ActivityRecorder::record($request->user(), ActivityAction::TASK_COMPLETED, $boardTask);
+        }
 
         return back()->with('success', 'flash.task_updated');
     }

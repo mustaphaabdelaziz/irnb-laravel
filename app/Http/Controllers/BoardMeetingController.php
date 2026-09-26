@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\BoardMeeting;
 use App\Models\MeetingAttendance;
+use App\Services\Activity\ActivityAction;
+use App\Services\Activity\ActivityRecorder;
 use App\Services\Storage\FileStorageService;
 use App\Services\Storage\PrivateFileStorage;
 use Illuminate\Http\RedirectResponse;
@@ -18,6 +20,7 @@ class BoardMeetingController extends Controller
         $data = $this->validateCore($request);
         $data['created_by_user_id'] = $request->user()?->id;
         $meeting = BoardMeeting::create($data);
+        ActivityRecorder::record($request->user(), ActivityAction::MEETING_CREATED, $meeting);
 
         return redirect()->route('board.meetings.show', $meeting)->with('success', 'flash.meeting_created');
     }
@@ -140,6 +143,7 @@ class BoardMeetingController extends Controller
             'cancelled_by_user_id' => $request->user()?->id,
             'cancel_reason' => $data['reason'],
         ]);
+        ActivityRecorder::record($request->user(), ActivityAction::MEETING_CANCELLED, $meeting);
 
         return back()->with('success', 'flash.meeting_cancelled');
     }

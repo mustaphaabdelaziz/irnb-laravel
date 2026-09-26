@@ -42,7 +42,7 @@ class PlayerImportController extends Controller
         ['key' => 'state', 'label' => 'col.state', 'legacy' => ['الولاية'], 'example' => 'الجزائر'],
         ['key' => 'category', 'label' => 'col.category', 'legacy' => ['الفئة'], 'example' => 'Senior'],
         ['key' => 'position', 'label' => 'col.position', 'hint' => 'col.hint.abbr_or_name', 'legacy' => ['المركز (الاختصار أو الاسم)'], 'example' => 'GK'],
-        ['key' => 'job', 'label' => 'col.job', 'legacy' => ['المهنة'], 'example' => 'طالب'],
+        ['key' => 'job', 'label' => 'col.job', 'legacy' => ['المهنة'], 'example' => 'Ingénieur'], // a seeded job (MemberJobSeeder), consistent with "worker"
         ['key' => 'status', 'label' => 'col.player_type', 'legacy' => ['الحالة (student/worker)'], 'example' => 'worker', 'localized' => true],
         ['key' => 'skill_level', 'label' => 'col.skill_level', 'hint' => 'col.hint.one_to_ten', 'legacy' => ['المستوى (1-10)'], 'example' => '5'],
         ['key' => 'blood_group', 'label' => 'col.blood_group', 'legacy' => ['فصيلة الدم'], 'example' => 'O+'],

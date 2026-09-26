@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\TransactionImportController;
 use App\Models\EquipmentCatalog;
 use App\Models\EquipmentCategory;
 use App\Models\EquipmentItem;
+use App\Models\MemberJob;
 use App\Models\Player;
 use App\Models\Transaction;
 use App\Models\User;
@@ -117,6 +119,37 @@ class ImportTemplatesTest extends TestCase
         $this->assertSame('cash', $t->payment_method);
         $this->assertEquals(1000, (float) $t->amount);
         $this->assertSame('2026-01-15', Carbon::parse($t->transaction_date)->format('Y-m-d'));
+    }
+
+    #[Test]
+    public function the_transactions_template_example_is_keyed_by_column(): void
+    {
+        foreach (TransactionImportController::COLUMNS as $column) {
+            $this->assertArrayHasKey('example', $column, $column['key']);
+        }
+
+        $rows = Spreadsheet::readRows($this->save($this->actingAs($this->user('fr'))->get(route('transactions.import.template')), 'xlsx')->getRealPath());
+        [$headerRow, $map] = (new ImportColumns(TransactionImportController::COLUMNS))->locate($rows);
+        $example = $rows[$headerRow + 1];
+
+        $this->assertSame('1000', $example[$map['amount']]);
+        $this->assertSame(UiLang::get('income', null, 'fr'), $example[$map['transaction_type']]);
+        $this->assertSame(UiLang::get('paid', null, 'fr'), $example[$map['status']]);
+        $this->assertSame(UiLang::get('cash', null, 'fr'), $example[$map['payment_method']]);
+    }
+
+    #[Test]
+    public function the_players_template_example_is_a_worker_with_a_seeded_non_student_job(): void
+    {
+        $job = MemberJob::create(['name' => 'Ingénieur', 'name_fr' => 'Ingénieur']);
+        MemberJob::create(['name' => 'Étudiant', 'name_fr' => 'Étudiant']);
+        $file = $this->save($this->actingAs($this->user('ar'))->get(route('players.import.template', ['format' => 'csv'])), 'csv');
+
+        $this->actingAs($this->user('ar'))->post(route('players.import.store'), ['file' => $file])->assertSessionHas('success');
+
+        $p = Player::query()->sole();
+        $this->assertFalse($p->is_student);
+        $this->assertSame($job->id, $p->member_job_id);
     }
 
     #[Test]

@@ -23,20 +23,21 @@ class TransactionImportController extends Controller
     /**
      * Same order as the transactions export (its trailing "Recorded by" column
      * is ignored here). `legacy` are the headers of the old CSV template, so
-     * files made from it still import by header.
+     * files made from it still import by header. `example` is the template's
+     * example cell; an i18n key when `localized`.
      *
-     * @var list<array{key:string, label:string, hint?:string, legacy?:list<string>}>
+     * @var list<array{key:string, label:string, hint?:string, legacy?:list<string>, example:string, localized?:bool}>
      */
     public const COLUMNS = [
-        ['key' => 'transaction_date', 'label' => 'col.date', 'hint' => 'col.hint.date', 'legacy' => ['Date (YYYY-MM-DD)']],
-        ['key' => 'title', 'label' => 'col.title', 'legacy' => ['Title']],
-        ['key' => 'transaction_type', 'label' => 'col.type', 'legacy' => ['Type (income/expense)']],
-        ['key' => 'category', 'label' => 'col.category', 'legacy' => ['Category']],
-        ['key' => 'amount', 'label' => 'col.amount', 'legacy' => ['Amount']],
-        ['key' => 'status', 'label' => 'col.status', 'legacy' => ['Status (Paid/Partial/Unpaid/Exempt)']],
-        ['key' => 'payment_method', 'label' => 'col.payment_method', 'legacy' => ['Payment Method']],
-        ['key' => 'finance_account', 'label' => 'col.cash_register'],
-        ['key' => 'description', 'label' => 'col.description', 'legacy' => ['Description']],
+        ['key' => 'transaction_date', 'label' => 'col.date', 'hint' => 'col.hint.date', 'legacy' => ['Date (YYYY-MM-DD)'], 'example' => '2026-01-15'],
+        ['key' => 'title', 'label' => 'col.title', 'legacy' => ['Title'], 'example' => ''],
+        ['key' => 'transaction_type', 'label' => 'col.type', 'legacy' => ['Type (income/expense)'], 'example' => 'income', 'localized' => true],
+        ['key' => 'category', 'label' => 'col.category', 'legacy' => ['Category'], 'example' => 'subscription'],
+        ['key' => 'amount', 'label' => 'col.amount', 'legacy' => ['Amount'], 'example' => '1000'],
+        ['key' => 'status', 'label' => 'col.status', 'legacy' => ['Status (Paid/Partial/Unpaid/Exempt)'], 'example' => 'paid', 'localized' => true],
+        ['key' => 'payment_method', 'label' => 'col.payment_method', 'legacy' => ['Payment Method'], 'example' => 'cash', 'localized' => true],
+        ['key' => 'finance_account', 'label' => 'col.cash_register', 'example' => ''],
+        ['key' => 'description', 'label' => 'col.description', 'legacy' => ['Description'], 'example' => ''],
     ];
 
     /** Stored type code => UI label key. */
@@ -50,8 +51,11 @@ class TransactionImportController extends Controller
 
     public function template(Request $request): SymfonyResponse
     {
-        // One example row in COLUMNS order; enum cells in the user's language.
-        $example = ['2026-01-15', '', UiLang::get('income'), 'subscription', '1000', UiLang::get('paid'), UiLang::get('cash'), '', ''];
+        // One example row built from COLUMNS; enum cells in the user's language.
+        $example = array_map(
+            fn (array $c) => ($c['localized'] ?? false) ? UiLang::get($c['example']) : $c['example'],
+            self::COLUMNS,
+        );
 
         return Export::download(Export::format($request), 'transactions-import-template',
             (new ImportColumns(self::COLUMNS))->headers(), [$example]);

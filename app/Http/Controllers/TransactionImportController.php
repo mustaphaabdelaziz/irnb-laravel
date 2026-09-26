@@ -82,10 +82,19 @@ class TransactionImportController extends Controller
                 return $v === null ? '' : trim((string) $v);
             };
 
-            $amount = $this->parseAmount($cell('amount'));
-            if ($amount === null || $amount <= 0) {
-                continue; // blank / invalid line
+            $rawAmount = $cell('amount');
+            $amount = $this->parseAmount($rawAmount);
+            if ($amount === null && $rawAmount !== '') {
+                $errors[] = __('Row :line: amount ":value" is not a number, the row was skipped.', ['line' => $line, 'value' => $rawAmount]);
+
+                continue;
             }
+            if ($amount === null || $amount <= 0) {
+                continue; // blank line, or a zero amount
+            }
+
+            $rawDate = $cell('transaction_date');
+            $date = $this->parseDate($rawDate);
 
             $type = ImportColumns::value($cell('transaction_type'), self::TYPES) ?? 'income';
             $category = $this->matchCategory($categories, $type, $cell('category'));
@@ -98,7 +107,7 @@ class TransactionImportController extends Controller
 
             try {
                 Transaction::create([
-                    'transaction_date' => $this->parseDate($cell('transaction_date')) ?? now(),
+                    'transaction_date' => $date ?? now(),
                     'transaction_type' => $type,
                     'category' => $category ? Str::slug($category->name, '_') : ($cell('category') ?: 'other'),
                     'finance_category_id' => $category?->id,
@@ -113,6 +122,9 @@ class TransactionImportController extends Controller
                 ]);
                 $imported++;
 
+                if ($date === null && $rawDate !== '') {
+                    $errors[] = __('Row :line: date ":value" is not valid, today\'s date was used.', ['line' => $line, 'value' => $rawDate]);
+                }
                 if ($registerName !== '' && ! $register) {
                     $errors[] = __('Row :line: cash register ":name" not found, the default register was used.', ['line' => $line, 'name' => $registerName]);
                 }

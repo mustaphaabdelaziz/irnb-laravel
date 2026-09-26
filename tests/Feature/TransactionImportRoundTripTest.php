@@ -107,6 +107,49 @@ class TransactionImportRoundTripTest extends TestCase
     }
 
     #[Test]
+    public function an_unparseable_amount_is_skipped_with_a_warning(): void
+    {
+        $admin = $this->admin('en');
+        $file = $this->csv("\xEF\xBB\xBFDate,Title,Type,Category,Amount,Status,Payment method,Cash register,Description\r\n"
+            ."2026-02-03,Good,income,other,100,Paid,cash,,\r\n"
+            ."2026-02-03,Bad,income,other,12abc,Paid,cash,,\r\n"
+            .",,,,,,,,\r\n");
+
+        $this->actingAs($admin)->post(route('transactions.import.store'), ['file' => $file])
+            ->assertSessionHas('success', '1 transactions imported successfully.')
+            ->assertSessionHas('error', 'Row 3: amount "12abc" is not a number, the row was skipped.');
+
+        $this->assertSame('Good', Transaction::query()->sole()->title);
+    }
+
+    #[Test]
+    public function an_unparseable_date_uses_today_with_a_warning(): void
+    {
+        $admin = $this->admin('en');
+        $file = $this->csv("\xEF\xBB\xBFDate,Title,Type,Category,Amount,Status,Payment method,Cash register,Description\r\n"
+            ."31/02/2026,X,income,other,100,Paid,cash,,\r\n");
+
+        $this->actingAs($admin)->post(route('transactions.import.store'), ['file' => $file])
+            ->assertSessionHas('error', 'Row 2: date "31/02/2026" is not valid, today\'s date was used.');
+
+        $this->assertSame(now()->format('Y-m-d'), Transaction::query()->sole()->transaction_date->format('Y-m-d'));
+    }
+
+    #[Test]
+    public function the_new_warnings_are_translated(): void
+    {
+        $file = fn () => $this->csv("\xEF\xBB\xBFDate,Title,Type,Category,Amount,Status,Payment method,Cash register,Description\r\n"
+            ."someday,X,income,other,100,Paid,cash,,\r\n"
+            ."2026-02-03,Y,income,other,abc,Paid,cash,,\r\n");
+
+        $this->actingAs($this->admin('fr'))->post(route('transactions.import.store'), ['file' => $file()])
+            ->assertSessionHas('error', "Ligne 2 : date « someday » invalide, la date du jour a été utilisée.\nLigne 3 : montant « abc » n'est pas un nombre, la ligne a été ignorée.");
+
+        $this->actingAs($this->admin('ar'))->post(route('transactions.import.store'), ['file' => $file()])
+            ->assertSessionHas('error', fn ($e) => str_contains($e, 'السطر 2') && str_contains($e, 'someday') && str_contains($e, 'السطر 3') && str_contains($e, 'abc') && ! str_contains($e, 'Row'));
+    }
+
+    #[Test]
     public function a_file_made_from_the_old_template_still_imports(): void
     {
         $admin = $this->admin('en');

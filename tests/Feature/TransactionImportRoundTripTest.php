@@ -7,6 +7,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -118,5 +119,71 @@ class TransactionImportRoundTripTest extends TestCase
         $this->assertSame('Unpaid', $t->status);
         $this->assertSame('desc', $t->description);
         $this->assertSame('Old title', $t->title);
+    }
+
+    private function importRow(string $date, string $amount): void
+    {
+        $cell = fn (string $v) => '"'.str_replace('"', '""', $v).'"';
+        $file = $this->csv("\xEF\xBB\xBFDate,Title,Type,Category,Amount,Status,Payment method,Cash register,Description\r\n"
+            .implode(',', [$cell($date), 'X', 'income', 'other', $cell($amount), 'Paid', 'cash', '', ''])."\r\n");
+
+        $this->actingAs($this->admin('en'))->post(route('transactions.import.store'), ['file' => $file]);
+    }
+
+    /** @return array<string, array{0:string, 1:float|null}> */
+    public static function amounts(): array
+    {
+        return [
+            'plain' => ['1500', 1500.0],
+            'dot decimal' => ['1500.5', 1500.5],
+            'comma decimal' => ['750,5', 750.5],
+            'comma thousands' => ['1,500', 1500.0],
+            'comma thousands 12k' => ['12,000', 12000.0],
+            'comma thousands dot decimal' => ['1,500.75', 1500.75],
+            'space thousands comma decimal' => ['1 000,50', 1000.5],
+            'nbsp thousands' => ["12\u{00A0}000", 12000.0],
+            'dot thousands comma decimal' => ['1.000,50', 1000.5],
+            'long spreadsheet decimal' => ['750.50000000000011', 750.5],
+            'mixed thousands separators' => ['1,000.000', null],
+            'bad grouping' => ['1,50,0', null],
+            'text' => ['abc', null],
+            'blank' => ['', null],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('amounts')]
+    public function amounts_are_read_with_thousands_and_decimal_separators(string $raw, ?float $expected): void
+    {
+        $this->importRow('2026-02-03', $raw);
+
+        if ($expected === null) {
+            $this->assertSame(0, Transaction::query()->count(), "'{$raw}' must not import");
+
+            return;
+        }
+        $this->assertEqualsWithDelta($expected, (float) Transaction::query()->sole()->amount, 0.001, $raw);
+    }
+
+    /** @return array<string, array{0:string, 1:string|null}> */
+    public static function dates(): array
+    {
+        return [
+            'iso' => ['2026-02-03', '2026-02-03'],
+            'day first' => ['03/02/2026', '2026-02-03'],
+            'day first no rollover' => ['31/02/2026', null],
+            'iso no rollover' => ['2026-02-31', null],
+            'text' => ['someday', null],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dates')]
+    public function impossible_dates_are_not_rolled_over(string $raw, ?string $expected): void
+    {
+        $this->importRow($raw, '100');
+
+        // An unreadable date falls back to today, as it always has.
+        $this->assertSame($expected ?? now()->format('Y-m-d'), Transaction::query()->sole()->transaction_date->format('Y-m-d'), $raw);
     }
 }

@@ -101,6 +101,7 @@ class TransactionImportController extends Controller
             $type = ImportColumns::value($cell('transaction_type'), self::TYPES) ?? 'income';
             $category = $this->matchCategory($categories, $type, $cell('category'));
             $payment = $cell('payment_method');
+            $title = $cell('title');
             $registerName = $cell('finance_account');
             $register = $registerName === '' ? null : $registers->first(
                 fn (FinanceAccount $a) => NameNormalizer::key($a->name) === NameNormalizer::key($registerName)
@@ -118,7 +119,7 @@ class TransactionImportController extends Controller
                     'payment_method' => ImportColumns::value($payment, self::PAYMENT_METHODS) ?? ($payment !== '' ? mb_substr($payment, 0, 255) : 'cash'),
                     'finance_account_id' => $register?->id, // null → the observer applies the default register
                     'description' => $cell('description') ?: null,
-                    'title' => $cell('title') !== '' ? mb_substr($cell('title'), 0, 150) : null,
+                    'title' => $title !== '' ? mb_substr($title, 0, 150) : null,
                     'recorded_by_user_id' => $request->user()?->id,
                 ]);
                 $imported++;
@@ -153,26 +154,51 @@ class TransactionImportController extends Controller
         ));
     }
 
-    /** "1000", "750.5", "1 000,50" → float; anything else → null. */
+    /**
+     * "1500", "750,5", "1,500", "12 000", "1.000,50", "1,500.75" → float.
+     * A dot or comma is the decimal separator only when 1–2 digits follow it
+     * at the end; groups of exactly 3 digits after a comma, dot or space are
+     * thousands. Anything else (ambiguous or malformed) → null.
+     */
     private function parseAmount(string $value): ?float
     {
-        $value = str_replace([' ', "\u{00A0}", "\u{202F}"], '', $value);
-        if (! str_contains($value, '.') && substr_count($value, ',') === 1) {
-            $value = str_replace(',', '.', $value);
+        $value = trim($value);
+        $decimal = null;
+        $fraction = '';
+
+        if (preg_match('/^(.+?)([.,])(\d{1,2})$/u', $value, $m)) {
+            [, $value, $decimal, $fraction] = $m;
+        } elseif (preg_match('/^(\d+)\.(\d{4,})$/', $value, $m)) {
+            // A long plain decimal, as a spreadsheet number cell comes back.
+            [, $value, $fraction] = $m;
+            $decimal = '.';
         }
 
-        return is_numeric($value) ? (float) $value : null;
+        if (preg_match('/^\d+$/', $value)) {
+            $digits = $value;
+        } elseif (preg_match('/^[1-9]\d{0,2}([,. \x{00A0}\x{202F}])\d{3}(?:\1\d{3})*$/u', $value, $m) && $m[1] !== $decimal) {
+            $digits = (string) preg_replace('/\D/', '', $value);
+        } else {
+            return null;
+        }
+
+        return (float) ($fraction === '' ? $digits : $digits.'.'.$fraction);
     }
 
+    /** Y-m-d (or anything Carbon reads) and d/m/Y; impossible dates such as 31/02 → null, never rolled over. */
     private function parseDate(string $value): ?string
     {
         if ($value === '') {
             return null;
         }
+        if (preg_match('#^(\d{1,2})/(\d{1,2})/(\d{4})$#', $value, $m)) {
+            return checkdate((int) $m[2], (int) $m[1], (int) $m[3]) ? sprintf('%04d-%02d-%02d', $m[3], $m[2], $m[1]) : null;
+        }
+        if (preg_match('#^(\d{4})-(\d{1,2})-(\d{1,2})\b#', $value, $m) && ! checkdate((int) $m[2], (int) $m[3], (int) $m[1])) {
+            return null;
+        }
         try {
-            return preg_match('#^\d{1,2}/\d{1,2}/\d{4}$#', $value)
-                ? Carbon::createFromFormat('!d/m/Y', $value)->format('Y-m-d')
-                : Carbon::parse($value)->format('Y-m-d');
+            return Carbon::parse($value)->format('Y-m-d');
         } catch (Throwable) {
             return null;
         }

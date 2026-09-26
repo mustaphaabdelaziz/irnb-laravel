@@ -8,6 +8,8 @@ use App\Models\InventorySessionItem;
 use App\Models\Player;
 use App\Models\StorageLocation;
 use App\Models\User;
+use App\Services\Activity\ActivityAction;
+use App\Services\Activity\ActivityRecorder;
 use App\Services\Equipment\EquipmentStockService;
 use App\Support\Export;
 use App\Support\UiLang;
@@ -72,6 +74,8 @@ class InventoryController extends Controller
             }
             // Expected is a number of units to find, not a number of lots.
             $session->update(['total_expected' => (int) $items->sum('quantity')]);
+
+            ActivityRecorder::record($request->user(), ActivityAction::STOCKTAKE_STARTED, $session);
 
             return $session;
         });
@@ -160,11 +164,11 @@ class InventoryController extends Controller
      * Reconcile: apply found/condition/location results back onto equipment
      * items (missing → Lost), then close the session.
      */
-    public function complete(InventorySession $session): RedirectResponse
+    public function complete(Request $request, InventorySession $session): RedirectResponse
     {
         abort_if($session->status !== 'in_progress', 403, 'This inventory is already closed.');
 
-        DB::transaction(function () use ($session) {
+        DB::transaction(function () use ($session, $request) {
             $found = 0;
             $missing = 0;
             $stock = app(EquipmentStockService::class);
@@ -206,6 +210,12 @@ class InventoryController extends Controller
                 'completed_at' => now(),
                 'total_found' => $found,
                 'total_missing' => $missing,
+            ]);
+
+            // Credited to whoever closes the count, not whoever opened it.
+            ActivityRecorder::record($request->user(), ActivityAction::STOCKTAKE_COMPLETED, $session, [
+                'found' => $found,
+                'missing' => $missing,
             ]);
         });
 

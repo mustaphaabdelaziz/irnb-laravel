@@ -253,6 +253,12 @@ class EquipmentStockService
                 'event_timestamp' => now(),
             ]);
 
+            if ($actor) {
+                ActivityRecorder::record($actor, ActivityAction::STOCK_RECEIVED, $item, [
+                    'quantity' => $quantity,
+                ]);
+            }
+
             return $item;
         });
     }

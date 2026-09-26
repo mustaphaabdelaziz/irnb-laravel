@@ -12,6 +12,8 @@ use App\Models\EquipmentItem;
 use App\Models\EquipmentRental;
 use App\Models\Player;
 use App\Models\Transaction;
+use App\Services\Activity\ActivityAction;
+use App\Services\Activity\ActivityRecorder;
 use App\Services\Equipment\EquipmentLifecycleService;
 use App\Services\Equipment\EquipmentStockService;
 use App\Services\Equipment\SerialNumberService;
@@ -75,7 +77,7 @@ class EquipmentItemController extends Controller
             'purchase_price' => ['nullable', 'numeric', 'min:0'],
         ]);
 
-        DB::transaction(function () use ($validated) {
+        DB::transaction(function () use ($validated, $request) {
             $item = new EquipmentItem([
                 'catalog_id' => $validated['catalog_id'],
                 'designation' => $validated['designation'] ?? null,
@@ -91,6 +93,9 @@ class EquipmentItemController extends Controller
 
             // Assigns unique_identifier and saves (with collision retry).
             $this->serials->assign($item);
+
+            // A serialized item is always a single unit.
+            ActivityRecorder::record($request->user(), ActivityAction::STOCK_RECEIVED, $item, ['quantity' => 1]);
         });
 
         return redirect()->route('equipment.catalogs.show', $validated['catalog_id'])
@@ -191,7 +196,7 @@ class EquipmentItemController extends Controller
                 'external_phone' => $validated['external_phone'] ?? null,
                 'notes' => $validated['notes'] ?? null,
                 'user_id' => $request->user()?->id,
-            ]);
+            ], $request->user());
         } catch (StockException $e) {
             return back()->with('error', $e->toFlash());
         }
@@ -215,7 +220,7 @@ class EquipmentItemController extends Controller
                 'return_date' => $validated['return_date'] ?? null,
                 'notes' => $validated['notes'] ?? null,
                 'user_id' => $request->user()?->id,
-            ]);
+            ], $request->user());
         } catch (StockException $e) {
             return back()->with('error', $e->toFlash());
         }
@@ -545,6 +550,11 @@ class EquipmentItemController extends Controller
             } catch (Throwable $e) {
                 $errors[] = __('Row :line: :message', ['line' => $line, 'message' => $e->getMessage()]);
             }
+        }
+
+        // One summary event for the whole file, never one per row.
+        if ($imported > 0) {
+            ActivityRecorder::record($request->user(), ActivityAction::EQUIPMENT_IMPORTED, $catalog, ['count' => $imported]);
         }
 
         $message = __(':count items imported successfully.', ['count' => $imported]);

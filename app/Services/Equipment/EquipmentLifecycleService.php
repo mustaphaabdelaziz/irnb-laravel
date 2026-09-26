@@ -6,6 +6,9 @@ use App\Exceptions\Equipment\StockException;
 use App\Models\EquipmentHistory;
 use App\Models\EquipmentItem;
 use App\Models\EquipmentRental;
+use App\Models\User;
+use App\Services\Activity\ActivityAction;
+use App\Services\Activity\ActivityRecorder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
@@ -21,7 +24,7 @@ class EquipmentLifecycleService
      * Issue units to a team player ($rentable) or to an external person
      * (options: external_name, external_phone, with $rentable null).
      */
-    public function rentOut(EquipmentItem $item, ?Model $rentable, array $options = []): EquipmentRental
+    public function rentOut(EquipmentItem $item, ?Model $rentable, array $options = [], ?User $actor = null): EquipmentRental
     {
         $quantity = (int) ($options['quantity'] ?? 1);
         $type = $options['type'] ?? 'rental';
@@ -36,7 +39,7 @@ class EquipmentLifecycleService
             throw StockException::notEnoughAvailable($quantity, $available);
         }
 
-        return DB::transaction(function () use ($item, $rentable, $options, $quantity, $type) {
+        return DB::transaction(function () use ($item, $rentable, $options, $quantity, $type, $actor) {
             // status is a lot-level disposition. Only a single-unit lot flips
             // to Rented; a multi-unit lot stays Available and lets the
             // availability formula account for what is out.
@@ -71,6 +74,16 @@ class EquipmentLifecycleService
                 'due_date' => $rental->due_date?->toDateString(),
             ]);
 
+            // Quantity only: the recipient never goes into the activity log.
+            if ($actor) {
+                ActivityRecorder::record(
+                    $actor,
+                    $type === 'assignment' ? ActivityAction::EQUIPMENT_ASSIGNED : ActivityAction::EQUIPMENT_RENTED,
+                    $rental,
+                    ['quantity' => $quantity],
+                );
+            }
+
             return $rental;
         });
     }
@@ -81,7 +94,7 @@ class EquipmentLifecycleService
      * $options: quantity (defaults to everything outstanding), condition,
      * return_date, notes, user_id.
      */
-    public function returnItem(EquipmentRental $rental, array $options = []): void
+    public function returnItem(EquipmentRental $rental, array $options = [], ?User $actor = null): void
     {
         $item = $rental->equipmentItem;
         $outstanding = $rental->outstanding_quantity;
@@ -96,7 +109,7 @@ class EquipmentLifecycleService
             throw StockException::tooManyToReturn($quantity, $outstanding);
         }
 
-        DB::transaction(function () use ($item, $rental, $options, $quantity, $condition) {
+        DB::transaction(function () use ($item, $rental, $options, $quantity, $condition, $actor) {
             $returned = $rental->returned_quantity + $quantity;
             $fullyReturned = $returned >= $rental->quantity;
 
@@ -122,6 +135,13 @@ class EquipmentLifecycleService
                 'fully_returned' => $fullyReturned,
                 'rental_duration_days' => $rental->rental_duration,
             ]);
+
+            // The units handed back by this call, so a partial return logs its part.
+            if ($actor) {
+                ActivityRecorder::record($actor, ActivityAction::EQUIPMENT_RETURNED, $rental, [
+                    'quantity' => $quantity,
+                ]);
+            }
         });
     }
 

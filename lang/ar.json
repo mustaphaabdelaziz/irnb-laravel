@@ -34,6 +34,7 @@
     "Recorded by": "سجّله",
     "Row :line: \":name\" already exists — skipped.": "السطر :line: \":name\" موجود مسبقاً — تم تخطيه.",
     "Row :line: :message": "السطر :line: :message",
+    "Row :line: cash register \":name\" not found, the default register was used.": "السطر :line: الصندوق \":name\" غير موجود، تم استعمال الصندوق الافتراضي.",
     "Row :line: unknown category \":category\".": "السطر :line: فئة غير معروفة \":category\".",
     "Season": "الموسم",
     "Select :count players or fewer at a time.": "اختر :count لاعب أو أقل في المرة الواحدة.",

@@ -34,6 +34,7 @@
     "Recorded by": "Enregistré par",
     "Row :line: \":name\" already exists — skipped.": "Ligne :line : « :name » existe déjà — ignoré.",
     "Row :line: :message": "Ligne :line : :message",
+    "Row :line: cash register \":name\" not found, the default register was used.": "Ligne :line : caisse « :name » introuvable, la caisse par défaut a été utilisée.",
     "Row :line: unknown category \":category\".": "Ligne :line : catégorie inconnue « :category ».",
     "Season": "Saison",
     "Select :count players or fewer at a time.": "Sélectionnez :count joueurs ou moins à la fois.",

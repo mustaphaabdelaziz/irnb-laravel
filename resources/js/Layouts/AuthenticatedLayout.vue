@@ -88,6 +88,8 @@ const userRole = computed(() => (isAdmin.value ? t('administrator') : t('member'
 
 function isActive(item) {
     const url = currentUrl.value ?? '';
+    // `match` items decide with their own pattern (Members vs its Activity pages).
+    if (item.match) return item.match.test(url);
     // `exact` items (e.g. the Board hub) must not stay highlighted on their
     // own sub-pages, which have their own menu entries.
     return item.exact ? url === item.prefix || url.startsWith(item.prefix + '?') : url.startsWith(item.prefix);
@@ -124,7 +126,8 @@ const sections = computed(() => {
             { label: t('tasks'), href: '/board/tasks', icon: 'task', prefix: '/board/tasks', module: 'board' },
         ] },
         { label: t('nav_access'), items: [
-            { label: t('members'), href: '/users', icon: 'members', prefix: '/users', badge: pendingApprovals.value, module: 'users' },
+            { label: t('members'), href: '/users', icon: 'members', prefix: '/users', match: /^\/users(?!\/(\d+\/)?activity)/, badge: pendingApprovals.value, module: 'users' },
+            { label: t('activity.title'), href: '/users/activity', icon: 'task', prefix: '/users/activity', match: /^\/users\/(\d+\/)?activity/, module: 'users' },
             { label: t('roles'), href: '/roles', icon: 'flag', prefix: '/roles', superadminOnly: true },
         ] },
         { label: t('administration'), items: [
@@ -267,6 +270,7 @@ function switchLocale(code) {
                     </template>
                     <template #content>
                         <DropdownLink :href="route('profile.edit')">{{ t('profile') }}</DropdownLink>
+                        <DropdownLink :href="route('profile.activity')">{{ t('activity.my_title') }}</DropdownLink>
                         <DropdownLink :href="route('logout')" method="post" as="button">{{ t('logout') }}</DropdownLink>
                     </template>
                 </Dropdown>

@@ -78,7 +78,10 @@ function initial(user) {
         <template #header>
             <div class="flex items-center justify-between">
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('members') }}</h1>
-                <Badge v-if="pendingCount" :label="`${pendingCount} ${t('pending_approval')}`" color="amber" />
+                <div class="flex items-center gap-3">
+                    <Badge v-if="pendingCount" :label="`${pendingCount} ${t('pending_approval')}`" color="amber" />
+                    <Link :href="route('users.activity.index')" class="text-sm font-medium text-primary-700 hover:underline dark:text-primary-300">{{ t('activity.title') }}</Link>
+                </div>
             </div>
         </template>
 

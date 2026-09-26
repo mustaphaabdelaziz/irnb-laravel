@@ -43,6 +43,7 @@ use App\Http\Controllers\StorageLocationController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\TransactionImportController;
+use App\Http\Controllers\UserActivityController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WebsiteConfigController;
 use Illuminate\Support\Facades\Route;
@@ -119,6 +120,8 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    // The signed-in user's own activity: self-only, no users/view needed (unguarded).
+    Route::get('/profile/activity', [UserActivityController::class, 'mine'])->name('profile.activity');
 
     // Player bulk import + export + bulk actions (declared before the resource so the static paths win)
     Route::get('/players/import/template', [PlayerImportController::class, 'template'])->name('players.import.template');
@@ -238,6 +241,9 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
     Route::group([], function () {
         // User / member management
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        // Activity pages (users/view). The static path comes before any /users/{user} route.
+        Route::get('/users/activity', [UserActivityController::class, 'index'])->name('users.activity.index');
+        Route::get('/users/{user}/activity', [UserActivityController::class, 'show'])->name('users.activity.show');
         Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');

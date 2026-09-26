@@ -68,7 +68,7 @@ return [
 
     // Route names that need no permission once authenticated.
     'unguarded' => [
-        'dashboard', 'profile.edit', 'profile.update', 'profile.destroy',
+        'dashboard', 'profile.edit', 'profile.update', 'profile.destroy', 'profile.activity',
         'lang.switch', 'account.pending',
     ],
 ];

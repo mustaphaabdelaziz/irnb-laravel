@@ -3,7 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import DeleteUserForm from './Partials/DeleteUserForm.vue';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm.vue';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
@@ -23,11 +23,14 @@ defineProps({
 
     <AuthenticatedLayout>
         <template #header>
-            <h2
-                class="text-xl font-semibold leading-tight text-gray-800"
-            >
-                {{ t('profile') }}
-            </h2>
+            <div class="flex items-center justify-between gap-3">
+                <h2
+                    class="text-xl font-semibold leading-tight text-gray-800"
+                >
+                    {{ t('profile') }}
+                </h2>
+                <Link :href="route('profile.activity')" class="shrink-0 text-sm font-medium text-primary-700 hover:underline dark:text-primary-300">{{ t('activity.my_title') }}</Link>
+            </div>
         </template>
 
         <div class="py-12">

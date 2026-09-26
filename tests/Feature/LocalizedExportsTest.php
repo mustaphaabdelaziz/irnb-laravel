@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\BoardMember;
+use App\Models\BoardRole;
 use App\Models\BoardTask;
 use App\Models\Category;
 use App\Models\EquipmentCatalog;
@@ -152,6 +153,24 @@ class LocalizedExportsTest extends TestCase
         $this->assertStringContainsString($this->xmlText(UiLang::get('high', null, 'fr')), $tasks);
         $this->assertStringContainsString($this->xmlText(UiLang::get('in_progress', null, 'fr')), $tasks);
         $this->assertMatchesRegularExpression('#<v>40</v>#', $tasks);
+    }
+
+    #[Test]
+    public function board_member_roles_export_the_custom_label_or_the_translated_built_in_name(): void
+    {
+        $admin = $this->admin('fr');
+        BoardRole::create(['name' => 'kit_manager', 'label' => 'Responsable matériel']);
+        BoardRole::create(['name' => 'unlabelled_role']);
+        BoardMember::create(['name' => 'Karim', 'role' => 'president', 'status' => 'active']);
+        BoardMember::create(['name' => 'Sami', 'role' => 'kit_manager', 'status' => 'active']);
+        BoardMember::create(['name' => 'Nadia', 'role' => 'unlabelled_role', 'status' => 'active']);
+
+        $xml = $this->sheet($this->actingAs($admin)->get(route('board.members.export'))->baseResponse);
+
+        $this->assertStringContainsString($this->xmlText('Responsable matériel'), $xml);
+        $this->assertStringNotContainsString('kit_manager', $xml);
+        $this->assertStringContainsString($this->xmlText(UiLang::get('president', null, 'fr')), $xml);
+        $this->assertStringContainsString('unlabelled_role', $xml); // no label, no key: the name, as t(r) shows it
     }
 
     #[Test]

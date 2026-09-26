@@ -265,9 +265,11 @@ class BoardController extends Controller
 
     public function exportMembers(Request $request): SymfonyResponse
     {
-        // Role and status render on the page as t(code) (Board/Members.vue).
+        // Role mirrors roleLabel() in Board/Members.vue: the role's own label
+        // when it has one (custom roles), else t(name). Status renders as t(code).
+        $roleLabels = BoardRole::pluck('label', 'name');
         $rows = BoardMember::orderBy('sort_order')->get()->map(fn (BoardMember $m) => [
-            $m->name, self::codeLabel($m->role), $m->email, $m->phone !== null ? (string) $m->phone : null,
+            $m->name, ($roleLabels[$m->role] ?? null) ?: self::codeLabel($m->role), $m->email, $m->phone !== null ? (string) $m->phone : null,
             $m->term_start, $m->term_end, self::codeLabel($m->status),
         ])->all();
 

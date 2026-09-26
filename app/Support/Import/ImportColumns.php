@@ -40,11 +40,11 @@ final class ImportColumns
         foreach (array_slice($rows, 0, self::SCAN_ROWS, true) as $i => $row) {
             $matched = $this->match($row);
             if (count($matched) >= $needed) {
-                return [$i, $this->withPositions($matched)];
+                return [$i, $this->withPositions($matched, $row)];
             }
         }
 
-        return [0, $this->withPositions([])];
+        return [0, $this->withPositions([], null)];
     }
 
     /**
@@ -107,15 +107,24 @@ final class ImportColumns
         return $map;
     }
 
-    /** @param  array<string, int>  $matched */
-    private function withPositions(array $matched): array
+    /**
+     * Matched columns keep their index; an unmatched one falls back to its
+     * template position when that position is free. With a header row, the
+     * position must also have an empty header — a named header there is some
+     * other column (e.g. an export's "Status" where the template has "Price").
+     * Without a header row (legacy positional files) any free position goes.
+     *
+     * @param  array<string, int>  $matched
+     * @param  list<string|null>|null  $header  the detected header row, or null
+     */
+    private function withPositions(array $matched, ?array $header): array
     {
         $taken = array_flip($matched);
         $map = [];
         foreach ($this->columns as $position => $c) {
             if (isset($matched[$c['key']])) {
                 $map[$c['key']] = $matched[$c['key']];
-            } elseif (! isset($taken[$position])) {
+            } elseif (! isset($taken[$position]) && ($header === null || trim((string) ($header[$position] ?? '')) === '')) {
                 $map[$c['key']] = $position;
             }
         }

@@ -57,6 +57,30 @@ class ImportColumnsTest extends TestCase
     }
 
     #[Test]
+    public function with_a_header_row_an_unmatched_column_never_takes_a_named_foreign_column(): void
+    {
+        // "Status" sits where the template has Amount: it is some other
+        // column, so Amount must stay unmapped rather than read the status.
+        [$row, $map] = $this->columns()->locate([['Date', 'Title', 'Status'], ['2026-01-01', 'x', 'Paid']]);
+
+        $this->assertSame(0, $row);
+        $this->assertSame(['transaction_date' => 0, 'title' => 1], $map);
+    }
+
+    #[Test]
+    public function with_a_header_row_an_unmatched_column_still_takes_its_blank_header_position(): void
+    {
+        [, $map] = $this->columns()->locate([['Date', 'Title', ''], ['2026-01-01', 'x', '5']]);
+        $this->assertSame(['transaction_date' => 0, 'title' => 1, 'amount' => 2], $map);
+
+        [, $map] = $this->columns()->locate([['Date', 'Title', null], ['2026-01-01', 'x', '5']]);
+        $this->assertSame(['transaction_date' => 0, 'title' => 1, 'amount' => 2], $map);
+
+        [, $map] = $this->columns()->locate([['Date', 'Title'], ['2026-01-01', 'x', '5']]);
+        $this->assertSame(['transaction_date' => 0, 'title' => 1, 'amount' => 2], $map);
+    }
+
+    #[Test]
     public function a_repeated_header_goes_to_the_next_free_column(): void
     {
         $cols = new ImportColumns([

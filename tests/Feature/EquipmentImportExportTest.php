@@ -95,6 +95,45 @@ class EquipmentImportExportTest extends TestCase
     }
 
     #[Test]
+    public function an_items_xlsx_export_re_imports_without_reading_status_as_a_price(): void
+    {
+        $catalog = $this->catalog();
+        EquipmentItem::create([
+            'catalog_id' => $catalog->id,
+            'unique_identifier' => 'IRNB-2026-BALL-00042',
+            'purchase_date' => '2026-05-01',
+            'status' => 'Available',
+            'condition' => 'Good',
+            'location' => 'Locker B',
+            'designation' => 'Exported Ball',
+            'notes' => 'spare',
+        ]);
+        $user = User::factory()->admin()->create(['email_verified_at' => now(), 'preferred_lng' => 'ar']);
+
+        $response = $this->actingAs($user)->get(route('equipment.items.export', [$catalog, 'format' => 'xlsx']));
+        $response->assertOk();
+        ob_start();
+        $response->baseResponse->sendContent();
+        $path = tempnam(sys_get_temp_dir(), 'eqx').'.xlsx';
+        file_put_contents($path, ob_get_clean());
+
+        $this->actingAs($user)
+            ->post(route('equipment.items.import', $catalog), ['file' => new UploadedFile($path, 'items.xlsx', null, null, true)])
+            ->assertRedirect()
+            ->assertSessionHas('success')
+            ->assertSessionMissing('error');
+
+        $this->assertSame(0, Transaction::query()->count(), 'the export has no price column: no purchase expense');
+        $copy = EquipmentItem::where('catalog_id', $catalog->id)->where('unique_identifier', '!=', 'IRNB-2026-BALL-00042')->sole();
+        $this->assertSame('Exported Ball', $copy->designation);
+        $this->assertSame('Good', $copy->condition);
+        $this->assertSame('Locker B', $copy->location);
+        $this->assertSame('2026-05-01', $copy->purchase_date->format('Y-m-d'));
+        $this->assertSame('spare', $copy->notes);
+        $this->assertNull($copy->purchase_transaction_id);
+    }
+
+    #[Test]
     public function it_exports_the_catalog_items_as_csv(): void
     {
         $catalog = $this->catalog();

@@ -61,8 +61,13 @@ class PlayerController extends Controller
 
         $this->applyPlayerFilters($query, $request);
 
+        // Page size picked on the list; anything else falls back to 25.
+        $perPage = in_array((int) $request->input('per_page'), [25, 50, 100, 200], true)
+            ? (int) $request->input('per_page')
+            : 25;
+
         $players = $query->orderBy('lastname')->orderBy('firstname')
-            ->paginate(25)
+            ->paginate($perPage)
             ->withQueryString();
 
         // Prefer the current-locale name, falling back to the base name.
@@ -129,16 +134,6 @@ class PlayerController extends Controller
             // positions feeds the bulk-edit field picker as well as the filter.
             'positions' => fn () => Position::orderBy('name')->get(['id', 'name']),
             'playerStatuses' => fn () => PlayerStatus::orderBy('sort_order')->get(),
-            // Rows with no `code` are stray legacy rows (see algeriaGeo()) and are
-            // excluded so the filter never offers an uncoded wilaya.
-            'wilayas' => fn () => CountryState::query()->whereNotNull('code')->orderBy('code')
-                ->get(['id', 'code', 'name', 'name_fr', 'name_ar'])
-                ->map(fn (CountryState $state) => [
-                    'id' => $state->id,
-                    'code' => $state->code,
-                    'name' => $state->name_fr ?: $state->name,
-                    'localized_name' => $state->localized_name,
-                ]),
             // The "missing type X" options: only types that can be missing.
             'documentTypes' => fn () => DocumentType::query()
                 ->where('is_active', true)
@@ -149,7 +144,7 @@ class PlayerController extends Controller
             'statusStats' => $statusStats,
             'positionStats' => $positionStats,
             'ageStats' => $ageStats,
-            'filters' => $request->only(['search', 'category_id', 'status', 'position_id', 'branch_id', 'age', 'archived', 'wilaya_id', 'academic', 'certificate', 'documents']),
+            'filters' => $request->only(['search', 'lastname', 'category_id', 'status', 'position_id', 'branch_id', 'age', 'archived', 'wilaya_id', 'academic', 'certificate', 'documents', 'per_page']),
             // Default school year of the academic results printout.
             'currentSchoolYear' => Season::current()->startYear,
         ]);
@@ -653,6 +648,10 @@ class PlayerController extends Controller
     {
         if ($request->filled('search')) {
             $query->search((string) $request->input('search'));
+        }
+
+        if ($request->filled('lastname')) {
+            $query->where('lastname', 'like', '%'.trim((string) $request->input('lastname')).'%');
         }
 
         if ($request->filled('category_id')) {

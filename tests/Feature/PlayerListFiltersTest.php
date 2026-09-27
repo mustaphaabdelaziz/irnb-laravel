@@ -1,0 +1,99 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Player;
+use App\Models\PlayerStatus;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia;
+use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
+
+class PlayerListFiltersTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private function admin(): User
+    {
+        return User::factory()->admin()->create(['email_verified_at' => now()]);
+    }
+
+    private function player(array $attributes): Player
+    {
+        static $sequence = 0;
+        $sequence++;
+
+        return Player::create([
+            'membership_id' => '2024'.str_pad((string) $sequence, 5, '0', STR_PAD_LEFT),
+            'join_year' => 2024,
+            'is_student' => true,
+            ...$attributes,
+        ]);
+    }
+
+    #[Test]
+    public function a_player_can_be_saved_without_a_skill_level(): void
+    {
+        $this->actingAs($this->admin())
+            ->post(route('players.store'), ['firstname' => 'Ali', 'lastname' => 'Benali', 'skill_level' => null])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $player = Player::firstOrFail();
+        $this->assertNull($player->skill_level);
+
+        $this->put(route('players.update', $player), ['firstname' => 'Ali', 'lastname' => 'Benali', 'skill_level' => null])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+    }
+
+    #[Test]
+    public function the_list_filters_by_family_name(): void
+    {
+        $this->player(['firstname' => 'Ali', 'lastname' => 'Benali']);
+        $this->player(['firstname' => 'Sami', 'lastname' => 'Khelifi']);
+
+        $this->actingAs($this->admin())
+            ->get(route('players.index', ['lastname' => 'khel']))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('players.data', 1)
+                ->where('players.data.0.lastname', 'Khelifi'));
+    }
+
+    #[Test]
+    public function the_list_filters_by_status(): void
+    {
+        $status = PlayerStatus::query()->firstOrFail();
+        $this->player(['firstname' => 'Ali', 'status_id' => $status->id]);
+        $this->player(['firstname' => 'Sami', 'status_id' => null]);
+
+        $this->actingAs($this->admin())
+            ->get(route('players.index', ['status' => $status->id]))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('players.data', 1)
+                ->where('players.data.0.firstname', 'Ali'));
+    }
+
+    #[Test]
+    public function the_page_size_follows_per_page_within_the_allowed_sizes(): void
+    {
+        foreach (range(1, 60) as $i) {
+            $this->player(['firstname' => "P{$i}"]);
+        }
+
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->get(route('players.index', ['per_page' => 50]))
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('players.data', 50));
+
+        $this->actingAs($admin)->get(route('players.index', ['per_page' => 100]))
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('players.data', 60));
+
+        // Anything outside the allowed sizes falls back to 25.
+        $this->actingAs($admin)->get(route('players.index', ['per_page' => 5000]))
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('players.data', 25));
+    }
+}

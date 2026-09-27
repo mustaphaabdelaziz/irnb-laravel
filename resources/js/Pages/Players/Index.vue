@@ -29,7 +29,6 @@ const props = defineProps({
     branches: { type: Array, default: () => [] },
     positions: { type: Array, default: () => [] },
     playerStatuses: { type: Array, default: () => [] },
-    wilayas: { type: Array, default: () => [] },
     categoryStats: { type: Array, default: () => [] },
     statusStats: { type: Array, default: () => [] },
     positionStats: { type: Array, default: () => [] },
@@ -40,6 +39,7 @@ const props = defineProps({
 });
 
 const search = ref(props.filters?.search || '');
+const lastnameFilter = ref(props.filters?.lastname || '');
 // The backend filters on `category_id` — the param must match or the filter is a no-op.
 const categoryFilter = ref(props.filters?.category_id || '');
 
@@ -47,28 +47,30 @@ const statusFilter = ref(props.filters?.status || '');
 const positionFilter = ref(props.filters?.position_id || '');
 const branchFilter = ref(props.filters?.branch_id || '');
 const ageFilter = ref(props.filters?.age || '');
-const wilayaFilter = ref(props.filters?.wilaya_id || '');
 const academicFilter = ref(props.filters?.academic || '');
 const certificateFilter = ref(props.filters?.certificate || '');
 // missing | expiring | missing-<typeId> — one select, one query parameter.
 const documentsFilter = ref(props.filters?.documents || '');
 // Active vs Archived view. Backend defaults to active when no `archived` param.
 const archivedView = ref(!!Number(props.filters?.archived));
+// Page size; empty means the server default (25).
+const perPage = ref(props.filters?.per_page || '');
 
 // The stats follow the filters too; the lookup lists never do, so they stay out
 // of the reload.
 const { params: filterParams, loading: filtering } = useListFilters('players.index', () => ({
     search: search.value,
+    lastname: lastnameFilter.value,
     category_id: categoryFilter.value,
     status: statusFilter.value,
     position_id: positionFilter.value,
     branch_id: branchFilter.value,
     age: ageFilter.value,
-    wilaya_id: wilayaFilter.value,
     academic: academicFilter.value,
     certificate: certificateFilter.value,
     documents: documentsFilter.value,
     archived: archivedView.value ? 1 : undefined,
+    per_page: perPage.value,
 }), { only: ['players', 'filters', 'categoryStats', 'statusStats', 'positionStats', 'ageStats'] });
 
 // --- Remembered filters ---
@@ -79,8 +81,8 @@ const { params: filterParams, loading: filtering } = useListFilters('players.ind
 // reload the list with them.
 const FILTERS_KEY = 'players.filters';
 const filterRefs = {
-    search, category_id: categoryFilter, status: statusFilter, position_id: positionFilter,
-    branch_id: branchFilter, age: ageFilter, wilaya_id: wilayaFilter, academic: academicFilter,
+    search, lastname: lastnameFilter, category_id: categoryFilter, status: statusFilter, position_id: positionFilter,
+    branch_id: branchFilter, age: ageFilter, academic: academicFilter,
     certificate: certificateFilter, documents: documentsFilter,
 };
 
@@ -92,6 +94,7 @@ if (!window.location.search) {
             if (saved[key] !== undefined) r.value = String(saved[key]);
         }
         if (saved.archived) archivedView.value = true;
+        if (saved.per_page) perPage.value = String(saved.per_page);
     }
 }
 
@@ -102,7 +105,8 @@ watch(filterParams, (params) => {
     } catch { /* storage unavailable: filters just aren't remembered */ }
 }, { immediate: true });
 
-const hasActiveFilters = computed(() => Object.keys(filterParams.value).length > 0);
+// Page size is a view preference, not a filter: it does not light up "clear".
+const hasActiveFilters = computed(() => Object.keys(filterParams.value).some((k) => k !== 'per_page'));
 
 function clearFilters() {
     for (const r of Object.values(filterRefs)) r.value = '';
@@ -128,6 +132,8 @@ const statusChips = computed(() => props.statusStats.map((s) => ({
 const positionChips = computed(() => props.positionStats.map((s) => ({
     key: s.position_id ?? '', label: s.name || t('unassigned'), count: s.count,
 })));
+// Fixed age groups for the filter select; the doughnut only lists non-empty ones.
+const ageGroups = ['u10', '10-19', '20-29', '30-39', '40+', 'unknown'];
 const ageLabel = (bucket) => (bucket === 'u10' ? '< 10' : bucket === 'unknown' ? t('unknown') : bucket);
 const ageChips = computed(() => props.ageStats.map((s) => ({
     key: s.bucket, label: ageLabel(s.bucket), count: s.count,
@@ -331,15 +337,22 @@ function runBulk() {
                     <option value="">{{ t('all_branches') }}</option>
                     <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.localized_name || b.name }}</option>
                 </select>
+                <div class="w-full sm:w-48">
+                    <SearchInput v-model="lastnameFilter" :placeholder="t('filter_by_lastname')" />
+                </div>
                 <select
-                    v-if="wilayas.length"
-                    v-model="wilayaFilter"
+                    v-model="statusFilter"
                     class="min-w-0 flex-1 rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:max-w-xs sm:flex-none"
                 >
-                    <option value="">{{ t('all_wilayas') }}</option>
-                    <!-- A value of its own: useListFilters drops empty values. -->
-                    <option value="none">{{ t('no_wilaya') }}</option>
-                    <option v-for="w in wilayas" :key="w.id" :value="w.id">{{ w.code }} · {{ w.localized_name || w.name }}</option>
+                    <option value="">{{ t('all_statuses') }}</option>
+                    <option v-for="s in playerStatuses" :key="s.id" :value="String(s.id)">{{ s.localized_name || s.name }}</option>
+                </select>
+                <select
+                    v-model="ageFilter"
+                    class="min-w-0 flex-1 rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:max-w-xs sm:flex-none"
+                >
+                    <option value="">{{ t('all_age_groups') }}</option>
+                    <option v-for="g in ageGroups" :key="g" :value="g">{{ ageLabel(g) }}</option>
                 </select>
                 <select
                     v-model="academicFilter"
@@ -446,7 +459,16 @@ function runBulk() {
                     </Link>
                 </div>
                 <p v-if="!players.data.length" class="py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</p>
-                <Pagination :links="players" />
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <label class="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                        <select v-model="perPage" class="rounded-lg border-slate-300 py-1 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-slate-700">
+                            <option value="">25</option>
+                            <option v-for="n in [50, 100, 200]" :key="n" :value="String(n)">{{ n }}</option>
+                        </select>
+                        {{ t('per_page') }}
+                    </label>
+                    <Pagination :links="players" />
+                </div>
             </div>
 
             <!-- Table -->
@@ -478,7 +500,11 @@ function runBulk() {
                                 <td class="whitespace-nowrap px-4 py-3 text-sm font-mono text-slate-600 dark:text-slate-300">{{ player.membership_id }}</td>
                                 <td class="whitespace-nowrap px-4 py-3 text-sm font-mono text-slate-600 dark:text-slate-300">{{ formatFileNumber(player.file_number) }}</td>
                                 <td class="whitespace-nowrap px-4 py-3">
-                                    <Link :href="route('players.show', player.id)" class="text-sm font-medium text-slate-900 dark:text-slate-100 hover:text-primary-600">
+                                    <Link :href="route('players.show', player.id)" class="flex items-center gap-3 text-sm font-medium text-slate-900 dark:text-slate-100 hover:text-primary-600">
+                                        <img v-if="player.picture_url" :src="player.picture_url" :alt="player.firstname" loading="lazy" class="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700" />
+                                        <span v-else class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-50 text-sm font-bold text-primary-600 ring-1 ring-primary-100 dark:bg-primary-500/10 dark:text-primary-300 dark:ring-primary-500/20">
+                                            {{ (player.lastname || player.firstname || '?').charAt(0).toUpperCase() }}
+                                        </span>
                                         {{ player.fullname || `${player.lastname} ${player.firstname}` }}
                                     </Link>
                                 </td>
@@ -519,8 +545,17 @@ function runBulk() {
                         </tbody>
                     </table>
                 </div>
-                <div class="px-4">
-                    <Pagination :links="players" />
+                <div class="px-4 py-2">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <label class="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                            <select v-model="perPage" class="rounded-lg border-slate-300 py-1 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-slate-700">
+                                <option value="">25</option>
+                                <option v-for="n in [50, 100, 200]" :key="n" :value="String(n)">{{ n }}</option>
+                            </select>
+                            {{ t('per_page') }}
+                        </label>
+                        <Pagination :links="players" />
+                    </div>
                 </div>
             </div>
         </div>

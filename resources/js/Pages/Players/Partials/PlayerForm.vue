@@ -235,14 +235,14 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
             <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('basic_info') }}</h2>
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <div>
-                    <InputLabel :value="t('firstname') + ' *'" />
-                    <TextInput v-model="form.firstname" class="mt-1 w-full" required />
-                    <InputError :message="form.errors.firstname" class="mt-1" />
-                </div>
-                <div>
                     <InputLabel :value="t('lastname')" />
                     <TextInput v-model="form.lastname" class="mt-1 w-full" />
                     <InputError :message="form.errors.lastname" class="mt-1" />
+                </div>
+                <div>
+                    <InputLabel :value="t('firstname') + ' *'" />
+                    <TextInput v-model="form.firstname" class="mt-1 w-full" required />
+                    <InputError :message="form.errors.firstname" class="mt-1" />
                 </div>
                 <div>
                     <InputLabel :value="t('nickname')" />

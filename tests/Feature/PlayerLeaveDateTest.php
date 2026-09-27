@@ -91,7 +91,7 @@ class PlayerLeaveDateTest extends TestCase
         $player = $this->player();
 
         $this->actingAs($this->admin())->put(route('players.update', $player), [
-            'firstname' => $player->firstname,
+            'firstname' => $player->firstname, 'lastname' => 'Test',
             'status_id' => $this->statusId('left'),
             'left_at' => '2026-04-20',
         ])->assertRedirect();
@@ -105,7 +105,7 @@ class PlayerLeaveDateTest extends TestCase
         $player = $this->player();
 
         $this->actingAs($this->admin())->put(route('players.update', $player), [
-            'firstname' => $player->firstname,
+            'firstname' => $player->firstname, 'lastname' => 'Test',
             'status_id' => $this->statusId('left'),
             'left_at' => '2026-06-01',
         ])->assertSessionHasErrors('left_at');

@@ -235,8 +235,8 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
             <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('basic_info') }}</h2>
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <div>
-                    <InputLabel :value="t('lastname')" />
-                    <TextInput v-model="form.lastname" class="mt-1 w-full" />
+                    <InputLabel :value="t('lastname') + ' *'" />
+                    <TextInput v-model="form.lastname" class="mt-1 w-full" required />
                     <InputError :message="form.errors.lastname" class="mt-1" />
                 </div>
                 <div>
@@ -348,7 +348,7 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                     <InputError :message="form.errors.other_position_ids" class="mt-1" />
                 </div>
                 <div class="sm:col-span-2 lg:col-span-3">
-                    <InputLabel :value="t('branches')" />
+                    <InputLabel :value="t('branches') + (branches.length ? ' *' : '')" />
                     <SearchableSelect
                         v-if="branches.length"
                         v-model="branchPick"
@@ -363,6 +363,7 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                             <button type="button" @click="removeBranch(id)" class="text-primary-400 hover:text-rose-600">×</button>
                         </span>
                     </div>
+                    <InputError :message="form.errors.branch_ids" class="mt-1" />
                     <p v-if="!branches.length" class="mt-1 text-xs text-slate-400">
                         {{ t('no_branches_hint') }}
                         <Link :href="route('branches.index')" class="text-primary-600 hover:underline">{{ t('branches') }}</Link>

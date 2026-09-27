@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Branch;
 use App\Models\Player;
 use App\Models\PlayerStatus;
 use App\Models\User;
@@ -60,6 +61,40 @@ class PlayerListFiltersTest extends TestCase
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->has('players.data', 1)
                 ->where('players.data.0.lastname', 'Khelifi'));
+    }
+
+    #[Test]
+    public function the_list_filters_by_blood_group(): void
+    {
+        $this->player(['firstname' => 'Ali', 'health_blood_group_rhesus' => 'A+']);
+        $this->player(['firstname' => 'Sami', 'health_blood_group_rhesus' => 'A-']);
+
+        $this->actingAs($this->admin())
+            ->get(route('players.index', ['blood_group' => 'A+']))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('players.data', 1)
+                ->where('players.data.0.firstname', 'Ali'));
+    }
+
+    #[Test]
+    public function a_player_needs_a_last_name_and_a_branch_once_branches_exist(): void
+    {
+        $admin = $this->admin();
+
+        // No branches set up: there is nothing to pick, so none is required.
+        $this->actingAs($admin)
+            ->post(route('players.store'), ['firstname' => 'Ali'])
+            ->assertSessionHasErrors(['lastname'])
+            ->assertSessionDoesntHaveErrors(['branch_ids']);
+
+        $branch = Branch::create(['name' => 'Football']);
+
+        $this->post(route('players.store'), ['firstname' => 'Ali', 'lastname' => 'Benali'])
+            ->assertSessionHasErrors(['branch_ids']);
+
+        $this->post(route('players.store'), ['firstname' => 'Ali', 'lastname' => 'Benali', 'branch_ids' => [$branch->id]])
+            ->assertSessionHasNoErrors();
     }
 
     #[Test]

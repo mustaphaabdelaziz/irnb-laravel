@@ -76,7 +76,7 @@ class ActivityPlayerEventsTest extends TestCase
     {
         $admin = $this->admin();
 
-        $this->actingAs($admin)->post(route('players.store'), ['firstname' => 'Amine'])->assertRedirect();
+        $this->actingAs($admin)->post(route('players.store'), ['firstname' => 'Amine', 'lastname' => 'Test'])->assertRedirect();
 
         $player = Player::query()->firstOrFail();
         $events = $this->events(ActivityAction::PLAYER_REGISTERED);

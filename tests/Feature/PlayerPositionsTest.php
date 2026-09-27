@@ -34,7 +34,7 @@ class PlayerPositionsTest extends TestCase
         $back = $this->position('LB', 'Arrière gauche');
 
         $this->actingAs($this->admin())->post(route('players.store'), [
-            'firstname' => 'Amine',
+            'firstname' => 'Amine', 'lastname' => 'Test',
             'position_id' => $mid->id,
             'other_position_ids' => [$wing->id, $back->id],
         ])->assertRedirect();
@@ -52,7 +52,7 @@ class PlayerPositionsTest extends TestCase
         $mid = $this->position('MF', 'Milieu');
 
         $this->actingAs($this->admin())->post(route('players.store'), [
-            'firstname' => 'Amine',
+            'firstname' => 'Amine', 'lastname' => 'Test',
             'position_id' => $mid->id,
             'other_position_ids' => [$mid->id],
         ])->assertSessionHasErrors('other_position_ids');
@@ -71,7 +71,7 @@ class PlayerPositionsTest extends TestCase
         $player->otherPositions()->sync([$wing->id]);
 
         $this->actingAs($this->admin())->put(route('players.update', $player), [
-            'firstname' => 'Amine',
+            'firstname' => 'Amine', 'lastname' => 'Test',
             'position_id' => $mid->id,
             'other_position_ids' => [$back->id],
         ])->assertRedirect();
@@ -171,7 +171,7 @@ class PlayerPositionsTest extends TestCase
         // clears the list: ConvertEmptyStringsToNull turns it into a present
         // null, which the nullable|array rule accepts.
         $this->actingAs($this->admin())->put(route('players.update', $player), [
-            'firstname' => 'Amine',
+            'firstname' => 'Amine', 'lastname' => 'Test',
             'position_id' => $mid->id,
             'other_position_ids' => '',
         ])->assertRedirect();
@@ -183,7 +183,7 @@ class PlayerPositionsTest extends TestCase
         // A client that never mentions the key at all (e.g. a different
         // caller) must not wipe out what is already there.
         $this->actingAs($this->admin())->put(route('players.update', $player), [
-            'firstname' => 'Amine',
+            'firstname' => 'Amine', 'lastname' => 'Test',
             'position_id' => $mid->id,
         ])->assertRedirect();
 
@@ -203,7 +203,7 @@ class PlayerPositionsTest extends TestCase
         // all in this request — the old "WG is one of the others" pivot row
         // would otherwise survive and duplicate the abbreviation on the card.
         $this->actingAs($this->admin())->put(route('players.update', $player), [
-            'firstname' => 'Amine',
+            'firstname' => 'Amine', 'lastname' => 'Test',
             'position_id' => $wing->id,
         ])->assertRedirect();
 

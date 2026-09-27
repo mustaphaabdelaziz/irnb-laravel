@@ -41,7 +41,7 @@ class PlayerMembershipIdTest extends TestCase
 
         $this->actingAs($this->admin())
             ->put(route('players.update', $player), [
-                'firstname' => 'Test',
+                'firstname' => 'Test', 'lastname' => 'Test',
                 'join_year' => 2025,
             ])
             ->assertRedirect();
@@ -59,7 +59,7 @@ class PlayerMembershipIdTest extends TestCase
 
         $this->actingAs($this->admin())
             ->put(route('players.update', $player), [
-                'firstname' => 'Renamed',
+                'firstname' => 'Renamed', 'lastname' => 'Test',
                 'join_year' => 2024,
             ])
             ->assertRedirect();

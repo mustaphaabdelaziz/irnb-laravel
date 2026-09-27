@@ -55,7 +55,7 @@ class PlayerFormPropsTest extends TestCase
     {
         $this->actingAs($this->admin())
             ->post(route('players.store'), [
-                'firstname' => 'Yacine',
+                'firstname' => 'Yacine', 'lastname' => 'Test',
                 'state' => 'Adrar',
                 'city' => 'Reggane',
                 'is_student' => false,

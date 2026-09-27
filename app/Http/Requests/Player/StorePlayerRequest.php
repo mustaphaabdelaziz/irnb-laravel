@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Player;
 
+use App\Models\Branch;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -17,7 +18,7 @@ class StorePlayerRequest extends FormRequest
     {
         return [
             'firstname' => ['required', 'string', 'max:255'],
-            'lastname' => ['nullable', 'string', 'max:255'],
+            'lastname' => ['required', 'string', 'max:255'],
             'nickname' => ['nullable', 'string', 'max:255'],
             'father' => ['nullable', 'string', 'max:255'],
             'grandfather' => ['nullable', 'string', 'max:255'],
@@ -44,7 +45,8 @@ class StorePlayerRequest extends FormRequest
             'position_id' => ['nullable', 'integer', 'exists:positions,id'],
             'other_position_ids' => ['nullable', 'array'],
             'other_position_ids.*' => ['integer', 'exists:positions,id'],
-            'branch_ids' => ['nullable', 'array'],
+            // Required once the club has branches; with none set up there is nothing to pick.
+            'branch_ids' => [Rule::requiredIf(fn () => Branch::exists()), 'nullable', 'array'],
             'branch_ids.*' => ['integer', 'exists:branches,id'],
             'team' => ['nullable', 'string', 'max:255'],
             'skill_level' => ['nullable', 'integer', 'min:1', 'max:10'],

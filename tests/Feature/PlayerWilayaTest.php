@@ -50,7 +50,7 @@ class PlayerWilayaTest extends TestCase
         $ghardaia = $this->wilaya('47');
 
         $this->actingAs($this->admin())->post(route('players.store'), [
-            'firstname' => 'Amine',
+            'firstname' => 'Amine', 'lastname' => 'Test',
             'wilaya_id' => $ghardaia->id,
             'city' => 'Metlili',
         ])->assertRedirect();
@@ -307,7 +307,7 @@ class PlayerWilayaTest extends TestCase
         ]);
 
         $this->actingAs($this->admin())->post(route('players.store'), [
-            'firstname' => 'Amine',
+            'firstname' => 'Amine', 'lastname' => 'Test',
             'wilaya_id' => $stray->id,
         ])->assertSessionHasErrors('wilaya_id');
 

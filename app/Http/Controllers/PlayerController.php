@@ -144,7 +144,7 @@ class PlayerController extends Controller
             'statusStats' => $statusStats,
             'positionStats' => $positionStats,
             'ageStats' => $ageStats,
-            'filters' => $request->only(['search', 'lastname', 'category_id', 'status', 'position_id', 'branch_id', 'age', 'archived', 'wilaya_id', 'academic', 'certificate', 'documents', 'per_page']),
+            'filters' => $request->only(['search', 'lastname', 'blood_group', 'category_id', 'status', 'position_id', 'branch_id', 'age', 'archived', 'wilaya_id', 'academic', 'certificate', 'documents', 'per_page']),
             // Default school year of the academic results printout.
             'currentSchoolYear' => Season::current()->startYear,
         ]);
@@ -652,6 +652,10 @@ class PlayerController extends Controller
 
         if ($request->filled('lastname')) {
             $query->where('lastname', 'like', '%'.trim((string) $request->input('lastname')).'%');
+        }
+
+        if ($request->filled('blood_group')) {
+            $query->where('health_blood_group_rhesus', $request->input('blood_group'));
         }
 
         if ($request->filled('category_id')) {

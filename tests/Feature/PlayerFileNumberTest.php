@@ -59,7 +59,7 @@ class PlayerFileNumberTest extends TestCase
         $fileNumber = $player->fresh()->file_number;
 
         $this->actingAs($this->admin())
-            ->put(route('players.update', $player), ['firstname' => 'Amine', 'join_year' => 2025])
+            ->put(route('players.update', $player), ['firstname' => 'Amine', 'lastname' => 'Test', 'join_year' => 2025])
             ->assertRedirect();
 
         $player->refresh();

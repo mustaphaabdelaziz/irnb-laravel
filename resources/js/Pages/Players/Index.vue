@@ -47,6 +47,7 @@ const statusFilter = ref(props.filters?.status || '');
 const positionFilter = ref(props.filters?.position_id || '');
 const branchFilter = ref(props.filters?.branch_id || '');
 const ageFilter = ref(props.filters?.age || '');
+const bloodGroupFilter = ref(props.filters?.blood_group || '');
 const academicFilter = ref(props.filters?.academic || '');
 const certificateFilter = ref(props.filters?.certificate || '');
 // missing | expiring | missing-<typeId> — one select, one query parameter.
@@ -66,6 +67,7 @@ const { params: filterParams, loading: filtering } = useListFilters('players.ind
     position_id: positionFilter.value,
     branch_id: branchFilter.value,
     age: ageFilter.value,
+    blood_group: bloodGroupFilter.value,
     academic: academicFilter.value,
     certificate: certificateFilter.value,
     documents: documentsFilter.value,
@@ -82,7 +84,7 @@ const { params: filterParams, loading: filtering } = useListFilters('players.ind
 const FILTERS_KEY = 'players.filters';
 const filterRefs = {
     search, lastname: lastnameFilter, category_id: categoryFilter, status: statusFilter, position_id: positionFilter,
-    branch_id: branchFilter, age: ageFilter, academic: academicFilter,
+    branch_id: branchFilter, age: ageFilter, blood_group: bloodGroupFilter, academic: academicFilter,
     certificate: certificateFilter, documents: documentsFilter,
 };
 
@@ -132,8 +134,7 @@ const statusChips = computed(() => props.statusStats.map((s) => ({
 const positionChips = computed(() => props.positionStats.map((s) => ({
     key: s.position_id ?? '', label: s.name || t('unassigned'), count: s.count,
 })));
-// Fixed age groups for the filter select; the doughnut only lists non-empty ones.
-const ageGroups = ['u10', '10-19', '20-29', '30-39', '40+', 'unknown'];
+const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 const ageLabel = (bucket) => (bucket === 'u10' ? '< 10' : bucket === 'unknown' ? t('unknown') : bucket);
 const ageChips = computed(() => props.ageStats.map((s) => ({
     key: s.bucket, label: ageLabel(s.bucket), count: s.count,
@@ -348,11 +349,11 @@ function runBulk() {
                     <option v-for="s in playerStatuses" :key="s.id" :value="String(s.id)">{{ s.localized_name || s.name }}</option>
                 </select>
                 <select
-                    v-model="ageFilter"
+                    v-model="bloodGroupFilter"
                     class="min-w-0 flex-1 rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:max-w-xs sm:flex-none"
                 >
-                    <option value="">{{ t('all_age_groups') }}</option>
-                    <option v-for="g in ageGroups" :key="g" :value="g">{{ ageLabel(g) }}</option>
+                    <option value="">{{ t('all_blood_groups') }}</option>
+                    <option v-for="g in bloodGroups" :key="g" :value="g">{{ g }}</option>
                 </select>
                 <select
                     v-model="academicFilter"

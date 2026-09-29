@@ -12,7 +12,7 @@ forward the P3 dashboard widget. P2 paper sheets and P4 follow-up stay as planne
 | Title | "Theme" becomes **Title / goal** (e.g. "Running 7.2 km in 40 min"), shown everywhere a session appears. |
 | Multi-category | **Pre-season sessions only** can hold several categories. |
 | Pre-season counting | A joint pre-season session counts +1 for **every** category in it. |
-| Calendar views | Month (existing) + Week with hours + Agenda list + Categories × days timeline. |
+| Calendar views | Month (existing) + Week with hours + Agenda list + **Season roadmap** (categories as rows across the season, pre-season / training bars, closures, session ticks). |
 | Statistics | Player profile card, club-wide stats page, dashboard card, PDF/Excel export. |
 | Delivery | Two steps: **2a** = codes, title, multi-category pre-season, views. **2b** = statistics, profile, dashboard, exports. |
 
@@ -48,7 +48,7 @@ codes: {
 - Migration renames `training_sessions.theme` → `title`, widened to 150 characters.
 - Session screen log field and the add-session modal get "Title / goal".
 - Shown on: month calendar chips (truncated, full text on hover), week blocks, agenda rows,
-  timeline cells (hover), and (2b) the player profile session list.
+  roadmap ticks (hover), and (2b) the player profile session list.
 
 ## 2a — C. Multi-category pre-season sessions
 
@@ -68,7 +68,7 @@ codes: {
 
 ## 2a — D. Calendar views
 
-View switcher on the attendance page (kept in the URL, `view=month|week|agenda|timeline`):
+View switcher on the attendance page (kept in the URL, `view=month|week|agenda|roadmap`):
 
 - **Month** — existing grid, one category.
 - **Week** — 7 day columns × hour rows (from the earliest to the latest session of the week, at
@@ -76,10 +76,18 @@ View switcher on the attendance page (kept in the URL, `view=month|week|agenda|t
   and title; all categories; overlapping sessions sit side by side. Previous / next week / today.
 - **Agenda** — chronological list for the month: date, time, kind, categories, title, state,
   marked count; optional category filter; links to the session.
-- **Timeline** — one row per category, one column per day of the month; a cell shows a dot per
-  session coloured by kind (cancelled struck), hover = time + title, click = session.
-- Week, agenda and timeline generate the shown range for every category first (same lazy
-  generator, idempotent).
+- **Roadmap** (season roadmap) — the whole season (season start month → end) left to right,
+  zoom month / week, horizontal scroll; one row per category plus a top "Closures" row:
+  - pre-season bar per category: from its first to its last pre-season session, labelled with
+    progress (held / target, e.g. 8/10);
+  - training bar per category: from its first to its last regular/extra session in the season;
+  - club closures as shaded bands across all rows;
+  - one small tick per session on its date, coloured by kind (cancelled = hollow), hover = date,
+    time, title, state; click = session;
+  - a "today" line; season picker (current / previous / next).
+  The roadmap reads existing sessions only; it does not generate sessions for the whole season.
+- Week and agenda generate the shown range for every category first (same lazy generator,
+  idempotent).
 
 ## 2b — E. Statistics
 

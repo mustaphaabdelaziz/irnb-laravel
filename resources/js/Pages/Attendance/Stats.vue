@@ -8,6 +8,8 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PeriodFilter from '@/Components/Activity/PeriodFilter.vue';
 import ChartCard from '@/Components/Dashboard/ChartCard.vue';
 import StatusBreakdown from '@/Components/Attendance/StatusBreakdown.vue';
+import ExportMenu from '@/Components/ExportMenu.vue';
+import Icon from '@/Components/Icon.vue';
 import { useAttendanceCodes } from '@/Composables/useAttendanceCodes';
 import { barDataset, baseOptions } from '@/lib/chartTheme';
 import { hasMarks, hours, monthTick, pct, periodQuery, statusBars } from '@/lib/attendanceStats';
@@ -37,6 +39,7 @@ const { statuses, label, color } = useAttendanceCodes();
 const rtl = computed(() => locale.value === 'ar');
 
 const keep = computed(() => (props.categoryId ? { category_id: props.categoryId } : {}));
+const exportHref = computed(() => route('attendance.stats.export', { ...periodQuery(props.period), ...keep.value }));
 function pickCategory(value) {
     router.get(route('attendance.stats'), { ...periodQuery(props.period), ...(value ? { category_id: Number(value) } : {}) }, { preserveScroll: true, replace: true });
 }
@@ -78,6 +81,9 @@ const linkButton = 'rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 
                 <h1 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('att.stats_title') }}</h1>
                 <div class="flex items-center gap-2 print:hidden">
                     <Link :href="route('attendance.index')" :class="linkButton">{{ t('attendance') }}</Link>
+                    <ExportMenu :href="exportHref" :label="t('export')" :formats="['xlsx', 'csv', 'pdf']">
+                        <template #icon><Icon name="download" /></template>
+                    </ExportMenu>
                 </div>
             </div>
         </template>

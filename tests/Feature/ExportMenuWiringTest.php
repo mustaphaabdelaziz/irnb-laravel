@@ -57,6 +57,7 @@ class ExportMenuWiringTest extends TestCase
             'stocktake export' => ['inventory.export'],
             'board members export' => ['board.members.export'],
             'board tasks export' => ['board.tasks.export'],
+            'attendance stats export' => ['attendance.stats.export'],
             'players template' => ['players.import.template'],
             'transactions template' => ['transactions.import.template'],
             'catalogs template' => ['equipment.catalogs.import.template'],

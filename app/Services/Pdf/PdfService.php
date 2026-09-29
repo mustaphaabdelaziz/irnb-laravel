@@ -12,14 +12,14 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class PdfService
 {
-    private function make(bool $rtl): Mpdf
+    private function make(bool $rtl, bool $landscape = false): Mpdf
     {
         $tempDir = storage_path('app/mpdf');
         File::ensureDirectoryExists($tempDir);
 
         $mpdf = new Mpdf([
             'mode' => 'utf-8',
-            'format' => 'A4',
+            'format' => $landscape ? 'A4-L' : 'A4',
             'directionality' => $rtl ? 'rtl' : 'ltr',
             'autoScriptToLang' => true,
             'autoLangToFont' => true,
@@ -31,17 +31,17 @@ class PdfService
         return $mpdf;
     }
 
-    public function render(string $html, bool $rtl = true): string
+    public function render(string $html, bool $rtl = true, bool $landscape = false): string
     {
-        $mpdf = $this->make($rtl);
+        $mpdf = $this->make($rtl, $landscape);
         $mpdf->WriteHTML($html);
 
         return $mpdf->Output('', 'S');
     }
 
-    public function stream(string $html, string $filename, bool $rtl = true): Response
+    public function stream(string $html, string $filename, bool $rtl = true, bool $landscape = false): Response
     {
-        return response($this->render($html, $rtl), 200, [
+        return response($this->render($html, $rtl, $landscape), 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="'.$filename.'"',
         ]);

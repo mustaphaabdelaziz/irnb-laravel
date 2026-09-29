@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Enums\AttendanceStatus;
 use App\Models\WebsiteConfig;
 
 /**
@@ -45,6 +46,27 @@ final class AttendanceSettings
     public static function codes(): array
     {
         return self::get()['codes'];
+    }
+
+    /**
+     * Each status's name for server-rendered documents (PDF, spreadsheets):
+     * the configured name in $locale (default: the app locale), else the
+     * built-in `att.status.<status>` from the UI catalogs, so a document
+     * reads exactly like the screen.
+     *
+     * @return array<string, string> status value => name, in the fixed status order
+     */
+    public static function labels(?string $locale = null): array
+    {
+        $locale ??= app()->getLocale();
+        $codes = self::codes();
+
+        $labels = [];
+        foreach (AttendanceStatus::values() as $status) {
+            $labels[$status] = ($codes[$status]['label'][$locale] ?? null) ?: UiLang::get("att.status.{$status}", null, $locale);
+        }
+
+        return $labels;
     }
 
     public static function save(array $values): void

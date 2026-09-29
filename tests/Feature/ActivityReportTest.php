@@ -2,9 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Enums\SessionKind;
+use App\Enums\SessionState;
 use App\Models\ActivityLog;
 use App\Models\BoardMeeting;
 use App\Models\BoardTask;
+use App\Models\Category;
 use App\Models\EquipmentCatalog;
 use App\Models\EquipmentItem;
 use App\Models\EquipmentRental;
@@ -17,6 +20,7 @@ use App\Models\PlayerAcademicRecord;
 use App\Models\PlayerAcademicYear;
 use App\Models\PlayerDocument;
 use App\Models\Subscription;
+use App\Models\TrainingSession;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\Activity\ActivityAction;
@@ -332,6 +336,11 @@ class ActivityReportTest extends TestCase
         $transfer = FinanceTransfer::create([
             'from_account_id' => $account('A')->id, 'to_account_id' => $account('B')->id, 'amount' => 2500, 'transfer_date' => '2026-10-10',
         ]);
+        $category = Category::create(['name' => 'U15']);
+        $trainingSession = TrainingSession::create([
+            'category_id' => $category->id, 'date' => '2026-10-05', 'start_time' => '18:00', 'end_time' => '19:30',
+            'kind' => SessionKind::Regular, 'state' => SessionState::Planned,
+        ]);
 
         $expected = [
             [ActivityAction::PLAYER_REGISTERED, $player, route('players.show', $player), $player->fullname],
@@ -347,6 +356,7 @@ class ActivityReportTest extends TestCase
             [ActivityAction::JOB_CREATED, $job, route('jobs.index'), 'Menuisier'],
             [ActivityAction::SUBSCRIPTION_CREATED, $subscription, route('subscriptions.show', $subscription), 'Annuelle 2026'],
             [ActivityAction::TRANSFER_RECORDED, $transfer, route('finance.registers.index'), null],
+            [ActivityAction::TRAINING_SESSION_CREATED, $trainingSession, route('attendance.sessions.show', $trainingSession), 'U15 · 2026-10-05'],
         ];
 
         foreach ($expected as [$action, $subject, $url, $label]) {

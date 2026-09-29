@@ -30,7 +30,7 @@ final class AttendanceCode
             return ['status' => self::SIMPLE[$code], 'minutes' => null];
         }
 
-        if (preg_match('/^([RD])(\d{1,3})$/', $code, $m) && (int) $m[2] > 0) {
+        if (preg_match('/^([RD])(\d{1,3})$/', $code, $m) && (int) $m[2] > 0 && (int) $m[2] <= 600) {
             return [
                 'status' => $m[1] === 'R' ? AttendanceStatus::Late : AttendanceStatus::LeftEarly,
                 'minutes' => (int) $m[2],

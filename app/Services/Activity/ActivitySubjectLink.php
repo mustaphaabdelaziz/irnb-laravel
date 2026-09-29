@@ -15,6 +15,7 @@ use App\Models\Player;
 use App\Models\PlayerAcademicRecord;
 use App\Models\PlayerDocument;
 use App\Models\Subscription;
+use App\Models\TrainingSession;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Support\UiLang;
@@ -38,6 +39,7 @@ final class ActivitySubjectLink
         PlayerAcademicRecord::class => ['academicYear.player'],
         EquipmentRental::class => ['equipmentItem.catalog'],
         EquipmentItem::class => ['catalog'],
+        TrainingSession::class => ['category'],
     ];
 
     /**
@@ -59,6 +61,7 @@ final class ActivitySubjectLink
         InventorySession::class => ['inventory'],
         BoardMeeting::class => ['board'],
         BoardTask::class => ['board'],
+        TrainingSession::class => ['attendance'],
     ];
 
     /**
@@ -185,6 +188,10 @@ final class ActivitySubjectLink
             ],
             $subject instanceof BoardMeeting => [(string) $subject->title, route('board.meetings.show', $subject)],
             $subject instanceof BoardTask => [(string) $subject->title, route('board.tasks')],
+            $subject instanceof TrainingSession => [
+                ((string) $subject->category?->localized_name).' · '.$subject->date,
+                route('attendance.sessions.show', $subject),
+            ],
             default => [class_basename($subject).' #'.$subject->getKey(), null],
         };
     }

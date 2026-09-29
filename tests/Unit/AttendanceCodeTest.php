@@ -19,6 +19,7 @@ class AttendanceCodeTest extends TestCase
             'late' => ['R15', AttendanceStatus::Late, 15],
             'late spaced' => [' r 5 ', AttendanceStatus::Late, 5],
             'left early' => ['D10', AttendanceStatus::LeftEarly, 10],
+            'late at the cap' => ['R600', AttendanceStatus::Late, 600],
             'not training' => ['B', AttendanceStatus::NotTraining, null],
             'excused' => ['ae', AttendanceStatus::AbsentExcused, null],
             'unexcused' => ['AN', AttendanceStatus::AbsentUnexcused, null],
@@ -35,7 +36,7 @@ class AttendanceCodeTest extends TestCase
     #[Test]
     public function it_rejects_unknown_codes_and_late_without_minutes(): void
     {
-        foreach (['X', 'R', 'R0', 'D', 'R1000', 'A'] as $code) {
+        foreach (['X', 'R', 'R0', 'D', 'R1000', 'R601', 'A'] as $code) {
             $this->assertNull(AttendanceCode::parse($code), $code);
         }
     }

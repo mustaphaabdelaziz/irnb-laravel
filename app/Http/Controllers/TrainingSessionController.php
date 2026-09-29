@@ -7,6 +7,7 @@ use App\Enums\SessionState;
 use App\Models\TrainingSession;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,18 +26,26 @@ class TrainingSessionController extends Controller
         ]);
         $this->assertSlotFree((int) $data['category_id'], $data['date'], $data['start_time']);
 
-        $session = DB::transaction(function () use ($data, $request) {
-            $session = TrainingSession::create($data + ['state' => SessionState::Planned]);
-            ActivityRecorder::record($request->user(), ActivityAction::TRAINING_SESSION_CREATED, $session, ['kind' => $data['kind']]);
+        try {
+            $session = DB::transaction(function () use ($data, $request) {
+                $session = TrainingSession::create($data + ['state' => SessionState::Planned]);
+                ActivityRecorder::record($request->user(), ActivityAction::TRAINING_SESSION_CREATED, $session, ['kind' => $data['kind']]);
 
-            return $session;
-        });
+                return $session;
+            });
+        } catch (UniqueConstraintViolationException) {
+            // Two submits raced past assertSlotFree(); the unique (category, date, start) key caught it.
+            throw ValidationException::withMessages(['start_time' => 'att.error.duplicate']);
+        }
 
         return redirect()->route('attendance.sessions.show', $session)->with('success', 'flash.training_session_created');
     }
 
     public function cancel(Request $request, TrainingSession $session): RedirectResponse
     {
+        if ($session->state === SessionState::Cancelled) {
+            throw ValidationException::withMessages(['reason' => 'att.error.cancelled']);
+        }
         $data = $request->validate(['reason' => ['required', 'string', 'max:255']]);
 
         DB::transaction(function () use ($session, $data, $request) {
@@ -56,10 +65,15 @@ class TrainingSessionController extends Controller
         $data = $request->validate($this->slotRules());
         $this->assertSlotFree($session->category_id, $data['date'], $data['start_time'], $session->id);
 
-        DB::transaction(function () use ($session, $data, $request) {
-            $session->update($data + ['moved_from' => $session->moved_from ?? $session->date]);
-            ActivityRecorder::record($request->user(), ActivityAction::TRAINING_SESSION_MOVED, $session);
-        });
+        try {
+            DB::transaction(function () use ($session, $data, $request) {
+                $session->update($data + ['moved_from' => $session->moved_from ?? $session->date]);
+                ActivityRecorder::record($request->user(), ActivityAction::TRAINING_SESSION_MOVED, $session);
+            });
+        } catch (UniqueConstraintViolationException) {
+            // Two submits raced past assertSlotFree(); the unique (category, date, start) key caught it.
+            throw ValidationException::withMessages(['start_time' => 'att.error.duplicate']);
+        }
 
         return back()->with('success', 'flash.training_session_moved');
     }

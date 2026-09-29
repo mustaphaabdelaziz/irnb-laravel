@@ -23,6 +23,9 @@ class AttendanceController extends Controller
     public function show(TrainingSession $session, Roster $roster): Response
     {
         $marks = $session->attendances()->get()->keyBy('player_id');
+        // Loaded once up front: both forSession() and orderedCategories() read
+        // $session->categories, so this saves querying it twice.
+        $session->loadMissing('categories');
         $players = $roster->forSession($session);
         // Primary category first, then the others of a joint pre-season session.
         $categories = $session->orderedCategories()

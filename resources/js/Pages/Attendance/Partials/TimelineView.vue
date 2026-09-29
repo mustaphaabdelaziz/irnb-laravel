@@ -35,7 +35,6 @@ const filters = computed(() => ({ category_id: props.categoryId, kind: props.kin
 const span = computed(() => monthsBetween(props.from, props.to) + 1);
 const earlier = () => emit('navigate', { ...filters.value, from: addMonths(props.from, -1), to: span.value >= MAX_MONTHS ? addMonths(props.to, -1) : props.to });
 const later = () => emit('navigate', { ...filters.value, from: span.value >= MAX_MONTHS ? addMonths(props.from, 1) : props.from, to: addMonths(props.to, 1) });
-const goToday = () => emit('navigate', { ...filters.value }, { preserveScroll: false });
 const filter = (patch) => emit('navigate', { ...filters.value, from: props.from, to: props.to, ...patch });
 
 const summaryParts = (e) => statuses.filter((s) => e.summary?.[s]).map((s) => ({ status: s, text: `${e.summary[s]} ${label(s)}` }));
@@ -50,16 +49,38 @@ const cardClass = (e) => (e.state === 'cancelled'
     : ['border-s-4 bg-white ring-1 ring-slate-200 hover:ring-primary-300 dark:bg-slate-900 dark:ring-slate-800', KIND_BORDER[e.kind]]);
 const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900';
 
-// Bring today into view whenever it sits inside the visible window: on the
-// first render and again after navigating (earlier/later/goToday), since the
-// window then changes without remounting the component.
-function scrollToTodayIfVisible() {
-    if (props.from <= thisMonth && thisMonth <= props.to) {
-        nextTick(() => document.getElementById('att-today')?.scrollIntoView({ block: 'center' }));
-    }
+// "Today" is the only action that should ever pull the view back to today.
+// Earlier/Later grow the window but must never yank the scroll position, and
+// on mount we only jump to today when the window opens on exactly the
+// current month (a wider default window is a deliberate choice to show).
+const isCurrentMonthOnly = computed(() => props.from === thisMonth && props.to === thisMonth);
+function scrollToToday() {
+    nextTick(() => document.getElementById('att-today')?.scrollIntoView({ block: 'center' }));
 }
-onMounted(scrollToTodayIfVisible);
-watch(() => [props.from, props.to], scrollToTodayIfVisible);
+onMounted(() => {
+    if (isCurrentMonthOnly.value) scrollToToday();
+});
+
+// The "Today" button always ends on the current month. If we're already
+// showing just that month there's nothing to navigate, so scroll right away.
+// Otherwise flag it and let the watch below scroll once navigation lands us
+// back on the current month (earlier/later never set this flag, so they
+// change from/to without triggering a scroll).
+let scrollToTodayNext = false;
+const goToday = () => {
+    if (isCurrentMonthOnly.value) {
+        scrollToToday();
+        return;
+    }
+    scrollToTodayNext = true;
+    emit('navigate', { ...filters.value }, { preserveScroll: false });
+};
+watch(() => [props.from, props.to], () => {
+    if (scrollToTodayNext) {
+        scrollToTodayNext = false;
+        scrollToToday();
+    }
+});
 </script>
 
 <template>

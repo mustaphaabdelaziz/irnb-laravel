@@ -2,9 +2,11 @@
 
 namespace App\Services\Attendance;
 
+use App\Enums\SessionKind;
 use App\Enums\SessionState;
 use App\Models\Attendance;
 use App\Models\Category;
+use App\Models\ClubClosure;
 use App\Models\TrainingSession;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
@@ -12,11 +14,14 @@ use Illuminate\Support\Collection;
 /**
  * Sessions shaped for the calendar views: every category taking part
  * (primary first), title, marked count and, once held, how many players had
- * each status.
+ * each status. The timeline adds club closures and pre-season milestones.
  */
 final class CalendarFeed
 {
-    public function __construct(private readonly SessionGenerator $generator) {}
+    public function __construct(
+        private readonly SessionGenerator $generator,
+        private readonly PreseasonProgress $preseason,
+    ) {}
 
     /** Generates every category's planned sessions for each month the range touches (idempotent). */
     public function generateAll(string $from, string $to): void
@@ -63,6 +68,39 @@ final class CalendarFeed
             'marked' => $s->attendances_count,
             'summary' => $summaries[$s->id] ?? null,
         ])->values();
+    }
+
+    /**
+     * Sessions, club closures and pre-season milestones in [from, to], in
+     * date order; on one date a closure comes first and a milestone right
+     * after the session that reached it.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function timeline(string $from, string $to, ?int $categoryId = null, ?string $kind = null): array
+    {
+        $events = $this->sessions($from, $to, $categoryId, $kind)
+            ->map(fn (array $s) => $s + ['type' => 'session', 'key' => "s{$s['id']}", 'order' => 1, 'time' => $s['start_time']])
+            ->all();
+
+        $closures = ClubClosure::where('start_date', '<=', $to)->where('end_date', '>=', $from)->orderBy('start_date')->get();
+        foreach ($closures as $closure) {
+            $events[] = [
+                'type' => 'closure', 'key' => "c{$closure->id}", 'order' => 0, 'time' => '00:00',
+                'date' => max($closure->start_date, $from),
+                'start_date' => $closure->start_date, 'end_date' => $closure->end_date, 'reason' => $closure->reason,
+            ];
+        }
+
+        if ($kind === null || $kind === SessionKind::Preseason->value) {
+            foreach ($this->preseason->milestones($from, $to, $categoryId) as $m) {
+                $events[] = $m + ['type' => 'milestone', 'key' => "m{$m['milestone']}-{$m['category_id']}-{$m['session_id']}", 'order' => 2];
+            }
+        }
+
+        usort($events, fn (array $a, array $b) => [$a['date'], $a['order'], $a['time']] <=> [$b['date'], $b['order'], $b['time']]);
+
+        return $events;
     }
 
     /**

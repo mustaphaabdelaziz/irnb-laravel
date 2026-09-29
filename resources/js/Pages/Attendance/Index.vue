@@ -11,6 +11,7 @@ import ViewSwitcher from './Partials/ViewSwitcher.vue';
 import MonthView from './Partials/MonthView.vue';
 import WeekView from './Partials/WeekView.vue';
 import AgendaView from './Partials/AgendaView.vue';
+import TimelineView from './Partials/TimelineView.vue';
 
 const props = defineProps({
     view: { type: String, default: 'month' },
@@ -21,6 +22,10 @@ const props = defineProps({
     preseason: { type: Object, default: null },
     hasSchedule: { type: Boolean, default: false },
     week: { type: Object, default: null }, // { start, end } in the week view
+    from: { type: String, default: null }, // timeline window, YYYY-MM
+    to: { type: String, default: null },
+    kind: { type: String, default: null }, // timeline kind filter
+    events: { type: Array, default: () => [] }, // timeline events
 });
 const { t } = useI18n();
 const { can } = useCan();
@@ -70,6 +75,7 @@ function openCreate(kind) {
             <MonthView v-if="view === 'month'" :categories="categories" :category-id="categoryId" :month="month" :sessions="sessions" :preseason="preseason" :has-schedule="hasSchedule" @navigate="navigate" />
             <WeekView v-else-if="view === 'week'" :week="week" :sessions="sessions" @navigate="navigate" />
             <AgendaView v-else-if="view === 'agenda'" :categories="categories" :category-id="categoryId" :month="month" :sessions="sessions" @navigate="navigate" />
+            <TimelineView v-else-if="view === 'timeline'" :categories="categories" :category-id="categoryId" :kind="kind" :from="from" :to="to" :events="events" @navigate="navigate" />
         </div>
 
         <AddSessionModal :show="showCreate" :kind="createKind" :categories="categories" :category-id="categoryId" :date="today" @close="showCreate = false" />

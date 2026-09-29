@@ -1530,5 +1530,13 @@
     "att.col.time": "Heure",
     "att.col.kind": "Type",
     "att.col.state": "État",
-    "att.col.marked": "Saisis"
+    "att.col.marked": "Saisis",
+    "att.view.timeline": "Chronologie",
+    "att.all_kinds": "Tous les types",
+    "att.earlier": "Afficher le mois précédent",
+    "att.later": "Afficher le mois suivant",
+    "att.closure": "Club fermé",
+    "att.milestone.started": "Début de la préparation · {category}",
+    "att.milestone.completed": "Préparation terminée {done}/{target} · {category}",
+    "att.no_events": "Rien ce mois-ci."
 }

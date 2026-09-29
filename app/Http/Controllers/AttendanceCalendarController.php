@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\SessionKind;
 use App\Models\Category;
 use App\Models\TrainingSchedule;
 use App\Services\Attendance\CalendarFeed;
@@ -23,7 +24,10 @@ use Inertia\Response;
  */
 class AttendanceCalendarController extends Controller
 {
-    public const VIEWS = ['month', 'week', 'agenda'];
+    public const VIEWS = ['month', 'week', 'agenda', 'timeline'];
+
+    /** The timeline grows one month at a time up to this many months. */
+    public const TIMELINE_MAX_MONTHS = 12;
 
     public function __construct(
         private readonly SessionGenerator $generator,
@@ -38,6 +42,9 @@ class AttendanceCalendarController extends Controller
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'month' => ['nullable', 'date_format:Y-m'],
             'date' => ['nullable', 'date_format:Y-m-d'],
+            'from' => ['nullable', 'date_format:Y-m'],
+            'to' => ['nullable', 'date_format:Y-m'],
+            'kind' => ['nullable', Rule::enum(SessionKind::class)],
         ]);
         $view = $data['view'] ?? 'month';
         $categories = Category::orderBy('id')->get()
@@ -46,6 +53,7 @@ class AttendanceCalendarController extends Controller
         $props = match ($view) {
             'week' => $this->week($data),
             'agenda' => $this->agenda($data),
+            'timeline' => $this->timeline($data),
             default => $this->month($data, $categories),
         };
 
@@ -107,6 +115,37 @@ class AttendanceCalendarController extends Controller
             'categoryId' => $categoryId,
             'month' => $anchor->format('Y-m'),
             'sessions' => $this->feed->sessions($from, $to, $categoryId),
+        ];
+    }
+
+    /**
+     * Months `from`..`to` (default: `month`, else the current one) as one
+     * chronological list of sessions, closures and pre-season milestones.
+     */
+    private function timeline(array $data): array
+    {
+        $to = CarbonImmutable::createFromFormat('!Y-m', $data['to'] ?? $data['month'] ?? now()->format('Y-m'));
+        $from = isset($data['from']) ? CarbonImmutable::createFromFormat('!Y-m', $data['from']) : $to;
+        if ($from->greaterThan($to)) {
+            [$from, $to] = [$to, $from];
+        }
+        if (($to->year - $from->year) * 12 + $to->month - $from->month >= self::TIMELINE_MAX_MONTHS) {
+            $from = $to->subMonths(self::TIMELINE_MAX_MONTHS - 1);
+        }
+
+        $fromDate = $from->toDateString();
+        $toDate = $to->endOfMonth()->toDateString();
+        $this->feed->generateAll($fromDate, $toDate);
+        $categoryId = $this->categoryFilter($data);
+        $kind = $data['kind'] ?? null;
+
+        return [
+            'categoryId' => $categoryId,
+            'kind' => $kind,
+            'month' => $to->format('Y-m'),
+            'from' => $from->format('Y-m'),
+            'to' => $to->format('Y-m'),
+            'events' => $this->feed->timeline($fromDate, $toDate, $categoryId, $kind),
         ];
     }
 

@@ -1530,5 +1530,13 @@
     "att.col.time": "Time",
     "att.col.kind": "Type",
     "att.col.state": "State",
-    "att.col.marked": "Marked"
+    "att.col.marked": "Marked",
+    "att.view.timeline": "Timeline",
+    "att.all_kinds": "All types",
+    "att.earlier": "Show the previous month",
+    "att.later": "Show the next month",
+    "att.closure": "Club closed",
+    "att.milestone.started": "Pre-season started · {category}",
+    "att.milestone.completed": "Pre-season completed {done}/{target} · {category}",
+    "att.no_events": "Nothing this month."
 }

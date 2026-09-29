@@ -1530,5 +1530,13 @@
     "att.col.time": "الوقت",
     "att.col.kind": "النوع",
     "att.col.state": "الوضعية",
-    "att.col.marked": "المسجلون"
+    "att.col.marked": "المسجلون",
+    "att.view.timeline": "الخط الزمني",
+    "att.all_kinds": "كل الأنواع",
+    "att.earlier": "عرض الشهر السابق",
+    "att.later": "عرض الشهر التالي",
+    "att.closure": "النادي مغلق",
+    "att.milestone.started": "انطلاق التحضير البدني · {category}",
+    "att.milestone.completed": "اكتمال التحضير البدني {done}/{target} · {category}",
+    "att.no_events": "لا شيء هذا الشهر."
 }

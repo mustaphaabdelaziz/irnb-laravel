@@ -14,9 +14,15 @@ return new class extends Migration
      * (multi-category) session must attribute the mark to exactly one
      * category instead of the player's *current* one.
      *
-     * Adding a nullable column is a plain ALTER TABLE ADD COLUMN on sqlite,
-     * not a table rebuild (unlike ->change()/dropColumn(), see the theme
-     * rename migration), so it is safe with existing rows and foreign keys.
+     * `->constrained()` makes this a *foreign key* add, which Laravel's
+     * sqlite grammar implements as a table rebuild (create-copy-drop-rename)
+     * even though a plain nullable column add would not need one — sqlite
+     * cannot add a column with an inline `REFERENCES` clause via `ALTER
+     * TABLE ... ADD COLUMN`. That rebuild is safe here only because nothing
+     * else references `attendances` (unlike training_sessions, see the theme
+     * rename migration): the drop-and-rename step cascade-deletes no rows.
+     * A future column added here with `->constrained()` on a table that
+     * *does* have child tables would need the same care.
      */
     public function up(): void
     {

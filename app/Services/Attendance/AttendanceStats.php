@@ -178,21 +178,15 @@ final class AttendanceStats
     public function categories(string $from, string $to): array
     {
         // Each mark exactly once, under the category it is attributed to
-        // (see the class comment): the mark's own recorded category when it
-        // still takes part in the session, otherwise the session's primary.
-        $attributed = fn (): Builder => DB::table('attendances')
-            ->join('training_sessions', 'training_sessions.id', '=', 'attendances.training_session_id')
-            ->join('training_session_category', 'training_session_category.training_session_id', '=', 'attendances.training_session_id')
-            ->where('training_sessions.state', SessionState::Held->value)
-            ->whereBetween('training_sessions.date', [$from, $to])
-            ->where(fn (Builder $q) => $q
-                ->whereColumn('training_session_category.category_id', 'attendances.category_id')
-                ->orWhere(fn (Builder $w) => $w
-                    ->whereColumn('training_session_category.category_id', 'training_sessions.category_id')
-                    ->whereNotExists(fn (Builder $sub) => $sub->select(DB::raw(1))
-                        ->from('training_session_category as tsc2')
-                        ->whereColumn('tsc2.training_session_id', 'attendances.training_session_id')
-                        ->whereColumn('tsc2.category_id', 'attendances.category_id'))));
+        // (see the class comment and attributedTo()).
+        $attributed = fn (): Builder => $this->attributedTo(
+            DB::table('attendances')
+                ->join('training_sessions', 'training_sessions.id', '=', 'attendances.training_session_id')
+                ->join('training_session_category', 'training_session_category.training_session_id', '=', 'attendances.training_session_id')
+                ->where('training_sessions.state', SessionState::Held->value)
+                ->whereBetween('training_sessions.date', [$from, $to]),
+            'training_session_category.category_id',
+        );
 
         $counts = [];
         $lateMinutes = [];
@@ -381,17 +375,10 @@ final class AttendanceStats
             ->where('training_sessions.state', SessionState::Held->value)
             ->whereBetween('training_sessions.date', [$from, $to])
             ->when($playerId !== null, fn (Builder $q) => $q->where('attendances.player_id', $playerId))
-            ->when($categoryId !== null, fn (Builder $q) => $q
-                ->whereIn('attendances.training_session_id', $this->sessionsOf($categoryId))
-                ->where(fn (Builder $w) => $w
-                    ->whereIn('attendances.training_session_id', $this->singleCategorySessions())
-                    ->orWhere('attendances.category_id', $categoryId)
-                    ->orWhere(fn (Builder $w2) => $w2
-                        ->where('training_sessions.category_id', $categoryId)
-                        ->whereNotExists(fn (Builder $sub) => $sub->select(DB::raw(1))
-                            ->from('training_session_category as tsc')
-                            ->whereColumn('tsc.training_session_id', 'attendances.training_session_id')
-                            ->whereColumn('tsc.category_id', 'attendances.category_id')))));
+            ->when($categoryId !== null, fn (Builder $q) => $this->attributedTo(
+                $q->whereIn('attendances.training_session_id', $this->sessionsOf($categoryId)),
+                $categoryId,
+            ));
     }
 
     /** Ids of the sessions a category takes part in (the pivot, so joint sessions too). */
@@ -400,13 +387,31 @@ final class AttendanceStats
         return DB::table('training_session_category')->select('training_session_id')->where('category_id', $categoryId);
     }
 
-    /** Ids of the sessions with one category (all but joint pre-season sessions). */
-    private function singleCategorySessions(): Builder
+    /**
+     * The one attribution rule (see the class doc), applied as a where() on
+     * $query: a mark belongs to $category — either a column expression (a
+     * joined `training_session_category.category_id`, one row per category
+     * in the session) or a literal category id — when `attendances.category_id`
+     * matches it directly, or the mark's own recorded category never took
+     * part in this session and $category is the session's primary
+     * (`training_sessions.category_id`). $query must already join
+     * `attendances`/`training_sessions` (and, for a column expression,
+     * `training_session_category`); this only adds the matching condition.
+     */
+    private function attributedTo(Builder $query, string|int $category): Builder
     {
-        return DB::table('training_session_category')
-            ->select('training_session_id')
-            ->groupBy('training_session_id')
-            ->havingRaw('count(*) = 1');
+        return $query->where(fn (Builder $w) => $this->matchesCategory($w, 'attendances.category_id', $category)
+            ->orWhere(fn (Builder $w) => $this->matchesCategory($w, 'training_sessions.category_id', $category)
+                ->whereNotExists(fn (Builder $sub) => $sub->select(DB::raw(1))
+                    ->from('training_session_category as tsc_attr')
+                    ->whereColumn('tsc_attr.training_session_id', 'attendances.training_session_id')
+                    ->whereColumn('tsc_attr.category_id', 'attendances.category_id'))));
+    }
+
+    /** $category compared to $column: a column match for a column expression, a bound value for a literal id. */
+    private function matchesCategory(Builder $query, string $column, string|int $category): Builder
+    {
+        return is_int($category) ? $query->where($column, $category) : $query->whereColumn($column, $category);
     }
 
     /** @return array<int, int> minutes missed (absences and not-training × session length) per group key */

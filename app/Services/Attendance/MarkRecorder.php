@@ -39,7 +39,8 @@ final class MarkRecorder
             // it, but an existing mark keeps whatever category_id it already
             // has (see the loop below) — later roster moves never rewrite it.
             $categoryByPlayer = Player::whereIn('id', $playerIds)->pluck('category_id', 'id');
-            $existingPlayerIds = $session->attendances()->whereIn('player_id', $playerIds)->pluck('player_id')->all();
+            $existingPlayerIds = $session->attendances()->whereIn('player_id', $playerIds)->pluck('player_id')
+                ->map(fn ($id) => (int) $id)->all();
 
             foreach ($marks as $mark) {
                 $status = AttendanceStatus::from($mark['status']);

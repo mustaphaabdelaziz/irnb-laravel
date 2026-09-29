@@ -1524,5 +1524,11 @@
     "att.next_week": "الأسبوع التالي",
     "att.prev_month": "الشهر السابق",
     "att.next_month": "الشهر التالي",
-    "att.no_sessions_week": "لا توجد حصص هذا الأسبوع."
+    "att.no_sessions_week": "لا توجد حصص هذا الأسبوع.",
+    "att.view.agenda": "القائمة",
+    "att.all_categories": "كل الفئات",
+    "att.col.time": "الوقت",
+    "att.col.kind": "النوع",
+    "att.col.state": "الوضعية",
+    "att.col.marked": "المسجلون"
 }

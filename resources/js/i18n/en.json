@@ -1524,5 +1524,11 @@
     "att.next_week": "Next week",
     "att.prev_month": "Previous month",
     "att.next_month": "Next month",
-    "att.no_sessions_week": "No sessions this week."
+    "att.no_sessions_week": "No sessions this week.",
+    "att.view.agenda": "Agenda",
+    "att.all_categories": "All categories",
+    "att.col.time": "Time",
+    "att.col.kind": "Type",
+    "att.col.state": "State",
+    "att.col.marked": "Marked"
 }

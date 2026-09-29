@@ -6,7 +6,7 @@ const emit = defineEmits(['switch']);
 const { t } = useI18n();
 
 // Keep in step with AttendanceCalendarController::VIEWS.
-const VIEWS = ['month', 'week'];
+const VIEWS = ['month', 'week', 'agenda'];
 </script>
 
 <template>

@@ -1524,5 +1524,11 @@
     "att.next_week": "Semaine suivante",
     "att.prev_month": "Mois précédent",
     "att.next_month": "Mois suivant",
-    "att.no_sessions_week": "Aucune séance cette semaine."
+    "att.no_sessions_week": "Aucune séance cette semaine.",
+    "att.view.agenda": "Agenda",
+    "att.all_categories": "Toutes les catégories",
+    "att.col.time": "Heure",
+    "att.col.kind": "Type",
+    "att.col.state": "État",
+    "att.col.marked": "Saisis"
 }

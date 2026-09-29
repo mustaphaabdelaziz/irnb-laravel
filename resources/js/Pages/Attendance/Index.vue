@@ -10,6 +10,7 @@ import AddSessionModal from './Partials/AddSessionModal.vue';
 import ViewSwitcher from './Partials/ViewSwitcher.vue';
 import MonthView from './Partials/MonthView.vue';
 import WeekView from './Partials/WeekView.vue';
+import AgendaView from './Partials/AgendaView.vue';
 
 const props = defineProps({
     view: { type: String, default: 'month' },
@@ -68,6 +69,7 @@ function openCreate(kind) {
 
             <MonthView v-if="view === 'month'" :categories="categories" :category-id="categoryId" :month="month" :sessions="sessions" :preseason="preseason" :has-schedule="hasSchedule" @navigate="navigate" />
             <WeekView v-else-if="view === 'week'" :week="week" :sessions="sessions" @navigate="navigate" />
+            <AgendaView v-else-if="view === 'agenda'" :categories="categories" :category-id="categoryId" :month="month" :sessions="sessions" @navigate="navigate" />
         </div>
 
         <AddSessionModal :show="showCreate" :kind="createKind" :categories="categories" :category-id="categoryId" :date="today" @close="showCreate = false" />

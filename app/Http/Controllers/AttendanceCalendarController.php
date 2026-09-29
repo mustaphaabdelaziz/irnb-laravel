@@ -23,7 +23,7 @@ use Inertia\Response;
  */
 class AttendanceCalendarController extends Controller
 {
-    public const VIEWS = ['month', 'week'];
+    public const VIEWS = ['month', 'week', 'agenda'];
 
     public function __construct(
         private readonly SessionGenerator $generator,
@@ -45,6 +45,7 @@ class AttendanceCalendarController extends Controller
 
         $props = match ($view) {
             'week' => $this->week($data),
+            'agenda' => $this->agenda($data),
             default => $this->month($data, $categories),
         };
 
@@ -90,6 +91,22 @@ class AttendanceCalendarController extends Controller
             'month' => $start->format('Y-m'),
             'week' => ['start' => $start->toDateString(), 'end' => $end->toDateString()],
             'sessions' => $this->feed->sessions($start->toDateString(), $end->toDateString()),
+        ];
+    }
+
+    /** The month as a chronological list, every category or those including the filter. */
+    private function agenda(array $data): array
+    {
+        $anchor = $this->monthAnchor($data);
+        $from = $anchor->toDateString();
+        $to = $anchor->endOfMonth()->toDateString();
+        $this->feed->generateAll($from, $to);
+        $categoryId = $this->categoryFilter($data);
+
+        return [
+            'categoryId' => $categoryId,
+            'month' => $anchor->format('Y-m'),
+            'sessions' => $this->feed->sessions($from, $to, $categoryId),
         ];
     }
 

@@ -59,6 +59,22 @@ class AttendanceCategoryPivotTest extends TestCase
     }
 
     #[Test]
+    public function an_unlinked_generated_session_is_linked_on_the_next_view(): void
+    {
+        $u15 = $this->category();
+        TrainingSchedule::create(['category_id' => $u15->id, 'weekday' => 1, 'start_time' => '18:00', 'end_time' => '19:30', 'valid_from' => '2026-01-01']);
+
+        app(SessionGenerator::class)->forMonth($u15->id, 2026, 10);
+        $session = TrainingSession::where('category_id', $u15->id)->first();
+        DB::table('training_session_category')->where('training_session_id', $session->id)->delete();
+
+        $created = app(SessionGenerator::class)->forMonth($u15->id, 2026, 10);
+
+        $this->assertSame(0, $created);
+        $this->assertContains([$session->id, $u15->id], $this->links());
+    }
+
+    #[Test]
     public function the_backfill_links_existing_sessions_once(): void
     {
         $u15 = $this->category();

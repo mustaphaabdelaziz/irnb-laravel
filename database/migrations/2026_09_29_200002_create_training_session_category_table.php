@@ -26,7 +26,7 @@ return new class extends Migration
 
         // Backfill: each session gets its primary category. Only missing rows
         // are inserted, so a second run (every desktop boot) adds nothing.
-        DB::table('training_session_category')->insertUsing(
+        DB::table('training_session_category')->insertOrIgnoreUsing(
             ['training_session_id', 'category_id'],
             DB::table('training_sessions as s')
                 ->select('s.id', 's.category_id')

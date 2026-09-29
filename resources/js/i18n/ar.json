@@ -1558,5 +1558,10 @@
     "att.col.late_minutes": "التأخر (د)",
     "att.col.missed_hours": "الغياب (سا)",
     "att.col.score": "النقاط",
-    "att.col.score_pct": "نسبة النقاط"
+    "att.col.score_pct": "نسبة النقاط",
+    "att.sessions_unit": "حصص",
+    "att.profile.by_status": "حسب الحالة",
+    "att.profile.sessions": "الحصص",
+    "att.profile.load_error": "تعذّر تحميل الحضور.",
+    "att.retry": "إعادة المحاولة"
 }

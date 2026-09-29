@@ -1558,5 +1558,10 @@
     "att.col.late_minutes": "Retard (min)",
     "att.col.missed_hours": "Manqué (h)",
     "att.col.score": "Score",
-    "att.col.score_pct": "Score %"
+    "att.col.score_pct": "Score %",
+    "att.sessions_unit": "séances",
+    "att.profile.by_status": "Par statut",
+    "att.profile.sessions": "Séances",
+    "att.profile.load_error": "Impossible de charger les présences.",
+    "att.retry": "Réessayer"
 }

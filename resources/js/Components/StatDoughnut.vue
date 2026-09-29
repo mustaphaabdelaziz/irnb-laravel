@@ -17,6 +17,8 @@ const props = defineProps({
         type: Array,
         default: () => ['#02a85c', '#0284c7', '#d97706', '#e11d48', '#7c3aed', '#0891b2', '#65a30d', '#db2777'],
     },
+    // What the total counts ("sessions" on the attendance card); players by default.
+    unit: { type: String, default: null },
 });
 const emit = defineEmits(['update:modelValue']);
 
@@ -60,14 +62,14 @@ const chartOptions = computed(() => ({
     <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
         <div class="mb-2 flex items-center justify-between">
             <p class="text-xs font-bold uppercase tracking-wide text-slate-400">{{ title }}</p>
-            <p class="text-xs font-semibold text-slate-400">{{ total }} {{ t('players') }}</p>
+            <p class="text-xs font-semibold text-slate-400">{{ total }} {{ unit ?? t('players') }}</p>
         </div>
         <div class="flex flex-col items-center gap-4 sm:flex-row">
             <div class="relative h-44 w-44 shrink-0">
                 <Doughnut :data="chartData" :options="chartOptions" />
                 <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
                     <span class="text-2xl font-extrabold text-slate-900 dark:text-slate-100">{{ total }}</span>
-                    <span class="text-[0.65rem] font-semibold uppercase text-slate-400">{{ t('players') }}</span>
+                    <span class="text-[0.65rem] font-semibold uppercase text-slate-400">{{ unit ?? t('players') }}</span>
                 </div>
             </div>
             <div class="flex flex-1 flex-wrap content-center gap-2">

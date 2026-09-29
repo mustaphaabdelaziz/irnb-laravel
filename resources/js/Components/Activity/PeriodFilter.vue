@@ -5,16 +5,18 @@ import { useI18n } from 'vue-i18n';
 import Icon from '@/Components/Icon.vue';
 
 /**
- * The activity pages' period control, and the only thing that writes their
- * period to the URL (`period`, `from`, `to`), so a view survives a refresh and
- * can be shared. `keep` carries the other query params the page wants kept
- * (e.g. the chosen action); the page number is always dropped.
+ * A period control (month / season / custom range). With `href` it writes
+ * the period to the URL (`period`, `from`, `to`), so a view survives a
+ * refresh and can be shared; `keep` carries the other query params the page
+ * wants kept (the page number is always dropped). Without `href` it only
+ * emits `change` with that query, for a card that fetches its own data.
  */
 const props = defineProps({
     period: { type: Object, required: true },
-    href: { type: String, required: true },
+    href: { type: String, default: null },
     keep: { type: Object, default: () => ({}) },
 });
+const emit = defineEmits(['change']);
 
 const { t } = useI18n();
 
@@ -31,6 +33,10 @@ watch(() => props.period, (p) => {
 });
 
 function visit(query) {
+    if (!props.href) {
+        emit('change', query);
+        return;
+    }
     router.get(props.href, { ...props.keep, ...query }, {
         preserveState: true,
         preserveScroll: true,

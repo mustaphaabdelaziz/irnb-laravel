@@ -3,6 +3,7 @@
 use App\Http\Controllers\AttendanceCalendarController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceGridController;
+use App\Http\Controllers\AttendancePlayerController;
 use App\Http\Controllers\AttendanceSettingsController;
 use App\Http\Controllers\AttendanceStatsController;
 use App\Http\Controllers\BackupController;
@@ -325,6 +326,8 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         Route::get('/attendance', [AttendanceCalendarController::class, 'index'])->name('attendance.index');
         Route::get('/attendance/stats', [AttendanceStatsController::class, 'index'])->name('attendance.stats');
         Route::get('/attendance/stats/export', [AttendanceStatsController::class, 'export'])->name('attendance.stats.export');
+        // A player's attendance for the profile card: named attendance.* so it needs attendance/view.
+        Route::get('/attendance/players/{player}', [AttendancePlayerController::class, 'show'])->name('attendance.players.show');
         Route::get('/attendance/grid', [AttendanceGridController::class, 'show'])->name('attendance.grid');
         Route::post('/attendance/grid', [AttendanceGridController::class, 'save'])->name('attendance.grid.save');
         Route::post('/attendance/sessions', [TrainingSessionController::class, 'store'])->name('attendance.sessions.store');

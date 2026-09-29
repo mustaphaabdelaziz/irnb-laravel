@@ -1558,5 +1558,10 @@
     "att.col.late_minutes": "Late (min)",
     "att.col.missed_hours": "Missed (h)",
     "att.col.score": "Score",
-    "att.col.score_pct": "Score %"
+    "att.col.score_pct": "Score %",
+    "att.sessions_unit": "sessions",
+    "att.profile.by_status": "By status",
+    "att.profile.sessions": "Sessions",
+    "att.profile.load_error": "Attendance could not be loaded.",
+    "att.retry": "Try again"
 }

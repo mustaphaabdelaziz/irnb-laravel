@@ -13,6 +13,7 @@ import Icon from '@/Components/Icon.vue';
 import PlayerFieldRow from '@/Components/PlayerFieldRow.vue';
 import { formatPhone } from '@/lib/phone';
 import AcademicSection from '@/Pages/Players/Partials/AcademicSection.vue';
+import AttendanceSection from '@/Pages/Players/Partials/AttendanceSection.vue';
 import PlayerDocumentsCard from '@/Components/PlayerDocumentsCard.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
@@ -21,10 +22,12 @@ import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 import { ref, computed, watch } from 'vue';
 import { useStatusLabel } from '@/Composables/useStatusLabel';
 import { formatFileNumber, fileDrawer } from '@/lib/fileNumber';
+import { useCan } from '@/Composables/useCan';
 
 const { t } = useI18n();
 const { statusLabel } = useStatusLabel();
 const { formatMoney } = useFormatMoney();
+const { can } = useCan();
 
 const props = defineProps({
     player: Object,
@@ -38,6 +41,8 @@ const props = defineProps({
     currentSchoolYear: { type: Number, default: null },
     // null when the viewer lacks documents/view (the server does not send it).
     documents: { type: Object, default: null },
+    // Status names and colours for the attendance card; null without attendance/view.
+    attendanceCodes: { type: Object, default: null },
 });
 
 const subscriptions = computed(() => props.player?.player_subscriptions ?? []);
@@ -437,6 +442,9 @@ function formatDate(val) {
 
             <!-- Studies: only students carry an education section -->
             <AcademicSection v-if="player.is_student" :player="player" :certificate-thresholds="certificateThresholds" :current-school-year="currentSchoolYear" />
+
+            <!-- Attendance: fetches its own data (attendance/view) after the profile has painted -->
+            <AttendanceSection v-if="can('attendance', 'view')" :player="player" />
 
             <!-- Documents: checklist + actions (absent without the documents permission) -->
             <PlayerDocumentsCard v-if="documents" :player-id="player.id" :checklist="documents" />

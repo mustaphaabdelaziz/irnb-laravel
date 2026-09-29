@@ -29,6 +29,7 @@ use App\Services\Player\MembershipNumber;
 use App\Services\Player\PlayerDocumentService;
 use App\Services\Player\RegisterPlayerService;
 use App\Services\Storage\FileStorageService;
+use App\Support\AttendanceSettings;
 use App\Support\CertificateThresholds;
 use App\Support\Export;
 use App\Support\Season;
@@ -221,6 +222,11 @@ class PlayerController extends Controller
             // documents/view the checklist is not even sent to the page.
             'documents' => $request->user()?->hasPermission('documents', 'view')
                 ? DocumentChecklist::for($player)
+                : null,
+            // The attendance card fetches its own data (attendance.players.show);
+            // the page only carries the status names and colours it draws with.
+            'attendanceCodes' => $request->user()?->hasPermission('attendance', 'view')
+                ? AttendanceSettings::codes()
                 : null,
         ]);
     }

@@ -195,6 +195,7 @@
     "bulk_mode_detach": "Remove",
     "bulk_mode_replace": "Replace",
     "by_age": "By Age",
+    "by_family_name": "By family name",
     "by_category": "By Category",
     "by_completed_tasks": "by completed tasks",
     "by_position": "By Position",

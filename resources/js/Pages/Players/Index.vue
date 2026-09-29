@@ -3,6 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import StatStrip from '@/Components/Dashboard/StatStrip.vue';
 import Pagination from '@/Components/Pagination.vue';
 import SearchInput from '@/Components/SearchInput.vue';
+import SearchableSelect from '@/Components/SearchableSelect.vue';
 import Badge from '@/Components/Badge.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
@@ -33,6 +34,8 @@ const props = defineProps({
     statusStats: { type: Array, default: () => [] },
     positionStats: { type: Array, default: () => [] },
     ageStats: { type: Array, default: () => [] },
+    familyStats: { type: Array, default: () => [] },
+    familyNames: { type: Array, default: () => [] },
     documentTypes: { type: Array, default: () => [] },
     filters: Object,
     currentSchoolYear: { type: Number, default: null },
@@ -73,7 +76,7 @@ const { params: filterParams, loading: filtering } = useListFilters('players.ind
     documents: documentsFilter.value,
     archived: archivedView.value ? 1 : undefined,
     per_page: perPage.value,
-}), { only: ['players', 'filters', 'categoryStats', 'statusStats', 'positionStats', 'ageStats'] });
+}), { only: ['players', 'filters', 'categoryStats', 'statusStats', 'positionStats', 'ageStats', 'familyStats'] });
 
 // --- Remembered filters ---
 // The filters stick until the user clears them, even after leaving the page or
@@ -138,6 +141,14 @@ const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 const ageLabel = (bucket) => (bucket === 'u10' ? '< 10' : bucket === 'unknown' ? t('unknown') : bucket);
 const ageChips = computed(() => props.ageStats.map((s) => ({
     key: s.bucket, label: ageLabel(s.bucket), count: s.count,
+})));
+
+// Biggest families; the trailing "others" slice completes the total but can't filter.
+const familyChips = computed(() => props.familyStats.map((s) => (s.others
+    ? { key: '__others', label: t('other'), count: s.count, static: true }
+    : { key: s.name, label: s.name, count: s.count })));
+const familyOptions = computed(() => props.familyNames.map((f) => ({
+    value: f.name, label: f.name, description: `${f.count} ${t('players')}`,
 })));
 
 const statusPalette = ['#0284c7', '#d97706', '#e11d48', '#64748b', '#7c3aed', '#02a85c'];
@@ -316,6 +327,7 @@ function runBulk() {
                 <StatDoughnut v-if="statusChips.length" v-model="statusFilter" :title="t('by_status')" :stats="statusChips" :palette="statusPalette" />
                 <StatDoughnut v-if="positionChips.length" v-model="positionFilter" :title="t('by_position')" :stats="positionChips" />
                 <StatDoughnut v-if="ageChips.length" v-model="ageFilter" :title="t('by_age')" :stats="ageChips" :palette="agePalette" />
+                <StatDoughnut v-if="familyChips.length" v-model="lastnameFilter" :title="t('by_family_name')" :stats="familyChips" />
             </div>
 
             <!-- Filters + view toggle -->
@@ -339,7 +351,7 @@ function runBulk() {
                     <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.localized_name || b.name }}</option>
                 </select>
                 <div class="w-full sm:w-48">
-                    <SearchInput v-model="lastnameFilter" :placeholder="t('filter_by_lastname')" />
+                    <SearchableSelect v-model="lastnameFilter" :options="familyOptions" :placeholder="t('filter_by_lastname')" />
                 </div>
                 <select
                     v-model="statusFilter"

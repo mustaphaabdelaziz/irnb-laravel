@@ -122,6 +122,8 @@ class PlayerController extends Controller
         // into PHP and counted them in a loop on each request.
         $ageStats = $this->ageStats($request);
 
+        $familyStats = $this->familyStats($request);
+
         // Lookup lists are closures: the page's filter reloads ask only for the
         // filter-dependent props, so these queries are skipped on every search.
         return Inertia::render('Players/Index', [
@@ -134,6 +136,17 @@ class PlayerController extends Controller
             // positions feeds the bulk-edit field picker as well as the filter.
             'positions' => fn () => Position::orderBy('name')->get(['id', 'name']),
             'playerStatuses' => fn () => PlayerStatus::orderBy('sort_order')->get(),
+            // Every family name on file, for the family filter's searchable list.
+            'familyNames' => fn () => Player::query()
+                ->where('archived', false)
+                ->whereNotNull('lastname')
+                ->where('lastname', '!=', '')
+                ->groupBy('lastname')
+                ->orderBy('lastname')
+                ->selectRaw('lastname, COUNT(*) as total')
+                ->get()
+                ->map(fn ($row) => ['name' => $row->lastname, 'count' => (int) $row->total])
+                ->values(),
             // The "missing type X" options: only types that can be missing.
             'documentTypes' => fn () => DocumentType::query()
                 ->where('is_active', true)
@@ -144,6 +157,7 @@ class PlayerController extends Controller
             'statusStats' => $statusStats,
             'positionStats' => $positionStats,
             'ageStats' => $ageStats,
+            'familyStats' => $familyStats,
             'filters' => $request->only(['search', 'lastname', 'blood_group', 'category_id', 'status', 'position_id', 'branch_id', 'age', 'archived', 'wilaya_id', 'academic', 'certificate', 'documents', 'per_page']),
             // Default school year of the academic results printout.
             'currentSchoolYear' => Season::current()->startYear,
@@ -651,7 +665,9 @@ class PlayerController extends Controller
         }
 
         if ($request->filled('lastname')) {
-            $query->where('lastname', 'like', '%'.trim((string) $request->input('lastname')).'%');
+            // Picked from the list of names on file, so an exact match: "Ali"
+            // must not also bring in "Benali".
+            $query->where('lastname', trim((string) $request->input('lastname')));
         }
 
         if ($request->filled('blood_group')) {
@@ -737,6 +753,35 @@ class PlayerController extends Controller
         } else {
             $query->where('archived', false);
         }
+    }
+
+    /**
+     * The biggest families in the current list (ignoring the family filter
+     * itself, like the other charts), plus one "others" slice so the chart
+     * still adds up to the whole list.
+     *
+     * @return list<array{name: string|null, count: int, others?: bool}>
+     */
+    private function familyStats(Request $request, int $top = 8): array
+    {
+        $rows = $this->statsQuery($request, 'lastname')
+            ->whereNotNull('players.lastname')
+            ->where('players.lastname', '!=', '')
+            ->groupBy('players.lastname')
+            ->selectRaw('players.lastname as name, COUNT(*) as total')
+            ->orderByDesc('total')
+            ->orderBy('players.lastname')
+            ->limit($top)
+            ->get();
+
+        $stats = $rows->map(fn ($row) => ['name' => $row->name, 'count' => (int) $row->total])->all();
+
+        $others = $this->statsQuery($request, 'lastname')->count() - array_sum(array_column($stats, 'count'));
+        if ($others > 0) {
+            $stats[] = ['name' => null, 'count' => $others, 'others' => true];
+        }
+
+        return $stats;
     }
 
     /**

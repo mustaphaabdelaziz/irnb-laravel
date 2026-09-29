@@ -50,17 +50,55 @@ class PlayerListFiltersTest extends TestCase
     }
 
     #[Test]
-    public function the_list_filters_by_family_name(): void
+    public function the_list_filters_by_an_exact_family_name(): void
     {
-        $this->player(['firstname' => 'Ali', 'lastname' => 'Benali']);
+        $this->player(['firstname' => 'Ali', 'lastname' => 'Ali']);
+        $this->player(['firstname' => 'Omar', 'lastname' => 'Benali']);
         $this->player(['firstname' => 'Sami', 'lastname' => 'Khelifi']);
 
+        // Picked from the list: "Ali" must not also bring in "Benali".
         $this->actingAs($this->admin())
-            ->get(route('players.index', ['lastname' => 'khel']))
+            ->get(route('players.index', ['lastname' => 'Ali']))
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->has('players.data', 1)
-                ->where('players.data.0.lastname', 'Khelifi'));
+                ->where('players.data.0.firstname', 'Ali'));
+    }
+
+    #[Test]
+    public function the_family_list_and_chart_count_players_per_family(): void
+    {
+        foreach (['Benali', 'Benali', 'Benali', 'Khelifi', 'Khelifi', 'Saadi'] as $i => $lastname) {
+            $this->player(['firstname' => "P{$i}", 'lastname' => $lastname]);
+        }
+        $this->player(['firstname' => 'Gone', 'lastname' => 'Archived', 'archived' => true]);
+
+        $this->actingAs($this->admin())
+            ->get(route('players.index'))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                // The picker lists every active family, alphabetically, with its size.
+                ->where('familyNames', [
+                    ['name' => 'Benali', 'count' => 3],
+                    ['name' => 'Khelifi', 'count' => 2],
+                    ['name' => 'Saadi', 'count' => 1],
+                ])
+                ->where('familyStats.0', ['name' => 'Benali', 'count' => 3])
+                ->has('familyStats', 3));
+    }
+
+    #[Test]
+    public function the_family_chart_folds_small_families_into_others(): void
+    {
+        foreach (range(1, 10) as $i) {
+            $this->player(['firstname' => "P{$i}", 'lastname' => "Family{$i}"]);
+        }
+
+        $this->actingAs($this->admin())
+            ->get(route('players.index'))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                // Top 8 families, then one "others" slice holding the last 2.
+                ->has('familyStats', 9)
+                ->where('familyStats.8', ['name' => null, 'count' => 2, 'others' => true]));
     }
 
     #[Test]

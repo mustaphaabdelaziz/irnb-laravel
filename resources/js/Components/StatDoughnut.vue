@@ -8,7 +8,8 @@ const { t } = useI18n();
 
 const props = defineProps({
     title: { type: String, required: true },
-    // [{ key, label, count }] — key is what the filter uses, label what's shown.
+    // [{ key, label, count, static? }] — key is what the filter uses, label
+    // what's shown. A static slice (e.g. "others") is shown but can't filter.
     stats: { type: Array, default: () => [] },
     // Currently selected key ('' = no filter). v-model.
     modelValue: { type: [String, Number], default: '' },
@@ -21,9 +22,10 @@ const emit = defineEmits(['update:modelValue']);
 
 const total = computed(() => props.stats.reduce((s, c) => s + c.count, 0));
 const pct = (count) => (total.value ? Math.round((count / total.value) * 100) : 0);
-const isActive = (stat) => String(props.modelValue) === String(stat.key);
+const isActive = (stat) => !stat.static && String(props.modelValue) === String(stat.key);
 
 function toggle(stat) {
+    if (stat.static) return;
     emit('update:modelValue', isActive(stat) ? '' : stat.key);
 }
 
@@ -71,10 +73,13 @@ const chartOptions = computed(() => ({
             <div class="flex flex-1 flex-wrap content-center gap-2">
                 <button v-for="(stat, i) in stats" :key="String(stat.key)"
                     @click="toggle(stat)"
+                    :disabled="stat.static"
                     class="flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm ring-1 transition-colors"
                     :class="isActive(stat)
                         ? 'bg-primary-600 text-white ring-primary-600'
-                        : 'bg-slate-50 text-slate-700 ring-slate-200 hover:bg-primary-50 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700'">
+                        : stat.static
+                            ? 'cursor-default bg-slate-50 text-slate-500 ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700'
+                            : 'bg-slate-50 text-slate-700 ring-slate-200 hover:bg-primary-50 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700'">
                     <span class="h-2.5 w-2.5 shrink-0 rounded-full" :style="{ backgroundColor: palette[i % palette.length] }"></span>
                     <span class="font-semibold">{{ stat.label }}</span>
                     <span class="rounded-full bg-white/80 px-1.5 py-0.5 text-xs font-bold text-slate-600 dark:bg-slate-900/60 dark:text-slate-300"

@@ -17,7 +17,7 @@ const props = defineProps({
 });
 const { t, locale } = useI18n();
 const { can } = useCan();
-const { statuses, code, label, chipStyle, tint, statusOf } = useAttendanceCodes();
+const { statuses, code, label, chipStyle, tint, takesMinutes, statusOf } = useAttendanceCodes();
 const page = usePage();
 const editable = computed(() => can('attendance', 'edit'));
 const lang = computed(() => (locale.value === 'ar' ? 'ar' : locale.value));
@@ -31,7 +31,7 @@ const dayLabel = (s) => new Date(`${s.date}T00:00:00`).toLocaleDateString(lang.v
 const monthLabel = computed(() => new Date(`${props.month}-01T00:00:00`).toLocaleDateString(lang.value, { month: 'long', year: 'numeric' }));
 
 // The legend comes from the configured codes: late / left early show a sample with minutes.
-const legendCode = (s) => code(s) + (s === 'late' || s === 'left_early' ? '15' : '');
+const legendCode = (s) => code(s) + (takesMinutes(s) ? '15' : '');
 
 function onInput(pid, sid, event) {
     values[pid][sid] = event.target.value.toUpperCase();

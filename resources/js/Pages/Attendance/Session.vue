@@ -21,7 +21,7 @@ const props = defineProps({
 });
 const { t, locale } = useI18n();
 const { can } = useCan();
-const { label, chipStyle } = useAttendanceCodes();
+const { label, chipStyle, takesMinutes } = useAttendanceCodes();
 const page = usePage();
 const errors = computed(() => page.props.errors ?? {});
 
@@ -32,7 +32,6 @@ const dateLabel = computed(() => new Date(`${props.session.date}T00:00:00`).toLo
 const rows = ref(props.rows.map((r) => ({ ...r, note: r.note ?? '' })));
 const log = reactive({ coach: props.session.coach ?? props.lastCoach ?? '', title: props.session.title ?? '', notes: props.session.notes ?? '' });
 
-const takesMinutes = (s) => s === 'late' || s === 'left_early';
 const takesReason = (s) => s === 'absent_excused' || s === 'not_training';
 function setStatus(row, status) {
     row.status = status;

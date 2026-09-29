@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /** One player's mark at one training session. */
 class Attendance extends Model
 {
-    protected $fillable = ['training_session_id', 'player_id', 'status', 'minutes', 'reason', 'note', 'recorded_by'];
+    protected $fillable = ['training_session_id', 'player_id', 'category_id', 'status', 'minutes', 'reason', 'note', 'recorded_by'];
 
     protected function casts(): array
     {
@@ -25,5 +25,11 @@ class Attendance extends Model
     public function player(): BelongsTo
     {
         return $this->belongsTo(Player::class);
+    }
+
+    /** The player's category when this mark was recorded — fixed, never the player's current one. */
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
     }
 }

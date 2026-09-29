@@ -21,9 +21,15 @@ use Illuminate\Support\Facades\DB;
  * Every method runs a fixed number of grouped queries, whatever the roster
  * size, with the query builder only (same SQL on sqlite and MySQL).
  *
- * Category filter: a mark belongs to category C when C takes part in the
- * session and, for a joint pre-season session, the player is currently in C.
- * A single-category session keeps every mark in it, guests included.
+ * Category attribution: a single-category session keeps every mark in it,
+ * guests included. A joint (multi-category) session attributes each mark to
+ * `attendances.category_id` — the category the player was in when the mark
+ * was recorded (see MarkRecorder), fixed forever after — as long as that
+ * category still takes part in the session; otherwise (a guest whose own
+ * category never took part) the mark falls back to the session's primary
+ * `training_sessions.category_id`. Either way a mark lands in exactly one
+ * category, so the category totals always sum to the global total, and a
+ * later roster move never rewrites which category a past mark belongs to.
  */
 final class AttendanceStats
 {
@@ -171,16 +177,22 @@ final class AttendanceStats
     /** @return list<array<string, mixed>> one row per category, by id */
     public function categories(string $from, string $to): array
     {
-        // Each mark once per category it belongs to (see the class comment).
+        // Each mark exactly once, under the category it is attributed to
+        // (see the class comment): the mark's own recorded category when it
+        // still takes part in the session, otherwise the session's primary.
         $attributed = fn (): Builder => DB::table('attendances')
             ->join('training_sessions', 'training_sessions.id', '=', 'attendances.training_session_id')
             ->join('training_session_category', 'training_session_category.training_session_id', '=', 'attendances.training_session_id')
-            ->join('players', 'players.id', '=', 'attendances.player_id')
             ->where('training_sessions.state', SessionState::Held->value)
             ->whereBetween('training_sessions.date', [$from, $to])
             ->where(fn (Builder $q) => $q
-                ->whereColumn('training_session_category.category_id', 'players.category_id')
-                ->orWhereIn('attendances.training_session_id', $this->singleCategorySessions()));
+                ->whereColumn('training_session_category.category_id', 'attendances.category_id')
+                ->orWhere(fn (Builder $w) => $w
+                    ->whereColumn('training_session_category.category_id', 'training_sessions.category_id')
+                    ->whereNotExists(fn (Builder $sub) => $sub->select(DB::raw(1))
+                        ->from('training_session_category as tsc2')
+                        ->whereColumn('tsc2.training_session_id', 'attendances.training_session_id')
+                        ->whereColumn('tsc2.category_id', 'attendances.category_id'))));
 
         $counts = [];
         $lateMinutes = [];
@@ -373,7 +385,13 @@ final class AttendanceStats
                 ->whereIn('attendances.training_session_id', $this->sessionsOf($categoryId))
                 ->where(fn (Builder $w) => $w
                     ->whereIn('attendances.training_session_id', $this->singleCategorySessions())
-                    ->orWhereIn('attendances.player_id', DB::table('players')->select('id')->where('category_id', $categoryId))));
+                    ->orWhere('attendances.category_id', $categoryId)
+                    ->orWhere(fn (Builder $w2) => $w2
+                        ->where('training_sessions.category_id', $categoryId)
+                        ->whereNotExists(fn (Builder $sub) => $sub->select(DB::raw(1))
+                            ->from('training_session_category as tsc')
+                            ->whereColumn('tsc.training_session_id', 'attendances.training_session_id')
+                            ->whereColumn('tsc.category_id', 'attendances.category_id')))));
     }
 
     /** Ids of the sessions a category takes part in (the pivot, so joint sessions too). */

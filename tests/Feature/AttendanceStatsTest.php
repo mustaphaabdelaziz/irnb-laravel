@@ -43,10 +43,11 @@ class AttendanceStatsTest extends TestCase
         return $training;
     }
 
+    /** category_id mirrors MarkRecorder: the player's category at the time of the mark, not necessarily their current one. */
     private function mark(TrainingSession $training, Player $player, AttendanceStatus $status, ?int $minutes = null, ?string $reason = null, ?string $note = null): void
     {
         Attendance::create([
-            'training_session_id' => $training->id, 'player_id' => $player->id,
+            'training_session_id' => $training->id, 'player_id' => $player->id, 'category_id' => $player->category_id,
             'status' => $status, 'minutes' => $minutes, 'reason' => $reason, 'note' => $note,
         ]);
     }
@@ -142,6 +143,21 @@ class AttendanceStatsTest extends TestCase
     }
 
     #[Test]
+    public function a_late_exactly_at_the_threshold_is_not_converted_to_absent(): void
+    {
+        $u15 = $this->category();
+        $c = $this->player($u15);
+        // late_minutes_as_absent defaults to 30: the rule is strictly greater
+        // than, so a late of exactly 30 minutes must stay a late.
+        $this->mark($this->training($u15, '2026-10-01'), $c, AttendanceStatus::Late, 30);
+
+        $row = $this->stats()->players('2026-10-01', '2026-10-31')[$c->id];
+        $this->assertSame(1, $row['counts']['late']);
+        $this->assertSame(0, $row['counts']['absent_unexcused']);
+        $this->assertSame(0.75, $row['score']);   // 1 x 0.75, not converted to -1
+    }
+
+    #[Test]
     public function a_joint_session_is_split_by_category_and_a_guest_stays_with_the_session(): void
     {
         $u15 = $this->category('U15');
@@ -180,6 +196,48 @@ class AttendanceStatsTest extends TestCase
         $this->assertSame(5, $categories[$u17->id]['late_minutes']);
         $this->assertSame(['season' => '2026/27', 'done' => 1, 'target' => 12], $categories[$u15->id]['preseason']);
         $this->assertSame(['season' => '2026/27', 'done' => 1, 'target' => null], $categories[$u17->id]['preseason']);
+    }
+
+    #[Test]
+    public function a_joint_marks_category_stays_with_u15_after_the_player_moves_to_u17(): void
+    {
+        $u15 = $this->category('U15');
+        $u17 = $this->category('U17');
+        $x = $this->player($u15);
+        $joint = $this->training($u15, '2026-10-03', kind: SessionKind::Preseason, others: [$u17]);
+        $this->mark($joint, $x, AttendanceStatus::Present);   // recorded while X is still U15
+
+        $x->update(['category_id' => $u17->id]);   // moved after the mark was recorded
+
+        $u15Rows = $this->stats()->players('2026-10-01', '2026-10-31', $u15->id);
+        $this->assertSame([$x->id], array_keys($u15Rows));
+        $u17Rows = $this->stats()->players('2026-10-01', '2026-10-31', $u17->id);
+        $this->assertSame([], array_keys($u17Rows));   // not U17's, despite X now living there
+
+        $categories = collect($this->stats()->categories('2026-10-01', '2026-10-31'))->keyBy('category_id');
+        $this->assertSame(1, $categories[$u15->id]['expected']);
+        $this->assertSame(0, $categories[$u17->id]['expected']);
+    }
+
+    #[Test]
+    public function a_guest_outside_the_joint_categories_counts_under_the_sessions_primary(): void
+    {
+        $u15 = $this->category('U15');
+        $u17 = $this->category('U17');
+        $u13 = $this->category('U13');
+        $guest = $this->player($u13);
+        $joint = $this->training($u15, '2026-10-03', kind: SessionKind::Preseason, others: [$u17]);   // primary U15
+        $this->mark($joint, $guest, AttendanceStatus::Present);
+
+        $u15Rows = $this->stats()->players('2026-10-01', '2026-10-31', $u15->id);
+        $this->assertSame([$guest->id], array_keys($u15Rows));   // the primary, not the guest's own U13
+        $u17Rows = $this->stats()->players('2026-10-01', '2026-10-31', $u17->id);
+        $this->assertSame([], array_keys($u17Rows));
+
+        $globalExpected = array_sum(array_column($this->stats()->players('2026-10-01', '2026-10-31'), 'expected'));
+        $sumOverCategories = array_sum(array_column($this->stats()->categories('2026-10-01', '2026-10-31'), 'expected'));
+        $this->assertSame(1, $globalExpected);
+        $this->assertSame($globalExpected, $sumOverCategories);
     }
 
     #[Test]

@@ -111,6 +111,26 @@ class MarkRecorderTest extends TestCase
     }
 
     #[Test]
+    public function a_mark_takes_the_players_category_on_create_and_keeps_it_after_they_move(): void
+    {
+        $u15 = $this->category();
+        $u17 = $this->category('U17');
+        $a = $this->player($u15);
+        $session = $this->makeSession($u15);
+        $recorder = app(MarkRecorder::class);
+
+        $recorder->save($session, [['player_id' => $a->id, 'status' => 'present']], null);
+        $this->assertSame($u15->id, $session->attendances()->sole()->category_id);
+
+        $a->update(['category_id' => $u17->id]);
+        $recorder->save($session, [['player_id' => $a->id, 'status' => 'late', 'minutes' => 5]], null);
+
+        $mark = $session->attendances()->sole();
+        $this->assertSame(AttendanceStatus::Late, $mark->status);
+        $this->assertSame($u15->id, $mark->category_id);   // unchanged despite the move
+    }
+
+    #[Test]
     public function once_marked_the_session_roster_is_frozen(): void
     {
         $u15 = $this->category();

@@ -8,6 +8,7 @@ use App\Enums\SessionState;
 use App\Models\Attendance;
 use App\Models\TrainingSchedule;
 use App\Models\TrainingSession;
+use App\Support\AttendanceSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
@@ -134,5 +135,22 @@ class AttendanceGridTest extends TestCase
         ])->assertSessionHasErrors('columns.0');
 
         $this->assertSame(0, Attendance::count());
+    }
+
+    #[Test]
+    public function a_longer_configured_code_with_minutes_still_saves(): void
+    {
+        AttendanceSettings::save(['codes' => ['late' => ['code' => 'ABC']]]);
+        $u15 = $this->category();
+        $a = $this->player($u15);
+        $session = TrainingSession::create(['category_id' => $u15->id, 'date' => '2026-10-05', 'start_time' => '18:00', 'end_time' => '19:30', 'kind' => 'regular', 'state' => 'planned']);
+
+        $this->actingAs($this->admin())->post(route('attendance.grid.save'), [
+            'columns' => [['session_id' => $session->id, 'codes' => [$a->id => 'ABC  15']]],
+        ])->assertSessionHasNoErrors();
+
+        $mark = $session->attendances()->sole();
+        $this->assertSame(AttendanceStatus::Late, $mark->status);
+        $this->assertSame(15, $mark->minutes);
     }
 }

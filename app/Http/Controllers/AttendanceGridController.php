@@ -88,7 +88,7 @@ class AttendanceGridController extends Controller
             'columns' => ['required', 'array', 'min:1'],
             'columns.*.session_id' => ['required', 'integer', 'distinct', 'exists:training_sessions,id'],
             'columns.*.codes' => ['required', 'array', 'min:1'],
-            'columns.*.codes.*' => ['nullable', 'string', 'max:6'],
+            'columns.*.codes.*' => ['nullable', 'string', 'max:12'],
         ]);
 
         $sessionIds = array_column($data['columns'], 'session_id');

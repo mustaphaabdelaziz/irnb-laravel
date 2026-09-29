@@ -29,6 +29,7 @@ const categoryLabel = computed(() => props.categories.find((c) => c.id === props
 
 const stateClass = { planned: 'text-slate-500', held: 'text-emerald-600 dark:text-emerald-400', cancelled: 'text-slate-400' };
 const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900';
+const print = () => window.print();
 </script>
 
 <template>
@@ -39,7 +40,7 @@ const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg
                 <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
             </select>
             <MonthNav :month="month" @change="(m) => go({ month: m })" />
-            <button type="button" class="ms-auto inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800" @click="window.print()">
+            <button type="button" class="ms-auto inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800" @click="print">
                 <Icon name="print" /> {{ t('print') }}
             </button>
         </div>

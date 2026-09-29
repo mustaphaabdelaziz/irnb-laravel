@@ -131,7 +131,7 @@ function save() {
                                     :data-cell="`${r}-${c}`"
                                     :value="values[row.id][s.id]"
                                     :disabled="!editable"
-                                    maxlength="6"
+                                    maxlength="12"
                                     dir="ltr"
                                     class="w-14 rounded border-slate-200 p-1 text-center font-mono text-xs uppercase dark:border-slate-700 dark:bg-slate-900"
                                     :class="cellError(row.id, s.id) ? 'border-rose-500 ring-1 ring-rose-500' : ''"

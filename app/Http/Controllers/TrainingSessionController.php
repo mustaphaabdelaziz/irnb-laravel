@@ -10,26 +10,37 @@ use App\Services\Activity\ActivityRecorder;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class TrainingSessionController extends Controller
 {
-    /** An extra or pre-season session added by hand (regular ones come from the schedule). */
+    /**
+     * An extra or pre-season session added by hand (regular ones come from the
+     * schedule). Only a pre-season session can be shared by several
+     * categories; `category_id` is its primary one.
+     */
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
             'category_id' => ['required', 'integer', 'exists:categories,id'],
+            'category_ids' => ['nullable', 'array'],
+            'category_ids.*' => ['integer', 'distinct', 'exists:categories,id'],
             'kind' => ['required', Rule::in([SessionKind::Extra->value, SessionKind::Preseason->value])],
             'title' => ['nullable', 'string', 'max:150'],
             ...$this->slotRules(),
         ]);
-        $this->assertSlotFree((int) $data['category_id'], $data['date'], $data['start_time']);
+        $categoryIds = $data['kind'] === SessionKind::Preseason->value
+            ? $this->uniqueIds([(int) $data['category_id'], ...($data['category_ids'] ?? [])])
+            : [(int) $data['category_id']];
+        $this->assertSlotFree($categoryIds, $data['date'], $data['start_time']);
 
         try {
-            $session = DB::transaction(function () use ($data, $request) {
-                $session = TrainingSession::create($data + ['state' => SessionState::Planned]);
+            $session = DB::transaction(function () use ($data, $categoryIds, $request) {
+                $session = TrainingSession::create(Arr::except($data, 'category_ids') + ['state' => SessionState::Planned]);
+                $session->categories()->syncWithoutDetaching($categoryIds);
                 ActivityRecorder::record($request->user(), ActivityAction::TRAINING_SESSION_CREATED, $session, ['kind' => $data['kind']]);
 
                 return $session;
@@ -40,6 +51,44 @@ class TrainingSessionController extends Controller
         }
 
         return redirect()->route('attendance.sessions.show', $session)->with('success', 'flash.training_session_created');
+    }
+
+    /**
+     * The categories of a pre-season session, editable until its marks are
+     * first saved (the roster is frozen from then on). If the primary
+     * category is dropped, the first chosen one becomes primary.
+     */
+    public function updateCategories(Request $request, TrainingSession $session): RedirectResponse
+    {
+        $data = $request->validate([
+            'category_ids' => ['required', 'array', 'min:1'],
+            'category_ids.*' => ['integer', 'distinct', 'exists:categories,id'],
+        ]);
+
+        $error = match (true) {
+            $session->kind !== SessionKind::Preseason => 'att.error.not_preseason',
+            $session->state === SessionState::Cancelled => 'att.error.cancelled',
+            $session->state === SessionState::Held, $session->attendances()->exists() => 'att.error.already_marked',
+            default => null,
+        };
+        if ($error !== null) {
+            throw ValidationException::withMessages(['category_ids' => $error]);
+        }
+
+        $ids = $this->uniqueIds($data['category_ids']);
+        $this->assertSlotFree($ids, $session->date, $session->start_time, $session->id, 'category_ids');
+        $primary = in_array($session->category_id, $ids, true) ? $session->category_id : $ids[0];
+
+        try {
+            DB::transaction(function () use ($session, $ids, $primary) {
+                $session->update(['category_id' => $primary]);
+                $session->categories()->sync($ids);
+            });
+        } catch (UniqueConstraintViolationException) {
+            throw ValidationException::withMessages(['category_ids' => 'att.error.duplicate']);
+        }
+
+        return back()->with('success', 'flash.training_session_categories_saved');
     }
 
     public function cancel(Request $request, TrainingSession $session): RedirectResponse
@@ -64,7 +113,7 @@ class TrainingSessionController extends Controller
             throw ValidationException::withMessages(['date' => 'att.error.cancelled']);
         }
         $data = $request->validate($this->slotRules());
-        $this->assertSlotFree($session->category_id, $data['date'], $data['start_time'], $session->id);
+        $this->assertSlotFree($session->categoryIds(), $data['date'], $data['start_time'], $session->id);
 
         try {
             DB::transaction(function () use ($session, $data, $request) {
@@ -88,14 +137,28 @@ class TrainingSessionController extends Controller
         ];
     }
 
-    private function assertSlotFree(int $categoryId, string $date, string $startTime, ?int $ignoreId = null): void
+    /** @return array<int, int> */
+    private function uniqueIds(array $ids): array
     {
-        $taken = TrainingSession::where('category_id', $categoryId)->where('date', $date)->where('start_time', $startTime)
+        return array_values(array_unique(array_map('intval', $ids)));
+    }
+
+    /**
+     * No other session that any of these categories takes part in may start
+     * at the same date and time. The pivot holds every category, primary or
+     * not, so this also covers the P1 unique (category, date, start) key.
+     *
+     * @param  array<int, int>  $categoryIds
+     */
+    private function assertSlotFree(array $categoryIds, string $date, string $startTime, ?int $ignoreId = null, string $errorKey = 'start_time'): void
+    {
+        $taken = TrainingSession::where('date', $date)->where('start_time', $startTime)
+            ->whereIn('id', DB::table('training_session_category')->select('training_session_id')->whereIn('category_id', $categoryIds))
             ->when($ignoreId, fn ($q) => $q->whereKeyNot($ignoreId))
             ->exists();
 
         if ($taken) {
-            throw ValidationException::withMessages(['start_time' => 'att.error.duplicate']);
+            throw ValidationException::withMessages([$errorKey => 'att.error.duplicate']);
         }
     }
 }

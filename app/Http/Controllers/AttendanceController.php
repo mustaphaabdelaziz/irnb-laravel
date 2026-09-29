@@ -79,28 +79,36 @@ class AttendanceController extends Controller
         ]);
     }
 
-    /** One session: its roster with marks (everyone present until first saved) and its log. */
+    /** One session: its roster with marks (everyone present until first saved), its categories and its log. */
     public function show(TrainingSession $session, Roster $roster): Response
     {
-        $session->load('category');
+        $session->load('categories');
         $marks = $session->attendances()->get()->keyBy('player_id');
         $players = $roster->forSession($session);
+        // Primary category first, then the others of a joint pre-season session.
+        $categories = $session->categories
+            ->sortBy(fn (Category $c) => $c->id === $session->category_id ? 0 : $c->id)
+            ->mapWithKeys(fn (Category $c) => [$c->id => $c->localized_name]);
+        $joint = $categories->count() > 1;
 
         return Inertia::render('Attendance/Session', [
             'session' => [
                 'id' => $session->id, 'date' => $session->date, 'start_time' => $session->start_time, 'end_time' => $session->end_time,
                 'kind' => $session->kind->value, 'state' => $session->state->value, 'cancel_reason' => $session->cancel_reason,
                 'moved_from' => $session->moved_from, 'coach' => $session->coach, 'title' => $session->title, 'notes' => $session->notes,
-                'category' => $session->category?->localized_name,
+                'category' => $categories->implode(' · '),
                 'category_id' => $session->category_id,
+                'categories' => $categories->map(fn (string $name, int $id) => ['id' => $id, 'name' => $name])->values(),
             ],
             'saved' => $marks->isNotEmpty(),
-            'rows' => $players->map(function (Player $p) use ($marks) {
+            'rows' => $players->map(function (Player $p) use ($marks, $categories, $joint) {
                 $mark = $marks->get($p->id);
 
                 return [
                     'player_id' => $p->id,
                     'name' => trim("{$p->lastname} {$p->firstname}"),
+                    // Where a player comes from only matters when several categories share the session.
+                    'category' => $joint ? $categories->get($p->category_id) : null,
                     'status' => $mark?->status->value ?? AttendanceStatus::Present->value,
                     'minutes' => $mark?->minutes,
                     'reason' => $mark?->reason?->value,
@@ -117,6 +125,9 @@ class AttendanceController extends Controller
                 ->orderByDesc('date')->value('coach'),
             'statuses' => AttendanceStatus::values(),
             'reasons' => AbsenceReason::values(),
+            'allCategories' => $session->kind === SessionKind::Preseason
+                ? Category::orderBy('id')->get()->map(fn (Category $c) => ['id' => $c->id, 'name' => $c->localized_name])->values()
+                : [],
         ]);
     }
 

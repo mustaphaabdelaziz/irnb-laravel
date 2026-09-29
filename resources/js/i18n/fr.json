@@ -1494,5 +1494,12 @@
     "att.error.no_players": "Ajoutez au moins un joueur.",
     "att.error.not_in_roster": "Ce joueur ne fait pas partie de la liste de cette séance.",
     "att.title_goal": "Titre / objectif",
-    "att.title_placeholder": "ex. Course de 7,2 km en 40 min"
+    "att.title_placeholder": "ex. Course de 7,2 km en 40 min",
+    "att.categories": "Catégories",
+    "att.other_categories": "Autres catégories participantes",
+    "att.edit_categories": "Modifier les catégories",
+    "att.categories_help": "Les catégories peuvent être modifiées tant que les présences ne sont pas enregistrées.",
+    "att.error.not_preseason": "Seules les séances de préparation peuvent regrouper plusieurs catégories.",
+    "att.error.already_marked": "Les présences de cette séance sont déjà enregistrées.",
+    "flash.training_session_categories_saved": "Catégories enregistrées."
 }

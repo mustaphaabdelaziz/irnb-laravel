@@ -328,6 +328,7 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         Route::put('/attendance/sessions/{session}/marks', [AttendanceController::class, 'saveMarks'])->name('attendance.sessions.marks');
         Route::post('/attendance/sessions/{session}/cancel', [TrainingSessionController::class, 'cancel'])->name('attendance.sessions.cancel');
         Route::post('/attendance/sessions/{session}/move', [TrainingSessionController::class, 'move'])->name('attendance.sessions.move');
+        Route::put('/attendance/sessions/{session}/categories', [TrainingSessionController::class, 'updateCategories'])->name('attendance.sessions.categories');
         Route::get('/attendance/settings', [AttendanceSettingsController::class, 'index'])->name('attendance.settings');
         Route::put('/attendance/settings', [AttendanceSettingsController::class, 'update'])->name('attendance.settings.update');
         Route::post('/attendance/schedules', [AttendanceSettingsController::class, 'storeSchedule'])->name('attendance.schedules.store');

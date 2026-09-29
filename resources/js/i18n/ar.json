@@ -1494,5 +1494,12 @@
     "att.error.no_players": "أضف لاعباً واحداً على الأقل.",
     "att.error.not_in_roster": "هذا اللاعب ليس في قائمة هذه الحصة.",
     "att.title_goal": "العنوان / الهدف",
-    "att.title_placeholder": "مثال: جري 7.2 كم في 40 دقيقة"
+    "att.title_placeholder": "مثال: جري 7.2 كم في 40 دقيقة",
+    "att.categories": "الفئات",
+    "att.other_categories": "فئات أخرى مشاركة",
+    "att.edit_categories": "تعديل الفئات",
+    "att.categories_help": "يمكن تعديل الفئات ما دام الحضور لم يُسجَّل بعد.",
+    "att.error.not_preseason": "حصص التحضير البدني وحدها يمكن أن تضم عدة فئات.",
+    "att.error.already_marked": "تم تسجيل الحضور لهذه الحصة من قبل.",
+    "flash.training_session_categories_saved": "تم حفظ الفئات."
 }

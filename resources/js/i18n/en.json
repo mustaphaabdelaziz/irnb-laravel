@@ -1494,5 +1494,12 @@
     "att.error.no_players": "Add at least one player.",
     "att.error.not_in_roster": "This player is not on this session's list.",
     "att.title_goal": "Title / goal",
-    "att.title_placeholder": "e.g. Running 7.2 km in 40 min"
+    "att.title_placeholder": "e.g. Running 7.2 km in 40 min",
+    "att.categories": "Categories",
+    "att.other_categories": "Other categories taking part",
+    "att.edit_categories": "Edit categories",
+    "att.categories_help": "Categories can be changed until attendance is first saved.",
+    "att.error.not_preseason": "Only pre-season sessions can have several categories.",
+    "att.error.already_marked": "Attendance has already been saved for this session.",
+    "flash.training_session_categories_saved": "Categories saved."
 }

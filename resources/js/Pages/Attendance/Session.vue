@@ -16,6 +16,7 @@ const props = defineProps({
     lastCoach: { type: String, default: null },
     statuses: { type: Array, default: () => [] },
     reasons: { type: Array, default: () => [] },
+    allCategories: { type: Array, default: () => [] },
 });
 const { t, locale } = useI18n();
 const { can } = useCan();
@@ -48,7 +49,7 @@ const counts = computed(() => rows.value.reduce((acc, r) => ((acc[r.status] = (a
 const pick = ref('');
 function addPlayer() {
     const p = props.candidates.find((c) => c.id === Number(pick.value));
-    if (p && !rows.value.some((r) => r.player_id === p.id)) rows.value.push({ player_id: p.id, name: p.name, status: 'present', minutes: null, reason: null, note: '' });
+    if (p && !rows.value.some((r) => r.player_id === p.id)) rows.value.push({ player_id: p.id, name: p.name, category: null, status: 'present', minutes: null, reason: null, note: '' });
     pick.value = '';
 }
 const removeRow = (row) => (rows.value = rows.value.filter((r) => r !== row));
@@ -57,7 +58,7 @@ const saving = ref(false);
 function save() {
     router.put(route('attendance.sessions.marks', props.session.id), {
         ...log,
-        marks: rows.value.map(({ name, ...mark }) => mark),
+        marks: rows.value.map(({ name, category, ...mark }) => mark),
     }, { preserveScroll: true, preserveState: 'errors', onStart: () => (saving.value = true), onFinish: () => (saving.value = false) });
 }
 const rowError = (i) => ['minutes', 'reason', 'note', 'status'].map((f) => errors.value[`marks.${i}.${f}`]).find(Boolean);
@@ -69,6 +70,22 @@ const submitCancel = () => cancelForm.post(route('attendance.sessions.cancel', p
 const showMove = ref(false);
 const moveForm = useForm({ date: props.session.date, start_time: props.session.start_time, end_time: props.session.end_time });
 const submitMove = () => moveForm.post(route('attendance.sessions.move', props.session.id), { onSuccess: () => (showMove.value = false) });
+
+// ---- Categories of a pre-season session: editable until its marks are first saved ----
+const canEditCategories = computed(() => editable.value && props.session.kind === 'preseason' && !props.saved);
+const showCategories = ref(false);
+const categoriesForm = useForm({ category_ids: [] });
+function openCategories() {
+    categoriesForm.category_ids = props.session.categories.map((c) => c.id);
+    categoriesForm.clearErrors();
+    showCategories.value = true;
+}
+// 'errors' keeps the modal open on a validation error; a success remounts the page with the new roster.
+const submitCategories = () => categoriesForm.put(route('attendance.sessions.categories', props.session.id), {
+    preserveScroll: true,
+    preserveState: 'errors',
+    onSuccess: () => (showCategories.value = false),
+});
 
 const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900';
 const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
@@ -88,6 +105,7 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                     </div>
                 </div>
                 <div v-if="editable" class="flex gap-2">
+                    <button v-if="canEditCategories" class="rounded-lg px-3 py-1.5 text-sm font-semibold text-amber-700 ring-1 ring-amber-200 hover:bg-amber-50 dark:text-amber-300 dark:ring-amber-900" @click="openCategories">{{ t('att.edit_categories') }}</button>
                     <button class="rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:text-slate-300 dark:ring-slate-700" @click="showMove = true">{{ t('att.move') }}</button>
                     <button class="rounded-lg px-3 py-1.5 text-sm font-semibold text-rose-600 ring-1 ring-rose-200 hover:bg-rose-50 dark:ring-rose-900" @click="showCancel = true">{{ t('att.cancel') }}</button>
                 </div>
@@ -109,7 +127,10 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                 <ul>
                     <li v-for="(row, i) in rows" :key="row.player_id" class="border-b border-slate-100 p-3 last:border-0 dark:border-slate-800">
                         <div class="flex flex-wrap items-center gap-2">
-                            <span class="min-w-[10rem] flex-1 font-medium text-slate-900 dark:text-slate-100">{{ row.name }}</span>
+                            <span class="min-w-[10rem] flex-1 font-medium text-slate-900 dark:text-slate-100">
+                                {{ row.name }}
+                                <span v-if="row.category" class="ms-1 text-xs font-normal text-slate-400">{{ row.category }}</span>
+                            </span>
                             <button v-for="s in statuses" :key="s" type="button" :disabled="!editable" class="rounded-lg px-2 py-1 text-xs font-semibold" :class="row.status === s ? statusStyle[s] : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400'" @click="setStatus(row, s)">{{ t(`att.status.${s}`) }}</button>
                             <button v-if="editable" type="button" class="p-1 text-slate-300 hover:text-rose-600" :title="t('att.remove')" @click="removeRow(row)"><Icon name="trash" /></button>
                         </div>
@@ -170,6 +191,24 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                 <div class="flex justify-end gap-2">
                     <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700" @click="showMove = false">{{ t('att.close') }}</button>
                     <button type="submit" :disabled="moveForm.processing" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">{{ t('att.save') }}</button>
+                </div>
+            </form>
+        </Modal>
+
+        <Modal :show="showCategories" max-width="md" @close="showCategories = false">
+            <form class="space-y-3 p-5" @submit.prevent="submitCategories">
+                <h2 class="font-bold text-slate-900 dark:text-slate-100">{{ t('att.categories') }}</h2>
+                <p class="text-xs text-slate-500">{{ t('att.categories_help') }}</p>
+                <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                    <label v-for="c in allCategories" :key="c.id" class="inline-flex items-center gap-1.5">
+                        <input v-model="categoriesForm.category_ids" type="checkbox" :value="c.id" class="rounded border-slate-300 text-primary-600 dark:border-slate-700 dark:bg-slate-900" />
+                        {{ c.name }}
+                    </label>
+                </div>
+                <InputError v-for="(e, k) in categoriesForm.errors" :key="k" :message="tr(e)" />
+                <div class="flex justify-end gap-2">
+                    <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700" @click="showCategories = false">{{ t('att.close') }}</button>
+                    <button type="submit" :disabled="categoriesForm.processing || !categoriesForm.category_ids.length" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('att.save') }}</button>
                 </div>
             </form>
         </Modal>

@@ -24,6 +24,7 @@ class AttendancePermissionTest extends TestCase
         $this->assertSame(['attendance', 'edit'], PermissionMap::resolve('attendance.grid.save'));
         $this->assertSame(['attendance', 'edit'], PermissionMap::resolve('attendance.sessions.marks'));
         $this->assertSame(['attendance', 'add'], PermissionMap::resolve('attendance.sessions.store'));
+        $this->assertSame(['attendance', 'edit'], PermissionMap::resolve('attendance.sessions.categories'));
         $this->assertSame(['attendance', 'edit'], PermissionMap::resolve('attendance.settings'));
         // Settings mutations all need edit, not the weaker add/delete deriveAction() would give them.
         $this->assertSame(['attendance', 'edit'], PermissionMap::resolve('attendance.schedules.store'));

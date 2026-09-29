@@ -1,12 +1,11 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Icon from '@/Components/Icon.vue';
-import Modal from '@/Components/Modal.vue';
-import InputError from '@/Components/InputError.vue';
 import { useCan } from '@/Composables/useCan';
+import AddSessionModal from './Partials/AddSessionModal.vue';
 
 const props = defineProps({
     categories: { type: Array, default: () => [] },
@@ -65,15 +64,12 @@ const preseasonLabel = computed(() => {
 });
 
 // ---- Add an extra / pre-season session ----
-const showForm = ref(false);
-const form = useForm({ category_id: null, kind: 'extra', date: '', start_time: '18:00', end_time: '19:30', title: '' });
-function openCreate(kind, date = todayKey) {
-    form.reset();
-    form.clearErrors();
-    Object.assign(form, { category_id: props.categoryId, kind, date });
-    showForm.value = true;
+const showCreate = ref(false);
+const createKind = ref('extra');
+function openCreate(kind) {
+    createKind.value = kind;
+    showCreate.value = true;
 }
-const submit = () => form.post(route('attendance.sessions.store'), { onSuccess: () => (showForm.value = false) });
 const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900';
 </script>
 
@@ -129,21 +125,6 @@ const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg
             </div>
         </div>
 
-        <Modal :show="showForm" max-width="md" @close="showForm = false">
-            <form class="space-y-3 p-5" @submit.prevent="submit">
-                <h2 class="font-bold text-slate-900 dark:text-slate-100">{{ form.kind === 'preseason' ? t('att.add_preseason') : t('att.add_extra') }}</h2>
-                <label class="block text-sm">{{ t('att.date') }}<input v-model="form.date" type="date" :class="[input, 'mt-1 block w-full']" /></label>
-                <div class="flex gap-2">
-                    <label class="flex-1 text-sm">{{ t('att.start') }}<input v-model="form.start_time" type="time" :class="[input, 'mt-1 block w-full']" /></label>
-                    <label class="flex-1 text-sm">{{ t('att.end') }}<input v-model="form.end_time" type="time" :class="[input, 'mt-1 block w-full']" /></label>
-                </div>
-                <label class="block text-sm">{{ t('att.title_goal') }}<input v-model="form.title" type="text" maxlength="150" :placeholder="t('att.title_placeholder')" :class="[input, 'mt-1 block w-full']" /></label>
-                <InputError v-for="(e, k) in form.errors" :key="k" :message="e.startsWith('att.') ? t(e) : e" />
-                <div class="flex justify-end gap-2">
-                    <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700" @click="showForm = false">{{ t('att.close') }}</button>
-                    <button type="submit" :disabled="form.processing" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">{{ t('att.save') }}</button>
-                </div>
-            </form>
-        </Modal>
+        <AddSessionModal :show="showCreate" :kind="createKind" :categories="categories" :category-id="categoryId" :date="todayKey" @close="showCreate = false" />
     </AuthenticatedLayout>
 </template>

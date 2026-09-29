@@ -1490,5 +1490,6 @@
     "att.unexcused_streak": "Alerte après ce nombre d'absences non justifiées d'affilée",
     "att.error.invalid_code": "Code inconnu",
     "att.error.cancelled": "Cette séance est annulée.",
-    "att.error.duplicate": "Cette catégorie a déjà une séance à cette date et heure."
+    "att.error.duplicate": "Cette catégorie a déjà une séance à cette date et heure.",
+    "att.error.no_players": "Ajoutez au moins un joueur."
 }

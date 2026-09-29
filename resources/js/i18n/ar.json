@@ -1490,5 +1490,6 @@
     "att.unexcused_streak": "تنبيه بعد هذا العدد من الغيابات المتتالية بدون عذر",
     "att.error.invalid_code": "رمز غير معروف",
     "att.error.cancelled": "هذه الحصة ملغاة.",
-    "att.error.duplicate": "لهذه الفئة حصة في نفس التاريخ والوقت."
+    "att.error.duplicate": "لهذه الفئة حصة في نفس التاريخ والوقت.",
+    "att.error.no_players": "أضف لاعباً واحداً على الأقل."
 }

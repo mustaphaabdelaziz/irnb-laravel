@@ -27,6 +27,10 @@ final class MarkRecorder
             throw ValidationException::withMessages(['session' => 'att.error.cancelled']);
         }
 
+        if ($marks === []) {
+            throw ValidationException::withMessages(['marks' => 'att.error.no_players']);
+        }
+
         return DB::transaction(function () use ($session, $marks, $user, $log) {
             $playerIds = [];
 
@@ -38,7 +42,7 @@ final class MarkRecorder
                     ['training_session_id' => $session->id, 'player_id' => (int) $mark['player_id']],
                     [
                         'status' => $status,
-                        'minutes' => $status->takesMinutes() ? (int) $mark['minutes'] : null,
+                        'minutes' => $status->takesMinutes() ? (int) ($mark['minutes'] ?? 0) : null,
                         'reason' => $status->takesReason() ? ($mark['reason'] ?? null) : null,
                         'note' => ($mark['note'] ?? null) ?: null,
                         'recorded_by' => $user?->id,

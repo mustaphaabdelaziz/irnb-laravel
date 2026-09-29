@@ -1490,5 +1490,6 @@
     "att.unexcused_streak": "Alert after this many unexcused absences in a row",
     "att.error.invalid_code": "Unknown code",
     "att.error.cancelled": "This session is cancelled.",
-    "att.error.duplicate": "This category already has a session at that date and time."
+    "att.error.duplicate": "This category already has a session at that date and time.",
+    "att.error.no_players": "Add at least one player."
 }

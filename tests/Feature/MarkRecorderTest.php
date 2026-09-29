@@ -120,4 +120,22 @@ class MarkRecorderTest extends TestCase
         $this->expectException(ValidationException::class);
         app(MarkRecorder::class)->save($session, [['player_id' => $this->player($u15)->id, 'status' => 'present']], null);
     }
+
+    #[Test]
+    public function saving_no_players_is_rejected_and_keeps_the_frozen_roster(): void
+    {
+        $u15 = $this->category();
+        $a = $this->player($u15);
+        $session = $this->makeSession($u15);
+        app(MarkRecorder::class)->save($session, [['player_id' => $a->id, 'status' => 'present']], null);
+
+        try {
+            app(MarkRecorder::class)->save($session, [], null);
+            $this->fail('ValidationException should have been thrown');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('marks', $e->errors());
+        }
+
+        $this->assertSame([$a->id], $session->attendances()->pluck('player_id')->all());
+    }
 }

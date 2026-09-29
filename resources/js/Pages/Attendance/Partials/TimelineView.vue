@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onMounted } from 'vue';
+import { computed, nextTick, onMounted, watch } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import Icon from '@/Components/Icon.vue';
@@ -50,12 +50,16 @@ const cardClass = (e) => (e.state === 'cancelled'
     : ['border-s-4 bg-white ring-1 ring-slate-200 hover:ring-primary-300 dark:bg-slate-900 dark:ring-slate-800', KIND_BORDER[e.kind]]);
 const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900';
 
-onMounted(() => {
-    // Opened on the current month (first visit or "today"): bring today into view.
-    if (props.from === props.to && props.to === thisMonth) {
+// Bring today into view whenever it sits inside the visible window: on the
+// first render and again after navigating (earlier/later/goToday), since the
+// window then changes without remounting the component.
+function scrollToTodayIfVisible() {
+    if (props.from <= thisMonth && thisMonth <= props.to) {
         nextTick(() => document.getElementById('att-today')?.scrollIntoView({ block: 'center' }));
     }
-});
+}
+onMounted(scrollToTodayIfVisible);
+watch(() => [props.from, props.to], scrollToTodayIfVisible);
 </script>
 
 <template>

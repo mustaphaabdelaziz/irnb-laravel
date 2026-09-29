@@ -68,7 +68,8 @@ const settingsForm = useForm(JSON.parse(JSON.stringify(props.settings)));
 const submitSettings = () => settingsForm.put(route('attendance.settings.update'), { preserveScroll: true });
 // The built-in name in one language, shown as the placeholder of that language's field.
 const builtin = (status, loc) => t(`att.status.${status}`, {}, { locale: loc });
-const rowError = (status) => tr(settingsForm.errors[`codes.${status}.code`] ?? settingsForm.errors[`codes.${status}.color`]);
+const codeError = (status) => tr(settingsForm.errors[`codes.${status}.code`]);
+const colorError = (status) => tr(settingsForm.errors[`codes.${status}.color`]);
 const otherErrors = computed(() => Object.entries(settingsForm.errors)
     .filter(([k]) => !/^codes\.[a-z_]+\.(code|color)$/.test(k))
     .map(([, e]) => tr(e)));
@@ -176,7 +177,8 @@ const otherErrors = computed(() => Object.entries(settingsForm.errors)
                                             <span class="h-3 w-3 rounded-full" :style="{ backgroundColor: settingsForm.codes[s].color }"></span>
                                             {{ t(`att.status.${s}`) }}
                                         </span>
-                                        <InputError :message="rowError(s)" />
+                                        <InputError :message="codeError(s)" />
+                                        <InputError :message="colorError(s)" />
                                     </td>
                                     <td class="py-2 pe-2">
                                         <input v-model="settingsForm.codes[s].code" type="text" maxlength="3" dir="auto" :aria-label="`${t('att.col.code')} · ${t(`att.status.${s}`)}`" :class="[input, 'w-16 text-center font-mono uppercase']" />

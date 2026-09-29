@@ -7,9 +7,11 @@ use App\Enums\SessionState;
 use App\Models\Attendance;
 use App\Models\Category;
 use App\Models\ClubClosure;
+use App\Models\TrainingSchedule;
 use App\Models\TrainingSession;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Sessions shaped for the calendar views: every category taking part
@@ -26,14 +28,20 @@ final class CalendarFeed
     /** Generates every category's planned sessions for each month the range touches (idempotent). */
     public function generateAll(string $from, string $to): void
     {
-        $categoryIds = Category::orderBy('id')->pluck('id');
+        // Only categories with a schedule overlapping the range have anything
+        // to generate; skipping the rest avoids a pointless query per month.
+        $categoryIds = TrainingSchedule::where('valid_from', '<=', $to)
+            ->where(fn ($q) => $q->whereNull('valid_to')->orWhere('valid_to', '>=', $from))
+            ->distinct()->orderBy('category_id')->pluck('category_id');
         $last = CarbonImmutable::createFromFormat('!Y-m-d', $to)->startOfMonth();
 
-        for ($month = CarbonImmutable::createFromFormat('!Y-m-d', $from)->startOfMonth(); $month->lessThanOrEqualTo($last); $month = $month->addMonth()) {
-            foreach ($categoryIds as $categoryId) {
-                $this->generator->forMonth((int) $categoryId, $month->year, $month->month);
+        DB::transaction(function () use ($categoryIds, $from, $last) {
+            for ($month = CarbonImmutable::createFromFormat('!Y-m-d', $from)->startOfMonth(); $month->lessThanOrEqualTo($last); $month = $month->addMonth()) {
+                foreach ($categoryIds as $categoryId) {
+                    $this->generator->forMonth((int) $categoryId, $month->year, $month->month);
+                }
             }
-        }
+        });
     }
 
     /** @return Collection<int, array<string, mixed>> */
@@ -61,8 +69,7 @@ final class CalendarFeed
             'state' => $s->state->value,
             'title' => $s->title,
             'cancel_reason' => $s->cancel_reason,
-            'categories' => $s->categories
-                ->sortBy(fn (Category $c) => $c->id === $s->category_id ? 0 : $c->id)
+            'categories' => $s->orderedCategories()
                 ->map(fn (Category $c) => ['id' => $c->id, 'name' => $c->localized_name])
                 ->values()->all(),
             'marked' => $s->attendances_count,

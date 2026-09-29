@@ -50,6 +50,7 @@ class AttendanceSettingsController extends Controller
             $rules["points.$status"] = ['required', 'numeric', 'between:-5,5'];
             $rules["codes.$status.code"] = ['required', 'string', 'regex:/^\p{L}{1,3}$/u'];
             $rules["codes.$status.color"] = ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'];
+            $rules["codes.$status.label"] = ['nullable', 'array'];
             foreach (AttendanceSettings::LOCALES as $locale) {
                 $rules["codes.$status.label.$locale"] = ['nullable', 'string', 'max:40'];
             }

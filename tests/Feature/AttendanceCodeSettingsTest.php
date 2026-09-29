@@ -59,6 +59,17 @@ class AttendanceCodeSettingsTest extends TestCase
     }
 
     #[Test]
+    public function a_string_label_is_rejected_instead_of_crashing(): void
+    {
+        $response = $this->actingAs($this->admin())->put(route('attendance.settings.update'), $this->payload([
+            'present' => ['label' => 'oops'],
+        ]));
+
+        $response->assertSessionHasErrors('codes.present.label');
+        $this->assertNotSame(500, $response->getStatusCode());
+    }
+
+    #[Test]
     public function codes_must_be_unique_ignoring_case(): void
     {
         $this->actingAs($this->admin())->put(route('attendance.settings.update'), $this->payload([

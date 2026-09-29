@@ -8,6 +8,7 @@ use App\Enums\SessionState;
 use App\Models\Attendance;
 use App\Models\TrainingSession;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
@@ -43,6 +44,9 @@ class TrainingSessionTitleTest extends TestCase
         $this->assertFalse(Schema::hasColumn('training_sessions', 'theme'));
         $this->assertSame('Endurance', $session->fresh()->title);
         $this->assertSame(1, Attendance::count());
+        // The rename is a plain ALTER TABLE, not a table rebuild: it must not
+        // cascade-delete the session's training_session_category pivot rows.
+        $this->assertSame(1, DB::table('training_session_category')->count());
     }
 
     #[Test]

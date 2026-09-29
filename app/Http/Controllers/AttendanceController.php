@@ -22,12 +22,10 @@ class AttendanceController extends Controller
     /** One session: its roster with marks (everyone present until first saved), its categories and its log. */
     public function show(TrainingSession $session, Roster $roster): Response
     {
-        $session->load('categories');
         $marks = $session->attendances()->get()->keyBy('player_id');
         $players = $roster->forSession($session);
         // Primary category first, then the others of a joint pre-season session.
-        $categories = $session->categories
-            ->sortBy(fn (Category $c) => $c->id === $session->category_id ? 0 : $c->id)
+        $categories = $session->orderedCategories()
             ->mapWithKeys(fn (Category $c) => [$c->id => $c->localized_name]);
         $joint = $categories->count() > 1;
 

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -86,5 +87,17 @@ class TrainingSession extends Model
         sort($ids);
 
         return $ids;
+    }
+
+    /** @return Collection<int, Category> every category taking part, primary first then by id */
+    public function orderedCategories(): Collection
+    {
+        if (! $this->relationLoaded('categories')) {
+            $this->load('categories');
+        }
+
+        return $this->categories
+            ->sortBy(fn (Category $c) => $c->id === $this->category_id ? 0 : $c->id)
+            ->values();
     }
 }

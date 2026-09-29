@@ -85,25 +85,27 @@ final class SessionGenerator
             }
         }
 
-        $inserted = $rows === [] ? 0 : DB::table('training_sessions')->insertOrIgnore($rows);
+        return DB::transaction(function () use ($rows, $categoryId, $from, $to) {
+            $inserted = $rows === [] ? 0 : DB::table('training_sessions')->insertOrIgnore($rows);
 
-        // insertOrIgnore returns no ids, and a prior call may have inserted
-        // sessions but been interrupted before linking them: link every
-        // session of this category and month that has no pivot row yet, in
-        // one insert-select. insertOrIgnoreUsing tolerates a concurrent
-        // request linking the same session first.
-        DB::table('training_session_category')->insertOrIgnoreUsing(
-            ['training_session_id', 'category_id'],
-            DB::table('training_sessions as s')
-                ->select('s.id', 's.category_id')
-                ->where('s.category_id', $categoryId)
-                ->whereBetween('s.date', [$from, $to])
-                ->whereNotExists(fn ($q) => $q->select(DB::raw(1))
-                    ->from('training_session_category as p')
-                    ->whereColumn('p.training_session_id', 's.id')
-                    ->whereColumn('p.category_id', 's.category_id')),
-        );
+            // insertOrIgnore returns no ids, and a prior call may have inserted
+            // sessions but been interrupted before linking them: link every
+            // session of this category and month that has no pivot row yet, in
+            // one insert-select. insertOrIgnoreUsing tolerates a concurrent
+            // request linking the same session first.
+            DB::table('training_session_category')->insertOrIgnoreUsing(
+                ['training_session_id', 'category_id'],
+                DB::table('training_sessions as s')
+                    ->select('s.id', 's.category_id')
+                    ->where('s.category_id', $categoryId)
+                    ->whereBetween('s.date', [$from, $to])
+                    ->whereNotExists(fn ($q) => $q->select(DB::raw(1))
+                        ->from('training_session_category as p')
+                        ->whereColumn('p.training_session_id', 's.id')
+                        ->whereColumn('p.category_id', 's.category_id')),
+            );
 
-        return $inserted;
+            return $inserted;
+        });
     }
 }

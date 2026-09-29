@@ -7,7 +7,7 @@ use App\Models\BoardMeeting;
 use App\Models\InventorySession;
 use App\Models\Player;
 use App\Models\Transaction;
-use App\Models\WebsiteConfig;
+use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
 use App\Support\Media;
 use App\Support\TransactionTitle;
@@ -31,7 +31,7 @@ class ReportController extends Controller
         }
 
         $html = view('pdf.receipt', [
-            'club' => $this->club(),
+            'club' => ClubHeader::data(),
             'transaction' => $transaction,
             'relatedName' => $relatedName,
             'receiptNumber' => str_pad((string) $transaction->id, 6, '0', STR_PAD_LEFT),
@@ -51,7 +51,7 @@ class ReportController extends Controller
         $player->load(['category', 'position']);
 
         $html = view('pdf.member-card', [
-            'club' => $this->club(),
+            'club' => ClubHeader::data(),
             'player' => $player,
             'photo' => $this->resolveMediaFile($player->picture_url),
         ])->render();
@@ -71,7 +71,7 @@ class ReportController extends Controller
             ->sortKeys();
 
         $html = view('pdf.academic-report', [
-            'club' => $this->club(),
+            'club' => ClubHeader::data(),
             'player' => $player,
             'photo' => $this->resolveMediaFile($player->picture_url),
             'academicYears' => $player->academicYears,
@@ -100,7 +100,7 @@ class ReportController extends Controller
             ->get();
 
         $html = view('pdf.financial-summary', [
-            'club' => $this->club(),
+            'club' => ClubHeader::data(),
             'year' => $year,
             'totalIncome' => $totalIncome,
             'totalExpense' => $totalExpense,
@@ -117,7 +117,7 @@ class ReportController extends Controller
         $meeting->load(['attendances.member', 'tasks.member', 'createdBy:id,name']);
 
         $html = view('pdf.meeting-minutes', [
-            'club' => $this->club(),
+            'club' => ClubHeader::data(),
             'meeting' => $meeting,
         ])->render();
 
@@ -129,41 +129,11 @@ class ReportController extends Controller
         $session->load(['items.item.catalog:id,name', 'conductedBy:id,name', 'participants.participant']);
 
         $html = view('pdf.inventory-report', [
-            'club' => $this->club(),
+            'club' => ClubHeader::data(),
             'session' => $session,
         ])->render();
 
         return $this->pdf->stream($html, "inventory-{$session->reference}.pdf");
-    }
-
-    /**
-     * Localised club header data for document templates.
-     *
-     * @return array<string, mixed>
-     */
-    private function club(): array
-    {
-        $config = WebsiteConfig::singleton();
-        $locale = app()->getLocale();
-
-        $pick = function ($value) use ($locale) {
-            if (! is_array($value)) {
-                return $value;
-            }
-
-            return $value[$locale] ?? $value['en'] ?? $value['ar'] ?? collect($value)->filter()->first();
-        };
-
-        $branding = $config->branding ?? [];
-
-        return [
-            'name' => $pick($config->club_name),
-            'logo' => $this->resolveMediaFile($branding['logo'] ?? null),
-            'address' => $config->full_address ?: null,
-            'phone' => $config->contact_phone,
-            'email' => $config->contact_email,
-            'currency' => $config->settings['currencySymbol'] ?? $config->settings['currency'] ?? 'DZD',
-        ];
     }
 
     /**

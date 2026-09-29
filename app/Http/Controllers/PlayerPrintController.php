@@ -4,12 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Player;
-use App\Models\WebsiteConfig;
+use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
 use App\Services\Player\AcademicResultsSheet;
 use App\Services\Player\FileNumber;
 use App\Support\Export;
-use App\Support\Media;
 use App\Support\Season;
 use App\Support\UiLang;
 use Illuminate\Http\Request;
@@ -108,7 +107,7 @@ class PlayerPrintController extends Controller
         }
 
         $html = view('pdf.board-table', [
-            'club' => $this->club(),
+            'club' => ClubHeader::data(),
             'category' => $category,
             'season' => $season,
             'players' => $players,
@@ -136,7 +135,7 @@ class PlayerPrintController extends Controller
         $categoryId = isset($validated['category_id']) ? (int) $validated['category_id'] : null;
 
         $html = view('pdf.academic-results', [
-            'club' => $this->club(),
+            'club' => ClubHeader::data(),
             'schoolYear' => $schoolYear,
             'sections' => AcademicResultsSheet::build($schoolYear, $categoryId),
         ])->render();
@@ -147,29 +146,12 @@ class PlayerPrintController extends Controller
     private function renderLabels(Collection $players, string $filename): Response
     {
         $html = view('pdf.folder-label', [
-            'club' => $this->club(),
+            'club' => ClubHeader::data(),
             'players' => $players,
             // Same reasoning as boardTable() above: compute once, not per label.
             'drawerSize' => FileNumber::drawerSize(),
         ])->render();
 
         return $this->pdf->stream($html, $filename);
-    }
-
-    /** The club header block, same shape ReportController uses. */
-    private function club(): array
-    {
-        $config = WebsiteConfig::singleton();
-        $locale = app()->getLocale();
-        $name = $config->club_name;
-
-        return [
-            'name' => is_array($name) ? ($name[$locale] ?? $name['en'] ?? $name['ar'] ?? '') : $name,
-            'logo' => Media::localFile($config->branding['logo'] ?? null),
-            'address' => $config->full_address ?: null,
-            'phone' => $config->contact_phone,
-            'email' => $config->contact_email,
-            'currency' => $config->settings['currencySymbol'] ?? 'DZD',
-        ];
     }
 }

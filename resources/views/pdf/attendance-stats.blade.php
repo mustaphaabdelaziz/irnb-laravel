@@ -82,6 +82,35 @@
         @endforeach
     </table>
 
+    <h2>{{ $L('att.stats.top') }} &middot; {{ $L('att.stats.bottom') }}</h2>
+    <div class="sub">{{ str_replace('{n}', (string) $ranking['min_expected'], $L('att.stats.ranking_help')) }}</div>
+    @if (empty($ranking['top']) && empty($ranking['bottom']))
+        <div class="empty">{{ $L('att.stats.no_ranking') }}</div>
+    @else
+        <table class="rows">
+            <tr>
+                <th style="width:50%;">{{ $L('att.stats.top') }}</th>
+                <th style="width:50%;">{{ $L('att.stats.bottom') }}</th>
+            </tr>
+            <tr>
+                <td>
+                    @forelse ($ranking['top'] as $i => $row)
+                        <div>{{ $i + 1 }}. {{ $row['name'] }} <span class="pct">{{ $row['category'] ?? '' }}</span> — <bdi dir="ltr">{{ $pct($row['score_pct']) }}</bdi></div>
+                    @empty
+                        <span class="pct">—</span>
+                    @endforelse
+                </td>
+                <td>
+                    @forelse ($ranking['bottom'] as $i => $row)
+                        <div>{{ $i + 1 }}. {{ $row['name'] }} <span class="pct">{{ $row['category'] ?? '' }}</span> — <bdi dir="ltr">{{ $pct($row['score_pct']) }}</bdi></div>
+                    @empty
+                        <span class="pct">—</span>
+                    @endforelse
+                </td>
+            </tr>
+        </table>
+    @endif
+
     <h2>{{ $L('att.stats.players') }}</h2>
     @if (empty($players))
         <div class="empty">{{ $L('att.stats.no_data') }}</div>

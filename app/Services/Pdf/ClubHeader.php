@@ -7,8 +7,9 @@ use App\Support\Media;
 
 /**
  * The club block every PDF opens with (`pdf.partials.header`): the name in
- * the app locale and the logo as a file path mPDF can read. Same shape as
- * the private club() helpers of ReportController and PlayerPrintController.
+ * the app locale and the logo as a file path mPDF can read. Used by every
+ * controller that renders a PDF (ReportController, PlayerPrintController and
+ * the attendance exports), so the header never drifts between them.
  */
 final class ClubHeader
 {

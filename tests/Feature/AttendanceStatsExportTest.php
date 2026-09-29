@@ -138,4 +138,31 @@ class AttendanceStatsExportTest extends TestCase
         $this->assertFalse($seen['rtl']);
         $this->assertStringContainsString('En retard', $seen['html']);   // unset name: built-in French
     }
+
+    #[Test]
+    public function the_pdf_lists_the_top_and_bottom_ranked_players(): void
+    {
+        $u15 = $this->category('U15');
+        $top = collect(range(1, 5))->map(fn () => $this->player($u15));
+        $bottom = $this->player($u15);
+
+        foreach (range(1, 5) as $day) {
+            $session = TrainingSession::create([
+                'category_id' => $u15->id, 'date' => sprintf('2026-10-0%d', $day), 'start_time' => '18:00', 'end_time' => '19:30',
+                'kind' => SessionKind::Regular, 'state' => SessionState::Held,
+            ]);
+            foreach ($top as $player) {
+                Attendance::create(['training_session_id' => $session->id, 'player_id' => $player->id, 'status' => AttendanceStatus::Present]);
+            }
+            Attendance::create(['training_session_id' => $session->id, 'player_id' => $bottom->id, 'status' => AttendanceStatus::AbsentUnexcused]);
+        }
+
+        $seen = $this->spyPdf();
+        $this->actingAs($this->userIn('en'))->get(route('attendance.stats.export', self::OCTOBER + ['format' => 'pdf']))->assertOk();
+
+        $this->assertStringContainsString('Best attendance', $seen['html']);
+        $this->assertStringContainsString('Lowest attendance', $seen['html']);
+        $this->assertStringContainsString($top->first()->fullname, $seen['html']);
+        $this->assertStringContainsString($bottom->fullname, $seen['html']);
+    }
 }

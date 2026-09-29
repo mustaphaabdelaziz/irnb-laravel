@@ -32,6 +32,12 @@ class AttendancePermissionTest extends TestCase
         $this->assertSame(['attendance', 'edit'], PermissionMap::resolve('attendance.closures.store'));
         $this->assertSame(['attendance', 'edit'], PermissionMap::resolve('attendance.closures.destroy'));
         $this->assertSame(['attendance', 'edit'], PermissionMap::resolve('attendance.preseason-targets.store'));
+
+        // 2b: statistics, their exports and the profile card only read.
+        $this->assertSame(['attendance', 'view'], PermissionMap::resolve('attendance.stats'));
+        $this->assertSame(['attendance', 'view'], PermissionMap::resolve('attendance.stats.export'));
+        $this->assertSame(['attendance', 'view'], PermissionMap::resolve('attendance.players.show'));
+        $this->assertSame(['attendance', 'view'], PermissionMap::resolve('attendance.players.report'));
     }
 
     #[Test]

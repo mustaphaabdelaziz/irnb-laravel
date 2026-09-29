@@ -56,6 +56,8 @@ return [
         'players.academic-results' => ['players', 'view'],
         // "grid" is not a view verb: opening the month grid must not need edit rights.
         'attendance.grid' => ['attendance', 'view'],
+        // "stats" is not a view verb: reading the statistics must not need edit rights.
+        'attendance.stats' => ['attendance', 'view'],
         // Schedules, closures and pre-season targets reshape the whole season's
         // calendar, not just one row, so all their writes need edit — without
         // these, deriveAction() would gate the stores as 'add' and the

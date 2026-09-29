@@ -4,6 +4,7 @@ use App\Http\Controllers\AttendanceCalendarController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceGridController;
 use App\Http\Controllers\AttendanceSettingsController;
+use App\Http\Controllers\AttendanceStatsController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\BoardController;
 use App\Http\Controllers\BoardMeetingController;
@@ -322,6 +323,7 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
 
         // Player attendance at category trainings (module `attendance`).
         Route::get('/attendance', [AttendanceCalendarController::class, 'index'])->name('attendance.index');
+        Route::get('/attendance/stats', [AttendanceStatsController::class, 'index'])->name('attendance.stats');
         Route::get('/attendance/grid', [AttendanceGridController::class, 'show'])->name('attendance.grid');
         Route::post('/attendance/grid', [AttendanceGridController::class, 'save'])->name('attendance.grid.save');
         Route::post('/attendance/sessions', [TrainingSessionController::class, 'store'])->name('attendance.sessions.store');

@@ -46,12 +46,13 @@ class AttendanceGridController extends Controller
             ->orderBy('date')->orderBy('start_time')
             ->get();
 
+        $codes = AttendanceCode::fromSettings();
         $cells = [];
         $expected = [];
         foreach ($sessions as $session) {
             if ($session->attendances->isNotEmpty()) {
                 foreach ($session->attendances as $mark) {
-                    $cells[$mark->player_id][$session->id] = AttendanceCode::format($mark->status, $mark->minutes);
+                    $cells[$mark->player_id][$session->id] = $codes->format($mark->status, $mark->minutes);
                 }
 
                 continue;
@@ -91,6 +92,7 @@ class AttendanceGridController extends Controller
         $sessionIds = array_column($data['columns'], 'session_id');
         $sessions = TrainingSession::with(['attendances', 'categories'])->whereIn('id', $sessionIds)->get()->keyBy('id');
 
+        $codes = AttendanceCode::fromSettings();
         $plan = [];
         $errors = [];
         foreach ($data['columns'] as $i => $column) {
@@ -116,7 +118,7 @@ class AttendanceGridController extends Controller
                     continue;
                 }
 
-                $parsed = AttendanceCode::parse($code);
+                $parsed = $codes->parse($code);
                 if ($parsed === null) {
                     $errors["columns.$i.codes.$playerId"] = 'att.error.invalid_code';
 

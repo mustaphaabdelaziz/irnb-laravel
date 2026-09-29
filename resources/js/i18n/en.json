@@ -1502,5 +1502,17 @@
     "att.error.not_preseason": "Only pre-season sessions can have several categories.",
     "att.error.already_marked": "Attendance has already been saved for this session.",
     "flash.training_session_categories_saved": "Categories saved.",
-    "activity.action.training_session_categories_changed": "Session categories changed"
+    "activity.action.training_session_categories_changed": "Session categories changed",
+    "att.codes": "Codes and colours",
+    "att.codes_help": "Each status has a code of 1 to 3 letters (Arabic letters allowed), written on paper and typed in the month grid. Late and left-early codes are followed by the minutes, e.g. R15. A name left empty uses the built-in one. Changing a code never changes saved marks.",
+    "att.col.status": "Status",
+    "att.col.code": "Code",
+    "att.col.color": "Colour",
+    "att.col.label_ar": "Name (Arabic)",
+    "att.col.label_fr": "Name (French)",
+    "att.col.label_en": "Name (English)",
+    "att.col.points": "Points",
+    "att.error.code_format": "1 to 3 letters, no digits or spaces.",
+    "att.error.code_taken": "Another status already uses this code.",
+    "att.error.color_format": "Pick a colour."
 }

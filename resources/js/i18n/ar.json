@@ -1502,5 +1502,17 @@
     "att.error.not_preseason": "حصص التحضير البدني وحدها يمكن أن تضم عدة فئات.",
     "att.error.already_marked": "تم تسجيل الحضور لهذه الحصة من قبل.",
     "flash.training_session_categories_saved": "تم حفظ الفئات.",
-    "activity.action.training_session_categories_changed": "تعديل فئات الحصة"
+    "activity.action.training_session_categories_changed": "تعديل فئات الحصة",
+    "att.codes": "الرموز والألوان",
+    "att.codes_help": "لكل حالة رمز من حرف إلى 3 أحرف (الحروف العربية مقبولة)، يُكتب على الورق ويُدخل في جدول الشهر. رمزا التأخر والمغادرة المبكرة يتبعهما عدد الدقائق، مثال R15. الاسم الفارغ يأخذ الاسم الافتراضي. تغيير الرمز لا يغيّر الحضور المسجل.",
+    "att.col.status": "الحالة",
+    "att.col.code": "الرمز",
+    "att.col.color": "اللون",
+    "att.col.label_ar": "الاسم (عربية)",
+    "att.col.label_fr": "الاسم (فرنسية)",
+    "att.col.label_en": "الاسم (إنجليزية)",
+    "att.col.points": "النقاط",
+    "att.error.code_format": "من حرف إلى 3 أحرف، دون أرقام أو مسافات.",
+    "att.error.code_taken": "هذا الرمز مستعمل لحالة أخرى.",
+    "att.error.color_format": "اختر لوناً."
 }

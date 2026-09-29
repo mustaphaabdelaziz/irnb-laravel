@@ -5,12 +5,17 @@ namespace App\Support;
 use App\Models\WebsiteConfig;
 
 /**
- * Attendance scoring settings, kept in WebsiteConfig.settings['attendance'].
+ * Attendance settings, kept in WebsiteConfig.settings['attendance'].
  * Points and rules only change the score used for ranking and alerts; the
- * status counts shown in reports are always the raw marks.
+ * status counts shown in reports are always the raw marks. Codes are what is
+ * written on paper and typed in the month grid; marks store the status, so
+ * changing a code never rewrites history.
  */
 final class AttendanceSettings
 {
+    /** Languages a status name can be given in. */
+    public const LOCALES = ['ar', 'fr', 'en'];
+
     public const DEFAULTS = [
         'points' => [
             'present' => 1, 'late' => 0.75, 'left_early' => 0.75, 'not_training' => 0.5,
@@ -18,6 +23,15 @@ final class AttendanceSettings
         ],
         'rules' => ['lates_per_unexcused' => 3, 'late_minutes_as_absent' => 30],
         'alerts' => ['min_score_pct' => 60, 'unexcused_streak' => 3],
+        // A null name falls back to the built-in translation att.status.<status>.
+        'codes' => [
+            'present' => ['code' => 'P', 'color' => '#059669', 'label' => ['ar' => null, 'fr' => null, 'en' => null]],
+            'late' => ['code' => 'R', 'color' => '#f59e0b', 'label' => ['ar' => null, 'fr' => null, 'en' => null]],
+            'left_early' => ['code' => 'D', 'color' => '#f97316', 'label' => ['ar' => null, 'fr' => null, 'en' => null]],
+            'not_training' => ['code' => 'B', 'color' => '#0284c7', 'label' => ['ar' => null, 'fr' => null, 'en' => null]],
+            'absent_excused' => ['code' => 'AE', 'color' => '#64748b', 'label' => ['ar' => null, 'fr' => null, 'en' => null]],
+            'absent_unexcused' => ['code' => 'AN', 'color' => '#e11d48', 'label' => ['ar' => null, 'fr' => null, 'en' => null]],
+        ],
     ];
 
     public static function get(): array
@@ -25,6 +39,12 @@ final class AttendanceSettings
         $stored = (WebsiteConfig::singleton()->settings ?? [])['attendance'] ?? [];
 
         return array_replace_recursive(self::DEFAULTS, is_array($stored) ? $stored : []);
+    }
+
+    /** @return array<string, array{code: string, color: string, label: array<string, ?string>}> */
+    public static function codes(): array
+    {
+        return self::get()['codes'];
     }
 
     public static function save(array $values): void

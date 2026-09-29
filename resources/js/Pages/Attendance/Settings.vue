@@ -27,6 +27,8 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
 
 const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900';
 const card = 'rounded-xl bg-white p-4 ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800';
+// Only att.* values are translation keys; Laravel's own messages show as they are.
+const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
 
 // ---- Weekly schedule ----
 const editingId = ref(null);
@@ -60,9 +62,16 @@ watch(() => [targetForm.category_id, targetForm.season_start_year], ([c, y]) => 
 }, { immediate: true });
 const submitTarget = () => targetForm.post(route('attendance.preseason-targets.store'), { preserveScroll: true });
 
-// ---- Points, rules, alerts ----
+// ---- Codes, points, rules, alerts: one form, one save ----
+const LOCALES = ['ar', 'fr', 'en'];
 const settingsForm = useForm(JSON.parse(JSON.stringify(props.settings)));
 const submitSettings = () => settingsForm.put(route('attendance.settings.update'), { preserveScroll: true });
+// The built-in name in one language, shown as the placeholder of that language's field.
+const builtin = (status, loc) => t(`att.status.${status}`, {}, { locale: loc });
+const rowError = (status) => tr(settingsForm.errors[`codes.${status}.code`] ?? settingsForm.errors[`codes.${status}.color`]);
+const otherErrors = computed(() => Object.entries(settingsForm.errors)
+    .filter(([k]) => !/^codes\.[a-z_]+\.(code|color)$/.test(k))
+    .map(([, e]) => tr(e)));
 </script>
 
 <template>
@@ -144,16 +153,50 @@ const submitSettings = () => settingsForm.put(route('attendance.settings.update'
                 </form>
             </section>
 
-            <!-- Points, rules, alerts -->
-            <section :class="[card, 'lg:col-span-2']">
-                <form class="grid gap-4 md:grid-cols-3" @submit.prevent="submitSettings">
-                    <div>
-                        <h2 class="mb-2 font-bold text-slate-900 dark:text-slate-100">{{ t('att.points') }}</h2>
-                        <label v-for="s in statuses" :key="s" class="mb-1 flex items-center justify-between gap-2 text-sm">
-                            {{ t(`att.status.${s}`) }}
-                            <input v-model.number="settingsForm.points[s]" type="number" step="0.25" min="-5" max="5" :class="[input, 'w-24']" />
-                        </label>
+            <!-- Codes and points, rules, alerts -->
+            <form class="space-y-4 lg:col-span-2" @submit.prevent="submitSettings">
+                <section :class="card">
+                    <h2 class="mb-1 font-bold text-slate-900 dark:text-slate-100">{{ t('att.codes') }}</h2>
+                    <p class="mb-3 text-xs text-slate-500">{{ t('att.codes_help') }}</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-[46rem] text-sm">
+                            <thead>
+                                <tr class="text-xs text-slate-500">
+                                    <th class="py-1 text-start font-semibold">{{ t('att.col.status') }}</th>
+                                    <th class="py-1 text-start font-semibold">{{ t('att.col.code') }}</th>
+                                    <th class="py-1 text-start font-semibold">{{ t('att.col.color') }}</th>
+                                    <th v-for="l in LOCALES" :key="l" class="py-1 text-start font-semibold">{{ t(`att.col.label_${l}`) }}</th>
+                                    <th class="py-1 text-start font-semibold">{{ t('att.col.points') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="s in statuses" :key="s" class="border-t border-slate-100 align-top dark:border-slate-800">
+                                    <td class="py-2 pe-2">
+                                        <span class="inline-flex items-center gap-2 font-medium">
+                                            <span class="h-3 w-3 rounded-full" :style="{ backgroundColor: settingsForm.codes[s].color }"></span>
+                                            {{ t(`att.status.${s}`) }}
+                                        </span>
+                                        <InputError :message="rowError(s)" />
+                                    </td>
+                                    <td class="py-2 pe-2">
+                                        <input v-model="settingsForm.codes[s].code" type="text" maxlength="3" dir="auto" :aria-label="`${t('att.col.code')} · ${t(`att.status.${s}`)}`" :class="[input, 'w-16 text-center font-mono uppercase']" />
+                                    </td>
+                                    <td class="py-2 pe-2">
+                                        <input v-model="settingsForm.codes[s].color" type="color" :aria-label="`${t('att.col.color')} · ${t(`att.status.${s}`)}`" class="h-9 w-12 cursor-pointer rounded border border-slate-300 bg-transparent p-0.5 dark:border-slate-700" />
+                                    </td>
+                                    <td v-for="l in LOCALES" :key="l" class="py-2 pe-2">
+                                        <input v-model="settingsForm.codes[s].label[l]" type="text" maxlength="40" :dir="l === 'ar' ? 'rtl' : 'ltr'" :placeholder="builtin(s, l)" :aria-label="`${t(`att.col.label_${l}`)} · ${t(`att.status.${s}`)}`" :class="[input, 'w-full min-w-[8rem]']" />
+                                    </td>
+                                    <td class="py-2">
+                                        <input v-model.number="settingsForm.points[s]" type="number" step="0.25" min="-5" max="5" :aria-label="`${t('att.col.points')} · ${t(`att.status.${s}`)}`" :class="[input, 'w-20']" />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
+                </section>
+
+                <section :class="[card, 'grid gap-4 md:grid-cols-2']">
                     <div>
                         <h2 class="mb-2 font-bold text-slate-900 dark:text-slate-100">{{ t('att.rules') }}</h2>
                         <label class="mb-2 block text-sm">{{ t('att.lates_per_unexcused') }}<input v-model.number="settingsForm.rules.lates_per_unexcused" type="number" min="0" max="20" :class="[input, 'mt-1 block w-24']" /></label>
@@ -164,12 +207,13 @@ const submitSettings = () => settingsForm.put(route('attendance.settings.update'
                         <label class="mb-2 block text-sm">{{ t('att.min_score_pct') }}<input v-model.number="settingsForm.alerts.min_score_pct" type="number" min="0" max="100" :class="[input, 'mt-1 block w-24']" /></label>
                         <label class="block text-sm">{{ t('att.unexcused_streak') }}<input v-model.number="settingsForm.alerts.unexcused_streak" type="number" min="0" max="20" :class="[input, 'mt-1 block w-24']" /></label>
                     </div>
-                    <div class="md:col-span-3">
-                        <InputError v-for="(e, k) in settingsForm.errors" :key="k" :message="e" />
-                        <button type="submit" :disabled="settingsForm.processing" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">{{ t('att.save') }}</button>
-                    </div>
-                </form>
-            </section>
+                </section>
+
+                <div>
+                    <InputError v-for="(e, i) in otherErrors" :key="i" :message="e" />
+                    <button type="submit" :disabled="settingsForm.processing" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">{{ t('att.save') }}</button>
+                </div>
+            </form>
         </div>
     </AuthenticatedLayout>
 </template>

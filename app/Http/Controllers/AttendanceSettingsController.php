@@ -9,10 +9,12 @@ use App\Models\ClubClosure;
 use App\Models\PreseasonTarget;
 use App\Models\TrainingSchedule;
 use App\Models\TrainingSession;
+use App\Services\Attendance\AttendanceCode;
 use App\Support\AttendanceSettings;
 use App\Support\Season;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -46,13 +48,24 @@ class AttendanceSettingsController extends Controller
         ];
         foreach (AttendanceStatus::values() as $status) {
             $rules["points.$status"] = ['required', 'numeric', 'between:-5,5'];
+            $rules["codes.$status.code"] = ['required', 'string', 'regex:/^\p{L}{1,3}$/u'];
+            $rules["codes.$status.color"] = ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'];
+            foreach (AttendanceSettings::LOCALES as $locale) {
+                $rules["codes.$status.label.$locale"] = ['nullable', 'string', 'max:40'];
+            }
         }
-        $data = $request->validate($rules);
+        $data = $request->validate($rules, [
+            'codes.*.code.required' => 'att.error.code_format',
+            'codes.*.code.regex' => 'att.error.code_format',
+            'codes.*.color.required' => 'att.error.color_format',
+            'codes.*.color.regex' => 'att.error.color_format',
+        ]);
 
         AttendanceSettings::save([
             'points' => array_map('floatval', $data['points']),
             'rules' => array_map('intval', $data['rules']),
             'alerts' => array_map('intval', $data['alerts']),
+            'codes' => $this->normaliseCodes($data['codes']),
         ]);
 
         return back()->with('success', 'flash.attendance_settings_saved');
@@ -120,6 +133,41 @@ class AttendanceSettingsController extends Controller
         );
 
         return back()->with('success', 'flash.preseason_target_saved');
+    }
+
+    /**
+     * Codes are stored upper-cased and must differ from each other ignoring
+     * case (the grid compares them that way); the later status in the list
+     * gets the error. Colours are stored lower-cased, empty names as null.
+     */
+    private function normaliseCodes(array $input): array
+    {
+        $codes = [];
+        $seen = [];
+        $errors = [];
+
+        foreach (AttendanceStatus::values() as $status) {
+            $row = $input[$status];
+            $code = AttendanceCode::normalise($row['code']);
+            if (isset($seen[$code])) {
+                $errors["codes.$status.code"] = 'att.error.code_taken';
+            }
+            $seen[$code] = true;
+
+            $labels = [];
+            foreach (AttendanceSettings::LOCALES as $locale) {
+                $label = $row['label'][$locale] ?? null;
+                $labels[$locale] = $label === null || $label === '' ? null : $label;
+            }
+
+            $codes[$status] = ['code' => $code, 'color' => strtolower($row['color']), 'label' => $labels];
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+
+        return $codes;
     }
 
     private function validateSchedule(Request $request): array

@@ -32,21 +32,24 @@ function onInput(pid, sid, event) {
     values[pid][sid] = event.target.value.toUpperCase();
     dirty.add(sid);
 }
+// Only att.* codes are translation keys; anything else (e.g. a plain message) shows as is.
+const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
 function cellError(pid, sid) {
     const i = sent.value.indexOf(sid);
     const e = i === -1 ? null : page.props.errors?.[`columns.${i}.codes.${pid}`];
-    return e ? t(e) : null;
+    return tr(e);
 }
 function columnError(sid) {
     const i = sent.value.indexOf(sid);
-    return i === -1 ? null : page.props.errors?.[`columns.${i}`];
+    const e = i === -1 ? null : page.props.errors?.[`columns.${i}`];
+    return tr(e);
 }
 const columnMessages = computed(() => {
     const errors = page.props.errors ?? {};
 
     return Object.keys(errors)
         .filter((key) => /^columns\.\d+$/.test(key) || key === 'session' || key === 'marks')
-        .map((key) => (typeof errors[key] === 'string' && errors[key].startsWith('att.') ? t(errors[key]) : errors[key]));
+        .map((key) => tr(errors[key]));
 });
 const codeStyle = (code) => ({
     'bg-amber-50 dark:bg-amber-500/10': /^R/.test(code),
@@ -96,7 +99,7 @@ function save() {
         </template>
 
         <p class="mb-3 text-xs text-slate-500">{{ t('att.grid_help') }}</p>
-        <InputError :message="page.props.errors?.columns ? t(page.props.errors.columns) : null" />
+        <InputError :message="tr(page.props.errors?.columns)" />
         <InputError v-for="(msg, idx) in columnMessages" :key="idx" :message="msg" />
 
         <p v-if="!sessions.length" class="text-sm text-slate-500">{{ t('att.no_sessions') }}</p>
@@ -105,7 +108,7 @@ function save() {
                 <thead>
                     <tr class="bg-slate-50 dark:bg-slate-800/50">
                         <th class="sticky start-0 z-10 bg-slate-50 p-2 text-start dark:bg-slate-800">{{ t('att.player') }}</th>
-                        <th v-for="s in sessions" :key="s.id" class="min-w-[3.5rem] p-1 text-center text-xs font-semibold" :class="columnError(s.id) ? 'text-rose-600' : dirty.has(s.id) ? 'text-primary-600' : 'text-slate-500'" :title="columnError(s.id) ? t(columnError(s.id)) : ''">
+                        <th v-for="s in sessions" :key="s.id" class="min-w-[3.5rem] p-1 text-center text-xs font-semibold" :class="columnError(s.id) ? 'text-rose-600' : dirty.has(s.id) ? 'text-primary-600' : 'text-slate-500'" :title="columnError(s.id) ?? ''">
                             <Link :href="route('attendance.sessions.show', s.id)" class="hover:underline">{{ dayLabel(s) }}</Link>
                             <div class="font-normal" :class="s.state === 'held' ? 'text-emerald-600' : 'text-slate-400'">{{ s.state === 'held' ? '✓' : '·' }}</div>
                         </th>

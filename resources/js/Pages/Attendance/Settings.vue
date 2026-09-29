@@ -17,7 +17,9 @@ const props = defineProps({
 });
 const { t, locale } = useI18n();
 const lang = computed(() => (locale.value === 'ar' ? 'ar' : locale.value));
-const today = new Date().toISOString().slice(0, 10);
+// Local 'Y-m-d', not toISOString()'s UTC date (see Index.vue's key()).
+const key = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const today = key(new Date());
 
 // ISO weekday 1..7 -> localized name (2024-01-01 is a Monday).
 const weekdayName = (n) => new Date(Date.UTC(2024, 0, n)).toLocaleDateString(lang.value, { weekday: 'long', timeZone: 'UTC' });

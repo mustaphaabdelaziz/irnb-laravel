@@ -48,6 +48,19 @@ class MarkRecorderTest extends TestCase
     }
 
     #[Test]
+    public function a_player_who_left_exactly_on_the_session_date_is_not_expected(): void
+    {
+        $u15 = $this->category();
+        // Player::booted() clears left_at unless the status is "left" (seeded by migrations).
+        $left = Player::leftStatusId();
+        $this->player($u15, ['status_id' => $left, 'left_at' => '2026-10-05']);
+
+        $ids = app(Roster::class)->expected($u15->id, '2026-10-05')->pluck('id')->all();
+
+        $this->assertSame([], $ids);
+    }
+
+    #[Test]
     public function saving_stores_marks_normalises_fields_and_holds_the_session(): void
     {
         $u15 = $this->category();

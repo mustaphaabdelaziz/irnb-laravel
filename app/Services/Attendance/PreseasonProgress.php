@@ -10,6 +10,7 @@ use App\Models\TrainingSession;
 use App\Support\Season;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Pre-season progress per category and season. A joint pre-season session
@@ -29,6 +30,40 @@ final class PreseasonProgress
             'target' => PreseasonTarget::where('category_id', $categoryId)
                 ->where('season_start_year', $season->startYear)->value('target_count'),
         ];
+    }
+
+    /**
+     * Every category's progress for the season of $date in three queries
+     * (the statistics page lists all categories at once).
+     *
+     * @return array<int, array{season: string, done: int, target: ?int}> keyed by category id
+     */
+    public function forCategories(DateTimeInterface|string $date): array
+    {
+        $season = Season::forDate($date);
+
+        $done = DB::table('training_session_category')
+            ->join('training_sessions', 'training_sessions.id', '=', 'training_session_category.training_session_id')
+            ->where('training_sessions.kind', SessionKind::Preseason->value)
+            ->where('training_sessions.state', SessionState::Held->value)
+            ->whereBetween('training_sessions.date', [$season->start()->toDateString(), $season->end()->toDateString()])
+            ->select('training_session_category.category_id')
+            ->selectRaw('count(*) as total')
+            ->groupBy('training_session_category.category_id')
+            ->get()
+            ->mapWithKeys(fn ($row) => [(int) $row->category_id => (int) $row->total]);
+
+        $targets = PreseasonTarget::where('season_start_year', $season->startYear)
+            ->get(['category_id', 'target_count'])
+            ->mapWithKeys(fn (PreseasonTarget $target) => [(int) $target->category_id => (int) $target->target_count]);
+
+        return Category::orderBy('id')->pluck('id')
+            ->mapWithKeys(fn ($id) => [(int) $id => [
+                'season' => $season->label(),
+                'done' => $done[(int) $id] ?? 0,
+                'target' => $targets[(int) $id] ?? null,
+            ]])
+            ->all();
     }
 
     /**

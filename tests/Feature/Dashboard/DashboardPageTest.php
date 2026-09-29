@@ -236,7 +236,10 @@ class DashboardPageTest extends TestCase
         // design) and one for the certificate counts themselves.
         // members: +3 for leavers — the "left" tile, left-per-month on the growth
         // chart, and departures by category.
-        foreach (['members' => 21, 'operations' => 12] as $tab => $budget) {
+        // members: +5 for the attendance card — today's schedules, today's
+        // sessions, the attendance settings, and the last 30 days' marks
+        // grouped by status and by session length.
+        foreach (['members' => 26, 'operations' => 12] as $tab => $budget) {
             $recorder = new \ArrayObject;
             DB::listen(function ($query) use ($recorder): void {
                 $recorder->append($query->sql);

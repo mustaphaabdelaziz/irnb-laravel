@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n';
 import ChartCard from '@/Components/Dashboard/ChartCard.vue';
 import Meter from '@/Components/Dashboard/Meter.vue';
 import StatTile from '@/Components/Dashboard/StatTile.vue';
+import AttendanceCard from '@/Pages/Dashboard/Partials/AttendanceCard.vue';
 import { Card, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Separator } from '@/Components/ui/separator';
 import { baseOptions, ordinal, seriesColor, sequential, spanLabel } from '@/lib/chartTheme';
@@ -199,6 +200,8 @@ const genderTotal = computed(() => (split.value.male + split.value.female) || 1)
                 :tone="tile.tone"
             />
         </section>
+
+        <AttendanceCard v-if="data?.attendance" :data="data.attendance" />
 
         <section v-if="academic && academic.students" class="space-y-3" :aria-label="t('dashboard.mem_academic')">
             <h3 class="text-sm font-semibold text-muted-foreground">{{ t('dashboard.mem_academic') }}</h3>

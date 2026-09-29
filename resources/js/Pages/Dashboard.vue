@@ -30,6 +30,8 @@ const props = defineProps({
     finance: { type: Object, default: null },
     members: { type: Object, default: null },
     operations: { type: Object, default: null },
+    // Status names and colours for the attendance card; null without attendance/view.
+    attendanceCodes: { type: Object, default: null },
 });
 
 const { t, locale } = useI18n();

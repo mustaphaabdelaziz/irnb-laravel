@@ -1565,5 +1565,10 @@
     "att.profile.load_error": "Attendance could not be loaded.",
     "att.retry": "Try again",
     "att.report_title": "Attendance report",
-    "att.print_report": "Attendance report (PDF)"
+    "att.print_report": "Attendance report (PDF)",
+    "att.dash.today": "Today's sessions",
+    "att.dash.none_today": "No sessions today.",
+    "att.dash.last30": "Last 30 days",
+    "att.dash.no_marks": "No attendance recorded in the last 30 days.",
+    "att.dash.open_calendar": "Open the calendar"
 }

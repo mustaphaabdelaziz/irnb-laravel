@@ -1565,5 +1565,10 @@
     "att.profile.load_error": "تعذّر تحميل الحضور.",
     "att.retry": "إعادة المحاولة",
     "att.report_title": "تقرير الحضور",
-    "att.print_report": "تقرير الحضور (PDF)"
+    "att.print_report": "تقرير الحضور (PDF)",
+    "att.dash.today": "حصص اليوم",
+    "att.dash.none_today": "لا توجد حصص اليوم.",
+    "att.dash.last30": "آخر 30 يومًا",
+    "att.dash.no_marks": "لم يُسجَّل أي حضور خلال آخر 30 يومًا.",
+    "att.dash.open_calendar": "فتح التقويم"
 }

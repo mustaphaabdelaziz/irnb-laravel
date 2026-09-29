@@ -1565,5 +1565,10 @@
     "att.profile.load_error": "Impossible de charger les présences.",
     "att.retry": "Réessayer",
     "att.report_title": "Rapport de présence",
-    "att.print_report": "Rapport de présence (PDF)"
+    "att.print_report": "Rapport de présence (PDF)",
+    "att.dash.today": "Séances du jour",
+    "att.dash.none_today": "Aucune séance aujourd'hui.",
+    "att.dash.last30": "30 derniers jours",
+    "att.dash.no_marks": "Aucune présence enregistrée ces 30 derniers jours.",
+    "att.dash.open_calendar": "Ouvrir le calendrier"
 }

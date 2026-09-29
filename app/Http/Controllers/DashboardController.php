@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Branch;
 use App\Models\User;
+use App\Services\Dashboard\AttendanceCard;
 use App\Services\Dashboard\DashboardFilters;
 use App\Services\Dashboard\FinanceStats;
 use App\Services\Dashboard\HeroStats;
 use App\Services\Dashboard\MemberStats;
 use App\Services\Dashboard\OperationsStats;
 use App\Services\Dashboard\OverviewStats;
+use App\Support\AttendanceSettings;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -37,6 +39,7 @@ class DashboardController extends Controller
         private readonly FinanceStats $finance,
         private readonly MemberStats $members,
         private readonly OperationsStats $operations,
+        private readonly AttendanceCard $attendance,
     ) {}
 
     public function __invoke(Request $request): Response
@@ -55,6 +58,10 @@ class DashboardController extends Controller
                 ->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
             'can' => fn (): array => $this->visibleTabs($user),
             'hero' => fn (): array => $this->hero->get($filters),
+            // Status names and colours for the members tab's attendance card.
+            'attendanceCodes' => fn (): ?array => $user?->hasPermission('attendance', 'view')
+                ? AttendanceSettings::codes()
+                : null,
             ...$this->tabProps($filters, $user),
         ]);
     }
@@ -79,7 +86,12 @@ class DashboardController extends Controller
                 ? $this->finance->get($filters)
                 : null,
             'members' => fn (): ?array => $this->guard($user, 'members')
-                ? $this->members->get($filters)
+                ? [
+                    ...$this->members->get($filters),
+                    // The attendance card rides with the members tab; it needs
+                    // attendance/view on top of the tab's players/view.
+                    'attendance' => $user->hasPermission('attendance', 'view') ? $this->attendance->get() : null,
+                ]
                 : null,
             'operations' => fn (): ?array => $this->guard($user, 'operations')
                 ? $this->operations->get($filters)

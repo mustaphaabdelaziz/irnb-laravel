@@ -1514,5 +1514,6 @@
     "att.col.points": "Points",
     "att.error.code_format": "1 to 3 letters, no digits or spaces.",
     "att.error.code_taken": "Another status already uses this code.",
-    "att.error.color_format": "Pick a colour."
+    "att.error.color_format": "Pick a colour.",
+    "att.grid_help_codes": "Type one code per cell; add the minutes after the late and left-early codes, e.g. {late}15. An empty cell counts as present when the column is saved."
 }

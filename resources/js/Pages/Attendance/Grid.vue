@@ -6,6 +6,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Icon from '@/Components/Icon.vue';
 import InputError from '@/Components/InputError.vue';
 import { useCan } from '@/Composables/useCan';
+import { useAttendanceCodes } from '@/Composables/useAttendanceCodes';
 
 const props = defineProps({
     category: { type: Object, required: true },
@@ -16,6 +17,7 @@ const props = defineProps({
 });
 const { t, locale } = useI18n();
 const { can } = useCan();
+const { statuses, code, label, chipStyle, tint, statusOf } = useAttendanceCodes();
 const page = usePage();
 const editable = computed(() => can('attendance', 'edit'));
 const lang = computed(() => (locale.value === 'ar' ? 'ar' : locale.value));
@@ -27,6 +29,9 @@ const sent = ref([]); // session ids in the order last posted, to map `columns.{
 const inRoster = (pid, sid) => values[pid] !== undefined && sid in values[pid];
 const dayLabel = (s) => new Date(`${s.date}T00:00:00`).toLocaleDateString(lang.value, { weekday: 'short', day: 'numeric' });
 const monthLabel = computed(() => new Date(`${props.month}-01T00:00:00`).toLocaleDateString(lang.value, { month: 'long', year: 'numeric' }));
+
+// The legend comes from the configured codes: late / left early show a sample with minutes.
+const legendCode = (s) => code(s) + (s === 'late' || s === 'left_early' ? '15' : '');
 
 function onInput(pid, sid, event) {
     values[pid][sid] = event.target.value.toUpperCase();
@@ -51,13 +56,11 @@ const columnMessages = computed(() => {
         .filter((key) => /^columns\.\d+$/.test(key) || key === 'session' || key === 'marks')
         .map((key) => tr(errors[key]));
 });
-const codeStyle = (code) => ({
-    'bg-amber-50 dark:bg-amber-500/10': /^R/.test(code),
-    'bg-orange-50 dark:bg-orange-500/10': /^D/.test(code),
-    'bg-sky-50 dark:bg-sky-500/10': code === 'B',
-    'bg-slate-100 dark:bg-slate-800': code === 'AE',
-    'bg-rose-50 dark:bg-rose-500/10': code === 'AN',
-});
+// A wash of the configured colour of the status the code stands for; present stays plain.
+function cellStyle(value) {
+    const status = statusOf(value);
+    return status && status !== 'present' ? tint(status) : null;
+}
 
 // Spreadsheet-style navigation: arrows / Enter move between cells (mirrored in RTL).
 function onKey(event, r, c) {
@@ -98,7 +101,12 @@ function save() {
             </div>
         </template>
 
-        <p class="mb-3 text-xs text-slate-500">{{ t('att.grid_help') }}</p>
+        <div class="mb-2 flex flex-wrap gap-2 text-xs">
+            <span v-for="s in statuses" :key="s" class="inline-flex items-center gap-1 rounded-full px-2 py-0.5" :style="chipStyle(s)">
+                <b class="font-mono" dir="ltr">{{ legendCode(s) }}</b>{{ label(s) }}
+            </span>
+        </div>
+        <p class="mb-3 text-xs text-slate-500">{{ t('att.grid_help_codes', { late: code('late') }) }}</p>
         <InputError :message="tr(page.props.errors?.columns)" />
         <InputError v-for="(msg, idx) in columnMessages" :key="idx" :message="msg" />
 
@@ -126,7 +134,8 @@ function save() {
                                     maxlength="6"
                                     dir="ltr"
                                     class="w-14 rounded border-slate-200 p-1 text-center font-mono text-xs uppercase dark:border-slate-700 dark:bg-slate-900"
-                                    :class="[codeStyle(values[row.id][s.id]), cellError(row.id, s.id) ? 'border-rose-500 ring-1 ring-rose-500' : '']"
+                                    :class="cellError(row.id, s.id) ? 'border-rose-500 ring-1 ring-rose-500' : ''"
+                                    :style="cellStyle(values[row.id][s.id])"
                                     :title="cellError(row.id, s.id) ?? ''"
                                     @input="onInput(row.id, s.id, $event)"
                                     @keydown="onKey($event, r, c)"

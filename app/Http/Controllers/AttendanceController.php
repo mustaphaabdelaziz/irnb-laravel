@@ -11,6 +11,7 @@ use App\Models\Player;
 use App\Models\TrainingSession;
 use App\Services\Attendance\MarkRecorder;
 use App\Services\Attendance\Roster;
+use App\Support\AttendanceSettings;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -64,6 +65,7 @@ class AttendanceController extends Controller
                 ->orderByDesc('date')->value('coach'),
             'statuses' => AttendanceStatus::values(),
             'reasons' => AbsenceReason::values(),
+            'attendanceCodes' => AttendanceSettings::codes(),
             'allCategories' => $session->kind === SessionKind::Preseason
                 ? Category::orderBy('id')->get()->map(fn (Category $c) => ['id' => $c->id, 'name' => $c->localized_name])->values()
                 : [],

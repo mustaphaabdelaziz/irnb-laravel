@@ -1514,5 +1514,6 @@
     "att.col.points": "Points",
     "att.error.code_format": "1 à 3 lettres, sans chiffres ni espaces.",
     "att.error.code_taken": "Un autre statut utilise déjà ce code.",
-    "att.error.color_format": "Choisissez une couleur."
+    "att.error.color_format": "Choisissez une couleur.",
+    "att.grid_help_codes": "Saisissez un code par case ; ajoutez les minutes après les codes de retard et de départ anticipé, ex. {late}15. Une case vide compte comme présent à l’enregistrement de la colonne."
 }

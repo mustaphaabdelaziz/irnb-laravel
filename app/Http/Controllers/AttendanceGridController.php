@@ -12,6 +12,7 @@ use App\Services\Attendance\AttendanceCode;
 use App\Services\Attendance\MarkRecorder;
 use App\Services\Attendance\Roster;
 use App\Services\Attendance\SessionGenerator;
+use App\Support\AttendanceSettings;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -77,6 +78,7 @@ class AttendanceGridController extends Controller
             ])->values(),
             'rows' => $rows,
             'cells' => (object) $cells,
+            'attendanceCodes' => AttendanceSettings::codes(),
         ]);
     }
 

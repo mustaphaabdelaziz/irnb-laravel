@@ -7,6 +7,7 @@ import Icon from '@/Components/Icon.vue';
 import Modal from '@/Components/Modal.vue';
 import InputError from '@/Components/InputError.vue';
 import { useCan } from '@/Composables/useCan';
+import { useAttendanceCodes } from '@/Composables/useAttendanceCodes';
 
 const props = defineProps({
     session: { type: Object, required: true },
@@ -20,6 +21,7 @@ const props = defineProps({
 });
 const { t, locale } = useI18n();
 const { can } = useCan();
+const { label, chipStyle } = useAttendanceCodes();
 const page = usePage();
 const errors = computed(() => page.props.errors ?? {});
 
@@ -40,10 +42,7 @@ function setStatus(row, status) {
 }
 const allPresent = () => rows.value.forEach((r) => setStatus(r, 'present'));
 
-const statusStyle = {
-    present: 'bg-emerald-600 text-white', late: 'bg-amber-500 text-white', left_early: 'bg-orange-500 text-white',
-    not_training: 'bg-sky-600 text-white', absent_excused: 'bg-slate-500 text-white', absent_unexcused: 'bg-rose-600 text-white',
-};
+const idleChip = 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400';
 const counts = computed(() => rows.value.reduce((acc, r) => ((acc[r.status] = (acc[r.status] ?? 0) + 1), acc), {}));
 
 const pick = ref('');
@@ -120,7 +119,7 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
             <section class="rounded-xl bg-white ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800 lg:col-span-2">
                 <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 p-3 dark:border-slate-800">
                     <div class="flex flex-wrap gap-2 text-xs">
-                        <span v-for="s in statuses" :key="s" v-show="counts[s]" class="rounded-full px-2 py-0.5" :class="statusStyle[s]">{{ t(`att.status.${s}`) }}: {{ counts[s] }}</span>
+                        <span v-for="s in statuses" :key="s" v-show="counts[s]" class="rounded-full px-2 py-0.5" :style="chipStyle(s)">{{ label(s) }}: {{ counts[s] }}</span>
                     </div>
                     <button v-if="editable" class="rounded-lg px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-50 dark:text-emerald-300 dark:ring-emerald-900" @click="allPresent">{{ t('att.all_present') }}</button>
                 </div>
@@ -131,7 +130,7 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                                 {{ row.name }}
                                 <span v-if="row.category" class="ms-1 text-xs font-normal text-slate-400">{{ row.category }}</span>
                             </span>
-                            <button v-for="s in statuses" :key="s" type="button" :disabled="!editable" class="rounded-lg px-2 py-1 text-xs font-semibold" :class="row.status === s ? statusStyle[s] : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400'" @click="setStatus(row, s)">{{ t(`att.status.${s}`) }}</button>
+                            <button v-for="s in statuses" :key="s" type="button" :disabled="!editable" class="rounded-lg px-2 py-1 text-xs font-semibold" :class="row.status === s ? '' : idleChip" :style="row.status === s ? chipStyle(s) : null" @click="setStatus(row, s)">{{ label(s) }}</button>
                             <button v-if="editable" type="button" class="p-1 text-slate-300 hover:text-rose-600" :title="t('att.remove')" @click="removeRow(row)"><Icon name="trash" /></button>
                         </div>
                         <div v-if="takesMinutes(row.status) || takesReason(row.status) || row.note" class="mt-2 flex flex-wrap items-center gap-2">

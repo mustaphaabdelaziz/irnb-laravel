@@ -2,9 +2,9 @@
 import { computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
-import Icon from '@/Components/Icon.vue';
 import { useAttendanceCodes } from '@/Composables/useAttendanceCodes';
-import { KIND_DOT, addMonths, dateKey, parseDay } from '@/lib/attendanceCalendar';
+import { KIND_DOT, dateKey, parseDay } from '@/lib/attendanceCalendar';
+import MonthNav from './MonthNav.vue';
 
 const props = defineProps({
     categories: { type: Array, default: () => [] },
@@ -20,7 +20,6 @@ const { statuses, color, summaryText } = useAttendanceCodes();
 
 const todayKey = dateKey(new Date());
 const anchor = computed(() => parseDay(`${props.month}-01`));
-const monthLabel = computed(() => anchor.value.toLocaleDateString(locale.value, { month: 'long', year: 'numeric' }));
 const weekdays = computed(() => Array.from({ length: 7 }, (_, i) =>
     new Date(Date.UTC(2024, 0, 1 + i)).toLocaleDateString(locale.value, { weekday: 'short', timeZone: 'UTC' })));
 
@@ -63,9 +62,7 @@ const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg
             <select :value="categoryId" :class="input" :aria-label="t('att.category')" @change="go({ category_id: Number($event.target.value) })">
                 <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
             </select>
-            <button class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rtl:rotate-180" :aria-label="t('att.prev_month')" @click="go({ month: addMonths(month, -1) })"><Icon name="back" /></button>
-            <span class="min-w-[9rem] text-center text-sm font-bold capitalize text-slate-900 dark:text-slate-100">{{ monthLabel }}</span>
-            <button class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 ltr:rotate-180" :aria-label="t('att.next_month')" @click="go({ month: addMonths(month, 1) })"><Icon name="back" /></button>
+            <MonthNav :month="month" @change="(m) => go({ month: m })" />
             <span v-if="preseason" class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">{{ preseasonLabel }}</span>
         </div>
 

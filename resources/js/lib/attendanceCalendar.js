@@ -33,6 +33,9 @@ export function toMinutes(hhmm) {
     return h * 60 + m;
 }
 
+/** Short day label ("Mon, 3 Feb") for a date key, in the given locale. */
+export const dayLabel = (key, locale) => parseDay(key).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' });
+
 export const KIND_DOT = { regular: 'bg-primary-500', preseason: 'bg-amber-500', extra: 'bg-violet-500' };
 export const KIND_BORDER = { regular: 'border-primary-500', preseason: 'border-amber-500', extra: 'border-violet-500' };
 export const KIND_BLOCK = {

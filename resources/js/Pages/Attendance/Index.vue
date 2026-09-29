@@ -59,7 +59,7 @@ function openCreate(kind) {
         <p v-if="!categories.length" class="text-sm text-slate-500">{{ t('att.no_category') }}</p>
 
         <div v-else class="space-y-4">
-            <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center justify-between gap-3 print:hidden">
                 <ViewSwitcher :view="view" @switch="switchView" />
                 <div v-if="can('attendance', 'add')" class="flex gap-2">
                     <button class="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-primary-700" @click="openCreate('extra')">+ {{ t('att.add_extra') }}</button>

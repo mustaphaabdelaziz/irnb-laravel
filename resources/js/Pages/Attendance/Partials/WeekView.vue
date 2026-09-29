@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import Icon from '@/Components/Icon.vue';
-import { KIND_BLOCK, addDays, dateKey, parseDay, toMinutes } from '@/lib/attendanceCalendar';
+import { KIND_BLOCK, addDays, dateKey, dayLabel as formatDayLabel, toMinutes } from '@/lib/attendanceCalendar';
 
 const props = defineProps({
     week: { type: Object, required: true }, // { start, end } 'Y-m-d', Monday to Sunday
@@ -15,7 +15,7 @@ const { t, locale } = useI18n();
 const HOUR_PX = 48;
 const today = dateKey(new Date());
 const days = computed(() => Array.from({ length: 7 }, (_, i) => addDays(props.week.start, i)));
-const dayLabel = (key) => parseDay(key).toLocaleDateString(locale.value, { weekday: 'short', day: 'numeric', month: 'short' });
+const dayLabel = (key) => formatDayLabel(key, locale.value);
 const rangeLabel = computed(() => `${dayLabel(props.week.start)} – ${dayLabel(props.week.end)}`);
 
 // Hour rows from the earliest start to the latest end of the week, never less than 08:00–20:00.

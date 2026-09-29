@@ -174,7 +174,7 @@ function switchLocale(code) {
 </script>
 
 <template>
-    <div class="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div class="min-h-screen bg-slate-50 dark:bg-slate-950 print:bg-white">
         <FlashMessages />
 
         <!-- Mobile overlay -->
@@ -186,7 +186,7 @@ function switchLocale(code) {
 
         <!-- ===== SIDEBAR ===== -->
         <aside
-            class="fixed inset-y-0 start-0 z-50 flex w-64 flex-col border-e border-slate-200 bg-white text-slate-700 transition-transform duration-300 ease-out dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
+            class="fixed inset-y-0 start-0 z-50 flex w-64 flex-col border-e border-slate-200 bg-white text-slate-700 transition-transform duration-300 ease-out dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 print:hidden"
             :class="mobileMenuOpen ? 'translate-x-0' : 'max-lg:-translate-x-full max-lg:rtl:translate-x-full'"
         >
             <!-- Crest -->
@@ -241,8 +241,8 @@ function switchLocale(code) {
         </aside>
 
         <!-- ===== MAIN ===== -->
-        <div class="lg:ms-64">
-            <header class="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-slate-200/80 bg-white/75 px-4 backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-900/75 sm:px-6">
+        <div class="lg:ms-64 print:ms-0">
+            <header class="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-slate-200/80 bg-white/75 px-4 backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-900/75 sm:px-6 print:hidden">
                 <button
                     @click="mobileMenuOpen = !mobileMenuOpen"
                     class="-ms-1 rounded-lg p-2 text-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 lg:hidden"

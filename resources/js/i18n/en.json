@@ -1501,5 +1501,6 @@
     "att.categories_help": "Categories can be changed until attendance is first saved.",
     "att.error.not_preseason": "Only pre-season sessions can have several categories.",
     "att.error.already_marked": "Attendance has already been saved for this session.",
-    "flash.training_session_categories_saved": "Categories saved."
+    "flash.training_session_categories_saved": "Categories saved.",
+    "activity.action.training_session_categories_changed": "Session categories changed"
 }

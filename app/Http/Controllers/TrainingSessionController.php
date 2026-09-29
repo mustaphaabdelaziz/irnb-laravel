@@ -26,8 +26,8 @@ class TrainingSessionController extends Controller
     {
         $data = $request->validate([
             'category_id' => ['required', 'integer', 'exists:categories,id'],
-            'category_ids' => ['nullable', 'array'],
-            'category_ids.*' => ['integer', 'distinct', 'exists:categories,id'],
+            'category_ids' => ['exclude_unless:kind,preseason', 'nullable', 'array'],
+            'category_ids.*' => ['exclude_unless:kind,preseason', 'integer', 'distinct', 'exists:categories,id'],
             'kind' => ['required', Rule::in([SessionKind::Extra->value, SessionKind::Preseason->value])],
             'title' => ['nullable', 'string', 'max:150'],
             ...$this->slotRules(),
@@ -80,9 +80,10 @@ class TrainingSessionController extends Controller
         $primary = in_array($session->category_id, $ids, true) ? $session->category_id : $ids[0];
 
         try {
-            DB::transaction(function () use ($session, $ids, $primary) {
+            DB::transaction(function () use ($session, $ids, $primary, $request) {
                 $session->update(['category_id' => $primary]);
                 $session->categories()->sync($ids);
+                ActivityRecorder::record($request->user(), ActivityAction::TRAINING_SESSION_CATEGORIES_CHANGED, $session, ['count' => count($ids)]);
             });
         } catch (UniqueConstraintViolationException) {
             throw ValidationException::withMessages(['category_ids' => 'att.error.duplicate']);

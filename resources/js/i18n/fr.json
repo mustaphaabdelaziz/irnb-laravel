@@ -1501,5 +1501,6 @@
     "att.categories_help": "Les catégories peuvent être modifiées tant que les présences ne sont pas enregistrées.",
     "att.error.not_preseason": "Seules les séances de préparation peuvent regrouper plusieurs catégories.",
     "att.error.already_marked": "Les présences de cette séance sont déjà enregistrées.",
-    "flash.training_session_categories_saved": "Catégories enregistrées."
+    "flash.training_session_categories_saved": "Catégories enregistrées.",
+    "activity.action.training_session_categories_changed": "Catégories de séance modifiées"
 }

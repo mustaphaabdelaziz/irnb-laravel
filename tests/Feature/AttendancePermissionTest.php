@@ -64,6 +64,7 @@ class AttendancePermissionTest extends TestCase
             ActivityAction::TRAINING_SESSION_CREATED,
             ActivityAction::TRAINING_SESSION_CANCELLED,
             ActivityAction::TRAINING_SESSION_MOVED,
+            ActivityAction::TRAINING_SESSION_CATEGORIES_CHANGED,
         ], ActivityAction::AREAS['attendance']);
     }
 }

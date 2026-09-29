@@ -5,11 +5,13 @@ namespace Tests\Feature;
 use App\Enums\AttendanceStatus;
 use App\Enums\SessionKind;
 use App\Enums\SessionState;
+use App\Models\ActivityLog;
 use App\Models\Attendance;
 use App\Models\Category;
 use App\Models\Role;
 use App\Models\TrainingSession;
 use App\Models\User;
+use App\Services\Activity\ActivityAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
@@ -95,6 +97,34 @@ class PreseasonMultiCategoryTest extends TestCase
     }
 
     #[Test]
+    public function a_joint_session_moved_to_a_free_slot_keeps_both_categories(): void
+    {
+        [$u15, $u17] = [$this->category(), $this->category('U17')];
+        $joint = $this->makeTraining($u15);
+        $joint->categories()->syncWithoutDetaching([$u17->id]);
+
+        $this->actingAs($this->admin())->post(route('attendance.sessions.move', $joint), $this->slot(['date' => '2026-09-06', 'start_time' => '11:00', 'end_time' => '12:30']))
+            ->assertSessionHasNoErrors()->assertSessionHas('success', 'flash.training_session_moved');
+
+        $joint->refresh();
+        $this->assertSame('2026-09-06', $joint->date);
+        $this->assertSame('11:00', $joint->start_time);
+        $this->assertSame([$u15->id, $u17->id], $joint->categoryIds());
+    }
+
+    #[Test]
+    public function an_extra_session_ignores_junk_category_ids_and_stays_single_category(): void
+    {
+        [$u15, $u17] = [$this->category(), $this->category('U17')];
+
+        $this->actingAs($this->admin())->post(route('attendance.sessions.store'), $this->slot([
+            'category_id' => $u15->id, 'category_ids' => [99999], 'kind' => 'extra',
+        ]))->assertSessionHasNoErrors();
+
+        $this->assertSame([$u15->id], TrainingSession::sole()->categoryIds());
+    }
+
+    #[Test]
     public function the_categories_of_an_unmarked_preseason_session_can_be_changed(): void
     {
         [$u15, $u17, $u19] = [$this->category(), $this->category('U17'), $this->category('U19')];
@@ -107,6 +137,20 @@ class PreseasonMultiCategoryTest extends TestCase
         // The primary category was removed, so the first chosen one takes over.
         $this->assertSame($u17->id, $training->category_id);
         $this->assertSame([$u17->id, $u19->id], $training->categoryIds());
+    }
+
+    #[Test]
+    public function changing_categories_records_activity(): void
+    {
+        [$u15, $u17, $u19] = [$this->category(), $this->category('U17'), $this->category('U19')];
+        $training = $this->makeTraining($u15);
+
+        $this->actingAs($this->admin())->put(route('attendance.sessions.categories', $training), ['category_ids' => [$u17->id, $u19->id]])
+            ->assertSessionHasNoErrors();
+
+        $log = ActivityLog::where('action', ActivityAction::TRAINING_SESSION_CATEGORIES_CHANGED)->sole();
+        $this->assertSame($training->id, $log->subject_id);
+        $this->assertSame(['count' => 2], $log->properties);
     }
 
     #[Test]

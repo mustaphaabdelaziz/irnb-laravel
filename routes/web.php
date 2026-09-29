@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\AttendanceGridController;
+use App\Http\Controllers\AttendanceSettingsController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\BoardController;
 use App\Http\Controllers\BoardMeetingController;
@@ -41,6 +44,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\StorageLocationController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\TrainingSessionController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\TransactionImportController;
 use App\Http\Controllers\UserActivityController;
@@ -314,6 +318,16 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         Route::post('/board/tasks', [BoardTaskController::class, 'store'])->name('board.tasks.store');
         Route::put('/board/tasks/{boardTask}', [BoardTaskController::class, 'update'])->name('board.tasks.update');
         Route::delete('/board/tasks/{boardTask}', [BoardTaskController::class, 'destroy'])->name('board.tasks.destroy');
+
+        // Player attendance at category trainings (module `attendance`).
+        Route::get('/attendance/settings', [AttendanceSettingsController::class, 'index'])->name('attendance.settings');
+        Route::put('/attendance/settings', [AttendanceSettingsController::class, 'update'])->name('attendance.settings.update');
+        Route::post('/attendance/schedules', [AttendanceSettingsController::class, 'storeSchedule'])->name('attendance.schedules.store');
+        Route::put('/attendance/schedules/{schedule}', [AttendanceSettingsController::class, 'updateSchedule'])->name('attendance.schedules.update');
+        Route::delete('/attendance/schedules/{schedule}', [AttendanceSettingsController::class, 'destroySchedule'])->name('attendance.schedules.destroy');
+        Route::post('/attendance/closures', [AttendanceSettingsController::class, 'storeClosure'])->name('attendance.closures.store');
+        Route::delete('/attendance/closures/{closure}', [AttendanceSettingsController::class, 'destroyClosure'])->name('attendance.closures.destroy');
+        Route::post('/attendance/preseason-targets', [AttendanceSettingsController::class, 'storeTarget'])->name('attendance.preseason-targets.store');
 
         // Website configuration
         Route::get('/settings', [WebsiteConfigController::class, 'show'])->name('settings.show');

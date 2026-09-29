@@ -150,7 +150,7 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
             <form class="space-y-3 p-5" @submit.prevent="submitCancel">
                 <h2 class="font-bold text-slate-900 dark:text-slate-100">{{ t('att.cancel') }}</h2>
                 <label class="block text-sm">{{ t('att.cancel_reason') }}<input v-model="cancelForm.reason" type="text" maxlength="255" :class="[input, 'mt-1 block w-full']" /></label>
-                <InputError :message="cancelForm.errors.reason" />
+                <InputError :message="tr(cancelForm.errors.reason)" />
                 <div class="flex justify-end gap-2">
                     <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700" @click="showCancel = false">{{ t('att.close') }}</button>
                     <button type="submit" :disabled="cancelForm.processing" class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700">{{ t('att.cancel') }}</button>

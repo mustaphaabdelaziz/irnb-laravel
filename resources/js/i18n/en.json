@@ -1515,5 +1515,14 @@
     "att.error.code_format": "1 to 3 letters, no digits or spaces.",
     "att.error.code_taken": "Another status already uses this code.",
     "att.error.color_format": "Pick a colour.",
-    "att.grid_help_codes": "Type one code per cell; add the minutes after the late and left-early codes, e.g. {late}15. An empty cell counts as present when the column is saved."
+    "att.grid_help_codes": "Type one code per cell; add the minutes after the late and left-early codes, e.g. {late}15. An empty cell counts as present when the column is saved.",
+    "att.views": "Calendar view",
+    "att.view.month": "Month",
+    "att.view.week": "Week",
+    "att.today": "Today",
+    "att.prev_week": "Previous week",
+    "att.next_week": "Next week",
+    "att.prev_month": "Previous month",
+    "att.next_month": "Next month",
+    "att.no_sessions_week": "No sessions this week."
 }

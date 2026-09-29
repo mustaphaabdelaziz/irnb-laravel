@@ -6,6 +6,7 @@ use App\Enums\SessionState;
 use App\Models\Attendance;
 use App\Models\Category;
 use App\Models\TrainingSession;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
 /**
@@ -15,6 +16,21 @@ use Illuminate\Support\Collection;
  */
 final class CalendarFeed
 {
+    public function __construct(private readonly SessionGenerator $generator) {}
+
+    /** Generates every category's planned sessions for each month the range touches (idempotent). */
+    public function generateAll(string $from, string $to): void
+    {
+        $categoryIds = Category::orderBy('id')->pluck('id');
+        $last = CarbonImmutable::createFromFormat('!Y-m-d', $to)->startOfMonth();
+
+        for ($month = CarbonImmutable::createFromFormat('!Y-m-d', $from)->startOfMonth(); $month->lessThanOrEqualTo($last); $month = $month->addMonth()) {
+            foreach ($categoryIds as $categoryId) {
+                $this->generator->forMonth((int) $categoryId, $month->year, $month->month);
+            }
+        }
+    }
+
     /** @return Collection<int, array<string, mixed>> */
     public function sessions(string $from, string $to, ?int $categoryId = null, ?string $kind = null): Collection
     {

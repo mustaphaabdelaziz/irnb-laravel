@@ -8,6 +8,7 @@ use App\Enums\SessionKind;
 use App\Enums\SessionState;
 use App\Models\ActivityLog;
 use App\Models\Category;
+use App\Models\Player;
 use App\Models\TrainingSession;
 use App\Services\Attendance\MarkRecorder;
 use App\Services\Attendance\Roster;
@@ -36,7 +37,7 @@ class MarkRecorderTest extends TestCase
         $stays = $this->player($u15);
         $this->player($u15, ['archived' => true]);
         // Player::booted() clears left_at unless the status is "left" (seeded by migrations).
-        $left = \App\Models\Player::leftStatusId();
+        $left = Player::leftStatusId();
         $this->player($u15, ['status_id' => $left, 'left_at' => '2026-10-01']);
         $leavesLater = $this->player($u15, ['status_id' => $left, 'left_at' => '2026-10-20']);
         $this->player($this->category('U17'));

@@ -105,6 +105,43 @@ class DashboardAttendanceCardTest extends TestCase
     }
 
     #[Test]
+    public function an_extra_session_today_does_not_hide_the_regular_slot(): void
+    {
+        $u15 = $this->category('U15');
+        TrainingSchedule::create(['category_id' => $u15->id, 'weekday' => 2, 'start_time' => '18:00', 'end_time' => '19:30', 'valid_from' => '2026-09-01']);
+        TrainingSession::create([
+            'category_id' => $u15->id, 'date' => '2026-10-20', 'start_time' => '09:00', 'end_time' => '10:30',
+            'kind' => SessionKind::Extra, 'state' => SessionState::Planned, 'title' => 'Extra fitness',
+        ]);
+
+        $card = $this->membersTab($this->admin())['attendance'];
+
+        $this->assertCount(2, $card['today']);
+        $this->assertSame('09:00', $card['today'][0]['start_time']);
+        $this->assertSame('extra', $card['today'][0]['kind']);
+        $this->assertSame('18:00', $card['today'][1]['start_time']);
+        $this->assertSame('regular', $card['today'][1]['kind']);
+        $this->assertSame('planned', $card['today'][1]['state']);
+        $this->assertTrue(TrainingSession::where('category_id', $u15->id)->where('date', '2026-10-20')->where('kind', SessionKind::Regular->value)->exists());
+    }
+
+    #[Test]
+    public function a_slot_moved_away_from_today_is_not_regenerated(): void
+    {
+        $u15 = $this->category('U15');
+        TrainingSchedule::create(['category_id' => $u15->id, 'weekday' => 2, 'start_time' => '18:00', 'end_time' => '19:30', 'valid_from' => '2026-09-01']);
+        TrainingSession::create([
+            'category_id' => $u15->id, 'date' => '2026-10-21', 'moved_from' => '2026-10-20', 'start_time' => '18:00', 'end_time' => '19:30',
+            'kind' => SessionKind::Regular, 'state' => SessionState::Planned,
+        ]);
+
+        $card = $this->membersTab($this->admin())['attendance'];
+
+        $this->assertSame([], $card['today']);
+        $this->assertFalse(TrainingSession::where('category_id', $u15->id)->where('date', '2026-10-20')->exists());
+    }
+
+    #[Test]
     public function nothing_is_generated_on_a_closure_day(): void
     {
         $u15 = $this->category('U15');

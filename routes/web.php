@@ -321,6 +321,8 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
 
         // Player attendance at category trainings (module `attendance`).
         Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+        Route::get('/attendance/grid', [AttendanceGridController::class, 'show'])->name('attendance.grid');
+        Route::post('/attendance/grid', [AttendanceGridController::class, 'save'])->name('attendance.grid.save');
         Route::post('/attendance/sessions', [TrainingSessionController::class, 'store'])->name('attendance.sessions.store');
         Route::get('/attendance/sessions/{session}', [AttendanceController::class, 'show'])->name('attendance.sessions.show');
         Route::put('/attendance/sessions/{session}/marks', [AttendanceController::class, 'saveMarks'])->name('attendance.sessions.marks');

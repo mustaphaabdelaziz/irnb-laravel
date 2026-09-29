@@ -45,6 +45,7 @@ class AttendanceGridTest extends TestCase
         $u15 = $this->category();
         [$a, $b] = [$this->player($u15), $this->player($u15)];
         $session = TrainingSession::create(['category_id' => $u15->id, 'date' => '2026-10-05', 'start_time' => '18:00', 'end_time' => '19:30', 'kind' => 'regular', 'state' => 'held']);
+        Attendance::create(['training_session_id' => $session->id, 'player_id' => $a->id, 'status' => AttendanceStatus::Present]);
         Attendance::create(['training_session_id' => $session->id, 'player_id' => $b->id, 'status' => AttendanceStatus::AbsentExcused, 'reason' => AbsenceReason::Injury]);
         $admin = $this->admin();
 
@@ -77,5 +78,61 @@ class AttendanceGridTest extends TestCase
         $this->assertSame(AttendanceStatus::Present, $marks[$a->id]->status);
         $this->assertSame(AbsenceReason::Other, $marks[$b->id]->reason);
         $this->assertSame(SessionState::Held, $session->fresh()->state);
+    }
+
+    #[Test]
+    public function a_bad_cell_in_one_column_saves_no_column(): void
+    {
+        $u15 = $this->category();
+        [$a, $b] = [$this->player($u15), $this->player($u15)];
+        $first = TrainingSession::create(['category_id' => $u15->id, 'date' => '2026-10-05', 'start_time' => '18:00', 'end_time' => '19:30', 'kind' => 'regular', 'state' => 'planned']);
+        $second = TrainingSession::create(['category_id' => $u15->id, 'date' => '2026-10-07', 'start_time' => '18:00', 'end_time' => '19:30', 'kind' => 'regular', 'state' => 'planned']);
+
+        $this->actingAs($this->admin())->post(route('attendance.grid.save'), [
+            'columns' => [
+                ['session_id' => $first->id, 'codes' => [$a->id => 'P', $b->id => 'P']],
+                ['session_id' => $second->id, 'codes' => [$a->id => 'X', $b->id => 'P']],
+            ],
+        ])->assertSessionHasErrors("columns.1.codes.{$a->id}");
+
+        $this->assertSame(0, Attendance::count());
+        $this->assertSame(SessionState::Planned, $first->fresh()->state);
+        $this->assertSame(SessionState::Planned, $second->fresh()->state);
+    }
+
+    #[Test]
+    public function a_player_outside_the_roster_is_rejected(): void
+    {
+        $u15 = $this->category();
+        $u17 = $this->category('U17');
+        $a = $this->player($u15);
+        $x = $this->player($u17);
+        $training = TrainingSession::create(['category_id' => $u15->id, 'date' => '2026-10-05', 'start_time' => '18:00', 'end_time' => '19:30', 'kind' => 'regular', 'state' => 'planned']);
+
+        $this->actingAs($this->admin())->post(route('attendance.grid.save'), [
+            'columns' => [['session_id' => $training->id, 'codes' => [$a->id => 'P', $x->id => 'P']]],
+        ])->assertSessionHasErrors("columns.0.codes.{$x->id}");
+
+        $this->assertSame(0, Attendance::count());
+
+        $this->actingAs($this->admin())->post(route('attendance.grid.save'), [
+            'columns' => [['session_id' => $training->id, 'codes' => ["{$a->id}abc" => 'P']]],
+        ])->assertSessionHasErrors("columns.0.codes.{$a->id}abc");
+
+        $this->assertSame(0, Attendance::count());
+    }
+
+    #[Test]
+    public function a_cancelled_column_is_rejected(): void
+    {
+        $u15 = $this->category();
+        $a = $this->player($u15);
+        $training = TrainingSession::create(['category_id' => $u15->id, 'date' => '2026-10-05', 'start_time' => '18:00', 'end_time' => '19:30', 'kind' => 'regular', 'state' => 'cancelled']);
+
+        $this->actingAs($this->admin())->post(route('attendance.grid.save'), [
+            'columns' => [['session_id' => $training->id, 'codes' => [$a->id => 'P']]],
+        ])->assertSessionHasErrors('columns.0');
+
+        $this->assertSame(0, Attendance::count());
     }
 }

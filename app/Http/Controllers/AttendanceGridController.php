@@ -75,7 +75,7 @@ class AttendanceGridController extends Controller
         ]);
     }
 
-    public function save(Request $request, MarkRecorder $recorder): RedirectResponse
+    public function save(Request $request, MarkRecorder $recorder, Roster $roster): RedirectResponse
     {
         $data = $request->validate([
             'columns' => ['required', 'array', 'min:1'],
@@ -84,14 +84,34 @@ class AttendanceGridController extends Controller
             'columns.*.codes.*' => ['nullable', 'string', 'max:6'],
         ]);
 
+        $sessionIds = array_column($data['columns'], 'session_id');
+        $sessions = TrainingSession::with('attendances')->whereIn('id', $sessionIds)->get()->keyBy('id');
+
         $plan = [];
         $errors = [];
         foreach ($data['columns'] as $i => $column) {
-            $session = TrainingSession::with('attendances')->findOrFail($column['session_id']);
+            $session = $sessions->get($column['session_id']);
+
+            if ($session->state === SessionState::Cancelled) {
+                $errors["columns.$i"] = 'att.error.cancelled';
+
+                continue;
+            }
+
             $existing = $session->attendances->keyBy('player_id');
+            $allowedIds = $existing->isNotEmpty()
+                ? $existing->keys()->all()
+                : $roster->expected($session->category_id, $session->date)->modelKeys();
+            $allowed = array_flip($allowedIds);
             $marks = [];
 
             foreach ($column['codes'] as $playerId => $code) {
+                if (! ctype_digit((string) $playerId) || ! isset($allowed[(int) $playerId])) {
+                    $errors["columns.$i.codes.$playerId"] = 'att.error.not_in_roster';
+
+                    continue;
+                }
+
                 $parsed = AttendanceCode::parse($code);
                 if ($parsed === null) {
                     $errors["columns.$i.codes.$playerId"] = 'att.error.invalid_code';
@@ -116,13 +136,6 @@ class AttendanceGridController extends Controller
             $plan[] = [$session, $marks];
         }
 
-        $unknown = array_diff(
-            collect($plan)->flatMap(fn ($p) => array_column($p[1], 'player_id'))->unique()->all(),
-            Player::whereIn('id', collect($plan)->flatMap(fn ($p) => array_column($p[1], 'player_id'))->all())->pluck('id')->all(),
-        );
-        if ($unknown !== []) {
-            $errors['columns'] = 'att.error.invalid_code';
-        }
         if ($errors !== []) {
             throw ValidationException::withMessages($errors);
         }

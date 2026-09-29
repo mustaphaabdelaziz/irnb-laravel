@@ -1491,5 +1491,6 @@
     "att.error.invalid_code": "Unknown code",
     "att.error.cancelled": "This session is cancelled.",
     "att.error.duplicate": "This category already has a session at that date and time.",
-    "att.error.no_players": "Add at least one player."
+    "att.error.no_players": "Add at least one player.",
+    "att.error.not_in_roster": "This player is not on this session's list."
 }

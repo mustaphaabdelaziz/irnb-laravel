@@ -1491,5 +1491,6 @@
     "att.error.invalid_code": "رمز غير معروف",
     "att.error.cancelled": "هذه الحصة ملغاة.",
     "att.error.duplicate": "لهذه الفئة حصة في نفس التاريخ والوقت.",
-    "att.error.no_players": "أضف لاعباً واحداً على الأقل."
+    "att.error.no_players": "أضف لاعباً واحداً على الأقل.",
+    "att.error.not_in_roster": "هذا اللاعب ليس في قائمة هذه الحصة."
 }

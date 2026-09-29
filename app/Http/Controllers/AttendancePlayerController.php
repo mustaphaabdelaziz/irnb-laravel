@@ -6,8 +6,13 @@ use App\Models\Player;
 use App\Services\Activity\ActivityPeriod;
 use App\Services\Attendance\AttendanceStats;
 use App\Services\Attendance\PreseasonProgress;
+use App\Services\Pdf\ClubHeader;
+use App\Services\Pdf\PdfService;
+use App\Support\AttendanceSettings;
+use App\Support\Media;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * One player's attendance, for the profile card. The routes are named
@@ -21,11 +26,34 @@ class AttendancePlayerController extends Controller
     public function __construct(
         private readonly AttendanceStats $stats,
         private readonly PreseasonProgress $preseason,
+        private readonly PdfService $pdf,
     ) {}
 
     public function show(Request $request, Player $player): JsonResponse
     {
         return response()->json($this->data($request, $player));
+    }
+
+    /** The card as a printable PDF, same period (A4 portrait, right-to-left in Arabic). */
+    public function report(Request $request, Player $player): Response
+    {
+        $player->loadMissing('category');
+        $data = $this->data($request, $player);
+
+        $html = view('pdf.attendance-player', [
+            ...$data,
+            'club' => ClubHeader::data(),
+            'player' => $player,
+            'photo' => Media::localFile($player->picture_url),
+            'labels' => AttendanceSettings::labels(),
+            'codes' => AttendanceSettings::codes(),
+        ])->render();
+
+        return $this->pdf->stream(
+            $html,
+            "attendance-{$player->membership_id}-{$data['period']['from']}-{$data['period']['to']}.pdf",
+            app()->getLocale() === 'ar',
+        );
     }
 
     /** @return array<string, mixed> */

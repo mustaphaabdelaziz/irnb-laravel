@@ -1563,5 +1563,7 @@
     "att.profile.by_status": "By status",
     "att.profile.sessions": "Sessions",
     "att.profile.load_error": "Attendance could not be loaded.",
-    "att.retry": "Try again"
+    "att.retry": "Try again",
+    "att.report_title": "Attendance report",
+    "att.print_report": "Attendance report (PDF)"
 }

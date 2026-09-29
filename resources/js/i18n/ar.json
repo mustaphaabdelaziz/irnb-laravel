@@ -1563,5 +1563,7 @@
     "att.profile.by_status": "حسب الحالة",
     "att.profile.sessions": "الحصص",
     "att.profile.load_error": "تعذّر تحميل الحضور.",
-    "att.retry": "إعادة المحاولة"
+    "att.retry": "إعادة المحاولة",
+    "att.report_title": "تقرير الحضور",
+    "att.print_report": "تقرير الحضور (PDF)"
 }

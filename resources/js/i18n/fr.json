@@ -1563,5 +1563,7 @@
     "att.profile.by_status": "Par statut",
     "att.profile.sessions": "Séances",
     "att.profile.load_error": "Impossible de charger les présences.",
-    "att.retry": "Réessayer"
+    "att.retry": "Réessayer",
+    "att.report_title": "Rapport de présence",
+    "att.print_report": "Rapport de présence (PDF)"
 }

@@ -6,10 +6,11 @@ import { useI18n } from 'vue-i18n';
 import '@/lib/registerCharts';
 import PeriodFilter from '@/Components/Activity/PeriodFilter.vue';
 import StatDoughnut from '@/Components/StatDoughnut.vue';
+import Icon from '@/Components/Icon.vue';
 import { useAttendanceCodes } from '@/Composables/useAttendanceCodes';
 import { baseOptions } from '@/lib/chartTheme';
 import { dayLabel } from '@/lib/attendanceCalendar';
-import { hours, pct, statusBars } from '@/lib/attendanceStats';
+import { hours, pct, periodQuery, statusBars } from '@/lib/attendanceStats';
 
 /**
  * The profile's attendance card. It fetches its own data
@@ -63,6 +64,8 @@ const doughnutStats = computed(() => statuses.map((s) => ({ key: s, label: label
 const doughnutPalette = computed(() => statuses.map((s) => color(s)));
 const monthlyChart = computed(() => statusBars(data.value?.monthly, statuses, label, color, locale.value));
 const monthlyOptions = computed(() => baseOptions({ rtl: rtl.value, stacked: true }));
+// Same period as the card.
+const reportHref = computed(() => (data.value ? route('attendance.players.report', { player: props.player.id, ...periodQuery(data.value.period) }) : null));
 
 const preseasonText = computed(() => {
     const p = data.value?.preseason;
@@ -79,7 +82,12 @@ const th = 'p-2 text-start text-xs font-semibold text-slate-500 dark:text-slate-
     <div class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-4 dark:border-slate-800">
             <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('attendance') }}</h3>
-            <PeriodFilter v-if="data" :period="data.period" @change="load" />
+            <div v-if="data" class="flex flex-wrap items-center gap-2">
+                <PeriodFilter :period="data.period" @change="load" />
+                <a :href="reportHref" target="_blank" class="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-800">
+                    <Icon name="print" /> {{ t('att.print_report') }}
+                </a>
+            </div>
         </div>
 
         <div v-if="loading && !data" class="space-y-3 px-5 py-4" aria-busy="true">

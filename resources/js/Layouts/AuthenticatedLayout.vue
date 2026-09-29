@@ -107,6 +107,7 @@ const sections = computed(() => {
         { label: t('nav_members'), items: [
             { label: t('players'), href: '/players', icon: 'players', prefix: '/players', module: 'players' },
             { label: t('subscriptions'), href: '/subscriptions', icon: 'subscriptions', prefix: '/subscriptions', module: 'subscriptions' },
+            { label: t('attendance'), href: '/attendance', icon: 'calendar', prefix: '/attendance', module: 'attendance' },
         ] },
         { label: t('nav_finance'), items: [
             { label: t('transactions'), href: '/transactions', icon: 'transactions', prefix: '/transactions', module: 'transactions' },

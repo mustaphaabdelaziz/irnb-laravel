@@ -320,6 +320,11 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         Route::delete('/board/tasks/{boardTask}', [BoardTaskController::class, 'destroy'])->name('board.tasks.destroy');
 
         // Player attendance at category trainings (module `attendance`).
+        Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+        Route::post('/attendance/sessions', [TrainingSessionController::class, 'store'])->name('attendance.sessions.store');
+        Route::get('/attendance/sessions/{session}', [AttendanceController::class, 'show'])->name('attendance.sessions.show');
+        Route::post('/attendance/sessions/{session}/cancel', [TrainingSessionController::class, 'cancel'])->name('attendance.sessions.cancel');
+        Route::post('/attendance/sessions/{session}/move', [TrainingSessionController::class, 'move'])->name('attendance.sessions.move');
         Route::get('/attendance/settings', [AttendanceSettingsController::class, 'index'])->name('attendance.settings');
         Route::put('/attendance/settings', [AttendanceSettingsController::class, 'update'])->name('attendance.settings.update');
         Route::post('/attendance/schedules', [AttendanceSettingsController::class, 'storeSchedule'])->name('attendance.schedules.store');

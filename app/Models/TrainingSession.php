@@ -7,11 +7,15 @@ use App\Enums\SessionState;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 /**
- * One training of one category on one date. `date`/`moved_from` are 'Y-m-d'
- * strings and times 'H:i' strings (see the create_attendance_tables migration).
+ * One training on one date. `date`/`moved_from` are 'Y-m-d' strings and times
+ * 'H:i' strings (see the create_attendance_tables migration). `category_id` is
+ * the primary category; `categories()` holds every category taking part (only
+ * pre-season sessions have more than one).
  */
 class TrainingSession extends Model
 {
@@ -25,9 +29,27 @@ class TrainingSession extends Model
         return ['kind' => SessionKind::class, 'state' => SessionState::class];
     }
 
+    protected static function booted(): void
+    {
+        // Every session is in the pivot with its primary category, so lists,
+        // rosters and slot checks can read the pivot alone. (The generator
+        // inserts rows without models and fills the pivot itself.)
+        static::created(function (TrainingSession $session) {
+            DB::table('training_session_category')->insertOrIgnore([
+                'training_session_id' => $session->id,
+                'category_id' => $session->category_id,
+            ]);
+        });
+    }
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function categories(): BelongsToMany
+    {
+        return $this->belongsToMany(Category::class, 'training_session_category');
     }
 
     public function schedule(): BelongsTo
@@ -44,5 +66,25 @@ class TrainingSession extends Model
     public function scopeUnmarkedPlanned(Builder $query): void
     {
         $query->where('state', SessionState::Planned->value)->whereDoesntHave('attendances');
+    }
+
+    /** Sessions the category takes part in: its own and joint pre-season ones. */
+    public function scopeIncludingCategory(Builder $query, int $categoryId): void
+    {
+        $query->whereIn('training_sessions.id', DB::table('training_session_category')
+            ->select('training_session_id')
+            ->where('category_id', $categoryId));
+    }
+
+    /** @return array<int, int> sorted ids of every category in the session */
+    public function categoryIds(): array
+    {
+        $ids = $this->relationLoaded('categories')
+            ? $this->categories->modelKeys()
+            : $this->categories()->pluck('categories.id')->all();
+        $ids = array_map('intval', $ids !== [] ? $ids : [$this->category_id]);
+        sort($ids);
+
+        return $ids;
     }
 }

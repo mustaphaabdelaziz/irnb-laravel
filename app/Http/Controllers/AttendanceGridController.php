@@ -23,7 +23,9 @@ use Inertia\Response;
 /**
  * Month grid: players × sessions, filled with the paper-sheet codes. A cell
  * exists only where the player is on that session's roster (frozen marks,
- * or the expected roster before the first save).
+ * or the expected roster before the first save). A joint pre-season session
+ * shows in the grid of each of its categories with its whole roster, since
+ * saving a column replaces the session's full set of marks.
  */
 class AttendanceGridController extends Controller
 {
@@ -37,15 +39,15 @@ class AttendanceGridController extends Controller
         $anchor = CarbonImmutable::createFromFormat('!Y-m', $data['month']);
         $generator->forMonth($category->id, $anchor->year, $anchor->month);
 
-        $sessions = TrainingSession::where('category_id', $category->id)
+        $sessions = TrainingSession::includingCategory($category->id)
             ->where('state', '!=', SessionState::Cancelled->value)
             ->whereBetween('date', [$anchor->startOfMonth()->toDateString(), $anchor->endOfMonth()->toDateString()])
-            ->with('attendances')
+            ->with(['attendances', 'categories'])
             ->orderBy('date')->orderBy('start_time')
             ->get();
 
         $cells = [];
-        $expectedByDate = [];
+        $expected = [];
         foreach ($sessions as $session) {
             if ($session->attendances->isNotEmpty()) {
                 foreach ($session->attendances as $mark) {
@@ -54,8 +56,10 @@ class AttendanceGridController extends Controller
 
                 continue;
             }
-            $expectedByDate[$session->date] ??= $roster->expected($category->id, $session->date)->modelKeys();
-            foreach ($expectedByDate[$session->date] as $playerId) {
+            $categoryIds = $session->categoryIds();
+            $key = $session->date.'|'.implode(',', $categoryIds);
+            $expected[$key] ??= $roster->expected($categoryIds, $session->date)->modelKeys();
+            foreach ($expected[$key] as $playerId) {
                 $cells[$playerId][$session->id] = '';
             }
         }
@@ -85,7 +89,7 @@ class AttendanceGridController extends Controller
         ]);
 
         $sessionIds = array_column($data['columns'], 'session_id');
-        $sessions = TrainingSession::with('attendances')->whereIn('id', $sessionIds)->get()->keyBy('id');
+        $sessions = TrainingSession::with(['attendances', 'categories'])->whereIn('id', $sessionIds)->get()->keyBy('id');
 
         $plan = [];
         $errors = [];
@@ -101,7 +105,7 @@ class AttendanceGridController extends Controller
             $existing = $session->attendances->keyBy('player_id');
             $allowedIds = $existing->isNotEmpty()
                 ? $existing->keys()->all()
-                : $roster->expected($session->category_id, $session->date)->modelKeys();
+                : $roster->expected($session->categoryIds(), $session->date)->modelKeys();
             $allowed = array_flip($allowedIds);
             $marks = [];
 

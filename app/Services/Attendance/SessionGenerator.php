@@ -15,7 +15,9 @@ use Illuminate\Support\Facades\DB;
  * time. Called whenever a month is opened (the desktop app has no reliable
  * scheduler), so it must be idempotent: the unique (category, date, start)
  * key ignores slots that already exist, including cancelled ones, and dates
- * whose sessions were moved away from are never regenerated.
+ * whose sessions were moved away from are never regenerated. A slot the
+ * category already attends through another category's joint pre-season
+ * session is left free too.
  */
 final class SessionGenerator
 {
@@ -42,6 +44,14 @@ final class SessionGenerator
             ->pluck('moved_from')
             ->flip();
 
+        $joint = DB::table('training_sessions')
+            ->join('training_session_category', 'training_session_category.training_session_id', '=', 'training_sessions.id')
+            ->where('training_session_category.category_id', $categoryId)
+            ->where('training_sessions.category_id', '!=', $categoryId)
+            ->whereBetween('training_sessions.date', [$from, $to])
+            ->get(['training_sessions.date', 'training_sessions.start_time'])
+            ->mapWithKeys(fn ($s) => ["{$s->date} {$s->start_time}" => true]);
+
         $now = now();
         $rows = [];
 
@@ -56,7 +66,8 @@ final class SessionGenerator
                 if ($schedule->weekday !== $day->dayOfWeekIso
                     || $schedule->valid_from > $date
                     || ($schedule->valid_to !== null && $schedule->valid_to < $date)
-                    || isset($moved[$date])) {
+                    || isset($moved[$date])
+                    || isset($joint["{$date} {$schedule->start_time}"])) {
                     continue;
                 }
 
@@ -74,6 +85,24 @@ final class SessionGenerator
             }
         }
 
-        return $rows === [] ? 0 : DB::table('training_sessions')->insertOrIgnore($rows);
+        $inserted = $rows === [] ? 0 : DB::table('training_sessions')->insertOrIgnore($rows);
+
+        if ($inserted > 0) {
+            // insertOrIgnore returns no ids: link this month's sessions of the
+            // category that have no pivot row yet, in one insert-select.
+            DB::table('training_session_category')->insertUsing(
+                ['training_session_id', 'category_id'],
+                DB::table('training_sessions as s')
+                    ->select('s.id', 's.category_id')
+                    ->where('s.category_id', $categoryId)
+                    ->whereBetween('s.date', [$from, $to])
+                    ->whereNotExists(fn ($q) => $q->select(DB::raw(1))
+                        ->from('training_session_category as p')
+                        ->whereColumn('p.training_session_id', 's.id')
+                        ->whereColumn('p.category_id', 's.category_id')),
+            );
+        }
+
+        return $inserted;
     }
 }

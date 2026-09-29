@@ -9,6 +9,7 @@ return [
         // never on the players module: documents are more sensitive than the
         // player record (medical certificates, ID copies).
         'players.documents' => 'documents',
+        'attendance' => 'attendance',
         'subscriptions' => 'subscriptions',
         'transactions' => 'transactions',
         'finance' => 'finance',
@@ -53,6 +54,8 @@ return [
         'players.labels' => ['players', 'view'],
         'players.board-table' => ['players', 'view'],
         'players.academic-results' => ['players', 'view'],
+        // "grid" is not a view verb: opening the month grid must not need edit rights.
+        'attendance.grid' => ['attendance', 'view'],
         'transactions.receipt' => ['transactions', 'view'],
         'reports.financial' => ['reports', 'view'],
         'finance.index' => ['finance', 'view'],

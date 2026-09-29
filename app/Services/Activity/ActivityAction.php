@@ -71,6 +71,15 @@ class ActivityAction
 
     const DOCUMENT_FILE_UPLOADED = 'document_file_uploaded';
 
+    // attendance
+    const ATTENDANCE_MARKED = 'attendance_marked';
+
+    const TRAINING_SESSION_CREATED = 'training_session_created';
+
+    const TRAINING_SESSION_CANCELLED = 'training_session_cancelled';
+
+    const TRAINING_SESSION_MOVED = 'training_session_moved';
+
     /** @var list<string> */
     const ALL = [
         self::PLAYER_REGISTERED,
@@ -101,6 +110,10 @@ class ActivityAction
         self::DOCUMENT_RENEWED,
         self::DOCUMENT_EXEMPTED,
         self::DOCUMENT_FILE_UPLOADED,
+        self::ATTENDANCE_MARKED,
+        self::TRAINING_SESSION_CREATED,
+        self::TRAINING_SESSION_CANCELLED,
+        self::TRAINING_SESSION_MOVED,
     ];
 
     /** @var array<string, list<string>> */
@@ -142,6 +155,12 @@ class ActivityAction
             self::DOCUMENT_RENEWED,
             self::DOCUMENT_EXEMPTED,
             self::DOCUMENT_FILE_UPLOADED,
+        ],
+        'attendance' => [
+            self::ATTENDANCE_MARKED,
+            self::TRAINING_SESSION_CREATED,
+            self::TRAINING_SESSION_CANCELLED,
+            self::TRAINING_SESSION_MOVED,
         ],
     ];
 

@@ -11,6 +11,7 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 import RentalTypeBadge from '@/Components/RentalTypeBadge.vue';
 import Icon from '@/Components/Icon.vue';
 import PlayerFieldRow from '@/Components/PlayerFieldRow.vue';
+import { formatPhone } from '@/lib/phone';
 import AcademicSection from '@/Pages/Players/Partials/AcademicSection.vue';
 import PlayerDocumentsCard from '@/Components/PlayerDocumentsCard.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
@@ -362,7 +363,10 @@ function formatDate(val) {
                         <PlayerFieldRow icon="flag" :label="t('membership_status')" :value="player.status?.localized_name || player.status?.name" />
                         <PlayerFieldRow v-if="player.left_at" icon="calendar" :label="t('left_at')" :value="formatDate(player.left_at)" />
                         <PlayerFieldRow icon="location" :label="t('state')" :value="[player.city, player.wilaya?.localized_name || player.wilaya?.name || player.state].filter(Boolean).join(', ')" />
-                        <PlayerFieldRow icon="phone" :label="t('phone')" :value="player.phones?.[0]" />
+                        <PlayerFieldRow icon="phone" :label="t('phone')">
+                            <span v-if="player.phones?.[0]" dir="ltr" class="font-mono">{{ formatPhone(player.phones[0]) }}</span>
+                            <template v-else>—</template>
+                        </PlayerFieldRow>
                         <PlayerFieldRow icon="mail" :label="t('email')" :value="player.email" />
                         <PlayerFieldRow icon="jobs" :label="t('job')" :value="player.is_student ? t('student') : (player.member_job?.localized_name || player.member_job?.name)" />
                         <PlayerFieldRow icon="drop" :label="t('blood_group')" :value="player.health_blood_group_rhesus" />
@@ -383,7 +387,7 @@ function formatDate(val) {
                                     <Icon name="phone" class="text-slate-400" />
                                     <span class="font-medium text-slate-800 dark:text-slate-200">{{ contact.name }}</span>
                                     <span v-if="contact.relationship" class="text-xs text-slate-500">{{ contact.relationship }}</span>
-                                    <span class="font-mono text-xs text-slate-600 dark:text-slate-300">{{ (contact.phones || [])[0] }}</span>
+                                    <span dir="ltr" class="font-mono text-xs text-slate-600 dark:text-slate-300">{{ formatPhone((contact.phones || [])[0]) }}</span>
                                 </li>
                             </ul>
                         </template>

@@ -11,6 +11,7 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createApp, h } from 'vue';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 import { setupI18n, setLocale } from './i18n';
+import { localizeNativeValidation } from './lib/nativeValidation';
 import { DEFAULT_CLUB_SHORT_NAME } from './Composables/useClubIdentity';
 
 // The tab title's suffix is the club's saved short name, kept current from
@@ -36,6 +37,8 @@ createInertiaApp({
         const locale = props.initialPage.props.locale || 'ar';
         const i18n = setupI18n(locale);
         setLocale(i18n, locale);
+        // Required-field bubbles in the app's language, not the browser's.
+        localizeNativeValidation(i18n.global.t);
 
         const app = createApp({ render: () => h(App, props) })
             .use(plugin)

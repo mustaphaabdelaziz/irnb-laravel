@@ -2,6 +2,7 @@
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
+import PhoneInput from '@/Components/PhoneInput.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
@@ -10,6 +11,7 @@ import { Link, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { formatFileNumber } from '@/lib/fileNumber';
+import { phoneDigits } from '@/lib/phone';
 import { useCan } from '@/Composables/useCan';
 
 const { t } = useI18n();
@@ -171,6 +173,14 @@ const shownImage = computed(() => previewUrl.value || (isEdit ? p.picture_url : 
 onBeforeUnmount(() => { if (previewUrl.value) URL.revokeObjectURL(previewUrl.value); });
 
 function submit() {
+    // The branch picker is not a native field, so the browser cannot flag it;
+    // say so here instead of waiting for the server's answer.
+    form.clearErrors('branch_ids');
+    if (props.branches.length && !form.branch_ids.length) {
+        form.setError('branch_ids', t('validation.branch_required'));
+        return;
+    }
+
     form.transform((data) => ({
         ...(isEdit ? { _method: 'put' } : {}),
         firstname: data.firstname,
@@ -181,7 +191,7 @@ function submit() {
         birthdate: data.birthdate || null,
         gender: data.gender,
         health_blood_group_rhesus: data.health_blood_group_rhesus || null,
-        phones: data.phone ? [data.phone] : [],
+        phones: phoneDigits(data.phone) ? [phoneDigits(data.phone)] : [],
         email: data.email || null,
         wilaya_id: data.wilaya_id || null,
         city: data.city || null,
@@ -209,7 +219,7 @@ function submit() {
         emergency_contacts: data.emergency_contact_name ? [{
             name: data.emergency_contact_name,
             relationship: data.emergency_contact_relationship || null,
-            phones: data.emergency_contact_phone ? [data.emergency_contact_phone] : [],
+            phones: phoneDigits(data.emergency_contact_phone) ? [phoneDigits(data.emergency_contact_phone)] : [],
         }] : [],
         ...(isEdit ? { archived: data.archived } : {}),
     })).post(isEdit ? route('players.update', p.id) : route('players.store'), { forceFormData: true });
@@ -277,7 +287,8 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                 </div>
                 <div>
                     <InputLabel :value="t('phone')" />
-                    <TextInput v-model="form.phone" type="tel" class="mt-1 w-full" />
+                    <PhoneInput v-model="form.phone" class="mt-1 w-full" />
+                    <InputError :message="form.errors['phones.0']" class="mt-1" />
                 </div>
                 <div>
                     <InputLabel :value="t('email')" />
@@ -431,7 +442,7 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                 </div>
                 <div>
                     <InputLabel :value="t('emergency_contact') + ' - ' + t('phone')" />
-                    <TextInput v-model="form.emergency_contact_phone" type="tel" class="mt-1 w-full" />
+                    <PhoneInput v-model="form.emergency_contact_phone" class="mt-1 w-full" />
                 </div>
             </div>
         </div>

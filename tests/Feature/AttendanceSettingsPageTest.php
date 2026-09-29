@@ -67,6 +67,71 @@ class AttendanceSettingsPageTest extends TestCase
     }
 
     #[Test]
+    public function editing_a_schedule_does_not_undo_a_moved_session(): void
+    {
+        Carbon::setTestNow('2026-10-01');
+        $u15 = $this->category();
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->post(route('attendance.schedules.store'), [
+            'category_id' => $u15->id, 'weekday' => 1, 'start_time' => '18:00', 'end_time' => '19:30', 'valid_from' => '2026-09-01',
+        ]);
+        $schedule = TrainingSchedule::sole();
+
+        // Generate a month after today and move its first planned session away.
+        $this->actingAs($admin)->get(route('attendance.index', ['category_id' => $u15->id, 'month' => '2026-11']));
+        $original = TrainingSession::where('schedule_id', $schedule->id)->orderBy('date')->first();
+        $originalDate = $original->date;
+
+        $this->actingAs($admin)->post(route('attendance.sessions.move', $original), [
+            'date' => '2026-11-20', 'start_time' => '17:00', 'end_time' => '18:30',
+        ])->assertSessionHasNoErrors();
+
+        $this->actingAs($admin)->put(route('attendance.schedules.update', $schedule), [
+            'category_id' => $u15->id, 'weekday' => 1, 'start_time' => '19:00', 'end_time' => '20:30', 'valid_from' => '2026-09-01',
+        ])->assertSessionHasNoErrors();
+
+        // Reopening the month must not recreate the slot the session was moved away from.
+        $this->actingAs($admin)->get(route('attendance.index', ['category_id' => $u15->id, 'month' => '2026-11']));
+
+        $this->assertModelExists($original);
+        $this->assertSame('2026-11-20', $original->fresh()->date);
+        $this->assertSame(0, TrainingSession::where('schedule_id', $schedule->id)->where('date', $originalDate)->count());
+    }
+
+    #[Test]
+    public function deleting_a_schedule_does_not_undo_a_moved_session(): void
+    {
+        Carbon::setTestNow('2026-10-01');
+        $u15 = $this->category();
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->post(route('attendance.schedules.store'), [
+            'category_id' => $u15->id, 'weekday' => 1, 'start_time' => '18:00', 'end_time' => '19:30', 'valid_from' => '2026-09-01',
+        ]);
+        $schedule = TrainingSchedule::sole();
+
+        $this->actingAs($admin)->get(route('attendance.index', ['category_id' => $u15->id, 'month' => '2026-11']));
+        $original = TrainingSession::where('schedule_id', $schedule->id)->orderBy('date')->first();
+        $originalDate = $original->date;
+
+        $this->actingAs($admin)->post(route('attendance.sessions.move', $original), [
+            'date' => '2026-11-20', 'start_time' => '17:00', 'end_time' => '18:30',
+        ])->assertSessionHasNoErrors();
+
+        $this->actingAs($admin)->delete(route('attendance.schedules.destroy', $schedule))
+            ->assertSessionHas('success', 'flash.training_schedule_deleted');
+        $this->assertModelMissing($schedule);
+
+        // No schedule is left to regenerate from, so the original date must stay empty.
+        $this->actingAs($admin)->get(route('attendance.index', ['category_id' => $u15->id, 'month' => '2026-11']));
+
+        $this->assertModelExists($original);
+        $this->assertSame('2026-11-20', $original->fresh()->date);
+        $this->assertSame(0, TrainingSession::where('date', $originalDate)->count());
+    }
+
+    #[Test]
     public function a_closure_removes_unmarked_planned_sessions_inside_it(): void
     {
         $u15 = $this->category();

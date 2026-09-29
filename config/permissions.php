@@ -56,6 +56,15 @@ return [
         'players.academic-results' => ['players', 'view'],
         // "grid" is not a view verb: opening the month grid must not need edit rights.
         'attendance.grid' => ['attendance', 'view'],
+        // Schedules, closures and pre-season targets reshape the whole season's
+        // calendar, not just one row, so all their writes need edit — without
+        // these, deriveAction() would gate the stores as 'add' and the
+        // destroys as 'delete', letting an add-only user reshape the calendar.
+        'attendance.schedules.store' => ['attendance', 'edit'],
+        'attendance.schedules.destroy' => ['attendance', 'edit'],
+        'attendance.closures.store' => ['attendance', 'edit'],
+        'attendance.closures.destroy' => ['attendance', 'edit'],
+        'attendance.preseason-targets.store' => ['attendance', 'edit'],
         'transactions.receipt' => ['transactions', 'view'],
         'reports.financial' => ['reports', 'view'],
         'finance.index' => ['finance', 'view'],

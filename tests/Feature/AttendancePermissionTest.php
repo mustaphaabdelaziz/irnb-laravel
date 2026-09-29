@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Role;
 use App\Services\Activity\ActivityAction;
 use App\Support\PermissionMap;
+use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -24,6 +25,12 @@ class AttendancePermissionTest extends TestCase
         $this->assertSame(['attendance', 'edit'], PermissionMap::resolve('attendance.sessions.marks'));
         $this->assertSame(['attendance', 'add'], PermissionMap::resolve('attendance.sessions.store'));
         $this->assertSame(['attendance', 'edit'], PermissionMap::resolve('attendance.settings'));
+        // Settings mutations all need edit, not the weaker add/delete deriveAction() would give them.
+        $this->assertSame(['attendance', 'edit'], PermissionMap::resolve('attendance.schedules.store'));
+        $this->assertSame(['attendance', 'edit'], PermissionMap::resolve('attendance.schedules.destroy'));
+        $this->assertSame(['attendance', 'edit'], PermissionMap::resolve('attendance.closures.store'));
+        $this->assertSame(['attendance', 'edit'], PermissionMap::resolve('attendance.closures.destroy'));
+        $this->assertSame(['attendance', 'edit'], PermissionMap::resolve('attendance.preseason-targets.store'));
     }
 
     #[Test]
@@ -38,6 +45,14 @@ class AttendancePermissionTest extends TestCase
         $this->assertSame(['view', 'edit'], $coach->fresh()->permissions['attendance']);
         $this->assertArrayNotHasKey('attendance', $cashier->fresh()->permissions);
         $this->assertSame(['view', 'add', 'edit', 'delete'], $admin->fresh()->permissions['attendance']);
+    }
+
+    #[Test]
+    public function the_coach_preset_gets_attendance_rights(): void
+    {
+        (new RoleSeeder)->run();
+
+        $this->assertSame(['view', 'add', 'edit'], Role::where('key', 'coach')->first()->permissions['attendance']);
     }
 
     #[Test]

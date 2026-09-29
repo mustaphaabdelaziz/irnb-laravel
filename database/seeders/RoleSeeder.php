@@ -37,6 +37,7 @@ class RoleSeeder extends Seeder
             'name' => ['en' => 'Coach', 'fr' => 'Entraîneur', 'ar' => 'مدرب'],
             'permissions' => [
                 'players' => ['view', 'add', 'edit'],
+                'attendance' => ['view', 'add', 'edit'],
                 'equipment' => ['view'],
                 'inventory' => ['view'],
             ],

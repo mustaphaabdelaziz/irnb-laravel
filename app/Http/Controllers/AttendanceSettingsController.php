@@ -92,6 +92,7 @@ class AttendanceSettingsController extends Controller
         ClubClosure::create($data);
         TrainingSession::unmarkedPlanned()
             ->where('kind', SessionKind::Regular->value)
+            ->whereNull('moved_from')
             ->whereBetween('date', [$data['start_date'], $data['end_date']])
             ->delete();
 
@@ -133,11 +134,18 @@ class AttendanceSettingsController extends Controller
         ]);
     }
 
-    /** Upcoming generated sessions nobody marked are rebuilt from the new schedule on the next month view. */
+    /**
+     * Upcoming generated sessions nobody marked are rebuilt from the new
+     * schedule on the next month view. Moved ones are left alone: move()
+     * keeps the schedule's `schedule_id`, and purging one here would drop
+     * its `moved_from` guard, so the generator would recreate the original
+     * date right back.
+     */
     private function purgeFuturePlanned(TrainingSchedule $schedule): void
     {
         TrainingSession::unmarkedPlanned()
             ->where('schedule_id', $schedule->id)
+            ->whereNull('moved_from')
             ->where('date', '>=', now()->toDateString())
             ->delete();
     }

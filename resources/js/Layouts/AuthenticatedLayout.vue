@@ -242,10 +242,10 @@ function switchLocale(code) {
 
         <!-- ===== MAIN ===== -->
         <div class="lg:ms-64 print:ms-0">
-            <header class="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-slate-200/80 bg-white/75 px-4 backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-900/75 sm:px-6 print:hidden">
+            <header class="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-slate-200/80 bg-white/75 px-4 backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-900/75 sm:px-6 print:static print:border-0 print:shadow-none">
                 <button
                     @click="mobileMenuOpen = !mobileMenuOpen"
-                    class="-ms-1 rounded-lg p-2 text-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 lg:hidden"
+                    class="-ms-1 rounded-lg p-2 text-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 lg:hidden print:hidden"
                     :aria-label="t('toggle_menu')"
                 >
                     <Icon name="menu" />
@@ -255,13 +255,13 @@ function switchLocale(code) {
                     <slot name="header" />
                 </div>
 
-                <ThemeToggle />
+                <ThemeToggle class="print:hidden" />
 
-                <a :href="route('home')" target="_blank" class="hidden rounded-lg p-2 text-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200 sm:block" :title="t('home')">
+                <a :href="route('home')" target="_blank" class="hidden rounded-lg p-2 text-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200 sm:block print:hidden" :title="t('home')">
                     <Icon name="external" />
                 </a>
 
-                <Dropdown align="right" width="48">
+                <Dropdown align="right" width="48" class="print:hidden">
                     <template #trigger>
                         <button class="flex items-center gap-2 rounded-full p-1 pe-2 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800">
                             <span class="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-sm font-bold text-white ring-1 ring-inset ring-primary-400/40">{{ userInitial }}</span>

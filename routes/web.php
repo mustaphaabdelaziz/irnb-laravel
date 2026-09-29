@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AttendanceCalendarController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceGridController;
 use App\Http\Controllers\AttendanceSettingsController;
@@ -320,7 +321,7 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         Route::delete('/board/tasks/{boardTask}', [BoardTaskController::class, 'destroy'])->name('board.tasks.destroy');
 
         // Player attendance at category trainings (module `attendance`).
-        Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+        Route::get('/attendance', [AttendanceCalendarController::class, 'index'])->name('attendance.index');
         Route::get('/attendance/grid', [AttendanceGridController::class, 'show'])->name('attendance.grid');
         Route::post('/attendance/grid', [AttendanceGridController::class, 'save'])->name('attendance.grid.save');
         Route::post('/attendance/sessions', [TrainingSessionController::class, 'store'])->name('attendance.sessions.store');

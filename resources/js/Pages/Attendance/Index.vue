@@ -56,6 +56,8 @@ const chip = {
     cancelled: 'bg-slate-200 text-slate-500 line-through dark:bg-slate-700 dark:text-slate-400',
 };
 const kindDot = { regular: 'bg-primary-500', preseason: 'bg-amber-500', extra: 'bg-violet-500' };
+const chipTitle = (s) => [t(`att.kind.${s.kind}`), t(`att.state.${s.state}`), s.categories.map((c) => c.name).join(', '), s.title]
+    .filter(Boolean).join(' · ');
 
 const preseasonLabel = computed(() => {
     if (!props.preseason) return '';
@@ -111,9 +113,10 @@ const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg
                 <div v-for="w in weekdays" :key="w" class="bg-slate-50 p-2 text-center text-xs font-semibold text-slate-500 dark:bg-slate-900">{{ w }}</div>
                 <div v-for="cell in cells" :key="cell.key" class="min-h-[5.5rem] bg-white p-1.5 dark:bg-slate-900" :class="{ 'opacity-40': !cell.inMonth }">
                     <div class="mb-1 text-xs font-semibold" :class="cell.key === todayKey ? 'text-primary-600' : 'text-slate-400'">{{ cell.day }}</div>
-                    <Link v-for="s in cell.sessions" :key="s.id" :href="route('attendance.sessions.show', s.id)" class="mb-1 flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium" :class="chip[s.state]" :title="[t(`att.kind.${s.kind}`), t(`att.state.${s.state}`), s.title].filter(Boolean).join(' · ')">
+                    <Link v-for="s in cell.sessions" :key="s.id" :href="route('attendance.sessions.show', s.id)" class="mb-1 flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium" :class="chip[s.state]" :title="chipTitle(s)">
                         <span class="h-1.5 w-1.5 shrink-0 rounded-full" :class="kindDot[s.kind]"></span>
                         <span dir="ltr">{{ s.start_time }}</span>
+                        <span v-if="s.categories.length > 1" class="shrink-0 rounded bg-amber-200/70 px-1 text-[10px] text-amber-900 dark:bg-amber-500/30 dark:text-amber-100">+{{ s.categories.length - 1 }}</span>
                         <span v-if="s.title" class="min-w-0 truncate">{{ s.title }}</span>
                         <span v-if="s.state === 'held'" class="ms-auto">✓</span>
                     </Link>

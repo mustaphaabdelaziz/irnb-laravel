@@ -19,7 +19,7 @@ class SaveAttendanceMarksRequest extends FormRequest
     {
         return [
             'coach' => ['nullable', 'string', 'max:100'],
-            'theme' => ['nullable', 'string', 'max:100'],
+            'title' => ['nullable', 'string', 'max:150'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'marks' => ['required', 'array', 'min:1'],
             'marks.*.player_id' => ['required', 'integer', 'distinct', 'exists:players,id'],

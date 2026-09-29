@@ -66,7 +66,7 @@ const preseasonLabel = computed(() => {
 
 // ---- Add an extra / pre-season session ----
 const showForm = ref(false);
-const form = useForm({ category_id: null, kind: 'extra', date: '', start_time: '18:00', end_time: '19:30' });
+const form = useForm({ category_id: null, kind: 'extra', date: '', start_time: '18:00', end_time: '19:30', title: '' });
 function openCreate(kind, date = todayKey) {
     form.reset();
     form.clearErrors();
@@ -115,9 +115,10 @@ const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg
                 <div v-for="w in weekdays" :key="w" class="bg-slate-50 p-2 text-center text-xs font-semibold text-slate-500 dark:bg-slate-900">{{ w }}</div>
                 <div v-for="cell in cells" :key="cell.key" class="min-h-[5.5rem] bg-white p-1.5 dark:bg-slate-900" :class="{ 'opacity-40': !cell.inMonth }">
                     <div class="mb-1 text-xs font-semibold" :class="cell.key === todayKey ? 'text-primary-600' : 'text-slate-400'">{{ cell.day }}</div>
-                    <Link v-for="s in cell.sessions" :key="s.id" :href="route('attendance.sessions.show', s.id)" class="mb-1 flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium" :class="chip[s.state]" :title="`${t(`att.kind.${s.kind}`)} · ${t(`att.state.${s.state}`)}`">
+                    <Link v-for="s in cell.sessions" :key="s.id" :href="route('attendance.sessions.show', s.id)" class="mb-1 flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium" :class="chip[s.state]" :title="[t(`att.kind.${s.kind}`), t(`att.state.${s.state}`), s.title].filter(Boolean).join(' · ')">
                         <span class="h-1.5 w-1.5 shrink-0 rounded-full" :class="kindDot[s.kind]"></span>
                         <span dir="ltr">{{ s.start_time }}</span>
+                        <span v-if="s.title" class="min-w-0 truncate">{{ s.title }}</span>
                         <span v-if="s.state === 'held'" class="ms-auto">✓</span>
                     </Link>
                 </div>
@@ -136,6 +137,7 @@ const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg
                     <label class="flex-1 text-sm">{{ t('att.start') }}<input v-model="form.start_time" type="time" :class="[input, 'mt-1 block w-full']" /></label>
                     <label class="flex-1 text-sm">{{ t('att.end') }}<input v-model="form.end_time" type="time" :class="[input, 'mt-1 block w-full']" /></label>
                 </div>
+                <label class="block text-sm">{{ t('att.title_goal') }}<input v-model="form.title" type="text" maxlength="150" :placeholder="t('att.title_placeholder')" :class="[input, 'mt-1 block w-full']" /></label>
                 <InputError v-for="(e, k) in form.errors" :key="k" :message="e.startsWith('att.') ? t(e) : e" />
                 <div class="flex justify-end gap-2">
                     <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700" @click="showForm = false">{{ t('att.close') }}</button>

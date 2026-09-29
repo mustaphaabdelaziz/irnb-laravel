@@ -51,7 +51,7 @@ class AttendanceController extends Controller
                 ->get()
                 ->map(fn (TrainingSession $s) => [
                     'id' => $s->id, 'date' => $s->date, 'start_time' => $s->start_time, 'end_time' => $s->end_time,
-                    'kind' => $s->kind->value, 'state' => $s->state->value, 'theme' => $s->theme,
+                    'kind' => $s->kind->value, 'state' => $s->state->value, 'title' => $s->title,
                     'marked' => $s->attendances_count,
                 ]);
 
@@ -90,7 +90,7 @@ class AttendanceController extends Controller
             'session' => [
                 'id' => $session->id, 'date' => $session->date, 'start_time' => $session->start_time, 'end_time' => $session->end_time,
                 'kind' => $session->kind->value, 'state' => $session->state->value, 'cancel_reason' => $session->cancel_reason,
-                'moved_from' => $session->moved_from, 'coach' => $session->coach, 'theme' => $session->theme, 'notes' => $session->notes,
+                'moved_from' => $session->moved_from, 'coach' => $session->coach, 'title' => $session->title, 'notes' => $session->notes,
                 'category' => $session->category?->localized_name,
                 'category_id' => $session->category_id,
             ],
@@ -124,7 +124,7 @@ class AttendanceController extends Controller
     {
         $data = $request->validated();
         $recorder->save($session, $data['marks'], $request->user(), [
-            'coach' => $data['coach'] ?? null, 'theme' => $data['theme'] ?? null, 'notes' => $data['notes'] ?? null,
+            'coach' => $data['coach'] ?? null, 'title' => $data['title'] ?? null, 'notes' => $data['notes'] ?? null,
         ]);
 
         return back()->with('success', 'flash.attendance_saved');

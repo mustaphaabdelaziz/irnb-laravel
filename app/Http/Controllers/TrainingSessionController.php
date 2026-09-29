@@ -22,6 +22,7 @@ class TrainingSessionController extends Controller
         $data = $request->validate([
             'category_id' => ['required', 'integer', 'exists:categories,id'],
             'kind' => ['required', Rule::in([SessionKind::Extra->value, SessionKind::Preseason->value])],
+            'title' => ['nullable', 'string', 'max:150'],
             ...$this->slotRules(),
         ]);
         $this->assertSlotFree((int) $data['category_id'], $data['date'], $data['start_time']);

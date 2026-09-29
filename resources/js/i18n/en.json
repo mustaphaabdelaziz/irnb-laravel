@@ -1492,5 +1492,7 @@
     "att.error.cancelled": "This session is cancelled.",
     "att.error.duplicate": "This category already has a session at that date and time.",
     "att.error.no_players": "Add at least one player.",
-    "att.error.not_in_roster": "This player is not on this session's list."
+    "att.error.not_in_roster": "This player is not on this session's list.",
+    "att.title_goal": "Title / goal",
+    "att.title_placeholder": "e.g. Running 7.2 km in 40 min"
 }

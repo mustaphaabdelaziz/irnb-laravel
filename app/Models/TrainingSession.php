@@ -17,7 +17,7 @@ class TrainingSession extends Model
 {
     protected $fillable = [
         'category_id', 'schedule_id', 'date', 'start_time', 'end_time', 'kind', 'state',
-        'cancel_reason', 'moved_from', 'coach', 'theme', 'notes',
+        'cancel_reason', 'moved_from', 'coach', 'title', 'notes',
     ];
 
     protected function casts(): array

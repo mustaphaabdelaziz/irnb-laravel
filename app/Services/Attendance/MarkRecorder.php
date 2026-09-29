@@ -19,7 +19,7 @@ use Illuminate\Validation\ValidationException;
  */
 final class MarkRecorder
 {
-    private const LOG_FIELDS = ['coach', 'theme', 'notes'];
+    private const LOG_FIELDS = ['coach', 'title', 'notes'];
 
     public function save(TrainingSession $session, array $marks, ?User $user, ?array $log = null): int
     {

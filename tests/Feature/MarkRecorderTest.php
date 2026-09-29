@@ -72,7 +72,7 @@ class MarkRecorderTest extends TestCase
             ['player_id' => $a->id, 'status' => 'late', 'minutes' => 12, 'reason' => 'injury'],
             ['player_id' => $b->id, 'status' => 'absent_excused', 'minutes' => 5, 'reason' => 'school', 'note' => 'Exam'],
             ['player_id' => $c->id, 'status' => 'present', 'note' => ''],
-        ], $admin, ['coach' => 'Karim', 'theme' => 'Endurance', 'notes' => null]);
+        ], $admin, ['coach' => 'Karim', 'title' => 'Endurance', 'notes' => null]);
 
         $this->assertSame(3, $count);
         $marks = $session->attendances()->get()->keyBy('player_id');
@@ -87,6 +87,7 @@ class MarkRecorderTest extends TestCase
         $session->refresh();
         $this->assertSame(SessionState::Held, $session->state);
         $this->assertSame('Karim', $session->coach);
+        $this->assertSame('Endurance', $session->title);
         $this->assertSame(1, ActivityLog::where('action', 'attendance_marked')->count());
     }
 

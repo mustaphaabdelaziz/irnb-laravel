@@ -59,7 +59,7 @@ class AttendanceSessionTest extends TestCase
         ])->assertSessionHasErrors(['marks.0.minutes', 'marks.1.reason']);
 
         $this->actingAs($admin)->put(route('attendance.sessions.marks', $session), [
-            'coach' => 'Karim', 'theme' => 'Endurance',
+            'coach' => 'Karim', 'title' => 'Endurance',
             'marks' => [
                 ['player_id' => $a->id, 'status' => 'late', 'minutes' => 10],
                 ['player_id' => $b->id, 'status' => 'absent_excused', 'reason' => 'illness', 'note' => 'Flu'],
@@ -67,7 +67,7 @@ class AttendanceSessionTest extends TestCase
         ])->assertSessionHasNoErrors()->assertSessionHas('success', 'flash.attendance_saved');
 
         $this->assertSame(SessionState::Held, $session->fresh()->state);
-        $this->assertSame('Endurance', $session->fresh()->theme);
+        $this->assertSame('Endurance', $session->fresh()->title);
         $this->assertSame(AttendanceStatus::Late, $session->attendances()->where('player_id', $a->id)->value('status'));
     }
 

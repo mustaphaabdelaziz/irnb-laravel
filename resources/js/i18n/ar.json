@@ -1492,5 +1492,7 @@
     "att.error.cancelled": "هذه الحصة ملغاة.",
     "att.error.duplicate": "لهذه الفئة حصة في نفس التاريخ والوقت.",
     "att.error.no_players": "أضف لاعباً واحداً على الأقل.",
-    "att.error.not_in_roster": "هذا اللاعب ليس في قائمة هذه الحصة."
+    "att.error.not_in_roster": "هذا اللاعب ليس في قائمة هذه الحصة.",
+    "att.title_goal": "العنوان / الهدف",
+    "att.title_placeholder": "مثال: جري 7.2 كم في 40 دقيقة"
 }

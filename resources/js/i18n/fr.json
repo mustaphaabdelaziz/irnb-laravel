@@ -1492,5 +1492,7 @@
     "att.error.cancelled": "Cette séance est annulée.",
     "att.error.duplicate": "Cette catégorie a déjà une séance à cette date et heure.",
     "att.error.no_players": "Ajoutez au moins un joueur.",
-    "att.error.not_in_roster": "Ce joueur ne fait pas partie de la liste de cette séance."
+    "att.error.not_in_roster": "Ce joueur ne fait pas partie de la liste de cette séance.",
+    "att.title_goal": "Titre / objectif",
+    "att.title_placeholder": "ex. Course de 7,2 km en 40 min"
 }

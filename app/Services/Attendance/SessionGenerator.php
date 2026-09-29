@@ -14,8 +14,8 @@ use Illuminate\Support\Facades\DB;
  * Turns a category's weekly schedule into planned sessions, one month at a
  * time. Called whenever a month is opened (the desktop app has no reliable
  * scheduler), so it must be idempotent: the unique (category, date, start)
- * key ignores slots that already exist, including cancelled ones, and a slot
- * whose session was moved elsewhere (`moved_from`) is skipped.
+ * key ignores slots that already exist, including cancelled ones, and dates
+ * whose sessions were moved away from are never regenerated.
  */
 final class SessionGenerator
 {
@@ -36,10 +36,11 @@ final class SessionGenerator
 
         $closures = ClubClosure::where('start_date', '<=', $to)->where('end_date', '>=', $from)->get(['start_date', 'end_date']);
 
-        $moved = TrainingSession::whereIn('schedule_id', $schedules->modelKeys())
+        $moved = TrainingSession::where('category_id', $categoryId)
             ->whereNotNull('moved_from')
-            ->get(['schedule_id', 'moved_from'])
-            ->mapWithKeys(fn (TrainingSession $s) => ["{$s->schedule_id}|{$s->moved_from}" => true]);
+            ->whereBetween('moved_from', [$from, $to])
+            ->pluck('moved_from')
+            ->flip();
 
         $now = now();
         $rows = [];
@@ -55,7 +56,7 @@ final class SessionGenerator
                 if ($schedule->weekday !== $day->dayOfWeekIso
                     || $schedule->valid_from > $date
                     || ($schedule->valid_to !== null && $schedule->valid_to < $date)
-                    || isset($moved["{$schedule->id}|{$date}"])) {
+                    || isset($moved[$date])) {
                     continue;
                 }
 

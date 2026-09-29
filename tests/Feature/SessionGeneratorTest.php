@@ -91,4 +91,32 @@ class SessionGeneratorTest extends TestCase
         $this->assertSame(0, app(SessionGenerator::class)->forMonth($u15->id, 2026, 10));
         $this->assertSame(0, TrainingSession::count());
     }
+
+    #[Test]
+    public function a_moved_session_stays_moved_after_its_schedule_is_replaced(): void
+    {
+        $u15 = $this->category();
+        $schedule = $this->schedule($u15->id, 1); // Mondays
+        $generator = app(SessionGenerator::class);
+
+        // Generate October 2026; Mondays: 5, 12, 19, 26
+        $generator->forMonth($u15->id, 2026, 10);
+
+        // Move the 2026-10-12 session to 2026-10-13
+        TrainingSession::where('date', '2026-10-12')->update(['date' => '2026-10-13', 'moved_from' => '2026-10-12']);
+
+        // Delete the schedule (schedule_id becomes NULL)
+        $schedule->delete();
+
+        // Create a new Monday schedule
+        $this->schedule($u15->id, 1);
+
+        // Regenerate October: must not recreate the session on 2026-10-12
+        $this->assertSame(0, $generator->forMonth($u15->id, 2026, 10));
+
+        // Assert: no session on 2026-10-12, moved session still on 2026-10-13
+        $dates = $this->dates($u15->id);
+        $this->assertNotContains('2026-10-12', $dates);
+        $this->assertContains('2026-10-13', $dates);
+    }
 }

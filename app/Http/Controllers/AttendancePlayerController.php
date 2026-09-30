@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Player;
 use App\Services\Activity\ActivityPeriod;
+use App\Services\Attendance\AtRisk;
 use App\Services\Attendance\AttendanceStats;
 use App\Services\Attendance\PreseasonProgress;
 use App\Services\Pdf\ClubHeader;
@@ -27,11 +28,19 @@ class AttendancePlayerController extends Controller
         private readonly AttendanceStats $stats,
         private readonly PreseasonProgress $preseason,
         private readonly PdfService $pdf,
+        private readonly AtRisk $risk,
     ) {}
 
     public function show(Request $request, Player $player): JsonResponse
     {
-        return response()->json($this->data($request, $player));
+        $data = $this->data($request, $player);
+        ['from' => $from, 'to' => $to] = $data['period'];
+
+        return response()->json([
+            ...$data,
+            // The card's warning banner, for the card's own period.
+            'risk' => $this->risk->forPlayer($player->id, $from, $to, $data['summary']),
+        ]);
     }
 
     /** The card as a printable PDF, same period (A4 portrait, right-to-left in Arabic). */
@@ -59,8 +68,7 @@ class AttendancePlayerController extends Controller
     /** @return array<string, mixed> */
     private function data(Request $request, Player $player): array
     {
-        // The current season unless the request picks a period.
-        $period = $request->query('period') === null ? ActivityPeriod::season() : ActivityPeriod::fromRequest($request);
+        $period = ActivityPeriod::fromRequestOrSeason($request);
         ['from' => $from, 'to' => $to] = $period->toArray();
 
         return [

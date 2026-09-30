@@ -166,4 +166,31 @@ class AttendancePlayerCardTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page->where('attendanceCodes', null));
     }
+
+    #[Test]
+    public function the_card_flags_a_player_at_risk_for_its_period(): void
+    {
+        $u15 = $this->category('U15');
+        $player = $this->player($u15);
+        foreach (['2026-10-01', '2026-10-03', '2026-10-05'] as $date) {
+            $this->mark($this->heldSession($u15, $date), $player, AttendanceStatus::AbsentUnexcused);
+        }
+        $this->mark($this->heldSession($u15, '2026-10-07'), $player, AttendanceStatus::Present);
+
+        $this->actingAs($this->admin())->getJson(route('attendance.players.show', $player))
+            ->assertOk()
+            ->assertJsonPath('risk.at_risk', true)
+            ->assertJsonPath('risk.streak', true)
+            ->assertJsonPath('risk.low_score', false)      // 4 sessions: below the score rule's minimum of 5
+            ->assertJsonPath('risk.current_streak', 0)
+            ->assertJsonPath('risk.longest_streak', 3)
+            ->assertJsonPath('risk.unexcused_streak', 3)
+            ->assertJsonPath('risk.min_score_pct', 60);
+
+        // September holds none of it.
+        $this->actingAs($this->admin())
+            ->getJson(route('attendance.players.show', ['player' => $player, 'period' => 'custom', 'from' => '2026-09-01', 'to' => '2026-09-30']))
+            ->assertJsonPath('risk.at_risk', false)
+            ->assertJsonPath('risk.longest_streak', 0);
+    }
 }

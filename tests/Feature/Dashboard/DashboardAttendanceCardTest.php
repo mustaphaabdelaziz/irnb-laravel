@@ -14,8 +14,11 @@ use App\Models\Role;
 use App\Models\TrainingSchedule;
 use App\Models\TrainingSession;
 use App\Models\User;
+use App\Models\WebsiteConfig;
+use App\Services\Dashboard\AttendanceCard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\AttendanceFixtures;
@@ -166,5 +169,71 @@ class DashboardAttendanceCardTest extends TestCase
         $this->assertIsArray($this->membersTab($both)['attendance']);
         $this->actingAs($both)->get(route('dashboard'))
             ->assertInertia(fn (Assert $page) => $page->where('attendanceCodes.present.code', 'P'));
+    }
+
+    #[Test]
+    public function the_card_counts_this_seasons_players_at_risk_and_lists_the_five_worst(): void
+    {
+        $u15 = $this->category('U15');
+        $sessions = array_map(fn (string $date) => $this->heldSession($u15, $date), ['2026-09-07', '2026-09-14', '2026-09-21', '2026-09-28', '2026-10-05']);
+        $atRisk = [];
+        foreach (range(1, 7) as $i) {
+            $player = $this->player($u15);
+            foreach ($sessions as $n => $training) {
+                $this->mark($training, $player, $n < 3 ? AttendanceStatus::AbsentUnexcused : AttendanceStatus::Present);
+            }
+            $atRisk[] = $player->id;
+        }
+        $fine = $this->player($u15);
+        foreach ($sessions as $training) {
+            $this->mark($training, $fine, AttendanceStatus::Present);
+        }
+        // Last season: not counted.
+        foreach (['2026-08-03', '2026-08-10', '2026-08-17'] as $date) {
+            $this->mark($this->heldSession($u15, $date), $fine, AttendanceStatus::AbsentUnexcused);
+        }
+
+        $risk = $this->membersTab($this->admin())['attendance']['risk'];
+
+        $this->assertSame('season', $risk['period']['period']);
+        $this->assertSame('2026-09-01', $risk['period']['from']);
+        $this->assertSame(7, $risk['count']);
+        $this->assertSame(array_slice($atRisk, 0, 5), array_column($risk['worst'], 'player_id'));   // all at 0 %: by name
+        $this->assertSame(0, $risk['worst'][0]['score_pct']);   // JSON: 0.0 comes back as 0
+        $this->assertSame(3, $risk['worst'][0]['longest_streak']);
+        $this->assertTrue($risk['worst'][0]['streak']);
+        $this->assertTrue($risk['worst'][0]['low_score']);
+        $this->assertSame('U15', $risk['worst'][0]['category']);
+    }
+
+    #[Test]
+    public function the_risk_card_costs_the_same_queries_for_3_or_30_players_at_risk(): void
+    {
+        $u15 = $this->category('U15');
+        $sessions = array_map(fn (string $date) => $this->heldSession($u15, $date), ['2026-09-07', '2026-09-14', '2026-09-21']);
+        $flag = function (int $n) use ($u15, $sessions): void {
+            foreach (range(1, $n) as $i) {
+                $player = $this->player($u15);
+                foreach ($sessions as $training) {
+                    $this->mark($training, $player, AttendanceStatus::AbsentUnexcused);
+                }
+            }
+        };
+        $measure = function (): int {
+            WebsiteConfig::singleton();   // loads the settings once, as AttendanceAtRiskTest does
+            $card = app(AttendanceCard::class);
+            DB::flushQueryLog();
+            DB::enableQueryLog();
+            $card->get();
+            DB::disableQueryLog();
+
+            return count(DB::getQueryLog());
+        };
+
+        $flag(3);
+        $few = $measure();
+        $flag(27);
+
+        $this->assertSame($few, $measure());
     }
 }

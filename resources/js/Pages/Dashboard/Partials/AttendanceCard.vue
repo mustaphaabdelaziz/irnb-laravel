@@ -6,10 +6,11 @@ import StatusBreakdown from '@/Components/Attendance/StatusBreakdown.vue';
 import { Card, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Separator } from '@/Components/ui/separator';
 import { KIND_DOT } from '@/lib/attendanceCalendar';
+import { pct } from '@/lib/attendanceStats';
 
 /** Today's sessions and the last 30 days by status (AttendanceCard on the server). */
 const props = defineProps({
-    data: { type: Object, required: true }, // { date, today: [], last30: { from, to, expected, counts, pct } }
+    data: { type: Object, required: true }, // { date, today: [], last30: {...}, risk: { period, count, worst: [] } }
 });
 const { t } = useI18n();
 
@@ -31,7 +32,7 @@ const stateClass = {
             </div>
         </CardHeader>
         <Separator />
-        <div class="grid gap-5 px-5 py-4 lg:grid-cols-2">
+        <div class="grid gap-5 px-5 py-4 lg:grid-cols-3">
             <section>
                 <h3 class="text-sm font-semibold text-muted-foreground">{{ t('att.dash.today') }}</h3>
                 <p v-if="!data.today.length" class="mt-3 text-sm text-muted-foreground">{{ t('att.dash.none_today') }}</p>
@@ -55,6 +56,21 @@ const stateClass = {
                 <div v-else class="mt-3">
                     <StatusBreakdown :counts="data.last30.counts" />
                 </div>
+            </section>
+            <section>
+                <div class="flex items-center justify-between gap-2">
+                    <h3 class="text-sm font-semibold text-muted-foreground">{{ t('att.risk.dash_title') }}</h3>
+                    <Link :href="route('attendance.alerts')" class="text-xs font-medium text-primary-700 hover:underline dark:text-primary-300">{{ t('att.risk.see_all') }}</Link>
+                </div>
+                <p class="mt-2 text-2xl font-bold tabular-nums" :class="data.risk.count ? 'text-rose-600 dark:text-rose-400' : 'text-foreground'">{{ data.risk.count }}</p>
+                <p v-if="!data.risk.count" class="text-sm text-muted-foreground">{{ t('att.risk.none') }}</p>
+                <ul v-else class="mt-1 divide-y divide-border/70">
+                    <li v-for="row in data.risk.worst" :key="row.player_id" class="flex items-center gap-2 py-1.5 text-sm">
+                        <Link :href="route('players.show', row.player_id)" class="min-w-0 flex-1 truncate font-medium hover:underline">{{ row.name }}</Link>
+                        <span v-if="row.streak" class="shrink-0 text-xs text-rose-600 dark:text-rose-400" :title="t('att.risk.col.longest_streak')">{{ t('att.risk.flag.streak') }} · {{ row.longest_streak }}</span>
+                        <bdi dir="ltr" class="shrink-0 text-xs font-semibold tabular-nums">{{ pct(row.score_pct) }}</bdi>
+                    </li>
+                </ul>
             </section>
         </div>
     </Card>

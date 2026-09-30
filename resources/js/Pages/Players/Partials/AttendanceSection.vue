@@ -51,6 +51,8 @@ const retry = () => load(lastQuery.value);
 defineExpose({ load });
 
 const summary = computed(() => data.value?.summary ?? null);
+// AtRisk::forPlayer() for the card's period: { at_risk, low_score, streak, score_pct, current_streak, longest_streak, min_score_pct, ... }
+const risk = computed(() => data.value?.risk ?? null);
 const tiles = computed(() => (summary.value
     ? [
         { key: 'expected', label: t('att.col.expected'), value: summary.value.expected },
@@ -105,6 +107,14 @@ const th = 'p-2 text-start text-xs font-semibold text-slate-500 dark:text-slate-
                 <div v-for="tile in tiles" :key="tile.key" class="rounded-xl bg-slate-50 p-4 dark:bg-slate-800/60">
                     <p class="text-xs text-slate-500 dark:text-slate-400">{{ tile.label }}</p>
                     <p class="mt-1 text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100"><bdi dir="ltr">{{ tile.value }}</bdi></p>
+                </div>
+            </div>
+            <div v-if="risk?.at_risk" role="alert" class="flex gap-3 rounded-xl bg-rose-50 p-3 text-sm text-rose-800 ring-1 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-200 dark:ring-rose-900">
+                <Icon name="alert" class="mt-0.5 size-4 shrink-0" />
+                <div class="space-y-0.5">
+                    <p class="font-semibold">{{ t('att.risk.banner') }}</p>
+                    <p v-if="risk.low_score">{{ t('att.risk.banner_score', { score: pct(risk.score_pct), min: risk.min_score_pct }) }}</p>
+                    <p v-if="risk.streak">{{ t('att.risk.banner_streak', { longest: risk.longest_streak, current: risk.current_streak }) }}</p>
                 </div>
             </div>
             <p v-if="preseasonText" class="text-sm text-slate-600 dark:text-slate-300">{{ preseasonText }}</p>

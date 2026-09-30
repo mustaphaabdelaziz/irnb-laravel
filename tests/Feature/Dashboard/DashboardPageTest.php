@@ -239,7 +239,15 @@ class DashboardPageTest extends TestCase
         // members: +5 for the attendance card — today's schedules, today's
         // sessions, the attendance settings, and the last 30 days' marks
         // grouped by status and by session length.
-        foreach (['members' => 26, 'operations' => 12] as $tab => $budget) {
+        // members: +6 for the card's players at risk this season — the
+        // season's start month (Season::current()'s website_configs read), the
+        // season's marks grouped by status and by session length
+        // (AttendanceStats::players()), the ordered unexcused-streak scan, and
+        // the flagged players with their categories (2; skipped when nobody is
+        // at risk). The settings are not read again: AtRisk shares the card's
+        // AttendanceStats. DashboardAttendanceCardTest proves the count does
+        // not grow with the number of players at risk.
+        foreach (['members' => 32, 'operations' => 12] as $tab => $budget) {
             $recorder = new \ArrayObject;
             DB::listen(function ($query) use ($recorder): void {
                 $recorder->append($query->sql);

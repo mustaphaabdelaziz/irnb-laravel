@@ -72,12 +72,14 @@ function deleteAccount(a) {
 
 /* ----- Reset (superadmin) ----- */
 const { isSuperadmin } = useCan();
+// Typed word, not a click: this wipes every financial record.
+// Inline field, not window.prompt(): Electron (desktop build) does not support prompt().
+const resetTyped = ref('');
+const resetMismatch = ref(false);
 function resetFinance() {
-    // Typed word, not a click: this wipes every financial record.
-    const typed = window.prompt(t('finance_reset_prompt'));
-    if (typed === null) return;
-    if (typed.trim() !== 'RESET') { window.alert(t('finance_reset_mismatch')); return; }
-    router.post(route('finance.reset'), { confirm: 'RESET' }, { preserveScroll: true });
+    if (resetTyped.value.trim() !== 'RESET') { resetMismatch.value = true; return; }
+    resetMismatch.value = false;
+    router.post(route('finance.reset'), { confirm: 'RESET' }, { preserveScroll: true, onSuccess: () => { resetTyped.value = ''; } });
 }
 </script>
 
@@ -254,9 +256,15 @@ function resetFinance() {
             <section v-if="isSuperadmin" class="card p-5 ring-1 ring-rose-200 dark:ring-rose-900/60">
                 <p class="text-sm font-bold text-rose-700 dark:text-rose-400">{{ t('finance_reset_title') }}</p>
                 <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">{{ t('finance_reset_desc') }}</p>
-                <button @click="resetFinance" class="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-3.5 py-2 text-sm font-bold text-white hover:bg-rose-700">
-                    <Icon name="xcircle" /> {{ t('finance_reset_button') }}
-                </button>
+                <form @submit.prevent="resetFinance" class="mt-4 flex flex-wrap items-end gap-3">
+                    <label class="text-sm"><span class="mb-1 block text-xs font-medium text-slate-500">{{ t('finance_reset_prompt') }}</span>
+                        <input v-model="resetTyped" @input="resetMismatch = false" placeholder="RESET" autocomplete="off" dir="ltr"
+                            class="w-40 rounded-lg border-slate-200 bg-white py-1.5 font-mono text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
+                    <button type="submit" :disabled="!resetTyped.trim()" class="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-3.5 py-2 text-sm font-bold text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50">
+                        <Icon name="xcircle" /> {{ t('finance_reset_button') }}
+                    </button>
+                </form>
+                <p v-if="resetMismatch" class="mt-2 text-sm font-semibold text-rose-600 dark:text-rose-400">{{ t('finance_reset_mismatch') }}</p>
             </section>
         </div>
     </AuthenticatedLayout>

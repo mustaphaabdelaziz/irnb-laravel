@@ -500,10 +500,10 @@ class AttendanceMonthSheetPdfTest extends TestCase
 
     private function training(Category $category, string $date, array $extra = []): TrainingSession
     {
-        return TrainingSession::create([
+        return TrainingSession::create(array_merge([
             'category_id' => $category->id, 'date' => $date, 'start_time' => '18:00', 'end_time' => '19:30',
             'kind' => SessionKind::Regular, 'state' => SessionState::Planned,
-        ] + $extra);
+        ], $extra)); // overrides win
     }
 
     private function mark(TrainingSession $training, Player $player, AttendanceStatus $status = AttendanceStatus::Present, ?int $minutes = null): void
@@ -1122,10 +1122,10 @@ class AttendanceSessionSheetPdfTest extends TestCase
 
     private function training(Category $category, string $date, array $extra = []): TrainingSession
     {
-        return TrainingSession::create([
+        return TrainingSession::create(array_merge([
             'category_id' => $category->id, 'date' => $date, 'start_time' => '18:00', 'end_time' => '19:30',
             'kind' => SessionKind::Regular, 'state' => SessionState::Planned,
-        ] + $extra);
+        ], $extra)); // overrides win
     }
 
     private function mark(TrainingSession $training, Player $player, AttendanceStatus $status = AttendanceStatus::Present, array $extra = []): void

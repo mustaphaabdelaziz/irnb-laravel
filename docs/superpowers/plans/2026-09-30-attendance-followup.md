@@ -1322,7 +1322,7 @@ class AttendanceAlertsPageTest extends TestCase
      *
      * @return array{0: Player, 1: Player, 2: Player}
      */
-    private function seed(): array
+    private function seedData(): array
     {
         $u15 = $this->category('U15');
         $u17 = $this->category('U17');
@@ -1346,7 +1346,7 @@ class AttendanceAlertsPageTest extends TestCase
     #[Test]
     public function the_page_lists_this_seasons_players_at_risk_by_default(): void
     {
-        [$risky, , $weak] = $this->seed();
+        [$risky, , $weak] = $this->seedData();
 
         $this->actingAs($this->admin())->get(route('attendance.alerts'))
             ->assertOk()
@@ -1381,7 +1381,7 @@ class AttendanceAlertsPageTest extends TestCase
     #[Test]
     public function a_category_and_a_period_narrow_the_list(): void
     {
-        [, , $weak] = $this->seed();
+        [, , $weak] = $this->seedData();
 
         $this->actingAs($this->admin())->get(route('attendance.alerts', ['category_id' => $weak->category_id]))
             ->assertInertia(fn (Assert $page) => $page
@@ -1400,7 +1400,7 @@ class AttendanceAlertsPageTest extends TestCase
     #[Test]
     public function the_export_lists_the_same_rows(): void
     {
-        [$risky] = $this->seed();
+        [$risky] = $this->seedData();
 
         $response = $this->actingAs($this->userIn('fr'))
             ->get(route('attendance.alerts.export', ['format' => 'csv']))
@@ -1419,7 +1419,7 @@ class AttendanceAlertsPageTest extends TestCase
     #[Test]
     public function the_page_and_the_export_need_attendance_view_only(): void
     {
-        $this->seed();
+        $this->seedData();
         $viewer = $this->userWith(['attendance' => ['view']]);
         $playersOnly = $this->userWith(['players' => ['view']]);
 
@@ -2983,7 +2983,7 @@ class AttendanceRankingPageTest extends TestCase
      *
      * @return array<string, mixed>
      */
-    private function seed(): array
+    private function seedData(): array
     {
         $u15 = $this->category('U15');
         $u17 = $this->category('U17');
@@ -3007,7 +3007,7 @@ class AttendanceRankingPageTest extends TestCase
     #[Test]
     public function the_first_category_and_the_current_month_are_ranked_by_default(): void
     {
-        $x = $this->seed();
+        $x = $this->seedData();
 
         $this->actingAs($this->userIn('fr'))->get(route('attendance.ranking'))
             ->assertOk()
@@ -3045,7 +3045,7 @@ class AttendanceRankingPageTest extends TestCase
     #[Test]
     public function a_season_can_be_ranked(): void
     {
-        $x = $this->seed();
+        $x = $this->seedData();
 
         $this->actingAs($this->userIn('fr'))
             ->get(route('attendance.ranking', ['category_id' => $x['u15']->id, 'type' => 'season', 'season' => 2026]))
@@ -3064,7 +3064,7 @@ class AttendanceRankingPageTest extends TestCase
     #[Test]
     public function a_category_without_ranked_players_shows_an_empty_list(): void
     {
-        $x = $this->seed();
+        $x = $this->seedData();
 
         $this->actingAs($this->admin())->get(route('attendance.ranking', ['category_id' => $x['u17']->id]))
             ->assertInertia(fn (Assert $page) => $page
@@ -3076,7 +3076,7 @@ class AttendanceRankingPageTest extends TestCase
     #[Test]
     public function the_page_needs_attendance_view_only(): void
     {
-        $this->seed();
+        $this->seedData();
 
         $this->actingAs($this->userWith(['attendance' => ['view']]))->get(route('attendance.ranking'))->assertOk();
         $this->actingAs($this->userWith(['players' => ['view']]))->get(route('attendance.ranking'))->assertForbidden();
@@ -3481,7 +3481,7 @@ class AttendanceCertificatesPdfTest extends TestCase
     }
 
     /** Same as the ranking page: A 100 %, B 95 %, G 95 %, C 80 %, D 60 %; E not ranked. */
-    private function seed(): array
+    private function seedData(): array
     {
         $u15 = $this->category('U15');
         $u17 = $this->category('U17');
@@ -3527,7 +3527,7 @@ class AttendanceCertificatesPdfTest extends TestCase
     #[Test]
     public function the_podium_prints_as_a_real_three_page_pdf(): void
     {
-        $x = $this->seed();
+        $x = $this->seedData();
 
         $response = $this->actingAs($this->userIn('fr'))->get(route('attendance.certificates', ['category_id' => $x['u15']->id]))->assertOk();
 
@@ -3538,7 +3538,7 @@ class AttendanceCertificatesPdfTest extends TestCase
     #[Test]
     public function the_podium_certificates_carry_name_place_score_category_and_period(): void
     {
-        $x = $this->seed();
+        $x = $this->seedData();
         $seen = $this->spyPdf();
 
         $this->actingAs($this->userIn('fr'))->get(route('attendance.certificates', ['category_id' => $x['u15']->id]))->assertOk();
@@ -3561,7 +3561,7 @@ class AttendanceCertificatesPdfTest extends TestCase
     #[Test]
     public function a_chosen_player_outside_the_podium_gets_a_certificate_without_a_place(): void
     {
-        $x = $this->seed();
+        $x = $this->seedData();
         $seen = $this->spyPdf();
 
         $this->actingAs($this->userIn('fr'))->get(route('attendance.certificates', ['category_id' => $x['u15']->id, 'player_id' => $x['c']->id]))->assertOk();
@@ -3576,7 +3576,7 @@ class AttendanceCertificatesPdfTest extends TestCase
     #[Test]
     public function a_chosen_player_on_the_podium_keeps_the_place(): void
     {
-        $x = $this->seed();
+        $x = $this->seedData();
         $seen = $this->spyPdf();
 
         $this->actingAs($this->userIn('fr'))->get(route('attendance.certificates', ['category_id' => $x['u15']->id, 'player_id' => $x['b']->id]))->assertOk();
@@ -3588,7 +3588,7 @@ class AttendanceCertificatesPdfTest extends TestCase
     #[Test]
     public function an_unranked_player_can_still_be_chosen(): void
     {
-        $x = $this->seed();
+        $x = $this->seedData();
         $seen = $this->spyPdf();
 
         $this->actingAs($this->userIn('fr'))->get(route('attendance.certificates', ['category_id' => $x['u15']->id, 'player_id' => $x['e']->id]))->assertOk();
@@ -3601,7 +3601,7 @@ class AttendanceCertificatesPdfTest extends TestCase
     #[Test]
     public function the_arabic_certificates_are_right_to_left_for_a_season(): void
     {
-        $x = $this->seed();
+        $x = $this->seedData();
         $seen = $this->spyPdf();
 
         $this->actingAs($this->userIn('ar'))
@@ -3619,7 +3619,7 @@ class AttendanceCertificatesPdfTest extends TestCase
     #[Test]
     public function nobody_ranked_means_no_podium(): void
     {
-        $x = $this->seed();
+        $x = $this->seedData();
 
         $this->actingAs($this->admin())->get(route('attendance.certificates', ['category_id' => $x['u17']->id]))->assertNotFound();
     }
@@ -3627,7 +3627,7 @@ class AttendanceCertificatesPdfTest extends TestCase
     #[Test]
     public function printing_needs_attendance_view_only(): void
     {
-        $x = $this->seed();
+        $x = $this->seedData();
         $this->spyPdf();
 
         $this->actingAs($this->userWith(['attendance' => ['view']]))->get(route('attendance.certificates', ['category_id' => $x['u15']->id]))->assertOk();
@@ -3928,7 +3928,7 @@ class AttendanceInjurySpellsTest extends TestCase
      *
      * @return array{0: Player, 1: Player, 2: Player}
      */
-    private function seed(): array
+    private function seedData(): array
     {
         $u15 = $this->category('U15');
         $x = $this->player($u15);
@@ -3957,7 +3957,7 @@ class AttendanceInjurySpellsTest extends TestCase
     #[Test]
     public function spells_join_consecutive_injury_marks_and_the_latest_one_is_open(): void
     {
-        [$x, $y, $z] = $this->seed();
+        [$x, $y, $z] = $this->seedData();
 
         $this->assertSame([
             ['start' => '2026-10-02', 'end' => '2026-10-03', 'sessions' => 2, 'open' => false],
@@ -3971,7 +3971,7 @@ class AttendanceInjurySpellsTest extends TestCase
     #[Test]
     public function the_profile_gets_the_periods_spells_newest_first_with_details_and_unmatched_ones(): void
     {
-        [$x, $y] = $this->seed();
+        [$x, $y] = $this->seedData();
         InjuryNote::create(['player_id' => $x->id, 'start_date' => '2026-10-06', 'body_part' => 'Cheville', 'description' => 'Entorse']);
         $stray = InjuryNote::create(['player_id' => $x->id, 'start_date' => '2026-10-04', 'body_part' => 'Genou']);   // no spell starts on the 4th
 
@@ -3994,7 +3994,7 @@ class AttendanceInjurySpellsTest extends TestCase
     #[Test]
     public function editing_an_earlier_mark_moves_the_start_and_the_detail_becomes_unmatched_not_lost(): void
     {
-        [$x] = $this->seed();
+        [$x] = $this->seedData();
         $note = InjuryNote::create(['player_id' => $x->id, 'start_date' => '2026-10-06', 'body_part' => 'Cheville']);
         // The illness on the 5th was an injury after all: the first two spells join.
         Attendance::where('player_id', $x->id)
@@ -4013,7 +4013,7 @@ class AttendanceInjurySpellsTest extends TestCase
     #[Test]
     public function the_club_list_has_current_injuries_and_the_periods_spells(): void
     {
-        [$x] = $this->seed();
+        [$x] = $this->seedData();
         $u17 = $this->category('U17');
         $w = $this->player($u17);
         $this->mark($this->training($u17, '2026-09-10'), $w, AttendanceStatus::NotTraining, ['reason' => 'injury']);
@@ -4073,7 +4073,7 @@ class AttendanceInjurySpellsTest extends TestCase
     #[Test]
     public function the_table_holds_one_detail_per_spell_start_and_its_migration_runs_again(): void
     {
-        [$x] = $this->seed();
+        [$x] = $this->seedData();
         InjuryNote::create(['player_id' => $x->id, 'start_date' => '2026-10-02']);
 
         try {
@@ -4939,7 +4939,7 @@ class AttendanceInjuriesPageTest extends TestCase
      *
      * @return array{0: Player, 1: Player}
      */
-    private function seed(): array
+    private function seedData(): array
     {
         $u15 = $this->category('U15');
         $u17 = $this->category('U17');
@@ -4961,7 +4961,7 @@ class AttendanceInjuriesPageTest extends TestCase
     #[Test]
     public function the_page_lists_current_injuries_and_this_seasons_spells(): void
     {
-        [$x, $w] = $this->seed();
+        [$x, $w] = $this->seedData();
 
         $this->actingAs($this->admin())->get(route('attendance.injuries'))
             ->assertOk()
@@ -4988,7 +4988,7 @@ class AttendanceInjuriesPageTest extends TestCase
     #[Test]
     public function a_category_and_a_period_narrow_the_lists(): void
     {
-        [$x, $w] = $this->seed();
+        [$x, $w] = $this->seedData();
 
         $this->actingAs($this->admin())->get(route('attendance.injuries', ['category_id' => $w->category_id]))
             ->assertInertia(fn (Assert $page) => $page
@@ -5007,7 +5007,7 @@ class AttendanceInjuriesPageTest extends TestCase
     #[Test]
     public function the_page_needs_attendance_view_only(): void
     {
-        $this->seed();
+        $this->seedData();
 
         $this->actingAs($this->userWith(['attendance' => ['view']]))->get(route('attendance.injuries'))->assertOk();
         $this->actingAs($this->userWith(['players' => ['view']]))->get(route('attendance.injuries'))->assertForbidden();

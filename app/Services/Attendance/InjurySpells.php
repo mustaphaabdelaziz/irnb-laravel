@@ -23,12 +23,18 @@ use Illuminate\Support\Facades\DB;
  *
  * A spell built as open (it holds the player's latest held mark) closes
  * early when its detail's `returned_on` is on or after the spell's end (the
- * latest mark's date): `open` becomes false and `end` moves to `returned_on`
- * — so overlaps() and the club's current list treat the return date as
- * where the spell actually stops. Every spell exposes `returned_on` (null
- * when it has none). A later injury mark that extends the spell past that
- * date reopens it: `end` then runs past `returned_on` again, so "on or
- * after" no longer holds — see withReturn().
+ * latest mark's date) and no later than today: `open` becomes false and
+ * `end` moves to `returned_on` — so overlaps() and the club's current list
+ * treat the return date as where the spell actually stops. A `returned_on`
+ * still in the future is a planned return, not yet a close: the spell stays
+ * open and `returned_on` is exposed so the UI can show "expected back". A
+ * later injury mark that extends the spell past a (past) `returned_on`
+ * reopens it: `end` then runs past `returned_on` again, so "on or after" no
+ * longer holds — see withReturn(). A spell already closed by later marks
+ * (never by the return note itself) exposes `returned_on` only when it is
+ * on or after the spell's end; an earlier, stale return date predates marks
+ * that show the player still injured, so it is not this spell's return and
+ * is not exposed.
  *
  * The club list scans only the players who can matter to it, then builds
  * their spells from their whole history as above. A spell shown is open
@@ -89,19 +95,26 @@ final class InjurySpells
 
     /**
      * A spell with its detail's return date applied: closes an open spell
-     * whose `returned_on` is on or after its end (moving `end` to it), and
-     * always exposes `returned_on`. A no-op for an already-closed spell or
-     * a missing/earlier return date.
+     * whose `returned_on` is on or after its end (moving `end` to it) and no
+     * later than today — a future `returned_on` is a planned return, so it
+     * keeps the spell open instead (still exposed, for "expected back"). A
+     * spell that is not open was closed by later marks, not by this note: it
+     * exposes `returned_on` only when it is on or after its end, never a
+     * stale date that predates marks showing the player still injured.
      *
      * @param  array{start: string, end: string, sessions: int, open: bool}  $spell
      */
     private static function withReturn(array $spell, ?string $returnedOn): array
     {
-        if ($spell['open'] && $returnedOn !== null && $returnedOn >= $spell['end']) {
-            return [...$spell, 'open' => false, 'end' => $returnedOn, 'returned_on' => $returnedOn];
+        if ($spell['open']) {
+            if ($returnedOn !== null && $returnedOn >= $spell['end'] && $returnedOn <= now()->toDateString()) {
+                return [...$spell, 'open' => false, 'end' => $returnedOn, 'returned_on' => $returnedOn];
+            }
+
+            return [...$spell, 'returned_on' => $returnedOn];
         }
 
-        return [...$spell, 'returned_on' => $returnedOn];
+        return [...$spell, 'returned_on' => $returnedOn !== null && $returnedOn >= $spell['end'] ? $returnedOn : null];
     }
 
     /**

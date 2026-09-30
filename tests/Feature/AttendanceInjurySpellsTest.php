@@ -209,6 +209,67 @@ class AttendanceInjurySpellsTest extends TestCase
     }
 
     #[Test]
+    public function a_future_return_date_keeps_the_open_spell_open_and_current(): void
+    {
+        [$x] = $this->seedData();
+        InjuryNote::create(['player_id' => $x->id, 'start_date' => '2026-10-12', 'returned_on' => '2026-10-21']);   // tomorrow: a planned return
+
+        $october = $this->spells()->club('2026-10-01', '2026-10-31');
+
+        $this->assertSame([$x->id], array_column($october['current'], 'player_id'));
+        $this->assertTrue($october['current'][0]['open']);
+        $this->assertSame('2026-10-12', $october['current'][0]['end']);   // not moved by a future return date
+        $this->assertSame('2026-10-21', $october['current'][0]['returned_on']);
+
+        $profile = $this->spells()->forPlayer($x->id, '2026-10-01', '2026-10-31');
+        $this->assertTrue($profile['spells'][0]['open']);
+        $this->assertSame('2026-10-21', $profile['spells'][0]['returned_on']);
+    }
+
+    #[Test]
+    public function a_return_date_equal_to_the_end_closes_the_spell_boundary(): void
+    {
+        [$x] = $this->seedData();
+        InjuryNote::create(['player_id' => $x->id, 'start_date' => '2026-10-12', 'returned_on' => '2026-10-12']);
+
+        $october = $this->spells()->club('2026-10-01', '2026-10-31');
+
+        $this->assertSame([], $october['current']);
+        $this->assertFalse($october['spells'][0]['open']);
+        $this->assertSame('2026-10-12', $october['spells'][0]['end']);
+        $this->assertSame('2026-10-12', $october['spells'][0]['returned_on']);
+    }
+
+    #[Test]
+    public function a_spell_closed_by_an_early_return_date_drops_out_of_the_clubs_spells(): void
+    {
+        $u15 = $this->category('U15');
+        $p = $this->player($u15);
+        $this->mark($this->training($u15, '2025-03-01'), $p, AttendanceStatus::NotTraining, ['reason' => 'injury']);
+        InjuryNote::create(['player_id' => $p->id, 'start_date' => '2025-03-01', 'returned_on' => '2025-03-05']);
+
+        $october = $this->spells()->club('2026-10-01', '2026-10-31');
+
+        $this->assertSame([], $october['current']);
+        $this->assertNotContains($p->id, array_column($october['spells'], 'player_id'));
+    }
+
+    #[Test]
+    public function a_stale_return_date_earlier_than_a_naturally_closed_spells_end_is_not_exposed(): void
+    {
+        [$x] = $this->seedData();
+        // The spell 2026-10-06..2026-10-07 closed naturally (the Present mark on the 9th). A stale
+        // return date entered before that end must not be shown as this spell's return.
+        InjuryNote::create(['player_id' => $x->id, 'start_date' => '2026-10-06', 'returned_on' => '2026-10-06']);
+
+        $profile = $this->spells()->forPlayer($x->id, '2026-10-01', '2026-10-31');
+
+        $closed = collect($profile['spells'])->firstWhere('start', '2026-10-06');
+        $this->assertFalse($closed['open']);
+        $this->assertNull($closed['returned_on']);
+    }
+
+    #[Test]
     public function the_club_list_runs_a_fixed_number_of_queries(): void
     {
         $u15 = $this->category('U15');

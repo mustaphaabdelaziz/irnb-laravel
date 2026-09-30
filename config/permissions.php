@@ -58,6 +58,8 @@ return [
         'attendance.grid' => ['attendance', 'view'],
         // "stats" is not a view verb: reading the statistics must not need edit rights.
         'attendance.stats' => ['attendance', 'view'],
+        // "month" and "session" are not view verbs: printing a blank sheet must not need edit rights.
+        'attendance.sheets.month' => ['attendance', 'view'],
         // Schedules, closures and pre-season targets reshape the whole season's
         // calendar, not just one row, so all their writes need edit — without
         // these, deriveAction() would gate the stores as 'add' and the

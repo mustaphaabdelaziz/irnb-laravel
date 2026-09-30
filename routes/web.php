@@ -5,6 +5,7 @@ use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceGridController;
 use App\Http\Controllers\AttendancePlayerController;
 use App\Http\Controllers\AttendanceSettingsController;
+use App\Http\Controllers\AttendanceSheetController;
 use App\Http\Controllers\AttendanceStatsController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\BoardController;
@@ -331,6 +332,8 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         Route::get('/attendance/players/{player}/report', [AttendancePlayerController::class, 'report'])->name('attendance.players.report');
         Route::get('/attendance/grid', [AttendanceGridController::class, 'show'])->name('attendance.grid');
         Route::post('/attendance/grid', [AttendanceGridController::class, 'save'])->name('attendance.grid.save');
+        // Paper sheets to print and fill in by hand (A4 PDFs); both only read.
+        Route::get('/attendance/sheets/month', [AttendanceSheetController::class, 'month'])->name('attendance.sheets.month');
         Route::post('/attendance/sessions', [TrainingSessionController::class, 'store'])->name('attendance.sessions.store');
         Route::get('/attendance/sessions/{session}', [AttendanceController::class, 'show'])->name('attendance.sessions.show');
         Route::put('/attendance/sessions/{session}/marks', [AttendanceController::class, 'saveMarks'])->name('attendance.sessions.marks');

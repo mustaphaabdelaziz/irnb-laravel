@@ -84,9 +84,8 @@ class AttendancePlayerController extends Controller
     public function letter(Request $request, Player $player): Response
     {
         $player->loadMissing('category');
-        $period = ActivityPeriod::fromRequestOrSeason($request);
-        ['from' => $from, 'to' => $to] = $period->toArray();
-        $summary = $this->stats->players($from, $to, null, $player->id)[$player->id] ?? $this->stats->emptyRow($player->id);
+        [$period, $summary] = $this->periodAndSummary($request, $player);
+        ['from' => $from, 'to' => $to] = $period;
         $rows = array_reverse(array_values(array_filter(
             $this->stats->playerSessions($player->id, $from, $to),
             fn (array $row) => in_array($row['status'], self::LETTER_STATUSES, true),
@@ -125,15 +124,27 @@ class AttendancePlayerController extends Controller
         return substr($date, 8, 2).'/'.substr($date, 5, 2).'/'.substr($date, 0, 4);
     }
 
+    /**
+     * The requested period (default: the current season) and the player's summary over it.
+     *
+     * @return array{0: array<string, mixed>, 1: array<string, mixed>}
+     */
+    private function periodAndSummary(Request $request, Player $player): array
+    {
+        $period = ActivityPeriod::fromRequestOrSeason($request)->toArray();
+
+        return [$period, $this->stats->players($period['from'], $period['to'], null, $player->id)[$player->id] ?? $this->stats->emptyRow($player->id)];
+    }
+
     /** @return array<string, mixed> */
     private function data(Request $request, Player $player): array
     {
-        $period = ActivityPeriod::fromRequestOrSeason($request);
-        ['from' => $from, 'to' => $to] = $period->toArray();
+        [$period, $summary] = $this->periodAndSummary($request, $player);
+        ['from' => $from, 'to' => $to] = $period;
 
         return [
-            'period' => $period->toArray(),
-            'summary' => $this->stats->players($from, $to, null, $player->id)[$player->id] ?? $this->stats->emptyRow($player->id),
+            'period' => $period,
+            'summary' => $summary,
             'monthly' => $this->stats->monthly($from, $to, null, $player->id),
             'preseason' => $player->category_id ? $this->preseason->forCategory((int) $player->category_id, $to) : null,
             'sessions' => $this->stats->playerSessions($player->id, $from, $to),

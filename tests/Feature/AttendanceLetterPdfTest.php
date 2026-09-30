@@ -180,6 +180,18 @@ class AttendanceLetterPdfTest extends TestCase
     }
 
     #[Test]
+    public function a_text_ending_in_line_breaks_prints_no_trailing_blank_line(): void
+    {
+        AttendanceSettings::save(['letter' => ['body' => ['fr' => "Madame, Monsieur,\nBien à vous.\r\n\n"]]]);
+        $player = $this->seedPlayer();
+        $seen = $this->spyPdf();
+
+        $this->actingAs($this->userIn('fr'))->get(route('attendance.players.letter', ['player' => $player] + self::OCTOBER))->assertOk();
+
+        $this->assertMatchesRegularExpression('#Madame, Monsieur,<br>\s*Bien à vous\.\s*</div>#u', $seen['html']);
+    }
+
+    #[Test]
     public function the_arabic_letter_is_right_to_left(): void
     {
         $player = $this->seedPlayer();

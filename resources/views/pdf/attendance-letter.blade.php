@@ -35,8 +35,8 @@
     </table>
 
     <div class="body">
-        @foreach (preg_split('/\R/u', $body) as $line)
-            {{ $line }}<br>
+        @foreach (preg_split('/\R/u', rtrim($body, "\r\n")) as $line)
+            {{ $line }}@unless ($loop->last)<br>@endunless
         @endforeach
     </div>
 

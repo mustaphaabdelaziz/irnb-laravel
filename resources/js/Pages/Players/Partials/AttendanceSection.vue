@@ -7,6 +7,7 @@ import '@/lib/registerCharts';
 import PeriodFilter from '@/Components/Activity/PeriodFilter.vue';
 import StatDoughnut from '@/Components/StatDoughnut.vue';
 import Icon from '@/Components/Icon.vue';
+import InjuryList from './InjuryList.vue';
 import { useAttendanceCodes } from '@/Composables/useAttendanceCodes';
 import { baseOptions } from '@/lib/chartTheme';
 import { dayLabel } from '@/lib/attendanceCalendar';
@@ -169,6 +170,8 @@ const th = 'p-2 text-start text-xs font-semibold text-slate-500 dark:text-slate-
                     </div>
                 </div>
             </template>
+
+            <InjuryList v-if="data.injuries" :player-id="player.id" :injuries="data.injuries" @saved="retry" />
         </div>
     </div>
 </template>

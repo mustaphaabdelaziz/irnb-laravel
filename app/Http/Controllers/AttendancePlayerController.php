@@ -6,6 +6,7 @@ use App\Models\Player;
 use App\Services\Activity\ActivityPeriod;
 use App\Services\Attendance\AtRisk;
 use App\Services\Attendance\AttendanceStats;
+use App\Services\Attendance\InjurySpells;
 use App\Services\Attendance\PreseasonProgress;
 use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
@@ -33,6 +34,7 @@ class AttendancePlayerController extends Controller
         private readonly PreseasonProgress $preseason,
         private readonly PdfService $pdf,
         private readonly AtRisk $risk,
+        private readonly InjurySpells $injuries,
     ) {}
 
     public function show(Request $request, Player $player): JsonResponse
@@ -44,6 +46,8 @@ class AttendancePlayerController extends Controller
             ...$data,
             // The card's warning banner, for the card's own period.
             'risk' => $this->risk->forPlayer($player->id, $from, $to, $data['summary']),
+            // The card's Injuries section: spells overlapping the period, with details, and unmatched details.
+            'injuries' => $this->injuries->forPlayer($player->id, $from, $to),
         ]);
     }
 

@@ -4,6 +4,7 @@ use App\Http\Controllers\AttendanceAlertsController;
 use App\Http\Controllers\AttendanceCalendarController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceGridController;
+use App\Http\Controllers\AttendanceInjuryController;
 use App\Http\Controllers\AttendancePlayerController;
 use App\Http\Controllers\AttendanceRankingController;
 use App\Http\Controllers\AttendanceSettingsController;
@@ -339,6 +340,10 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         Route::get('/attendance/players/{player}', [AttendancePlayerController::class, 'show'])->name('attendance.players.show');
         Route::get('/attendance/players/{player}/report', [AttendancePlayerController::class, 'report'])->name('attendance.players.report');
         Route::get('/attendance/players/{player}/letter', [AttendancePlayerController::class, 'letter'])->name('attendance.players.letter');
+        // Details of an injury spell (spells are built from the marks); all writes need attendance/edit.
+        Route::post('/attendance/players/{player}/injury-notes', [AttendanceInjuryController::class, 'store'])->name('attendance.injury-notes.store');
+        Route::put('/attendance/injury-notes/{note}', [AttendanceInjuryController::class, 'update'])->name('attendance.injury-notes.update');
+        Route::delete('/attendance/injury-notes/{note}', [AttendanceInjuryController::class, 'destroy'])->name('attendance.injury-notes.destroy');
         Route::get('/attendance/grid', [AttendanceGridController::class, 'show'])->name('attendance.grid');
         Route::post('/attendance/grid', [AttendanceGridController::class, 'save'])->name('attendance.grid.save');
         // Paper sheets to print and fill in by hand (A4 PDFs); both only read.

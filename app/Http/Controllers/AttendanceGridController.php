@@ -10,8 +10,8 @@ use App\Models\Player;
 use App\Models\TrainingSession;
 use App\Services\Attendance\AttendanceCode;
 use App\Services\Attendance\MarkRecorder;
+use App\Services\Attendance\MonthSheet;
 use App\Services\Attendance\Roster;
-use App\Services\Attendance\SessionGenerator;
 use App\Support\AttendanceSettings;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -22,15 +22,16 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Month grid: players × sessions, filled with the paper-sheet codes. A cell
- * exists only where the player is on that session's roster (frozen marks,
- * or the expected roster before the first save). A joint pre-season session
- * shows in the grid of each of its categories with its whole roster, since
- * saving a column replaces the session's full set of marks.
+ * Month grid: players × sessions (see MonthSheet), filled with the
+ * paper-sheet codes. A cell exists only where the player is on that
+ * session's roster (frozen marks, or the expected roster before the first
+ * save). A joint pre-season session shows in the grid of each of its
+ * categories with its whole roster, since saving a column replaces the
+ * session's full set of marks.
  */
 class AttendanceGridController extends Controller
 {
-    public function show(Request $request, SessionGenerator $generator, Roster $roster): Response
+    public function show(Request $request, MonthSheet $sheet): Response
     {
         $data = $request->validate([
             'category_id' => ['required', 'integer', 'exists:categories,id'],
@@ -38,37 +39,7 @@ class AttendanceGridController extends Controller
         ]);
         $category = Category::findOrFail($data['category_id']);
         $anchor = CarbonImmutable::createFromFormat('!Y-m', $data['month']);
-        $generator->forMonth($category->id, $anchor->year, $anchor->month);
-
-        $sessions = TrainingSession::includingCategory($category->id)
-            ->where('state', '!=', SessionState::Cancelled->value)
-            ->whereBetween('date', [$anchor->startOfMonth()->toDateString(), $anchor->endOfMonth()->toDateString()])
-            ->with(['attendances', 'categories'])
-            ->orderBy('date')->orderBy('start_time')
-            ->get();
-
-        $codes = AttendanceCode::fromSettings();
-        $cells = [];
-        $expected = [];
-        foreach ($sessions as $session) {
-            if ($session->attendances->isNotEmpty()) {
-                foreach ($session->attendances as $mark) {
-                    $cells[$mark->player_id][$session->id] = $codes->format($mark->status, $mark->minutes);
-                }
-
-                continue;
-            }
-            $categoryIds = $session->categoryIds();
-            $key = $session->date.'|'.implode(',', $categoryIds);
-            $expected[$key] ??= $roster->expected($categoryIds, $session->date)->modelKeys();
-            foreach ($expected[$key] as $playerId) {
-                $cells[$playerId][$session->id] = '';
-            }
-        }
-
-        $rows = Player::whereIn('id', array_keys($cells))->orderBy('lastname')->orderBy('firstname')
-            ->get(['id', 'firstname', 'lastname'])
-            ->map(fn (Player $p) => ['id' => $p->id, 'name' => trim("{$p->lastname} {$p->firstname}")]);
+        ['sessions' => $sessions, 'cells' => $cells, 'players' => $players] = $sheet->build($category->id, $anchor->year, $anchor->month);
 
         return Inertia::render('Attendance/Grid', [
             'category' => ['id' => $category->id, 'name' => $category->localized_name],
@@ -76,7 +47,7 @@ class AttendanceGridController extends Controller
             'sessions' => $sessions->map(fn (TrainingSession $s) => [
                 'id' => $s->id, 'date' => $s->date, 'start_time' => $s->start_time, 'kind' => $s->kind->value, 'state' => $s->state->value,
             ])->values(),
-            'rows' => $rows,
+            'rows' => $players->map(fn (Player $p) => ['id' => $p->id, 'name' => trim("{$p->lastname} {$p->firstname}")])->values(),
             'cells' => (object) $cells,
             'attendanceCodes' => AttendanceSettings::codes(),
         ]);

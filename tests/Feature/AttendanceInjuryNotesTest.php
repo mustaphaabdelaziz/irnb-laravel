@@ -14,6 +14,7 @@ use App\Models\TrainingSession;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\AttendanceFixtures;
 use Tests\TestCase;
@@ -165,5 +166,40 @@ class AttendanceInjuryNotesTest extends TestCase
         $this->actingAs($viewer)->putJson(route('attendance.injury-notes.update', $note), ['body_part' => 'Dos'])->assertForbidden();
         $this->actingAs($adder)->deleteJson(route('attendance.injury-notes.destroy', $note))->assertForbidden();
         $this->assertSame('Cheville', $note->fresh()->body_part);
+    }
+
+    #[Test]
+    public function validation_messages_name_the_fields_in_the_readers_language(): void
+    {
+        $player = $this->seedPlayer();
+        $french = User::factory()->admin()->create(['preferred_lng' => 'fr']);
+
+        $errors = $this->actingAs($french)
+            ->postJson(route('attendance.injury-notes.store', $player), ['body_part' => str_repeat('x', 61), 'returned_on' => 'demain'])
+            ->assertUnprocessable()
+            ->json('errors');
+
+        $this->assertStringContainsString('Partie du corps', $errors['body_part'][0]);
+        $this->assertStringContainsString('Retour le', $errors['returned_on'][0]);
+        $this->assertStringContainsString('Date de début', $errors['start_date'][0]);
+    }
+
+    #[Test]
+    public function a_detail_added_meanwhile_for_the_same_spell_is_updated_not_a_server_error(): void
+    {
+        $player = $this->seedPlayer();
+        $admin = $this->admin();
+        // Another request saves the same spell's detail between our lookup and our insert.
+        InjuryNote::creating(function (InjuryNote $note) use ($player): void {
+            if (InjuryNote::where('player_id', $player->id)->doesntExist()) {
+                DB::table('injury_notes')->insert(['player_id' => $player->id, 'start_date' => $note->start_date, 'body_part' => 'Cheville', 'created_at' => now(), 'updated_at' => now()]);
+            }
+        });
+
+        $this->actingAs($admin)
+            ->postJson(route('attendance.injury-notes.store', $player), ['start_date' => '2026-10-12', 'body_part' => 'Genou'])
+            ->assertOk()
+            ->assertJsonPath('note.body_part', 'Genou');
+        $this->assertSame('Genou', InjuryNote::sole()->body_part);
     }
 }

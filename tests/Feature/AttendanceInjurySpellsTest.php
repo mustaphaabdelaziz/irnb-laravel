@@ -205,6 +205,86 @@ class AttendanceInjurySpellsTest extends TestCase
         $this->assertSame(4, $few);
     }
 
+    /** Runs club() and returns [its result, the player ids whose marks its first query streamed]. */
+    private function clubScanning(string $from, string $to): array
+    {
+        $spells = $this->spells();
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $club = $spells->club($from, $to);
+        DB::disableQueryLog();
+        $first = DB::getQueryLog()[0];
+        $scanned = array_values(array_unique(array_map(fn (object $row) => (int) $row->player_id, DB::select($first['query'], $first['bindings']))));
+
+        return [$club, $scanned];
+    }
+
+    #[Test]
+    public function an_old_closed_spell_is_neither_scanned_nor_listed(): void
+    {
+        [$x] = $this->seedData();
+        $u17 = $this->category('U17');
+        $old = $this->player($u17);
+        $this->mark($this->training($u17, '2025-11-03'), $old, AttendanceStatus::NotTraining, ['reason' => 'injury']);
+        $this->mark($this->training($u17, '2025-11-05'), $old, AttendanceStatus::Present);
+        $this->mark($this->training($u17, '2026-10-08'), $old, AttendanceStatus::Present);
+
+        [$october, $scanned] = $this->clubScanning('2026-10-01', '2026-10-31');
+
+        $this->assertSame([$x->id], $scanned);
+        $this->assertNotContains($old->id, array_column($october['spells'], 'player_id'));
+        $this->assertNotContains($old->id, array_column($october['current'], 'player_id'));
+    }
+
+    #[Test]
+    public function a_spell_begun_before_the_period_is_listed_with_its_true_start(): void
+    {
+        $u15 = $this->category('U15');
+        $p = $this->player($u15);
+        foreach (['2026-09-20', '2026-09-25', '2026-10-02'] as $date) {
+            $this->mark($this->training($u15, $date), $p, AttendanceStatus::NotTraining, ['reason' => 'injury']);
+        }
+        $this->mark($this->training($u15, '2026-10-06'), $p, AttendanceStatus::Present);
+
+        [$october] = $this->clubScanning('2026-10-01', '2026-10-31');
+
+        $this->assertSame([['player_id' => $p->id, 'start' => '2026-09-20', 'end' => '2026-10-02', 'sessions' => 3, 'open' => false]],
+            array_map(fn (array $row) => array_intersect_key($row, array_flip(['player_id', 'start', 'end', 'sessions', 'open'])), $october['spells']));
+        $this->assertSame([], $october['current']);
+    }
+
+    #[Test]
+    public function an_open_spell_from_long_ago_is_current(): void
+    {
+        $u15 = $this->category('U15');
+        $p = $this->player($u15);
+        $this->mark($this->training($u15, '2025-03-01'), $p, AttendanceStatus::Present);
+        $this->mark($this->training($u15, '2025-03-04'), $p, AttendanceStatus::AbsentExcused, ['reason' => 'injury']);
+        $this->mark($this->training($u15, '2025-03-08'), $p, AttendanceStatus::NotTraining, ['reason' => 'injury']);
+
+        [$october, $scanned] = $this->clubScanning('2026-10-01', '2026-10-31');
+
+        $this->assertSame([$p->id], $scanned);
+        $this->assertSame([$p->id], array_column($october['current'], 'player_id'));
+        $this->assertSame('2025-03-04', $october['current'][0]['start']);
+        $this->assertSame([$p->id], array_column($october['spells'], 'player_id'));   // open: it runs until today
+    }
+
+    #[Test]
+    public function a_closed_spell_spanning_a_period_without_sessions_is_listed(): void
+    {
+        $u15 = $this->category('U15');
+        $p = $this->player($u15);
+        $this->mark($this->training($u15, '2026-07-28'), $p, AttendanceStatus::NotTraining, ['reason' => 'injury']);
+        $this->mark($this->training($u15, '2026-09-03'), $p, AttendanceStatus::NotTraining, ['reason' => 'injury']);
+        $this->mark($this->training($u15, '2026-09-05'), $p, AttendanceStatus::Present);
+
+        [$august] = $this->clubScanning('2026-08-01', '2026-08-31');
+
+        $this->assertSame([$p->id], array_column($august['spells'], 'player_id'));
+        $this->assertSame('2026-07-28', $august['spells'][0]['start']);
+    }
+
     #[Test]
     public function the_table_holds_one_detail_per_spell_start_and_its_migration_runs_again(): void
     {

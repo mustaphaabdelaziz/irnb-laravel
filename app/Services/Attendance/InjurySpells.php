@@ -20,6 +20,17 @@ use Illuminate\Support\Facades\DB;
  * never depends on the period on screen and an InjuryNote keyed by it stays
  * attached. A detail whose date no longer opens a spell (an earlier mark was
  * edited) is reported as unmatched, never dropped.
+ *
+ * The club list scans only the players who can matter to it, then builds
+ * their spells from their whole history as above. A spell shown is open
+ * (then the player's latest held mark is an injury mark) or overlaps
+ * [from, to]; an overlapping closed spell either has an injury mark dated in
+ * [from, to] (this covers one begun before $from and ended inside the
+ * period), or spans the period with no mark of the player in it (then their
+ * latest held mark before $from is an injury mark). So the scanned players
+ * are the union of: (a) an injury mark dated in [from, to]; (b) the latest
+ * held mark is an injury mark; (c) the latest held mark before $from is an
+ * injury mark. A player with only an old closed spell is not read.
  */
 final class InjurySpells
 {
@@ -100,14 +111,18 @@ final class InjurySpells
      * whatever the period). `spells`: the spells overlapping [from, to],
      * newest start first. Active players only (not archived, not left);
      * $categoryId keeps those now in that category. Four queries whatever
-     * the roster: the marks of players with an injury mark, their details,
-     * the players, their categories.
+     * the roster: the marks of the players who can matter (see the class
+     * doc), their details, the players, their categories.
      *
      * @return array{current: list<array<string, mixed>>, spells: list<array<string, mixed>>}
      */
     public function club(string $from, string $to, ?int $categoryId = null): array
     {
-        $byPlayer = self::fromMarks($this->marks()->whereIn('attendances.player_id', $this->injuredPlayers())->cursor());
+        $byPlayer = self::fromMarks($this->marks()->where(fn (Builder $q) => $q
+            ->whereIn('attendances.player_id', $this->injuryMarks()->whereBetween('s.date', [$from, $to]))
+            ->orWhereIn('attendances.player_id', $this->latestMarkIsInjury())
+            ->orWhereIn('attendances.player_id', $this->latestMarkIsInjury($from))
+        )->cursor());
         if ($byPlayer === []) {
             return ['current' => [], 'spells' => []];
         }
@@ -154,8 +169,8 @@ final class InjurySpells
             ->select('attendances.player_id', 'attendances.status', 'attendances.reason', 'training_sessions.date');
     }
 
-    /** Players with at least one injury mark in a held session (a subquery). */
-    private function injuredPlayers(): Builder
+    /** Player ids of the injury marks in held sessions (a subquery on attendances a, training_sessions s). */
+    private function injuryMarks(): Builder
     {
         return DB::table('attendances as a')
             ->join('training_sessions as s', 's.id', '=', 'a.training_session_id')
@@ -164,5 +179,28 @@ final class InjurySpells
                 ->orWhere(fn (Builder $q) => $q->where('a.status', AttendanceStatus::AbsentExcused->value)
                     ->where('a.reason', AbsenceReason::Injury->value)))
             ->select('a.player_id');
+    }
+
+    /**
+     * Players whose latest held mark (dated before $before, when given) is an
+     * injury mark: an injury mark with no later held mark of theirs in spell
+     * order (date, start time, session id). A correlated NOT EXISTS, no
+     * window function, so it runs the same on sqlite, MySQL and pgsql.
+     */
+    private function latestMarkIsInjury(?string $before = null): Builder
+    {
+        return $this->injuryMarks()
+            ->when($before !== null, fn (Builder $q) => $q->where('s.date', '<', $before))
+            ->whereNotExists(fn (Builder $later) => $later->selectRaw('1')
+                ->from('attendances as a2')
+                ->join('training_sessions as s2', 's2.id', '=', 'a2.training_session_id')
+                ->whereColumn('a2.player_id', 'a.player_id')
+                ->where('s2.state', SessionState::Held->value)
+                ->when($before !== null, fn (Builder $q) => $q->where('s2.date', '<', $before))
+                ->where(fn (Builder $q) => $q->whereColumn('s2.date', '>', 's.date')
+                    ->orWhere(fn (Builder $q) => $q->whereColumn('s2.date', 's.date')
+                        ->where(fn (Builder $q) => $q->whereColumn('s2.start_time', '>', 's.start_time')
+                            ->orWhere(fn (Builder $q) => $q->whereColumn('s2.start_time', 's.start_time')
+                                ->whereColumn('s2.id', '>', 's.id'))))));
     }
 }

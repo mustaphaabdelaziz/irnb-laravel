@@ -7,6 +7,7 @@ use App\Models\InjuryNote;
 use App\Models\Player;
 use App\Services\Activity\ActivityPeriod;
 use App\Services\Attendance\InjurySpells;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -62,12 +63,19 @@ class AttendanceInjuryController extends Controller
             throw ValidationException::withMessages(['start_date' => 'att.injury.error.no_spell']);
         }
 
-        $note = InjuryNote::firstOrNew(['player_id' => $player->id, 'start_date' => $data['start_date']]);
-        $note->fill(self::details($data));
-        if (! $note->exists) {
-            $note->created_by = $request->user()?->id;
+        $key = ['player_id' => $player->id, 'start_date' => $data['start_date']];
+        try {
+            $note = InjuryNote::firstOrNew($key);
+            $note->fill(self::details($data));
+            if (! $note->exists) {
+                $note->created_by = $request->user()?->id;
+            }
+            $note->save();
+        } catch (UniqueConstraintViolationException) {
+            // Another request added this spell's detail since the lookup: replace it, as saving again does.
+            $note = InjuryNote::where($key)->firstOrFail();
+            $note->update(self::details($data));
         }
-        $note->save();
 
         return response()->json(['note' => $note->toDetail()], $note->wasRecentlyCreated ? 201 : 200);
     }

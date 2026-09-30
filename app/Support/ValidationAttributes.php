@@ -105,6 +105,9 @@ final class ValidationAttributes
         'max_age' => 'doc_max_age',
         'discount_value' => 'discount',
         'return_date' => 'return_date',
+        'start_date' => 'att.start_date',
+        'body_part' => 'att.injury.col.body_part',
+        'returned_on' => 'att.injury.col.returned_on',
         'remark' => 'remark',
     ];
 

@@ -61,6 +61,8 @@ return [
         // "month" and "session" are not view verbs: printing a blank sheet must not need edit rights.
         'attendance.sheets.month' => ['attendance', 'view'],
         'attendance.sheets.session' => ['attendance', 'view'],
+        // Follow-up pages and PDFs only read; none of these last segments is a view verb.
+        'attendance.alerts' => ['attendance', 'view'],
         // Schedules, closures and pre-season targets reshape the whole season's
         // calendar, not just one row, so all their writes need edit — without
         // these, deriveAction() would gate the stores as 'add' and the

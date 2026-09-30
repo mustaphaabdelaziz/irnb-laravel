@@ -81,6 +81,7 @@ const linkButton = 'rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 
                 <h1 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('att.stats_title') }}</h1>
                 <div class="flex items-center gap-2 print:hidden">
                     <Link :href="route('attendance.index')" :class="linkButton">{{ t('attendance') }}</Link>
+                    <Link :href="route('attendance.alerts')" :class="linkButton">{{ t('att.risk.title') }}</Link>
                     <ExportMenu :href="exportHref" :label="t('export')" :formats="['xlsx', 'csv', 'pdf']">
                         <template #icon><Icon name="download" /></template>
                     </ExportMenu>

@@ -36,6 +36,12 @@ final class ActivityPeriod
         };
     }
 
+    /** The current season unless the request picks a period (the profile card, the at-risk list, the injuries). */
+    public static function fromRequestOrSeason(Request $request): self
+    {
+        return $request->query('period') === null ? self::season() : self::fromRequest($request);
+    }
+
     public static function month(): self
     {
         $now = CarbonImmutable::now();

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AttendanceAlertsController;
 use App\Http\Controllers\AttendanceCalendarController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceGridController;
@@ -327,6 +328,9 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         Route::get('/attendance', [AttendanceCalendarController::class, 'index'])->name('attendance.index');
         Route::get('/attendance/stats', [AttendanceStatsController::class, 'index'])->name('attendance.stats');
         Route::get('/attendance/stats/export', [AttendanceStatsController::class, 'export'])->name('attendance.stats.export');
+        // Follow-up: players at risk (page + XLSX/CSV); both only read.
+        Route::get('/attendance/alerts', [AttendanceAlertsController::class, 'index'])->name('attendance.alerts');
+        Route::get('/attendance/alerts/export', [AttendanceAlertsController::class, 'export'])->name('attendance.alerts.export');
         // A player's attendance for the profile card: named attendance.* so it needs attendance/view.
         Route::get('/attendance/players/{player}', [AttendancePlayerController::class, 'show'])->name('attendance.players.show');
         Route::get('/attendance/players/{player}/report', [AttendancePlayerController::class, 'report'])->name('attendance.players.report');

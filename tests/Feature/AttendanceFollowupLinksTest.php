@@ -29,4 +29,24 @@ class AttendanceFollowupLinksTest extends TestCase
         $this->assertStringContainsString($needle, $source);
         $this->assertStringNotContainsString('@click="window', $source);
     }
+
+    public static function pdfLinks(): array
+    {
+        return [
+            'profile → letter' => ['Players/Partials/AttendanceSection.vue', "route('attendance.players.letter'", ':href="letterHref" target="_blank"'],
+            'at risk → letter' => ['Attendance/Alerts.vue', "route('attendance.players.letter'", ':href="letterHref(row)" target="_blank"'],
+            'stats table → letter' => ['Attendance/Partials/StatsPlayerTable.vue', "route('attendance.players.letter'", ':href="letterHref(row)" target="_blank"'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('pdfLinks')]
+    public function the_pdf_opens_in_a_new_tab_from_a_plain_link(string $file, string $route, string $link): void
+    {
+        $source = (string) file_get_contents(resource_path("js/Pages/{$file}"));
+
+        $this->assertStringContainsString($route, $source);
+        $this->assertStringContainsString($link, $source);
+        $this->assertStringNotContainsString('@click="window', $source);
+    }
 }

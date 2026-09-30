@@ -50,6 +50,7 @@ class AttendancePermissionTest extends TestCase
 
         // The letter text is a setting: saving it needs edit ("letter" falls to edit).
         $this->assertSame(['attendance', 'edit'], PermissionMap::resolve('attendance.settings.letter'));
+        $this->assertSame(['attendance', 'view'], PermissionMap::resolve('attendance.players.letter'));
     }
 
     #[Test]

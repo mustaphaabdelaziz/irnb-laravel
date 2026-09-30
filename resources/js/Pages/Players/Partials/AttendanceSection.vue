@@ -68,6 +68,8 @@ const monthlyChart = computed(() => statusBars(data.value?.monthly, statuses, la
 const monthlyOptions = computed(() => baseOptions({ rtl: rtl.value, stacked: true }));
 // Same period as the card.
 const reportHref = computed(() => (data.value ? route('attendance.players.report', { player: props.player.id, ...periodQuery(data.value.period) }) : null));
+// The parent letter, for the same period.
+const letterHref = computed(() => (data.value ? route('attendance.players.letter', { player: props.player.id, ...periodQuery(data.value.period) }) : null));
 
 const preseasonText = computed(() => {
     const p = data.value?.preseason;
@@ -88,6 +90,9 @@ const th = 'p-2 text-start text-xs font-semibold text-slate-500 dark:text-slate-
                 <PeriodFilter :period="data.period" @change="load" />
                 <a :href="reportHref" target="_blank" class="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-800">
                     <Icon name="print" /> {{ t('att.print_report') }}
+                </a>
+                <a :href="letterHref" target="_blank" class="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-800">
+                    <Icon name="mail" /> {{ t('att.letter.print') }}
                 </a>
             </div>
         </div>

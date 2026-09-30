@@ -2,13 +2,15 @@
 import { computed, ref } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
+import Icon from '@/Components/Icon.vue';
 import { useCan } from '@/Composables/useCan';
 import { useAttendanceCodes } from '@/Composables/useAttendanceCodes';
-import { hours, pct } from '@/lib/attendanceStats';
+import { hours, pct, periodQuery } from '@/lib/attendanceStats';
 
 /** Every player of the period, sortable by any column (sorted in the browser: the server sends them all). */
 const props = defineProps({
     rows: { type: Array, default: () => [] },
+    period: { type: Object, required: true },
 });
 const { t, locale } = useI18n();
 const { can } = useCan();
@@ -45,6 +47,8 @@ const sorted = computed(() => {
 });
 
 const ariaSort = (key) => (sortKey.value !== key ? 'none' : sortDir.value === 'asc' ? 'ascending' : 'descending');
+// The parent letter, for the page's period.
+const letterHref = (row) => route('attendance.players.letter', { player: row.player_id, ...periodQuery(props.period) });
 
 const columns = computed(() => [
     { key: 'name', label: t('att.player'), start: true },
@@ -77,6 +81,7 @@ const columns = computed(() => [
                             <span v-if="sortKey === col.key" aria-hidden="true">{{ sortDir === 'asc' ? '▲' : '▼' }}</span>
                         </button>
                     </th>
+                    <th class="p-2"></th>
                 </tr>
             </thead>
             <tbody>
@@ -93,6 +98,9 @@ const columns = computed(() => [
                     <td class="p-2 text-end tabular-nums">{{ row.late_minutes }}</td>
                     <td class="p-2 text-end tabular-nums">{{ hours(row.missed_hours) }}</td>
                     <td class="p-2 text-end font-semibold tabular-nums"><bdi dir="ltr">{{ pct(row.score_pct) }}</bdi></td>
+                    <td class="whitespace-nowrap p-2 text-end">
+                        <a :href="letterHref(row)" target="_blank" :title="t('att.letter.print')" class="inline-flex items-center rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"><Icon name="mail" /><span class="sr-only">{{ t('att.letter.print') }}</span></a>
+                    </td>
                 </tr>
             </tbody>
         </table>

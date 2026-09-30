@@ -334,6 +334,7 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         // A player's attendance for the profile card: named attendance.* so it needs attendance/view.
         Route::get('/attendance/players/{player}', [AttendancePlayerController::class, 'show'])->name('attendance.players.show');
         Route::get('/attendance/players/{player}/report', [AttendancePlayerController::class, 'report'])->name('attendance.players.report');
+        Route::get('/attendance/players/{player}/letter', [AttendancePlayerController::class, 'letter'])->name('attendance.players.letter');
         Route::get('/attendance/grid', [AttendanceGridController::class, 'show'])->name('attendance.grid');
         Route::post('/attendance/grid', [AttendanceGridController::class, 'save'])->name('attendance.grid.save');
         // Paper sheets to print and fill in by hand (A4 PDFs); both only read.

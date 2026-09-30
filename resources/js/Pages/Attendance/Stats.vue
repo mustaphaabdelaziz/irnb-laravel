@@ -195,7 +195,7 @@ const linkButton = 'rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 
             </section>
 
             <StatsRanking :ranking="ranking" />
-            <StatsPlayerTable :rows="players" />
+            <StatsPlayerTable :rows="players" :period="period" />
         </div>
     </AuthenticatedLayout>
 </template>

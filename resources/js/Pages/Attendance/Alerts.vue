@@ -26,6 +26,7 @@ const { can } = useCan();
 
 const keep = computed(() => (props.categoryId ? { category_id: props.categoryId } : {}));
 const exportHref = computed(() => route('attendance.alerts.export', { ...periodQuery(props.period), ...keep.value }));
+const letterHref = (row) => route('attendance.players.letter', { player: row.player_id, ...periodQuery(props.period) });
 function pickCategory(value) {
     router.get(route('attendance.alerts'), { ...periodQuery(props.period), ...(value ? { category_id: Number(value) } : {}) }, { preserveScroll: true, replace: true });
 }
@@ -113,6 +114,7 @@ const th = 'p-2 font-semibold';
                             </td>
                             <td class="whitespace-nowrap p-2 text-end">
                                 <span class="inline-flex gap-1">
+                                    <a :href="letterHref(row)" target="_blank" :class="rowAction"><Icon name="mail" />{{ t('att.letter.print') }}</a>
                                     <Link v-if="can('players', 'view')" :href="route('players.show', row.player_id)" :class="rowAction"><Icon name="user" />{{ t('att.risk.open_profile') }}</Link>
                                 </span>
                             </td>

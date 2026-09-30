@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Support\Export\CsvWriter;
 use App\Support\Export\XlsxWriter;
 use App\Support\Spreadsheet;
 use Carbon\Carbon;
@@ -77,6 +78,20 @@ class SpreadsheetReaderTest extends TestCase
 
         $this->assertSame(['a', 'b'], $rows[0]);
         $this->assertSame(['محمد', '2'], $rows[1]);
+    }
+
+    #[Test]
+    public function re_importing_an_exported_csv_strips_the_writers_protective_apostrophe(): void
+    {
+        ob_start();
+        CsvWriter::stream(['h'], [['+213-555-12-34', '=SUM(1)', '@at', "\tTab", "\rCr", "'plain", '-5', "O'Brien"]], null);
+        $csv = (string) ob_get_clean();
+
+        $rows = Spreadsheet::readRows($this->file($csv, 'csv'));
+
+        // The first six were escaped by CsvWriter (=, @, +, -, tab, CR) and come back clean; a
+        // genuine leading apostrophe not followed by one of those, or one elsewhere, is untouched.
+        $this->assertSame(['+213-555-12-34', '=SUM(1)', '@at', "\tTab", "\rCr", "'plain", '-5', "O'Brien"], $rows[1]);
     }
 
     #[Test]

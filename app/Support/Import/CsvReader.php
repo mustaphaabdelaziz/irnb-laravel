@@ -7,10 +7,20 @@ namespace App\Support\Import;
  * not valid UTF-8 is taken as Excel's "CSV (ANSI)" on an Arabic Windows,
  * i.e. Windows-1256, which also covers French accented letters. iconv, not
  * mbstring: the desktop PHP's mbstring does not know Windows-1256.
+ *
+ * CsvWriter prefixes a cell with a protective apostrophe when it would
+ * otherwise read as a formula (starts with `= @ + -`, a tab or a CR); this
+ * is the one place CSV cells are read for imports, so it undoes exactly
+ * that apostrophe here, letting the app's own exports re-import cleanly. A
+ * leading apostrophe followed by anything else is genuine data and is left
+ * alone.
  */
 final class CsvReader
 {
     private const BOM = "\xEF\xBB\xBF";
+
+    /** Characters CsvWriter escapes a cell for; a leading `'` before one of these is its own doing. */
+    private const ESCAPED_AFTER_APOSTROPHE = "=@+-\t\r";
 
     /** @return list<list<string|null>> */
     public static function read(string $path): array
@@ -32,10 +42,20 @@ final class CsvReader
 
         $rows = [];
         while (($row = fgetcsv($handle, 0, $delimiter, '"', '')) !== false) {
-            $rows[] = $row === [null] ? [] : $row;
+            $rows[] = $row === [null] ? [] : array_map(self::unprotect(...), $row);
         }
         fclose($handle);
 
         return $rows;
+    }
+
+    /** Strips exactly one leading `'` when CsvWriter would have put it there (see the class doc). */
+    private static function unprotect(?string $cell): ?string
+    {
+        if ($cell === null || ! isset($cell[1]) || $cell[0] !== "'") {
+            return $cell;
+        }
+
+        return str_contains(self::ESCAPED_AFTER_APOSTROPHE, $cell[1]) ? substr($cell, 1) : $cell;
     }
 }

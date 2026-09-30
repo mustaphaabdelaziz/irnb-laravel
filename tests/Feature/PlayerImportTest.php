@@ -105,4 +105,20 @@ class PlayerImportTest extends TestCase
         $this->assertFalse(Player::where('firstname', 'Sami')->firstOrFail()->is_student);
         $this->assertFalse(Player::where('firstname', 'Nabil')->firstOrFail()->is_student);
     }
+
+    #[Test]
+    public function a_phone_escaped_on_export_re_imports_without_the_protective_apostrophe(): void
+    {
+        // CsvWriter prefixes a hyphenated phone like this with a protective apostrophe (it
+        // does not read as a plain phone number); re-importing the app's own export must
+        // strip it back off instead of storing the apostrophe as part of the phone.
+        $row = ['Sami', 'Kaci', '', '', '', '2000-01-01', 'Male', "'+213-555-12-34", '', 'Algiers', 'Algiers', '', '', '', '', '5', '', '', (string) now()->year];
+
+        $this->actingAs($this->admin())
+            ->post(route('players.import.store'), ['file' => $this->makeCsv([$row])])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertSame(['+213-555-12-34'], Player::where('firstname', 'Sami')->firstOrFail()->phones);
+    }
 }

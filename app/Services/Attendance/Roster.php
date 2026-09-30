@@ -14,7 +14,8 @@ use Illuminate\Support\Collection;
  */
 final class Roster
 {
-    private const COLUMNS = ['id', 'firstname', 'lastname', 'category_id'];
+    // file_number: the session sheet prints the paper-folder number.
+    private const COLUMNS = ['id', 'firstname', 'lastname', 'file_number', 'category_id'];
 
     /**
      * A player has one category, so several categories never list anyone twice.

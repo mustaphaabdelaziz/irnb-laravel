@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AbsenceReason;
+use App\Enums\SessionState;
 use App\Models\Category;
 use App\Models\Player;
 use App\Models\TrainingSession;
 use App\Services\Attendance\MonthSheet;
+use App\Services\Attendance\Roster;
 use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
 use App\Services\Player\FileNumber;
@@ -95,6 +98,61 @@ class AttendanceSheetController extends Controller
         ])->render();
 
         return $this->pdf->stream($html, "attendance-sheet-{$category->id}-{$anchor->format('Y-m')}.pdf", $locale === 'ar', true);
+    }
+
+    /**
+     * One session, A4 portrait: its list (frozen once marked, else the
+     * expected roster of every category taking part), a tick column per
+     * status, minutes, reason, note, and the session log to fill in.
+     */
+    public function session(Request $request, TrainingSession $session, Roster $roster): Response
+    {
+        $request->validate(['filled' => ['nullable', 'boolean']]);
+        $filled = $request->boolean('filled');
+        $locale = app()->getLocale();
+        $session->loadMissing('categories');
+        $players = $roster->forSession($session);
+        // Primary category first, then the others of a joint pre-season session.
+        $categories = $session->orderedCategories()->mapWithKeys(fn (Category $c) => [$c->id => $c->localized_name]);
+        $joint = $categories->count() > 1;
+        $marks = $filled ? $session->attendances()->get()->keyBy('player_id') : collect();
+
+        $html = view('pdf.attendance-session-sheet', [
+            'club' => ClubHeader::data(),
+            'session' => [
+                'date' => $session->date,
+                'dateLabel' => CarbonImmutable::createFromFormat('!Y-m-d', $session->date)->locale($locale)->translatedFormat('l j F Y'),
+                'time' => "{$session->start_time}–{$session->end_time}",
+                'kind' => $session->kind->value,
+                'categories' => $categories->values()->all(),
+                'coach' => $session->coach,
+                'title' => $session->title,
+                'notes' => $session->notes,
+                'cancelled' => $session->state === SessionState::Cancelled,
+                'cancel_reason' => $session->cancel_reason,
+            ],
+            'rows' => $players->map(function (Player $p) use ($marks, $categories, $joint) {
+                $mark = $marks->get($p->id);
+
+                return [
+                    'file_number' => self::fileNumber($p),
+                    'name' => self::name($p),
+                    // Where a player comes from only matters when several categories share the session.
+                    'category' => $joint ? $categories->get($p->category_id) : null,
+                    'status' => $mark?->status->value,
+                    'minutes' => $mark?->minutes,
+                    'reason' => $mark?->reason?->value,
+                    'note' => $mark?->note,
+                ];
+            })->values()->all(),
+            'blankRows' => self::BLANK_ROWS,
+            'filled' => $filled,
+            'labels' => AttendanceSettings::labels(),
+            'codes' => AttendanceSettings::codes(),
+            'reasons' => AbsenceReason::values(),
+        ])->render();
+
+        return $this->pdf->stream($html, "attendance-session-{$session->id}-{$session->date}.pdf", $locale === 'ar');
     }
 
     /** The folder number, zero-padded; a dash when the player has none yet. */

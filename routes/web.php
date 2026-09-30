@@ -336,6 +336,8 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         // Follow-up: a category's ranking for a month or a season.
         Route::get('/attendance/ranking', [AttendanceRankingController::class, 'index'])->name('attendance.ranking');
         Route::get('/attendance/certificates', [AttendanceRankingController::class, 'certificates'])->name('attendance.certificates');
+        // Follow-up: the club's injuries (current and in the period).
+        Route::get('/attendance/injuries', [AttendanceInjuryController::class, 'index'])->name('attendance.injuries');
         // A player's attendance for the profile card: named attendance.* so it needs attendance/view.
         Route::get('/attendance/players/{player}', [AttendancePlayerController::class, 'show'])->name('attendance.players.show');
         Route::get('/attendance/players/{player}/report', [AttendancePlayerController::class, 'report'])->name('attendance.players.report');

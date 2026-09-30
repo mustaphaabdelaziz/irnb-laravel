@@ -18,6 +18,7 @@ class AttendanceFollowupLinksTest extends TestCase
             'stats → at risk' => ['Attendance/Stats.vue', "route('attendance.alerts')"],
             'dashboard card → at risk' => ['Dashboard/Partials/AttendanceCard.vue', "route('attendance.alerts')"],
             'stats → ranking' => ['Attendance/Stats.vue', "route('attendance.ranking')"],
+            'stats → injuries' => ['Attendance/Stats.vue', "route('attendance.injuries')"],
         ];
     }
 

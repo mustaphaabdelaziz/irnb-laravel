@@ -66,6 +66,7 @@ return [
         'attendance.players.letter' => ['attendance', 'view'],
         'attendance.ranking' => ['attendance', 'view'],
         'attendance.certificates' => ['attendance', 'view'],
+        'attendance.injuries' => ['attendance', 'view'],
         // Injury details are edited, never just added or deleted: every write needs edit.
         'attendance.injury-notes.store' => ['attendance', 'edit'],
         'attendance.injury-notes.destroy' => ['attendance', 'edit'],

@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\InjuryNote;
 use App\Models\Player;
+use App\Services\Activity\ActivityPeriod;
 use App\Services\Attendance\InjurySpells;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
+use Inertia\Response as PageResponse;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -23,6 +27,28 @@ class AttendanceInjuryController extends Controller
     ];
 
     public function __construct(private readonly InjurySpells $spells) {}
+
+    /**
+     * The club's injuries (`attendance.injuries`, view): who is injured now,
+     * and every spell in the period (default: the current season), for
+     * active players, optionally those now in one category.
+     */
+    public function index(Request $request): PageResponse
+    {
+        $validated = $request->validate(['category_id' => ['nullable', 'integer', 'exists:categories,id']]);
+        $categoryId = isset($validated['category_id']) ? (int) $validated['category_id'] : null;
+        $period = ActivityPeriod::fromRequestOrSeason($request);
+        ['from' => $from, 'to' => $to] = $period->toArray();
+
+        return Inertia::render('Attendance/Injuries', [
+            'period' => $period->toArray(),
+            'categoryId' => $categoryId,
+            'categories' => Category::orderBy('id')->get()
+                ->map(fn (Category $category) => ['id' => $category->id, 'name' => $category->localized_name])
+                ->values()->all(),
+            ...$this->spells->club($from, $to, $categoryId),
+        ]);
+    }
 
     /** Adds the details of the spell starting on `start_date`, or replaces them if it has some. */
     public function store(Request $request, Player $player): JsonResponse

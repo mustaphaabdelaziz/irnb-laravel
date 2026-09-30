@@ -127,4 +127,24 @@ class AttendanceScoreTest extends TestCase
         $this->assertSame([1, 2], array_column($few['top'], 'player_id'));
         $this->assertSame([], $few['bottom']);
     }
+
+    #[Test]
+    public function the_full_ranking_numbers_every_eligible_player_with_the_same_tie_rules(): void
+    {
+        $rows = [
+            self::row(1, 10, 100.0),
+            self::row(2, 10, 80.0),
+            self::row(3, 5, 80.0, late: 2),     // same % as 2 but more lates: after 2
+            self::row(6, 8, 10.0, unexcused: 3),
+            self::row(7, 8, 10.0, unexcused: 5),
+            self::row(8, 4, 100.0),             // below the minimum
+            self::row(9, 10, null),             // no score %
+        ];
+
+        $ranked = AttendanceStats::ranked($rows);
+
+        $this->assertSame([1, 2, 3, 6, 7], array_column($ranked, 'player_id'));
+        $this->assertSame([1, 2, 3, 4, 5], array_column($ranked, 'rank'));
+        $this->assertSame([], AttendanceStats::ranked([self::row(1, 4, 90.0)]));
+    }
 }

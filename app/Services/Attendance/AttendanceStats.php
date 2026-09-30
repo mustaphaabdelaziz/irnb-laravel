@@ -276,6 +276,39 @@ final class AttendanceStats
     }
 
     /**
+     * Unexcused-absence streaks per player over the period: each player's
+     * marks in held sessions in session order (date, start time, id); a run
+     * of absent_unexcused marks is a streak and any other status ends it.
+     * `current` is the run that ends at the player's last mark of the period,
+     * `longest` the longest run, `last_date` that last mark's date. Only real
+     * unexcused marks count (a long late scored as unexcused does not). One
+     * query, streamed, whatever the roster size.
+     *
+     * @return array<int, array{current: int, longest: int, last_date: string}> keyed by player id
+     */
+    public function unexcusedStreaks(string $from, string $to, ?int $playerId = null): array
+    {
+        $marks = $this->marks($from, $to, null, $playerId)
+            ->orderBy('attendances.player_id')
+            ->orderBy('training_sessions.date')
+            ->orderBy('training_sessions.start_time')
+            ->orderBy('training_sessions.id')
+            ->select('attendances.player_id', 'attendances.status', 'training_sessions.date');
+
+        $streaks = [];
+        foreach ($marks->cursor() as $mark) {
+            $id = (int) $mark->player_id;
+            $row = $streaks[$id] ?? ['current' => 0, 'longest' => 0, 'last_date' => null];
+            $row['current'] = $mark->status === AttendanceStatus::AbsentUnexcused->value ? $row['current'] + 1 : 0;
+            $row['longest'] = max($row['longest'], $row['current']);
+            $row['last_date'] = $mark->date;
+            $streaks[$id] = $row;
+        }
+
+        return $streaks;
+    }
+
+    /**
      * Σ points per mark with the discipline rules applied, in this order:
      * (1) a late over `late_minutes_as_absent` minutes scores as an unexcused
      * absence ($longLates counts them); (2) of the lates left after (1),
@@ -338,25 +371,42 @@ final class AttendanceStats
     }
 
     /**
-     * Top and bottom RANKING_SIZE by score %, among players with at least
-     * RANKING_MIN_EXPECTED expected sessions. Ties: top = fewer unexcused,
-     * then fewer lates; bottom = more unexcused, then more lates; then id.
-     * The bottom list never repeats a player from the top list.
+     * Every player with at least RANKING_MIN_EXPECTED expected sessions and a
+     * score %, best first: score % desc, then fewer unexcused, then fewer
+     * lates, then id. Each row gains its 1-based `rank`; the tie rules break
+     * every tie, so no two rows share a rank.
+     *
+     * @return list<array<string, mixed>>
      */
-    public static function ranking(array $rows): array
+    public static function ranked(array $rows): array
     {
         $eligible = array_values(array_filter(
             $rows,
             fn (array $row) => $row['expected'] >= self::RANKING_MIN_EXPECTED && $row['score_pct'] !== null,
         ));
-
-        $best = $eligible;
-        usort($best, fn (array $a, array $b) => [$b['score_pct'], $a['counts']['absent_unexcused'], $a['counts']['late'], $a['player_id']]
+        usort($eligible, fn (array $a, array $b) => [$b['score_pct'], $a['counts']['absent_unexcused'], $a['counts']['late'], $a['player_id']]
             <=> [$a['score_pct'], $b['counts']['absent_unexcused'], $b['counts']['late'], $b['player_id']]);
-        $top = array_slice($best, 0, self::RANKING_SIZE);
+
+        foreach ($eligible as $i => $row) {
+            $eligible[$i]['rank'] = $i + 1;
+        }
+
+        return $eligible;
+    }
+
+    /**
+     * Top and bottom RANKING_SIZE by score %, among players with at least
+     * RANKING_MIN_EXPECTED expected sessions. Ties: top = ranked()'s rules;
+     * bottom = more unexcused, then more lates; then id. The bottom list
+     * never repeats a player from the top list.
+     */
+    public static function ranking(array $rows): array
+    {
+        $ranked = self::ranked($rows);
+        $top = array_slice($ranked, 0, self::RANKING_SIZE);
         $topIds = array_column($top, 'player_id');
 
-        $worst = array_values(array_filter($eligible, fn (array $row) => ! in_array($row['player_id'], $topIds, true)));
+        $worst = array_values(array_filter($ranked, fn (array $row) => ! in_array($row['player_id'], $topIds, true)));
         usort($worst, fn (array $a, array $b) => [$a['score_pct'], $b['counts']['absent_unexcused'], $b['counts']['late'], $a['player_id']]
             <=> [$b['score_pct'], $a['counts']['absent_unexcused'], $a['counts']['late'], $b['player_id']]);
 
@@ -451,7 +501,8 @@ final class AttendanceStats
         ];
     }
 
-    private function settings(): array
+    /** The attendance settings, read once per instance (AtRisk reads the alert thresholds here). */
+    public function settings(): array
     {
         return $this->settings ??= AttendanceSettings::get();
     }

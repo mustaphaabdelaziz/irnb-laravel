@@ -1677,5 +1677,7 @@
     "att.injury.unmatched": "Details without a matching spell",
     "att.injury.unmatched_help": "The marks changed and no spell starts on this date any more. Edit or delete these details.",
     "att.injury.error.no_spell": "No injury spell starts on this date.",
-    "att.injury.save_error": "Could not save. Try again."
+    "att.injury.save_error": "Could not save. Try again.",
+    "att.injury.returned_on": "Returned on {date}",
+    "att.injury.returned_hint": "Setting a return date marks the player as recovered."
 }

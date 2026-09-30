@@ -1677,5 +1677,7 @@
     "att.injury.unmatched": "تفاصيل بلا إصابة مطابقة",
     "att.injury.unmatched_help": "تغيّرت العلامات ولم تعد أي إصابة تبدأ في هذا التاريخ. عدّل هذه التفاصيل أو احذفها.",
     "att.injury.error.no_spell": "لا تبدأ أي إصابة في هذا التاريخ.",
-    "att.injury.save_error": "تعذّر الحفظ. أعد المحاولة."
+    "att.injury.save_error": "تعذّر الحفظ. أعد المحاولة.",
+    "att.injury.returned_on": "عاد في {date}",
+    "att.injury.returned_hint": "تحديد تاريخ العودة يعني أن اللاعب قد تعافى."
 }

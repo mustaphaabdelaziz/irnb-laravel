@@ -21,6 +21,15 @@ use Illuminate\Support\Facades\DB;
  * attached. A detail whose date no longer opens a spell (an earlier mark was
  * edited) is reported as unmatched, never dropped.
  *
+ * A spell built as open (it holds the player's latest held mark) closes
+ * early when its detail's `returned_on` is on or after the spell's end (the
+ * latest mark's date): `open` becomes false and `end` moves to `returned_on`
+ * — so overlaps() and the club's current list treat the return date as
+ * where the spell actually stops. Every spell exposes `returned_on` (null
+ * when it has none). A later injury mark that extends the spell past that
+ * date reopens it: `end` then runs past `returned_on` again, so "on or
+ * after" no longer holds — see withReturn().
+ *
  * The club list scans only the players who can matter to it, then builds
  * their spells from their whole history as above. A spell shown is open
  * (then the player's latest held mark is an injury mark) or overlaps
@@ -79,6 +88,23 @@ final class InjurySpells
     }
 
     /**
+     * A spell with its detail's return date applied: closes an open spell
+     * whose `returned_on` is on or after its end (moving `end` to it), and
+     * always exposes `returned_on`. A no-op for an already-closed spell or
+     * a missing/earlier return date.
+     *
+     * @param  array{start: string, end: string, sessions: int, open: bool}  $spell
+     */
+    private static function withReturn(array $spell, ?string $returnedOn): array
+    {
+        if ($spell['open'] && $returnedOn !== null && $returnedOn >= $spell['end']) {
+            return [...$spell, 'open' => false, 'end' => $returnedOn, 'returned_on' => $returnedOn];
+        }
+
+        return [...$spell, 'returned_on' => $returnedOn];
+    }
+
+    /**
      * The profile's injuries: the spells overlapping [from, to], newest first,
      * each with its detail (or null), and every detail of the player that
      * opens no spell. Two queries.
@@ -94,8 +120,10 @@ final class InjurySpells
 
         $shown = [];
         foreach (array_reverse($spells) as $spell) {
+            $note = $byStart->get($spell['start']);
+            $spell = self::withReturn($spell, $note?->returned_on);
             if (self::overlaps($spell, $from, $to)) {
-                $shown[] = [...$spell, 'note' => $byStart->get($spell['start'])?->toDetail()];
+                $shown[] = [...$spell, 'note' => $note?->toDetail()];
             }
         }
 
@@ -132,8 +160,10 @@ final class InjurySpells
         $rows = [];
         foreach ($byPlayer as $playerId => $spells) {
             foreach ($spells as $spell) {
+                $note = $notes->get($playerId.'|'.$spell['start']);
+                $spell = self::withReturn($spell, $note?->returned_on);
                 if ($spell['open'] || self::overlaps($spell, $from, $to)) {
-                    $rows[] = ['player_id' => $playerId, ...$spell, 'note' => $notes->get($playerId.'|'.$spell['start'])?->toDetail()];
+                    $rows[] = ['player_id' => $playerId, ...$spell, 'note' => $note?->toDetail()];
                 }
             }
         }

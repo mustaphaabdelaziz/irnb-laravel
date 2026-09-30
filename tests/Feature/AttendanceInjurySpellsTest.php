@@ -175,6 +175,40 @@ class AttendanceInjurySpellsTest extends TestCase
     }
 
     #[Test]
+    public function a_return_date_on_or_after_the_end_closes_the_open_spell_and_drops_it_from_current(): void
+    {
+        [$x] = $this->seedData();
+        InjuryNote::create(['player_id' => $x->id, 'start_date' => '2026-10-12', 'returned_on' => '2026-10-15']);
+
+        $october = $this->spells()->club('2026-10-01', '2026-10-31');
+
+        $this->assertSame([], $october['current']);   // closed: no longer "current"
+        $this->assertFalse($october['spells'][0]['open']);
+        $this->assertSame('2026-10-15', $october['spells'][0]['end']);   // the overlap rule now ends at returned_on
+        $this->assertSame('2026-10-15', $october['spells'][0]['returned_on']);
+
+        $profile = $this->spells()->forPlayer($x->id, '2026-10-01', '2026-10-31');
+        $this->assertFalse($profile['spells'][0]['open']);
+        $this->assertSame('2026-10-15', $profile['spells'][0]['returned_on']);   // the profile JSON exposes returned_on
+    }
+
+    #[Test]
+    public function a_later_injury_mark_past_the_return_date_reopens_the_spell(): void
+    {
+        $u15 = $this->category('U15');
+        $p = $this->player($u15);
+        $this->mark($this->training($u15, '2026-10-01'), $p, AttendanceStatus::NotTraining, ['reason' => 'injury']);
+        InjuryNote::create(['player_id' => $p->id, 'start_date' => '2026-10-01', 'returned_on' => '2026-10-03']);
+        $this->mark($this->training($u15, '2026-10-05'), $p, AttendanceStatus::NotTraining, ['reason' => 'injury']);   // extends the spell past the return date
+
+        $profile = $this->spells()->forPlayer($p->id, '2026-10-01', '2026-10-31');
+
+        $this->assertTrue($profile['spells'][0]['open']);
+        $this->assertSame('2026-10-05', $profile['spells'][0]['end']);
+        $this->assertSame('2026-10-03', $profile['spells'][0]['returned_on']);
+    }
+
+    #[Test]
     public function the_club_list_runs_a_fixed_number_of_queries(): void
     {
         $u15 = $this->category('U15');

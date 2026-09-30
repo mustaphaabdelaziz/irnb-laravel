@@ -88,6 +88,7 @@ const smallButton = 'inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs
                         :class="spell.open ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'"
                     >{{ spell.open ? t('att.injury.open') : t('att.injury.closed') }}</span>
                     <span class="text-xs text-slate-500">{{ t('att.injury.col.sessions') }}: {{ spell.sessions }}</span>
+                    <span v-if="!spell.open && spell.returned_on" class="text-xs text-emerald-600 dark:text-emerald-400">{{ t('att.injury.returned_on', { date: day(spell.returned_on) }) }}</span>
                     <button v-if="canEdit" type="button" :class="[smallButton, 'ms-auto']" @click="open(spell.start, spell.note)">
                         <Icon name="pencil" />{{ spell.note ? t('att.injury.edit_details') : t('att.injury.add_details') }}
                     </button>
@@ -129,6 +130,7 @@ const smallButton = 'inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs
                 <label class="block text-sm">{{ t('att.injury.col.returned_on') }}
                     <input v-model="editing.returned_on" type="date" :min="editing.start_date" :class="input" />
                 </label>
+                <p class="text-xs text-slate-500">{{ t('att.injury.returned_hint') }}</p>
                 <InputError :message="errorOf('returned_on')" />
                 <InputError :message="errorOf('start_date')" />
                 <InputError :message="errorOf('form')" />

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\Player;
 use App\Services\Attendance\AttendanceStats;
 use App\Services\Attendance\PlayerNames;
 use App\Services\Pdf\ClubHeader;
@@ -86,11 +87,16 @@ class AttendanceRankingController extends Controller
 
         if (isset($data['player_id'])) {
             $playerId = (int) $data['player_id'];
-            $row = collect($rows)->firstWhere('player_id', $playerId)
-                ?? $this->names->attach([
-                    $this->stats->players($period['from'], $period['to'], $category->id, $playerId)[$playerId]
-                        ?? $this->stats->emptyRow($playerId),
-                ])[0];
+            $row = collect($rows)->firstWhere('player_id', $playerId);
+            if ($row === null) {
+                $own = $this->stats->players($period['from'], $period['to'], $category->id, $playerId)[$playerId] ?? null;
+                // Neither expected in the category over the period nor in it now: no certificate "for" it.
+                abort_if(
+                    ($own['expected'] ?? 0) === 0 && (int) Player::whereKey($playerId)->value('category_id') !== $category->id,
+                    404,
+                );
+                $row = $this->names->attach([$own ?? $this->stats->emptyRow($playerId)])[0];
+            }
             $chosen = [$row];
             $filename = "certificate-{$row['membership_id']}-{$period['key']}.pdf";
         } else {

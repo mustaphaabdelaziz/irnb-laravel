@@ -192,6 +192,45 @@ class AttendanceCertificatesPdfTest extends TestCase
     }
 
     #[Test]
+    public function a_player_of_another_category_without_marks_in_it_is_refused(): void
+    {
+        $x = $this->seedData();
+        $other = $this->player($x['u17']);
+
+        $this->actingAs($this->admin())
+            ->get(route('attendance.certificates', ['category_id' => $x['u15']->id, 'player_id' => $other->id]))
+            ->assertNotFound();
+    }
+
+    #[Test]
+    public function a_player_of_the_category_without_marks_can_still_be_chosen(): void
+    {
+        $x = $this->seedData();
+        $fresh = $this->player($x['u15']);
+        $seen = $this->spyPdf();
+
+        $this->actingAs($this->userIn('fr'))
+            ->get(route('attendance.certificates', ['category_id' => $x['u15']->id, 'player_id' => $fresh->id]))
+            ->assertOk();
+
+        $this->assertStringContainsString($fresh->fullname, $seen['html']);
+    }
+
+    #[Test]
+    public function a_player_moved_to_another_category_keeps_the_certificate_for_the_marks_in_the_old_one(): void
+    {
+        $x = $this->seedData();
+        $x['e']->update(['category_id' => $x['u17']->id]);
+        $seen = $this->spyPdf();
+
+        $this->actingAs($this->userIn('fr'))
+            ->get(route('attendance.certificates', ['category_id' => $x['u15']->id, 'player_id' => $x['e']->id]))
+            ->assertOk();
+
+        $this->assertStringContainsString('75.0%', $seen['html']);
+    }
+
+    #[Test]
     public function the_arabic_certificates_are_right_to_left_for_a_season(): void
     {
         $x = $this->seedData();

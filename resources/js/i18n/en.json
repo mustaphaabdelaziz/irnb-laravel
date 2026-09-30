@@ -1679,5 +1679,6 @@
     "att.injury.error.no_spell": "No injury spell starts on this date.",
     "att.injury.save_error": "Could not save. Try again.",
     "att.injury.returned_on": "Returned on {date}",
+    "att.injury.expected_back": "Expected back {date}",
     "att.injury.returned_hint": "Setting a return date marks the player as recovered."
 }

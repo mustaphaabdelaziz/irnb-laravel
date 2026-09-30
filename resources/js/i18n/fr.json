@@ -1679,5 +1679,6 @@
     "att.injury.error.no_spell": "Aucune blessure ne commence à cette date.",
     "att.injury.save_error": "Enregistrement impossible. Réessayez.",
     "att.injury.returned_on": "De retour le {date}",
+    "att.injury.expected_back": "Retour prévu le {date}",
     "att.injury.returned_hint": "Indiquer une date de retour marque le joueur comme rétabli."
 }

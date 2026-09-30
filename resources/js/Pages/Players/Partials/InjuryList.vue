@@ -89,6 +89,7 @@ const smallButton = 'inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs
                     >{{ spell.open ? t('att.injury.open') : t('att.injury.closed') }}</span>
                     <span class="text-xs text-slate-500">{{ t('att.injury.col.sessions') }}: {{ spell.sessions }}</span>
                     <span v-if="!spell.open && spell.returned_on" class="text-xs text-emerald-600 dark:text-emerald-400">{{ t('att.injury.returned_on', { date: day(spell.returned_on) }) }}</span>
+                    <span v-else-if="spell.open && spell.returned_on" class="text-xs text-amber-600 dark:text-amber-400">{{ t('att.injury.expected_back', { date: day(spell.returned_on) }) }}</span>
                     <button v-if="canEdit" type="button" :class="[smallButton, 'ms-auto']" @click="open(spell.start, spell.note)">
                         <Icon name="pencil" />{{ spell.note ? t('att.injury.edit_details') : t('att.injury.add_details') }}
                     </button>
@@ -96,7 +97,6 @@ const smallButton = 'inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs
                 <div v-if="spell.note" class="mt-1 text-sm text-slate-600 dark:text-slate-300">
                     <p><b v-if="spell.note.body_part">{{ spell.note.body_part }}</b></p>
                     <p v-if="spell.note.description" class="whitespace-pre-line">{{ spell.note.description }}</p>
-                    <p v-if="spell.note.returned_on" class="text-xs text-slate-500">{{ t('att.injury.col.returned_on') }}: {{ day(spell.note.returned_on) }}</p>
                 </div>
             </li>
         </ol>

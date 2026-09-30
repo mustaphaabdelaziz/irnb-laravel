@@ -110,7 +110,9 @@ class AttendanceStatsController extends Controller
             'sessionsByMonth' => $sessions,
             'categoryRows' => $this->stats->categories($from, $to),
             'players' => $players,
-            'ranking' => AttendanceStats::ranking($players),
+            // The table stays historical (departed/archived players included); the owner
+            // decided they are not ranked, so only active players feed the top/bottom 5.
+            'ranking' => AttendanceStats::ranking(array_values(array_filter($players, fn (array $row) => $row['active']))),
         ];
     }
 

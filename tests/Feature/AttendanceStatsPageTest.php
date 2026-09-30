@@ -127,6 +127,29 @@ class AttendanceStatsPageTest extends TestCase
     }
 
     #[Test]
+    public function a_departed_players_best_score_does_not_enter_the_ranking_but_stays_in_the_table(): void
+    {
+        $u15 = $this->category('U15');
+        $departed = $this->player($u15, ['status_id' => Player::leftStatusId(), 'left_at' => '2026-09-01']);   // best score, but gone: not ranked
+        $active = $this->player($u15);
+        $sessions = array_map(fn (string $date) => $this->heldSession($u15, $date), ['2026-10-01', '2026-10-03', '2026-10-05', '2026-10-07', '2026-10-09']);
+        foreach ($sessions as $session) {
+            $this->mark($session, $departed, AttendanceStatus::Present);
+        }
+        foreach (array_slice($sessions, 0, 4) as $session) {
+            $this->mark($session, $active, AttendanceStatus::Present);
+        }
+        $this->mark($sessions[4], $active, AttendanceStatus::Late, 5);
+
+        $this->actingAs($this->admin())->get(route('attendance.stats'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('players', 2)
+                ->where('players', fn ($players) => collect($players)->contains('player_id', $departed->id))
+                ->where('ranking.top', fn ($top) => count($top) === 1 && $top[0]['player_id'] === $active->id));
+    }
+
+    #[Test]
     public function the_page_needs_attendance_view(): void
     {
         $this->assertSame(['attendance', 'view'], PermissionMap::resolve('attendance.stats'));

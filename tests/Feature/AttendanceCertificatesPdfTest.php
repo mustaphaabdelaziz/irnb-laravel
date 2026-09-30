@@ -8,6 +8,7 @@ use App\Enums\SessionState;
 use App\Models\Attendance;
 use App\Models\Category;
 use App\Models\Player;
+use App\Models\PlayerStatus;
 use App\Models\Role;
 use App\Models\TrainingSession;
 use App\Models\User;
@@ -246,6 +247,31 @@ class AttendanceCertificatesPdfTest extends TestCase
         $this->assertStringContainsString('شهادة مواظبة', $seen['html']);
         $this->assertStringContainsString('المرتبة الأولى', $seen['html']);
         $this->assertStringContainsString('موسم 2026/27', $seen['html']);
+    }
+
+    #[Test]
+    public function the_podium_excludes_a_departed_player(): void
+    {
+        $x = $this->seedData();
+        $x['a']->update(['archived' => true]);   // A was 100 %, rank 1
+        $seen = $this->spyPdf();
+
+        $this->actingAs($this->userIn('fr'))->get(route('attendance.certificates', ['category_id' => $x['u15']->id]))->assertOk();
+
+        $this->assertStringNotContainsString($x['a']->fullname, $seen['html']);
+        $this->assertStringContainsString('1re place', $seen['html']);
+        $this->assertLessThan(strpos($seen['html'], $x['g']->fullname), strpos($seen['html'], $x['b']->fullname));
+    }
+
+    #[Test]
+    public function a_departed_player_cannot_get_a_certificate(): void
+    {
+        $x = $this->seedData();
+        $x['a']->update(['status_id' => PlayerStatus::where('code', 'left')->value('id')]);
+
+        $this->actingAs($this->userIn('fr'))
+            ->get(route('attendance.certificates', ['category_id' => $x['u15']->id, 'player_id' => $x['a']->id]))
+            ->assertNotFound();
     }
 
     #[Test]

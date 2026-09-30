@@ -96,6 +96,8 @@ class AttendanceRankingController extends Controller
                     404,
                 );
                 $row = $this->names->attach([$own ?? $this->stats->emptyRow($playerId)])[0];
+                // Departed or archived: no certificate for them either, even outside the ranking.
+                abort_if(! $row['active'], 404);
             }
             $chosen = [$row];
             $filename = "certificate-{$row['membership_id']}-{$period['key']}.pdf";
@@ -159,16 +161,20 @@ class AttendanceRankingController extends Controller
     }
 
     /**
-     * The category's ranked players, with names, and how many players with
-     * marks had too few sessions to be ranked.
+     * The category's ranked players, with names, and how many active
+     * players with marks had too few sessions to be ranked. A departed or
+     * archived player (PlayerNames' `active` flag) is dropped before
+     * ranking: no rank, no medal, and not counted among the unranked
+     * either — they simply are not in the pool being ranked.
      *
      * @return array{rows: list<array<string, mixed>>, unranked: int}
      */
     private function ranking(int $categoryId, array $period): array
     {
         $rows = $this->stats->players($period['from'], $period['to'], $categoryId);
-        $ranked = AttendanceStats::ranked($rows);
+        $active = array_values(array_filter($this->names->attach($rows), fn (array $row) => $row['active']));
+        $ranked = AttendanceStats::ranked($active);
 
-        return ['rows' => $this->names->attach($ranked), 'unranked' => count($rows) - count($ranked)];
+        return ['rows' => $ranked, 'unranked' => count($active) - count($ranked)];
     }
 }

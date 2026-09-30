@@ -8,6 +8,7 @@ use App\Enums\SessionState;
 use App\Models\Attendance;
 use App\Models\Category;
 use App\Models\Player;
+use App\Models\PlayerStatus;
 use App\Models\Role;
 use App\Models\TrainingSession;
 use App\Models\User;
@@ -166,6 +167,35 @@ class AttendanceRankingPageTest extends TestCase
                 ->where('categoryId', $x['u17']->id)
                 ->has('rows', 0)
                 ->where('unranked', 0));
+    }
+
+    #[Test]
+    public function a_departed_player_is_excluded_and_the_next_one_takes_first(): void
+    {
+        $x = $this->seedData();
+        $x['a']->update(['status_id' => PlayerStatus::where('code', 'left')->value('id')]);   // A was 100 %, rank 1
+
+        $this->actingAs($this->userIn('fr'))->get(route('attendance.ranking', ['category_id' => $x['u15']->id]))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('unranked', 1)   // still just E; A is gone entirely, not "below the minimum"
+                ->has('rows', 4)
+                ->where('rows.0.player_id', $x['b']->id)
+                ->where('rows.0.rank', 1)
+                ->where('rows.1.player_id', $x['g']->id)
+                ->where('rows.2.player_id', $x['c']->id)
+                ->where('rows.3.player_id', $x['d']->id));
+    }
+
+    #[Test]
+    public function the_unranked_count_only_counts_active_players_below_the_minimum(): void
+    {
+        $x = $this->seedData();
+        $x['e']->update(['archived' => true]);   // E was the only one below the minimum
+
+        $this->actingAs($this->userIn('fr'))->get(route('attendance.ranking', ['category_id' => $x['u15']->id]))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('unranked', 0)
+                ->has('rows', 5));
     }
 
     #[Test]

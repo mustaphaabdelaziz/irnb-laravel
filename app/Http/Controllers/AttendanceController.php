@@ -49,7 +49,9 @@ class AttendanceController extends Controller
                     'player_id' => $p->id,
                     'name' => trim("{$p->lastname} {$p->firstname}"),
                     // Where a player comes from only matters when several categories share the session.
-                    'category' => $joint ? $categories->get($p->category_id) : null,
+                    // Once marked, the mark's own category_id (fixed at marking time) wins over the
+                    // player's current one, so a later category change never retags a frozen session.
+                    'category' => $joint ? $categories->get($mark?->category_id ?? $p->category_id) : null,
                     'status' => $mark?->status->value ?? AttendanceStatus::Present->value,
                     'minutes' => $mark?->minutes,
                     'reason' => $mark?->reason?->value,

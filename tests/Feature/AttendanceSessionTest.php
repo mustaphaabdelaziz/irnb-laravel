@@ -72,6 +72,28 @@ class AttendanceSessionTest extends TestCase
     }
 
     #[Test]
+    public function a_frozen_row_keeps_the_category_the_player_was_marked_with(): void
+    {
+        $u15 = $this->category();
+        $u17 = $this->category('U17');
+        $u13 = $this->category('U13');
+        $player = $this->player($u15);
+        $session = $this->makeSession($u15, ['kind' => SessionKind::Preseason]);
+        $session->categories()->syncWithoutDetaching([$u17->id]);
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->put(route('attendance.sessions.marks', $session), [
+            'marks' => [['player_id' => $player->id, 'status' => 'present']],
+        ])->assertSessionHasNoErrors();
+        $player->update(['category_id' => $u13->id]);
+
+        $this->actingAs($admin)->get(route('attendance.sessions.show', $session))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->component('Attendance/Session')
+                ->where('rows.0.category', 'U15'));
+    }
+
+    #[Test]
     public function marking_needs_attendance_edit(): void
     {
         $u15 = $this->category();

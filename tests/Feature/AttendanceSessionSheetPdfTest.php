@@ -155,6 +155,24 @@ class AttendanceSessionSheetPdfTest extends TestCase
     }
 
     #[Test]
+    public function a_moved_players_tag_stays_the_category_marked_at(): void
+    {
+        $u15 = $this->category('U15');
+        $u17 = $this->category('U17');
+        $u13 = $this->category('U13');
+        $player = $this->player($u15); // Test001 P1
+        $joint = $this->training($u15, '2026-10-05', ['kind' => SessionKind::Preseason]);
+        $joint->categories()->syncWithoutDetaching([$u17->id]);
+        $this->mark($joint, $player, AttendanceStatus::Present, ['category_id' => $u15->id]);
+        $player->update(['category_id' => $u13->id]);
+
+        $html = $this->sheetHtml($joint);
+
+        $this->assertStringContainsString('(U15)', $html);
+        $this->assertStringNotContainsString('(U13)', $html);
+    }
+
+    #[Test]
     public function status_columns_use_the_configured_codes_and_names(): void
     {
         AttendanceSettings::save(['codes' => ['late' => ['code' => 'T', 'label' => ['fr' => 'Tardif']]]]);

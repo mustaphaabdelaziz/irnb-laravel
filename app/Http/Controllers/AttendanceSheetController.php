@@ -57,7 +57,7 @@ class AttendanceSheetController extends Controller
             'date' => substr($s->date, 8, 2).'/'.substr($s->date, 5, 2),
             'time' => $s->start_time,
             'kind' => $s->kind->value,
-            'title' => $s->title ? Str::limit($s->title, 24) : null,
+            'title' => $s->title ? Str::limit(self::wrapLongWords($s->title), 24) : null,
         ])->values()->all();
 
         $chunks = array_chunk($columns, self::MAX_COLUMNS);
@@ -73,6 +73,9 @@ class AttendanceSheetController extends Controller
         }
 
         // Players from another category (a joint session's roster, a guest) carry its name.
+        // Deliberately the player's CURRENT category_id, not any mark's frozen one: unlike the
+        // session sheet/screen, the month grid is a forward-looking blank sheet the coach fills
+        // in on the pitch, so it lists people as they are today (see rows_follow_the_roster_rules()).
         $otherIds = $players->pluck('category_id')->filter()->map(fn ($id) => (int) $id)
             ->reject(fn (int $id) => $id === $category->id)->unique()->values()->all();
         $others = Category::whereIn('id', $otherIds)->get()
@@ -115,7 +118,9 @@ class AttendanceSheetController extends Controller
         // Primary category first, then the others of a joint pre-season session.
         $categories = $session->orderedCategories()->mapWithKeys(fn (Category $c) => [$c->id => $c->localized_name]);
         $joint = $categories->count() > 1;
-        $marks = $filled ? $session->attendances()->get()->keyBy('player_id') : collect();
+        // Loaded once, always: the category tag needs the mark's frozen category_id
+        // even on a blank sheet, only the status/minutes/reason/note stay gated by $filled.
+        $marks = $session->attendances()->get()->keyBy('player_id');
 
         $html = view('pdf.attendance-session-sheet', [
             'club' => ClubHeader::data(),
@@ -131,18 +136,20 @@ class AttendanceSheetController extends Controller
                 'cancelled' => $session->state === SessionState::Cancelled,
                 'cancel_reason' => $session->cancel_reason,
             ],
-            'rows' => $players->map(function (Player $p) use ($marks, $categories, $joint) {
+            'rows' => $players->map(function (Player $p) use ($marks, $categories, $joint, $filled) {
                 $mark = $marks->get($p->id);
 
                 return [
                     'file_number' => self::fileNumber($p),
                     'name' => self::name($p),
                     // Where a player comes from only matters when several categories share the session.
-                    'category' => $joint ? $categories->get($p->category_id) : null,
-                    'status' => $mark?->status->value,
-                    'minutes' => $mark?->minutes,
-                    'reason' => $mark?->reason?->value,
-                    'note' => $mark?->note,
+                    // Once marked, the mark's own category_id (fixed at marking time) wins over the
+                    // player's current one, so a later category change never retags a frozen session.
+                    'category' => $joint ? $categories->get($mark?->category_id ?? $p->category_id) : null,
+                    'status' => $filled ? $mark?->status->value : null,
+                    'minutes' => $filled ? $mark?->minutes : null,
+                    'reason' => $filled ? $mark?->reason?->value : null,
+                    'note' => $filled ? $mark?->note : null,
                 ];
             })->values()->all(),
             'blankRows' => self::BLANK_ROWS,
@@ -165,5 +172,20 @@ class AttendanceSheetController extends Controller
     private static function name(Player $player): string
     {
         return trim("{$player->lastname} {$player->firstname}");
+    }
+
+    /**
+     * Breaks any word over $width characters into $width-character chunks
+     * joined by spaces, so mPDF can wrap a long session title instead of
+     * widening the whole month column to fit it. wordwrap() itself is
+     * byte-based and would cut a multibyte word (e.g. Arabic) mid-character;
+     * mb_str_split() counts characters, not bytes, so it never does.
+     */
+    private static function wrapLongWords(string $text, int $width = 10): string
+    {
+        return implode(' ', array_map(
+            fn (string $word) => mb_strlen($word) > $width ? implode(' ', mb_str_split($word, $width)) : $word,
+            explode(' ', $text)
+        ));
     }
 }

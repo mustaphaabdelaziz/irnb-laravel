@@ -120,6 +120,39 @@ class AttendanceMonthSheetPdfTest extends TestCase
     }
 
     #[Test]
+    public function a_long_word_in_the_title_is_broken_so_it_does_not_widen_the_column(): void
+    {
+        $u15 = $this->category('U15');
+        $this->player($u15);
+        $this->training($u15, '2026-10-05', ['title' => 'Renforcementmusculaireintensifdujour']);
+
+        $html = $this->sheetHtml($u15);
+
+        $this->assertStringNotContainsString('Renforcementmusculaireintensifdujour', $html);
+        // A space now breaks the word into 10-character chunks, so mPDF can wrap it.
+        $this->assertStringContainsString('Renforceme ntmusculai', $html);
+    }
+
+    #[Test]
+    public function an_arabic_title_with_a_long_word_stays_valid_utf8(): void
+    {
+        $u15 = $this->category('U15');
+        $this->player($u15);
+        // A single ASCII prefix followed by a long unbroken Arabic run: byte-based
+        // wordwrap() would cut mid-character here (Arabic letters are 2 bytes each
+        // in UTF-8, and the odd-length prefix throws the byte offsets off parity).
+        $this->training($u15, '2026-10-05', ['title' => 'A'.str_repeat('مرحبا', 6)]);
+
+        $html = $this->sheetHtml($u15, 'ar');
+
+        $this->assertTrue(mb_check_encoding($html, 'UTF-8'));
+        // Str::limit()'s own mb_substr() silently repairs merely-invalid bytes,
+        // so the real check is that the letters themselves survive intact
+        // rather than being replaced by the mbstring substitute character.
+        $this->assertStringContainsString('مرحبا', $html);
+    }
+
+    #[Test]
     public function printing_generates_the_month_first(): void
     {
         $u15 = $this->category('U15');
@@ -280,6 +313,57 @@ class AttendanceMonthSheetPdfTest extends TestCase
         $this->assertStringContainsString('Séances 1 à 16 sur 20', $html);
         $this->assertStringContainsString('Séances 17 à 20 sur 20', $html);
         // The two blank columns fit after the last four sessions (one row).
+        $this->assertSame(2, substr_count($html, 'class="blank"'));
+    }
+
+    #[Test]
+    public function fourteen_sessions_leave_room_for_the_blank_columns(): void
+    {
+        $u15 = $this->category('U15');
+        $this->player($u15);
+        for ($day = 1; $day <= 14; $day++) {
+            $this->training($u15, sprintf('2026-10-%02d', $day));
+        }
+
+        $html = $this->sheetHtml($u15);
+
+        $this->assertSame(1, substr_count($html, '<thead>'));
+        // 14 + BLANK_COLUMNS(2) = MAX_COLUMNS(16): they still fit.
+        $this->assertSame(2, substr_count($html, 'class="blank"'));
+    }
+
+    #[Test]
+    public function fifteen_sessions_leave_no_room_for_the_blank_columns(): void
+    {
+        $u15 = $this->category('U15');
+        $this->player($u15);
+        for ($day = 1; $day <= 15; $day++) {
+            $this->training($u15, sprintf('2026-10-%02d', $day));
+        }
+
+        $html = $this->sheetHtml($u15);
+
+        $this->assertSame(1, substr_count($html, '<thead>'));
+        // 15 + BLANK_COLUMNS(2) = 17 > MAX_COLUMNS(16): dropped.
+        $this->assertSame(0, substr_count($html, 'class="blank"'));
+    }
+
+    #[Test]
+    public function seventeen_sessions_split_into_two_parts(): void
+    {
+        $u15 = $this->category('U15');
+        $this->player($u15);
+        for ($day = 1; $day <= 17; $day++) {
+            $this->training($u15, sprintf('2026-10-%02d', $day));
+        }
+
+        $html = $this->sheetHtml($u15);
+
+        $this->assertSame(2, substr_count($html, '<thead>'));
+        $this->assertSame(1, substr_count($html, '<pagebreak'));
+        $this->assertStringContainsString('Séances 1 à 16 sur 17', $html);
+        $this->assertStringContainsString('Séances 17 à 17 sur 17', $html);
+        // The last part is 1 session, well under MAX_COLUMNS, so its blank columns fit too.
         $this->assertSame(2, substr_count($html, 'class="blank"'));
     }
 

@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Enums\AttendanceStatus;
 use App\Models\Category;
-use App\Models\Player;
 use App\Services\Activity\ActivityPeriod;
 use App\Services\Attendance\AttendanceStats;
+use App\Services\Attendance\PlayerNames;
 use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
 use App\Support\AttendanceSettings;
@@ -27,6 +27,7 @@ class AttendanceStatsController extends Controller
     public function __construct(
         private readonly AttendanceStats $stats,
         private readonly PdfService $pdf,
+        private readonly PlayerNames $names,
     ) {}
 
     public function index(Request $request): Response
@@ -113,25 +114,10 @@ class AttendanceStatsController extends Controller
         ];
     }
 
-    /** Adds each player's name, membership id and current category; sorted by name. One query for all. */
+    /** Adds each player's name, membership id and current category (PlayerNames); sorted by name. */
     private function withNames(array $rows): array
     {
-        $players = Player::with('category')
-            ->whereIn('id', array_keys($rows))
-            ->get(['id', 'firstname', 'lastname', 'nickname', 'father', 'grandfather', 'membership_id', 'category_id'])
-            ->keyBy('id');
-
-        return collect($rows)
-            ->map(function (array $row) use ($players) {
-                $player = $players->get($row['player_id']);
-
-                return [
-                    ...$row,
-                    'name' => $player?->fullname ?? '#'.$row['player_id'],
-                    'membership_id' => $player?->membership_id,
-                    'category' => $player?->category?->localized_name,
-                ];
-            })
+        return collect($this->names->attach($rows))
             ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
             ->values()
             ->all();

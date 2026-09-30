@@ -66,6 +66,18 @@ const submitTarget = () => targetForm.post(route('attendance.preseason-targets.s
 const LOCALES = ['ar', 'fr', 'en'];
 const settingsForm = useForm(JSON.parse(JSON.stringify(props.settings)));
 const submitSettings = () => settingsForm.put(route('attendance.settings.update'), { preserveScroll: true });
+
+// ---- Parent letter: its own form and save ----
+const PLACEHOLDERS = ['player', 'category', 'period', 'absences', 'lates', 'club'];
+// Built in the script: a mustache may not contain "}}".
+const placeholderTokens = PLACEHOLDERS.map((p) => ({ key: p, token: '{' + p + '}' }));
+// Each placeholder standing for itself, so the built-in text shows them as they are typed.
+const literal = Object.fromEntries(placeholderTokens.map((p) => [p.key, p.token]));
+const letterForm = useForm({ letter: JSON.parse(JSON.stringify(props.settings.letter)) });
+const submitLetter = () => letterForm.put(route('attendance.settings.letter'), { preserveScroll: true });
+const builtinLetter = (part, loc) => t(`att.letter.default_${part}`, literal, { locale: loc });
+const letterErrors = computed(() => Object.values(letterForm.errors).map(tr));
+
 // The built-in name in one language, shown as the placeholder of that language's field.
 const builtin = (status, loc) => t(`att.status.${status}`, {}, { locale: loc });
 const codeError = (status) => tr(settingsForm.errors[`codes.${status}.code`]);
@@ -153,6 +165,31 @@ const otherErrors = computed(() => Object.entries(settingsForm.errors)
                     <div class="w-full"><InputError v-for="(e, k) in targetForm.errors" :key="k" :message="e" /></div>
                 </form>
             </section>
+
+            <!-- Parent letter -->
+            <form :class="[card, 'lg:col-span-2']" @submit.prevent="submitLetter">
+                <h2 class="mb-1 font-bold text-slate-900 dark:text-slate-100">{{ t('att.letter.settings_title') }}</h2>
+                <p class="text-xs text-slate-500">{{ t('att.letter.settings_help') }}</p>
+                <ul class="mb-3 mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                    <li v-for="ph in placeholderTokens" :key="ph.key">
+                        <code dir="ltr" class="rounded bg-slate-100 px-1 font-mono text-slate-700 dark:bg-slate-800 dark:text-slate-200">{{ ph.token }}</code>
+                        {{ t(`att.letter.ph.${ph.key}`) }}
+                    </li>
+                </ul>
+                <div class="grid gap-4 lg:grid-cols-3">
+                    <div v-for="l in LOCALES" :key="l" class="space-y-2">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ t(`att.letter.in_${l}`) }}</p>
+                        <label class="block text-xs text-slate-500">{{ t('att.letter.subject') }}
+                            <input v-model="letterForm.letter.subject[l]" type="text" maxlength="150" :dir="l === 'ar' ? 'rtl' : 'ltr'" :placeholder="builtinLetter('subject', l)" :class="[input, 'mt-1 block w-full']" />
+                        </label>
+                        <label class="block text-xs text-slate-500">{{ t('att.letter.body') }}
+                            <textarea v-model="letterForm.letter.body[l]" rows="8" maxlength="3000" :dir="l === 'ar' ? 'rtl' : 'ltr'" :placeholder="builtinLetter('body', l)" :class="[input, 'mt-1 block w-full']"></textarea>
+                        </label>
+                    </div>
+                </div>
+                <InputError v-for="(e, i) in letterErrors" :key="i" :message="e" />
+                <button type="submit" :disabled="letterForm.processing" class="mt-3 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">{{ t('att.save') }}</button>
+            </form>
 
             <!-- Codes and points, rules, alerts -->
             <form class="space-y-4 lg:col-span-2" @submit.prevent="submitSettings">

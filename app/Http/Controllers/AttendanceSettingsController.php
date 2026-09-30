@@ -72,6 +72,32 @@ class AttendanceSettingsController extends Controller
         return back()->with('success', 'flash.attendance_settings_saved');
     }
 
+    /**
+     * The parent letter's subject and body per language, saved on their own
+     * (a card of their own on the page). Trimmed, with Windows line breaks
+     * made plain; an empty text is stored as null, so the built-in one is used.
+     */
+    public function updateLetter(Request $request): RedirectResponse
+    {
+        $rules = ['letter' => ['required', 'array']];
+        foreach (AttendanceSettings::LOCALES as $locale) {
+            $rules["letter.subject.$locale"] = ['nullable', 'string', 'max:150'];
+            $rules["letter.body.$locale"] = ['nullable', 'string', 'max:3000'];
+        }
+        $data = $request->validate($rules);
+
+        $letter = [];
+        foreach (['subject', 'body'] as $part) {
+            foreach (AttendanceSettings::LOCALES as $locale) {
+                $text = trim(str_replace("\r\n", "\n", (string) ($data['letter'][$part][$locale] ?? '')));
+                $letter[$part][$locale] = $text === '' ? null : $text;
+            }
+        }
+        AttendanceSettings::save(['letter' => $letter]);
+
+        return back()->with('success', 'flash.attendance_settings_saved');
+    }
+
     public function storeSchedule(Request $request): RedirectResponse
     {
         TrainingSchedule::create($this->validateSchedule($request));

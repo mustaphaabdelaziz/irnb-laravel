@@ -47,6 +47,9 @@ class AttendancePermissionTest extends TestCase
         // "injuries" are not view verbs, so those routes have overrides; the export is a view verb.
         $this->assertSame(['attendance', 'view'], PermissionMap::resolve('attendance.alerts'));
         $this->assertSame(['attendance', 'view'], PermissionMap::resolve('attendance.alerts.export'));
+
+        // The letter text is a setting: saving it needs edit ("letter" falls to edit).
+        $this->assertSame(['attendance', 'edit'], PermissionMap::resolve('attendance.settings.letter'));
     }
 
     #[Test]

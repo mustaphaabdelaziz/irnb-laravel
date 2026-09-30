@@ -111,7 +111,7 @@ final class InjurySpells
                 return [...$spell, 'open' => false, 'end' => $returnedOn, 'returned_on' => $returnedOn];
             }
 
-            return [...$spell, 'returned_on' => $returnedOn];
+            return [...$spell, 'returned_on' => $returnedOn !== null && $returnedOn >= $spell['end'] ? $returnedOn : null];
         }
 
         return [...$spell, 'returned_on' => $returnedOn !== null && $returnedOn >= $spell['end'] ? $returnedOn : null];

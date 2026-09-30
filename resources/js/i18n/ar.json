@@ -1680,5 +1680,5 @@
     "att.injury.save_error": "تعذّر الحفظ. أعد المحاولة.",
     "att.injury.returned_on": "عاد في {date}",
     "att.injury.expected_back": "العودة المتوقعة في {date}",
-    "att.injury.returned_hint": "تحديد تاريخ العودة يعني أن اللاعب قد تعافى."
+    "att.injury.returned_hint": "تاريخ عودة حتى اليوم يعني أن اللاعب تعافى؛ والتاريخ اللاحق يُعرض كموعد العودة المتوقع."
 }

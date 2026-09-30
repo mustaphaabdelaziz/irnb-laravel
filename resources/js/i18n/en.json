@@ -1680,5 +1680,5 @@
     "att.injury.save_error": "Could not save. Try again.",
     "att.injury.returned_on": "Returned on {date}",
     "att.injury.expected_back": "Expected back {date}",
-    "att.injury.returned_hint": "Setting a return date marks the player as recovered."
+    "att.injury.returned_hint": "A return date up to today marks the player as recovered; a later date is shown as the expected return."
 }

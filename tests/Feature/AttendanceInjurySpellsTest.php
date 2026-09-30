@@ -205,7 +205,7 @@ class AttendanceInjurySpellsTest extends TestCase
 
         $this->assertTrue($profile['spells'][0]['open']);
         $this->assertSame('2026-10-05', $profile['spells'][0]['end']);
-        $this->assertSame('2026-10-03', $profile['spells'][0]['returned_on']);
+        $this->assertNull($profile['spells'][0]['returned_on']);
     }
 
     #[Test]

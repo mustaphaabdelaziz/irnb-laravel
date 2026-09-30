@@ -52,6 +52,7 @@ class AttendancePermissionTest extends TestCase
         $this->assertSame(['attendance', 'edit'], PermissionMap::resolve('attendance.settings.letter'));
         $this->assertSame(['attendance', 'view'], PermissionMap::resolve('attendance.players.letter'));
         $this->assertSame(['attendance', 'view'], PermissionMap::resolve('attendance.ranking'));
+        $this->assertSame(['attendance', 'view'], PermissionMap::resolve('attendance.certificates'));
     }
 
     #[Test]

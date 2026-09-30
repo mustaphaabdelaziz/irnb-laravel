@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Services\Attendance\AttendanceStats;
 use App\Services\Attendance\PlayerNames;
+use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
 use App\Support\Season;
 use App\Support\UiLang;
@@ -12,6 +13,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as FileResponse;
 
 /**
  * One category's attendance ranking for a month or a season, and (Task 9)
@@ -22,6 +24,9 @@ use Inertia\Response;
  */
 class AttendanceRankingController extends Controller
 {
+    /** Certificates "Print top 3" prints; only these places are printed on a certificate. */
+    public const PODIUM = 3;
+
     public function __construct(
         private readonly AttendanceStats $stats,
         private readonly PlayerNames $names,
@@ -62,6 +67,51 @@ class AttendanceRankingController extends Controller
             'unranked' => $unranked,
             'minExpected' => AttendanceStats::RANKING_MIN_EXPECTED,
         ]);
+    }
+
+    /**
+     * Certificates of assiduity, one A4 landscape page each: the podium of
+     * the category's ranking for the period, or one chosen player (with a
+     * place only when on the podium). No podium without a ranked player.
+     */
+    public function certificates(Request $request): FileResponse
+    {
+        $data = $request->validate([
+            'category_id' => ['required', 'integer', 'exists:categories,id'],
+            'player_id' => ['nullable', 'integer', 'exists:players,id'],
+        ]);
+        $category = Category::findOrFail($data['category_id']);
+        $period = $this->period($request);
+        ['rows' => $rows] = $this->ranking($category->id, $period);
+
+        if (isset($data['player_id'])) {
+            $playerId = (int) $data['player_id'];
+            $row = collect($rows)->firstWhere('player_id', $playerId)
+                ?? $this->names->attach([
+                    $this->stats->players($period['from'], $period['to'], $category->id, $playerId)[$playerId]
+                        ?? $this->stats->emptyRow($playerId),
+                ])[0];
+            $chosen = [$row];
+            $filename = "certificate-{$row['membership_id']}-{$period['key']}.pdf";
+        } else {
+            $chosen = array_slice($rows, 0, self::PODIUM);
+            abort_if($chosen === [], 404);
+            $filename = "certificates-{$category->id}-{$period['key']}.pdf";
+        }
+
+        $html = view('pdf.attendance-certificates', [
+            'club' => ClubHeader::data(),
+            'category' => $category->localized_name,
+            'periodLabel' => $period['label'],
+            'date' => now()->format('d/m/Y'),
+            'certificates' => array_map(fn (array $row): array => [
+                'name' => $row['name'],
+                'rank' => isset($row['rank']) && $row['rank'] <= self::PODIUM ? $row['rank'] : null,
+                'score_pct' => $row['score_pct'],
+            ], $chosen),
+        ])->render();
+
+        return $this->pdf->stream($html, $filename, app()->getLocale() === 'ar', true);
     }
 
     /**

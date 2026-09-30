@@ -1,7 +1,9 @@
 <script setup>
+import { computed } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import Icon from '@/Components/Icon.vue';
 import { useCan } from '@/Composables/useCan';
 import { pct } from '@/lib/attendanceStats';
 
@@ -31,6 +33,10 @@ function query(changes = {}) {
 }
 const visit = (changes) => router.get(route('attendance.ranking'), query(changes), { preserveScroll: true, replace: true });
 
+// Certificates (PDF, new tab): the podium, or one listed player.
+const podiumHref = computed(() => route('attendance.certificates', query()));
+const certificateHref = (row) => route('attendance.certificates', { ...query(), player_id: row.player_id });
+
 // Gold, silver and bronze for the podium.
 const MEDAL = {
     1: 'bg-amber-400 text-amber-950',
@@ -51,6 +57,7 @@ const th = 'p-2 font-semibold';
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <h1 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('att.ranking.title') }}</h1>
                 <div class="flex items-center gap-2 print:hidden">
+                    <a v-if="rows.length" :href="podiumHref" target="_blank" class="inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-primary-700"><Icon name="print" />{{ t('att.ranking.print_top3') }}</a>
                     <Link :href="route('attendance.stats')" :class="linkButton">{{ t('att.statistics') }}</Link>
                 </div>
             </div>
@@ -100,7 +107,9 @@ const th = 'p-2 font-semibold';
                             <td class="p-2 text-end tabular-nums">{{ row.expected }}</td>
                             <td class="p-2 text-end tabular-nums">{{ row.present }}</td>
                             <td class="p-2 text-end font-semibold tabular-nums"><bdi dir="ltr">{{ pct(row.score_pct) }}</bdi></td>
-                            <td class="whitespace-nowrap p-2 text-end"></td>
+                            <td class="whitespace-nowrap p-2 text-end">
+                                <a :href="certificateHref(row)" target="_blank" class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-800"><Icon name="print" />{{ t('att.ranking.certificate') }}</a>
+                            </td>
                         </tr>
                     </tbody>
                 </table>

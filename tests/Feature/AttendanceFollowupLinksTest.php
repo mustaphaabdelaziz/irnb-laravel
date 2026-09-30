@@ -37,6 +37,8 @@ class AttendanceFollowupLinksTest extends TestCase
             'profile → letter' => ['Players/Partials/AttendanceSection.vue', "route('attendance.players.letter'", ':href="letterHref" target="_blank"'],
             'at risk → letter' => ['Attendance/Alerts.vue', "route('attendance.players.letter'", ':href="letterHref(row)" target="_blank"'],
             'stats table → letter' => ['Attendance/Partials/StatsPlayerTable.vue', "route('attendance.players.letter'", ':href="letterHref(row)" target="_blank"'],
+            'ranking → podium' => ['Attendance/Ranking.vue', "route('attendance.certificates'", ':href="podiumHref" target="_blank"'],
+            'ranking → one certificate' => ['Attendance/Ranking.vue', "route('attendance.certificates'", ':href="certificateHref(row)" target="_blank"'],
         ];
     }
 

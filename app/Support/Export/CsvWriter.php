@@ -20,11 +20,11 @@ final class CsvWriter
         fwrite($out, self::BOM);
 
         if ($title !== null && $title !== '') {
-            self::line($out, [$title]);
+            self::line($out, [self::stringify($title)]);
             self::line($out, []); // spacer row
         }
         if ($headers !== []) {
-            self::line($out, $headers);
+            self::line($out, array_map(self::stringify(...), $headers));
         }
         foreach ($rows as $row) {
             self::line($out, array_map(self::stringify(...), array_values((array) $row)));
@@ -46,11 +46,39 @@ final class CsvWriter
 
     private static function stringify(mixed $value): string
     {
-        return match (true) {
+        $out = match (true) {
             $value === null => '',
             is_bool($value) => $value ? '1' : '0',
             $value instanceof \DateTimeInterface => $value->format('Y-m-d'),
             default => (string) $value,
         };
+
+        // Only a genuine string can carry a spreadsheet formula; a cast int/float/bool/date never needs escaping.
+        return is_string($value) ? self::escapeFormula($out) : $out;
+    }
+
+    /**
+     * Excel/Sheets run a cell starting with =, @, a tab or a CR as a
+     * formula: an apostrophe in front forces it back to text. A leading +
+     * or - is escaped too, unless it reads as a plain number or phone
+     * number (digits, spaces, parentheses and dots only), so "+213 555 12
+     * 34" and "-5" are left alone while "-cmd|..." and "+HYPERLINK(...)"
+     * are not.
+     */
+    private static function escapeFormula(string $value): string
+    {
+        if ($value === '') {
+            return $value;
+        }
+
+        $first = $value[0];
+        if ($first === '=' || $first === '@' || $first === "\t" || $first === "\r") {
+            return "'".$value;
+        }
+        if (($first === '+' || $first === '-') && ! preg_match('/^[+-][\d\s().]*$/', $value)) {
+            return "'".$value;
+        }
+
+        return $value;
     }
 }

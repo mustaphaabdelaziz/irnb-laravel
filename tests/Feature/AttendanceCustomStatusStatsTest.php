@@ -190,4 +190,23 @@ class AttendanceCustomStatusStatsTest extends TestCase
         $current = app(InjurySpells::class)->club('2026-10-01', '2026-10-31')['current'];
         $this->assertSame([$open->id], array_column($current, 'player_id'));
     }
+
+    #[Test]
+    public function a_hidden_code_gets_a_column_only_while_it_has_marks(): void
+    {
+        $unused = $this->custom('Q', 'present');
+        $used = $this->custom('W', 'present');
+        AttendanceCustomStatus::whereIn('key', [$unused, $used])->update(['is_active' => false]);
+        AttendanceCustomStatus::where('key', $unused)->update(['label_en' => 'Quiet']);
+        AttendanceCustomStatus::where('key', $used)->update(['label_en' => 'Worked']);
+        $u15 = $this->category();
+        $this->mark($u15, $this->player($u15), $used);
+
+        $csv = $this->actingAs(User::factory()->admin()->create(['preferred_lng' => 'en']))
+            ->get(route('attendance.stats.export', ['period' => 'custom', 'from' => '2026-10-01', 'to' => '2026-10-31', 'format' => 'csv']))
+            ->streamedContent();
+
+        $this->assertStringContainsString('Worked', $csv);
+        $this->assertStringNotContainsString('Quiet', $csv);
+    }
 }

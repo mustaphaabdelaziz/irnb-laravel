@@ -24,7 +24,7 @@ const props = defineProps({
 });
 
 const { t, locale } = useI18n();
-const { statuses, label, color, chipStyle } = useAttendanceCodes();
+const { withMarks, label, color, chipStyle } = useAttendanceCodes();
 const rtl = computed(() => locale.value === 'ar');
 
 const data = ref(null);
@@ -63,6 +63,8 @@ const tiles = computed(() => (summary.value
     ]
     : []));
 
+// Hidden custom codes only show while the player has marks for them in the period.
+const statuses = computed(() => withMarks([summary.value?.counts]));
 const doughnutStats = computed(() => statuses.value.map((s) => ({ key: s, label: label(s), count: summary.value?.counts?.[s] ?? 0, static: true })));
 const doughnutPalette = computed(() => statuses.value.map((s) => color(s)));
 const monthlyChart = computed(() => statusBars(data.value?.monthly, statuses.value, label, color, locale.value));

@@ -73,8 +73,11 @@ export function useAttendanceCodes() {
         return m ? WITH_MINUTES.find((s) => code(s) === m[1]) ?? null : null;
     }
 
+    /** The columns of a breakdown: every active status, plus a hidden custom code only where one of the { status: count } objects has marks for it. */
+    const withMarks = (countsList) => statuses.value.filter((s) => codes.value[s]?.active !== false || countsList.some((c) => (c?.[s] ?? 0) > 0));
+
     /** "18 Present · 2 Late" for a held session's { status: count } summary. */
     const summaryText = (summary) => statuses.value.filter((s) => summary?.[s]).map((s) => `${summary[s]} ${label(s)}`).join(' · ');
 
-    return { statuses, activeStatuses, codes, code, label, color, chipStyle, tint, takesMinutes, takesReason, statusOf, summaryText };
+    return { statuses, activeStatuses, withMarks, codes, code, label, color, chipStyle, tint, takesMinutes, takesReason, statusOf, summaryText };
 }

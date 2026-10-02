@@ -99,6 +99,29 @@ final class AttendanceStatusCatalog
         return array_keys(array_filter($this->kinds(), fn (array $k, string $key) => $k['active'] || isset($used[$key]), ARRAY_FILTER_USE_BOTH));
     }
 
+    /**
+     * The columns of a breakdown (tables, exports): every active status, plus a
+     * hidden custom code only where one of the counts has marks for it.
+     *
+     * @param  array<string, int>  ...$countsList  status key => marks
+     * @return list<string>
+     */
+    public function withMarks(array ...$countsList): array
+    {
+        return array_keys(array_filter($this->kinds(), function (array $k, string $key) use ($countsList) {
+            if ($k['active']) {
+                return true;
+            }
+            foreach ($countsList as $counts) {
+                if (($counts[$key] ?? 0) > 0) {
+                    return true;
+                }
+            }
+
+            return false;
+        }, ARRAY_FILTER_USE_BOTH));
+    }
+
     /** A built-in status or a custom code not hidden. */
     public function isActive(string $key): bool
     {

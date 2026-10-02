@@ -14,7 +14,9 @@ const props = defineProps({
 });
 const { t, locale } = useI18n();
 const { can } = useCan();
-const { statuses, label, color } = useAttendanceCodes();
+const { withMarks, label, color } = useAttendanceCodes();
+// Hidden custom codes only show while some row has marks for them.
+const statuses = computed(() => withMarks(props.rows.map((r) => r.counts)));
 
 const TEXT = ['name', 'category'];
 const sortKey = ref('score_pct');

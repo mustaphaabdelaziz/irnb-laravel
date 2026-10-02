@@ -35,7 +35,9 @@ const props = defineProps({
     attendanceCodes: { type: Object, default: null },
 });
 const { t, locale } = useI18n();
-const { statuses, label, color } = useAttendanceCodes();
+const { withMarks, label, color } = useAttendanceCodes();
+// Hidden custom codes only show while the data on screen has marks for them.
+const statuses = computed(() => withMarks([props.totals?.counts, ...(props.categoryRows ?? []).map((r) => r.counts)]));
 const rtl = computed(() => locale.value === 'ar');
 
 const keep = computed(() => (props.categoryId ? { category_id: props.categoryId } : {}));

@@ -49,7 +49,9 @@ class AttendanceStatsController extends Controller
             ? collect($data['categories'])->firstWhere('id', $data['categoryId'])['name']
             : UiLang::get('att.all_categories');
         $filename = 'attendance-stats-'.$from.'-'.$to.($data['categoryId'] !== null ? '-'.$data['categoryId'] : '');
-        $labels = app(AttendanceStatusCatalog::class)->labels();
+        $catalog = app(AttendanceStatusCatalog::class);
+        // A hidden custom code only gets a column while the data has marks for it.
+        $labels = $catalog->labels(null, $catalog->withMarks($data['totals']['counts'], ...array_column($data['categoryRows'], 'counts')));
 
         if ($request->query('format') === 'pdf') {
             $html = view('pdf.attendance-stats', [
@@ -57,7 +59,7 @@ class AttendanceStatsController extends Controller
                 'club' => ClubHeader::data(),
                 'categoryName' => $categoryName,
                 'labels' => $labels,
-                'codes' => app(AttendanceStatusCatalog::class)->codes(),
+                'codes' => $catalog->codes(),
             ])->render();
 
             return $this->pdf->stream($html, $filename.'.pdf', app()->getLocale() === 'ar', true);

@@ -64,7 +64,8 @@ class AttendancePlayerController extends Controller
             'club' => ClubHeader::data(),
             'player' => $player,
             'photo' => Media::localFile($player->picture_url),
-            'labels' => $this->catalog->labels(),
+            // A hidden custom code only shows while the player has marks for it in the period.
+            'labels' => $this->catalog->labels(null, $this->catalog->withMarks($data['summary']['counts'])),
             'codes' => $this->catalog->codes(),
         ])->render();
 

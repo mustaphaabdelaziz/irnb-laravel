@@ -38,18 +38,21 @@ const sheetHref = computed(() => (props.categoryId ? route('attendance.sheets.mo
 // travels along unless a view sets it (null = every category).
 const clean = (params) => Object.fromEntries(Object.entries(params).filter(([, v]) => v !== null && v !== undefined && v !== ''));
 // The props each view returns (AttendanceCalendarController). Moving within a
-// view reloads only these, so the server skips the category list and codes;
-// `flash` comes along so an old message is not shown again. Switching views
-// is a full visit, since each view returns different props.
+// view reloads only these, so the server skips the category list and codes.
+// Shared props that change while the page is open come along too
+// (HandleInertiaRequests): `flash` so an old message is not shown again,
+// `auth` and `pendingApprovals` so permissions and badges stay current.
+// Switching views is a full visit, since each view returns different props.
+const SHARED_PROPS = ['flash', 'auth', 'pendingApprovals'];
 const VIEW_PROPS = {
-    month: ['view', 'categoryId', 'month', 'sessions', 'preseason', 'hasSchedule', 'flash'],
-    week: ['view', 'categoryId', 'month', 'week', 'sessions', 'flash'],
-    agenda: ['view', 'categoryId', 'month', 'sessions', 'flash'],
-    timeline: ['view', 'categoryId', 'kind', 'month', 'from', 'to', 'events', 'flash'],
+    month: ['view', 'categoryId', 'month', 'sessions', 'preseason', 'hasSchedule'],
+    week: ['view', 'categoryId', 'month', 'week', 'sessions'],
+    agenda: ['view', 'categoryId', 'month', 'sessions'],
+    timeline: ['view', 'categoryId', 'kind', 'month', 'from', 'to', 'events'],
 };
 function navigate(params, options = {}) {
     const view = params.view ?? props.view;
-    const only = view === props.view ? VIEW_PROPS[view] : undefined;
+    const only = view === props.view ? [...VIEW_PROPS[view], ...SHARED_PROPS] : undefined;
     router.get(route('attendance.index'), clean({ view: props.view, category_id: props.categoryId, ...params }), { preserveScroll: true, ...(only ? { only } : {}), ...options });
 }
 const switchView = (view) => navigate({ view, month: props.month }, { preserveScroll: false });

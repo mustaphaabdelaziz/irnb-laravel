@@ -87,7 +87,7 @@ class AttendanceCalendarPerformanceTest extends TestCase
                 'X-Inertia' => 'true',
                 'X-Inertia-Version' => (string) $version,
                 'X-Inertia-Partial-Component' => 'Attendance/Index',
-                'X-Inertia-Partial-Data' => 'view,categoryId,month,sessions,preseason,hasSchedule,flash',
+                'X-Inertia-Partial-Data' => 'view,categoryId,month,sessions,preseason,hasSchedule,flash,auth,pendingApprovals',
             ])
             ->assertOk()
             ->json('props');
@@ -97,6 +97,8 @@ class AttendanceCalendarPerformanceTest extends TestCase
         $this->assertNotEmpty($props['sessions']);
         $this->assertStringStartsWith('2026-11-', $props['sessions'][0]['date']);
         $this->assertArrayHasKey('flash', $props);
+        $this->assertArrayHasKey('auth', $props);
+        $this->assertArrayHasKey('pendingApprovals', $props);
         $this->assertArrayNotHasKey('categories', $props);
         $this->assertArrayNotHasKey('attendanceCodes', $props);
     }

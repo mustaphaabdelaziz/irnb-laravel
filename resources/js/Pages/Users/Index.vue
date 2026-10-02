@@ -10,8 +10,9 @@ import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import { useI18n } from 'vue-i18n';
-import { ref } from 'vue';
-import { useListFilters } from '@/Composables/useListFilters';
+import { computed, ref } from 'vue';
+import { asList, useListFilters } from '@/Composables/useListFilters';
+import MultiSelectFilter from '@/Components/MultiSelectFilter.vue';
 
 const { t } = useI18n();
 
@@ -24,8 +25,19 @@ const props = defineProps({
 });
 
 const search = ref(props.filters?.search || '');
-const statusFilter = ref(props.filters?.status || '');
-const roleFilter = ref(props.filters?.role || '');
+// Multi-select filters: a user matching any checked value is listed.
+const statusFilter = ref(asList(props.filters?.status));
+const roleFilter = ref(asList(props.filters?.role));
+const statusOptions = computed(() => [
+    { value: 'pending', label: t('pending_approval') },
+    { value: 'approved', label: t('approved') },
+    { value: 'active', label: t('active') },
+    { value: 'inactive', label: t('inactive') },
+]);
+const roleOptions = computed(() => [
+    { value: 'admin', label: t('administrator') },
+    { value: 'user', label: t('user') },
+]);
 const deleteId = ref(null);
 
 const { loading: filtering } = useListFilters('users.index', () => ({
@@ -91,18 +103,8 @@ function initial(user) {
                 <div class="w-full sm:w-64">
                     <SearchInput v-model="search" :loading="filtering" :placeholder="t('search')" />
                 </div>
-                <select v-model="statusFilter" class="rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                    <option value="">{{ t('all') }}</option>
-                    <option value="pending">{{ t('pending_approval') }}</option>
-                    <option value="approved">{{ t('approved') }}</option>
-                    <option value="active">{{ t('active') }}</option>
-                    <option value="inactive">{{ t('inactive') }}</option>
-                </select>
-                <select v-model="roleFilter" class="rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                    <option value="">{{ t('all') }}</option>
-                    <option value="admin">{{ t('administrator') }}</option>
-                    <option value="user">{{ t('user') }}</option>
-                </select>
+                <MultiSelectFilter v-model="statusFilter" :options="statusOptions" :label="t('status')" :placeholder="`${t('status')}: ${t('all')}`" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
+                <MultiSelectFilter v-model="roleFilter" :options="roleOptions" :label="t('role')" :placeholder="`${t('role')}: ${t('all')}`" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
             </div>
 
             <!-- Table -->

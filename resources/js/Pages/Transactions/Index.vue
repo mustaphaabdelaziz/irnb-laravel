@@ -8,11 +8,12 @@ import Icon from '@/Components/Icon.vue';
 import ExportMenu from '@/Components/ExportMenu.vue';
 import StatCard from '@/Components/StatCard.vue';
 import CategoryManager from '@/Components/CategoryManager.vue';
+import MultiSelectFilter from '@/Components/MultiSelectFilter.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { ref, computed } from 'vue';
-import { useListFilters } from '@/Composables/useListFilters';
+import { asList, useListFilters } from '@/Composables/useListFilters';
 import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 import { useStatusLabel } from '@/Composables/useStatusLabel';
 import { useBulkSelection } from '@/Composables/useBulkSelection';
@@ -30,9 +31,10 @@ const props = defineProps({
 });
 
 const search = ref(props.filters?.search || '');
-const typeFilter = ref(props.filters?.type || '');
-const financeCategoryFilter = ref(props.filters?.finance_category_id || '');
-const financeAccountFilter = ref(props.filters?.finance_account_id || '');
+// Multi-select filters: a row matches any checked value; [] = no filter.
+const typeFilter = ref(asList(props.filters?.type));
+const financeCategoryFilter = ref(asList(props.filters?.finance_category_id));
+const financeAccountFilter = ref(asList(props.filters?.finance_account_id));
 const showCategories = ref(false);
 const { accountLabel } = useFinanceAccountLabel();
 
@@ -50,6 +52,15 @@ const { params: filterParams, loading: filtering } = useListFilters('transaction
     date_from: props.filters?.date_from,
     date_to: props.filters?.date_to,
 }), { only: ['transactions', 'filters', 'stats'] });
+
+const typeOptions = computed(() => [
+    { value: 'income', label: t('income') },
+    { value: 'expense', label: t('expense') },
+]);
+const financeCategoryOptions = computed(() => ['income', 'expense'].flatMap((type) => props.financeCategories
+    .filter((c) => c.type === type)
+    .map((c) => ({ value: c.id, label: c.localized_name || c.name, group: t(type) }))));
+const financeAccountOptions = computed(() => props.financeAccounts.map((a) => ({ value: a.id, label: accountLabel(a) })));
 
 // Export the current view (respects the active filters).
 const exportUrl = computed(() => route('transactions.export', filterParams.value));
@@ -127,26 +138,9 @@ function bulkDestroy() {
                 <div class="w-full sm:w-64">
                     <SearchInput v-model="search" :loading="filtering" :placeholder="t('search')" />
                 </div>
-                <select v-model="typeFilter" class="rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                    <option value="">{{ t('all') }}</option>
-                    <option value="income">{{ t('income') }}</option>
-                    <option value="expense">{{ t('expense') }}</option>
-                </select>
-                <select v-model="financeCategoryFilter" class="rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                    <option value="">{{ t('all_categories') }}</option>
-                    <optgroup :label="t('income')">
-                        <option v-for="c in financeCategories.filter((x) => x.type === 'income')" :key="c.id" :value="c.id">{{ c.localized_name || c.name }}</option>
-                    </optgroup>
-                    <optgroup :label="t('expense')">
-                        <option v-for="c in financeCategories.filter((x) => x.type === 'expense')" :key="c.id" :value="c.id">{{ c.localized_name || c.name }}</option>
-                    </optgroup>
-                </select>
-                <select v-model="financeAccountFilter" class="rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                    <option value="">{{ t('all_cash_registers') }}</option>
-                    <option v-for="account in financeAccounts" :key="account.id" :value="account.id">
-                        {{ accountLabel(account) }}
-                    </option>
-                </select>
+                <MultiSelectFilter v-model="typeFilter" :options="typeOptions" :label="t('type')" :placeholder="`${t('type')}: ${t('all')}`" class="min-w-0 flex-1 sm:w-44 sm:flex-none" />
+                <MultiSelectFilter v-model="financeCategoryFilter" :options="financeCategoryOptions" :label="t('category')" :placeholder="t('all_categories')" class="min-w-0 flex-1 sm:w-52 sm:flex-none" />
+                <MultiSelectFilter v-model="financeAccountFilter" :options="financeAccountOptions" :label="t('cash_register')" :placeholder="t('all_cash_registers')" class="min-w-0 flex-1 sm:w-52 sm:flex-none" />
             </div>
 
             <div v-if="selected.length" class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-primary-50 px-4 py-2.5 ring-1 ring-primary-200 dark:bg-primary-900/20 dark:ring-primary-800">

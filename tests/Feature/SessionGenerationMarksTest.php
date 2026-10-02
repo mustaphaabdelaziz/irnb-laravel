@@ -9,6 +9,7 @@ use App\Models\ClubClosure;
 use App\Models\TrainingSchedule;
 use App\Models\TrainingSession;
 use App\Models\User;
+use App\Services\Attendance\SessionGenerator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
@@ -219,5 +220,67 @@ class SessionGenerationMarksTest extends TestCase
         $agenda();
         $this->assertCount(5, $this->dates($this->u15));
         $this->assertCount(5 + 4, $this->dates($u17)); // five Tuesdays, four Thursdays
+    }
+
+    /**
+     * Another request deletes a closure after this generation read the
+     * closures but before it marks the month: its forget found no mark to
+     * delete, so the generation itself must not mark the month either.
+     */
+    private function deleteClosureWhenItIsRead(ClubClosure $closure): void
+    {
+        $done = false;
+        DB::listen(function ($query) use (&$done, $closure) {
+            if (! $done && str_contains($query->sql, 'from "club_closures"')) {
+                $done = true;
+                $closure->delete();
+            }
+        });
+    }
+
+    #[Test]
+    public function a_month_whose_inputs_change_during_generation_is_not_marked(): void
+    {
+        $this->schedule($this->u15);
+        $this->deleteClosureWhenItIsRead(ClubClosure::create(['start_date' => '2027-03-07', 'end_date' => '2027-03-16', 'reason' => 'Holidays']));
+
+        app(SessionGenerator::class)->forMonth($this->u15->id, 2027, 3);
+
+        $this->assertSame(['2027-03-01', '2027-03-22', '2027-03-29'], $this->dates($this->u15));
+        $this->assertFalse($this->marked($this->u15));
+        $this->viewMonth($this->u15);
+        $this->assertSame(['2027-03-01', '2027-03-08', '2027-03-15', '2027-03-22', '2027-03-29'], $this->dates($this->u15));
+    }
+
+    #[Test]
+    public function a_range_whose_inputs_change_during_generation_is_not_marked(): void
+    {
+        $this->schedule($this->u15);
+        $this->deleteClosureWhenItIsRead(ClubClosure::create(['start_date' => '2027-03-07', 'end_date' => '2027-03-16', 'reason' => 'Holidays']));
+
+        app(SessionGenerator::class)->forRange('2027-03-01', '2027-03-31');
+
+        $this->assertFalse($this->marked($this->u15));
+        $this->viewMonth($this->u15);
+        $this->assertCount(5, $this->dates($this->u15));
+    }
+
+    #[Test]
+    public function the_regenerate_command_forgets_every_mark_or_one_categorys(): void
+    {
+        $u17 = $this->category('U17');
+        $this->schedule($this->u15);
+        $this->schedule($u17);
+        $this->viewMonth($this->u15);
+        $this->viewMonth($u17);
+
+        $this->artisan('attendance:regenerate', ['--category' => $u17->id])->assertSuccessful();
+        $this->assertTrue($this->marked($this->u15));
+        $this->assertFalse($this->marked($u17));
+
+        $this->artisan('attendance:regenerate')->assertSuccessful();
+        $this->assertFalse($this->marked($this->u15));
+
+        $this->artisan('attendance:regenerate', ['--category' => 999999])->assertFailed();
     }
 }

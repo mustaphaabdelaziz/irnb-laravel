@@ -33,6 +33,7 @@ final class SessionGenerator
             return 0;
         }
 
+        $version = GenerationMarks::version(); // before reading any input
         $from = $first->toDateString();
         $to = $first->endOfMonth()->toDateString();
 
@@ -48,7 +49,7 @@ final class SessionGenerator
 
         $closures = ClubClosure::where('start_date', '<=', $to)->where('end_date', '>=', $from)->get(['start_date', 'end_date']);
 
-        return $this->generate($categoryId, $first, $schedules, $closures);
+        return $this->generate($categoryId, $first, $schedules, $closures, $version);
     }
 
     /**
@@ -64,6 +65,7 @@ final class SessionGenerator
         $rangeFrom = $firstMonth.'-01';
         $rangeTo = CarbonImmutable::createFromFormat('!Y-m-d', $lastMonth.'-01')->endOfMonth()->toDateString();
 
+        $version = GenerationMarks::version(); // before reading any input
         $schedules = TrainingSchedule::where('valid_from', '<=', $rangeTo)
             ->where(fn ($q) => $q->whereNull('valid_to')->orWhere('valid_to', '>=', $rangeFrom))
             ->orderBy('category_id')->orderBy('id')
@@ -100,9 +102,9 @@ final class SessionGenerator
 
         $closures = ClubClosure::where('start_date', '<=', $rangeTo)->where('end_date', '>=', $rangeFrom)->get(['start_date', 'end_date']);
 
-        DB::transaction(function () use ($pending, $closures) {
+        DB::transaction(function () use ($pending, $closures, $version) {
             foreach ($pending as [$categoryId, $first, $active]) {
-                $this->generate($categoryId, $first, $active, $closures);
+                $this->generate($categoryId, $first, $active, $closures, $version);
             }
         });
     }
@@ -110,8 +112,9 @@ final class SessionGenerator
     /**
      * @param  Collection<int, TrainingSchedule>  $schedules  the category's schedules valid in the month
      * @param  Collection<int, ClubClosure>  $closures  at least every closure overlapping the month
+     * @param  int  $version  GenerationMarks::version() read before the inputs
      */
-    private function generate(int $categoryId, CarbonImmutable $first, Collection $schedules, Collection $closures): int
+    private function generate(int $categoryId, CarbonImmutable $first, Collection $schedules, Collection $closures, int $version): int
     {
         $from = $first->toDateString();
         $to = $first->endOfMonth()->toDateString();
@@ -163,7 +166,7 @@ final class SessionGenerator
             }
         }
 
-        return DB::transaction(function () use ($rows, $categoryId, $first, $from, $to) {
+        return DB::transaction(function () use ($rows, $categoryId, $first, $from, $to, $version) {
             $inserted = $rows === [] ? 0 : DB::table('training_sessions')->insertOrIgnore($rows);
 
             // insertOrIgnore returns no ids, and a prior call may have inserted
@@ -183,7 +186,8 @@ final class SessionGenerator
                         ->whereColumn('p.category_id', 's.category_id')),
             );
 
-            GenerationMarks::mark($categoryId, $first->format('Y-m'));
+            // Not marked if an input changed since $version: the next view generates again.
+            GenerationMarks::mark($categoryId, $first->format('Y-m'), $version);
 
             return $inserted;
         });

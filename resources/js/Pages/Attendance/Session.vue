@@ -21,7 +21,10 @@ const props = defineProps({
 });
 const { t, locale } = useI18n();
 const { can } = useCan();
-const { label, chipStyle, takesMinutes } = useAttendanceCodes();
+const { codes, label, chipStyle, takesMinutes } = useAttendanceCodes();
+// A hidden custom code is offered only on a row whose saved mark already has it.
+const savedStatus = Object.fromEntries(props.rows.map((r) => [r.player_id, r.status]));
+const offered = (row, s) => codes.value[s]?.active !== false || savedStatus[row.player_id] === s;
 const page = usePage();
 const errors = computed(() => page.props.errors ?? {});
 
@@ -72,7 +75,7 @@ function save() {
         marks: rows.value.map(({ name, category, ...mark }) => mark),
     }, { preserveScroll: true, preserveState: 'errors', onStart: () => (saving.value = true), onFinish: () => (saving.value = false) });
 }
-const rowError = (i) => ['minutes', 'reason', 'note', 'status'].map((f) => errors.value[`marks.${i}.${f}`]).find(Boolean);
+const rowError = (i) => ['minutes', 'reason', 'note', 'status'].map((f) => errors.value[`marks.${i}.${f}`]).map(tr).find(Boolean);
 
 // ---- Cancel / move ----
 const showCancel = ref(false);
@@ -146,7 +149,7 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                                 {{ row.name }}
                                 <span v-if="row.category" class="ms-1 text-xs font-normal text-slate-400">{{ row.category }}</span>
                             </span>
-                            <button v-for="s in statuses" :key="s" type="button" :disabled="!editable" class="rounded-lg px-2 py-1 text-xs font-semibold" :class="row.status === s ? '' : idleChip" :style="row.status === s ? chipStyle(s) : null" @click="setStatus(row, s)">{{ label(s) }}</button>
+                            <button v-for="s in statuses.filter((st) => offered(row, st))" :key="s" type="button" :disabled="!editable" class="rounded-lg px-2 py-1 text-xs font-semibold" :class="row.status === s ? '' : idleChip" :style="row.status === s ? chipStyle(s) : null" @click="setStatus(row, s)">{{ label(s) }}</button>
                             <button v-if="editable" type="button" class="p-1 text-slate-300 hover:text-rose-600" :title="t('att.remove')" @click="removeRow(row)"><Icon name="trash" /></button>
                         </div>
                         <div v-if="takesMinutes(row.status) || takesReason(row.status) || row.note" class="mt-2 flex flex-wrap items-center gap-2">

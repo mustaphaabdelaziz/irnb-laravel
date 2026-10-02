@@ -223,6 +223,7 @@
     "att.error.already_marked": "Les présences de cette séance sont déjà enregistrées.",
     "att.error.cancelled": "Cette séance est annulée.",
     "att.error.code_format": "1 à 3 lettres, sans chiffres ni espaces.",
+    "att.error.code_hidden": "Ce code est masqué : il ne reste que sur un pointage qui l'a déjà.",
     "att.error.code_in_use": "Ce code est utilisé dans des pointages : il ne peut qu'être masqué.",
     "att.error.code_taken": "Un autre statut utilise déjà ce code.",
     "att.error.color_format": "Choisissez une couleur.",

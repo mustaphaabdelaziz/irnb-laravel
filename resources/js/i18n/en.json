@@ -223,6 +223,7 @@
     "att.error.already_marked": "Attendance has already been saved for this session.",
     "att.error.cancelled": "This session is cancelled.",
     "att.error.code_format": "1 to 3 letters, no digits or spaces.",
+    "att.error.code_hidden": "This code is hidden: it only stays on a mark that already has it.",
     "att.error.code_in_use": "This code is used by saved marks: it can only be hidden.",
     "att.error.code_taken": "Another status already uses this code.",
     "att.error.color_format": "Pick a colour.",

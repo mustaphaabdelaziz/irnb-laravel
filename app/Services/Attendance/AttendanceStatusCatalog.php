@@ -99,6 +99,12 @@ final class AttendanceStatusCatalog
         return array_keys(array_filter($this->kinds(), fn (array $k, string $key) => $k['active'] || isset($used[$key]), ARRAY_FILTER_USE_BOTH));
     }
 
+    /** A built-in status or a custom code not hidden. */
+    public function isActive(string $key): bool
+    {
+        return $this->kinds()[$key]['active'] ?? false;
+    }
+
     public function has(string $key): bool
     {
         return isset($this->kinds()[$key]);

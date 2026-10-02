@@ -68,9 +68,41 @@ class AttendanceCustomStatusMarksTest extends TestCase
             'marks' => [['player_id' => $a->id, 'status' => 'c_999']],
         ])->assertSessionHasErrors('marks.0.status');
 
+        // Hidden: no longer picked for a new mark...
+        $b = $this->player($u15);
         $this->actingAs($admin)->put(route('attendance.sessions.marks', $session), [
-            'marks' => [['player_id' => $a->id, 'status' => $hidden->key]],
+            'marks' => [['player_id' => $a->id, 'status' => $hidden->key], ['player_id' => $b->id, 'status' => 'present']],
+        ])->assertSessionHasErrors(['marks.0.status' => 'att.error.code_hidden']);
+
+        // ...but kept where the saved mark already has it.
+        Attendance::create(['training_session_id' => $session->id, 'player_id' => $a->id, 'status' => $hidden->key]);
+        $this->actingAs($admin)->put(route('attendance.sessions.marks', $session), [
+            'marks' => [['player_id' => $a->id, 'status' => $hidden->key], ['player_id' => $b->id, 'status' => 'present']],
         ])->assertSessionHasNoErrors();
+        $this->actingAs($admin)->put(route('attendance.sessions.marks', $session), [
+            'marks' => [['player_id' => $a->id, 'status' => $hidden->key], ['player_id' => $b->id, 'status' => $hidden->key]],
+        ])->assertSessionHasErrors(['marks.1.status' => 'att.error.code_hidden']);
+    }
+
+    #[Test]
+    public function the_grid_keeps_a_hidden_code_only_where_the_mark_already_has_it(): void
+    {
+        $hidden = $this->travelStatus(['is_active' => false]);
+        $u15 = $this->category();
+        [$a, $b] = [$this->player($u15), $this->player($u15)];
+        $session = $this->makeSession($u15, 'held');
+        Attendance::create(['training_session_id' => $session->id, 'player_id' => $a->id, 'status' => $hidden->key]);
+        Attendance::create(['training_session_id' => $session->id, 'player_id' => $b->id, 'status' => 'present']);
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->post(route('attendance.grid.save'), [
+            'columns' => [['session_id' => $session->id, 'codes' => [$a->id => 'V', $b->id => 'V']]],
+        ])->assertSessionHasErrors(["columns.0.codes.{$b->id}" => 'att.error.code_hidden']);
+
+        $this->actingAs($admin)->post(route('attendance.grid.save'), [
+            'columns' => [['session_id' => $session->id, 'codes' => [$a->id => 'V', $b->id => '']]],
+        ])->assertSessionHasNoErrors();
+        $this->assertSame($hidden->key, Attendance::where('player_id', $a->id)->value('status'));
     }
 
     #[Test]

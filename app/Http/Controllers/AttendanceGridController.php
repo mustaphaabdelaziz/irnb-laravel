@@ -53,7 +53,7 @@ class AttendanceGridController extends Controller
         ]);
     }
 
-    public function save(Request $request, MarkRecorder $recorder, Roster $roster): RedirectResponse
+    public function save(Request $request, MarkRecorder $recorder, Roster $roster, AttendanceStatusCatalog $catalog): RedirectResponse
     {
         $data = $request->validate([
             'columns' => ['required', 'array', 'min:1'],
@@ -98,6 +98,12 @@ class AttendanceGridController extends Controller
                     continue;
                 }
                 $previous = $existing->get((int) $playerId);
+                // A hidden custom code stays only where the saved mark already has it.
+                if (! $catalog->isActive($parsed['status']) && $previous?->status !== $parsed['status']) {
+                    $errors["columns.$i.codes.$playerId"] = 'att.error.code_hidden';
+
+                    continue;
+                }
                 $keepDetails = $previous?->status === $parsed['status'];
                 $reason = $keepDetails ? $previous->reason?->value : null;
                 if ($parsed['status'] === AttendanceStatus::AbsentExcused->value && $reason === null) {

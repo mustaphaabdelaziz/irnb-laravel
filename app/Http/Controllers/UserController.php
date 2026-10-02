@@ -15,6 +15,13 @@ use Inertia\Response;
 
 class UserController extends Controller
 {
+    /**
+     * The values the role filter can apply: the `privileges` entries a user
+     * can hold (UpdateUserRequest allows user|admin; superadmin is set by
+     * the app). Anything else is neither applied nor echoed.
+     */
+    private const ROLE_FILTERS = ['user', 'admin', 'superadmin'];
+
     public function index(Request $request): Response
     {
         $query = User::query()->with('memberJob');
@@ -43,7 +50,8 @@ class UserController extends Controller
             $query->whereIn('is_active', array_map(fn (string $v) => $v === 'active', $activity));
         }
 
-        if ($roles = ListFilter::values($request, 'role')) {
+        $roles = ListFilter::get($request, 'role', self::ROLE_FILTERS);
+        if ($roles !== []) {
             $query->where(function ($q) use ($roles) {
                 foreach ($roles as $role) {
                     $q->orWhereJsonContains('privileges', $role);
@@ -75,7 +83,7 @@ class UserController extends Controller
                 ...$request->only(['search']),
                 'approval' => $approval,
                 'activity' => $activity,
-                'role' => ListFilter::values($request, 'role'),
+                'role' => $roles,
             ], fn ($value) => $value !== []),
             // Closure so filter reloads (partial) skip the count query.
             'pendingCount' => fn () => User::where('is_user', true)->where('approved', false)->count(),

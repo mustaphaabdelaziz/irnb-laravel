@@ -135,6 +135,20 @@ class ListMultiSelectFiltersTest extends TestCase
     }
 
     #[Test]
+    public function the_user_role_filter_echoes_and_applies_only_known_roles(): void
+    {
+        User::factory()->create(['name' => 'plain-user', 'privileges' => ['user']]);
+
+        $filters = $this->props('users.index', ['role' => ['user', 'bogus']])['filters'];
+        $this->assertSame(['user'], $filters['role']);
+
+        // Junk alone is no filter at all: not echoed, and every user listed.
+        $props = $this->props('users.index', ['role' => ['bogus', '<script>']]);
+        $this->assertArrayNotHasKey('role', $props['filters']);
+        $this->assertContains('plain-user', collect($props['users']['data'])->pluck('name')->all());
+    }
+
+    #[Test]
     public function old_user_status_links_still_work(): void
     {
         User::factory()->create(['name' => 'pending-user', 'approved' => false, 'is_active' => false]);

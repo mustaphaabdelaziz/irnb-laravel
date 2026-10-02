@@ -37,7 +37,7 @@ const earlier = () => emit('navigate', { ...filters.value, from: addMonths(props
 const later = () => emit('navigate', { ...filters.value, from: span.value >= MAX_MONTHS ? addMonths(props.from, 1) : props.from, to: addMonths(props.to, 1) });
 const filter = (patch) => emit('navigate', { ...filters.value, from: props.from, to: props.to, ...patch });
 
-const summaryParts = (e) => statuses.filter((s) => e.summary?.[s]).map((s) => ({ status: s, text: `${e.summary[s]} ${label(s)}` }));
+const summaryParts = (e) => statuses.value.filter((s) => e.summary?.[s]).map((s) => ({ status: s, text: `${e.summary[s]} ${label(s)}` }));
 function dotClass(e) {
     if (e.type === 'closure') return 'bg-slate-400';
     if (e.type === 'milestone') return 'bg-amber-500';

@@ -53,7 +53,7 @@ const tiles = computed(() => [
     { key: 'score', label: t('att.col.score_pct'), value: pct(props.totals.score_pct) },
 ]);
 
-const statusChart = computed(() => statusBars(props.monthly, statuses, label, color, locale.value));
+const statusChart = computed(() => statusBars(props.monthly, statuses.value, label, color, locale.value));
 const stackedOptions = computed(() => baseOptions({ rtl: rtl.value, stacked: true }));
 
 const sessionsChart = computed(() => ({

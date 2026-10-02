@@ -21,7 +21,7 @@ const sortKey = ref('score_pct');
 const sortDir = ref('desc');
 
 function value(row, key) {
-    if (statuses.includes(key)) return row.counts[key];
+    if (statuses.value.includes(key)) return row.counts[key];
     if (TEXT.includes(key)) return row[key] ?? '';
     return row[key] ?? -1; // no score % (nothing expected) sorts last in descending order
 }
@@ -54,7 +54,7 @@ const columns = computed(() => [
     { key: 'name', label: t('att.player'), start: true },
     { key: 'category', label: t('att.category'), start: true },
     { key: 'expected', label: t('att.col.expected') },
-    ...statuses.map((s) => ({ key: s, label: label(s), color: color(s) })),
+    ...statuses.value.map((s) => ({ key: s, label: label(s), color: color(s) })),
     { key: 'late_minutes', label: t('att.col.late_minutes') },
     { key: 'missed_hours', label: t('att.col.missed_hours') },
     { key: 'score_pct', label: t('att.col.score_pct') },

@@ -63,9 +63,9 @@ const tiles = computed(() => (summary.value
     ]
     : []));
 
-const doughnutStats = computed(() => statuses.map((s) => ({ key: s, label: label(s), count: summary.value?.counts?.[s] ?? 0, static: true })));
-const doughnutPalette = computed(() => statuses.map((s) => color(s)));
-const monthlyChart = computed(() => statusBars(data.value?.monthly, statuses, label, color, locale.value));
+const doughnutStats = computed(() => statuses.value.map((s) => ({ key: s, label: label(s), count: summary.value?.counts?.[s] ?? 0, static: true })));
+const doughnutPalette = computed(() => statuses.value.map((s) => color(s)));
+const monthlyChart = computed(() => statusBars(data.value?.monthly, statuses.value, label, color, locale.value));
 const monthlyOptions = computed(() => baseOptions({ rtl: rtl.value, stacked: true }));
 // Same period as the card.
 const reportHref = computed(() => (data.value ? route('attendance.players.report', { player: props.player.id, ...periodQuery(data.value.period) }) : null));

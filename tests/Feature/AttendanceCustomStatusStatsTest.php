@@ -13,9 +13,11 @@ use App\Models\User;
 use App\Services\Attendance\AtRisk;
 use App\Services\Attendance\AttendanceStats;
 use App\Services\Attendance\InjurySpells;
+use App\Services\Dashboard\AttendanceCard;
 use App\Services\Pdf\PdfService;
 use App\Support\AttendanceSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Mockery\MockInterface;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\AttendanceFixtures;
@@ -208,5 +210,45 @@ class AttendanceCustomStatusStatsTest extends TestCase
 
         $this->assertStringContainsString('Worked', $csv);
         $this->assertStringNotContainsString('Quiet', $csv);
+    }
+
+    #[Test]
+    public function not_counted_sessions_do_not_count_toward_the_ranking_minimum_or_low_score_alerts(): void
+    {
+        $travel = $this->custom('V', 'not_counted');
+        $u15 = $this->category();
+        $player = $this->player($u15);
+        // 7 marks, but only 4 expected (3 travelling): under RANKING_MIN_EXPECTED (5).
+        foreach (['absent_unexcused', 'absent_excused', 'absent_excused', 'present', $travel, $travel, $travel] as $status) {
+            $this->mark($u15, $player, $status);
+        }
+        $row = app(AttendanceStats::class)->players('2026-10-01', '2026-10-31')[$player->id];
+
+        $this->assertSame(4, $row['expected']);
+        $this->assertLessThan(AttendanceStats::RANKING_MIN_EXPECTED, $row['expected']);
+        $this->assertSame([], AttendanceStats::ranked([$row]));
+        // A score of 0 % would flag a low score, but not with fewer than RANKING_MIN_EXPECTED sessions.
+        $this->assertSame([], app(AtRisk::class)->list('2026-10-01', '2026-10-31'));
+    }
+
+    #[Test]
+    public function the_dashboard_card_shows_only_not_counted_marks_with_nothing_expected(): void
+    {
+        Carbon::setTestNow('2026-10-20 10:00:00');
+        try {
+            $travel = $this->custom('V', 'not_counted');
+            $u15 = $this->category();
+            $player = $this->player($u15);
+            $this->mark($u15, $player, $travel);
+            $this->mark($u15, $player, $travel);
+
+            $card = app(AttendanceCard::class)->get();
+
+            $this->assertSame(0, $card['last30']['expected']);
+            $this->assertSame(2, $card['last30']['counts'][$travel]);
+            $this->assertNull($card['last30']['pct'][$travel]);
+        } finally {
+            Carbon::setTestNow();
+        }
     }
 }

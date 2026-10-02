@@ -9,10 +9,12 @@ use App\Models\Player;
 use App\Models\PlayerStatus;
 use App\Models\TrainingSession;
 use App\Services\Attendance\Roster;
+use App\Services\Pdf\PdfService;
 use App\Support\AttendanceSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
+use Mockery\MockInterface;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\AttendanceFixtures;
 use Tests\TestCase;
@@ -203,5 +205,51 @@ class AttendanceRosterStatusTest extends TestCase
         $this->actingAs($this->admin())->put(route('attendance.settings.update'), $payload)->assertSessionHasNoErrors();
 
         $this->assertSame([$a->id], $this->rosterIds($this->makeSession($u15)));
+    }
+
+    #[Test]
+    public function a_saved_session_keeps_its_roster_when_the_sets_change(): void
+    {
+        $u15 = $this->category();
+        $registered = $this->player($u15, ['status_id' => $this->statusId('registered')]);
+        $this->player($u15, ['status_id' => $this->statusId('paused')]);
+        $session = $this->makeSession($u15);
+        $admin = $this->admin();
+        $this->actingAs($admin)->put(route('attendance.sessions.marks', $session), [
+            'marks' => [['player_id' => $registered->id, 'status' => 'present']],
+        ])->assertSessionHasNoErrors();
+
+        AttendanceSettings::save(['roster_status_ids' => [$this->statusId('paused')]]);
+        $session->update(['roster_status_ids' => [$this->statusId('paused')]]);
+
+        $this->assertSame([$registered->id], $this->rosterIds($session));
+    }
+
+    #[Test]
+    public function the_month_grid_and_sheet_follow_each_sessions_set(): void
+    {
+        $u15 = $this->category();
+        $registered = $this->player($u15, ['status_id' => $this->statusId('registered')]);
+        $paused = $this->player($u15, ['status_id' => $this->statusId('paused'), 'nickname' => 'Pausé']);
+        $regular = $this->makeSession($u15);
+        $both = $this->makeSession($u15, ['date' => '2026-10-07', 'roster_status_ids' => [$this->statusId('registered'), $this->statusId('paused')]]);
+
+        $this->actingAs($this->admin())->get(route('attendance.grid', ['category_id' => $u15->id, 'month' => '2026-10']))
+            ->assertInertia(fn (Assert $page) => $page->has('rows', 2)
+                ->where("cells.{$registered->id}.{$regular->id}", '')
+                ->where("cells.{$registered->id}.{$both->id}", '')
+                ->where("cells.{$paused->id}.{$both->id}", '')
+                ->missing("cells.{$paused->id}.{$regular->id}"));
+
+        $seen = new \ArrayObject;
+        $this->mock(PdfService::class, function (MockInterface $mock) use ($seen) {
+            $mock->shouldReceive('stream')->once()->andReturnUsing(function (string $html) use ($seen) {
+                $seen['html'] = $html;
+
+                return response('%PDF-spy', 200, ['Content-Type' => 'application/pdf']);
+            });
+        });
+        $this->actingAs($this->admin())->get(route('attendance.sheets.month', ['category_id' => $u15->id, 'month' => '2026-10']))->assertOk();
+        $this->assertStringContainsString(e($paused->fresh()->fullname), $seen['html']);
     }
 }

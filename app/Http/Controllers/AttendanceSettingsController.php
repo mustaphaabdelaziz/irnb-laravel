@@ -17,6 +17,7 @@ use App\Support\AttendanceSettings;
 use App\Support\Season;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -120,16 +121,23 @@ class AttendanceSettingsController extends Controller
 
     public function updateSchedule(Request $request, TrainingSchedule $schedule): RedirectResponse
     {
-        $schedule->update($this->validateSchedule($request));
-        $this->purgeFuturePlanned($schedule);
+        $data = $this->validateSchedule($request);
+        // One transaction: see purgeFuturePlanned().
+        DB::transaction(function () use ($schedule, $data) {
+            $schedule->update($data);
+            $this->purgeFuturePlanned($schedule);
+        });
 
         return back()->with('success', 'flash.training_schedule_saved');
     }
 
     public function destroySchedule(TrainingSchedule $schedule): RedirectResponse
     {
-        $this->purgeFuturePlanned($schedule);
-        $schedule->delete();
+        // One transaction: see purgeFuturePlanned().
+        DB::transaction(function () use ($schedule) {
+            $this->purgeFuturePlanned($schedule);
+            $schedule->delete();
+        });
 
         return back()->with('success', 'flash.training_schedule_deleted');
     }
@@ -250,7 +258,11 @@ class AttendanceSettingsController extends Controller
         // A query-builder delete fires no model events: the generation marks
         // of the schedule's category are forgotten only by TrainingSchedule's
         // saved/deleted event, which updateSchedule() and destroySchedule()
-        // fire next to this call. Do not call it without one.
+        // fire next to this call. Do not call it without one, and keep both
+        // in one DB::transaction: the event's version bump then holds the
+        // version row lock that GenerationMarks::mark() takes, until the
+        // purge is committed too, so a concurrent calendar generation cannot
+        // mark a month whose sessions this purge then deletes.
         TrainingSession::unmarkedPlanned()
             ->where('schedule_id', $schedule->id)
             ->whereNull('moved_from')

@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\Attendance\SessionGenerator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\AttendanceFixtures;
 use Tests\TestCase;
@@ -109,6 +110,48 @@ class SessionGenerationMarksTest extends TestCase
 
         $this->assertSame([], $this->dates($this->u15));
         $this->assertSame(['2027-03-02', '2027-03-09', '2027-03-16', '2027-03-23', '2027-03-30'], $this->dates($u17));
+    }
+
+    /**
+     * The schedule's version bump (its saved/deleted event) and the purge of
+     * its planned sessions run in one transaction, so a concurrent generation
+     * cannot mark a month between the two (its mark() waits on the version
+     * row lock until both are committed).
+     *
+     * @return array<string, array{0: string}>
+     */
+    public static function scheduleChanges(): array
+    {
+        return ['update' => ['update'], 'destroy' => ['destroy']];
+    }
+
+    #[Test]
+    #[DataProvider('scheduleChanges')]
+    public function a_schedule_change_bumps_the_version_and_purges_in_one_transaction(string $change): void
+    {
+        $schedule = $this->schedule($this->u15);
+        $this->viewMonth($this->u15);
+        $this->assertNotEmpty($this->dates($this->u15));
+
+        $baseline = DB::transactionLevel();
+        $levels = ['bump' => [], 'purge' => []];
+        DB::listen(function ($query) use (&$levels) {
+            if (str_starts_with($query->sql, 'update "session_generation_version"')) {
+                $levels['bump'][] = DB::transactionLevel();
+            } elseif (str_starts_with($query->sql, 'delete from "training_sessions"')) {
+                $levels['purge'][] = DB::transactionLevel();
+            }
+        });
+
+        $request = $this->actingAs($this->user);
+        $change === 'update'
+            ? $request->put(route('attendance.schedules.update', $schedule), [
+                'category_id' => $this->u15->id, 'weekday' => 2, 'start_time' => '18:00', 'end_time' => '19:30', 'valid_from' => '2026-01-01',
+            ])->assertSessionHasNoErrors()
+            : $request->delete(route('attendance.schedules.destroy', $schedule))->assertSessionHasNoErrors();
+
+        $this->assertSame([$baseline + 1], $levels['bump']);
+        $this->assertSame([$baseline + 1], $levels['purge']);
     }
 
     #[Test]

@@ -110,7 +110,7 @@ function initial(user) {
                 </div>
                 <MultiSelectFilter v-model="approvalFilter" collapse-all :options="approvalOptions" :label="t('filter.approval')" :placeholder="`${t('filter.approval')}: ${t('all')}`" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
                 <MultiSelectFilter v-model="activityFilter" collapse-all :options="activityOptions" :label="t('filter.activity')" :placeholder="`${t('filter.activity')}: ${t('all')}`" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
-                <MultiSelectFilter v-model="roleFilter" collapse-all :options="roleOptions" :label="t('role')" :placeholder="`${t('role')}: ${t('all')}`" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
+                <MultiSelectFilter v-model="roleFilter" :options="roleOptions" :label="t('role')" :placeholder="`${t('role')}: ${t('all')}`" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
             </div>
 
             <!-- Table -->

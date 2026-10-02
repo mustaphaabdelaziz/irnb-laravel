@@ -366,9 +366,9 @@ function runBulk() {
                 <div class="w-full sm:w-64">
                     <SearchInput v-model="search" :loading="filtering" :placeholder="t('search_for_member')" />
                 </div>
-                <MultiSelectFilter v-model="categoryFilter" collapse-all :options="categoryOptions" :label="t('category')" :placeholder="t('all_categories')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
-                <MultiSelectFilter v-if="branches.length" v-model="branchFilter" collapse-all :options="branchOptions" :label="t('branch')" :placeholder="t('all_branches')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
-                <MultiSelectFilter v-model="lastnameFilter" collapse-all :options="familyOptions" :label="t('filter_by_lastname')" :placeholder="t('filter_by_lastname')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
+                <MultiSelectFilter v-model="categoryFilter" :options="categoryOptions" :label="t('category')" :placeholder="t('all_categories')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
+                <MultiSelectFilter v-if="branches.length" v-model="branchFilter" :options="branchOptions" :label="t('branch')" :placeholder="t('all_branches')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
+                <MultiSelectFilter v-model="lastnameFilter" :options="familyOptions" :label="t('filter_by_lastname')" :placeholder="t('filter_by_lastname')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
                 <MultiSelectFilter v-model="statusFilter" :options="statusOptions" :label="t('status')" :placeholder="statusPlaceholder" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
                 <MultiSelectFilter v-model="bloodGroupFilter" :options="bloodGroups.map((g) => ({ value: g, label: g }))" :label="t('blood_group')" :placeholder="t('all_blood_groups')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
                 <MultiSelectFilter v-model="academicFilter" :options="academicOptions" :label="t('filter.studies')" :placeholder="t('academic_all')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />

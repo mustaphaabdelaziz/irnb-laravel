@@ -26,8 +26,10 @@ const props = defineProps({
     // A search box appears once the list is longer than this.
     searchThreshold: { type: Number, default: 8 },
     // Every option checked means "no filter": emit []. Leave off where all
-    // options together do NOT cover every row (e.g. document problems, or a
-    // status filter whose empty value has its own default).
+    // options together do NOT cover every row (e.g. a nullable column such as
+    // a player's category or family name, a list of active records only,
+    // document problems, or a status filter whose empty value has its own
+    // default): there, checking everything must still filter.
     collapseAll: { type: Boolean, default: false },
     // Upper bound on checked values (keeps the URL short; server cap is 500).
     maxSelected: { type: Number, default: 200 },

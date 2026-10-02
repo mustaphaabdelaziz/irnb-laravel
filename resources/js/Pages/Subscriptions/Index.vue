@@ -113,7 +113,7 @@ function destroy() {
             <div class="flex flex-wrap items-end gap-3">
                 <div>
                     <label class="block text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('branch') }}</label>
-                    <MultiSelectFilter v-model="branchFilter" collapse-all :options="branchOptions" :placeholder="t('all_branches')" class="mt-1 w-48" />
+                    <MultiSelectFilter v-model="branchFilter" :options="branchOptions" :placeholder="t('all_branches')" class="mt-1 w-48" />
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('subscription_kind') }}</label>
@@ -121,7 +121,7 @@ function destroy() {
                 </div>
                 <div v-if="!onlyExceptional">
                     <label class="block text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('season') }}</label>
-                    <MultiSelectFilter v-model="yearFilter" collapse-all :options="seasonOptions" :placeholder="t('all')" class="mt-1 w-44" />
+                    <MultiSelectFilter v-model="yearFilter" :options="seasonOptions" :placeholder="t('all')" class="mt-1 w-44" />
                 </div>
             </div>
 

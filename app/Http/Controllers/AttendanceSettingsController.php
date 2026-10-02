@@ -17,6 +17,7 @@ use App\Support\AttendanceSettings;
 use App\Support\Season;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -52,8 +53,8 @@ class AttendanceSettingsController extends Controller
             'rules.late_minutes_as_absent' => ['required', 'integer', 'between:0,240'],
             'alerts.min_score_pct' => ['required', 'integer', 'between:0,100'],
             'alerts.unexcused_streak' => ['required', 'integer', 'between:0,20'],
-            // Left out (null): unchanged. Never empty: a roster needs at least one status.
-            'roster_status_ids' => ['nullable', 'array', 'min:1'],
+            // Left out (null) or empty with no status defined at all: unchanged. Otherwise at least one status.
+            'roster_status_ids' => ['nullable', 'array', Rule::when(PlayerStatus::exists(), 'min:1')],
             'roster_status_ids.*' => ['integer', 'distinct', 'exists:player_statuses,id'],
         ];
         foreach (AttendanceStatus::values() as $status) {
@@ -78,7 +79,7 @@ class AttendanceSettingsController extends Controller
             'rules' => array_map('intval', $data['rules']),
             'alerts' => array_map('intval', $data['alerts']),
             'codes' => $this->normaliseCodes($data['codes']),
-            ...(isset($data['roster_status_ids']) ? ['roster_status_ids' => array_values(array_map('intval', $data['roster_status_ids']))] : []),
+            ...(! empty($data['roster_status_ids']) ? ['roster_status_ids' => array_values(array_map('intval', $data['roster_status_ids']))] : []),
         ]);
 
         return back()->with('success', 'flash.attendance_settings_saved');

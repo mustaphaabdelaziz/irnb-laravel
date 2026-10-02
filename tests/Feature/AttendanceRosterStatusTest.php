@@ -190,4 +190,18 @@ class AttendanceRosterStatusTest extends TestCase
         $this->assertSame([$this->statusId('registered')], $roster->statusIdsFor($orphan->fresh()));
         $this->assertSame([$registered->id], $this->rosterIds($orphan));
     }
+
+    #[Test]
+    public function with_no_player_status_at_all_the_settings_still_save_and_the_roster_is_everyone(): void
+    {
+        $u15 = $this->category();
+        $a = $this->player($u15);
+        PlayerStatus::query()->delete();
+
+        $payload = AttendanceSettings::DEFAULTS;
+        $payload['roster_status_ids'] = [];
+        $this->actingAs($this->admin())->put(route('attendance.settings.update'), $payload)->assertSessionHasNoErrors();
+
+        $this->assertSame([$a->id], $this->rosterIds($this->makeSession($u15)));
+    }
 }

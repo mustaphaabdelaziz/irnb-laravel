@@ -39,6 +39,8 @@ function submit() {
             ...d,
             category_ids: d.kind === 'preseason' ? [d.category_id, ...d.category_ids.filter((id) => id !== d.category_id)] : [],
             title: d.title || null,
+            // No player status defined at all: left out, the roster takes the default.
+            roster_status_ids: props.playerStatuses.length ? d.roster_status_ids : undefined,
         }))
         .post(route('attendance.sessions.store'), { onSuccess: () => emit('close') });
 }

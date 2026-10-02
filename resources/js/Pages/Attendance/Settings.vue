@@ -68,7 +68,10 @@ const submitTarget = () => targetForm.post(route('attendance.preseason-targets.s
 // ---- Codes, points, rules, alerts: one form, one save ----
 const LOCALES = ['ar', 'fr', 'en'];
 const settingsForm = useForm(JSON.parse(JSON.stringify(props.settings)));
-const submitSettings = () => settingsForm.put(route('attendance.settings.update'), { preserveScroll: true });
+// With no player status defined at all there is nothing to choose: the roster set is left out.
+const submitSettings = () => settingsForm
+    .transform((d) => ({ ...d, roster_status_ids: props.playerStatuses.length ? d.roster_status_ids : null }))
+    .put(route('attendance.settings.update'), { preserveScroll: true });
 
 // ---- Parent letter: its own form and save ----
 const PLACEHOLDERS = ['player', 'category', 'period', 'absences', 'lates', 'club'];

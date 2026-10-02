@@ -47,7 +47,7 @@ class AttendanceController extends Controller
 
                 return [
                     'player_id' => $p->id,
-                    'name' => trim("{$p->lastname} {$p->firstname}"),
+                    'name' => $p->fullname,
                     // Where a player comes from only matters when several categories share the session.
                     // Once marked, the mark's own category_id (fixed at marking time) wins over the
                     // player's current one, so a later category change never retags a frozen session.

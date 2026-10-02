@@ -168,10 +168,10 @@ class AttendanceSheetController extends Controller
         return FileNumber::format($player->file_number === null ? null : (int) $player->file_number) ?: '—';
     }
 
-    /** "LASTNAME Firstname", exactly as the month grid lists the player. */
+    /** Player::fullname, exactly as the month grid and the session page list the player. */
     private static function name(Player $player): string
     {
-        return trim("{$player->lastname} {$player->firstname}");
+        return $player->fullname;
     }
 
     /**

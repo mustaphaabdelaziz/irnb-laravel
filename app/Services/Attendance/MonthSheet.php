@@ -18,7 +18,8 @@ use Illuminate\Support\Collection;
  */
 final class MonthSheet
 {
-    private const PLAYER_COLUMNS = ['id', 'firstname', 'lastname', 'file_number', 'category_id'];
+    // Roster::COLUMNS: what Player::fullname and the sheets need.
+    private const PLAYER_COLUMNS = Roster::COLUMNS;
 
     public function __construct(
         private readonly SessionGenerator $generator,

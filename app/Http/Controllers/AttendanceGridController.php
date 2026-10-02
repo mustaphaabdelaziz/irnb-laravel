@@ -47,7 +47,7 @@ class AttendanceGridController extends Controller
             'sessions' => $sessions->map(fn (TrainingSession $s) => [
                 'id' => $s->id, 'date' => $s->date, 'start_time' => $s->start_time, 'kind' => $s->kind->value, 'state' => $s->state->value,
             ])->values(),
-            'rows' => $players->map(fn (Player $p) => ['id' => $p->id, 'name' => trim("{$p->lastname} {$p->firstname}")])->values(),
+            'rows' => $players->map(fn (Player $p) => ['id' => $p->id, 'name' => $p->fullname])->values(),
             'cells' => (object) $cells,
             'attendanceCodes' => app(AttendanceStatusCatalog::class)->codes(),
         ]);

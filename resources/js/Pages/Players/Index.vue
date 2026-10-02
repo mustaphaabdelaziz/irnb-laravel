@@ -3,7 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import StatStrip from '@/Components/Dashboard/StatStrip.vue';
 import Pagination from '@/Components/Pagination.vue';
 import SearchInput from '@/Components/SearchInput.vue';
-import SearchableSelect from '@/Components/SearchableSelect.vue';
+import MultiSelectFilter from '@/Components/MultiSelectFilter.vue';
 import Badge from '@/Components/Badge.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
@@ -11,7 +11,7 @@ import { useI18n } from 'vue-i18n';
 import { ref, watch, computed } from 'vue';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useBulkSelection } from '@/Composables/useBulkSelection';
-import { useListFilters } from '@/Composables/useListFilters';
+import { asList, useListFilters } from '@/Composables/useListFilters';
 import { formatFileNumber } from '@/lib/fileNumber';
 import BulkEditModal from '@/Components/BulkEditModal.vue';
 import StatDoughnut from '@/Components/StatDoughnut.vue';
@@ -42,19 +42,22 @@ const props = defineProps({
 });
 
 const search = ref(props.filters?.search || '');
-const lastnameFilter = ref(props.filters?.lastname || '');
+// Every select filter is a list (multi-select): a row matches any checked
+// value, and the filters combine with AND. An empty list = no filter.
+const lastnameFilter = ref(asList(props.filters?.lastname));
 // The backend filters on `category_id` — the param must match or the filter is a no-op.
-const categoryFilter = ref(props.filters?.category_id || '');
+const categoryFilter = ref(asList(props.filters?.category_id));
 
-const statusFilter = ref(props.filters?.status || '');
-const positionFilter = ref(props.filters?.position_id || '');
-const branchFilter = ref(props.filters?.branch_id || '');
-const ageFilter = ref(props.filters?.age || '');
-const bloodGroupFilter = ref(props.filters?.blood_group || '');
-const academicFilter = ref(props.filters?.academic || '');
-const certificateFilter = ref(props.filters?.certificate || '');
-// missing | expiring | missing-<typeId> — one select, one query parameter.
-const documentsFilter = ref(props.filters?.documents || '');
+// No status checked = every status except "Left the club" (server default).
+const statusFilter = ref(asList(props.filters?.status));
+const positionFilter = ref(asList(props.filters?.position_id));
+const branchFilter = ref(asList(props.filters?.branch_id));
+const ageFilter = ref(asList(props.filters?.age));
+const bloodGroupFilter = ref(asList(props.filters?.blood_group));
+const academicFilter = ref(asList(props.filters?.academic));
+const certificateFilter = ref(asList(props.filters?.certificate));
+// missing | expiring | missing-<typeId>, mixable.
+const documentsFilter = ref(asList(props.filters?.documents));
 // Active vs Archived view. Backend defaults to active when no `archived` param.
 const archivedView = ref(!!Number(props.filters?.archived));
 // Page size; empty means the server default (25).
@@ -85,8 +88,8 @@ const { params: filterParams, loading: filtering } = useListFilters('players.ind
 // Setting the refs here, before the first render, lets useListFilters' watcher
 // reload the list with them.
 const FILTERS_KEY = 'players.filters';
-const filterRefs = {
-    search, lastname: lastnameFilter, category_id: categoryFilter, status: statusFilter, position_id: positionFilter,
+const listFilterRefs = {
+    lastname: lastnameFilter, category_id: categoryFilter, status: statusFilter, position_id: positionFilter,
     branch_id: branchFilter, age: ageFilter, blood_group: bloodGroupFilter, academic: academicFilter,
     certificate: certificateFilter, documents: documentsFilter,
 };
@@ -95,8 +98,10 @@ if (!window.location.search) {
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem(FILTERS_KEY) || 'null'); } catch { saved = null; }
     if (saved && typeof saved === 'object') {
-        for (const [key, r] of Object.entries(filterRefs)) {
-            if (saved[key] !== undefined) r.value = String(saved[key]);
+        if (typeof saved.search === 'string') search.value = saved.search;
+        // Lists, or a single value saved before filters took several.
+        for (const [key, r] of Object.entries(listFilterRefs)) {
+            if (saved[key] !== undefined) r.value = asList(saved[key]);
         }
         if (saved.archived) archivedView.value = true;
         if (saved.per_page) perPage.value = String(saved.per_page);
@@ -114,9 +119,35 @@ watch(filterParams, (params) => {
 const hasActiveFilters = computed(() => Object.keys(filterParams.value).some((k) => k !== 'per_page'));
 
 function clearFilters() {
-    for (const r of Object.values(filterRefs)) r.value = '';
+    search.value = '';
+    for (const r of Object.values(listFilterRefs)) r.value = [];
     archivedView.value = false;
 }
+
+// The board table and the academic printout are per category: offered with
+// that category only when exactly one is checked.
+const singleCategory = computed(() => (categoryFilter.value.length === 1 ? categoryFilter.value[0] : ''));
+
+// Options of the select filters.
+const categoryOptions = computed(() => props.categories.map((c) => ({ value: c.id, label: c.localized_name || c.name })));
+const branchOptions = computed(() => props.branches.map((b) => ({ value: b.id, label: b.localized_name || b.name })));
+// "none" = players with no status at all; mixable with the statuses.
+const statusOptions = computed(() => [
+    ...props.playerStatuses.map((s) => ({ value: s.id, label: s.localized_name || s.name })),
+    { value: 'none', label: t('filter.no_status') },
+]);
+const leftStatus = computed(() => props.playerStatuses.find((s) => s.code === 'left') || null);
+const statusPlaceholder = computed(() => (leftStatus.value
+    ? t('filter.status_all_but_left', { name: leftStatus.value.localized_name || leftStatus.value.name })
+    : t('all_statuses')));
+const academicOptions = computed(() => ['at_risk', 'good', 'none'].map((v) => ({ value: v, label: t(`academic_${v}`) })));
+const certificateOptions = computed(() => ['excellence', 'congratulations', 'encouragement', 'honor_roll']
+    .map((v) => ({ value: v, label: t(`certificate_${v}`) })));
+const documentOptions = computed(() => [
+    { value: 'missing', label: t('doc_filter_missing') },
+    { value: 'expiring', label: t('doc_filter_expiring') },
+    ...props.documentTypes.map((dt) => ({ value: `missing-${dt.id}`, label: dt.localized_name || dt.name, group: t('doc_filter_missing_type') })),
+]);
 
 const exportHref = computed(() => route('players.export', filterParams.value));
 
@@ -132,7 +163,7 @@ const categoryChips = computed(() => props.categoryStats.map((s) => ({
     key: s.category_id ?? '', label: s.name || t('uncategorized'), count: s.count,
 })));
 const statusChips = computed(() => props.statusStats.map((s) => ({
-    key: s.status_id ?? '', label: s.name || t('uncategorized'), count: s.count,
+    key: s.status_id ?? 'none', label: s.status_id ? s.name : t('filter.no_status'), count: s.count,
 })));
 const positionChips = computed(() => props.positionStats.map((s) => ({
     key: s.position_id ?? '', label: s.name || t('unassigned'), count: s.count,
@@ -148,7 +179,7 @@ const familyChips = computed(() => props.familyStats.map((s) => (s.others
     ? { key: '__others', label: t('other'), count: s.count, static: true }
     : { key: s.name, label: s.name, count: s.count })));
 const familyOptions = computed(() => props.familyNames.map((f) => ({
-    value: f.name, label: f.name, description: `${f.count} ${t('players')}`,
+    value: f.name, label: `${f.name} (${f.count})`,
 })));
 
 const statusPalette = ['#0284c7', '#d97706', '#e11d48', '#64748b', '#7c3aed', '#02a85c'];
@@ -266,11 +297,11 @@ function runBulk() {
                         <template #icon><Icon name="download" /></template>
                     </ExportMenu>
 
-                    <ExportMenu v-if="categoryFilter" :href="route('players.board-table', { category_id: categoryFilter })"
+                    <ExportMenu v-if="singleCategory" :href="route('players.board-table', { category_id: singleCategory })"
                         :label="t('print_board_table')" :formats="['pdf', 'xlsx', 'csv']" collapse>
                         <template #icon><Icon name="print" /></template>
                     </ExportMenu>
-                    <AcademicResultsPrint :categories="categories" :category-id="categoryFilter" :current-school-year="currentSchoolYear" />
+                    <AcademicResultsPrint :categories="categories" :category-id="singleCategory" :current-school-year="currentSchoolYear" />
 
                     <!-- ...folded into an overflow menu below xl -->
                     <Dropdown align="right" width="48" class="xl:hidden">
@@ -335,68 +366,14 @@ function runBulk() {
                 <div class="w-full sm:w-64">
                     <SearchInput v-model="search" :loading="filtering" :placeholder="t('search_for_member')" />
                 </div>
-                <select
-                    v-model="categoryFilter"
-                    class="min-w-0 flex-1 rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:max-w-xs sm:flex-none"
-                >
-                    <option value="">{{ t('all_categories') }}</option>
-                    <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.localized_name || cat.name }}</option>
-                </select>
-                <select
-                    v-if="branches.length"
-                    v-model="branchFilter"
-                    class="min-w-0 flex-1 rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:max-w-xs sm:flex-none"
-                >
-                    <option value="">{{ t('all_branches') }}</option>
-                    <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.localized_name || b.name }}</option>
-                </select>
-                <div class="w-full sm:w-48">
-                    <SearchableSelect v-model="lastnameFilter" :options="familyOptions" :placeholder="t('filter_by_lastname')" />
-                </div>
-                <select
-                    v-model="statusFilter"
-                    class="min-w-0 flex-1 rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:max-w-xs sm:flex-none"
-                >
-                    <option value="">{{ t('all_statuses') }}</option>
-                    <option v-for="s in playerStatuses" :key="s.id" :value="String(s.id)">{{ s.localized_name || s.name }}</option>
-                </select>
-                <select
-                    v-model="bloodGroupFilter"
-                    class="min-w-0 flex-1 rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:max-w-xs sm:flex-none"
-                >
-                    <option value="">{{ t('all_blood_groups') }}</option>
-                    <option v-for="g in bloodGroups" :key="g" :value="g">{{ g }}</option>
-                </select>
-                <select
-                    v-model="academicFilter"
-                    class="min-w-0 flex-1 rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:max-w-xs sm:flex-none"
-                >
-                    <option value="">{{ t('academic_all') }}</option>
-                    <option value="at_risk">{{ t('academic_at_risk') }}</option>
-                    <option value="good">{{ t('academic_good') }}</option>
-                    <option value="none">{{ t('academic_none') }}</option>
-                </select>
-                <select
-                    v-model="certificateFilter"
-                    class="min-w-0 flex-1 rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:max-w-xs sm:flex-none"
-                >
-                    <option value="">{{ t('certificate_filter_all') }}</option>
-                    <option value="excellence">{{ t('certificate_excellence') }}</option>
-                    <option value="congratulations">{{ t('certificate_congratulations') }}</option>
-                    <option value="encouragement">{{ t('certificate_encouragement') }}</option>
-                    <option value="honor_roll">{{ t('certificate_honor_roll') }}</option>
-                </select>
-                <select
-                    v-model="documentsFilter"
-                    class="min-w-0 flex-1 rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:max-w-xs sm:flex-none"
-                >
-                    <option value="">{{ t('doc_filter_all') }}</option>
-                    <option value="missing">{{ t('doc_filter_missing') }}</option>
-                    <option value="expiring">{{ t('doc_filter_expiring') }}</option>
-                    <optgroup v-if="documentTypes.length" :label="t('doc_filter_missing_type')">
-                        <option v-for="dt in documentTypes" :key="dt.id" :value="`missing-${dt.id}`">{{ dt.localized_name || dt.name }}</option>
-                    </optgroup>
-                </select>
+                <MultiSelectFilter v-model="categoryFilter" collapse-all :options="categoryOptions" :label="t('category')" :placeholder="t('all_categories')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
+                <MultiSelectFilter v-if="branches.length" v-model="branchFilter" collapse-all :options="branchOptions" :label="t('branch')" :placeholder="t('all_branches')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
+                <MultiSelectFilter v-model="lastnameFilter" collapse-all :options="familyOptions" :label="t('filter_by_lastname')" :placeholder="t('filter_by_lastname')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
+                <MultiSelectFilter v-model="statusFilter" :options="statusOptions" :label="t('status')" :placeholder="statusPlaceholder" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
+                <MultiSelectFilter v-model="bloodGroupFilter" :options="bloodGroups.map((g) => ({ value: g, label: g }))" :label="t('blood_group')" :placeholder="t('all_blood_groups')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
+                <MultiSelectFilter v-model="academicFilter" :options="academicOptions" :label="t('filter.studies')" :placeholder="t('academic_all')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
+                <MultiSelectFilter v-model="certificateFilter" :options="certificateOptions" :label="t('certificate')" :placeholder="t('certificate_filter_all')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
+                <MultiSelectFilter v-model="documentsFilter" :options="documentOptions" :label="t('documents')" :placeholder="t('doc_filter_all')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
                 <button
                     v-if="hasActiveFilters"
                     type="button"

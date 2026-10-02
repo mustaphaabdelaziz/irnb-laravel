@@ -86,6 +86,19 @@ class Player extends Model
         return PlayerStatus::where('code', 'left')->value('id');
     }
 
+    /**
+     * Players who have not left the club: no status at all, or any status but
+     * the one coded `left`. A subquery, so it costs no extra lookup. Shared by
+     * the players list default and the dashboard figures that drill into it.
+     */
+    public function scopeNotLeft(Builder $query): void
+    {
+        $column = $query->getModel()->qualifyColumn('status_id');
+
+        $query->where(fn (Builder $q) => $q->whereNull($column)
+            ->orWhereNotIn($column, PlayerStatus::query()->select('id')->where('code', 'left')));
+    }
+
     public static function isLeftStatus(mixed $statusId): bool
     {
         return $statusId !== null && $statusId !== '' && (int) $statusId === static::leftStatusId();

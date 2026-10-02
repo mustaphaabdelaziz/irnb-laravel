@@ -11,7 +11,8 @@ import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useBulkSelection } from '@/Composables/useBulkSelection';
 import { computed, ref } from 'vue';
-import { useListFilters } from '@/Composables/useListFilters';
+import { asList, useListFilters } from '@/Composables/useListFilters';
+import MultiSelectFilter from '@/Components/MultiSelectFilter.vue';
 
 const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
@@ -25,7 +26,8 @@ const props = defineProps({
 });
 
 const search = ref(props.filters?.search || '');
-const categoryFilter = ref(props.filters?.category || '');
+// Multi-select: a catalog in any checked category is listed.
+const categoryFilter = ref(asList(props.filters?.category));
 
 const { params: filterParams, loading: filtering } = useListFilters('equipment.catalogs.index', () => ({
     search: search.value,
@@ -108,10 +110,7 @@ function submitImport() {
                 <div class="w-full sm:w-64">
                     <SearchInput v-model="search" :loading="filtering" :placeholder="t('search')" />
                 </div>
-                <select v-model="categoryFilter" class="rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                    <option value="">{{ t('all_categories') }}</option>
-                    <option v-for="cat in equipmentCategories" :key="cat" :value="cat">{{ cat }}</option>
-                </select>
+                <MultiSelectFilter v-model="categoryFilter" collapse-all :options="equipmentCategories.map((cat) => ({ value: cat, label: cat }))" :label="t('category')" :placeholder="t('all_categories')" class="min-w-0 flex-1 sm:w-52 sm:flex-none" />
             </div>
 
             <div v-if="selected.length" class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-primary-50 px-4 py-2.5 ring-1 ring-primary-200 dark:bg-primary-900/20 dark:ring-primary-800">

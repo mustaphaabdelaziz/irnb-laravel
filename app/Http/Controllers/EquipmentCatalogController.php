@@ -14,6 +14,7 @@ use App\Services\Dashboard\ModuleStats;
 use App\Services\Storage\FileStorageService;
 use App\Support\Export;
 use App\Support\Import\ImportColumns;
+use App\Support\ListFilter;
 use App\Support\Spreadsheet;
 use App\Support\UiLang;
 use Illuminate\Http\RedirectResponse;
@@ -43,8 +44,8 @@ class EquipmentCatalogController extends Controller
             });
         }
 
-        if ($request->filled('category')) {
-            $query->where('category', $request->input('category'));
+        if ($categories = ListFilter::values($request, 'category')) {
+            $query->whereIn('category', $categories);
         }
 
         $catalogs = $query->orderBy('name')
@@ -54,7 +55,7 @@ class EquipmentCatalogController extends Controller
         return Inertia::render('Equipment/Catalog/Index', [
             'catalogs' => $catalogs,
             'strip' => fn (): array => app(ModuleStats::class)->equipment(),
-            'filters' => $request->only(['search', 'category']),
+            'filters' => ListFilter::echo($request, ['category' => ListFilter::TEXT], ['search']),
             // Closure so filter reloads (partial) skip the lookup query.
             'equipmentCategories' => fn () => EquipmentCategory::orderBy('name')->pluck('name'),
         ]);

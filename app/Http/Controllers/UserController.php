@@ -6,6 +6,7 @@ use App\Http\Requests\User\UpdateUserRequest;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\Storage\FileStorageService;
+use App\Support\ListFilter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Password;
@@ -29,16 +30,25 @@ class UserController extends Controller
             });
         }
 
-        match ($request->input('status')) {
-            'pending' => $query->where('approved', false),
-            'approved' => $query->where('approved', true),
-            'active' => $query->where('is_active', true),
-            'inactive' => $query->where('is_active', false),
-            default => null,
-        };
+        // Approval and activity are two filters (AND between them), each
+        // taking several values (OR within). An old `status` link maps onto
+        // whichever of the two its value belongs to.
+        [$approval, $activity] = $this->statusFilters($request);
 
-        if ($request->filled('role')) {
-            $query->whereJsonContains('privileges', $request->input('role'));
+        if ($approval !== []) {
+            $query->whereIn('approved', array_map(fn (string $v) => $v === 'approved', $approval));
+        }
+
+        if ($activity !== []) {
+            $query->whereIn('is_active', array_map(fn (string $v) => $v === 'active', $activity));
+        }
+
+        if ($roles = ListFilter::values($request, 'role')) {
+            $query->where(function ($q) use ($roles) {
+                foreach ($roles as $role) {
+                    $q->orWhereJsonContains('privileges', $role);
+                }
+            });
         }
 
         $users = $query->orderByDesc('created_at')
@@ -61,13 +71,35 @@ class UserController extends Controller
 
         return Inertia::render('Users/Index', [
             'users' => $users,
-            'filters' => $request->only(['search', 'status', 'role']),
+            'filters' => array_filter([
+                ...$request->only(['search']),
+                'approval' => $approval,
+                'activity' => $activity,
+                'role' => ListFilter::values($request, 'role'),
+            ], fn ($value) => $value !== []),
             // Closure so filter reloads (partial) skip the count query.
             'pendingCount' => fn () => User::where('is_user', true)->where('approved', false)->count(),
             // Password reset and superadmin actions are gated to a superadmin.
             'canManageAccess' => $request->user()->isSuperadmin(),
             'currentUserId' => $request->user()->id,
         ]);
+    }
+
+    /**
+     * The approval (pending|approved) and activity (active|inactive) filters,
+     * with an old single `status` value folded into the one it belongs to.
+     *
+     * @return array{0: list<string>, 1: list<string>}
+     */
+    private function statusFilters(Request $request): array
+    {
+        $legacy = ListFilter::values($request, 'status');
+        $merge = fn (string $key, array $allowed) => array_values(array_unique(array_merge(
+            ListFilter::get($request, $key, $allowed),
+            array_values(array_intersect($legacy, $allowed)),
+        )));
+
+        return [$merge('approval', ['pending', 'approved']), $merge('activity', ['active', 'inactive'])];
     }
 
     public function edit(Request $request, User $user): Response

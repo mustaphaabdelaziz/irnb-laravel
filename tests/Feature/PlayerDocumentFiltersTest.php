@@ -114,7 +114,7 @@ class PlayerDocumentFiltersTest extends TestCase
         $props = $this->props(['documents' => 'missing']);
 
         $this->assertSame(['Adult'], $this->names($props));
-        $this->assertSame('missing', $props['filters']['documents']);
+        $this->assertSame(['missing'], $props['filters']['documents']);
     }
 
     #[Test]
@@ -185,7 +185,7 @@ class PlayerDocumentFiltersTest extends TestCase
 
         $this->assertSame(['Unplaced'], $this->names($this->props(['wilaya_id' => 'none'])));
         $this->assertSame(['Placed'], $this->names($this->props(['wilaya_id' => $wilaya->id])));
-        $this->assertSame('none', $this->props(['wilaya_id' => 'none'])['filters']['wilaya_id']);
+        $this->assertSame(['none'], $this->props(['wilaya_id' => 'none'])['filters']['wilaya_id']);
     }
 
     #[Test]

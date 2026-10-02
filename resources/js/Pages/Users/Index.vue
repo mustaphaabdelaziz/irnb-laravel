@@ -10,8 +10,9 @@ import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import { useI18n } from 'vue-i18n';
-import { ref } from 'vue';
-import { useListFilters } from '@/Composables/useListFilters';
+import { computed, ref } from 'vue';
+import { asList, useListFilters } from '@/Composables/useListFilters';
+import MultiSelectFilter from '@/Components/MultiSelectFilter.vue';
 
 const { t } = useI18n();
 
@@ -24,13 +25,29 @@ const props = defineProps({
 });
 
 const search = ref(props.filters?.search || '');
-const statusFilter = ref(props.filters?.status || '');
-const roleFilter = ref(props.filters?.role || '');
+// Multi-select filters: OR within one, AND across. Approval and activity are
+// separate (an old ?status= link is mapped onto them by the server).
+const approvalFilter = ref(asList(props.filters?.approval));
+const activityFilter = ref(asList(props.filters?.activity));
+const roleFilter = ref(asList(props.filters?.role));
+const approvalOptions = computed(() => [
+    { value: 'pending', label: t('pending_approval') },
+    { value: 'approved', label: t('approved') },
+]);
+const activityOptions = computed(() => [
+    { value: 'active', label: t('active') },
+    { value: 'inactive', label: t('inactive') },
+]);
+const roleOptions = computed(() => [
+    { value: 'admin', label: t('administrator') },
+    { value: 'user', label: t('user') },
+]);
 const deleteId = ref(null);
 
 const { loading: filtering } = useListFilters('users.index', () => ({
     search: search.value,
-    status: statusFilter.value,
+    approval: approvalFilter.value,
+    activity: activityFilter.value,
     role: roleFilter.value,
 }), { only: ['users', 'filters'] });
 
@@ -91,18 +108,9 @@ function initial(user) {
                 <div class="w-full sm:w-64">
                     <SearchInput v-model="search" :loading="filtering" :placeholder="t('search')" />
                 </div>
-                <select v-model="statusFilter" class="rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                    <option value="">{{ t('all') }}</option>
-                    <option value="pending">{{ t('pending_approval') }}</option>
-                    <option value="approved">{{ t('approved') }}</option>
-                    <option value="active">{{ t('active') }}</option>
-                    <option value="inactive">{{ t('inactive') }}</option>
-                </select>
-                <select v-model="roleFilter" class="rounded-lg border-slate-300 dark:border-slate-700 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                    <option value="">{{ t('all') }}</option>
-                    <option value="admin">{{ t('administrator') }}</option>
-                    <option value="user">{{ t('user') }}</option>
-                </select>
+                <MultiSelectFilter v-model="approvalFilter" collapse-all :options="approvalOptions" :label="t('filter.approval')" :placeholder="`${t('filter.approval')}: ${t('all')}`" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
+                <MultiSelectFilter v-model="activityFilter" collapse-all :options="activityOptions" :label="t('filter.activity')" :placeholder="`${t('filter.activity')}: ${t('all')}`" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
+                <MultiSelectFilter v-model="roleFilter" collapse-all :options="roleOptions" :label="t('role')" :placeholder="`${t('role')}: ${t('all')}`" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
             </div>
 
             <!-- Table -->

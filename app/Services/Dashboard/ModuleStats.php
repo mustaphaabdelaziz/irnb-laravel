@@ -26,11 +26,13 @@ class ModuleStats
         $row = DB::table('players')
             ->where('archived', false)
             ->selectRaw(
-                'COUNT(*) as total, '
+                // Active = not "Left the club", like the players list default;
+                // the debt figures still count everyone who owes.
+                'COUNT(CASE WHEN status_id IS NULL OR status_id NOT IN (SELECT id FROM player_statuses WHERE code = ?) THEN 1 END) as total, '
                 .'COUNT(CASE WHEN outstanding_debt > 0 THEN 1 END) as with_debt, '
                 .'SUM(outstanding_debt) as debt_total, '
                 .'COUNT(CASE WHEN created_at >= ? THEN 1 END) as joined_this_month',
-                [CarbonImmutable::now()->startOfMonth()->toDateTimeString()],
+                ['left', CarbonImmutable::now()->startOfMonth()->toDateTimeString()],
             )
             ->first();
 

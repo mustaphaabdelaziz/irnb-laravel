@@ -7,8 +7,9 @@ import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
-import { ref, watch } from 'vue';
-import { useListFilters } from '@/Composables/useListFilters';
+import { computed, ref, watch } from 'vue';
+import { asList, useListFilters } from '@/Composables/useListFilters';
+import MultiSelectFilter from '@/Components/MultiSelectFilter.vue';
 
 const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
@@ -22,12 +23,21 @@ const props = defineProps({
     seasons: { type: Array, default: () => [] },
 });
 
-const branchFilter = ref(props.filters?.branch_id || '');
+// Multi-select filters: a subscription matching any checked value is listed.
+const branchFilter = ref(asList(props.filters?.branch_id));
 // Numbers, so the season option from the URL shows as selected.
-const yearFilter = ref(props.filters?.year ? Number(props.filters.year) : '');
-const kindFilter = ref(props.filters?.kind || '');
-// A one-off charge has no season, so a season filter would hide them all.
-watch(kindFilter, (kind) => { if (kind === 'exceptional') yearFilter.value = ''; });
+const yearFilter = ref(asList(props.filters?.year));
+const kindFilter = ref(asList(props.filters?.kind));
+// A one-off charge has no season, so a season filter would hide them all:
+// with only "exceptional" checked the season picker goes away.
+const onlyExceptional = computed(() => kindFilter.value.length === 1 && kindFilter.value[0] === 'exceptional');
+watch(onlyExceptional, (only) => { if (only) yearFilter.value = []; }, { immediate: true });
+const branchOptions = computed(() => props.branches.map((b) => ({ value: b.id, label: b.localized_name || b.name })));
+const kindOptions = computed(() => [
+    { value: 'annual', label: t('subscription_kind_annual') },
+    { value: 'exceptional', label: t('subscription_kind_exceptional') },
+]);
+const seasonOptions = computed(() => props.seasons.map((s) => ({ value: s.value, label: s.label })));
 
 const { loading: filtering } = useListFilters('subscriptions.index', () => ({
     branch_id: branchFilter.value,
@@ -103,25 +113,15 @@ function destroy() {
             <div class="flex flex-wrap items-end gap-3">
                 <div>
                     <label class="block text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('branch') }}</label>
-                    <select v-model="branchFilter" class="mt-1 rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-900 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                        <option value="">{{ t('all_branches') }}</option>
-                        <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.localized_name || b.name }}</option>
-                    </select>
+                    <MultiSelectFilter v-model="branchFilter" collapse-all :options="branchOptions" :placeholder="t('all_branches')" class="mt-1 w-48" />
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('subscription_kind') }}</label>
-                    <select v-model="kindFilter" class="mt-1 rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-900 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                        <option value="">{{ t('all') }}</option>
-                        <option value="annual">{{ t('subscription_kind_annual') }}</option>
-                        <option value="exceptional">{{ t('subscription_kind_exceptional') }}</option>
-                    </select>
+                    <MultiSelectFilter v-model="kindFilter" collapse-all :options="kindOptions" :placeholder="t('all')" class="mt-1 w-44" />
                 </div>
-                <div v-if="kindFilter !== 'exceptional'">
+                <div v-if="!onlyExceptional">
                     <label class="block text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('season') }}</label>
-                    <select v-model="yearFilter" class="mt-1 rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-900 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                        <option value="">{{ t('all') }}</option>
-                        <option v-for="s in seasons" :key="s.value" :value="s.value">{{ s.label }}</option>
-                    </select>
+                    <MultiSelectFilter v-model="yearFilter" collapse-all :options="seasonOptions" :placeholder="t('all')" class="mt-1 w-44" />
                 </div>
             </div>
 

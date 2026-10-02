@@ -33,17 +33,19 @@ class PlayerAcademicFilterTest extends TestCase
     }
 
     /** @return array<int, string> firstnames the list returns for the given query */
-    private function listed(array $query): array
+    private function listed(array $query, bool $applied = true): array
     {
         $admin = User::factory()->create(['privileges' => ['admin'], 'is_active' => true, 'email_verified_at' => now()]);
         $names = [];
 
         $this->actingAs($admin)->get(route('players.index', $query))
-            ->assertInertia(function (Assert $page) use (&$names, $query) {
+            ->assertInertia(function (Assert $page) use (&$names, $query, $applied) {
                 $names = collect($page->toArray()['props']['players']['data'])->pluck('firstname')->sort()->values()->all();
 
+                // A scalar link still works; the echo is always a list, and a
+                // value the filter cannot apply is not echoed at all.
                 foreach ($query as $key => $value) {
-                    $page->where("filters.{$key}", $value);
+                    $applied ? $page->where("filters.{$key}", [$value]) : $page->missing("filters.{$key}");
                 }
             });
 
@@ -104,6 +106,6 @@ class PlayerAcademicFilterTest extends TestCase
     {
         $this->player('Someone');
 
-        $this->assertSame(['Someone'], $this->listed(['certificate' => 'not-a-real-certificate']));
+        $this->assertSame(['Someone'], $this->listed(['certificate' => 'not-a-real-certificate'], applied: false));
     }
 }

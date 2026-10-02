@@ -14,7 +14,9 @@ use Illuminate\Support\Facades\DB;
  * training" (whatever the reason) or an excused absence for injury. A
  * player's consecutive injury marks in held sessions (date, start time, id),
  * with no other mark of theirs in between, form one spell. A spell is open
- * while it holds the player's latest held mark.
+ * while it holds the player's latest held mark. A not_counted mark (a custom
+ * code that leaves the session out, see AttendanceStatusCatalog) is skipped:
+ * it neither extends nor ends a spell, nor counts as the latest mark.
  *
  * Spells always come from the player's whole history, so a spell's start
  * never depends on the period on screen and an InjuryNote keyed by it stays
@@ -49,7 +51,13 @@ use Illuminate\Support\Facades\DB;
  */
 final class InjurySpells
 {
-    public function __construct(private readonly PlayerNames $names) {}
+    /** @var list<string>|null status keys whose marks are skipped (behaviour not_counted) */
+    private ?array $skipped = null;
+
+    public function __construct(
+        private readonly PlayerNames $names,
+        private readonly AttendanceStatusCatalog $catalog,
+    ) {}
 
     public static function isInjury(string $status, ?string $reason): bool
     {
@@ -59,13 +67,17 @@ final class InjurySpells
 
     /**
      * @param  iterable<object>  $marks  rows with player_id, date, status, reason, ordered by player, date, start time, id
+     * @param  list<string>  $skipped  status keys that neither extend nor end a spell (not_counted)
      * @return array<int, list<array{start: string, end: string, sessions: int, open: bool}>> by player id, oldest first
      */
-    public static function fromMarks(iterable $marks): array
+    public static function fromMarks(iterable $marks, array $skipped = []): array
     {
         $spells = [];
         $running = []; // player id => index of the spell the next injury mark extends
         foreach ($marks as $mark) {
+            if (in_array($mark->status, $skipped, true)) {
+                continue;
+            }
             $id = (int) $mark->player_id;
             if (! self::isInjury($mark->status, $mark->reason)) {
                 unset($running[$id]);
@@ -90,7 +102,7 @@ final class InjurySpells
     /** @return list<array{start: string, end: string, sessions: int, open: bool}> the player's whole history, oldest first */
     public function all(int $playerId): array
     {
-        return self::fromMarks($this->marks()->where('attendances.player_id', $playerId)->cursor())[$playerId] ?? [];
+        return self::fromMarks($this->marks()->where('attendances.player_id', $playerId)->cursor(), $this->skipped())[$playerId] ?? [];
     }
 
     /**
@@ -120,7 +132,7 @@ final class InjurySpells
     /**
      * The profile's injuries: the spells overlapping [from, to], newest first,
      * each with its detail (or null), and every detail of the player that
-     * opens no spell. Two queries.
+     * opens no spell. Three queries (the custom codes, the marks, the details).
      *
      * @return array{spells: list<array<string, mixed>>, unmatched: list<array<string, mixed>>}
      */
@@ -151,8 +163,8 @@ final class InjurySpells
      * The club list. `current`: every open spell, oldest start first (today,
      * whatever the period). `spells`: the spells overlapping [from, to],
      * newest start first. Active players only (not archived, not left);
-     * $categoryId keeps those now in that category. Four queries whatever
-     * the roster: the marks of the players who can matter (see the class
+     * $categoryId keeps those now in that category. Five queries whatever
+     * the roster: the custom codes, the marks of the players who can matter (see the class
      * doc), their details, the players, their categories.
      *
      * @return array{current: list<array<string, mixed>>, spells: list<array<string, mixed>>}
@@ -163,7 +175,7 @@ final class InjurySpells
             ->whereIn('attendances.player_id', $this->injuryMarks()->whereBetween('s.date', [$from, $to]))
             ->orWhereIn('attendances.player_id', $this->latestMarkIsInjury())
             ->orWhereIn('attendances.player_id', $this->latestMarkIsInjury($from))
-        )->cursor());
+        )->cursor(), $this->skipped());
         if ($byPlayer === []) {
             return ['current' => [], 'spells' => []];
         }
@@ -197,6 +209,12 @@ final class InjurySpells
     private static function overlaps(array $spell, string $from, string $to): bool
     {
         return $spell['start'] <= $to && ($spell['open'] || $spell['end'] >= $from);
+    }
+
+    /** @return list<string> */
+    private function skipped(): array
+    {
+        return $this->skipped ??= $this->catalog->keysBehavingAs(AttendanceStatusCatalog::NOT_COUNTED);
     }
 
     /** Held-session marks in spell order: player, date, start time, session id. */
@@ -239,6 +257,7 @@ final class InjurySpells
                 ->join('training_sessions as s2', 's2.id', '=', 'a2.training_session_id')
                 ->whereColumn('a2.player_id', 'a.player_id')
                 ->where('s2.state', SessionState::Held->value)
+                ->whereNotIn('a2.status', $this->skipped())
                 ->when($before !== null, fn (Builder $q) => $q->where('s2.date', '<', $before))
                 ->where(fn (Builder $q) => $q->whereColumn('s2.date', '>', 's.date')
                     ->orWhere(fn (Builder $q) => $q->whereColumn('s2.date', 's.date')

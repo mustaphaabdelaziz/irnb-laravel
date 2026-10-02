@@ -12,6 +12,7 @@ use App\Models\TrainingSession;
 use App\Models\User;
 use App\Services\Attendance\AtRisk;
 use App\Services\Attendance\AttendanceStats;
+use App\Services\Attendance\InjurySpells;
 use App\Services\Pdf\PdfService;
 use App\Support\AttendanceSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -167,5 +168,26 @@ class AttendanceCustomStatusStatsTest extends TestCase
 
         $this->assertStringContainsString('Absences: 3.', $seen['html']);
         $this->assertStringContainsString('Skipped', $seen['html']);
+    }
+
+    #[Test]
+    public function a_not_counted_mark_neither_ends_nor_extends_an_injury_spell(): void
+    {
+        $travel = $this->custom('V', 'not_counted');
+        $u15 = $this->category();
+        $closed = $this->player($u15);
+        $open = $this->player($u15);
+        foreach (['not_training', $travel, 'not_training', 'present'] as $status) {
+            $this->mark($u15, $closed, $status);
+        }
+        foreach (['present', 'not_training', $travel] as $status) {
+            $this->mark($u15, $open, $status);
+        }
+        $spells = app(InjurySpells::class);
+
+        $this->assertSame([['start' => '2026-10-01', 'end' => '2026-10-03', 'sessions' => 2, 'open' => false]], $spells->all($closed->id));
+        $this->assertSame([['start' => '2026-10-06', 'end' => '2026-10-06', 'sessions' => 1, 'open' => true]], $spells->all($open->id));
+        $current = app(InjurySpells::class)->club('2026-10-01', '2026-10-31')['current'];
+        $this->assertSame([$open->id], array_column($current, 'player_id'));
     }
 }

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\AttendanceStatus;
 use App\Models\Category;
 use App\Services\Activity\ActivityPeriod;
 use App\Services\Attendance\AttendanceStats;
@@ -70,9 +69,9 @@ class AttendanceStatsController extends Controller
         }
         array_push($headers, UiLang::get('att.col.late_minutes'), UiLang::get('att.col.missed_hours'), UiLang::get('att.col.score'), UiLang::get('att.col.score_pct'));
 
-        $rows = array_map(function (array $row): array {
+        $rows = array_map(function (array $row) use ($labels): array {
             $cells = [$row['name'], (string) $row['membership_id'], $row['category'] ?? '', $row['expected']];
-            foreach (AttendanceStatus::values() as $status) {
+            foreach (array_keys($labels) as $status) {
                 array_push($cells, $row['counts'][$status], $row['pct'][$status]);
             }
 

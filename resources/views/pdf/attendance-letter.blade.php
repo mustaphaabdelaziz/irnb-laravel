@@ -1,7 +1,6 @@
 @php
     $L = fn (string $key) => \App\Support\UiLang::get($key);
     $day = fn (string $date) => substr($date, 8, 2).'/'.substr($date, 5, 2).'/'.substr($date, 0, 4);
-    $shown = ['absent_unexcused', 'absent_excused', 'late', 'left_early'];
 @endphp
 <!DOCTYPE html>
 <html>

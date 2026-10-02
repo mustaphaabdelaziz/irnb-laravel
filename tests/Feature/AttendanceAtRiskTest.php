@@ -199,7 +199,7 @@ class AttendanceAtRiskTest extends TestCase
         $add(27);
 
         $this->assertSame($few, $measure());
-        // players(): 2, the streak scan: 1, the flagged players and their categories: 2.
-        $this->assertSame(5, $few);
+        // The custom codes: 1, players(): 2, the streak scan: 1, the flagged players and their categories: 2.
+        $this->assertSame(6, $few);
     }
 }

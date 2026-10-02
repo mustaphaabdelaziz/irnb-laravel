@@ -117,9 +117,10 @@ class AttendanceStreaksTest extends TestCase
             return count(DB::getQueryLog());
         };
 
+        // The scan itself, plus one for the custom codes (which statuses are unexcused or skipped).
         $add(3);
-        $this->assertSame(1, $measure());
+        $this->assertSame(2, $measure());
         $add(30);
-        $this->assertSame(1, $measure());
+        $this->assertSame(2, $measure());
     }
 }

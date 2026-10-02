@@ -27,7 +27,7 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class AttendancePlayerController extends Controller
 {
-    /** The marks a parent letter lists: absences, lates and early departures. */
+    /** The marks a parent letter lists: absences (custom absence codes too), lates and early departures. */
     public const LETTER_STATUSES = ['late', 'left_early', 'absent_excused', 'absent_unexcused'];
 
     public function __construct(
@@ -36,6 +36,7 @@ class AttendancePlayerController extends Controller
         private readonly PdfService $pdf,
         private readonly AtRisk $risk,
         private readonly InjurySpells $injuries,
+        private readonly AttendanceStatusCatalog $catalog,
     ) {}
 
     public function show(Request $request, Player $player): JsonResponse
@@ -63,8 +64,8 @@ class AttendancePlayerController extends Controller
             'club' => ClubHeader::data(),
             'player' => $player,
             'photo' => Media::localFile($player->picture_url),
-            'labels' => app(AttendanceStatusCatalog::class)->labels(),
-            'codes' => app(AttendanceStatusCatalog::class)->codes(),
+            'labels' => $this->catalog->labels(),
+            'codes' => $this->catalog->codes(),
         ])->render();
 
         return $this->pdf->stream(
@@ -87,13 +88,15 @@ class AttendancePlayerController extends Controller
         $player->loadMissing('category');
         [$period, $summary] = $this->periodAndSummary($request, $player);
         ['from' => $from, 'to' => $to] = $period;
+        $listed = $this->catalog->keysBehavingAs(...self::LETTER_STATUSES);
         $rows = array_reverse(array_values(array_filter(
             $this->stats->playerSessions($player->id, $from, $to),
-            fn (array $row) => in_array($row['status'], self::LETTER_STATUSES, true),
+            fn (array $row) => in_array($row['status'], $listed, true),
         )));
         $club = ClubHeader::data();
         $periodText = self::day($from).' – '.self::day($to);
-        $counts = $summary['counts'];
+        // As they count: a custom absence code adds to the absences.
+        $counts = $summary['scored'];
         $letter = AttendanceSettings::letter([
             'player' => $player->fullname,
             'category' => $player->category?->localized_name ?? '—',
@@ -113,7 +116,12 @@ class AttendancePlayerController extends Controller
             'periodText' => $periodText,
             'rows' => $rows,
             'summary' => $summary,
-            'labels' => app(AttendanceStatusCatalog::class)->labels(),
+            // The totals: unexcused, excused, lates, early departures, then each custom absence code.
+            'shown' => [
+                'absent_unexcused', 'absent_excused', 'late', 'left_early',
+                ...array_diff($this->catalog->keysBehavingAs('absent_unexcused', 'absent_excused'), ['absent_unexcused', 'absent_excused']),
+            ],
+            'labels' => $this->catalog->labels(),
         ])->render();
 
         return $this->pdf->stream($html, "attendance-letter-{$player->membership_id}-{$from}-{$to}.pdf", app()->getLocale() === 'ar');

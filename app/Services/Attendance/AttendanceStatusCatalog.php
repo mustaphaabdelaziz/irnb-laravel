@@ -6,6 +6,7 @@ use App\Enums\AttendanceStatus;
 use App\Models\AttendanceCustomStatus;
 use App\Support\AttendanceSettings;
 use App\Support\UiLang;
+use Illuminate\Support\Collection;
 
 /**
  * Every attendance status in one place: the six built-in ones (their code,
@@ -19,7 +20,8 @@ use App\Support\UiLang;
  * absent_unexcused, or not_counted (the session is left out for that player).
  * Every status is still counted and shown on its own in breakdowns.
  *
- * Read once per instance (one query for the custom codes).
+ * Read once per instance: the custom codes are one query; codes, colours
+ * and names also read the settings, which behaviours never need.
  */
 final class AttendanceStatusCatalog
 {
@@ -27,6 +29,12 @@ final class AttendanceStatusCatalog
 
     /** @var array<string, array<string, mixed>>|null */
     private ?array $entries = null;
+
+    /** @var Collection<int, AttendanceCustomStatus>|null */
+    private ?Collection $customs = null;
+
+    /** @var array<string, array{behaviour: string, active: bool}>|null */
+    private ?array $kinds = null;
 
     /**
      * Key => entry (key, code, color, label per locale, behaviour, custom,
@@ -55,7 +63,7 @@ final class AttendanceStatusCatalog
             ];
         }
 
-        foreach (AttendanceCustomStatus::orderBy('sort_order')->orderBy('id')->get() as $custom) {
+        foreach ($this->customs() as $custom) {
             $entries[$custom->key] = [
                 'key' => $custom->key,
                 'code' => $custom->code,
@@ -74,7 +82,7 @@ final class AttendanceStatusCatalog
     /** @return list<string> every status key in order; $activeOnly drops hidden custom codes */
     public function keys(bool $activeOnly = false): array
     {
-        return array_keys(array_filter($this->entries(), fn (array $e) => ! $activeOnly || $e['active']));
+        return array_keys(array_filter($this->kinds(), fn (array $k) => ! $activeOnly || $k['active']));
     }
 
     /**
@@ -88,12 +96,12 @@ final class AttendanceStatusCatalog
     {
         $used = array_flip(array_map('strval', is_array($used) ? $used : iterator_to_array($used, false)));
 
-        return array_keys(array_filter($this->entries(), fn (array $e) => $e['active'] || isset($used[$e['key']])));
+        return array_keys(array_filter($this->kinds(), fn (array $k, string $key) => $k['active'] || isset($used[$key]), ARRAY_FILTER_USE_BOTH));
     }
 
     public function has(string $key): bool
     {
-        return isset($this->entries()[$key]);
+        return isset($this->kinds()[$key]);
     }
 
     /**
@@ -141,7 +149,7 @@ final class AttendanceStatusCatalog
     /** How a status's marks count; an unknown key counts as not_counted. */
     public function behaviour(string $key): string
     {
-        return $this->entries()[$key]['behaviour'] ?? self::NOT_COUNTED;
+        return $this->kinds()[$key]['behaviour'] ?? self::NOT_COUNTED;
     }
 
     /**
@@ -153,7 +161,7 @@ final class AttendanceStatusCatalog
      */
     public function keysBehavingAs(string ...$behaviours): array
     {
-        return array_keys(array_filter($this->entries(), fn (array $e) => in_array($e['behaviour'], $behaviours, true)));
+        return array_keys(array_filter($this->kinds(), fn (array $k) => in_array($k['behaviour'], $behaviours, true)));
     }
 
     /**
@@ -191,6 +199,28 @@ final class AttendanceStatusCatalog
     public function requiresReason(string $key): bool
     {
         return AttendanceStatus::tryFrom($key)?->requiresReason() ?? false;
+    }
+
+    /** @return Collection<int, AttendanceCustomStatus> the custom codes, by sort order then id (one query) */
+    private function customs(): Collection
+    {
+        return $this->customs ??= AttendanceCustomStatus::orderBy('sort_order')->orderBy('id')->get();
+    }
+
+    /** @return array<string, array{behaviour: string, active: bool}> every status key, in order, with how it counts */
+    private function kinds(): array
+    {
+        if ($this->kinds === null) {
+            $this->kinds = [];
+            foreach (AttendanceStatus::values() as $status) {
+                $this->kinds[$status] = ['behaviour' => $status, 'active' => true];
+            }
+            foreach ($this->customs() as $custom) {
+                $this->kinds[$custom->key] = ['behaviour' => $custom->behaviour, 'active' => $custom->is_active];
+            }
+        }
+
+        return $this->kinds;
     }
 
     /** @return array<string, string> per locale: its own name, else the first other name given, else the code */

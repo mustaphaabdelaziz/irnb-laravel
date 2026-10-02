@@ -16,7 +16,11 @@ use Illuminate\Support\Facades\DB;
  * Only held sessions count: a cancelled session keeps its marks but is
  * ignored, a planned one has none. "Expected" is the number of marks a player
  * has in those sessions, so later roster changes never rewrite history.
- * Counts are the raw marks; the discipline rules change the score only.
+ * Counts are the raw marks, one per status (custom codes included); the
+ * discipline rules change the score only. A custom code counts as its
+ * behaviour (AttendanceStatusCatalog): `scored` folds the marks into the six
+ * built-in statuses, and a not_counted mark leaves that session out for the
+ * player (not expected, not scored, not in streaks).
  *
  * Every method runs a fixed number of grouped queries, whatever the roster
  * size, with the query builder only (same SQL on sqlite and MySQL).
@@ -38,12 +42,15 @@ final class AttendanceStats
 
     public const RANKING_SIZE = 5;
 
-    /** Statuses that cost the player the session's time (missed hours). */
+    /** Behaviours that cost the player the session's time (missed hours). */
     public const MISSED = ['absent_excused', 'absent_unexcused', 'not_training'];
 
     private ?array $settings = null;
 
-    public function __construct(private readonly PreseasonProgress $preseason) {}
+    public function __construct(
+        private readonly PreseasonProgress $preseason,
+        private readonly AttendanceStatusCatalog $catalog,
+    ) {}
 
     /** @return array<int, array<string, mixed>> keyed and ordered by player id */
     public function players(string $from, string $to, ?int $categoryId = null, ?int $playerId = null): array
@@ -78,7 +85,7 @@ final class AttendanceStats
         $rows = [];
         foreach ($counts as $id => $byStatus) {
             $base = $this->base($byStatus, $lateMinutes[$id] ?? 0, $missed[$id] ?? 0);
-            $score = self::score($base['counts'], $longLates[$id] ?? 0, $points, $settings['rules']);
+            $score = self::score($base['scored'], $longLates[$id] ?? 0, $points, $settings['rules']);
             $rows[$id] = [
                 'player_id' => $id,
                 ...$base,
@@ -99,13 +106,13 @@ final class AttendanceStats
     /** Totals over players() rows; the score adds each player's own score. */
     public function summarize(array $rows): array
     {
-        $counts = array_fill_keys(AttendanceStatus::values(), 0);
+        $counts = array_fill_keys($this->catalog->keys(), 0);
         $lateMinutes = 0;
         $missedMinutes = 0;
         $score = 0.0;
         foreach ($rows as $row) {
             foreach ($counts as $status => $n) {
-                $counts[$status] = $n + $row['counts'][$status];
+                $counts[$status] = $n + ($row['counts'][$status] ?? 0);
             }
             $lateMinutes += $row['late_minutes'];
             $missedMinutes += $row['missed_minutes'];
@@ -128,7 +135,7 @@ final class AttendanceStats
     {
         $labels = self::months($from, $to);
         $index = array_flip($labels);
-        $statuses = array_fill_keys(AttendanceStatus::values(), array_fill(0, count($labels), 0));
+        $statuses = array_fill_keys($this->catalog->keys(), array_fill(0, count($labels), 0));
 
         $rows = $this->marks($from, $to, $categoryId, $playerId)
             ->selectRaw('substr(training_sessions.date, 1, 7) as ym')
@@ -278,7 +285,8 @@ final class AttendanceStats
     /**
      * Unexcused-absence streaks per player over the period: each player's
      * marks in held sessions in session order (date, start time, id); a run
-     * of absent_unexcused marks is a streak and any other status ends it.
+     * of unexcused marks (absent_unexcused or a custom code behaving so) is a
+     * streak, a not_counted mark is skipped, and any other status ends it.
      * `current` is the run that ends at the player's last mark of the period,
      * `longest` the longest run, `last_date` that last mark's date. Only real
      * unexcused marks count (a long late scored as unexcused does not). One
@@ -295,11 +303,16 @@ final class AttendanceStats
             ->orderBy('training_sessions.id')
             ->select('attendances.player_id', 'attendances.status', 'training_sessions.date');
 
+        $unexcused = array_flip($this->catalog->keysBehavingAs(AttendanceStatus::AbsentUnexcused->value));
+        $skipped = array_flip($this->catalog->keysBehavingAs(AttendanceStatusCatalog::NOT_COUNTED));
         $streaks = [];
         foreach ($marks->cursor() as $mark) {
+            if (isset($skipped[$mark->status])) {
+                continue;
+            }
             $id = (int) $mark->player_id;
             $row = $streaks[$id] ?? ['current' => 0, 'longest' => 0, 'last_date' => null];
-            $row['current'] = $mark->status === AttendanceStatus::AbsentUnexcused->value ? $row['current'] + 1 : 0;
+            $row['current'] = isset($unexcused[$mark->status]) ? $row['current'] + 1 : 0;
             $row['longest'] = max($row['longest'], $row['current']);
             $row['last_date'] = $mark->date;
             $streaks[$id] = $row;
@@ -316,7 +329,7 @@ final class AttendanceStats
      * unexcused absence. A rule set to 0 is off. Left-early marks are never
      * touched.
      *
-     * @param  array<string, int>  $counts  raw marks per status
+     * @param  array<string, int>  $counts  marks per built-in status as they count (a row's `scored`)
      */
     public static function score(array $counts, int $longLates, array $points, array $rules): float
     {
@@ -384,8 +397,8 @@ final class AttendanceStats
             $rows,
             fn (array $row) => $row['expected'] >= self::RANKING_MIN_EXPECTED && $row['score_pct'] !== null,
         ));
-        usort($eligible, fn (array $a, array $b) => [$b['score_pct'], $a['counts']['absent_unexcused'], $a['counts']['late'], $a['player_id']]
-            <=> [$a['score_pct'], $b['counts']['absent_unexcused'], $b['counts']['late'], $b['player_id']]);
+        usort($eligible, fn (array $a, array $b) => [$b['score_pct'], self::scored($a, 'absent_unexcused'), self::scored($a, 'late'), $a['player_id']]
+            <=> [$a['score_pct'], self::scored($b, 'absent_unexcused'), self::scored($b, 'late'), $b['player_id']]);
 
         foreach ($eligible as $i => $row) {
             $eligible[$i]['rank'] = $i + 1;
@@ -407,8 +420,8 @@ final class AttendanceStats
         $topIds = array_column($top, 'player_id');
 
         $worst = array_values(array_filter($ranked, fn (array $row) => ! in_array($row['player_id'], $topIds, true)));
-        usort($worst, fn (array $a, array $b) => [$a['score_pct'], $b['counts']['absent_unexcused'], $b['counts']['late'], $a['player_id']]
-            <=> [$b['score_pct'], $a['counts']['absent_unexcused'], $a['counts']['late'], $b['player_id']]);
+        usort($worst, fn (array $a, array $b) => [$a['score_pct'], self::scored($b, 'absent_unexcused'), self::scored($b, 'late'), $a['player_id']]
+            <=> [$b['score_pct'], self::scored($a, 'absent_unexcused'), self::scored($a, 'late'), $b['player_id']]);
 
         return [
             'min_expected' => self::RANKING_MIN_EXPECTED,
@@ -467,7 +480,7 @@ final class AttendanceStats
     /** @return array<int, int> minutes missed (absences and not-training × session length) per group key */
     private function missedMinutes(Builder $marks, string $key): array
     {
-        $rows = $marks->whereIn('attendances.status', self::MISSED)
+        $rows = $marks->whereIn('attendances.status', $this->catalog->keysBehavingAs(...self::MISSED))
             ->select($key.' as group_key', 'training_sessions.start_time', 'training_sessions.end_time')
             ->selectRaw('count(*) as total')
             ->groupBy($key, 'training_sessions.start_time', 'training_sessions.end_time')
@@ -482,23 +495,42 @@ final class AttendanceStats
         return $minutes;
     }
 
-    /** Counts of all six statuses, % of expected, late minutes and missed time. */
+    /**
+     * Raw counts of every status (custom codes included), the marks as they
+     * count (`scored`: folded into the six built-in statuses, not_counted
+     * dropped), expected = sum of scored, each status's % of expected (null
+     * for a not_counted status, never expected), late minutes and missed time.
+     */
     private function base(array $byStatus, int $lateMinutes, int $missedMinutes): array
     {
         $counts = [];
-        foreach (AttendanceStatus::values() as $status) {
+        foreach ($this->catalog->keys() as $status) {
             $counts[$status] = (int) ($byStatus[$status] ?? 0);
         }
-        $expected = array_sum($counts);
+        $scored = $this->catalog->fold($counts);
+        $expected = array_sum($scored);
+        $pct = [];
+        foreach ($counts as $status => $n) {
+            $pct[$status] = $expected > 0 && $this->catalog->behaviour($status) !== AttendanceStatusCatalog::NOT_COUNTED
+                ? round($n / $expected * 100, 1)
+                : null;
+        }
 
         return [
             'expected' => $expected,
             'counts' => $counts,
-            'pct' => array_map(fn (int $n) => $expected > 0 ? round($n / $expected * 100, 1) : null, $counts),
+            'scored' => $scored,
+            'pct' => $pct,
             'late_minutes' => $lateMinutes,
             'missed_minutes' => $missedMinutes,
             'missed_hours' => round($missedMinutes / 60, 1),
         ];
+    }
+
+    /** A built-in status's scored count in a row (rows built elsewhere may only carry `counts`). */
+    private static function scored(array $row, string $status): int
+    {
+        return (int) (($row['scored'] ?? $row['counts'])[$status] ?? 0);
     }
 
     /** The attendance settings, read once per instance (AtRisk reads the alert thresholds here). */

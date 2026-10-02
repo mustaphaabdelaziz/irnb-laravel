@@ -25,6 +25,13 @@ use Illuminate\Support\Facades\DB;
  */
 final class SessionGenerator
 {
+    /**
+     * Tries for a generation transaction that hits a deadlock (two requests
+     * generating overlapping months on MySQL). Laravel retries only at the
+     * outermost transaction: a nested one rethrows the deadlock to it.
+     */
+    private const DEADLOCK_ATTEMPTS = 3;
+
     /** Generates one category's month, unless it is marked as generated from the current inputs. */
     public function forMonth(int $categoryId, int $year, int $month): int
     {
@@ -102,11 +109,15 @@ final class SessionGenerator
 
         $closures = ClubClosure::where('start_date', '<=', $rangeTo)->where('end_date', '>=', $rangeFrom)->get(['start_date', 'end_date']);
 
+        // The outermost transaction here: a deadlock inside generate()'s own
+        // (nested) transaction is rethrown up to this one, which retries the
+        // whole range. Each retry is idempotent (insertOrIgnore, link only
+        // what is unlinked, mark only at the captured version).
         DB::transaction(function () use ($pending, $closures, $version) {
             foreach ($pending as [$categoryId, $first, $active]) {
                 $this->generate($categoryId, $first, $active, $closures, $version);
             }
-        });
+        }, self::DEADLOCK_ATTEMPTS);
     }
 
     /**
@@ -190,6 +201,6 @@ final class SessionGenerator
             GenerationMarks::mark($categoryId, $first->format('Y-m'), $version);
 
             return $inserted;
-        });
+        }, self::DEADLOCK_ATTEMPTS); // outermost when called from forMonth(); nested (attempts unused) from forRange()
     }
 }

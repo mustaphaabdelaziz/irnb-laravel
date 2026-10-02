@@ -33,6 +33,17 @@ class AttendanceCalendarController extends Controller
     /** The timeline grows one month at a time up to this many months. */
     public const TIMELINE_MAX_MONTHS = 12;
 
+    /**
+     * The props each view method returns, besides `view` (Index.vue's
+     * VIEW_PROPS lists the same keys).
+     */
+    private const VIEW_PROPS = [
+        'month' => ['categoryId', 'month', 'sessions', 'preseason', 'hasSchedule'],
+        'week' => ['categoryId', 'month', 'week', 'sessions'],
+        'agenda' => ['categoryId', 'month', 'sessions'],
+        'timeline' => ['categoryId', 'kind', 'month', 'from', 'to', 'events'],
+    ];
+
     public function __construct(
         private readonly SessionGenerator $generator,
         private readonly CalendarFeed $feed,
@@ -58,12 +69,22 @@ class AttendanceCalendarController extends Controller
                 ->map(fn (Category $c) => ['id' => $c->id, 'name' => $c->localized_name])->values();
         };
 
-        $props = match ($view) {
-            'week' => $this->week($data),
-            'agenda' => $this->agenda($data),
-            'timeline' => $this->timeline($data),
-            default => $this->month($data, $categories),
+        // The view's props are computed together (generation first) on the
+        // first one resolved, and only if one is asked for: a partial reload
+        // of other props (the add-session dialog's roster) generates nothing.
+        $computed = null;
+        $compute = function () use (&$computed, $view, $data, $categories): array {
+            return $computed ??= match ($view) {
+                'week' => $this->week($data),
+                'agenda' => $this->agenda($data),
+                'timeline' => $this->timeline($data),
+                default => $this->month($data, $categories),
+            };
         };
+        $props = [];
+        foreach (self::VIEW_PROPS[$view] as $key) {
+            $props[$key] = fn () => $compute()[$key];
+        }
 
         return Inertia::render('Attendance/Index', [
             'view' => $view,

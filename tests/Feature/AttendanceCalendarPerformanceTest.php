@@ -103,6 +103,43 @@ class AttendanceCalendarPerformanceTest extends TestCase
         $this->assertArrayNotHasKey('attendanceCodes', $props);
     }
 
+    /**
+     * Opening the add-session dialog reloads only the roster checkboxes
+     * (Index.vue openCreate()): the view's sessions are neither generated
+     * nor read again.
+     */
+    #[Test]
+    #[DataProvider('views')]
+    public function reloading_only_the_roster_props_skips_the_views_sessions(array $params): void
+    {
+        if ($params['view'] === 'month') {
+            $params['category_id'] = $this->categories[2]->id;
+        }
+        $version = $this->actingAs($this->user)->get(route('attendance.index', $params))->viewData('page')['version'];
+
+        $sql = [];
+        DB::listen(function ($query) use (&$sql) {
+            $sql[] = $query->sql;
+        });
+        $props = $this->actingAs($this->user)
+            ->get(route('attendance.index', $params), [
+                'X-Inertia' => 'true',
+                'X-Inertia-Version' => (string) $version,
+                'X-Inertia-Partial-Component' => 'Attendance/Index',
+                'X-Inertia-Partial-Data' => 'playerStatuses,rosterStatusIds',
+            ])
+            ->assertOk()
+            ->json('props');
+
+        $this->assertArrayHasKey('playerStatuses', $props);
+        $this->assertArrayHasKey('rosterStatusIds', $props);
+        $this->assertArrayNotHasKey('sessions', $props);
+        $this->assertArrayNotHasKey('events', $props);
+        $touched = array_filter($sql, fn (string $q) => preg_match('/training_s|session_generation|club_closures|preseason/', $q) === 1);
+        $this->assertSame([], array_values($touched));
+        $this->assertLessThanOrEqual(10, count($sql));
+    }
+
     /** @return array{queries: int, writes: array<int, string>, transactions: int} */
     private function measure(array $params): array
     {

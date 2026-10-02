@@ -31,8 +31,8 @@ final class Roster
     /** @var list<int>|null the settings' default set, read once per instance */
     private ?array $defaultStatusIds = null;
 
-    /** @var array{registered: ?int, left: ?int}|null */
-    private ?array $codedStatuses = null;
+    /** @var array<int, ?string>|null every player status id => its code, read once per instance */
+    private ?array $statuses = null;
 
     /**
      * A player has one category, so several categories never list anyone twice.
@@ -75,12 +75,20 @@ final class Roster
             ->get(self::COLUMNS);
     }
 
-    /** @return list<int> the session's roster set: its own, else the settings' default */
+    /**
+     * The session's roster set: its own statuses that still exist, else (none
+     * set, or all since deleted) the settings' default.
+     *
+     * @return list<int>
+     */
     public function statusIdsFor(TrainingSession $session): array
     {
-        $own = $session->roster_status_ids;
+        $own = array_values(array_filter(
+            array_map('intval', is_array($session->roster_status_ids) ? $session->roster_status_ids : []),
+            fn (int $id) => array_key_exists($id, $this->statuses()),
+        ));
 
-        return is_array($own) && $own !== [] ? array_values(array_map('intval', $own)) : $this->defaultStatusIds();
+        return $own !== [] ? $own : $this->defaultStatusIds();
     }
 
     /** @return list<int> */
@@ -92,14 +100,14 @@ final class Roster
     /** @return array{registered: ?int, left: ?int} */
     private function codedStatuses(): array
     {
-        if ($this->codedStatuses === null) {
-            $ids = PlayerStatus::whereIn('code', ['registered', 'left'])->pluck('id', 'code');
-            $this->codedStatuses = [
-                'registered' => isset($ids['registered']) ? (int) $ids['registered'] : null,
-                'left' => isset($ids['left']) ? (int) $ids['left'] : null,
-            ];
-        }
+        $byCode = array_flip(array_filter($this->statuses(), fn (?string $code) => $code !== null));
 
-        return $this->codedStatuses;
+        return ['registered' => $byCode['registered'] ?? null, 'left' => $byCode['left'] ?? null];
+    }
+
+    /** @return array<int, ?string> */
+    private function statuses(): array
+    {
+        return $this->statuses ??= PlayerStatus::pluck('code', 'id')->mapWithKeys(fn (?string $code, $id) => [(int) $id => $code])->all();
     }
 }

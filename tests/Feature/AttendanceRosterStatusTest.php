@@ -174,4 +174,20 @@ class AttendanceRosterStatusTest extends TestCase
         $this->actingAs($this->admin())->get(route('attendance.sessions.show', $session))
             ->assertInertia(fn (Assert $page) => $page->has('candidates', 0));
     }
+
+    #[Test]
+    public function a_session_set_whose_statuses_were_all_deleted_falls_back_to_the_default(): void
+    {
+        $u15 = $this->category();
+        $registered = $this->player($u15, ['status_id' => $this->statusId('registered')]);
+        $gone = PlayerStatus::create(['name' => 'Temporaire', 'sort_order' => 99, 'is_active' => true]);
+        $mixed = $this->makeSession($u15, ['roster_status_ids' => [$gone->id, $this->statusId('paused')]]);
+        $orphan = $this->makeSession($u15, ['date' => '2026-10-07', 'roster_status_ids' => [$gone->id]]);
+        $gone->delete();
+        $roster = app(Roster::class);
+
+        $this->assertSame([$this->statusId('paused')], $roster->statusIdsFor($mixed->fresh()));
+        $this->assertSame([$this->statusId('registered')], $roster->statusIdsFor($orphan->fresh()));
+        $this->assertSame([$registered->id], $this->rosterIds($orphan));
+    }
 }

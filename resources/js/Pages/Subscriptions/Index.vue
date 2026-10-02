@@ -31,7 +31,7 @@ const kindFilter = ref(asList(props.filters?.kind));
 // A one-off charge has no season, so a season filter would hide them all:
 // with only "exceptional" checked the season picker goes away.
 const onlyExceptional = computed(() => kindFilter.value.length === 1 && kindFilter.value[0] === 'exceptional');
-watch(onlyExceptional, (only) => { if (only) yearFilter.value = []; });
+watch(onlyExceptional, (only) => { if (only) yearFilter.value = []; }, { immediate: true });
 const branchOptions = computed(() => props.branches.map((b) => ({ value: b.id, label: b.localized_name || b.name })));
 const kindOptions = computed(() => [
     { value: 'annual', label: t('subscription_kind_annual') },
@@ -113,15 +113,15 @@ function destroy() {
             <div class="flex flex-wrap items-end gap-3">
                 <div>
                     <label class="block text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('branch') }}</label>
-                    <MultiSelectFilter v-model="branchFilter" :options="branchOptions" :placeholder="t('all_branches')" class="mt-1 w-48" />
+                    <MultiSelectFilter v-model="branchFilter" collapse-all :options="branchOptions" :placeholder="t('all_branches')" class="mt-1 w-48" />
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('subscription_kind') }}</label>
-                    <MultiSelectFilter v-model="kindFilter" :options="kindOptions" :placeholder="t('all')" class="mt-1 w-44" />
+                    <MultiSelectFilter v-model="kindFilter" collapse-all :options="kindOptions" :placeholder="t('all')" class="mt-1 w-44" />
                 </div>
                 <div v-if="!onlyExceptional">
                     <label class="block text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('season') }}</label>
-                    <MultiSelectFilter v-model="yearFilter" :options="seasonOptions" :placeholder="t('all')" class="mt-1 w-44" />
+                    <MultiSelectFilter v-model="yearFilter" collapse-all :options="seasonOptions" :placeholder="t('all')" class="mt-1 w-44" />
                 </div>
             </div>
 

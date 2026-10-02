@@ -131,7 +131,11 @@ const singleCategory = computed(() => (categoryFilter.value.length === 1 ? categ
 // Options of the select filters.
 const categoryOptions = computed(() => props.categories.map((c) => ({ value: c.id, label: c.localized_name || c.name })));
 const branchOptions = computed(() => props.branches.map((b) => ({ value: b.id, label: b.localized_name || b.name })));
-const statusOptions = computed(() => props.playerStatuses.map((s) => ({ value: s.id, label: s.localized_name || s.name })));
+// "none" = players with no status at all; mixable with the statuses.
+const statusOptions = computed(() => [
+    ...props.playerStatuses.map((s) => ({ value: s.id, label: s.localized_name || s.name })),
+    { value: 'none', label: t('filter.no_status') },
+]);
 const leftStatus = computed(() => props.playerStatuses.find((s) => s.code === 'left') || null);
 const statusPlaceholder = computed(() => (leftStatus.value
     ? t('filter.status_all_but_left', { name: leftStatus.value.localized_name || leftStatus.value.name })
@@ -159,7 +163,7 @@ const categoryChips = computed(() => props.categoryStats.map((s) => ({
     key: s.category_id ?? '', label: s.name || t('uncategorized'), count: s.count,
 })));
 const statusChips = computed(() => props.statusStats.map((s) => ({
-    key: s.status_id ?? '', label: s.name || t('uncategorized'), count: s.count,
+    key: s.status_id ?? 'none', label: s.status_id ? s.name : t('filter.no_status'), count: s.count,
 })));
 const positionChips = computed(() => props.positionStats.map((s) => ({
     key: s.position_id ?? '', label: s.name || t('unassigned'), count: s.count,
@@ -362,9 +366,9 @@ function runBulk() {
                 <div class="w-full sm:w-64">
                     <SearchInput v-model="search" :loading="filtering" :placeholder="t('search_for_member')" />
                 </div>
-                <MultiSelectFilter v-model="categoryFilter" :options="categoryOptions" :label="t('category')" :placeholder="t('all_categories')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
-                <MultiSelectFilter v-if="branches.length" v-model="branchFilter" :options="branchOptions" :label="t('branch')" :placeholder="t('all_branches')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
-                <MultiSelectFilter v-model="lastnameFilter" :options="familyOptions" :label="t('filter_by_lastname')" :placeholder="t('filter_by_lastname')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
+                <MultiSelectFilter v-model="categoryFilter" collapse-all :options="categoryOptions" :label="t('category')" :placeholder="t('all_categories')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
+                <MultiSelectFilter v-if="branches.length" v-model="branchFilter" collapse-all :options="branchOptions" :label="t('branch')" :placeholder="t('all_branches')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
+                <MultiSelectFilter v-model="lastnameFilter" collapse-all :options="familyOptions" :label="t('filter_by_lastname')" :placeholder="t('filter_by_lastname')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
                 <MultiSelectFilter v-model="statusFilter" :options="statusOptions" :label="t('status')" :placeholder="statusPlaceholder" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
                 <MultiSelectFilter v-model="bloodGroupFilter" :options="bloodGroups.map((g) => ({ value: g, label: g }))" :label="t('blood_group')" :placeholder="t('all_blood_groups')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
                 <MultiSelectFilter v-model="academicFilter" :options="academicOptions" :label="t('filter.studies')" :placeholder="t('academic_all')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />

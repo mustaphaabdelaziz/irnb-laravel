@@ -138,9 +138,9 @@ function bulkDestroy() {
                 <div class="w-full sm:w-64">
                     <SearchInput v-model="search" :loading="filtering" :placeholder="t('search')" />
                 </div>
-                <MultiSelectFilter v-model="typeFilter" :options="typeOptions" :label="t('type')" :placeholder="`${t('type')}: ${t('all')}`" class="min-w-0 flex-1 sm:w-44 sm:flex-none" />
-                <MultiSelectFilter v-model="financeCategoryFilter" :options="financeCategoryOptions" :label="t('category')" :placeholder="t('all_categories')" class="min-w-0 flex-1 sm:w-52 sm:flex-none" />
-                <MultiSelectFilter v-model="financeAccountFilter" :options="financeAccountOptions" :label="t('cash_register')" :placeholder="t('all_cash_registers')" class="min-w-0 flex-1 sm:w-52 sm:flex-none" />
+                <MultiSelectFilter v-model="typeFilter" collapse-all :options="typeOptions" :label="t('type')" :placeholder="`${t('type')}: ${t('all')}`" class="min-w-0 flex-1 sm:w-44 sm:flex-none" />
+                <MultiSelectFilter v-model="financeCategoryFilter" collapse-all :options="financeCategoryOptions" :label="t('category')" :placeholder="t('all_categories')" class="min-w-0 flex-1 sm:w-52 sm:flex-none" />
+                <MultiSelectFilter v-model="financeAccountFilter" collapse-all :options="financeAccountOptions" :label="t('cash_register')" :placeholder="t('all_cash_registers')" class="min-w-0 flex-1 sm:w-52 sm:flex-none" />
             </div>
 
             <div v-if="selected.length" class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-primary-50 px-4 py-2.5 ring-1 ring-primary-200 dark:bg-primary-900/20 dark:ring-primary-800">

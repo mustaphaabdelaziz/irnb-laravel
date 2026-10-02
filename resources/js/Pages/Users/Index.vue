@@ -25,12 +25,16 @@ const props = defineProps({
 });
 
 const search = ref(props.filters?.search || '');
-// Multi-select filters: a user matching any checked value is listed.
-const statusFilter = ref(asList(props.filters?.status));
+// Multi-select filters: OR within one, AND across. Approval and activity are
+// separate (an old ?status= link is mapped onto them by the server).
+const approvalFilter = ref(asList(props.filters?.approval));
+const activityFilter = ref(asList(props.filters?.activity));
 const roleFilter = ref(asList(props.filters?.role));
-const statusOptions = computed(() => [
+const approvalOptions = computed(() => [
     { value: 'pending', label: t('pending_approval') },
     { value: 'approved', label: t('approved') },
+]);
+const activityOptions = computed(() => [
     { value: 'active', label: t('active') },
     { value: 'inactive', label: t('inactive') },
 ]);
@@ -42,7 +46,8 @@ const deleteId = ref(null);
 
 const { loading: filtering } = useListFilters('users.index', () => ({
     search: search.value,
-    status: statusFilter.value,
+    approval: approvalFilter.value,
+    activity: activityFilter.value,
     role: roleFilter.value,
 }), { only: ['users', 'filters'] });
 
@@ -103,8 +108,9 @@ function initial(user) {
                 <div class="w-full sm:w-64">
                     <SearchInput v-model="search" :loading="filtering" :placeholder="t('search')" />
                 </div>
-                <MultiSelectFilter v-model="statusFilter" :options="statusOptions" :label="t('status')" :placeholder="`${t('status')}: ${t('all')}`" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
-                <MultiSelectFilter v-model="roleFilter" :options="roleOptions" :label="t('role')" :placeholder="`${t('role')}: ${t('all')}`" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
+                <MultiSelectFilter v-model="approvalFilter" collapse-all :options="approvalOptions" :label="t('filter.approval')" :placeholder="`${t('filter.approval')}: ${t('all')}`" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
+                <MultiSelectFilter v-model="activityFilter" collapse-all :options="activityOptions" :label="t('filter.activity')" :placeholder="`${t('filter.activity')}: ${t('all')}`" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
+                <MultiSelectFilter v-model="roleFilter" collapse-all :options="roleOptions" :label="t('role')" :placeholder="`${t('role')}: ${t('all')}`" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
             </div>
 
             <!-- Table -->

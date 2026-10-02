@@ -9,6 +9,10 @@ import { useI18n } from 'vue-i18n';
  * v-model is a list of strings (option values are compared as strings), kept
  * in option order so the query string stays stable. No dependency: the app
  * runs offline, and native checkboxes give keyboard + screen reader support.
+ *
+ * Long selections make long URLs (and the server refuses more than 500
+ * values), so: with `collapseAll`, checking every option emits [] (= no
+ * filter, the same rows), and at most `maxSelected` values can be checked.
  */
 const props = defineProps({
     modelValue: { type: Array, default: () => [] },
@@ -21,6 +25,12 @@ const props = defineProps({
     placeholder: { type: String, default: '' },
     // A search box appears once the list is longer than this.
     searchThreshold: { type: Number, default: 8 },
+    // Every option checked means "no filter": emit []. Leave off where all
+    // options together do NOT cover every row (e.g. document problems, or a
+    // status filter whose empty value has its own default).
+    collapseAll: { type: Boolean, default: false },
+    // Upper bound on checked values (keeps the URL short; server cap is 500).
+    maxSelected: { type: Number, default: 200 },
     disabled: { type: Boolean, default: false },
 });
 const emit = defineEmits(['update:modelValue']);
@@ -34,6 +44,10 @@ const root = ref(null);
 const button = ref(null);
 const panel = ref(null);
 const searchBox = ref(null);
+// Flip the panel to the other edge when it would leave the viewport.
+const alignEnd = ref(false);
+// Shown when a click would go past maxSelected.
+const limitHit = ref(false);
 
 const selected = computed(() => new Set((props.modelValue || []).map(String)));
 
@@ -73,19 +87,32 @@ const summary = computed(() => {
     return props.label ? `${props.label}: ${n}` : n;
 });
 
+// Option order first; values with no option (stale ids from an old link)
+// are kept at the end so a click elsewhere does not silently drop them.
+// Returns false (and emits nothing) when the set is over the limit.
 function emitSet(set) {
-    // Option order first; values with no option (stale ids from an old link)
-    // are kept at the end so a click elsewhere does not silently drop them.
     const known = props.options.map((o) => String(o.value)).filter((v) => set.has(v));
     const unknown = [...set].filter((v) => !props.options.some((o) => String(o.value) === v));
+    if (props.collapseAll && known.length === props.options.length && !unknown.length) {
+        limitHit.value = false;
+        emit('update:modelValue', []);
+        return true;
+    }
+    if (known.length + unknown.length > props.maxSelected) {
+        limitHit.value = true;
+        return false;
+    }
+    limitHit.value = false;
     emit('update:modelValue', [...known, ...unknown]);
+    return true;
 }
 
-function toggle(option) {
+function toggle(option, event) {
     const next = new Set(selected.value);
     const value = String(option.value);
     next.has(value) ? next.delete(value) : next.add(value);
-    emitSet(next);
+    // Refused: put the native checkbox back to what the model says.
+    if (!emitSet(next) && event?.target) event.target.checked = selected.value.has(value);
 }
 
 function selectAllVisible() {
@@ -95,18 +122,31 @@ function selectAllVisible() {
 }
 
 function clear() {
+    limitHit.value = false;
     emit('update:modelValue', []);
 }
 
 function show() {
     if (props.disabled) return;
+    alignEnd.value = false;
     open.value = true;
-    nextTick(() => (searchable.value ? searchBox.value : firstCheckbox())?.focus());
+    nextTick(() => {
+        fitPanel();
+        (searchable.value ? searchBox.value : firstCheckbox())?.focus();
+    });
+}
+
+function fitPanel() {
+    const rect = panel.value?.getBoundingClientRect();
+    if (!rect) return;
+    const margin = 8;
+    if (rect.right > window.innerWidth - margin || rect.left < margin) alignEnd.value = true;
 }
 
 function close(refocus = false) {
     open.value = false;
     query.value = '';
+    limitHit.value = false;
     if (refocus) button.value?.focus();
 }
 
@@ -176,7 +216,8 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDown,
             ref="panel"
             role="group"
             :aria-label="label || placeholder"
-            class="absolute start-0 z-30 mt-1 w-max min-w-full max-w-[min(22rem,90vw)] rounded-lg border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900"
+            class="absolute z-30 mt-1 w-max min-w-full max-w-[min(22rem,calc(100vw-2rem))] rounded-lg border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900"
+            :class="alignEnd ? 'end-0' : 'start-0'"
             @keydown="onPanelKey"
         >
             <input
@@ -196,6 +237,10 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDown,
                     :disabled="!selected.size" @click="clear">{{ t('filter.clear') }}</button>
             </div>
 
+            <p v-if="limitHit" role="status" class="border-b border-amber-100 bg-amber-50 px-3 py-1.5 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-900/30 dark:text-amber-200">
+                {{ t('filter.too_many', { max: maxSelected }) }}
+            </p>
+
             <ul class="max-h-64 overflow-y-auto py-1">
                 <template v-for="row in rows" :key="row.key">
                     <li v-if="row.heading" class="px-3 pb-1 pt-2 text-[0.7rem] font-bold uppercase tracking-wide text-slate-400">{{ row.heading }}</li>
@@ -206,7 +251,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDown,
                                 type="checkbox"
                                 class="h-4 w-4 shrink-0 rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800"
                                 :checked="selected.has(String(row.option.value))"
-                                @change="toggle(row.option)"
+                                @change="toggle(row.option, $event)"
                             />
                             <span class="min-w-0 flex-1 truncate">{{ row.option.label }}</span>
                         </label>

@@ -7,6 +7,7 @@ use App\Models\TrainingSchedule;
 use App\Services\Activity\ActivityPeriod;
 use App\Services\Attendance\AtRisk;
 use App\Services\Attendance\CalendarFeed;
+use App\Services\Attendance\GenerationMarks;
 use App\Services\Attendance\SessionGenerator;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
@@ -119,8 +120,11 @@ final class AttendanceCard
             return;
         }
 
-        DB::transaction(function () use ($missing, $today) {
+        DB::transaction(function () use ($missing, $today, $date) {
             foreach ($missing as $categoryId) {
+                // A slot is missing although the month may be marked as
+                // generated (changed outside the app): forget the mark first.
+                GenerationMarks::forgetSlots([$categoryId], [$date]);
                 $this->generator->forMonth($categoryId, $today->year, $today->month);
             }
         });

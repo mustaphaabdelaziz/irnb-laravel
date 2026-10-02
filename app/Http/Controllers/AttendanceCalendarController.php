@@ -12,6 +12,7 @@ use App\Services\Attendance\PreseasonProgress;
 use App\Services\Attendance\SessionGenerator;
 use App\Support\AttendanceSettings;
 use Carbon\CarbonImmutable;
+use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
@@ -22,7 +23,8 @@ use Inertia\Response;
  * The attendance calendar: one route (`attendance.index`, gated as view by
  * its name) with a `view` query parameter. Month shows one category; the
  * other views show every category and first generate the shown range for
- * all of them (the generator is idempotent).
+ * all of them (the generator is idempotent, and skips months already
+ * generated from the current inputs).
  */
 class AttendanceCalendarController extends Controller
 {
@@ -49,8 +51,12 @@ class AttendanceCalendarController extends Controller
             'kind' => ['nullable', Rule::enum(SessionKind::class)],
         ]);
         $view = $data['view'] ?? 'month';
-        $categories = Category::orderBy('id')->get()
-            ->map(fn (Category $c) => ['id' => $c->id, 'name' => $c->localized_name])->values();
+        // Lazy, so a partial reload while navigating a view skips them (see Index.vue).
+        $list = null;
+        $categories = function () use (&$list): Collection {
+            return $list ??= Category::orderBy('id')->get()
+                ->map(fn (Category $c) => ['id' => $c->id, 'name' => $c->localized_name])->values();
+        };
 
         $props = match ($view) {
             'week' => $this->week($data),
@@ -62,18 +68,19 @@ class AttendanceCalendarController extends Controller
         return Inertia::render('Attendance/Index', [
             'view' => $view,
             'categories' => $categories,
-            'attendanceCodes' => app(AttendanceStatusCatalog::class)->codes(),
-            // The add-session dialog's roster checkboxes, pre-checked with the settings' default set.
-            'playerStatuses' => fn () => PlayerStatus::options(),
-            'rosterStatusIds' => fn () => AttendanceSettings::rosterStatusIds(),
+            'attendanceCodes' => fn () => app(AttendanceStatusCatalog::class)->codes(),
+            // The add-session dialog's roster checkboxes, pre-checked with the settings' default
+            // set: optional, fetched only when the dialog first opens (see Index.vue openCreate()).
+            'playerStatuses' => Inertia::optional(fn () => PlayerStatus::options()),
+            'rosterStatusIds' => Inertia::optional(fn () => AttendanceSettings::rosterStatusIds()),
             ...$props,
         ]);
     }
 
     /** One category's month. Opening it generates its planned sessions. */
-    private function month(array $data, Collection $categories): array
+    private function month(array $data, Closure $categories): array
     {
-        $categoryId = isset($data['category_id']) ? (int) $data['category_id'] : data_get($categories->first(), 'id');
+        $categoryId = isset($data['category_id']) ? (int) $data['category_id'] : data_get($categories()->first(), 'id');
         $anchor = $this->monthAnchor($data);
         $props = ['categoryId' => $categoryId, 'month' => $anchor->format('Y-m'), 'sessions' => [], 'preseason' => null, 'hasSchedule' => false];
 

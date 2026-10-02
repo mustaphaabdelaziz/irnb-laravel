@@ -142,6 +142,9 @@ class AttendanceSettingsController extends Controller
         ]);
 
         ClubClosure::create($data);
+        // A query-builder delete fires no model events: the generation marks
+        // of these months are forgotten only by ClubClosure's saved event
+        // above. Keep the two together.
         TrainingSession::unmarkedPlanned()
             ->where('kind', SessionKind::Regular->value)
             ->whereNull('moved_from')
@@ -243,6 +246,10 @@ class AttendanceSettingsController extends Controller
      */
     private function purgeFuturePlanned(TrainingSchedule $schedule): void
     {
+        // A query-builder delete fires no model events: the generation marks
+        // of the schedule's category are forgotten only by TrainingSchedule's
+        // saved/deleted event, which updateSchedule() and destroySchedule()
+        // fire next to this call. Do not call it without one.
         TrainingSession::unmarkedPlanned()
             ->where('schedule_id', $schedule->id)
             ->whereNull('moved_from')

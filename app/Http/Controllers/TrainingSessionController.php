@@ -87,6 +87,8 @@ class TrainingSessionController extends Controller
 
         try {
             DB::transaction(function () use ($session, $ids, $primary, $request) {
+                // Before the sync: a dropped category gets its slot back (pivot syncs fire no model events).
+                $session->forgetGenerationMarks();
                 $session->update(['category_id' => $primary]);
                 $session->categories()->sync($ids);
                 ActivityRecorder::record($request->user(), ActivityAction::TRAINING_SESSION_CATEGORIES_CHANGED, $session, ['count' => count($ids)]);

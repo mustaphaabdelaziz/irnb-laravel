@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\SessionKind;
 use App\Enums\SessionState;
+use App\Services\Attendance\GenerationMarks;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -41,7 +42,31 @@ class TrainingSession extends Model
                 'training_session_id' => $session->id,
                 'category_id' => $session->category_id,
             ]);
+            GenerationMarks::forgetSlots([$session->category_id], [$session->date]);
         });
+
+        // A session that leaves a slot (moved, re-assigned, deleted) may free
+        // it for the generator, in its old and new month, for every category
+        // taking part: those months are generated again on the next view.
+        static::updated(function (TrainingSession $session) {
+            if ($session->wasChanged(['date', 'start_time', 'category_id', 'moved_from'])) {
+                $session->forgetGenerationMarks();
+            }
+        });
+        static::deleting(fn (TrainingSession $session) => $session->forgetGenerationMarks());
+    }
+
+    /** Drops the generation marks of every month and category this session's slot touches. */
+    public function forgetGenerationMarks(): void
+    {
+        GenerationMarks::forgetSlots(
+            [
+                ...DB::table('training_session_category')->where('training_session_id', $this->id)->pluck('category_id')->all(),
+                $this->category_id,
+                $this->getOriginal('category_id'),
+            ],
+            [$this->date, $this->getOriginal('date'), $this->moved_from, $this->getOriginal('moved_from')],
+        );
     }
 
     public function category(): BelongsTo

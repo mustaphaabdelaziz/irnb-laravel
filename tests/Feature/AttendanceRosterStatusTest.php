@@ -148,8 +148,11 @@ class AttendanceRosterStatusTest extends TestCase
         $registered = $this->statusId('registered');
 
         $this->actingAs($admin)->get(route('attendance.index', ['category_id' => $u15->id, 'month' => '2026-10']))
-            ->assertInertia(fn (Assert $page) => $page->where('rosterStatusIds', [$registered])
-                ->where('playerStatuses.0.id', PlayerStatus::orderBy('sort_order')->orderBy('id')->value('id')));
+            // Optional props: left out of the page load, fetched when the add-session dialog opens.
+            ->assertInertia(fn (Assert $page) => $page->missing('playerStatuses')->missing('rosterStatusIds')
+                ->reloadOnly(['playerStatuses', 'rosterStatusIds'], fn (Assert $reload) => $reload
+                    ->where('rosterStatusIds', [$registered])
+                    ->where('playerStatuses.0.id', PlayerStatus::orderBy('sort_order')->orderBy('id')->value('id'))));
 
         $this->actingAs($admin)->get(route('attendance.settings'))
             ->assertInertia(fn (Assert $page) => $page->where('settings.roster_status_ids', [$registered])

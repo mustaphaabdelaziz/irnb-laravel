@@ -7,11 +7,8 @@ use App\Enums\SessionState;
 use App\Models\Attendance;
 use App\Models\Category;
 use App\Models\ClubClosure;
-use App\Models\TrainingSchedule;
 use App\Models\TrainingSession;
-use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Sessions shaped for the calendar views: every category taking part
@@ -25,23 +22,10 @@ final class CalendarFeed
         private readonly PreseasonProgress $preseason,
     ) {}
 
-    /** Generates every category's planned sessions for each month the range touches (idempotent). */
+    /** Generates every category's planned sessions for each month the range touches (idempotent, read-only once generated). */
     public function generateAll(string $from, string $to): void
     {
-        // Only categories with a schedule overlapping the range have anything
-        // to generate; skipping the rest avoids a pointless query per month.
-        $categoryIds = TrainingSchedule::where('valid_from', '<=', $to)
-            ->where(fn ($q) => $q->whereNull('valid_to')->orWhere('valid_to', '>=', $from))
-            ->distinct()->orderBy('category_id')->pluck('category_id');
-        $last = CarbonImmutable::createFromFormat('!Y-m-d', $to)->startOfMonth();
-
-        DB::transaction(function () use ($categoryIds, $from, $last) {
-            for ($month = CarbonImmutable::createFromFormat('!Y-m-d', $from)->startOfMonth(); $month->lessThanOrEqualTo($last); $month = $month->addMonth()) {
-                foreach ($categoryIds as $categoryId) {
-                    $this->generator->forMonth((int) $categoryId, $month->year, $month->month);
-                }
-            }
-        });
+        $this->generator->forRange($from, $to);
     }
 
     /** @return Collection<int, array<string, mixed>> */

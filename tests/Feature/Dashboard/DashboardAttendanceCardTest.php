@@ -94,6 +94,22 @@ class DashboardAttendanceCardTest extends TestCase
     }
 
     #[Test]
+    public function a_missing_training_day_is_generated_even_in_a_month_marked_as_generated(): void
+    {
+        $u15 = $this->category('U15');
+        TrainingSchedule::create(['category_id' => $u15->id, 'weekday' => 2, 'start_time' => '18:00', 'end_time' => '19:30', 'valid_from' => '2026-09-01']);
+        $admin = $this->admin();
+        $this->actingAs($admin)->get(route('attendance.index', ['category_id' => $u15->id, 'month' => '2026-10']))->assertOk();
+        // Removed behind the app's back: no model event forgot the month's mark.
+        DB::table('training_sessions')->where('date', '2026-10-20')->delete();
+
+        $card = $this->membersTab($admin)['attendance'];
+
+        $this->assertCount(1, $card['today']);
+        $this->assertTrue(TrainingSession::where('category_id', $u15->id)->where('date', '2026-10-20')->exists());
+    }
+
+    #[Test]
     public function a_training_day_is_generated_when_nobody_opened_the_month_yet(): void
     {
         $u15 = $this->category('U15');

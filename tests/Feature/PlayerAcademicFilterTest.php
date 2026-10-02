@@ -42,8 +42,9 @@ class PlayerAcademicFilterTest extends TestCase
             ->assertInertia(function (Assert $page) use (&$names, $query) {
                 $names = collect($page->toArray()['props']['players']['data'])->pluck('firstname')->sort()->values()->all();
 
+                // A scalar link still works; the echo is always a list.
                 foreach ($query as $key => $value) {
-                    $page->where("filters.{$key}", $value);
+                    $page->where("filters.{$key}", [$value]);
                 }
             });
 

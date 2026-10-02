@@ -32,6 +32,7 @@ use App\Services\Storage\FileStorageService;
 use App\Support\AttendanceSettings;
 use App\Support\CertificateThresholds;
 use App\Support\Export;
+use App\Support\ListFilter;
 use App\Support\Season;
 use App\Support\TransactionTitle;
 use App\Support\UiLang;
@@ -48,6 +49,12 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class PlayerController extends Controller
 {
+    /** List filters that take several values (see applyPlayerFilters). */
+    private const MULTI_FILTERS = [
+        'lastname', 'blood_group', 'category_id', 'status', 'position_id', 'branch_id',
+        'age', 'wilaya_id', 'academic', 'certificate', 'documents',
+    ];
+
     public function index(Request $request): Response
     {
         // Missing documents per row, computed in SQL — the twin of the player
@@ -159,7 +166,8 @@ class PlayerController extends Controller
             'positionStats' => $positionStats,
             'ageStats' => $ageStats,
             'familyStats' => $familyStats,
-            'filters' => $request->only(['search', 'lastname', 'blood_group', 'category_id', 'status', 'position_id', 'branch_id', 'age', 'archived', 'wilaya_id', 'academic', 'certificate', 'documents', 'per_page']),
+            // Multi-select filters come back as lists, whatever shape was sent.
+            'filters' => ListFilter::echo($request, self::MULTI_FILTERS, ['search', 'archived', 'per_page']),
             // Default school year of the academic results printout.
             'currentSchoolYear' => Season::current()->startYear,
         ]);
@@ -624,8 +632,10 @@ class PlayerController extends Controller
         // applyPlayerFilters stays the single definition of what each means.
         $scoped = new Request($filters);
 
+        // The status chart also drops the hide-Left default, so Left keeps a
+        // slice the user can click to bring those players back.
         $query = Player::query();
-        $this->applyPlayerFilters($query, $scoped);
+        $this->applyPlayerFilters($query, $scoped, hideLeftByDefault: $except !== 'status');
 
         return $query->getQuery()->from('players');
     }
@@ -664,94 +674,121 @@ class PlayerController extends Controller
     /**
      * Apply the shared list filters (used by index + export).
      */
-    private function applyPlayerFilters($query, Request $request): void
+    private function applyPlayerFilters($query, Request $request, bool $hideLeftByDefault = true): void
     {
-        if ($request->filled('search')) {
-            $query->search((string) $request->input('search'));
+        // Every select filter may carry several values (ListFilter): OR within
+        // one filter, AND across filters. Each OR group sits in its own nested
+        // where so it never leaks into the filters around it.
+        if ($request->filled('search') && is_string($request->input('search'))) {
+            $query->search($request->input('search'));
         }
 
-        if ($request->filled('lastname')) {
+        if ($lastnames = ListFilter::values($request, 'lastname')) {
             // Picked from the list of names on file, so an exact match: "Ali"
             // must not also bring in "Benali".
-            $query->where('lastname', trim((string) $request->input('lastname')));
+            $query->whereIn('lastname', $lastnames);
         }
 
-        if ($request->filled('blood_group')) {
-            $query->where('health_blood_group_rhesus', $request->input('blood_group'));
+        if ($bloodGroups = ListFilter::values($request, 'blood_group')) {
+            $query->whereIn('health_blood_group_rhesus', $bloodGroups);
         }
 
-        if ($request->filled('category_id')) {
-            $query->where('category_id', $request->input('category_id'));
+        if ($categoryIds = ListFilter::ids($request, 'category_id')) {
+            $query->whereIn('category_id', $categoryIds);
         }
 
-        if ($request->filled('status')) {
-            $query->where('status_id', $request->input('status'));
+        if ($statusIds = ListFilter::ids($request, 'status')) {
+            $query->whereIn('status_id', $statusIds);
+        } elseif ($hideLeftByDefault) {
+            // "Left the club" stays out of sight until a status is picked; a
+            // player with no status at all is still listed. A subquery, so the
+            // list and each chart cost no extra lookup.
+            $query->where(fn ($q) => $q->whereNull('status_id')
+                ->orWhereNotIn('status_id', PlayerStatus::query()->select('id')->where('code', 'left')));
         }
 
-        if ($request->filled('position_id')) {
-            $positionId = (int) $request->input('position_id');
-
-            // "Plays X" means the main position or one of the others. Wrapped in
-            // its own closure so orWhereHas doesn't escape into an OR against
-            // whatever other filters (category, branch, ...) are ANDed around it.
-            $query->where(fn ($q) => $q->where('position_id', $positionId)
-                ->orWhereHas('otherPositions', fn ($p) => $p->where('positions.id', $positionId)));
+        if ($positionIds = ListFilter::ids($request, 'position_id')) {
+            // "Plays X" means the main position or one of the others.
+            $query->where(fn ($q) => $q->whereIn('position_id', $positionIds)
+                ->orWhereHas('otherPositions', fn ($p) => $p->whereIn('positions.id', $positionIds)));
         }
 
-        if ($request->filled('branch_id')) {
-            $query->whereHas('branches', fn ($q) => $q->where('branches.id', $request->input('branch_id')));
+        if ($branchIds = ListFilter::ids($request, 'branch_id')) {
+            $query->whereHas('branches', fn ($q) => $q->whereIn('branches.id', $branchIds));
         }
 
-        if ($request->filled('wilaya_id')) {
+        $wilayas = ListFilter::values($request, 'wilaya_id');
+        if ($wilayas !== []) {
             // "none" finds the players whose wilaya was never set or was "Unknown"
             // before the P2 migration (the list's filter drops empty values, so
-            // "no wilaya" needs a value of its own).
-            $request->input('wilaya_id') === 'none'
-                ? $query->whereNull('wilaya_id')
-                : $query->where('wilaya_id', $request->input('wilaya_id'));
-        }
+            // "no wilaya" needs a value of its own). It mixes with real ids.
+            $none = in_array('none', $wilayas, true);
+            $wilayaIds = ListFilter::ids($request, 'wilaya_id');
 
-        if ($request->filled('documents')) {
-            $this->applyDocumentsFilter($query, (string) $request->input('documents'));
-        }
-
-        if ($request->filled('academic')) {
-            $latest = '('.PlayerAcademicRecord::latestOn20Sql().')';
-            $pass = PlayerAcademicRecord::PASS_MARK_ON_20;
-
-            match ($request->input('academic')) {
-                'at_risk' => $query->where('is_student', true)->whereRaw("{$latest} < ?", [$pass]),
-                'good' => $query->where('is_student', true)->whereRaw("{$latest} >= ?", [$pass]),
-                'none' => $query->where('is_student', true)->whereDoesntHave('academicRecords'),
-                default => null,
-            };
-        }
-
-        if ($request->filled('certificate')) {
-            $certificate = $request->input('certificate');
-
-            if (in_array($certificate, AcademicCertificate::values(), true)) {
-                $currentYear = Season::current()->startYear;
-
-                $query->where('is_student', true)->whereHas(
-                    'academicYears',
-                    fn ($year) => $year->where('academic_year', $currentYear)
-                        ->whereHas('records', fn ($records) => $records->where('certificate', $certificate)),
-                );
+            if ($none || $wilayaIds !== []) {
+                $query->where(function ($q) use ($none, $wilayaIds) {
+                    if ($none) {
+                        $q->orWhereNull('wilaya_id');
+                    }
+                    if ($wilayaIds !== []) {
+                        $q->orWhereIn('wilaya_id', $wilayaIds);
+                    }
+                });
             }
         }
 
-        if ($request->filled('age')) {
-            $today = Carbon::today();
-            match ($request->input('age')) {
-                'unknown' => $query->whereNull('birthdate'),
-                'u10' => $query->where('birthdate', '>', $today->copy()->subYears(10)),
-                '10-19' => $query->where('birthdate', '<=', $today->copy()->subYears(10))->where('birthdate', '>', $today->copy()->subYears(20)),
-                '20-29' => $query->where('birthdate', '<=', $today->copy()->subYears(20))->where('birthdate', '>', $today->copy()->subYears(30)),
-                '30-39' => $query->where('birthdate', '<=', $today->copy()->subYears(30))->where('birthdate', '>', $today->copy()->subYears(40)),
-                '40+' => $query->where('birthdate', '<=', $today->copy()->subYears(40)),
-                default => null,
-            };
+        if ($documents = ListFilter::values($request, 'documents')) {
+            // An unknown value adds no condition, so it widens nothing.
+            $query->where(function ($q) use ($documents) {
+                foreach ($documents as $filter) {
+                    $q->orWhere(fn ($one) => $this->applyDocumentsFilter($one, $filter));
+                }
+            });
+        }
+
+        $academic = array_values(array_intersect(ListFilter::values($request, 'academic'), ['at_risk', 'good', 'none']));
+        if ($academic !== []) {
+            $latest = '('.PlayerAcademicRecord::latestOn20Sql().')';
+            $pass = PlayerAcademicRecord::PASS_MARK_ON_20;
+
+            $query->where('is_student', true)->where(function ($q) use ($academic, $latest, $pass) {
+                foreach ($academic as $bucket) {
+                    match ($bucket) {
+                        'at_risk' => $q->orWhereRaw("{$latest} < ?", [$pass]),
+                        'good' => $q->orWhereRaw("{$latest} >= ?", [$pass]),
+                        'none' => $q->orWhereDoesntHave('academicRecords'),
+                    };
+                }
+            });
+        }
+
+        $certificates = array_values(array_intersect(ListFilter::values($request, 'certificate'), AcademicCertificate::values()));
+        if ($certificates !== []) {
+            $currentYear = Season::current()->startYear;
+
+            $query->where('is_student', true)->whereHas(
+                'academicYears',
+                fn ($year) => $year->where('academic_year', $currentYear)
+                    ->whereHas('records', fn ($records) => $records->whereIn('certificate', $certificates)),
+            );
+        }
+
+        $ages = array_values(array_intersect(ListFilter::values($request, 'age'), ['unknown', 'u10', '10-19', '20-29', '30-39', '40+']));
+        if ($ages !== []) {
+            $at = fn (int $years) => Carbon::today()->subYears($years);
+
+            $query->where(function ($q) use ($ages, $at) {
+                foreach ($ages as $bucket) {
+                    match ($bucket) {
+                        'unknown' => $q->orWhereNull('birthdate'),
+                        'u10' => $q->orWhere('birthdate', '>', $at(10)),
+                        '10-19' => $q->orWhere(fn ($b) => $b->where('birthdate', '<=', $at(10))->where('birthdate', '>', $at(20))),
+                        '20-29' => $q->orWhere(fn ($b) => $b->where('birthdate', '<=', $at(20))->where('birthdate', '>', $at(30))),
+                        '30-39' => $q->orWhere(fn ($b) => $b->where('birthdate', '<=', $at(30))->where('birthdate', '>', $at(40))),
+                        '40+' => $q->orWhere('birthdate', '<=', $at(40)),
+                    };
+                }
+            });
         }
 
         if ($request->has('archived')) {

@@ -26,10 +26,18 @@ return new class extends Migration
             $table->unsignedInteger('sort_order')->default(0);
             $table->timestamps();
         });
+
+        // "Does any mark use this code?" (delete guard, settings page) reads marks by status.
+        Schema::table('attendances', function (Blueprint $table) {
+            $table->index('status');
+        });
     }
 
     public function down(): void
     {
+        Schema::table('attendances', function (Blueprint $table) {
+            $table->dropIndex(['status']);
+        });
         Schema::dropIfExists('attendance_custom_statuses');
     }
 };

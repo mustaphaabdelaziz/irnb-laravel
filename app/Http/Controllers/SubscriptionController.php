@@ -13,6 +13,7 @@ use App\Services\Activity\ActivityRecorder;
 use App\Services\Dashboard\ModuleStats;
 use App\Services\Finance\RecalculatePlayerDebtService;
 use App\Support\Export;
+use App\Support\ListFilter;
 use App\Support\UiLang;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -28,16 +29,17 @@ class SubscriptionController extends Controller
     {
         $query = Subscription::query()->with(['categories', 'branches']);
 
-        if (in_array($request->input('kind'), Subscription::KINDS, true)) {
-            $query->where('kind', $request->input('kind'));
+        // Each filter may hold several values: OR within, AND across.
+        if ($kinds = array_values(array_intersect(ListFilter::values($request, 'kind'), Subscription::KINDS))) {
+            $query->whereIn('kind', $kinds);
         }
 
-        if ($request->filled('year')) {
-            $query->where('year', $request->input('year'));
+        if ($years = ListFilter::ids($request, 'year')) {
+            $query->whereIn('year', $years);
         }
 
-        if ($request->filled('branch_id')) {
-            $query->whereHas('branches', fn ($b) => $b->where('branches.id', $request->input('branch_id')));
+        if ($branchIds = ListFilter::ids($request, 'branch_id')) {
+            $query->whereHas('branches', fn ($b) => $b->whereIn('branches.id', $branchIds));
         }
 
         $subscriptions = $query->orderByDesc('year')->orderBy('name')
@@ -50,7 +52,7 @@ class SubscriptionController extends Controller
             // Closures so filter reloads (partial) skip these queries.
             'branches' => fn () => Branch::orderBy('name')->get(),
             'branchStats' => fn () => $this->branchStats(),
-            'filters' => $request->only(['year', 'kind', 'branch_id']),
+            'filters' => ListFilter::echo($request, ['year', 'kind', 'branch_id']),
             'seasons' => fn () => $this->seasonOptions(Subscription::query()->whereNotNull('year')->distinct()->pluck('year')),
         ]);
     }

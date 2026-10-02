@@ -6,6 +6,7 @@ use App\Http\Requests\User\UpdateUserRequest;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\Storage\FileStorageService;
+use App\Support\ListFilter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Password;
@@ -29,16 +30,27 @@ class UserController extends Controller
             });
         }
 
-        match ($request->input('status')) {
-            'pending' => $query->where('approved', false),
-            'approved' => $query->where('approved', true),
-            'active' => $query->where('is_active', true),
-            'inactive' => $query->where('is_active', false),
-            default => null,
-        };
+        // Several statuses / roles: a user matching any of them is listed.
+        $statuses = array_values(array_intersect(ListFilter::values($request, 'status'), ['pending', 'approved', 'active', 'inactive']));
+        if ($statuses !== []) {
+            $query->where(function ($q) use ($statuses) {
+                foreach ($statuses as $status) {
+                    match ($status) {
+                        'pending' => $q->orWhere('approved', false),
+                        'approved' => $q->orWhere('approved', true),
+                        'active' => $q->orWhere('is_active', true),
+                        'inactive' => $q->orWhere('is_active', false),
+                    };
+                }
+            });
+        }
 
-        if ($request->filled('role')) {
-            $query->whereJsonContains('privileges', $request->input('role'));
+        if ($roles = ListFilter::values($request, 'role')) {
+            $query->where(function ($q) use ($roles) {
+                foreach ($roles as $role) {
+                    $q->orWhereJsonContains('privileges', $role);
+                }
+            });
         }
 
         $users = $query->orderByDesc('created_at')
@@ -61,7 +73,7 @@ class UserController extends Controller
 
         return Inertia::render('Users/Index', [
             'users' => $users,
-            'filters' => $request->only(['search', 'status', 'role']),
+            'filters' => ListFilter::echo($request, ['status', 'role'], ['search']),
             // Closure so filter reloads (partial) skip the count query.
             'pendingCount' => fn () => User::where('is_user', true)->where('approved', false)->count(),
             // Password reset and superadmin actions are gated to a superadmin.

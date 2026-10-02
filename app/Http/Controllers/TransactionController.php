@@ -18,6 +18,7 @@ use App\Services\FinanceService;
 use App\Services\Storage\FileStorageService;
 use App\Services\Storage\PrivateFileStorage;
 use App\Support\Export;
+use App\Support\ListFilter;
 use App\Support\TransactionTitle;
 use App\Support\UiLang;
 use Illuminate\Database\Eloquent\Builder;
@@ -35,6 +36,16 @@ class TransactionController extends Controller
     /** Stored payment-method code => the i18n key the screens use (resources/js/lib/statusLabels.js). */
     private const PAYMENT_METHOD_KEYS = ['bank' => 'bank_transfer'];
 
+    /** Select filters (query parameter => column); each takes several values. */
+    private const LIST_FILTER_COLUMNS = [
+        'type' => 'transaction_type',
+        'category' => 'category',
+        'fiscal_year' => 'fiscal_year',
+        'status' => 'status',
+        'finance_category_id' => 'finance_category_id',
+        'finance_account_id' => 'finance_account_id',
+    ];
+
     public function index(Request $request): Response
     {
         $query = Transaction::query()->where('archived', false);
@@ -51,7 +62,8 @@ class TransactionController extends Controller
 
         return Inertia::render('Transactions/Index', [
             'transactions' => $transactions,
-            'filters' => $request->only(['search', 'type', 'category', 'finance_category_id', 'finance_account_id', 'fiscal_year', 'status', 'date_from', 'date_to']),
+            // Select filters come back as lists, whatever shape was sent.
+            'filters' => ListFilter::echo($request, array_keys(self::LIST_FILTER_COLUMNS), ['search', 'date_from', 'date_to']),
             // Lookups as closures so filter reloads (partial) skip these queries.
             'financeCategories' => fn () => FinanceCategory::where('is_active', true)
                 ->orderBy('type')->orderBy('sort_order')->orderBy('name')->get(['id', 'type', 'name', 'name_ar', 'name_fr', 'name_en', 'color']),
@@ -301,17 +313,15 @@ class TransactionController extends Controller
                     ->whereIn('related_entity_id', Player::query()->search($search)->select('id'))));
         }
 
-        $columns = [
-            'type' => 'transaction_type',
-            'category' => 'category',
-            'fiscal_year' => 'fiscal_year',
-            'status' => 'status',
-            'finance_category_id' => 'finance_category_id',
-            'finance_account_id' => 'finance_account_id',
-        ];
-        foreach ($columns as $param => $column) {
-            if ($request->filled($param)) {
-                $query->where($column, $request->input($param));
+        // Each may hold several values (key[]=a&key[]=b) or one scalar from
+        // an old link: OR within a filter, AND across filters.
+        foreach (self::LIST_FILTER_COLUMNS as $param => $column) {
+            $values = str_ends_with($param, '_id')
+                ? ListFilter::ids($request, $param)
+                : ListFilter::values($request, $param);
+
+            if ($values !== []) {
+                $query->whereIn($column, $values);
             }
         }
 

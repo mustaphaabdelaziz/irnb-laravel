@@ -3,7 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\AbsenceReason;
-use App\Enums\AttendanceStatus;
+use App\Services\Attendance\AttendanceStatusCatalog;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -23,7 +23,8 @@ class SaveAttendanceMarksRequest extends FormRequest
             'notes' => ['nullable', 'string', 'max:2000'],
             'marks' => ['required', 'array', 'min:1'],
             'marks.*.player_id' => ['required', 'integer', 'distinct', 'exists:players,id'],
-            'marks.*.status' => ['required', Rule::enum(AttendanceStatus::class)],
+            // Any status of the catalog, hidden custom codes included: re-saving an old session must not fail.
+            'marks.*.status' => ['required', 'string', Rule::in(app(AttendanceStatusCatalog::class)->keys())],
             'marks.*.minutes' => ['nullable', 'integer', 'between:1,600', 'required_if:marks.*.status,late,left_early'],
             'marks.*.reason' => ['nullable', Rule::enum(AbsenceReason::class), 'required_if:marks.*.status,absent_excused'],
             'marks.*.note' => ['nullable', 'string', 'max:255'],

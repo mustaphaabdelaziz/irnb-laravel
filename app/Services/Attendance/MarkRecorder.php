@@ -2,7 +2,6 @@
 
 namespace App\Services\Attendance;
 
-use App\Enums\AttendanceStatus;
 use App\Enums\SessionState;
 use App\Models\Attendance;
 use App\Models\Player;
@@ -21,6 +20,8 @@ use Illuminate\Validation\ValidationException;
 final class MarkRecorder
 {
     private const LOG_FIELDS = ['coach', 'title', 'notes'];
+
+    public function __construct(private readonly AttendanceStatusCatalog $catalog) {}
 
     public function save(TrainingSession $session, array $marks, ?User $user, ?array $log = null): int
     {
@@ -43,13 +44,16 @@ final class MarkRecorder
                 ->map(fn ($id) => (int) $id)->all();
 
             foreach ($marks as $mark) {
-                $status = AttendanceStatus::from($mark['status']);
+                $status = (string) $mark['status'];
+                if (! $this->catalog->has($status)) {
+                    throw ValidationException::withMessages(['marks' => 'att.error.invalid_code']);
+                }
                 $playerId = (int) $mark['player_id'];
 
                 $values = [
                     'status' => $status,
-                    'minutes' => $status->takesMinutes() ? (int) ($mark['minutes'] ?? 0) : null,
-                    'reason' => $status->takesReason() ? ($mark['reason'] ?? null) : null,
+                    'minutes' => $this->catalog->takesMinutes($status) ? (int) ($mark['minutes'] ?? 0) : null,
+                    'reason' => $this->catalog->takesReason($status) ? ($mark['reason'] ?? null) : null,
                     'note' => ($mark['note'] ?? null) ?: null,
                     'recorded_by' => $user?->id,
                 ];

@@ -9,9 +9,9 @@ use App\Http\Requests\SaveAttendanceMarksRequest;
 use App\Models\Category;
 use App\Models\Player;
 use App\Models\TrainingSession;
+use App\Services\Attendance\AttendanceStatusCatalog;
 use App\Services\Attendance\MarkRecorder;
 use App\Services\Attendance\Roster;
-use App\Support\AttendanceSettings;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -20,7 +20,7 @@ use Inertia\Response;
 class AttendanceController extends Controller
 {
     /** One session: its roster with marks (everyone present until first saved), its categories and its log. */
-    public function show(TrainingSession $session, Roster $roster): Response
+    public function show(TrainingSession $session, Roster $roster, AttendanceStatusCatalog $catalog): Response
     {
         $marks = $session->attendances()->get()->keyBy('player_id');
         // Loaded once up front: both forSession() and orderedCategories() read
@@ -52,7 +52,7 @@ class AttendanceController extends Controller
                     // Once marked, the mark's own category_id (fixed at marking time) wins over the
                     // player's current one, so a later category change never retags a frozen session.
                     'category' => $joint ? $categories->get($mark?->category_id ?? $p->category_id) : null,
-                    'status' => $mark?->status->value ?? AttendanceStatus::Present->value,
+                    'status' => $mark?->status ?? AttendanceStatus::Present->value,
                     'minutes' => $mark?->minutes,
                     'reason' => $mark?->reason?->value,
                     'note' => $mark?->note,
@@ -66,9 +66,10 @@ class AttendanceController extends Controller
             'lastCoach' => TrainingSession::where('category_id', $session->category_id)
                 ->whereKeyNot($session->id)->whereNotNull('coach')
                 ->orderByDesc('date')->value('coach'),
-            'statuses' => AttendanceStatus::values(),
+            // The buttons: every active status, plus a hidden custom one still used in this session.
+            'statuses' => $catalog->shown($marks->pluck('status')),
             'reasons' => AbsenceReason::values(),
-            'attendanceCodes' => AttendanceSettings::codes(),
+            'attendanceCodes' => $catalog->codes(),
             'allCategories' => $session->kind === SessionKind::Preseason
                 ? Category::orderBy('id')->get()->map(fn (Category $c) => ['id' => $c->id, 'name' => $c->localized_name])->values()
                 : [],

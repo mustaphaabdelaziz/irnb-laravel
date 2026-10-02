@@ -6,10 +6,10 @@ use App\Enums\AttendanceStatus;
 use App\Models\Category;
 use App\Services\Activity\ActivityPeriod;
 use App\Services\Attendance\AttendanceStats;
+use App\Services\Attendance\AttendanceStatusCatalog;
 use App\Services\Attendance\PlayerNames;
 use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
-use App\Support\AttendanceSettings;
 use App\Support\Export;
 use App\Support\UiLang;
 use Illuminate\Http\Request;
@@ -34,7 +34,7 @@ class AttendanceStatsController extends Controller
     {
         return Inertia::render('Attendance/Stats', [
             ...$this->data($request),
-            'attendanceCodes' => AttendanceSettings::codes(),
+            'attendanceCodes' => app(AttendanceStatusCatalog::class)->codes(),
         ]);
     }
 
@@ -50,7 +50,7 @@ class AttendanceStatsController extends Controller
             ? collect($data['categories'])->firstWhere('id', $data['categoryId'])['name']
             : UiLang::get('att.all_categories');
         $filename = 'attendance-stats-'.$from.'-'.$to.($data['categoryId'] !== null ? '-'.$data['categoryId'] : '');
-        $labels = AttendanceSettings::labels();
+        $labels = app(AttendanceStatusCatalog::class)->labels();
 
         if ($request->query('format') === 'pdf') {
             $html = view('pdf.attendance-stats', [
@@ -58,7 +58,7 @@ class AttendanceStatsController extends Controller
                 'club' => ClubHeader::data(),
                 'categoryName' => $categoryName,
                 'labels' => $labels,
-                'codes' => AttendanceSettings::codes(),
+                'codes' => app(AttendanceStatusCatalog::class)->codes(),
             ])->render();
 
             return $this->pdf->stream($html, $filename.'.pdf', app()->getLocale() === 'ar', true);

@@ -35,7 +35,7 @@ class AttendanceModelTest extends TestCase
         $this->assertSame('2026-10-05', $fresh->date);
         $this->assertSame('18:00', $fresh->start_time);
         $this->assertSame(SessionKind::Regular, $fresh->kind);
-        $this->assertSame(AttendanceStatus::Late, $fresh->attendances->first()->status);
+        $this->assertSame(AttendanceStatus::Late->value, $fresh->attendances->first()->status);
         $this->assertSame(15, $fresh->attendances->first()->minutes);
         $this->assertTrue($fresh->category->is($u15));
     }

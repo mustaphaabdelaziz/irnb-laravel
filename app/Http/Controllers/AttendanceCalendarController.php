@@ -5,10 +5,10 @@ namespace App\Http\Controllers;
 use App\Enums\SessionKind;
 use App\Models\Category;
 use App\Models\TrainingSchedule;
+use App\Services\Attendance\AttendanceStatusCatalog;
 use App\Services\Attendance\CalendarFeed;
 use App\Services\Attendance\PreseasonProgress;
 use App\Services\Attendance\SessionGenerator;
-use App\Support\AttendanceSettings;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -60,7 +60,7 @@ class AttendanceCalendarController extends Controller
         return Inertia::render('Attendance/Index', [
             'view' => $view,
             'categories' => $categories,
-            'attendanceCodes' => AttendanceSettings::codes(),
+            'attendanceCodes' => app(AttendanceStatusCatalog::class)->codes(),
             ...$props,
         ]);
     }

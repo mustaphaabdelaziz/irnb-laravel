@@ -68,7 +68,7 @@ class AttendanceSessionTest extends TestCase
 
         $this->assertSame(SessionState::Held, $session->fresh()->state);
         $this->assertSame('Endurance', $session->fresh()->title);
-        $this->assertSame(AttendanceStatus::Late, $session->attendances()->where('player_id', $a->id)->value('status'));
+        $this->assertSame(AttendanceStatus::Late->value, $session->attendances()->where('player_id', $a->id)->value('status'));
     }
 
     #[Test]

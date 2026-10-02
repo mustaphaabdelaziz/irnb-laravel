@@ -5,7 +5,7 @@
     $L = fn (string $key) => \App\Support\UiLang::get($key);
     $statuses = array_keys($labels);
     $code = fn (string $status) => AttendanceCode::normalise($codes[$status]['code']);
-    $legendCode = fn (string $status) => $code($status).(AttendanceStatus::from($status)->takesMinutes() ? '15' : '');
+    $legendCode = fn (string $status) => $code($status).((AttendanceStatus::tryFrom($status)?->takesMinutes() ?? false) ? '15' : '');
     $marks = ['preseason' => $L('att.sheet.kind_mark.preseason'), 'extra' => $L('att.sheet.kind_mark.extra')];
     $footer = $category['name'].' · '.$monthLabel.' — '.strtr($L('att.sheet.page'), ['{page}' => '{PAGENO}', '{pages}' => '{nbpg}']);
 @endphp

@@ -6,6 +6,7 @@ use App\Models\Player;
 use App\Services\Activity\ActivityPeriod;
 use App\Services\Attendance\AtRisk;
 use App\Services\Attendance\AttendanceStats;
+use App\Services\Attendance\AttendanceStatusCatalog;
 use App\Services\Attendance\InjurySpells;
 use App\Services\Attendance\PreseasonProgress;
 use App\Services\Pdf\ClubHeader;
@@ -62,8 +63,8 @@ class AttendancePlayerController extends Controller
             'club' => ClubHeader::data(),
             'player' => $player,
             'photo' => Media::localFile($player->picture_url),
-            'labels' => AttendanceSettings::labels(),
-            'codes' => AttendanceSettings::codes(),
+            'labels' => app(AttendanceStatusCatalog::class)->labels(),
+            'codes' => app(AttendanceStatusCatalog::class)->codes(),
         ])->render();
 
         return $this->pdf->stream(
@@ -112,7 +113,7 @@ class AttendancePlayerController extends Controller
             'periodText' => $periodText,
             'rows' => $rows,
             'summary' => $summary,
-            'labels' => AttendanceSettings::labels(),
+            'labels' => app(AttendanceStatusCatalog::class)->labels(),
         ])->render();
 
         return $this->pdf->stream($html, "attendance-letter-{$player->membership_id}-{$from}-{$to}.pdf", app()->getLocale() === 'ar');

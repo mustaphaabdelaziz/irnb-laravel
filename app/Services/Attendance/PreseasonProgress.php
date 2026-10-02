@@ -82,12 +82,20 @@ final class PreseasonProgress
 
         foreach ($seasons as $season) {
             $targets = PreseasonTarget::where('season_start_year', $season->startYear)->pluck('target_count', 'category_id');
+            // Every category's held sessions of the season in one query, in date order.
+            $heldByCategory = DB::table('training_session_category')
+                ->join('training_sessions', 'training_sessions.id', '=', 'training_session_category.training_session_id')
+                ->when($categoryId !== null, fn ($q) => $q->where('training_session_category.category_id', $categoryId))
+                ->where('training_sessions.kind', SessionKind::Preseason->value)
+                ->where('training_sessions.state', SessionState::Held->value)
+                ->whereBetween('training_sessions.date', [$season->start()->toDateString(), $season->end()->toDateString()])
+                ->orderBy('training_sessions.date')->orderBy('training_sessions.start_time')->orderBy('training_sessions.id')
+                ->get(['training_session_category.category_id', 'training_sessions.id', 'training_sessions.date', 'training_sessions.start_time'])
+                ->groupBy(fn ($row) => (int) $row->category_id);
 
             foreach ($categories as $category) {
-                $held = $this->held($category->id, $season)
-                    ->orderBy('date')->orderBy('start_time')->orderBy('id')
-                    ->get(['id', 'date', 'start_time']);
-                if ($held->isEmpty()) {
+                $held = $heldByCategory->get($category->id);
+                if ($held === null) {
                     continue;
                 }
 
@@ -105,7 +113,7 @@ final class PreseasonProgress
                         'milestone' => $milestone,
                         'date' => $session->date,
                         'time' => $session->start_time,
-                        'session_id' => $session->id,
+                        'session_id' => (int) $session->id,
                         'category_id' => $category->id,
                         'category' => $category->localized_name,
                         'done' => $count,

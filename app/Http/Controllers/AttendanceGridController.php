@@ -80,7 +80,7 @@ class AttendanceGridController extends Controller
             $existing = $session->attendances->keyBy('player_id');
             $allowedIds = $existing->isNotEmpty()
                 ? $existing->keys()->all()
-                : $roster->expected($session->categoryIds(), $session->date)->modelKeys();
+                : $roster->expected($session->categoryIds(), $session->date, $roster->statusIdsFor($session))->modelKeys();
             $allowed = array_flip($allowedIds);
             $marks = [];
 

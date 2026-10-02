@@ -8,6 +8,7 @@ use App\Models\Attendance;
 use App\Models\AttendanceCustomStatus;
 use App\Models\Category;
 use App\Models\ClubClosure;
+use App\Models\PlayerStatus;
 use App\Models\PreseasonTarget;
 use App\Models\TrainingSchedule;
 use App\Models\TrainingSession;
@@ -35,7 +36,9 @@ class AttendanceSettingsController extends Controller
             'targets' => PreseasonTarget::get(['category_id', 'season_start_year', 'target_count']),
             'seasons' => collect([$current, Season::forStartYear($current->startYear + 1)])
                 ->map(fn (Season $s) => ['start_year' => $s->startYear, 'label' => $s->label()])->values(),
-            'settings' => AttendanceSettings::get(),
+            // The roster set shows resolved: never set = the status coded `registered`.
+            'settings' => ['roster_status_ids' => AttendanceSettings::rosterStatusIds()] + AttendanceSettings::get(),
+            'playerStatuses' => PlayerStatus::options(),
             'statuses' => AttendanceStatus::values(),
             'customStatuses' => $this->customStatuses(),
             'behaviours' => AttendanceCustomStatus::BEHAVIOURS,
@@ -49,6 +52,9 @@ class AttendanceSettingsController extends Controller
             'rules.late_minutes_as_absent' => ['required', 'integer', 'between:0,240'],
             'alerts.min_score_pct' => ['required', 'integer', 'between:0,100'],
             'alerts.unexcused_streak' => ['required', 'integer', 'between:0,20'],
+            // Left out (null): unchanged. Never empty: a roster needs at least one status.
+            'roster_status_ids' => ['nullable', 'array', 'min:1'],
+            'roster_status_ids.*' => ['integer', 'distinct', 'exists:player_statuses,id'],
         ];
         foreach (AttendanceStatus::values() as $status) {
             $rules["points.$status"] = ['required', 'numeric', 'between:-5,5'];
@@ -64,6 +70,7 @@ class AttendanceSettingsController extends Controller
             'codes.*.code.regex' => 'att.error.code_format',
             'codes.*.color.required' => 'att.error.color_format',
             'codes.*.color.regex' => 'att.error.color_format',
+            'roster_status_ids.min' => 'att.error.roster_statuses_required',
         ]);
 
         AttendanceSettings::save([
@@ -71,6 +78,7 @@ class AttendanceSettingsController extends Controller
             'rules' => array_map('intval', $data['rules']),
             'alerts' => array_map('intval', $data['alerts']),
             'codes' => $this->normaliseCodes($data['codes']),
+            ...(isset($data['roster_status_ids']) ? ['roster_status_ids' => array_values(array_map('intval', $data['roster_status_ids']))] : []),
         ]);
 
         return back()->with('success', 'flash.attendance_settings_saved');

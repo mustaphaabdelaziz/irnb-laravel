@@ -16,6 +16,7 @@ const props = defineProps({
     statuses: { type: Array, default: () => [] },
     customStatuses: { type: Array, default: () => [] },
     behaviours: { type: Array, default: () => [] },
+    playerStatuses: { type: Array, default: () => [] }, // [{ id, name }]
 });
 const { t, locale } = useI18n();
 const lang = computed(() => (locale.value === 'ar' ? 'ar' : locale.value));
@@ -281,6 +282,17 @@ function destroyCustom(s) {
                         <h2 class="mb-2 font-bold text-slate-900 dark:text-slate-100">{{ t('att.alerts') }}</h2>
                         <label class="mb-2 block text-sm">{{ t('att.min_score_pct') }}<input v-model.number="settingsForm.alerts.min_score_pct" type="number" min="0" max="100" :class="[input, 'mt-1 block w-24']" /></label>
                         <label class="block text-sm">{{ t('att.unexcused_streak') }}<input v-model.number="settingsForm.alerts.unexcused_streak" type="number" min="0" max="20" :class="[input, 'mt-1 block w-24']" /></label>
+                    </div>
+                </section>
+
+                <section :class="card">
+                    <h2 class="mb-1 font-bold text-slate-900 dark:text-slate-100">{{ t('att.roster_statuses') }}</h2>
+                    <p class="mb-3 text-xs text-slate-500">{{ t('att.roster_statuses_settings_help') }}</p>
+                    <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                        <label v-for="s in playerStatuses" :key="s.id" class="inline-flex items-center gap-1.5">
+                            <input v-model="settingsForm.roster_status_ids" type="checkbox" :value="s.id" class="rounded border-slate-300 text-primary-600 dark:border-slate-700 dark:bg-slate-900" />
+                            {{ s.name }}
+                        </label>
                     </div>
                 </section>
 

@@ -58,11 +58,20 @@ class AttendanceController extends Controller
                     'note' => $mark?->note,
                 ];
             })->values(),
-            'candidates' => Player::where('archived', false)->whereNull('left_at')
+            // Anyone to add by hand, whatever their status or category: not archived,
+            // not gone before the session date, not already listed; searched by full name.
+            'candidates' => Player::with(['status', 'category'])
+                ->where('archived', false)
+                ->where(fn ($q) => $q->whereNull('left_at')->orWhereDate('left_at', '>', $session->date))
                 ->whereNotIn('id', $players->modelKeys())
                 ->orderBy('lastname')->orderBy('firstname')
-                ->get(['id', 'firstname', 'lastname'])
-                ->map(fn (Player $p) => ['id' => $p->id, 'name' => trim("{$p->lastname} {$p->firstname}")]),
+                ->get([...Roster::COLUMNS, 'status_id'])
+                ->map(fn (Player $p) => [
+                    'id' => $p->id,
+                    'name' => $p->fullname,
+                    'status' => $p->status?->localized_name,
+                    'category' => $p->category?->localized_name,
+                ]),
             'lastCoach' => TrainingSession::where('category_id', $session->category_id)
                 ->whereKeyNot($session->id)->whereNotNull('coach')
                 ->orderByDesc('date')->value('coach'),

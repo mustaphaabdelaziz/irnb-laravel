@@ -26,6 +26,8 @@ const props = defineProps({
     to: { type: String, default: null },
     kind: { type: String, default: null }, // timeline kind filter
     events: { type: Array, default: () => [] }, // timeline events
+    playerStatuses: { type: Array, default: () => [] }, // add-session dialog: roster status checkboxes
+    rosterStatusIds: { type: Array, default: () => [] },
 });
 const { t } = useI18n();
 const { can } = useCan();
@@ -83,6 +85,6 @@ function openCreate(kind) {
             <TimelineView v-else-if="view === 'timeline'" :categories="categories" :category-id="categoryId" :kind="kind" :from="from" :to="to" :events="events" @navigate="navigate" />
         </div>
 
-        <AddSessionModal :show="showCreate" :kind="createKind" :categories="categories" :category-id="categoryId" :date="today" @close="showCreate = false" />
+        <AddSessionModal :show="showCreate" :kind="createKind" :categories="categories" :category-id="categoryId" :date="today" :player-statuses="playerStatuses" :roster-status-ids="rosterStatusIds" @close="showCreate = false" />
     </AuthenticatedLayout>
 </template>

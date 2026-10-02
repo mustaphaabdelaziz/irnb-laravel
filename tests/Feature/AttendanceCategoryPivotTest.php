@@ -67,6 +67,10 @@ class AttendanceCategoryPivotTest extends TestCase
         app(SessionGenerator::class)->forMonth($u15->id, 2026, 10);
         $session = TrainingSession::where('category_id', $u15->id)->first();
         DB::table('training_session_category')->where('training_session_id', $session->id)->delete();
+        // The generation mark is written in the same transaction as the sessions
+        // and their links, so a month left half-linked (an interrupted run before
+        // marks existed) has no mark.
+        DB::table('session_generation_marks')->delete();
 
         $created = app(SessionGenerator::class)->forMonth($u15->id, 2026, 10);
 

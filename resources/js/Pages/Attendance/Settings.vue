@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Icon from '@/Components/Icon.vue';
@@ -14,6 +14,8 @@ const props = defineProps({
     seasons: { type: Array, default: () => [] },
     settings: { type: Object, required: true },
     statuses: { type: Array, default: () => [] },
+    customStatuses: { type: Array, default: () => [] },
+    behaviours: { type: Array, default: () => [] },
 });
 const { t, locale } = useI18n();
 const lang = computed(() => (locale.value === 'ar' ? 'ar' : locale.value));
@@ -85,6 +87,40 @@ const colorError = (status) => tr(settingsForm.errors[`codes.${status}.color`]);
 const otherErrors = computed(() => Object.entries(settingsForm.errors)
     .filter(([k]) => !/^codes\.[a-z_]+\.(code|color)$/.test(k))
     .map(([, e]) => tr(e)));
+
+// ---- Custom codes: added, edited, hidden or deleted one at a time ----
+const blankCustom = { code: '', color: '#7c3aed', label_ar: '', label_fr: '', label_en: '', behaviour: 'not_counted', is_active: true };
+const editingCustomId = ref(null);
+const customForm = useForm({ ...blankCustom });
+const page = usePage();
+const customErrors = computed(() => [...Object.values(customForm.errors), page.props.errors?.custom_status].filter(Boolean).map(tr));
+const customName = (s) => s[`label_${locale.value}`] || s.label_ar || s.label_fr || s.label_en || s.code;
+function editCustom(s) {
+    editingCustomId.value = s.id;
+    customForm.clearErrors();
+    Object.assign(customForm, { code: s.code, color: s.color, label_ar: s.label_ar ?? '', label_fr: s.label_fr ?? '', label_en: s.label_en ?? '', behaviour: s.behaviour, is_active: s.is_active });
+}
+function resetCustom() {
+    editingCustomId.value = null;
+    customForm.defaults({ ...blankCustom });
+    customForm.reset();
+    customForm.clearErrors();
+}
+function submitCustom() {
+    const opts = { preserveScroll: true, onSuccess: resetCustom };
+    editingCustomId.value
+        ? customForm.put(route('attendance.custom-statuses.update', editingCustomId.value), opts)
+        : customForm.post(route('attendance.custom-statuses.store'), opts);
+}
+// Hide or show keeps every other field as it is.
+function toggleCustom(s) {
+    router.put(route('attendance.custom-statuses.update', s.id), {
+        code: s.code, color: s.color, label_ar: s.label_ar, label_fr: s.label_fr, label_en: s.label_en, behaviour: s.behaviour, is_active: !s.is_active,
+    }, { preserveScroll: true });
+}
+function destroyCustom(s) {
+    if (window.confirm(t('att.confirm_delete'))) router.delete(route('attendance.custom-statuses.destroy', s.id), { preserveScroll: true });
+}
 </script>
 
 <template>
@@ -253,6 +289,60 @@ const otherErrors = computed(() => Object.entries(settingsForm.errors)
                     <button type="submit" :disabled="settingsForm.processing" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">{{ t('att.save') }}</button>
                 </div>
             </form>
+
+            <!-- Custom codes -->
+            <section :class="[card, 'lg:col-span-2']">
+                <h2 class="mb-1 font-bold text-slate-900 dark:text-slate-100">{{ t('att.custom.title') }}</h2>
+                <p class="mb-3 text-xs text-slate-500">{{ t('att.custom.help') }}</p>
+                <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="submitCustom">
+                    <label class="text-xs text-slate-500">{{ t('att.col.code') }}
+                        <input v-model="customForm.code" type="text" maxlength="3" dir="auto" :class="[input, 'block w-16 text-center font-mono uppercase']" />
+                    </label>
+                    <label class="text-xs text-slate-500">{{ t('att.col.color') }}
+                        <input v-model="customForm.color" type="color" class="block h-9 w-12 cursor-pointer rounded border border-slate-300 bg-transparent p-0.5 dark:border-slate-700" />
+                    </label>
+                    <label v-for="l in LOCALES" :key="l" class="text-xs text-slate-500">{{ t(`att.col.label_${l}`) }}
+                        <input v-model="customForm[`label_${l}`]" type="text" maxlength="40" :dir="l === 'ar' ? 'rtl' : 'ltr'" :class="[input, 'block w-36']" />
+                    </label>
+                    <label class="text-xs text-slate-500">{{ t('att.custom.behaviour_label') }}
+                        <select v-model="customForm.behaviour" :class="[input, 'block']">
+                            <option v-for="b in behaviours" :key="b" :value="b">{{ t(`att.custom.behaviour.${b}`) }}</option>
+                        </select>
+                    </label>
+                    <button type="submit" :disabled="customForm.processing" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">{{ editingCustomId ? t('att.save') : t('att.custom.add') }}</button>
+                    <button v-if="editingCustomId" type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700" @click="resetCustom">{{ t('att.close') }}</button>
+                    <div class="w-full"><InputError v-for="(e, i) in customErrors" :key="i" :message="e" /></div>
+                </form>
+                <p v-if="!customStatuses.length" class="text-sm text-slate-500">{{ t('att.custom.none') }}</p>
+                <div v-else class="overflow-x-auto">
+                    <table class="w-full min-w-[40rem] text-sm">
+                        <thead>
+                            <tr class="text-xs text-slate-500">
+                                <th class="py-1 text-start font-semibold">{{ t('att.col.code') }}</th>
+                                <th class="py-1 text-start font-semibold">{{ t('att.col.status') }}</th>
+                                <th class="py-1 text-start font-semibold">{{ t('att.custom.behaviour_label') }}</th>
+                                <th class="py-1 text-start font-semibold">{{ t('att.custom.state') }}</th>
+                                <th class="py-1"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="s in customStatuses" :key="s.id" class="border-t border-slate-100 dark:border-slate-800" :class="s.is_active ? '' : 'opacity-60'">
+                                <td class="py-2 pe-2">
+                                    <span class="inline-flex items-center gap-2 font-mono font-semibold"><span class="h-3 w-3 rounded-full" :style="{ backgroundColor: s.color }"></span><bdi>{{ s.code }}</bdi></span>
+                                </td>
+                                <td class="py-2 pe-2 font-medium">{{ customName(s) }}</td>
+                                <td class="py-2 pe-2 text-slate-600 dark:text-slate-300">{{ t(`att.custom.behaviour.${s.behaviour}`) }}</td>
+                                <td class="py-2 pe-2 text-xs text-slate-500">{{ s.is_active ? t('att.custom.shown') : t('att.custom.hidden') }}</td>
+                                <td class="whitespace-nowrap py-2 text-end">
+                                    <button type="button" class="p-1 text-slate-400 hover:text-primary-600" :title="t('att.edit')" @click="editCustom(s)"><Icon name="pencil" /></button>
+                                    <button type="button" class="rounded px-2 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800" @click="toggleCustom(s)">{{ s.is_active ? t('att.custom.hide') : t('att.custom.show') }}</button>
+                                    <button type="button" class="p-1 text-slate-400 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-40" :disabled="s.used" :title="s.used ? t('att.error.code_in_use') : t('att.delete')" @click="destroyCustom(s)"><Icon name="trash" /></button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
         </div>
     </AuthenticatedLayout>
 </template>

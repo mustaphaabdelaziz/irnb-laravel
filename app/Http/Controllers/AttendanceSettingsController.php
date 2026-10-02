@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Enums\AttendanceStatus;
 use App\Enums\SessionKind;
+use App\Models\Attendance;
+use App\Models\AttendanceCustomStatus;
 use App\Models\Category;
 use App\Models\ClubClosure;
 use App\Models\PreseasonTarget;
@@ -35,6 +37,8 @@ class AttendanceSettingsController extends Controller
                 ->map(fn (Season $s) => ['start_year' => $s->startYear, 'label' => $s->label()])->values(),
             'settings' => AttendanceSettings::get(),
             'statuses' => AttendanceStatus::values(),
+            'customStatuses' => $this->customStatuses(),
+            'behaviours' => AttendanceCustomStatus::BEHAVIOURS,
         ]);
     }
 
@@ -164,13 +168,13 @@ class AttendanceSettingsController extends Controller
 
     /**
      * Codes are stored upper-cased and must differ from each other ignoring
-     * case (the grid compares them that way); the later status in the list
-     * gets the error. Colours are stored lower-cased, empty names as null.
+     * case (the grid compares them that way), and from every custom code;
+     * the later status in the list gets the error. Colours are stored lower-cased, empty names as null.
      */
     private function normaliseCodes(array $input): array
     {
         $codes = [];
-        $seen = [];
+        $seen = array_fill_keys(AttendanceCustomStatus::pluck('code')->map(fn (string $code) => AttendanceCode::normalise($code))->all(), true);
         $errors = [];
 
         foreach (AttendanceStatus::values() as $status) {
@@ -195,6 +199,19 @@ class AttendanceSettingsController extends Controller
         }
 
         return $codes;
+    }
+
+    /** @return list<array<string, mixed>> the custom codes as the settings page edits them, with whether any mark uses each */
+    private function customStatuses(): array
+    {
+        $customs = AttendanceCustomStatus::orderBy('sort_order')->orderBy('id')->get();
+        $used = Attendance::whereIn('status', $customs->pluck('key'))->distinct()->pluck('status')->flip();
+
+        return $customs->map(fn (AttendanceCustomStatus $s) => [
+            'id' => $s->id, 'key' => $s->key, 'code' => $s->code, 'color' => $s->color,
+            'label_ar' => $s->label_ar, 'label_fr' => $s->label_fr, 'label_en' => $s->label_en,
+            'behaviour' => $s->behaviour, 'is_active' => $s->is_active, 'used' => $used->has($s->key),
+        ])->values()->all();
     }
 
     private function validateSchedule(Request $request): array

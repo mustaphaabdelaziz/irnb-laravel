@@ -11,8 +11,9 @@ const props = defineProps({
     // [{ key, label, count, static? }] — key is what the filter uses, label
     // what's shown. A static slice (e.g. "others") is shown but can't filter.
     stats: { type: Array, default: () => [] },
-    // Currently selected key ('' = no filter). v-model.
-    modelValue: { type: [String, Number], default: '' },
+    // Currently selected key ('' = no filter), or a list of selected keys for
+    // a multi-select filter: a click then toggles that key in the list. v-model.
+    modelValue: { type: [String, Number, Array], default: '' },
     palette: {
         type: Array,
         default: () => ['#02a85c', '#0284c7', '#d97706', '#e11d48', '#7c3aed', '#0891b2', '#65a30d', '#db2777'],
@@ -24,18 +25,35 @@ const emit = defineEmits(['update:modelValue']);
 
 const total = computed(() => props.stats.reduce((s, c) => s + c.count, 0));
 const pct = (count) => (total.value ? Math.round((count / total.value) * 100) : 0);
-const isActive = (stat) => !stat.static && String(props.modelValue) === String(stat.key);
+const multiple = computed(() => Array.isArray(props.modelValue));
+// In a list an empty key (e.g. "uncategorized") has no filter value to add.
+const clickable = (stat) => !stat.static && !(multiple.value && (stat.key === '' || stat.key === null || stat.key === undefined));
+const isActive = (stat) => clickable(stat) && (multiple.value
+    ? props.modelValue.map(String).includes(String(stat.key))
+    : String(props.modelValue) === String(stat.key));
 
 function toggle(stat) {
-    if (stat.static) return;
-    emit('update:modelValue', isActive(stat) ? '' : stat.key);
+    if (!clickable(stat)) return;
+    if (!multiple.value) {
+        emit('update:modelValue', isActive(stat) ? '' : stat.key);
+        return;
+    }
+    const key = String(stat.key);
+    const list = props.modelValue.map(String);
+    emit('update:modelValue', list.includes(key) ? list.filter((k) => k !== key) : [...list, key]);
 }
+
+const hasSelection = computed(() => props.stats.some((s) => isActive(s)));
 
 const chartData = computed(() => ({
     labels: props.stats.map((s) => s.label),
     datasets: [{
         data: props.stats.map((s) => s.count),
-        backgroundColor: props.stats.map((_, i) => props.palette[i % props.palette.length]),
+        // With a selection, unselected slices fade so the chosen ones stand out.
+        backgroundColor: props.stats.map((s, i) => {
+            const color = props.palette[i % props.palette.length];
+            return hasSelection.value && !isActive(s) && /^#[0-9a-f]{6}$/i.test(color) ? `${color}55` : color;
+        }),
         borderWidth: 0,
     }],
 }));
@@ -75,11 +93,12 @@ const chartOptions = computed(() => ({
             <div class="flex flex-1 flex-wrap content-center gap-2">
                 <button v-for="(stat, i) in stats" :key="String(stat.key)"
                     @click="toggle(stat)"
-                    :disabled="stat.static"
+                    :disabled="!clickable(stat)"
+                    :aria-pressed="clickable(stat) ? isActive(stat) : undefined"
                     class="flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm ring-1 transition-colors"
                     :class="isActive(stat)
                         ? 'bg-primary-600 text-white ring-primary-600'
-                        : stat.static
+                        : !clickable(stat)
                             ? 'cursor-default bg-slate-50 text-slate-500 ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700'
                             : 'bg-slate-50 text-slate-700 ring-slate-200 hover:bg-primary-50 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700'">
                     <span class="h-2.5 w-2.5 shrink-0 rounded-full" :style="{ backgroundColor: palette[i % palette.length] }"></span>

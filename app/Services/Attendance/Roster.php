@@ -54,7 +54,8 @@ final class Roster
                 if ($registered !== null && in_array($registered, $statusIds, true)) {
                     $q->orWhereNull('status_id');
                     if ($left !== null) {
-                        $q->orWhere('status_id', $left); // left after the date (see the date condition above)
+                        // Left after the date (the date condition above); a legacy "left" with no date never counts.
+                        $q->orWhere(fn ($q) => $q->where('status_id', $left)->whereNotNull('left_at'));
                     }
                 }
             }))

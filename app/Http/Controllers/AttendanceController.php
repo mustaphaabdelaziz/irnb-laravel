@@ -64,6 +64,10 @@ class AttendanceController extends Controller
                 ->where('archived', false)
                 ->where(fn ($q) => $q->whereNull('left_at')->orWhereDate('left_at', '>', $session->date))
                 ->whereNotIn('id', $players->modelKeys())
+                // A legacy "left" status with no leave date has left all the same.
+                ->when(Player::leftStatusId(), fn ($q, int $left) => $q->where(fn ($q) => $q->whereNull('status_id')
+                    ->orWhere('status_id', '!=', $left)
+                    ->orWhereNotNull('left_at')))
                 ->orderBy('lastname')->orderBy('firstname')
                 ->get([...Roster::COLUMNS, 'status_id'])
                 ->map(fn (Player $p) => [

@@ -11,6 +11,7 @@ use App\Models\TrainingSession;
 use App\Services\Attendance\Roster;
 use App\Support\AttendanceSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\AttendanceFixtures;
@@ -157,5 +158,20 @@ class AttendanceRosterStatusTest extends TestCase
         $this->actingAs($admin)->get(route('attendance.settings'))
             ->assertInertia(fn (Assert $page) => $page->where('settings.roster_status_ids', [$registered])
                 ->has('playerStatuses'));
+    }
+
+    #[Test]
+    public function a_left_player_without_a_leave_date_is_neither_expected_nor_offered(): void
+    {
+        $u15 = $this->category();
+        $stays = $this->player($u15, ['status_id' => $this->statusId('registered')]);
+        $legacy = $this->player($u15);
+        // Older data: status "left" but no leave date (Player::booted() would stamp one).
+        DB::table('players')->where('id', $legacy->id)->update(['status_id' => Player::leftStatusId(), 'left_at' => null]);
+        $session = $this->makeSession($u15);
+
+        $this->assertSame([$stays->id], $this->rosterIds($session));
+        $this->actingAs($this->admin())->get(route('attendance.sessions.show', $session))
+            ->assertInertia(fn (Assert $page) => $page->has('candidates', 0));
     }
 }

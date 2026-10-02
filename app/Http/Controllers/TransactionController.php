@@ -46,6 +46,16 @@ class TransactionController extends Controller
         'finance_account_id' => 'finance_account_id',
     ];
 
+    /** Which values each select filter can apply (ListFilter specs). */
+    private const LIST_FILTER_SPECS = [
+        'type' => ['income', 'expense'],
+        'category' => ListFilter::TEXT,
+        'fiscal_year' => ListFilter::IDS,
+        'status' => ListFilter::TEXT,
+        'finance_category_id' => ListFilter::IDS,
+        'finance_account_id' => ListFilter::IDS,
+    ];
+
     public function index(Request $request): Response
     {
         $query = Transaction::query()->where('archived', false);
@@ -63,7 +73,7 @@ class TransactionController extends Controller
         return Inertia::render('Transactions/Index', [
             'transactions' => $transactions,
             // Select filters come back as lists, whatever shape was sent.
-            'filters' => ListFilter::echo($request, array_keys(self::LIST_FILTER_COLUMNS), ['search', 'date_from', 'date_to']),
+            'filters' => ListFilter::echo($request, self::LIST_FILTER_SPECS, ['search', 'date_from', 'date_to']),
             // Lookups as closures so filter reloads (partial) skip these queries.
             'financeCategories' => fn () => FinanceCategory::where('is_active', true)
                 ->orderBy('type')->orderBy('sort_order')->orderBy('name')->get(['id', 'type', 'name', 'name_ar', 'name_fr', 'name_en', 'color']),
@@ -316,9 +326,7 @@ class TransactionController extends Controller
         // Each may hold several values (key[]=a&key[]=b) or one scalar from
         // an old link: OR within a filter, AND across filters.
         foreach (self::LIST_FILTER_COLUMNS as $param => $column) {
-            $values = str_ends_with($param, '_id')
-                ? ListFilter::ids($request, $param)
-                : ListFilter::values($request, $param);
+            $values = ListFilter::get($request, $param, self::LIST_FILTER_SPECS[$param]);
 
             if ($values !== []) {
                 $query->whereIn($column, $values);

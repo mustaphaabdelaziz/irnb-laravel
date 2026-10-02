@@ -10,6 +10,7 @@ use App\Models\Player;
 use App\Models\PlayerStatus;
 use App\Models\Position;
 use App\Models\User;
+use App\Support\ListFilter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -253,5 +254,101 @@ class PlayerMultiSelectFiltersTest extends TestCase
 
         $this->assertSame(['A'], $this->names(['category_id' => [$u13->id, 'abc', '', '-3']]));
         $this->assertSame(['A', 'B'], $this->names(['category_id' => ['', 'abc']]));
+    }
+
+    #[Test]
+    public function a_search_finds_left_players_too(): void
+    {
+        $left = $this->playerStatus('left');
+        $this->player('Gonezo', ['status_id' => $left->id]);
+        $this->player('Gonezi');
+        $this->player('Other', ['status_id' => $left->id]);
+
+        $this->assertSame(['Gonezi', 'Gonezo'], $this->names(['search' => 'Gonez']));
+        // A picked status still wins over the search default.
+        $this->assertSame(['Gonezo'], $this->names(['search' => 'Gonez', 'status' => [$left->id]]));
+    }
+
+    #[Test]
+    public function the_archived_view_shows_every_archived_player_including_left(): void
+    {
+        $left = $this->playerStatus('left');
+        $this->player('ArchivedLeft', ['status_id' => $left->id, 'archived' => true]);
+        $this->player('Archived', ['archived' => true]);
+        $this->player('ActiveLeft', ['status_id' => $left->id]);
+
+        $this->assertSame(['Archived', 'ArchivedLeft'], $this->names(['archived' => 1]));
+        $this->assertSame([], $this->names());
+    }
+
+    #[Test]
+    public function the_no_status_option_mixes_with_status_ids(): void
+    {
+        $registered = $this->playerStatus('registered');
+        $left = $this->playerStatus('left');
+        $this->player('Member', ['status_id' => $registered->id]);
+        $this->player('Gone', ['status_id' => $left->id]);
+        $this->player('NoStatus');
+
+        $this->assertSame(['NoStatus'], $this->names(['status' => ['none']]));
+        $this->assertSame(['Gone', 'NoStatus'], $this->names(['status' => ['none', $left->id]]));
+        $this->assertSame(['none', (string) $left->id], $this->props(['status' => ['none', $left->id]])['filters']['status']);
+    }
+
+    #[Test]
+    public function several_certificates_show_holders_of_any_of_them(): void
+    {
+        $this->travelTo('2026-05-14'); // current school year 2025
+        $holder = fn (string $name, string $certificate, int $year = 2025) => $this->player($name, ['is_student' => true])
+            ->academicYears()->create(['academic_year' => $year, 'education_level' => 'secondary'])
+            ->records()->create(['period' => 'T1', 'gpa' => 17, 'certificate' => $certificate]);
+
+        $holder('Excellent', 'excellence');
+        $holder('Honor', 'honor_roll');
+        $holder('Encouraged', 'encouragement');
+        $holder('PastExcellent', 'excellence', 2024);
+
+        $this->assertSame(['Excellent', 'Honor'], $this->names(['certificate' => ['excellence', 'honor_roll']]));
+    }
+
+    #[Test]
+    public function the_echo_keeps_only_values_the_filter_can_apply(): void
+    {
+        $u13 = Category::create(['name' => 'U13']);
+
+        $filters = $this->props([
+            'category_id' => [$u13->id, 'abc', '-1'],
+            'academic' => ['bogus', 'none'],
+            'documents' => ['missing', 'missing-x', 'missing-12', 'junk'],
+            'status' => ['none', 'left'],
+            'certificate' => ['bogus'],
+        ])['filters'];
+
+        $this->assertSame([(string) $u13->id], $filters['category_id']);
+        $this->assertSame(['none'], $filters['academic']);
+        $this->assertSame(['missing', 'missing-12'], $filters['documents']);
+        $this->assertSame(['none'], $filters['status']);
+        $this->assertArrayNotHasKey('certificate', $filters);
+    }
+
+    #[Test]
+    public function a_selection_over_the_cap_is_rejected_not_truncated(): void
+    {
+        $this->player('A');
+        $this->admin ??= User::factory()->admin()->create(['email_verified_at' => now()]);
+
+        $tooMany = range(1, ListFilter::MAX_VALUES + 1);
+
+        $this->actingAs($this->admin)
+            ->from(route('dashboard'))
+            ->get(route('players.index', ['category_id' => $tooMany]))
+            ->assertRedirect(route('dashboard'))
+            ->assertSessionHasErrors('category_id');
+
+        $this->getJson(route('players.export', ['category_id' => $tooMany]))
+            ->assertStatus(422);
+
+        // Exactly the cap is fine.
+        $this->get(route('players.index', ['category_id' => range(1, ListFilter::MAX_VALUES)]))->assertOk();
     }
 }

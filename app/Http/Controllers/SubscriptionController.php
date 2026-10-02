@@ -52,7 +52,7 @@ class SubscriptionController extends Controller
             // Closures so filter reloads (partial) skip these queries.
             'branches' => fn () => Branch::orderBy('name')->get(),
             'branchStats' => fn () => $this->branchStats(),
-            'filters' => ListFilter::echo($request, ['year', 'kind', 'branch_id']),
+            'filters' => ListFilter::echo($request, ['year' => ListFilter::IDS, 'kind' => Subscription::KINDS, 'branch_id' => ListFilter::IDS]),
             'seasons' => fn () => $this->seasonOptions(Subscription::query()->whereNotNull('year')->distinct()->pluck('year')),
         ]);
     }

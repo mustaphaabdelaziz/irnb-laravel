@@ -4,8 +4,9 @@ namespace Tests\Unit;
 
 use App\Support\ListFilter;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 class ListFilterTest extends TestCase
 {
@@ -37,17 +38,36 @@ class ListFilterTest extends TestCase
     }
 
     #[Test]
-    public function the_list_is_capped(): void
+    public function more_values_than_the_cap_are_refused_not_truncated(): void
     {
-        $query = implode('&', array_map(fn ($i) => "k[]={$i}", range(1, 150)));
+        $query = fn (int $n) => implode('&', array_map(fn ($i) => "k[]={$i}", range(1, $n)));
 
-        $this->assertCount(ListFilter::MAX_VALUES, ListFilter::ids($this->request($query), 'k'));
+        $this->assertCount(ListFilter::MAX_VALUES, ListFilter::ids($this->request($query(ListFilter::MAX_VALUES)), 'k'));
+
+        $this->expectException(ValidationException::class);
+        ListFilter::ids($this->request($query(ListFilter::MAX_VALUES + 1)), 'k');
     }
 
     #[Test]
-    public function the_echo_returns_lists_for_multi_keys_only_when_set(): void
+    public function specs_keep_only_values_the_filter_applies(): void
     {
-        $echo = ListFilter::echo($this->request('a=1&b[]=x&b[]=y&search=hi&c[]='), ['a', 'b', 'c'], ['search', 'per_page']);
+        $request = $this->request('k[]=3&k[]=none&k[]=abc&k[]=missing-4&k[]=a');
+
+        $this->assertSame(['3'], ListFilter::get($request, 'k', ListFilter::IDS));
+        $this->assertSame(['3', 'none'], ListFilter::get($request, 'k', 'ids|none'));
+        $this->assertSame(['missing-4'], ListFilter::get($request, 'k', '/^missing-\d+$/'));
+        $this->assertSame(['none', 'a'], ListFilter::get($request, 'k', ['a', 'none']));
+        $this->assertSame(['3', 'none', 'abc', 'missing-4', 'a'], ListFilter::get($request, 'k', ListFilter::TEXT));
+    }
+
+    #[Test]
+    public function the_echo_returns_applied_values_for_multi_keys_only_when_set(): void
+    {
+        $echo = ListFilter::echo(
+            $this->request('a=1&b[]=x&b[]=y&b[]=z&search=hi&c[]=&d[]=abc'),
+            ['a' => ListFilter::IDS, 'b' => ['x', 'y'], 'c' => ListFilter::TEXT, 'd' => ListFilter::IDS],
+            ['search', 'per_page'],
+        );
 
         $this->assertSame(['search' => 'hi', 'a' => ['1'], 'b' => ['x', 'y']], $echo);
     }

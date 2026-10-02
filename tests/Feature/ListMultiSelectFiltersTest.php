@@ -110,21 +110,45 @@ class ListMultiSelectFiltersTest extends TestCase
     }
 
     #[Test]
-    public function users_filter_by_several_statuses_and_roles(): void
+    public function users_filter_by_approval_activity_and_role(): void
     {
         User::factory()->create(['name' => 'pending-user', 'approved' => false, 'is_active' => false, 'privileges' => ['user']]);
         User::factory()->create(['name' => 'active-admin', 'approved' => true, 'is_active' => true, 'privileges' => ['admin']]);
         User::factory()->create(['name' => 'inactive-user', 'approved' => true, 'is_active' => false, 'privileges' => ['user']]);
+        User::factory()->create(['name' => 'pending-active', 'approved' => false, 'is_active' => true, 'privileges' => ['user']]);
 
         $names = fn (array $query) => collect($this->props('users.index', $query)['users']['data'])
             ->pluck('name')->reject(fn ($n) => $n === 'zz-admin')->sort()->values()->all();
 
-        $this->assertSame(['inactive-user', 'pending-user'], $names(['status' => ['pending', 'inactive']]));
+        // Approval and activity are separate filters: AND between them.
+        $this->assertSame(['pending-user'], $names(['approval' => ['pending'], 'activity' => ['inactive']]));
+        // OR within one filter.
+        $this->assertSame(['active-admin', 'inactive-user', 'pending-active', 'pending-user'], $names(['approval' => ['pending', 'approved']]));
+        $this->assertSame(['inactive-user', 'pending-user'], $names(['activity' => 'inactive']));
+        $this->assertSame(['active-admin', 'inactive-user', 'pending-active', 'pending-user'], $names(['role' => ['admin', 'user']]));
+        $this->assertSame(['inactive-user', 'pending-active', 'pending-user'], $names(['role' => ['user', 'bogus']]));
+        $this->assertSame(['inactive-user'], $names(['approval' => ['approved'], 'role' => ['user']]));
+
+        $filters = $this->props('users.index', ['approval' => ['pending', 'bogus'], 'activity' => ['active']])['filters'];
+        $this->assertSame(['pending'], $filters['approval']);
+        $this->assertSame(['active'], $filters['activity']);
+    }
+
+    #[Test]
+    public function old_user_status_links_still_work(): void
+    {
+        User::factory()->create(['name' => 'pending-user', 'approved' => false, 'is_active' => false]);
+        User::factory()->create(['name' => 'active-user', 'approved' => true, 'is_active' => true]);
+
+        $names = fn (array $query) => collect($this->props('users.index', $query)['users']['data'])
+            ->pluck('name')->reject(fn ($n) => $n === 'zz-admin')->sort()->values()->all();
+
         $this->assertSame(['pending-user'], $names(['status' => 'pending']));
-        $this->assertSame(['active-admin', 'inactive-user', 'pending-user'], $names(['role' => ['admin', 'user']]));
-        $this->assertSame(['inactive-user', 'pending-user'], $names(['role' => ['user', 'bogus']]));
-        $this->assertSame(['inactive-user'], $names(['status' => ['approved'], 'role' => ['user']]));
-        $this->assertSame(['pending', 'inactive'], $this->props('users.index', ['status' => ['pending', 'inactive']])['filters']['status']);
+        $this->assertSame(['active-user'], $names(['status' => 'active']));
+        // The old parameter is echoed as the new filter it maps to.
+        $filters = $this->props('users.index', ['status' => 'inactive'])['filters'];
+        $this->assertSame(['inactive'], $filters['activity']);
+        $this->assertArrayNotHasKey('approval', $filters);
     }
 
     private function subscription(string $name, array $attributes = [], array $branchIds = []): Subscription

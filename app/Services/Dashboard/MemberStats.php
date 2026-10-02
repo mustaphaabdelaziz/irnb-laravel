@@ -478,7 +478,11 @@ class MemberStats
     /** How the club's students are doing at school, judged on each one's latest trimester converted to /20. */
     private function academic(DashboardFilters $filters): array
     {
+        // Left players are out, like the players list these figures open
+        // (it hides "Left the club" by default): the count clicked is the
+        // count listed.
         $latest = $this->active($filters)
+            ->notLeft()
             ->where('players.is_student', true)
             ->toBase()
             ->selectRaw('('.PlayerAcademicRecord::latestOn20Sql().') as latest_on20')
@@ -509,6 +513,7 @@ class MemberStats
     private function certificateCounts(DashboardFilters $filters, int $currentYear): array
     {
         $counts = $this->active($filters)
+            ->notLeft()
             ->where('players.is_student', true)
             ->toBase()
             ->join('player_academic_years', 'player_academic_years.player_id', '=', 'players.id')

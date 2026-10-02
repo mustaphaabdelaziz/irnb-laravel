@@ -55,7 +55,7 @@ class EquipmentCatalogController extends Controller
         return Inertia::render('Equipment/Catalog/Index', [
             'catalogs' => $catalogs,
             'strip' => fn (): array => app(ModuleStats::class)->equipment(),
-            'filters' => ListFilter::echo($request, ['category'], ['search']),
+            'filters' => ListFilter::echo($request, ['category' => ListFilter::TEXT], ['search']),
             // Closure so filter reloads (partial) skip the lookup query.
             'equipmentCategories' => fn () => EquipmentCategory::orderBy('name')->pluck('name'),
         ]);

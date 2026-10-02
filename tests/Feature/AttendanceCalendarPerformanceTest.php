@@ -74,6 +74,33 @@ class AttendanceCalendarPerformanceTest extends TestCase
         $this->assertLessThanOrEqual(20, $second['queries']);
     }
 
+    #[Test]
+    public function moving_within_a_view_reloads_only_that_views_props(): void
+    {
+        $category = $this->categories[2];
+        $version = $this->actingAs($this->user)
+            ->get(route('attendance.index', ['category_id' => $category->id, 'month' => '2026-10']))
+            ->viewData('page')['version'];
+
+        $props = $this->actingAs($this->user)
+            ->get(route('attendance.index', ['view' => 'month', 'category_id' => $category->id, 'month' => '2026-11']), [
+                'X-Inertia' => 'true',
+                'X-Inertia-Version' => (string) $version,
+                'X-Inertia-Partial-Component' => 'Attendance/Index',
+                'X-Inertia-Partial-Data' => 'view,categoryId,month,sessions,preseason,hasSchedule,flash',
+            ])
+            ->assertOk()
+            ->json('props');
+
+        $this->assertSame('2026-11', $props['month']);
+        $this->assertSame($category->id, $props['categoryId']);
+        $this->assertNotEmpty($props['sessions']);
+        $this->assertStringStartsWith('2026-11-', $props['sessions'][0]['date']);
+        $this->assertArrayHasKey('flash', $props);
+        $this->assertArrayNotHasKey('categories', $props);
+        $this->assertArrayNotHasKey('attendanceCodes', $props);
+    }
+
     /** @return array{queries: int, writes: array<int, string>, transactions: int} */
     private function measure(array $params): array
     {

@@ -37,8 +37,20 @@ const sheetHref = computed(() => (props.categoryId ? route('attendance.sheets.mo
 // Empty values are dropped so the URL only carries what is set. The category
 // travels along unless a view sets it (null = every category).
 const clean = (params) => Object.fromEntries(Object.entries(params).filter(([, v]) => v !== null && v !== undefined && v !== ''));
+// The props each view returns (AttendanceCalendarController). Moving within a
+// view reloads only these, so the server skips the category list and codes;
+// `flash` comes along so an old message is not shown again. Switching views
+// is a full visit, since each view returns different props.
+const VIEW_PROPS = {
+    month: ['view', 'categoryId', 'month', 'sessions', 'preseason', 'hasSchedule', 'flash'],
+    week: ['view', 'categoryId', 'month', 'week', 'sessions', 'flash'],
+    agenda: ['view', 'categoryId', 'month', 'sessions', 'flash'],
+    timeline: ['view', 'categoryId', 'kind', 'month', 'from', 'to', 'events', 'flash'],
+};
 function navigate(params, options = {}) {
-    router.get(route('attendance.index'), clean({ view: props.view, category_id: props.categoryId, ...params }), { preserveScroll: true, ...options });
+    const view = params.view ?? props.view;
+    const only = view === props.view ? VIEW_PROPS[view] : undefined;
+    router.get(route('attendance.index'), clean({ view: props.view, category_id: props.categoryId, ...params }), { preserveScroll: true, ...(only ? { only } : {}), ...options });
 }
 const switchView = (view) => navigate({ view, month: props.month }, { preserveScroll: false });
 

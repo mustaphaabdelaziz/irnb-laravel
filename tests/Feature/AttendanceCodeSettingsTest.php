@@ -93,7 +93,7 @@ class AttendanceCodeSettingsTest extends TestCase
         AttendanceSettings::save(['codes' => ['present' => ['code' => 'ح'], 'late' => ['code' => 'ت']]]);
         $admin = $this->admin();
 
-        $this->assertSame(AttendanceStatus::Late, Attendance::where('player_id', $a->id)->value('status'));
+        $this->assertSame(AttendanceStatus::Late->value, Attendance::where('player_id', $a->id)->value('status'));
 
         $this->actingAs($admin)->get(route('attendance.grid', ['category_id' => $u15->id, 'month' => '2026-10']))
             ->assertInertia(fn (Assert $page) => $page

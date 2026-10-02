@@ -32,6 +32,13 @@ class PlayerStatus extends Model
         ];
     }
 
+    /** @return list<array{id: int, name: string}> every status, in the lookup's order, as {id, name} in the current locale */
+    public static function options(): array
+    {
+        return static::orderBy('sort_order')->orderBy('id')->get()
+            ->map(fn (PlayerStatus $s) => ['id' => $s->id, 'name' => $s->localized_name])->values()->all();
+    }
+
     public function players(): HasMany
     {
         return $this->hasMany(Player::class, 'status_id');

@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Enums\AttendanceStatus;
 use App\Enums\SessionKind;
+use App\Models\Attendance;
+use App\Models\AttendanceCustomStatus;
 use App\Models\Category;
 use App\Models\ClubClosure;
+use App\Models\PlayerStatus;
 use App\Models\PreseasonTarget;
 use App\Models\TrainingSchedule;
 use App\Models\TrainingSession;
@@ -14,6 +17,7 @@ use App\Support\AttendanceSettings;
 use App\Support\Season;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -33,8 +37,12 @@ class AttendanceSettingsController extends Controller
             'targets' => PreseasonTarget::get(['category_id', 'season_start_year', 'target_count']),
             'seasons' => collect([$current, Season::forStartYear($current->startYear + 1)])
                 ->map(fn (Season $s) => ['start_year' => $s->startYear, 'label' => $s->label()])->values(),
-            'settings' => AttendanceSettings::get(),
+            // The roster set shows resolved: never set = the status coded `registered`.
+            'settings' => ['roster_status_ids' => AttendanceSettings::rosterStatusIds()] + AttendanceSettings::get(),
+            'playerStatuses' => PlayerStatus::options(),
             'statuses' => AttendanceStatus::values(),
+            'customStatuses' => $this->customStatuses(),
+            'behaviours' => AttendanceCustomStatus::BEHAVIOURS,
         ]);
     }
 
@@ -45,6 +53,9 @@ class AttendanceSettingsController extends Controller
             'rules.late_minutes_as_absent' => ['required', 'integer', 'between:0,240'],
             'alerts.min_score_pct' => ['required', 'integer', 'between:0,100'],
             'alerts.unexcused_streak' => ['required', 'integer', 'between:0,20'],
+            // Left out (null) or empty with no status defined at all: unchanged. Otherwise at least one status.
+            'roster_status_ids' => ['nullable', 'array', Rule::when(PlayerStatus::exists(), 'min:1')],
+            'roster_status_ids.*' => ['integer', 'distinct', 'exists:player_statuses,id'],
         ];
         foreach (AttendanceStatus::values() as $status) {
             $rules["points.$status"] = ['required', 'numeric', 'between:-5,5'];
@@ -60,6 +71,7 @@ class AttendanceSettingsController extends Controller
             'codes.*.code.regex' => 'att.error.code_format',
             'codes.*.color.required' => 'att.error.color_format',
             'codes.*.color.regex' => 'att.error.color_format',
+            'roster_status_ids.min' => 'att.error.roster_statuses_required',
         ]);
 
         AttendanceSettings::save([
@@ -67,6 +79,7 @@ class AttendanceSettingsController extends Controller
             'rules' => array_map('intval', $data['rules']),
             'alerts' => array_map('intval', $data['alerts']),
             'codes' => $this->normaliseCodes($data['codes']),
+            ...(! empty($data['roster_status_ids']) ? ['roster_status_ids' => array_values(array_map('intval', $data['roster_status_ids']))] : []),
         ]);
 
         return back()->with('success', 'flash.attendance_settings_saved');
@@ -167,13 +180,13 @@ class AttendanceSettingsController extends Controller
 
     /**
      * Codes are stored upper-cased and must differ from each other ignoring
-     * case (the grid compares them that way); the later status in the list
-     * gets the error. Colours are stored lower-cased, empty names as null.
+     * case (the grid compares them that way), and from every custom code;
+     * the later status in the list gets the error. Colours are stored lower-cased, empty names as null.
      */
     private function normaliseCodes(array $input): array
     {
         $codes = [];
-        $seen = [];
+        $seen = array_fill_keys(AttendanceCustomStatus::pluck('code')->map(fn (string $code) => AttendanceCode::normalise($code))->all(), true);
         $errors = [];
 
         foreach (AttendanceStatus::values() as $status) {
@@ -198,6 +211,19 @@ class AttendanceSettingsController extends Controller
         }
 
         return $codes;
+    }
+
+    /** @return list<array<string, mixed>> the custom codes as the settings page edits them, with whether any mark uses each */
+    private function customStatuses(): array
+    {
+        $customs = AttendanceCustomStatus::orderBy('sort_order')->orderBy('id')->get();
+        $used = Attendance::whereIn('status', $customs->pluck('key'))->distinct()->pluck('status')->flip();
+
+        return $customs->map(fn (AttendanceCustomStatus $s) => [
+            'id' => $s->id, 'key' => $s->key, 'code' => $s->code, 'color' => $s->color,
+            'label_ar' => $s->label_ar, 'label_fr' => $s->label_fr, 'label_en' => $s->label_en,
+            'behaviour' => $s->behaviour, 'is_active' => $s->is_active, 'used' => $used->has($s->key),
+        ])->values()->all();
     }
 
     private function validateSchedule(Request $request): array

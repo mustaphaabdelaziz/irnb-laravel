@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Branch;
 use App\Models\User;
+use App\Services\Attendance\AttendanceStatusCatalog;
 use App\Services\Dashboard\AttendanceCard;
 use App\Services\Dashboard\DashboardFilters;
 use App\Services\Dashboard\FinanceStats;
@@ -11,7 +12,6 @@ use App\Services\Dashboard\HeroStats;
 use App\Services\Dashboard\MemberStats;
 use App\Services\Dashboard\OperationsStats;
 use App\Services\Dashboard\OverviewStats;
-use App\Support\AttendanceSettings;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -60,7 +60,7 @@ class DashboardController extends Controller
             'hero' => fn (): array => $this->hero->get($filters),
             // Status names and colours for the members tab's attendance card.
             'attendanceCodes' => fn (): ?array => $user?->hasPermission('attendance', 'view')
-                ? AttendanceSettings::codes()
+                ? app(AttendanceStatusCatalog::class)->codes()
                 : null,
             ...$this->tabProps($filters, $user),
         ]);

@@ -79,6 +79,9 @@ return [
         'attendance.closures.store' => ['attendance', 'edit'],
         'attendance.closures.destroy' => ['attendance', 'edit'],
         'attendance.preseason-targets.store' => ['attendance', 'edit'],
+        // Custom codes are settings too: adding or deleting one changes how every mark reads.
+        'attendance.custom-statuses.store' => ['attendance', 'edit'],
+        'attendance.custom-statuses.destroy' => ['attendance', 'edit'],
         'transactions.receipt' => ['transactions', 'view'],
         'reports.financial' => ['reports', 'view'],
         'finance.index' => ['finance', 'view'],

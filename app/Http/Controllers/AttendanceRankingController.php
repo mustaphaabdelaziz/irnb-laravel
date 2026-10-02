@@ -62,7 +62,7 @@ class AttendanceRankingController extends Controller
                 'name' => $row['name'],
                 'category' => $row['category'],
                 'expected' => $row['expected'],
-                'present' => $row['counts']['present'],
+                'present' => $row['scored']['present'],
                 'score_pct' => $row['score_pct'],
             ], $rows),
             'unranked' => $unranked,

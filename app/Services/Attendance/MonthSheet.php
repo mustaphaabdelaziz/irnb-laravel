@@ -18,7 +18,8 @@ use Illuminate\Support\Collection;
  */
 final class MonthSheet
 {
-    private const PLAYER_COLUMNS = ['id', 'firstname', 'lastname', 'file_number', 'category_id'];
+    // Roster::COLUMNS: what Player::fullname and the sheets need.
+    private const PLAYER_COLUMNS = Roster::COLUMNS;
 
     public function __construct(
         private readonly SessionGenerator $generator,
@@ -54,8 +55,9 @@ final class MonthSheet
                 continue;
             }
             $categoryIds = $session->categoryIds();
-            $key = $session->date.'|'.implode(',', $categoryIds);
-            $expected[$key] ??= $this->roster->expected($categoryIds, $session->date)->modelKeys();
+            $statusIds = $this->roster->statusIdsFor($session);
+            $key = $session->date.'|'.implode(',', $categoryIds).'|'.implode(',', $statusIds);
+            $expected[$key] ??= $this->roster->expected($categoryIds, $session->date, $statusIds)->modelKeys();
             foreach ($expected[$key] as $playerId) {
                 $cells[$playerId][$session->id] = '';
             }

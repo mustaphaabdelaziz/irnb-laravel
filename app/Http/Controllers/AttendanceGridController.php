@@ -9,10 +9,10 @@ use App\Models\Category;
 use App\Models\Player;
 use App\Models\TrainingSession;
 use App\Services\Attendance\AttendanceCode;
+use App\Services\Attendance\AttendanceStatusCatalog;
 use App\Services\Attendance\MarkRecorder;
 use App\Services\Attendance\MonthSheet;
 use App\Services\Attendance\Roster;
-use App\Support\AttendanceSettings;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -47,13 +47,13 @@ class AttendanceGridController extends Controller
             'sessions' => $sessions->map(fn (TrainingSession $s) => [
                 'id' => $s->id, 'date' => $s->date, 'start_time' => $s->start_time, 'kind' => $s->kind->value, 'state' => $s->state->value,
             ])->values(),
-            'rows' => $players->map(fn (Player $p) => ['id' => $p->id, 'name' => trim("{$p->lastname} {$p->firstname}")])->values(),
+            'rows' => $players->map(fn (Player $p) => ['id' => $p->id, 'name' => $p->fullname])->values(),
             'cells' => (object) $cells,
-            'attendanceCodes' => AttendanceSettings::codes(),
+            'attendanceCodes' => app(AttendanceStatusCatalog::class)->codes(),
         ]);
     }
 
-    public function save(Request $request, MarkRecorder $recorder, Roster $roster): RedirectResponse
+    public function save(Request $request, MarkRecorder $recorder, Roster $roster, AttendanceStatusCatalog $catalog): RedirectResponse
     {
         $data = $request->validate([
             'columns' => ['required', 'array', 'min:1'],
@@ -80,7 +80,7 @@ class AttendanceGridController extends Controller
             $existing = $session->attendances->keyBy('player_id');
             $allowedIds = $existing->isNotEmpty()
                 ? $existing->keys()->all()
-                : $roster->expected($session->categoryIds(), $session->date)->modelKeys();
+                : $roster->expected($session->categoryIds(), $session->date, $roster->statusIdsFor($session))->modelKeys();
             $allowed = array_flip($allowedIds);
             $marks = [];
 
@@ -98,15 +98,21 @@ class AttendanceGridController extends Controller
                     continue;
                 }
                 $previous = $existing->get((int) $playerId);
+                // A hidden custom code stays only where the saved mark already has it.
+                if (! $catalog->isActive($parsed['status']) && $previous?->status !== $parsed['status']) {
+                    $errors["columns.$i.codes.$playerId"] = 'att.error.code_hidden';
+
+                    continue;
+                }
                 $keepDetails = $previous?->status === $parsed['status'];
                 $reason = $keepDetails ? $previous->reason?->value : null;
-                if ($parsed['status'] === AttendanceStatus::AbsentExcused && $reason === null) {
+                if ($parsed['status'] === AttendanceStatus::AbsentExcused->value && $reason === null) {
                     $reason = AbsenceReason::Other->value;
                 }
 
                 $marks[] = [
                     'player_id' => (int) $playerId,
-                    'status' => $parsed['status']->value,
+                    'status' => $parsed['status'],
                     'minutes' => $parsed['minutes'],
                     'reason' => $reason,
                     'note' => $keepDetails ? $previous->note : null,

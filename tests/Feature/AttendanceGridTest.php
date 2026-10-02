@@ -59,7 +59,7 @@ class AttendanceGridTest extends TestCase
         ])->assertSessionHasNoErrors()->assertSessionHas('success', 'flash.attendance_saved');
 
         $marks = $session->attendances()->get()->keyBy('player_id');
-        $this->assertSame(AttendanceStatus::Late, $marks[$a->id]->status);
+        $this->assertSame(AttendanceStatus::Late->value, $marks[$a->id]->status);
         $this->assertSame(20, $marks[$a->id]->minutes);
         $this->assertSame(AbsenceReason::Injury, $marks[$b->id]->reason);
     }
@@ -76,7 +76,7 @@ class AttendanceGridTest extends TestCase
         ])->assertSessionHasNoErrors();
 
         $marks = $session->attendances()->get()->keyBy('player_id');
-        $this->assertSame(AttendanceStatus::Present, $marks[$a->id]->status);
+        $this->assertSame(AttendanceStatus::Present->value, $marks[$a->id]->status);
         $this->assertSame(AbsenceReason::Other, $marks[$b->id]->reason);
         $this->assertSame(SessionState::Held, $session->fresh()->state);
     }
@@ -150,7 +150,7 @@ class AttendanceGridTest extends TestCase
         ])->assertSessionHasNoErrors();
 
         $mark = $session->attendances()->sole();
-        $this->assertSame(AttendanceStatus::Late, $mark->status);
+        $this->assertSame(AttendanceStatus::Late->value, $mark->status);
         $this->assertSame(15, $mark->minutes);
     }
 }

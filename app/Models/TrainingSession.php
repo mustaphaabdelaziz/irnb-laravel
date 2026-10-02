@@ -23,12 +23,13 @@ class TrainingSession extends Model
 {
     protected $fillable = [
         'category_id', 'schedule_id', 'date', 'start_time', 'end_time', 'kind', 'state',
-        'cancel_reason', 'moved_from', 'coach', 'title', 'notes',
+        'cancel_reason', 'moved_from', 'coach', 'title', 'notes', 'roster_status_ids',
     ];
 
     protected function casts(): array
     {
-        return ['kind' => SessionKind::class, 'state' => SessionState::class];
+        // roster_status_ids: player_statuses ids of the expected roster; null = the settings' default (see Roster).
+        return ['kind' => SessionKind::class, 'state' => SessionState::class, 'roster_status_ids' => 'array'];
     }
 
     protected static function booted(): void

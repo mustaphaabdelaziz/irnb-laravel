@@ -2,14 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\AttendanceStatus;
 use App\Models\Category;
 use App\Services\Activity\ActivityPeriod;
 use App\Services\Attendance\AttendanceStats;
+use App\Services\Attendance\AttendanceStatusCatalog;
 use App\Services\Attendance\PlayerNames;
 use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
-use App\Support\AttendanceSettings;
 use App\Support\Export;
 use App\Support\UiLang;
 use Illuminate\Http\Request;
@@ -34,7 +33,7 @@ class AttendanceStatsController extends Controller
     {
         return Inertia::render('Attendance/Stats', [
             ...$this->data($request),
-            'attendanceCodes' => AttendanceSettings::codes(),
+            'attendanceCodes' => app(AttendanceStatusCatalog::class)->codes(),
         ]);
     }
 
@@ -50,7 +49,9 @@ class AttendanceStatsController extends Controller
             ? collect($data['categories'])->firstWhere('id', $data['categoryId'])['name']
             : UiLang::get('att.all_categories');
         $filename = 'attendance-stats-'.$from.'-'.$to.($data['categoryId'] !== null ? '-'.$data['categoryId'] : '');
-        $labels = AttendanceSettings::labels();
+        $catalog = app(AttendanceStatusCatalog::class);
+        // A hidden custom code only gets a column while the data has marks for it.
+        $labels = $catalog->labels(null, $catalog->withMarks($data['totals']['counts'], ...array_column($data['categoryRows'], 'counts')));
 
         if ($request->query('format') === 'pdf') {
             $html = view('pdf.attendance-stats', [
@@ -58,7 +59,7 @@ class AttendanceStatsController extends Controller
                 'club' => ClubHeader::data(),
                 'categoryName' => $categoryName,
                 'labels' => $labels,
-                'codes' => AttendanceSettings::codes(),
+                'codes' => $catalog->codes(),
             ])->render();
 
             return $this->pdf->stream($html, $filename.'.pdf', app()->getLocale() === 'ar', true);
@@ -70,9 +71,9 @@ class AttendanceStatsController extends Controller
         }
         array_push($headers, UiLang::get('att.col.late_minutes'), UiLang::get('att.col.missed_hours'), UiLang::get('att.col.score'), UiLang::get('att.col.score_pct'));
 
-        $rows = array_map(function (array $row): array {
+        $rows = array_map(function (array $row) use ($labels): array {
             $cells = [$row['name'], (string) $row['membership_id'], $row['category'] ?? '', $row['expected']];
-            foreach (AttendanceStatus::values() as $status) {
+            foreach (array_keys($labels) as $status) {
                 array_push($cells, $row['counts'][$status], $row['pct'][$status]);
             }
 

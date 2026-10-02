@@ -21,6 +21,7 @@ use App\Models\Subscription;
 use App\Models\Transaction;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
+use App\Services\Attendance\AttendanceStatusCatalog;
 use App\Services\Dashboard\ModuleStats;
 use App\Services\Finance\DefaultRegisterResolver;
 use App\Services\Player\DocumentChecklist;
@@ -29,7 +30,6 @@ use App\Services\Player\MembershipNumber;
 use App\Services\Player\PlayerDocumentService;
 use App\Services\Player\RegisterPlayerService;
 use App\Services\Storage\FileStorageService;
-use App\Support\AttendanceSettings;
 use App\Support\CertificateThresholds;
 use App\Support\Export;
 use App\Support\ListFilter;
@@ -228,7 +228,7 @@ class PlayerController extends Controller
             // The attendance card fetches its own data (attendance.players.show);
             // the page only carries the status names and colours it draws with.
             'attendanceCodes' => $request->user()?->hasPermission('attendance', 'view')
-                ? AttendanceSettings::codes()
+                ? app(AttendanceStatusCatalog::class)->codes()
                 : null,
         ]);
     }

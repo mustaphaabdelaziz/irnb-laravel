@@ -14,7 +14,8 @@ const props = defineProps({
 });
 const { t } = useI18n();
 
-const hasMarks = computed(() => props.data.last30.expected > 0);
+// Any mark at all, even only not_counted ones (then nothing is expected, but the marks still show).
+const hasMarks = computed(() => Object.values(props.data.last30.counts ?? {}).some((n) => n > 0));
 const stateClass = {
     planned: 'text-muted-foreground',
     held: 'text-emerald-600 dark:text-emerald-400',
@@ -54,7 +55,7 @@ const stateClass = {
                 <h3 class="text-sm font-semibold text-muted-foreground">{{ t('att.dash.last30') }}</h3>
                 <p v-if="!hasMarks" class="mt-3 text-sm text-muted-foreground">{{ t('att.dash.no_marks') }}</p>
                 <div v-else class="mt-3">
-                    <StatusBreakdown :counts="data.last30.counts" />
+                    <StatusBreakdown :counts="data.last30.counts" :pct="data.last30.pct" />
                 </div>
             </section>
             <section>

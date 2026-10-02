@@ -7,12 +7,12 @@ use App\Enums\SessionState;
 use App\Models\Category;
 use App\Models\Player;
 use App\Models\TrainingSession;
+use App\Services\Attendance\AttendanceStatusCatalog;
 use App\Services\Attendance\MonthSheet;
 use App\Services\Attendance\Roster;
 use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
 use App\Services\Player\FileNumber;
-use App\Support\AttendanceSettings;
 use App\Support\Season;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -39,7 +39,7 @@ class AttendanceSheetController extends Controller
     public function __construct(private readonly PdfService $pdf) {}
 
     /** One category's month: players × sessions, A4 landscape (right-to-left in Arabic). */
-    public function month(Request $request, MonthSheet $sheet): Response
+    public function month(Request $request, MonthSheet $sheet, AttendanceStatusCatalog $catalog): Response
     {
         $data = $request->validate([
             'category_id' => ['required', 'integer', 'exists:categories,id'],
@@ -96,8 +96,8 @@ class AttendanceSheetController extends Controller
             ])->values()->all(),
             'cells' => $cells,
             'filled' => $request->boolean('filled'),
-            'labels' => AttendanceSettings::labels(),
-            'codes' => AttendanceSettings::codes(),
+            'labels' => $catalog->labels(null, $catalog->shown($sessions->flatMap->attendances->pluck('status'))),
+            'codes' => $catalog->codes(),
         ])->render();
 
         return $this->pdf->stream($html, "attendance-sheet-{$category->id}-{$anchor->format('Y-m')}.pdf", $locale === 'ar', true);
@@ -108,7 +108,7 @@ class AttendanceSheetController extends Controller
      * expected roster of every category taking part), a tick column per
      * status, minutes, reason, note, and the session log to fill in.
      */
-    public function session(Request $request, TrainingSession $session, Roster $roster): Response
+    public function session(Request $request, TrainingSession $session, Roster $roster, AttendanceStatusCatalog $catalog): Response
     {
         $request->validate(['filled' => ['nullable', 'boolean']]);
         $filled = $request->boolean('filled');
@@ -146,7 +146,7 @@ class AttendanceSheetController extends Controller
                     // Once marked, the mark's own category_id (fixed at marking time) wins over the
                     // player's current one, so a later category change never retags a frozen session.
                     'category' => $joint ? $categories->get($mark?->category_id ?? $p->category_id) : null,
-                    'status' => $filled ? $mark?->status->value : null,
+                    'status' => $filled ? $mark?->status : null,
                     'minutes' => $filled ? $mark?->minutes : null,
                     'reason' => $filled ? $mark?->reason?->value : null,
                     'note' => $filled ? $mark?->note : null,
@@ -154,8 +154,8 @@ class AttendanceSheetController extends Controller
             })->values()->all(),
             'blankRows' => self::BLANK_ROWS,
             'filled' => $filled,
-            'labels' => AttendanceSettings::labels(),
-            'codes' => AttendanceSettings::codes(),
+            'labels' => $catalog->labels(null, $catalog->shown($filled ? $marks->pluck('status') : [])),
+            'codes' => $catalog->codes(),
             'reasons' => AbsenceReason::values(),
         ])->render();
 
@@ -168,10 +168,10 @@ class AttendanceSheetController extends Controller
         return FileNumber::format($player->file_number === null ? null : (int) $player->file_number) ?: '—';
     }
 
-    /** "LASTNAME Firstname", exactly as the month grid lists the player. */
+    /** Player::fullname, exactly as the month grid and the session page list the player. */
     private static function name(Player $player): string
     {
-        return trim("{$player->lastname} {$player->firstname}");
+        return $player->fullname;
     }
 
     /**

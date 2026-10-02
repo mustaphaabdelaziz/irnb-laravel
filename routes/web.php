@@ -3,6 +3,7 @@
 use App\Http\Controllers\AttendanceAlertsController;
 use App\Http\Controllers\AttendanceCalendarController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\AttendanceCustomStatusController;
 use App\Http\Controllers\AttendanceGridController;
 use App\Http\Controllers\AttendanceInjuryController;
 use App\Http\Controllers\AttendancePlayerController;
@@ -360,6 +361,10 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         Route::get('/attendance/settings', [AttendanceSettingsController::class, 'index'])->name('attendance.settings');
         Route::put('/attendance/settings', [AttendanceSettingsController::class, 'update'])->name('attendance.settings.update');
         Route::put('/attendance/settings/letter', [AttendanceSettingsController::class, 'updateLetter'])->name('attendance.settings.letter');
+        // The owner's custom codes; every write needs attendance/edit (config/permissions.php).
+        Route::post('/attendance/custom-statuses', [AttendanceCustomStatusController::class, 'store'])->name('attendance.custom-statuses.store');
+        Route::put('/attendance/custom-statuses/{customStatus}', [AttendanceCustomStatusController::class, 'update'])->name('attendance.custom-statuses.update');
+        Route::delete('/attendance/custom-statuses/{customStatus}', [AttendanceCustomStatusController::class, 'destroy'])->name('attendance.custom-statuses.destroy');
         Route::post('/attendance/schedules', [AttendanceSettingsController::class, 'storeSchedule'])->name('attendance.schedules.store');
         Route::put('/attendance/schedules/{schedule}', [AttendanceSettingsController::class, 'updateSchedule'])->name('attendance.schedules.update');
         Route::delete('/attendance/schedules/{schedule}', [AttendanceSettingsController::class, 'destroySchedule'])->name('attendance.schedules.destroy');

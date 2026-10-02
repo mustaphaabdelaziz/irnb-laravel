@@ -9,9 +9,9 @@ use App\Http\Requests\SaveAttendanceMarksRequest;
 use App\Models\Category;
 use App\Models\Player;
 use App\Models\TrainingSession;
+use App\Services\Attendance\AttendanceStatusCatalog;
 use App\Services\Attendance\MarkRecorder;
 use App\Services\Attendance\Roster;
-use App\Support\AttendanceSettings;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -20,7 +20,7 @@ use Inertia\Response;
 class AttendanceController extends Controller
 {
     /** One session: its roster with marks (everyone present until first saved), its categories and its log. */
-    public function show(TrainingSession $session, Roster $roster): Response
+    public function show(TrainingSession $session, Roster $roster, AttendanceStatusCatalog $catalog): Response
     {
         $marks = $session->attendances()->get()->keyBy('player_id');
         // Loaded once up front: both forSession() and orderedCategories() read
@@ -47,28 +47,42 @@ class AttendanceController extends Controller
 
                 return [
                     'player_id' => $p->id,
-                    'name' => trim("{$p->lastname} {$p->firstname}"),
+                    'name' => $p->fullname,
                     // Where a player comes from only matters when several categories share the session.
                     // Once marked, the mark's own category_id (fixed at marking time) wins over the
                     // player's current one, so a later category change never retags a frozen session.
                     'category' => $joint ? $categories->get($mark?->category_id ?? $p->category_id) : null,
-                    'status' => $mark?->status->value ?? AttendanceStatus::Present->value,
+                    'status' => $mark?->status ?? AttendanceStatus::Present->value,
                     'minutes' => $mark?->minutes,
                     'reason' => $mark?->reason?->value,
                     'note' => $mark?->note,
                 ];
             })->values(),
-            'candidates' => Player::where('archived', false)->whereNull('left_at')
+            // Anyone to add by hand, whatever their status or category: not archived,
+            // not gone before the session date, not already listed; searched by full name.
+            'candidates' => Player::with(['status', 'category'])
+                ->where('archived', false)
+                ->where(fn ($q) => $q->whereNull('left_at')->orWhereDate('left_at', '>', $session->date))
                 ->whereNotIn('id', $players->modelKeys())
+                // A legacy "left" status with no leave date has left all the same.
+                ->when(Player::leftStatusId(), fn ($q, int $left) => $q->where(fn ($q) => $q->whereNull('status_id')
+                    ->orWhere('status_id', '!=', $left)
+                    ->orWhereNotNull('left_at')))
                 ->orderBy('lastname')->orderBy('firstname')
-                ->get(['id', 'firstname', 'lastname'])
-                ->map(fn (Player $p) => ['id' => $p->id, 'name' => trim("{$p->lastname} {$p->firstname}")]),
+                ->get([...Roster::COLUMNS, 'status_id'])
+                ->map(fn (Player $p) => [
+                    'id' => $p->id,
+                    'name' => $p->fullname,
+                    'status' => $p->status?->localized_name,
+                    'category' => $p->category?->localized_name,
+                ]),
             'lastCoach' => TrainingSession::where('category_id', $session->category_id)
                 ->whereKeyNot($session->id)->whereNotNull('coach')
                 ->orderByDesc('date')->value('coach'),
-            'statuses' => AttendanceStatus::values(),
+            // The buttons: every active status, plus a hidden custom one still used in this session.
+            'statuses' => $catalog->shown($marks->pluck('status')),
             'reasons' => AbsenceReason::values(),
-            'attendanceCodes' => AttendanceSettings::codes(),
+            'attendanceCodes' => $catalog->codes(),
             'allCategories' => $session->kind === SessionKind::Preseason
                 ? Category::orderBy('id')->get()->map(fn (Category $c) => ['id' => $c->id, 'name' => $c->localized_name])->values()
                 : [],

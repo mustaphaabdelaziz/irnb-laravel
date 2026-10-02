@@ -57,9 +57,9 @@ final class AtRisk
      * Every active player (not archived, not left) at risk over the period,
      * worst first: lowest score % (none last), then longest streak, then
      * name. $categoryId keeps the players now in that category; their numbers
-     * still cover all their marks, since the risk is the person's. Five
-     * queries whatever the roster (players(): 2, the streak scan: 1, names:
-     * 2), three when nobody is at risk.
+     * still cover all their marks, since the risk is the person's. Six
+     * queries whatever the roster (the custom codes: 1, players(): 2, the
+     * streak scan: 1, names: 2), four when nobody is at risk.
      *
      * @return list<array<string, mixed>>
      */
@@ -79,7 +79,7 @@ final class AtRisk
                 'player_id' => $playerId,
                 'expected' => $row['expected'],
                 'score_pct' => $row['score_pct'],
-                'unexcused' => $row['counts']['absent_unexcused'],
+                'unexcused' => $row['scored']['absent_unexcused'],
                 'current_streak' => $streak['current'],
                 'longest_streak' => $streak['longest'],
                 'last_date' => $streak['last_date'],

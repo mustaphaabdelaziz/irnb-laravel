@@ -17,7 +17,7 @@ const props = defineProps({
 });
 const { t, locale } = useI18n();
 const { can } = useCan();
-const { statuses, code, label, chipStyle, tint, takesMinutes, statusOf } = useAttendanceCodes();
+const { activeStatuses, code, label, chipStyle, tint, takesMinutes, statusOf } = useAttendanceCodes();
 const page = usePage();
 const editable = computed(() => can('attendance', 'edit'));
 const lang = computed(() => (locale.value === 'ar' ? 'ar' : locale.value));
@@ -110,7 +110,7 @@ function save() {
         </template>
 
         <div class="mb-2 flex flex-wrap gap-2 text-xs">
-            <span v-for="s in statuses" :key="s" class="inline-flex items-center gap-1 rounded-full px-2 py-0.5" :style="chipStyle(s)">
+            <span v-for="s in activeStatuses" :key="s" class="inline-flex items-center gap-1 rounded-full px-2 py-0.5" :style="chipStyle(s)">
                 <b class="font-mono" dir="ltr">{{ legendCode(s) }}</b>{{ label(s) }}
             </span>
         </div>

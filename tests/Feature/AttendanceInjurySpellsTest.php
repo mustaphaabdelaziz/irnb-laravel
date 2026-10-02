@@ -296,8 +296,8 @@ class AttendanceInjurySpellsTest extends TestCase
         $add(27);
 
         $this->assertSame($few, $measure());
-        // The marks of injured players, their details, the players, their categories.
-        $this->assertSame(4, $few);
+        // The custom codes, the marks of injured players, their details, the players, their categories.
+        $this->assertSame(5, $few);
     }
 
     /** Runs club() and returns [its result, the player ids whose marks its first query streamed]. */
@@ -308,7 +308,8 @@ class AttendanceInjurySpellsTest extends TestCase
         DB::enableQueryLog();
         $club = $spells->club($from, $to);
         DB::disableQueryLog();
-        $first = DB::getQueryLog()[0];
+        // The scan is the first query after the custom codes lookup (which statuses are skipped).
+        $first = collect(DB::getQueryLog())->first(fn (array $q) => ! str_contains($q['query'], 'attendance_custom_statuses'));
         $scanned = array_values(array_unique(array_map(fn (object $row) => (int) $row->player_id, DB::select($first['query'], $first['bindings']))));
 
         return [$club, $scanned];

@@ -106,7 +106,7 @@ class MarkRecorderTest extends TestCase
         $recorder->save($session, [['player_id' => $a->id, 'status' => 'absent_unexcused']], null);
 
         $this->assertSame([$a->id], $session->attendances()->pluck('player_id')->all());
-        $this->assertSame(AttendanceStatus::AbsentUnexcused, $session->attendances()->first()->status);
+        $this->assertSame(AttendanceStatus::AbsentUnexcused->value, $session->attendances()->first()->status);
         $this->assertSame('Karim', $session->fresh()->coach); // null log keeps it
     }
 
@@ -126,7 +126,7 @@ class MarkRecorderTest extends TestCase
         $recorder->save($session, [['player_id' => $a->id, 'status' => 'late', 'minutes' => 5]], null);
 
         $mark = $session->attendances()->sole();
-        $this->assertSame(AttendanceStatus::Late, $mark->status);
+        $this->assertSame(AttendanceStatus::Late->value, $mark->status);
         $this->assertSame($u15->id, $mark->category_id);   // unchanged despite the move
     }
 

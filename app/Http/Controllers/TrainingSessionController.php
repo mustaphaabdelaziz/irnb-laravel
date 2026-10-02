@@ -30,8 +30,14 @@ class TrainingSessionController extends Controller
             'category_ids.*' => ['exclude_unless:kind,preseason', 'integer', 'distinct', 'exists:categories,id'],
             'kind' => ['required', Rule::in([SessionKind::Extra->value, SessionKind::Preseason->value])],
             'title' => ['nullable', 'string', 'max:150'],
+            // The player statuses its roster is drawn from (the dialog pre-checks the settings' default).
+            'roster_status_ids' => ['nullable', 'array', 'min:1'],
+            'roster_status_ids.*' => ['integer', 'distinct', 'exists:player_statuses,id'],
             ...$this->slotRules(),
-        ]);
+        ], ['roster_status_ids.min' => 'att.error.roster_statuses_required']);
+        if (isset($data['roster_status_ids'])) {
+            $data['roster_status_ids'] = array_values(array_map('intval', $data['roster_status_ids']));
+        }
         $categoryIds = $data['kind'] === SessionKind::Preseason->value
             ? $this->uniqueIds([(int) $data['category_id'], ...($data['category_ids'] ?? [])])
             : [(int) $data['category_id']];

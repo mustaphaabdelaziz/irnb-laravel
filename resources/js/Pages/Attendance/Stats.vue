@@ -53,6 +53,8 @@ const tiles = computed(() => [
     { key: 'score', label: t('att.col.score_pct'), value: pct(props.totals.score_pct) },
 ]);
 
+// Any mark in the period, even only not_counted ones (then nothing is expected).
+const hasAnyMark = computed(() => Object.values(props.totals?.counts ?? {}).some((n) => n > 0));
 const statusChart = computed(() => statusBars(props.monthly, statuses.value, label, color, locale.value));
 const stackedOptions = computed(() => baseOptions({ rtl: rtl.value, stacked: true }));
 
@@ -108,8 +110,8 @@ const linkButton = 'rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 
             </section>
 
             <div :class="[card, 'p-4']">
-                <p v-if="!totals.expected" class="text-center text-sm text-slate-500">{{ t('att.stats.no_data') }}</p>
-                <StatusBreakdown v-else :counts="totals.counts" />
+                <p v-if="!hasAnyMark" class="text-center text-sm text-slate-500">{{ t('att.stats.no_data') }}</p>
+                <StatusBreakdown v-else :counts="totals.counts" :pct="totals.pct" />
                 <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">{{ t('att.stats.score_help') }}</p>
             </div>
 

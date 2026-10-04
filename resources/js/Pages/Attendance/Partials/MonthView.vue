@@ -13,8 +13,9 @@ const props = defineProps({
     sessions: { type: Array, default: () => [] },
     preseason: { type: Object, default: null },
     hasSchedule: { type: Boolean, default: false },
+    canAdd: { type: Boolean, default: false }, // a click on a day's free space opens the add-session dialog on that date
 });
-const emit = defineEmits(['navigate']);
+const emit = defineEmits(['navigate', 'add']);
 const { t, locale } = useI18n();
 const { statuses, color, summaryText } = useAttendanceCodes();
 
@@ -70,9 +71,19 @@ const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg
 
         <div class="grid grid-cols-7 gap-px overflow-hidden rounded-xl bg-slate-200 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-800">
             <div v-for="w in weekdays" :key="w" class="bg-slate-50 p-2 text-center text-xs font-semibold text-slate-500 dark:bg-slate-900">{{ w }}</div>
-            <div v-for="cell in cells" :key="cell.key" class="min-h-[5.5rem] min-w-0 bg-white p-1.5 dark:bg-slate-900" :class="{ 'opacity-40': !cell.inMonth }">
-                <div class="mb-1 text-xs font-semibold" :class="cell.key === todayKey ? 'text-primary-600' : 'text-slate-400'">{{ cell.day }}</div>
-                <Link v-for="s in cell.sessions" :key="s.id" :href="route('attendance.sessions.show', s.id)" class="mb-1 block rounded px-1.5 py-0.5 text-[11px] font-medium" :class="chip[s.state]" :title="chipTitle(s)">
+            <div
+                v-for="cell in cells"
+                :key="cell.key"
+                class="group min-h-[5.5rem] min-w-0 bg-white p-1.5 dark:bg-slate-900"
+                :class="{ 'opacity-40': !cell.inMonth, 'cursor-pointer hover:bg-primary-50/60 dark:hover:bg-primary-500/5': canAdd }"
+                :title="canAdd ? t('att.add_on_day') : undefined"
+                @click="canAdd && emit('add', cell.key)"
+            >
+                <div class="mb-1 flex items-center justify-between text-xs font-semibold" :class="cell.key === todayKey ? 'text-primary-600' : 'text-slate-400'">
+                    <span>{{ cell.day }}</span>
+                    <span v-if="canAdd" class="hidden text-sm leading-none text-primary-600 group-hover:inline print:!hidden" aria-hidden="true">+</span>
+                </div>
+                <Link v-for="s in cell.sessions" :key="s.id" :href="route('attendance.sessions.show', s.id)" class="mb-1 block rounded px-1.5 py-0.5 text-[11px] font-medium" :class="chip[s.state]" :title="chipTitle(s)" @click.stop>
                     <span class="flex items-center gap-1">
                         <span class="h-1.5 w-1.5 shrink-0 rounded-full" :class="KIND_DOT[s.kind]"></span>
                         <span dir="ltr">{{ s.start_time }}</span>

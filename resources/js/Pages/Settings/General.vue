@@ -222,7 +222,6 @@ const settingsForm = useForm({
     currency: props.config?.settings?.currency || 'DZD',
     timezone: props.config?.settings?.timezone || 'Africa/Algiers',
     default_language: props.config?.settings?.defaultLanguage || props.config?.settings?.default_language || 'ar',
-    enable_registration: props.config?.settings?.enableRegistration ?? props.config?.settings?.enable_registration ?? true,
     enable_donations: props.config?.settings?.enableDonations ?? props.config?.settings?.enable_donations ?? true,
     maintenance_mode: props.config?.settings?.maintenanceMode ?? props.config?.settings?.maintenance_mode ?? false,
     seasonStartMonth: props.config?.settings?.seasonStartMonth ?? 9,
@@ -323,7 +322,6 @@ function saveSettings() {
             currencySymbol: data.currency,
             timezone: data.timezone,
             defaultLanguage: data.default_language,
-            enableRegistration: data.enable_registration,
             enableDonations: data.enable_donations,
             maintenanceMode: data.maintenance_mode,
             seasonStartMonth: Number(settingsForm.seasonStartMonth),
@@ -600,10 +598,6 @@ function saveSettings() {
                                 </div>
                             </div>
                             <div class="space-y-3">
-                                <label class="flex items-center gap-2">
-                                    <input type="checkbox" v-model="settingsForm.enable_registration" class="rounded border-gray-300 text-primary-600 shadow-sm focus:ring-primary-500" />
-                                    <span class="text-sm text-slate-700 dark:text-slate-200">{{ t('enable_registration') }}</span>
-                                </label>
                                 <label class="flex items-center gap-2">
                                     <input type="checkbox" v-model="settingsForm.enable_donations" class="rounded border-gray-300 text-primary-600 shadow-sm focus:ring-primary-500" />
                                     <span class="text-sm text-slate-700 dark:text-slate-200">{{ t('enable_donations') }}</span>

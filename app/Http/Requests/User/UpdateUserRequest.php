@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\User;
 
+use App\Support\Username;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -14,6 +15,10 @@ class UpdateUserRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        if ($this->has('username')) {
+            $this->merge(['username' => Username::normalize($this->username)]);
+        }
+
         // The edit form posts overrides as a JSON string (multipart form-data).
         if (is_string($this->permission_overrides)) {
             $this->merge([
@@ -28,6 +33,7 @@ class UpdateUserRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
+            'username' => ['sometimes', ...Username::rules($userId)],
             'firstname' => ['nullable', 'string', 'max:255'],
             'lastname' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')->ignore($userId)],

@@ -18,7 +18,8 @@ use Illuminate\Support\Facades\DB;
  * key ignores slots that already exist, including cancelled ones, and dates
  * whose sessions were moved away from are never regenerated. A slot the
  * category already attends through another category's joint pre-season
- * session is left free too.
+ * session is left free too, and so is a regular slot deleted for good
+ * (deleted_session_slots).
  *
  * A generated month is marked (GenerationMarks) and skipped until one of its
  * inputs changes, so opening the calendar again only reads.
@@ -144,6 +145,12 @@ final class SessionGenerator
             ->get(['training_sessions.date', 'training_sessions.start_time'])
             ->mapWithKeys(fn ($s) => ["{$s->date} {$s->start_time}" => true]);
 
+        $deleted = DB::table('deleted_session_slots')
+            ->where('category_id', $categoryId)
+            ->whereBetween('date', [$from, $to])
+            ->get(['date', 'start_time'])
+            ->mapWithKeys(fn ($s) => ["{$s->date} {$s->start_time}" => true]);
+
         $now = now();
         $rows = [];
 
@@ -159,7 +166,8 @@ final class SessionGenerator
                     || $schedule->valid_from > $date
                     || ($schedule->valid_to !== null && $schedule->valid_to < $date)
                     || isset($moved[$date])
-                    || isset($joint["{$date} {$schedule->start_time}"])) {
+                    || isset($joint["{$date} {$schedule->start_time}"])
+                    || isset($deleted["{$date} {$schedule->start_time}"])) {
                     continue;
                 }
 

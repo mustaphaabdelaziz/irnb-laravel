@@ -26,6 +26,7 @@ final class ValidationAttributes
         'phones.*' => 'phone',
         'mobile' => 'mobile',
         'email' => 'email',
+        'username' => 'username',
         'wilaya_id' => 'state',
         'state' => 'state',
         'city' => 'city',

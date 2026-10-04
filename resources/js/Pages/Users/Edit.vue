@@ -24,6 +24,7 @@ const showAdvanced = ref(false);
 
 const form = useForm({
     name: props.user.name || '',
+    username: props.user.username || '',
     firstname: props.user.firstname || '',
     lastname: props.user.lastname || '',
     email: props.user.email || '',
@@ -84,6 +85,12 @@ function submit() {
             <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('basic_info') }}</h2>
                 <div class="grid gap-4 sm:grid-cols-2">
+                    <div class="sm:col-span-2">
+                        <InputLabel :value="t('username')" />
+                        <TextInput v-model="form.username" class="mt-1 w-full" required autocomplete="off" autocapitalize="none" spellcheck="false" />
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('username_hint') }}</p>
+                        <InputError :message="form.errors.username" class="mt-1" />
+                    </div>
                     <div>
                         <InputLabel :value="t('name')" />
                         <TextInput v-model="form.name" class="mt-1 w-full" required />

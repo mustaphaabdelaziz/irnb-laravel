@@ -16,10 +16,11 @@ class ProfileUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
+        // Email is an optional contact field; sign-in uses the username.
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => [
-                'required',
+                'nullable',
                 'string',
                 'lowercase',
                 'email',

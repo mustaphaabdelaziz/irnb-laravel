@@ -9,9 +9,6 @@ import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
 
 defineProps({
-    mustVerifyEmail: {
-        type: Boolean,
-    },
     status: {
         type: String,
     },
@@ -39,7 +36,6 @@ defineProps({
                     class="bg-white dark:bg-slate-900 p-4 shadow sm:rounded-lg sm:p-8"
                 >
                     <UpdateProfileInformationForm
-                        :must-verify-email="mustVerifyEmail"
                         :status="status"
                         class="max-w-xl"
                     />

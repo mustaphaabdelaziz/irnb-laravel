@@ -70,6 +70,8 @@ return [
         // Injury details are edited, never just added or deleted: every write needs edit.
         'attendance.injury-notes.store' => ['attendance', 'edit'],
         'attendance.injury-notes.destroy' => ['attendance', 'edit'],
+        // Deleting a session is a correction made like cancelling one: edit, not a separate delete right.
+        'attendance.sessions.destroy' => ['attendance', 'edit'],
         // Schedules, closures and pre-season targets reshape the whole season's
         // calendar, not just one row, so all their writes need edit — without
         // these, deriveAction() would gate the stores as 'add' and the

@@ -62,8 +62,11 @@ const switchView = (view) => navigate({ view, month: props.month }, { preserveSc
 // ---- Add an extra / pre-season session ----
 const showCreate = ref(false);
 const createKind = ref('extra');
-function openCreate(kind) {
+const createDate = ref(today);
+// From the buttons (today) or from a click on a calendar day (that date).
+function openCreate(kind, date = today) {
     createKind.value = kind;
+    createDate.value = date;
     // The roster status checkboxes are an optional prop: fetched once, before the dialog opens.
     if (props.playerStatuses === null) {
         router.reload({ only: ['playerStatuses', 'rosterStatusIds'], onSuccess: () => (showCreate.value = true) });
@@ -99,12 +102,12 @@ function openCreate(kind) {
                 </div>
             </div>
 
-            <MonthView v-if="view === 'month'" :categories="categories" :category-id="categoryId" :month="month" :sessions="sessions" :preseason="preseason" :has-schedule="hasSchedule" @navigate="navigate" />
-            <WeekView v-else-if="view === 'week'" :week="week" :sessions="sessions" @navigate="navigate" />
+            <MonthView v-if="view === 'month'" :categories="categories" :category-id="categoryId" :month="month" :sessions="sessions" :preseason="preseason" :has-schedule="hasSchedule" :can-add="can('attendance', 'add')" @navigate="navigate" @add="(date) => openCreate('extra', date)" />
+            <WeekView v-else-if="view === 'week'" :week="week" :sessions="sessions" :can-add="can('attendance', 'add')" @navigate="navigate" @add="(date) => openCreate('extra', date)" />
             <AgendaView v-else-if="view === 'agenda'" :categories="categories" :category-id="categoryId" :month="month" :sessions="sessions" @navigate="navigate" />
             <TimelineView v-else-if="view === 'timeline'" :categories="categories" :category-id="categoryId" :kind="kind" :from="from" :to="to" :events="events" @navigate="navigate" />
         </div>
 
-        <AddSessionModal :show="showCreate" :kind="createKind" :categories="categories" :category-id="categoryId" :date="today" :player-statuses="playerStatuses ?? []" :roster-status-ids="rosterStatusIds ?? []" @close="showCreate = false" />
+        <AddSessionModal :show="showCreate" :kind="createKind" :categories="categories" :category-id="categoryId" :date="createDate" :player-statuses="playerStatuses ?? []" :roster-status-ids="rosterStatusIds ?? []" @close="showCreate = false" />
     </AuthenticatedLayout>
 </template>

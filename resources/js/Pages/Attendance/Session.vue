@@ -12,6 +12,7 @@ import { useAttendanceCodes } from '@/Composables/useAttendanceCodes';
 const props = defineProps({
     session: { type: Object, required: true },
     saved: { type: Boolean, default: false },
+    marksCount: { type: Number, default: 0 },
     rows: { type: Array, default: () => [] },
     candidates: { type: Array, default: () => [] },
     lastCoach: { type: String, default: null },
@@ -81,6 +82,25 @@ const rowError = (i) => ['minutes', 'reason', 'note', 'status'].map((f) => error
 const showCancel = ref(false);
 const cancelForm = useForm({ reason: '' });
 const submitCancel = () => cancelForm.post(route('attendance.sessions.cancel', props.session.id), { onSuccess: () => (showCancel.value = false) });
+
+// ---- Delete / erase marks ----
+// Erasing only makes sense once there is something to erase (marks, or a cancellation).
+const canReset = computed(() => props.saved || cancelled.value);
+const showDelete = ref(false);
+const deleteMode = ref('delete');
+const deleting = ref(false);
+const openDelete = () => {
+    deleteMode.value = 'delete';
+    showDelete.value = true;
+};
+const submitDelete = () => {
+    const options = { onStart: () => (deleting.value = true), onFinish: () => (deleting.value = false), onSuccess: () => (showDelete.value = false) };
+    if (deleteMode.value === 'reset') {
+        router.post(route('attendance.sessions.reset', props.session.id), {}, options);
+    } else {
+        router.delete(route('attendance.sessions.destroy', props.session.id), options);
+    }
+};
 const showMove = ref(false);
 const moveForm = useForm({ date: props.session.date, start_time: props.session.start_time, end_time: props.session.end_time });
 const submitMove = () => moveForm.post(route('attendance.sessions.move', props.session.id), { onSuccess: () => (showMove.value = false) });
@@ -126,6 +146,7 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                         <button class="rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:text-slate-300 dark:ring-slate-700" @click="showMove = true">{{ t('att.move') }}</button>
                         <button class="rounded-lg px-3 py-1.5 text-sm font-semibold text-rose-600 ring-1 ring-rose-200 hover:bg-rose-50 dark:ring-rose-900" @click="showCancel = true">{{ t('att.cancel') }}</button>
                     </template>
+                    <button v-if="can('attendance', 'edit')" class="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-rose-700" @click="openDelete"><Icon name="trash" />{{ t('att.delete_session') }}</button>
                 </div>
             </div>
         </template>
@@ -198,6 +219,32 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                 <div class="flex justify-end gap-2">
                     <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700" @click="showCancel = false">{{ t('att.close') }}</button>
                     <button type="submit" :disabled="cancelForm.processing" class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700">{{ t('att.cancel') }}</button>
+                </div>
+            </form>
+        </Modal>
+
+        <Modal :show="showDelete" max-width="md" @close="showDelete = false">
+            <form class="space-y-3 p-5" @submit.prevent="submitDelete">
+                <h2 class="font-bold text-slate-900 dark:text-slate-100">{{ t('att.delete_session') }}</h2>
+                <label class="flex gap-2 rounded-lg p-3 text-sm ring-1 ring-slate-200 dark:ring-slate-700">
+                    <input v-model="deleteMode" type="radio" value="delete" class="mt-0.5" />
+                    <span>
+                        <span class="block font-semibold text-slate-900 dark:text-slate-100">{{ t('att.delete_choice_delete') }}</span>
+                        <span class="block text-slate-500">{{ t('att.delete_choice_delete_hint') }}</span>
+                        <span v-if="session.kind === 'regular'" class="block text-slate-500">{{ t('att.delete_regular_hint') }}</span>
+                    </span>
+                </label>
+                <label v-if="canReset" class="flex gap-2 rounded-lg p-3 text-sm ring-1 ring-slate-200 dark:ring-slate-700">
+                    <input v-model="deleteMode" type="radio" value="reset" class="mt-0.5" />
+                    <span>
+                        <span class="block font-semibold text-slate-900 dark:text-slate-100">{{ t('att.delete_choice_reset') }}</span>
+                        <span class="block text-slate-500">{{ t('att.delete_choice_reset_hint') }}</span>
+                    </span>
+                </label>
+                <p v-if="marksCount" class="rounded-lg bg-rose-50 p-3 text-sm font-semibold text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">{{ t('att.delete_marks_count', { count: marksCount }) }}</p>
+                <div class="flex justify-end gap-2">
+                    <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700" @click="showDelete = false">{{ t('att.close') }}</button>
+                    <button type="submit" :disabled="deleting" class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-50">{{ deleteMode === 'reset' ? t('att.reset_confirm') : t('att.delete_confirm') }}</button>
                 </div>
             </form>
         </Modal>

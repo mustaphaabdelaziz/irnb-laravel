@@ -53,6 +53,9 @@ const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg
     <Modal :show="show" max-width="md" @close="emit('close')">
         <form class="space-y-3 p-5" @submit.prevent="submit">
             <h2 class="font-bold text-slate-900 dark:text-slate-100">{{ form.kind === 'preseason' ? t('att.add_preseason') : t('att.add_extra') }}</h2>
+            <div class="inline-flex rounded-lg p-0.5 ring-1 ring-slate-200 dark:ring-slate-700" role="radiogroup">
+                <button v-for="k in ['extra', 'preseason']" :key="k" type="button" role="radio" :aria-checked="form.kind === k" class="rounded-md px-3 py-1 text-sm font-semibold" :class="form.kind === k ? (k === 'preseason' ? 'bg-amber-500 text-white' : 'bg-primary-600 text-white') : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'" @click="form.kind = k">{{ t(`att.kind.${k}`) }}</button>
+            </div>
             <label class="block text-sm">{{ t('att.category') }}
                 <select v-model="form.category_id" :class="[input, 'mt-1 block w-full']">
                     <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>

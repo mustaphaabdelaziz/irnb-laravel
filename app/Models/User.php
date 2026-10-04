@@ -4,7 +4,6 @@ namespace App\Models;
 
 use App\Support\Media;
 use Database\Factories\UserFactory;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,15 +12,32 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable implements MustVerifyEmail
+class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    protected static function booted(): void
+    {
+        // Accounts created outside the users form (seeder, legacy import)
+        // sign in with their email, as before usernames existed.
+        static::creating(function (User $user) {
+            if (blank($user->username) && filled($user->email)) {
+                $user->username = $user->email;
+            }
+        });
+    }
 
     /** Normalise the stored photo URL to a host-relative /media path (web + desktop). */
     protected function pictureUrl(): Attribute
     {
         return Attribute::make(get: fn ($value) => Media::path($value));
+    }
+
+    /** Usernames are case-insensitive: stored trimmed and lowercased. */
+    protected function username(): Attribute
+    {
+        return Attribute::make(set: fn ($value) => $value === null ? null : mb_strtolower(trim((string) $value)));
     }
 
     /**
@@ -31,6 +47,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     protected $fillable = [
         'name',
+        'username',
         'email',
         'password',
         'membership_id',

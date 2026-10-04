@@ -45,7 +45,6 @@ class PublicController extends Controller
                 'heroImages' => $branding['heroImages'] ?? [],
             ],
             'canLogin' => Route::has('login'),
-            'canRegister' => Route::has('register') && ($settings['enableRegistration'] ?? true),
         ]);
     }
 }

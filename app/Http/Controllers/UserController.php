@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\User\StoreUserRequest;
 use App\Http\Requests\User\UpdateUserRequest;
 use App\Models\Role;
 use App\Models\User;
@@ -30,6 +31,7 @@ class UserController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('username', 'like', "%{$search}%")
                     ->orWhere('firstname', 'like', "%{$search}%")
                     ->orWhere('lastname', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
@@ -65,6 +67,7 @@ class UserController extends Controller
             ->through(fn (User $user) => [
                 'id' => $user->id,
                 'name' => $user->name,
+                'username' => $user->username,
                 'fullname' => $user->fullname,
                 'email' => $user->email,
                 'phones' => $user->phones,
@@ -110,12 +113,47 @@ class UserController extends Controller
         return [$merge('approval', ['pending', 'approved']), $merge('activity', ['active', 'inactive'])];
     }
 
+    public function create(Request $request): Response
+    {
+        return Inertia::render('Users/Create', [
+            'roles' => Role::orderByDesc('is_system')->orderBy('key')->get(['id', 'key', 'name']),
+            'canManageAccess' => $request->user()->isSuperadmin(),
+        ]);
+    }
+
+    /**
+     * Accounts are only created here, by an administrator (no public sign-up).
+     * The account is approved and active at once; only a superadmin may give
+     * it a role, as on edit.
+     */
+    public function store(StoreUserRequest $request): RedirectResponse
+    {
+        $validated = $request->validated();
+
+        if (! $request->user()->isSuperadmin()) {
+            unset($validated['role_id']);
+        }
+
+        // 'password' => 'hashed' on the model hashes it.
+        User::create([
+            ...$validated,
+            'is_user' => true,
+            'approved' => true,
+            'is_active' => true,
+            'privileges' => ['user'],
+        ]);
+
+        return redirect()->route('users.index')
+            ->with('success', 'flash.user_created');
+    }
+
     public function edit(Request $request, User $user): Response
     {
         return Inertia::render('Users/Edit', [
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
+                'username' => $user->username,
                 'firstname' => $user->firstname,
                 'lastname' => $user->lastname,
                 'email' => $user->email,

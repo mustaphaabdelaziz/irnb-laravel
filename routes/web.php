@@ -120,10 +120,10 @@ Route::get('/lang/{locale}', [LanguageController::class, 'switch'])->name('lang.
 Route::middleware('auth')->get('/account/pending', fn () => Inertia::render('Auth/Pending'))
     ->name('account.pending');
 
-// Authenticated routes — require a verified email AND an approved, active account.
+// Authenticated routes — require an approved, active account.
 // The `permission` middleware enforces per-module (view/add/edit/delete) access
 // derived from each route name via config/permissions.php.
-Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(function () {
+Route::middleware(['auth', 'approved', 'permission'])->group(function () {
 
     // Dashboard
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
@@ -256,6 +256,8 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         // Activity pages (users/view). The static path comes before any /users/{user} route.
         Route::get('/users/activity', [UserActivityController::class, 'index'])->name('users.activity.index');
         Route::get('/users/{user}/activity', [UserActivityController::class, 'show'])->name('users.activity.show');
+        Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
+        Route::post('/users', [UserController::class, 'store'])->name('users.store');
         Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
@@ -358,6 +360,8 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         Route::post('/attendance/sessions/{session}/cancel', [TrainingSessionController::class, 'cancel'])->name('attendance.sessions.cancel');
         Route::post('/attendance/sessions/{session}/move', [TrainingSessionController::class, 'move'])->name('attendance.sessions.move');
         Route::put('/attendance/sessions/{session}/categories', [TrainingSessionController::class, 'updateCategories'])->name('attendance.sessions.categories');
+        Route::post('/attendance/sessions/{session}/reset', [TrainingSessionController::class, 'reset'])->name('attendance.sessions.reset');
+        Route::delete('/attendance/sessions/{session}', [TrainingSessionController::class, 'destroy'])->name('attendance.sessions.destroy');
         Route::get('/attendance/settings', [AttendanceSettingsController::class, 'index'])->name('attendance.settings');
         Route::put('/attendance/settings', [AttendanceSettingsController::class, 'update'])->name('attendance.settings.update');
         Route::put('/attendance/settings/letter', [AttendanceSettingsController::class, 'updateLetter'])->name('attendance.settings.letter');

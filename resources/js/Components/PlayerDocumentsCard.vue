@@ -202,6 +202,7 @@ function confirmRemoveFile() {
                             {{ item.type.name }}
                             <span v-if="item.type.is_required" class="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-normal text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('doc_required') }}</span>
                             <span v-if="item.type.max_age" class="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-normal text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('doc_up_to_age', { age: item.type.max_age }) }}</span>
+                            <span v-if="item.type.copies > 1" class="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-normal text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('doc_copies_count', { count: item.type.copies }) }}</span>
                             <span v-if="!item.type.is_active" class="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-normal text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('doc_inactive_type') }}</span>
                         </p>
                         <p class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">

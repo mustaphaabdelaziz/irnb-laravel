@@ -897,6 +897,8 @@
     "doc_filter_missing_type": "وثيقة محددة ناقصة",
     "doc_inactive_type": "لم تعد مطلوبة",
     "doc_mark_received": "تسجيل الاستلام",
+    "doc_copies": "عدد النسخ",
+    "doc_copies_count": "{count} نسخ",
     "doc_max_age": "حد السن",
     "doc_max_age_hint": "اتركه فارغاً لكل الأعمار. 17 تعني أن الوثيقة مطلوبة ما دام عمر اللاعب 17 سنة أو أقل.",
     "doc_missing_count": "{count} ناقصة",

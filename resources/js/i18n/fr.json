@@ -897,6 +897,8 @@
     "doc_filter_missing_type": "Un document précis manquant",
     "doc_inactive_type": "Plus demandé",
     "doc_mark_received": "Marquer reçu",
+    "doc_copies": "Nombre de copies",
+    "doc_copies_count": "{count} copies",
     "doc_max_age": "Limite d'âge",
     "doc_max_age_hint": "Laisser vide pour tous les âges. 17 signifie que le document est demandé tant que le joueur a 17 ans ou moins.",
     "doc_missing_count": "{count} manquant(s)",

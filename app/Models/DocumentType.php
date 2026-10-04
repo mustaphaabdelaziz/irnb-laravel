@@ -38,6 +38,7 @@ class DocumentType extends Model
         'is_required',
         'validity',
         'max_age',
+        'copies',
         'is_active',
         'sort_order',
     ];
@@ -52,6 +53,7 @@ class DocumentType extends Model
             'is_required' => 'boolean',
             'is_active' => 'boolean',
             'max_age' => 'integer',
+            'copies' => 'integer',
             'sort_order' => 'integer',
         ];
     }

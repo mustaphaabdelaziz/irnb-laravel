@@ -66,6 +66,7 @@ class DocumentTypeController extends Controller
             'is_required' => ['boolean'],
             'validity' => ['required', Rule::in(DocumentType::VALIDITIES)],
             'max_age' => ['nullable', 'integer', 'min:1', 'max:99'],
+            'copies' => ['nullable', 'integer', 'min:1', 'max:99'],
             'is_active' => ['boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:65535'],
         ]);
@@ -74,6 +75,7 @@ class DocumentTypeController extends Controller
         // rather than left out of the update.
         $data['max_age'] = $data['max_age'] ?? null;
         $data['sort_order'] = (int) ($data['sort_order'] ?? 0);
+        $data['copies'] = (int) ($data['copies'] ?? 1);
 
         return $data;
     }

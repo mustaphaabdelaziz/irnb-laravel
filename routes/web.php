@@ -360,6 +360,8 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
         Route::post('/attendance/sessions/{session}/cancel', [TrainingSessionController::class, 'cancel'])->name('attendance.sessions.cancel');
         Route::post('/attendance/sessions/{session}/move', [TrainingSessionController::class, 'move'])->name('attendance.sessions.move');
         Route::put('/attendance/sessions/{session}/categories', [TrainingSessionController::class, 'updateCategories'])->name('attendance.sessions.categories');
+        Route::post('/attendance/sessions/{session}/reset', [TrainingSessionController::class, 'reset'])->name('attendance.sessions.reset');
+        Route::delete('/attendance/sessions/{session}', [TrainingSessionController::class, 'destroy'])->name('attendance.sessions.destroy');
         Route::get('/attendance/settings', [AttendanceSettingsController::class, 'index'])->name('attendance.settings');
         Route::put('/attendance/settings', [AttendanceSettingsController::class, 'update'])->name('attendance.settings.update');
         Route::put('/attendance/settings/letter', [AttendanceSettingsController::class, 'updateLetter'])->name('attendance.settings.letter');

@@ -42,6 +42,7 @@ class AttendanceController extends Controller
                 'categories' => $categories->map(fn (string $name, int $id) => ['id' => $id, 'name' => $name])->values(),
             ],
             'saved' => $marks->isNotEmpty(),
+            'marksCount' => $marks->count(),
             'rows' => $players->map(function (Player $p) use ($marks, $categories, $joint) {
                 $mark = $marks->get($p->id);
 

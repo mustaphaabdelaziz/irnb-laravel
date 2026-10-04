@@ -115,6 +115,47 @@ class TrainingSessionController extends Controller
         return back()->with('success', 'flash.training_session_cancelled');
     }
 
+    /**
+     * Deletes the session and every mark in it, so it leaves every report.
+     * A regular session's slot (and its original slot if it was moved) is
+     * remembered, so the weekly schedule never recreates it.
+     */
+    public function destroy(Request $request, TrainingSession $session): RedirectResponse
+    {
+        $back = ['category_id' => $session->category_id, 'month' => substr($session->date, 0, 7)];
+
+        DB::transaction(function () use ($session, $request) {
+            if ($session->kind === SessionKind::Regular) {
+                $slots = [[$session->date, $session->start_time]];
+                if ($session->moved_from !== null) {
+                    $slots[] = [$session->moved_from, $session->schedule?->start_time ?? $session->start_time];
+                }
+                DB::table('deleted_session_slots')->insertOrIgnore(array_map(fn (array $slot) => [
+                    'category_id' => $session->category_id, 'date' => $slot[0], 'start_time' => $slot[1], 'created_at' => now(),
+                ], $slots));
+            }
+
+            ActivityRecorder::record($request->user(), ActivityAction::TRAINING_SESSION_DELETED, $session, ['marks' => $session->attendances()->count()]);
+            $session->attendances()->delete();
+            $session->delete(); // its deleting hook frees the slot's generation marks (reads the pivot first)
+            DB::table('training_session_category')->where('training_session_id', $session->id)->delete();
+        });
+
+        return redirect()->route('attendance.index', $back)->with('success', 'flash.training_session_deleted');
+    }
+
+    /** Erases every mark and makes the session planned again (a cancelled one too). */
+    public function reset(Request $request, TrainingSession $session): RedirectResponse
+    {
+        DB::transaction(function () use ($session, $request) {
+            ActivityRecorder::record($request->user(), ActivityAction::TRAINING_SESSION_RESET, $session, ['marks' => $session->attendances()->count()]);
+            $session->attendances()->delete();
+            $session->update(['state' => SessionState::Planned, 'cancel_reason' => null]);
+        });
+
+        return back()->with('success', 'flash.training_session_reset');
+    }
+
     /** `moved_from` keeps the first original date so the generator never recreates that slot. */
     public function move(Request $request, TrainingSession $session): RedirectResponse
     {

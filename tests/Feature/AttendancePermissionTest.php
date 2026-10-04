@@ -25,6 +25,9 @@ class AttendancePermissionTest extends TestCase
         $this->assertSame(['attendance', 'edit'], PermissionMap::resolve('attendance.sessions.marks'));
         $this->assertSame(['attendance', 'add'], PermissionMap::resolve('attendance.sessions.store'));
         $this->assertSame(['attendance', 'edit'], PermissionMap::resolve('attendance.sessions.categories'));
+        // Deleting a session or erasing its marks is a correction like cancelling: edit, not delete.
+        $this->assertSame(['attendance', 'edit'], PermissionMap::resolve('attendance.sessions.destroy'));
+        $this->assertSame(['attendance', 'edit'], PermissionMap::resolve('attendance.sessions.reset'));
         $this->assertSame(['attendance', 'edit'], PermissionMap::resolve('attendance.settings'));
         // Settings mutations all need edit, not the weaker add/delete deriveAction() would give them.
         $this->assertSame(['attendance', 'edit'], PermissionMap::resolve('attendance.schedules.store'));
@@ -92,6 +95,8 @@ class AttendancePermissionTest extends TestCase
             ActivityAction::TRAINING_SESSION_CANCELLED,
             ActivityAction::TRAINING_SESSION_MOVED,
             ActivityAction::TRAINING_SESSION_CATEGORIES_CHANGED,
+            ActivityAction::TRAINING_SESSION_DELETED,
+            ActivityAction::TRAINING_SESSION_RESET,
         ], ActivityAction::AREAS['attendance']);
     }
 }

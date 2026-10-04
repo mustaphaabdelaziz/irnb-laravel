@@ -82,6 +82,10 @@ class ActivityAction
 
     const TRAINING_SESSION_CATEGORIES_CHANGED = 'training_session_categories_changed';
 
+    const TRAINING_SESSION_DELETED = 'training_session_deleted';
+
+    const TRAINING_SESSION_RESET = 'training_session_reset';
+
     /** @var list<string> */
     const ALL = [
         self::PLAYER_REGISTERED,
@@ -117,6 +121,8 @@ class ActivityAction
         self::TRAINING_SESSION_CANCELLED,
         self::TRAINING_SESSION_MOVED,
         self::TRAINING_SESSION_CATEGORIES_CHANGED,
+        self::TRAINING_SESSION_DELETED,
+        self::TRAINING_SESSION_RESET,
     ];
 
     /** @var array<string, list<string>> */
@@ -165,6 +171,8 @@ class ActivityAction
             self::TRAINING_SESSION_CANCELLED,
             self::TRAINING_SESSION_MOVED,
             self::TRAINING_SESSION_CATEGORIES_CHANGED,
+            self::TRAINING_SESSION_DELETED,
+            self::TRAINING_SESSION_RESET,
         ],
     ];
 

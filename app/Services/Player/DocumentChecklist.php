@@ -225,6 +225,7 @@ final class DocumentChecklist
                 'is_required' => $type->is_required,
                 'validity' => $type->validity,
                 'max_age' => $type->max_age,
+                'copies' => $type->copies,
                 'is_active' => $type->is_active,
                 'is_photo' => $type->isPhoto(),
             ],

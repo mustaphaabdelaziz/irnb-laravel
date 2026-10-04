@@ -885,6 +885,8 @@
     "doc_filter_missing_type": "Missing a specific document",
     "doc_inactive_type": "No longer requested",
     "doc_mark_received": "Mark received",
+    "doc_copies": "Copies",
+    "doc_copies_count": "{count} copies",
     "doc_max_age": "Age limit",
     "doc_max_age_hint": "Leave empty for every age. 17 means the document is asked while the player is 17 or younger.",
     "doc_missing_count": "{count} missing",

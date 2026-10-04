@@ -28,6 +28,7 @@ const FIELDS = {
     is_required: false,
     validity: 'none',
     max_age: '',
+    copies: 1,
     sort_order: 0,
     is_active: true,
 };
@@ -109,6 +110,7 @@ function destroy() {
                             <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('doc_required') }}</th>
                             <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('doc_validity') }}</th>
                             <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('doc_max_age') }}</th>
+                            <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('doc_copies') }}</th>
                             <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('doc_records') }}</th>
                             <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('actions') }}</th>
                         </tr>
@@ -130,6 +132,7 @@ function destroy() {
                             <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
                                 {{ type.max_age ? t('doc_up_to_age', { age: type.max_age }) : t('doc_all_ages') }}
                             </td>
+                            <td class="px-4 py-3 text-end text-sm text-slate-600 dark:text-slate-300">{{ type.copies }}</td>
                             <td class="px-4 py-3 text-end text-sm text-slate-600 dark:text-slate-300">{{ type.player_documents_count }}</td>
                             <td class="whitespace-nowrap px-4 py-3 text-end">
                                 <button type="button" class="text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-200" @click="openEdit(type)">{{ t('edit') }}</button>
@@ -141,7 +144,7 @@ function destroy() {
                             </td>
                         </tr>
                         <tr v-if="!documentTypes.length">
-                            <td colspan="6" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
+                            <td colspan="7" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -181,6 +184,11 @@ function destroy() {
                         <InputLabel :value="t('doc_max_age')" />
                         <input v-model="form.max_age" type="number" min="1" max="99" :class="inputClass" />
                         <InputError :message="form.errors.max_age" class="mt-1" />
+                    </div>
+                    <div>
+                        <InputLabel :value="t('doc_copies')" />
+                        <input v-model="form.copies" type="number" min="1" max="99" :class="inputClass" />
+                        <InputError :message="form.errors.copies" class="mt-1" />
                     </div>
                     <div>
                         <InputLabel :value="t('sort_order')" />

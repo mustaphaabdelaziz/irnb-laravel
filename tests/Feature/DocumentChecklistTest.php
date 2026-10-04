@@ -159,6 +159,16 @@ class DocumentChecklistTest extends TestCase
     }
 
     #[Test]
+    public function each_item_says_how_many_copies_to_hand_in(): void
+    {
+        $this->type('photo')->update(['copies' => 4]);
+        $player = $this->player();
+
+        $this->assertSame(4, $this->item($player, 'photo')['type']['copies']);
+        $this->assertSame(1, $this->item($player, 'birth_certificate')['type']['copies']);
+    }
+
+    #[Test]
     public function a_received_document_is_scanned_or_on_paper(): void
     {
         $player = $this->player();

@@ -36,6 +36,7 @@ class DocumentTypeSettingsTest extends TestCase
             'is_required' => true,
             'validity' => 'season',
             'max_age' => '',
+            'copies' => 1,
             'is_active' => true,
             'sort_order' => 80,
             ...$overrides,
@@ -74,7 +75,7 @@ class DocumentTypeSettingsTest extends TestCase
     #[Test]
     public function a_type_can_be_created_with_its_rules_and_gets_a_stable_code(): void
     {
-        $this->actingAs($this->admin())->post(route('document-types.store'), $this->payload(['max_age' => 15]))
+        $this->actingAs($this->admin())->post(route('document-types.store'), $this->payload(['max_age' => 15, 'copies' => 4]))
             ->assertRedirect()
             ->assertSessionHas('success', 'flash.document_type_created');
 
@@ -84,9 +85,20 @@ class DocumentTypeSettingsTest extends TestCase
         $this->assertSame('season', $type->validity);
         $this->assertSame(15, $type->max_age);
         $this->assertSame(80, $type->sort_order);
+        $this->assertSame(4, $type->copies);
 
         app()->setLocale('ar');
         $this->assertSame('الإجازة الفدرالية', $type->localized_name);
+    }
+
+    #[Test]
+    public function every_type_asks_for_one_copy_unless_told_otherwise(): void
+    {
+        $this->assertSame([1], DocumentType::distinct()->pluck('copies')->all());
+
+        $this->actingAs($this->admin())->post(route('document-types.store'), $this->payload(['copies' => '']));
+
+        $this->assertSame(1, DocumentType::where('name', 'Licence fédérale')->value('copies'));
     }
 
     #[Test]
@@ -106,6 +118,9 @@ class DocumentTypeSettingsTest extends TestCase
 
         $this->actingAs($this->admin())->post(route('document-types.store'), $this->payload(['max_age' => 0]))
             ->assertSessionHasErrors('max_age');
+
+        $this->actingAs($this->admin())->post(route('document-types.store'), $this->payload(['copies' => 0]))
+            ->assertSessionHasErrors('copies');
 
         $this->actingAs($this->admin())->post(route('document-types.store'), $this->payload(['name' => 'Photo']))
             ->assertSessionHasErrors('name');

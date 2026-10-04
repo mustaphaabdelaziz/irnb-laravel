@@ -120,10 +120,10 @@ Route::get('/lang/{locale}', [LanguageController::class, 'switch'])->name('lang.
 Route::middleware('auth')->get('/account/pending', fn () => Inertia::render('Auth/Pending'))
     ->name('account.pending');
 
-// Authenticated routes — require a verified email AND an approved, active account.
+// Authenticated routes — require an approved, active account.
 // The `permission` middleware enforces per-module (view/add/edit/delete) access
 // derived from each route name via config/permissions.php.
-Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(function () {
+Route::middleware(['auth', 'approved', 'permission'])->group(function () {
 
     // Dashboard
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
@@ -256,6 +256,8 @@ Route::middleware(['auth', 'verified', 'approved', 'permission'])->group(functio
         // Activity pages (users/view). The static path comes before any /users/{user} route.
         Route::get('/users/activity', [UserActivityController::class, 'index'])->name('users.activity.index');
         Route::get('/users/{user}/activity', [UserActivityController::class, 'show'])->name('users.activity.show');
+        Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
+        Route::post('/users', [UserController::class, 'store'])->name('users.store');
         Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');

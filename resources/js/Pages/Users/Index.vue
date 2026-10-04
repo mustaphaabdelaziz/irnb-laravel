@@ -13,8 +13,10 @@ import { useI18n } from 'vue-i18n';
 import { computed, ref } from 'vue';
 import { asList, useListFilters } from '@/Composables/useListFilters';
 import MultiSelectFilter from '@/Components/MultiSelectFilter.vue';
+import { useCan } from '@/Composables/useCan';
 
 const { t } = useI18n();
+const { can } = useCan();
 
 const props = defineProps({
     users: Object,
@@ -98,6 +100,9 @@ function initial(user) {
                 <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <Badge v-if="pendingCount" :label="`${pendingCount} ${t('pending_approval')}`" color="amber" />
                     <Link :href="route('users.activity.index')" class="text-sm font-medium text-primary-700 hover:underline dark:text-primary-300">{{ t('activity.title') }}</Link>
+                    <Link v-if="can('users', 'add')" :href="route('users.create')">
+                        <PrimaryButton type="button">{{ t('new_user') }}</PrimaryButton>
+                    </Link>
                 </div>
             </div>
         </template>
@@ -134,7 +139,7 @@ function initial(user) {
                                         <span v-else class="flex h-9 w-9 items-center justify-center rounded-full bg-primary-100 text-sm font-bold text-primary-700">{{ initial(user) }}</span>
                                         <div class="min-w-0">
                                             <p class="truncate text-sm font-medium text-slate-900 dark:text-slate-100">{{ user.fullname || user.name }}</p>
-                                            <p class="truncate text-xs text-slate-500 dark:text-slate-400">{{ user.email || '-' }}</p>
+                                            <p class="truncate text-xs text-slate-500 dark:text-slate-400">{{ user.username || '-' }}</p>
                                         </div>
                                     </div>
                                 </td>
@@ -187,7 +192,7 @@ function initial(user) {
             <div v-if="pwUser" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" @click.self="pwUser = null">
                 <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
                     <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('reset_password') }}</h3>
-                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ pwUser.fullname || pwUser.name }} — {{ pwUser.email }}</p>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ pwUser.fullname || pwUser.name }} — {{ pwUser.username }}</p>
                     <form @submit.prevent="submitReset" class="mt-4 space-y-3">
                         <div>
                             <InputLabel :value="t('new_password')" />

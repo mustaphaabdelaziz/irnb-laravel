@@ -11,7 +11,6 @@ const page = usePage();
 defineProps({
     club: Object,
     canLogin: Boolean,
-    canRegister: Boolean,
 });
 
 const user = computed(() => page.props.auth?.user);
@@ -44,7 +43,6 @@ const socialMeta = {
                     <Link v-if="user" :href="route('dashboard')" class="inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-inset ring-primary-500/40 transition hover:bg-primary-700 hover:shadow-glow active:scale-[0.98]">{{ t('dashboard') }}<Icon name="arrow" class="text-sm rtl:rotate-180" /></Link>
                     <template v-else>
                         <Link v-if="canLogin" :href="route('login')" class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100">{{ t('login') }}</Link>
-                        <Link v-if="canRegister" :href="route('register')" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-inset ring-primary-500/40 transition hover:bg-primary-700 hover:shadow-glow active:scale-[0.98]">{{ t('register') }}</Link>
                     </template>
                 </nav>
             </div>

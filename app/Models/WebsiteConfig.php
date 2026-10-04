@@ -86,7 +86,6 @@ class WebsiteConfig extends Model
                     'fiscalYearStart' => '01-01',
                     'seasonStartMonth' => 9,
                     'fileDrawerSize' => 100,
-                    'enableRegistration' => true,
                     'enableDonations' => true,
                     'maintenanceMode' => false,
                 ],

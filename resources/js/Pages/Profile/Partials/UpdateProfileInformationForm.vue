@@ -3,15 +3,12 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
-import { Link, useForm, usePage } from '@inertiajs/vue3';
+import { useForm, usePage } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 
 defineProps({
-    mustVerifyEmail: {
-        type: Boolean,
-    },
     status: {
         type: String,
     },
@@ -21,7 +18,7 @@ const user = usePage().props.auth.user;
 
 const form = useForm({
     name: user.name,
-    email: user.email,
+    email: user.email ?? '',
 });
 </script>
 
@@ -41,6 +38,12 @@ const form = useForm({
             @submit.prevent="form.patch(route('profile.update'))"
             class="mt-6 space-y-6"
         >
+            <!-- The sign-in username is set by an administrator from the users page. -->
+            <div>
+                <InputLabel for="username" :value="t('username')" />
+                <TextInput id="username" type="text" class="mt-1 block w-full" :model-value="user.username ?? ''" disabled />
+            </div>
+
             <div>
                 <InputLabel for="name" :value="t('name')" />
 
@@ -65,33 +68,12 @@ const form = useForm({
                     type="email"
                     class="mt-1 block w-full"
                     v-model="form.email"
-                    required
-                    autocomplete="username"
+                    autocomplete="email"
                 />
 
                 <InputError class="mt-2" :message="form.errors.email" />
             </div>
 
-            <div v-if="mustVerifyEmail && user.email_verified_at === null">
-                <p class="mt-2 text-sm text-gray-800">
-                    {{ t('email_unverified') }}
-                    <Link
-                        :href="route('verification.send')"
-                        method="post"
-                        as="button"
-                        class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                    >
-                        {{ t('resend_verification_link') }}
-                    </Link>
-                </p>
-
-                <div
-                    v-show="status === 'verification-link-sent'"
-                    class="mt-2 text-sm font-medium text-green-600"
-                >
-                    {{ t('verification_link_sent_short') }}
-                </div>
-            </div>
 
             <div class="flex items-center gap-4">
                 <PrimaryButton :disabled="form.processing">{{ t('save') }}</PrimaryButton>

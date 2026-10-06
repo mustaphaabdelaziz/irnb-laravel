@@ -9,6 +9,7 @@ import { ref, computed, onMounted } from 'vue';
 import { Link, usePage, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import SidebarLink from '@/Components/SidebarLink.vue';
+import SidebarFlyout from '@/Components/Sidebar/SidebarFlyout.vue';
 import SidebarSection from '@/Components/Sidebar/SidebarSection.vue';
 import CommandPalette from '@/Components/CommandPalette.vue';
 import { useNavigation } from '@/Composables/useNavigation.js';
@@ -26,7 +27,7 @@ const { t, locale: i18nLocale } = useI18n();
 const page = usePage();
 const { isSuperadmin } = useCan();
 const { sections, url } = useNavigation();
-const { isOpen, toggleSection } = useSidebarState();
+const { isOpen, toggleSection, compact, toggleNarrow } = useSidebarState();
 
 const mobileMenuOpen = ref(false);
 const paletteOpen = ref(false);
@@ -126,76 +127,132 @@ function switchLocale(code) {
 
         <!-- ===== SIDEBAR ===== -->
         <aside
-            class="fixed inset-y-0 start-0 z-50 flex w-64 flex-col border-e border-slate-200 bg-white text-slate-700 transition-transform duration-300 ease-out dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 print:hidden"
-            :class="mobileMenuOpen ? 'translate-x-0' : 'max-lg:-translate-x-full max-lg:rtl:translate-x-full'"
+            class="fixed inset-y-0 start-0 z-50 flex flex-col border-e border-slate-200 bg-white text-slate-700 transition-[width,transform] duration-200 ease-out motion-reduce:transition-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 print:hidden"
+            :class="[
+                compact ? 'w-16' : 'w-64',
+                mobileMenuOpen ? 'translate-x-0' : 'max-lg:-translate-x-full max-lg:rtl:translate-x-full',
+            ]"
         >
             <!-- Crest -->
-            <div class="flex h-16 shrink-0 items-center gap-3 border-b border-slate-200 px-5 dark:border-slate-800">
+            <div
+                class="flex h-16 shrink-0 items-center border-b border-slate-200 dark:border-slate-800"
+                :class="compact ? 'justify-center px-0' : 'gap-3 px-5'"
+            >
                 <div class="flex h-10 w-10 items-center justify-center rounded-xl" :class="appLogo ? '' : 'bg-primary-50 ring-1 ring-primary-200 dark:bg-primary-500/10 dark:ring-primary-500/25'">
                     <img v-if="appLogo" :src="appLogo" :alt="appShortName" class="h-full w-full object-contain" />
                     <span v-else class="text-lg font-extrabold text-primary-600 dark:text-primary-400">{{ appShortName.charAt(0) }}</span>
                 </div>
-                <div class="min-w-0">
+                <div v-if="!compact" class="min-w-0">
                     <p class="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{{ appShortName }}</p>
                     <p class="eyebrow truncate !text-[0.65rem] text-slate-400">{{ t('club_management') }}</p>
                 </div>
             </div>
 
             <!-- Navigation -->
-            <nav ref="navEl" @scroll.passive="rememberNavScroll" class="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-                <button
-                    type="button"
-                    class="mb-2 flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-400 transition-colors hover:border-slate-300 hover:text-slate-600 dark:border-slate-800 dark:bg-slate-800/50 dark:hover:border-slate-700 dark:hover:text-slate-300"
-                    @click="paletteOpen = true"
-                >
-                    <Icon name="search" class="shrink-0 text-base" />
-                    <span class="flex-1 text-start">{{ t('nav.search') }}</span>
-                    <kbd class="rounded border border-slate-200 px-1.5 font-sans text-[0.65rem] font-semibold dark:border-slate-700" dir="ltr">{{ shortcutHint }}</kbd>
-                </button>
-                <template v-for="section in sections" :key="section.key">
-                    <template v-if="section.standalone">
-                        <SidebarLink
-                            v-for="item in section.items"
-                            :key="item.href"
-                            :href="item.href"
-                            :active="isActive(item, url)"
-                            :icon="item.icon"
-                            :badge="item.badge"
-                        >{{ item.label }}</SidebarLink>
+            <nav ref="navEl" @scroll.passive="rememberNavScroll" class="flex-1 space-y-1 overflow-y-auto py-4" :class="compact ? 'px-2' : 'px-3'">
+                <template v-if="!compact">
+                    <button
+                        type="button"
+                        class="mb-2 flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-400 transition-colors hover:border-slate-300 hover:text-slate-600 dark:border-slate-800 dark:bg-slate-800/50 dark:hover:border-slate-700 dark:hover:text-slate-300"
+                        @click="paletteOpen = true"
+                    >
+                        <Icon name="search" class="shrink-0 text-base" />
+                        <span class="flex-1 text-start">{{ t('nav.search') }}</span>
+                        <kbd class="rounded border border-slate-200 px-1.5 font-sans text-[0.65rem] font-semibold dark:border-slate-700" dir="ltr">{{ shortcutHint }}</kbd>
+                    </button>
+                    <template v-for="section in sections" :key="section.key">
+                        <template v-if="section.standalone">
+                            <SidebarLink
+                                v-for="item in section.items"
+                                :key="item.href"
+                                :href="item.href"
+                                :active="isActive(item, url)"
+                                :icon="item.icon"
+                                :badge="item.badge"
+                            >{{ item.label }}</SidebarLink>
+                        </template>
+                        <SidebarSection
+                            v-else
+                            :section="section"
+                            :url="url"
+                            :user-open="isOpen(section.key)"
+                            @toggle="toggleSection"
+                        />
                     </template>
-                    <SidebarSection
-                        v-else
-                        :section="section"
-                        :url="url"
-                        :user-open="isOpen(section.key)"
-                        @toggle="toggleSection"
-                    />
+                </template>
+                <template v-else>
+                    <button
+                        type="button"
+                        class="mb-2 flex w-full items-center justify-center rounded-xl p-1.5 text-slate-500 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                        :title="t('nav.search')"
+                        :aria-label="t('nav.search')"
+                        @click="paletteOpen = true"
+                    >
+                        <span class="flex h-7 w-7 items-center justify-center text-[1.05rem]"><Icon name="search" /></span>
+                    </button>
+                    <template v-for="section in sections" :key="section.key">
+                        <template v-if="section.standalone">
+                            <SidebarLink
+                                v-for="item in section.items"
+                                :key="item.href"
+                                :href="item.href"
+                                :active="isActive(item, url)"
+                                :icon="item.icon"
+                                :badge="item.badge"
+                                :title="item.label"
+                                icon-only
+                            >{{ item.label }}</SidebarLink>
+                        </template>
+                        <SidebarFlyout v-else :section="section" :url="url" />
+                    </template>
                 </template>
             </nav>
 
             <!-- Footer: user + language -->
-            <div class="shrink-0 space-y-3 border-t border-slate-200 p-3 dark:border-slate-800">
-                <Link :href="route('profile.edit')" class="flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800">
+            <div class="shrink-0 space-y-3 border-t border-slate-200 p-3 dark:border-slate-800" :class="compact ? 'px-2' : ''">
+                <Link
+                    :href="route('profile.edit')"
+                    class="flex items-center rounded-xl p-2 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
+                    :class="compact ? 'justify-center' : 'gap-3'"
+                    :title="compact ? (user?.firstname || user?.name) : null"
+                >
                     <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-sm font-bold text-white ring-1 ring-inset ring-primary-400/40">{{ userInitial }}</span>
-                    <span class="min-w-0 flex-1">
+                    <span v-if="!compact" class="min-w-0 flex-1">
                         <span class="block truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{{ user?.firstname || user?.name }}</span>
                         <span class="block truncate text-xs text-slate-500 dark:text-slate-400">{{ userRole }}</span>
                     </span>
                 </Link>
-                <div class="flex items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
+                <div class="flex items-center gap-2" :class="compact ? 'flex-col' : ''">
+                    <div class="flex flex-1 items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800" :class="compact ? 'w-full flex-col' : ''">
+                        <button
+                            v-for="loc in locales"
+                            :key="loc.code"
+                            @click="switchLocale(loc.code)"
+                            class="flex-1 rounded-lg py-1.5 text-xs font-bold transition-colors"
+                            :class="[compact ? 'w-full' : '', currentLocale === loc.code ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200']"
+                        >{{ loc.label }}</button>
+                    </div>
+                    <!-- Desktop-width only: the mobile drawer is always wide. -->
                     <button
-                        v-for="loc in locales"
-                        :key="loc.code"
-                        @click="switchLocale(loc.code)"
-                        class="flex-1 rounded-lg py-1.5 text-xs font-bold transition-colors"
-                        :class="currentLocale === loc.code ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'"
-                    >{{ loc.label }}</button>
+                        type="button"
+                        class="hidden shrink-0 items-center justify-center rounded-xl p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 lg:flex"
+                        :title="compact ? t('nav.expand_sidebar') : t('nav.collapse_sidebar')"
+                        :aria-label="compact ? t('nav.expand_sidebar') : t('nav.collapse_sidebar')"
+                        @click="toggleNarrow"
+                    >
+                        <!-- Chevron points toward the inline start to collapse, the end to expand. -->
+                        <Icon
+                            name="chevron"
+                            class="text-base transition-transform duration-200 motion-reduce:transition-none"
+                            :class="compact ? '-rotate-90 rtl:rotate-90' : 'rotate-90 rtl:-rotate-90'"
+                        />
+                    </button>
                 </div>
             </div>
         </aside>
 
         <!-- ===== MAIN ===== -->
-        <div class="lg:ms-64 print:ms-0">
+        <div class="transition-[margin] duration-200 ease-out motion-reduce:transition-none print:ms-0" :class="compact ? 'lg:ms-16' : 'lg:ms-64'">
             <header class="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-slate-200/80 bg-white/75 px-4 backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-900/75 sm:px-6 print:static print:border-0 print:shadow-none">
                 <button
                     @click="mobileMenuOpen = !mobileMenuOpen"

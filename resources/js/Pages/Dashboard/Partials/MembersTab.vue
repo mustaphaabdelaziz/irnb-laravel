@@ -319,7 +319,7 @@ const genderTotal = computed(() => (split.value.male + split.value.female) || 1)
         </ChartCard>
 
         <section class="grid gap-5 lg:grid-cols-3">
-            <Card class="border-border/70 shadow-none">
+            <Card v-if="data?.debtBands !== null" class="border-border/70 shadow-none">
                 <CardHeader class="px-5 py-4">
                     <CardTitle class="text-base">{{ t('dashboard.mem_debt_spread') }}</CardTitle>
                 </CardHeader>

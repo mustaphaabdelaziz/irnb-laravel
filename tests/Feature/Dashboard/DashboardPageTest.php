@@ -278,6 +278,50 @@ class DashboardPageTest extends TestCase
     }
 
     #[Test]
+    public function without_the_finance_right_no_money_reaches_the_dashboard(): void
+    {
+        $this->seedSomeData();
+        $user = $this->userWithoutFinance();
+
+        // Hero row: only the member and equipment tiles.
+        $this->actingAs($user)->get(route('dashboard'))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('hero', 2)
+                ->where('hero.0.key', 'members')
+                ->where('hero.1.key', 'equipment_on_loan'));
+
+        $overview = $this->actingAs($user)->get(route('dashboard'), $this->partialHeaders('overview'))->json('props.overview');
+        $this->assertNull($overview['cashFlow']);
+        $this->assertNull($overview['debtAging']);
+        $this->assertEmpty(array_filter($overview['activity'], fn (array $e) => $e['type'] === 'transaction'));
+        $this->assertEmpty(array_filter($overview['alerts'], fn (array $a) => in_array($a['key'], ['negative_balance', 'unpaid_over_60'], true)));
+
+        $members = $this->actingAs($user)->get(route('dashboard'), $this->partialHeaders('members'))->json('props.members');
+        $this->assertNull($members['debtBands']);
+        $this->assertNotContains('median_debt', array_column($members['summary'], 'key'));
+
+        $operations = $this->actingAs($user)->get(route('dashboard'), $this->partialHeaders('operations'))->json('props.operations');
+        $this->assertNull($operations['subscriptionFunnel']);
+        $this->assertNotContains('stock_value', array_column($operations['summary'], 'key'));
+    }
+
+    #[Test]
+    public function the_finance_right_alone_unlocks_the_money_whoever_holds_it(): void
+    {
+        $this->seedSomeData();
+        // A coach given only finance/view as a per-user extra right.
+        $user = $this->userWithoutFinance();
+        $user->update(['permission_overrides' => ['grant' => ['finance' => ['view']], 'revoke' => []]]);
+
+        $this->actingAs($user)->get(route('dashboard'))
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('hero', 6));
+
+        $overview = $this->actingAs($user)->get(route('dashboard'), $this->partialHeaders('overview'))->json('props.overview');
+        $this->assertNotNull($overview['cashFlow']);
+        $this->assertNotEmpty(array_filter($overview['activity'], fn (array $e) => $e['type'] === 'transaction'));
+    }
+
+    #[Test]
     public function the_page_tells_the_client_which_tabs_are_visible(): void
     {
         $this->actingAs($this->userWithoutFinance())

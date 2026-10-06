@@ -114,6 +114,7 @@ const statusTone = {
         </section>
 
         <ChartCard
+            v-if="data?.subscriptionFunnel !== null"
             :title="t('dashboard.ops_funnel')"
             :subtitle="t('dashboard.ops_funnel_hint')"
             :loading="loading"

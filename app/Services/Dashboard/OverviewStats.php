@@ -31,13 +31,17 @@ class OverviewStats
 
     private const UNPAID_ALERT_DAYS = 60;
 
-    public function get(DashboardFilters $filters): array
+    /**
+     * @param  bool  $money  false leaves out the cash-flow and debt charts, the
+     *                       money alerts and the transactions in the feed.
+     */
+    public function get(DashboardFilters $filters, bool $money = true): array
     {
         return [
-            'cashFlow' => $this->cashFlow($filters),
-            'debtAging' => $this->debtAging($filters),
-            'alerts' => $this->alerts($filters),
-            'activity' => $this->activity($filters),
+            'cashFlow' => $money ? $this->cashFlow($filters) : null,
+            'debtAging' => $money ? $this->debtAging($filters) : null,
+            'alerts' => $this->alerts($filters, $money),
+            'activity' => $this->activity($filters, $money),
         ];
     }
 
@@ -147,7 +151,7 @@ class OverviewStats
      * the strip, which is exactly the wrong habit for the one component whose
      * job is to be noticed.
      */
-    private function alerts(DashboardFilters $filters): array
+    private function alerts(DashboardFilters $filters, bool $money = true): array
     {
         $today = CarbonImmutable::now()->startOfDay();
 
@@ -163,13 +167,14 @@ class OverviewStats
 
         $lowStock = $this->lowStockCount($filters);
 
-        $negativeAccounts = DB::table('finance_accounts')
+        // The two money alerts count as 0 (and are dropped) without the right.
+        $negativeAccounts = ! $money ? 0 : DB::table('finance_accounts')
             ->where('is_active', true)
             ->where('current_balance', '<', 0)
             ->when($filters->branchId !== null, fn ($q) => $q->where('branch_id', $filters->branchId))
             ->count();
 
-        $unpaidMembers = $this->unpaidLines($filters)
+        $unpaidMembers = ! $money ? 0 : $this->unpaidLines($filters)
             ->whereRaw($this->effectiveDueDate().' < ?', [$today->subDays(self::UNPAID_ALERT_DAYS)->toDateString()])
             ->distinct()
             ->count('player_subscriptions.player_id');
@@ -224,9 +229,10 @@ class OverviewStats
      * one row at a time. Hydrating ten rentals as models costs ten extra
      * queries for a label this feed does not use.
      */
-    private function activity(DashboardFilters $filters): array
+    private function activity(DashboardFilters $filters, bool $money = true): array
     {
-        $transactions = DB::table('transactions')
+        // Transactions (title and amount) are finance data: not even queried without the right.
+        $transactions = ! $money ? Collection::make() : DB::table('transactions')
             ->where('transactions.archived', false)
             ->when($filters->branchId !== null, fn ($q) => $q->whereIn(
                 'transactions.finance_account_id',

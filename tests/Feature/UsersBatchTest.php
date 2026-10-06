@@ -75,42 +75,63 @@ class UsersBatchTest extends TestCase
         $this->assertSame('Already', $kept->fresh()->firstname);
     }
 
-    // ── role vs full access ──────────────────────────────────────────
+    // ── access comes from roles only ─────────────────────────────────
 
     #[Test]
-    public function turning_full_access_off_makes_the_assigned_role_govern(): void
+    public function retiring_the_admin_privilege_keeps_roles_and_gives_roleless_admins_the_administrator_role(): void
     {
-        $role = Role::factory()->create(['permissions' => ['players' => ['view']]]);
-        $member = User::factory()->admin()->create(['firstname' => 'Test', 'lastname' => 'User']);
-        $this->assertTrue($member->hasPermission('finance', 'view')); // admin privilege: everything
+        $administrator = Role::factory()->create(['key' => 'administrator', 'permissions' => Role::allPermissions()]);
+        $accountant = Role::factory()->create(['key' => 'accountant', 'permissions' => ['finance' => ['view']]]);
 
-        $this->actingAs(User::factory()->create(['privileges' => ['superadmin']]))
-            ->put(route('users.update', $member), [
-                'firstname' => 'Test', 'lastname' => 'User',
-                'role_id' => $role->id,
-                'privileges' => ['user'],
-            ])->assertSessionHasNoErrors();
+        $withRole = User::factory()->create(['privileges' => ['admin'], 'role_id' => $accountant->id]);
+        $withoutRole = User::factory()->create(['privileges' => ['admin'], 'role_id' => null]);
+        $owner = User::factory()->create(['privileges' => ['superadmin', 'admin']]);
+        $plain = User::factory()->create(['privileges' => ['user'], 'role_id' => null]);
 
-        $member->refresh();
-        $this->assertSame($role->id, $member->role_id);
-        $this->assertFalse($member->isGodAdmin());
-        $this->assertTrue($member->hasPermission('players', 'view'));
-        $this->assertFalse($member->hasPermission('finance', 'view'));
+        (require database_path('migrations/2026_10_07_100000_retire_admin_privilege.php'))->up();
+
+        $this->assertSame(['user'], $withRole->fresh()->privileges);
+        $this->assertSame($accountant->id, $withRole->fresh()->role_id);
+        $this->assertFalse($withRole->fresh()->hasPermission('players', 'view')); // the role governs now
+
+        $this->assertSame($administrator->id, $withoutRole->fresh()->role_id);
+        $this->assertTrue($withoutRole->fresh()->hasPermission('players', 'view'));
+
+        $this->assertSame(['superadmin'], $owner->fresh()->privileges);
+        $this->assertNull($plain->fresh()->role_id);
     }
 
     #[Test]
-    public function a_role_based_editor_cannot_grant_full_access(): void
+    public function the_edit_form_cannot_set_privileges(): void
     {
-        $editor = User::factory()->create([
-            'role_id' => Role::factory()->create(['permissions' => ['users' => ['view', 'edit']]])->id,
-        ]);
         $member = User::factory()->create(['privileges' => ['user']]);
 
-        $this->actingAs($editor)->put(route('users.update', $member), [
+        $this->actingAs(User::factory()->create(['privileges' => ['superadmin']]))->put(route('users.update', $member), [
             'firstname' => 'A', 'lastname' => 'B', 'privileges' => ['admin'],
         ])->assertSessionHasNoErrors();
 
         $this->assertSame(['user'], $member->fresh()->privileges);
+    }
+
+    #[Test]
+    public function the_users_list_filters_by_role_superadmin_or_no_role(): void
+    {
+        $coach = Role::factory()->create(['key' => 'coach']);
+        User::factory()->create(['username' => 'u-coach', 'role_id' => $coach->id]);
+        User::factory()->create(['username' => 'u-none', 'role_id' => null]);
+        User::factory()->create(['username' => 'u-owner', 'privileges' => ['superadmin']]);
+
+        $viewer = User::factory()->create(['privileges' => ['superadmin'], 'username' => 'zz-viewer']);
+        $names = fn (array $role) => collect($this->actingAs($viewer)
+            ->get(route('users.index', ['role' => $role]))->viewData('page')['props']['users']['data'])
+            ->pluck('username')->reject(fn ($u) => $u === 'zz-viewer')->sort()->values()->all();
+
+        $this->assertSame(['u-coach'], $names([(string) $coach->id]));
+        $this->assertContains('u-none', $names(['none']));
+        $this->assertNotContains('u-coach', $names(['none']));
+        $this->assertSame(['u-owner'], array_values(array_filter($names(['superadmin']), fn ($u) => str_starts_with($u, 'u-'))));
+        // An unknown value is no filter at all.
+        $this->assertContains('u-coach', $names(['bogus']));
     }
 
     #[Test]
@@ -180,13 +201,45 @@ class UsersBatchTest extends TestCase
         $this->actingAs($admin)->post(route('users.impersonate', $disabled))->assertSessionHas('error', 'flash.impersonate_inactive');
         $this->assertAuthenticatedAs($admin);
 
-        // A role-based user who may edit users is still not an administrator.
+        // A role that may only view users cannot (its route needs users/edit,
+        // and the controller checks again).
+        $viewer = User::factory()->create([
+            'role_id' => Role::factory()->create(['permissions' => ['users' => ['view']]])->id,
+        ]);
+        $target = User::factory()->create();
+        $this->actingAs($viewer)->post(route('users.impersonate', $target))->assertForbidden();
+        $this->assertAuthenticatedAs($viewer);
+    }
+
+    #[Test]
+    public function a_role_that_may_edit_users_can_log_in_as_someone(): void
+    {
         $editor = User::factory()->create([
             'role_id' => Role::factory()->create(['permissions' => ['users' => ['view', 'edit']]])->id,
         ]);
         $target = User::factory()->create();
-        $this->actingAs($editor)->post(route('users.impersonate', $target))->assertSessionHas('error', 'flash.impersonate_forbidden');
+
+        $this->actingAs($editor)->post(route('users.impersonate', $target))->assertRedirect(route('dashboard'));
+        $this->assertAuthenticatedAs($target);
+    }
+
+    #[Test]
+    public function nobody_but_a_superadmin_logs_in_as_someone_with_more_rights(): void
+    {
+        $editor = User::factory()->create([
+            'role_id' => Role::factory()->create(['permissions' => ['users' => ['view', 'edit']]])->id,
+        ]);
+        $treasurer = User::factory()->create([
+            'role_id' => Role::factory()->create(['permissions' => ['finance' => ['view']]])->id,
+        ]);
+
+        $this->actingAs($editor)->post(route('users.impersonate', $treasurer))
+            ->assertSessionHas('error', 'flash.impersonate_more_rights');
         $this->assertAuthenticatedAs($editor);
+
+        $this->actingAs(User::factory()->create(['privileges' => ['superadmin']]))
+            ->post(route('users.impersonate', $treasurer))->assertRedirect(route('dashboard'));
+        $this->assertAuthenticatedAs($treasurer);
     }
 
     #[Test]

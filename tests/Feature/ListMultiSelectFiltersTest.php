@@ -125,9 +125,10 @@ class ListMultiSelectFiltersTest extends TestCase
         // OR within one filter.
         $this->assertSame(['active-admin', 'inactive-user', 'pending-active', 'pending-user'], $names(['approval' => ['pending', 'approved']]));
         $this->assertSame(['inactive-user', 'pending-user'], $names(['activity' => 'inactive']));
-        $this->assertSame(['active-admin', 'inactive-user', 'pending-active', 'pending-user'], $names(['role' => ['admin', 'user']]));
-        $this->assertSame(['inactive-user', 'pending-active', 'pending-user'], $names(['role' => ['user', 'bogus']]));
-        $this->assertSame(['inactive-user'], $names(['approval' => ['approved'], 'role' => ['user']]));
+        // Role filter: role ids, `none` (no role), `superadmin`.
+        $this->assertSame(['active-admin', 'inactive-user', 'pending-active', 'pending-user'], $names(['role' => ['none']]));
+        $this->assertSame(['active-admin', 'inactive-user', 'pending-active', 'pending-user'], $names(['role' => ['none', 'bogus']]));
+        $this->assertSame(['active-admin', 'inactive-user'], $names(['approval' => ['approved'], 'role' => ['none']]));
 
         $filters = $this->props('users.index', ['approval' => ['pending', 'bogus'], 'activity' => ['active']])['filters'];
         $this->assertSame(['pending'], $filters['approval']);
@@ -139,8 +140,8 @@ class ListMultiSelectFiltersTest extends TestCase
     {
         User::factory()->create(['name' => 'plain-user', 'privileges' => ['user']]);
 
-        $filters = $this->props('users.index', ['role' => ['user', 'bogus']])['filters'];
-        $this->assertSame(['user'], $filters['role']);
+        $filters = $this->props('users.index', ['role' => ['none', 'bogus']])['filters'];
+        $this->assertSame(['none'], $filters['role']);
 
         // Junk alone is no filter at all: not echoed, and every user listed.
         $props = $this->props('users.index', ['role' => ['bogus', '<script>']]);

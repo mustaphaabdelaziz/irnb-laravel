@@ -24,6 +24,7 @@ const props = defineProps({
     pendingCount: Number,
     canManageAccess: { type: Boolean, default: false },
     currentUserId: { type: Number, default: 0 },
+    roles: { type: Array, default: () => [] },
 });
 
 const search = ref(props.filters?.search || '');
@@ -41,8 +42,9 @@ const activityOptions = computed(() => [
     { value: 'inactive', label: t('inactive') },
 ]);
 const roleOptions = computed(() => [
-    { value: 'admin', label: t('administrator') },
-    { value: 'user', label: t('user') },
+    { value: 'superadmin', label: t('super_admin') },
+    ...props.roles.map((r) => ({ value: String(r.id), label: roleName(r) })),
+    { value: 'none', label: t('no_role') },
 ]);
 const deleteId = ref(null);
 
@@ -158,10 +160,9 @@ function initial(user) {
                                 <td class="whitespace-nowrap px-4 py-3">
                                     <div class="flex flex-wrap gap-1">
                                         <Badge v-if="user.is_superadmin" :label="t('super_admin')" color="primary" />
-                                        <Badge v-else-if="user.privileges?.includes('admin')" :label="t('administrator')" color="blue" />
-                                        <Badge v-else :label="t('user')" color="slate" />
-                                        <!-- The assigned role; it only matters without full access. -->
-                                        <Badge v-if="user.role" :label="roleName(user.role)" :color="user.is_superadmin || user.privileges?.includes('admin') ? 'slate' : 'emerald'" />
+                                        <!-- Access comes from the role; a superadmin has everything anyway. -->
+                                        <Badge v-else-if="user.role" :label="roleName(user.role)" color="blue" />
+                                        <Badge v-else :label="t('no_role')" color="slate" />
                                     </div>
                                 </td>
                                 <td class="whitespace-nowrap px-4 py-3">

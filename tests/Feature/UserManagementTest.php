@@ -70,7 +70,7 @@ class UserManagementTest extends TestCase
 
         $member->refresh();
         $this->assertSame('Updated Name', $member->name);
-        $this->assertContains('admin', $member->privileges);
+        $this->assertNotContains('admin', $member->privileges); // access comes from roles, never the form
         $this->assertTrue($member->approved);
     }
 

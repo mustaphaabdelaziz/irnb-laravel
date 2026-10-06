@@ -39,8 +39,8 @@ class HandleInertiaRequests extends Middleware
                 'impersonator' => fn () => ($id = Impersonation::impersonatorId())
                     ? User::query()->find($id, ['id', 'name'])?->only(['id', 'name'])
                     : null,
-                // Who may "log in as" others: the admin/superadmin privileges.
-                'canImpersonate' => (bool) $user?->isGodAdmin() && ! Impersonation::active(),
+                // Who may "log in as" others: superadmin, or the right to edit users.
+                'canImpersonate' => $user !== null && Impersonation::allowedFor($user) && ! Impersonation::active(),
             ],
             'locale' => app()->getLocale(),
             // Gates desktop-only UI (the Backup page) — there is no folder picker on the web.

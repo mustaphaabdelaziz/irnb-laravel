@@ -17,11 +17,10 @@ use Inertia\Response;
 class UserController extends Controller
 {
     /**
-     * The values the role filter can apply: the `privileges` entries a user
-     * can hold (UpdateUserRequest allows user|admin; superadmin is set by
-     * the app). Anything else is neither applied nor echoed.
+     * Role filter values besides role ids: the superadmin account(s) and
+     * users with no role. Anything else is neither applied nor echoed.
      */
-    private const ROLE_FILTERS = ['user', 'admin', 'superadmin'];
+    private const ROLE_FILTER_EXTRAS = ['superadmin', 'none'];
 
     public function index(Request $request): Response
     {
@@ -52,11 +51,22 @@ class UserController extends Controller
             $query->whereIn('is_active', array_map(fn (string $v) => $v === 'active', $activity));
         }
 
-        $roles = ListFilter::get($request, 'role', self::ROLE_FILTERS);
+        $roleList = Role::orderByDesc('is_system')->orderBy('key')->get(['id', 'key', 'name']);
+        $roles = ListFilter::get($request, 'role', [
+            ...$roleList->map(fn (Role $role) => (string) $role->id)->all(),
+            ...self::ROLE_FILTER_EXTRAS,
+        ]);
         if ($roles !== []) {
             $query->where(function ($q) use ($roles) {
-                foreach ($roles as $role) {
-                    $q->orWhereJsonContains('privileges', $role);
+                $ids = array_values(array_filter($roles, 'ctype_digit'));
+                if ($ids !== []) {
+                    $q->orWhereIn('role_id', $ids);
+                }
+                if (in_array('none', $roles, true)) {
+                    $q->orWhereNull('role_id');
+                }
+                if (in_array('superadmin', $roles, true)) {
+                    $q->orWhereJsonContains('privileges', 'superadmin');
                 }
             });
         }
@@ -92,6 +102,7 @@ class UserController extends Controller
             ], fn ($value) => $value !== []),
             // Closure so filter reloads (partial) skip the count query.
             'pendingCount' => fn () => User::where('is_user', true)->where('approved', false)->count(),
+            'roles' => $roleList,
             // Password reset and superadmin actions are gated to a superadmin.
             'canManageAccess' => $request->user()->isSuperadmin(),
             'currentUserId' => $request->user()->id,
@@ -177,8 +188,6 @@ class UserController extends Controller
             'modules' => Role::MODULES,
             'actions' => Role::ACTIONS,
             'canManageAccess' => $request->user()->isSuperadmin(),
-            // Giving or removing full access (the admin privilege).
-            'canManagePrivileges' => $request->user()->isGodAdmin(),
         ]);
     }
 
@@ -192,17 +201,6 @@ class UserController extends Controller
         // Only a superadmin may (re)assign roles and per-user overrides.
         if (! $request->user()->isSuperadmin()) {
             unset($validated['role_id'], $validated['permission_overrides']);
-        }
-
-        // The admin privilege grants everything, whatever the role: only an
-        // admin/superadmin may give or take it, never a role-based editor.
-        if (! $request->user()->isGodAdmin()) {
-            unset($validated['privileges']);
-        }
-
-        // Preserve a superadmin's elevated privilege even if the form omits it.
-        if (in_array('superadmin', $user->privileges ?? [], true)) {
-            $validated['privileges'] = array_values(array_unique(['superadmin', ...($validated['privileges'] ?? [])]));
         }
 
         if ($request->hasFile('picture')) {

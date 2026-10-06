@@ -39,8 +39,6 @@ class UpdateUserRequest extends FormRequest
             'phones' => ['nullable', 'array'],
             'phones.*' => ['string', 'max:20'],
             'gender' => ['nullable', 'string', 'in:Male,Female'],
-            'privileges' => ['nullable', 'array'],
-            'privileges.*' => ['string', 'in:user,admin'],
             'role_id' => ['nullable', 'integer', 'exists:roles,id'],
             'permission_overrides' => ['nullable', 'array'],
             'permission_overrides.grant' => ['nullable', 'array'],

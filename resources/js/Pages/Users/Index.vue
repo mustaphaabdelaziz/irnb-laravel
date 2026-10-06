@@ -92,6 +92,10 @@ function submitReset() {
     });
 }
 
+function roleName(role) {
+    return role.name?.[locale.value] || role.name?.en || role.key;
+}
+
 function initial(user) {
     return (user.fullname || user.name || '?').charAt(0).toUpperCase();
 }
@@ -156,6 +160,8 @@ function initial(user) {
                                         <Badge v-if="user.is_superadmin" :label="t('super_admin')" color="primary" />
                                         <Badge v-else-if="user.privileges?.includes('admin')" :label="t('administrator')" color="blue" />
                                         <Badge v-else :label="t('user')" color="slate" />
+                                        <!-- The assigned role; it only matters without full access. -->
+                                        <Badge v-if="user.role" :label="roleName(user.role)" :color="user.is_superadmin || user.privileges?.includes('admin') ? 'slate' : 'emerald'" />
                                     </div>
                                 </td>
                                 <td class="whitespace-nowrap px-4 py-3">

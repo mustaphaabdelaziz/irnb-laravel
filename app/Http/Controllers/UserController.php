@@ -25,7 +25,7 @@ class UserController extends Controller
 
     public function index(Request $request): Response
     {
-        $query = User::query()->with('memberJob');
+        $query = User::query()->with(['memberJob', 'role:id,key,name']);
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -77,6 +77,7 @@ class UserController extends Controller
                 'approved' => $user->approved,
                 'is_active' => $user->is_active,
                 'is_superadmin' => in_array('superadmin', $user->privileges ?? [], true),
+                'role' => $user->role?->only(['key', 'name']),
                 'created_at' => $user->created_at,
                 'logged_in_at' => $user->logged_in_at,
             ]);
@@ -176,6 +177,8 @@ class UserController extends Controller
             'modules' => Role::MODULES,
             'actions' => Role::ACTIONS,
             'canManageAccess' => $request->user()->isSuperadmin(),
+            // Giving or removing full access (the admin privilege).
+            'canManagePrivileges' => $request->user()->isGodAdmin(),
         ]);
     }
 
@@ -189,6 +192,12 @@ class UserController extends Controller
         // Only a superadmin may (re)assign roles and per-user overrides.
         if (! $request->user()->isSuperadmin()) {
             unset($validated['role_id'], $validated['permission_overrides']);
+        }
+
+        // The admin privilege grants everything, whatever the role: only an
+        // admin/superadmin may give or take it, never a role-based editor.
+        if (! $request->user()->isGodAdmin()) {
+            unset($validated['privileges']);
         }
 
         // Preserve a superadmin's elevated privilege even if the form omits it.

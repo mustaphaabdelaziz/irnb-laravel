@@ -18,7 +18,11 @@ const props = defineProps({
     modules: { type: Array, default: () => [] },
     actions: { type: Array, default: () => [] },
     canManageAccess: { type: Boolean, default: false },
+    canManagePrivileges: { type: Boolean, default: false },
 });
+
+// The admin privilege: full access to everything, whatever the role says.
+const canToggleFullAccess = computed(() => props.canManagePrivileges && !props.user.is_superadmin);
 
 const preferredLng = props.user.preferred_lng || 'ar';
 const showAdvanced = ref(false);
@@ -31,6 +35,7 @@ const form = useForm({
     phone: props.user.phones?.[0] || '',
     gender: props.user.gender || 'Male',
     role_id: props.user.role_id ?? null,
+    full_access: (props.user.privileges ?? []).includes('admin'),
     permission_overrides: {
         grant: props.user.permission_overrides?.grant ?? {},
         revoke: props.user.permission_overrides?.revoke ?? {},
@@ -61,13 +66,21 @@ function hasOverride(bucket, module, action) {
 }
 
 function submit() {
-    form.transform((data) => ({
+    form.transform(({ full_access, ...data }) => ({
         ...data,
         phones: data.phone ? [data.phone] : [],
         permission_overrides: JSON.stringify(data.permission_overrides),
+        // Sent only by someone allowed to change it; the server checks again.
+        ...(canToggleFullAccess.value ? { privileges: [full_access ? 'admin' : 'user'] } : {}),
         _method: 'put',
-    })).post(route('users.update', props.user.id), { forceFormData: true });
+    })).post(route('users.update', props.user.id), {
+        forceFormData: true,
+        // A refused save must be visible even when the faulty field is off-screen.
+        onError: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
+    });
 }
+
+const hasErrors = computed(() => Object.keys(form.errors).length > 0);
 </script>
 
 <template>
@@ -84,6 +97,13 @@ function submit() {
         </template>
 
         <form @submit.prevent="submit" class="mx-auto max-w-3xl space-y-6">
+            <div v-if="hasErrors" role="alert" class="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-800 ring-1 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/30">
+                <p class="font-semibold">{{ t('user_save_failed') }}</p>
+                <ul class="mt-1 list-disc ps-5">
+                    <li v-for="(message, field) in form.errors" :key="field">{{ message }}</li>
+                </ul>
+            </div>
+
             <!-- Identity -->
             <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('basic_info') }}</h2>
@@ -131,11 +151,20 @@ function submit() {
                     {{ t('super_admin') }} — {{ t('role') }}
                 </div>
 
+                <label v-if="canToggleFullAccess" class="mb-4 flex items-start gap-3 rounded-lg bg-slate-50 p-3 dark:bg-slate-800/60">
+                    <input type="checkbox" v-model="form.full_access" class="mt-0.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+                    <span>
+                        <span class="block text-sm font-medium text-slate-800 dark:text-slate-100">{{ t('user_full_access') }}</span>
+                        <span class="block text-xs text-slate-500 dark:text-slate-400">{{ t('user_full_access_hint') }}</span>
+                    </span>
+                </label>
+
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div v-if="canManageAccess">
                         <InputLabel :value="t('role')" />
                         <SearchableSelect v-model="form.role_id" :options="roleOptions" :placeholder="t('no_role')" class="mt-1" />
                         <InputError :message="form.errors.role_id" class="mt-1" />
+                        <p v-if="form.full_access || user.is_superadmin" class="mt-1 rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">{{ t('user_role_ignored') }}</p>
                         <button type="button" class="mt-2 text-sm font-medium text-primary-600 hover:text-primary-700" @click="showAdvanced = !showAdvanced">
                             {{ showAdvanced ? t('hide_advanced') : t('advanced_overrides') }}
                         </button>

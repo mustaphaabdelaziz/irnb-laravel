@@ -75,6 +75,54 @@ class UsersBatchTest extends TestCase
         $this->assertSame('Already', $kept->fresh()->firstname);
     }
 
+    // ── role vs full access ──────────────────────────────────────────
+
+    #[Test]
+    public function turning_full_access_off_makes_the_assigned_role_govern(): void
+    {
+        $role = Role::factory()->create(['permissions' => ['players' => ['view']]]);
+        $member = User::factory()->admin()->create(['firstname' => 'Test', 'lastname' => 'User']);
+        $this->assertTrue($member->hasPermission('finance', 'view')); // admin privilege: everything
+
+        $this->actingAs(User::factory()->create(['privileges' => ['superadmin']]))
+            ->put(route('users.update', $member), [
+                'firstname' => 'Test', 'lastname' => 'User',
+                'role_id' => $role->id,
+                'privileges' => ['user'],
+            ])->assertSessionHasNoErrors();
+
+        $member->refresh();
+        $this->assertSame($role->id, $member->role_id);
+        $this->assertFalse($member->isGodAdmin());
+        $this->assertTrue($member->hasPermission('players', 'view'));
+        $this->assertFalse($member->hasPermission('finance', 'view'));
+    }
+
+    #[Test]
+    public function a_role_based_editor_cannot_grant_full_access(): void
+    {
+        $editor = User::factory()->create([
+            'role_id' => Role::factory()->create(['permissions' => ['users' => ['view', 'edit']]])->id,
+        ]);
+        $member = User::factory()->create(['privileges' => ['user']]);
+
+        $this->actingAs($editor)->put(route('users.update', $member), [
+            'firstname' => 'A', 'lastname' => 'B', 'privileges' => ['admin'],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(['user'], $member->fresh()->privileges);
+    }
+
+    #[Test]
+    public function the_users_list_shows_the_assigned_role(): void
+    {
+        $role = Role::factory()->create(['key' => 'coach', 'name' => ['en' => 'Coach']]);
+        User::factory()->create(['role_id' => $role->id, 'username' => 'coachy']);
+
+        $this->actingAs($this->admin())->get(route('users.index', ['search' => 'coachy']))
+            ->assertInertia(fn (Assert $page) => $page->where('users.data.0.role.key', 'coach'));
+    }
+
     // ── log in as ────────────────────────────────────────────────────
 
     #[Test]

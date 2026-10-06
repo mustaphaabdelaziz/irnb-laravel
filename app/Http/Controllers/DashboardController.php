@@ -57,7 +57,7 @@ class DashboardController extends Controller
                 ->orderBy('name')
                 ->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
             'can' => fn (): array => $this->visibleTabs($user),
-            'hero' => fn (): array => $this->hero->get($filters),
+            'hero' => fn (): array => $this->hero->get($filters, $this->money($user)),
             // Status names and colours for the members tab's attendance card.
             'attendanceCodes' => fn (): ?array => $user?->hasPermission('attendance', 'view')
                 ? app(AttendanceStatusCatalog::class)->codes()
@@ -81,20 +81,20 @@ class DashboardController extends Controller
         // Phase 2 and 3 fill these in. The keys exist now so the client's tab
         // machinery has one shape to code against from the start.
         $resolvers = [
-            'overview' => fn (): array => $this->overview->get($filters),
+            'overview' => fn (): array => $this->overview->get($filters, $this->money($user)),
             'finance' => fn (): ?array => $this->guard($user, 'finance')
                 ? $this->finance->get($filters)
                 : null,
             'members' => fn (): ?array => $this->guard($user, 'members')
                 ? [
-                    ...$this->members->get($filters),
+                    ...$this->members->get($filters, $this->money($user)),
                     // The attendance card rides with the members tab; it needs
                     // attendance/view on top of the tab's players/view.
                     'attendance' => $user->hasPermission('attendance', 'view') ? $this->attendance->get() : null,
                 ]
                 : null,
             'operations' => fn (): ?array => $this->guard($user, 'operations')
-                ? $this->operations->get($filters)
+                ? $this->operations->get($filters, $this->money($user))
                 : null,
         ];
 
@@ -115,6 +115,16 @@ class DashboardController extends Controller
             'members' => $this->guard($user, 'members'),
             'operations' => $this->guard($user, 'operations'),
         ];
+    }
+
+    /**
+     * Whether the user may see the club's money anywhere on the dashboard
+     * (tiles, charts, alerts, the activity feed): the Finance view right, as
+     * for the Finance tab. Without it those parts are never computed.
+     */
+    private function money(?User $user): bool
+    {
+        return (bool) $user?->hasPermission('finance', 'view');
     }
 
     /**

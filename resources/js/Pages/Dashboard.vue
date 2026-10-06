@@ -146,7 +146,8 @@ const heroTiles = computed(() => props.hero.map((tile) => ({
 
         <div class="space-y-6">
             <section
-                class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
+                class="grid gap-4 sm:grid-cols-2"
+                :class="heroTiles.length > 2 ? 'lg:grid-cols-3 xl:grid-cols-6' : ''"
                 :aria-label="t('dashboard.key_figures')"
             >
                 <StatTile

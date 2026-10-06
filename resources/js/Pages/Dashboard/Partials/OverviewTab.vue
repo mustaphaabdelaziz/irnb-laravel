@@ -98,7 +98,8 @@ const activityIcon = { transaction: 'money', registration: 'user', rental: 'box'
             />
         </section>
 
-        <section class="grid gap-5 lg:grid-cols-5">
+        <!-- Money charts: absent (null) without the Finance view right. -->
+        <section v-if="data?.cashFlow !== null" class="grid gap-5 lg:grid-cols-5">
             <ChartCard
                 class="lg:col-span-3"
                 :title="t('dashboard.cash_flow')"

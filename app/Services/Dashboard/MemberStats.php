@@ -36,16 +36,22 @@ class MemberStats
 
     private const TOP_CITIES = 6;
 
-    public function get(DashboardFilters $filters): array
+    /**
+     * @param  bool  $money  false leaves out the median debt tile and the
+     *                       debt bands.
+     */
+    public function get(DashboardFilters $filters, bool $money = true): array
     {
         return [
-            'summary' => $this->summary($filters),
+            'summary' => $money
+                ? $this->summary($filters)
+                : array_values(array_filter($this->summary($filters), fn (array $tile) => $tile['key'] !== 'median_debt')),
             'growth' => $this->growth($filters),
             'byCategory' => $this->byCategory($filters),
             'leftByCategory' => $this->leftByCategory($filters),
             'byStatus' => $this->byStatus($filters),
             'byAge' => $this->byAge($filters),
-            'debtBands' => $this->debtBands($filters),
+            'debtBands' => $money ? $this->debtBands($filters) : null,
             'split' => $this->split($filters),
             'academic' => $this->academic($filters),
             'topCities' => $this->topCities($filters),

@@ -34,11 +34,17 @@ class OperationsStats
      */
     private ?array $lowStockCache = null;
 
-    public function get(DashboardFilters $filters): array
+    /**
+     * @param  bool  $money  false leaves out the stock value and the
+     *                       subscription payment funnel.
+     */
+    public function get(DashboardFilters $filters, bool $money = true): array
     {
         return [
-            'summary' => $this->summary($filters),
-            'subscriptionFunnel' => $this->subscriptionFunnel($filters),
+            'summary' => $money
+                ? $this->summary($filters)
+                : array_values(array_filter($this->summary($filters), fn (array $tile) => $tile['key'] !== 'stock_value')),
+            'subscriptionFunnel' => $money ? $this->subscriptionFunnel($filters) : null,
             'itemsByStatus' => $this->itemsByStatus($filters),
             'lowStock' => $this->lowStock($filters),
             'rentalsPerMonth' => $this->rentalsPerMonth($filters),

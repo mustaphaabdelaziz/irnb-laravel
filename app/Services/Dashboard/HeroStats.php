@@ -23,9 +23,18 @@ use Illuminate\Support\Facades\DB;
  */
 class HeroStats
 {
-    public function get(DashboardFilters $filters): array
+    /**
+     * @param  bool  $money  false drops (and never computes) the tiles that
+     *                       reveal the club's finances: collection rate, cash
+     *                       flow, debt and treasury.
+     */
+    public function get(DashboardFilters $filters, bool $money = true): array
     {
         $months = MonthBucket::lastTwelve($filters->anchor());
+
+        if (! $money) {
+            return [$this->members($filters), $this->equipmentOnLoan($filters)];
+        }
 
         return [
             $this->members($filters),

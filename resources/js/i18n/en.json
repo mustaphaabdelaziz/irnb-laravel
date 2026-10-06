@@ -1800,7 +1800,7 @@
     "user_role_ignored": "A superadmin always has full access; the role has no effect.",
     "user_save_failed": "The changes were not saved:",
     "username": "Username",
-    "username_hint": "Used to sign in. Letters, digits and . _ - @ + only, no spaces. Not case-sensitive.",
+    "username_hint": "Used to sign in. Letters, digits and . _ - {'@'} + only, no spaces. Not case-sensitive.",
     "users": "Users",
     "validation.branch_required": "Please choose at least one branch.",
     "validation.check_required": "Please check this box.",

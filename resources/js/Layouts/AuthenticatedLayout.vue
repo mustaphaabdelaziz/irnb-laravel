@@ -102,6 +102,8 @@ const locales = [
 
 function switchLocale(code) {
     if (code === currentLocale.value) return;
+    // This GET changes server state, so drop prefetched pages: they carry the old locale and would flip the UI back.
+    router.flushAll();
     router.get(route('lang.switch', { locale: code }), {}, {
         preserveState: false,
         onSuccess: () => {

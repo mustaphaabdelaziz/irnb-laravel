@@ -41,12 +41,14 @@ watch(() => props.open, async (isOpen) => {
 
 // Same idea as hover prefetch: load the page the user is about to pick.
 // Debounced so arrowing through the list doesn't fire a request per row.
-watch(highlighted, () => {
+// Watches the href itself so the top result is prefetched too, while
+// `highlighted` stays 0 as the query changes.
+watch(() => (props.open ? results.value[highlighted.value]?.href : null), (href) => {
     clearTimeout(prefetchTimer);
-    if (!props.open) return;
+    if (!href) return;
     prefetchTimer = setTimeout(() => {
-        const item = results.value[highlighted.value];
-        if (item) router.prefetch(item.href, { method: 'get' }, { cacheFor: '30s' });
+        if (!props.open) return;
+        router.prefetch(href, { method: 'get' }, { cacheFor: '30s' });
     }, 75);
 });
 
@@ -94,6 +96,8 @@ onUnmounted(() => {
                 role="combobox"
                 aria-expanded="true"
                 aria-controls="palette-results"
+                aria-autocomplete="list"
+                :aria-label="t('nav.search')"
                 :aria-activedescendant="results.length ? `palette-option-${highlighted}` : undefined"
                 :placeholder="t('nav.search_placeholder')"
                 class="h-12 w-full border-0 bg-transparent px-0 text-sm text-slate-900 placeholder:text-slate-400 focus:ring-0 dark:text-slate-100"

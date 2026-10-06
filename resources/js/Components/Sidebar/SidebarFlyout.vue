@@ -29,6 +29,7 @@ async function show() {
     clearTimeout(closeTimer);
     top.value = trigger.value.getBoundingClientRect().top;
     open.value = true;
+    document.addEventListener('keydown', onDocumentKeydown);
     await nextTick();
     // Keep the panel on screen when the icon sits low in the rail.
     const height = panel.value?.offsetHeight ?? 0;
@@ -39,6 +40,7 @@ function hide() {
     clearTimeout(openTimer);
     clearTimeout(closeTimer);
     open.value = false;
+    document.removeEventListener('keydown', onDocumentKeydown);
 }
 
 function scheduleOpen() {
@@ -62,13 +64,19 @@ function onFocus() {
 }
 
 function onFocusOut(e) {
+    // Clicking non-focusable panel padding blurs with no target; the pointer is still on the panel.
+    if (e.relatedTarget === null && wrapper.value?.matches(':hover')) return;
     if (!wrapper.value?.contains(e.relatedTarget)) scheduleClose();
 }
 
-function onKeydown(e) {
-    if (e.key === 'Escape' && open.value) {
-        hide();
-        skipFocusOpen = true;
+// On document so Esc also closes a hover-opened panel that never had focus.
+function onDocumentKeydown(e) {
+    if (e.key !== 'Escape' || !open.value) return;
+    const focusInside = wrapper.value?.contains(document.activeElement);
+    hide();
+    if (focusInside) {
+        // focus() fires no event when the trigger already has focus, which would leave the flag stuck.
+        if (document.activeElement !== trigger.value) skipFocusOpen = true;
         trigger.value?.focus();
     }
 }
@@ -85,6 +93,7 @@ onMounted(() => {
 onUnmounted(() => {
     document.removeEventListener('pointerdown', onDocumentPointer);
     removeStartListener?.();
+    document.removeEventListener('keydown', onDocumentKeydown);
     clearTimeout(openTimer);
     clearTimeout(closeTimer);
 });
@@ -96,7 +105,6 @@ onUnmounted(() => {
         @mouseenter="scheduleOpen"
         @mouseleave="scheduleClose"
         @focusout="onFocusOut"
-        @keydown="onKeydown"
     >
         <button
             ref="trigger"

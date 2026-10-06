@@ -4,6 +4,7 @@ import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
+import IconButton from '@/Components/IconButton.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref } from 'vue';
@@ -71,8 +72,8 @@ function destroy() {
                                     <button @click="editingId = null" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">{{ t('cancel') }}</button>
                                 </div>
                                 <div v-else class="flex justify-end gap-2">
-                                    <button @click="startEdit(loc)" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">{{ t('edit') }}</button>
-                                    <button @click="deleteId = loc.id" class="text-sm text-rose-500 hover:text-rose-700">{{ t('delete') }}</button>
+                                    <IconButton icon="pencil" :label="t('edit')" plain size="sm" @click="startEdit(loc)" />
+                                    <IconButton icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteId = loc.id" />
                                 </div>
                             </td>
                         </tr>

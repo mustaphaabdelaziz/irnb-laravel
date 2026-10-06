@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import IconButton from '@/Components/IconButton.vue';
 import PeriodFilter from '@/Components/Activity/PeriodFilter.vue';
 import { useCan } from '@/Composables/useCan';
 import { parseDay } from '@/lib/attendanceCalendar';
@@ -38,7 +39,6 @@ const sections = computed(() => [
 
 const input = 'h-9 rounded-lg border-slate-300 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-900';
 const card = 'rounded-xl bg-white ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800';
-const linkButton = 'rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800';
 const th = 'p-2 font-semibold';
 </script>
 
@@ -48,7 +48,7 @@ const th = 'p-2 font-semibold';
         <template #header>
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <h1 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('att.injury.title') }}</h1>
-                <Link :href="route('attendance.stats')" :class="[linkButton, 'print:hidden']">{{ t('att.statistics') }}</Link>
+                <IconButton :href="route('attendance.stats')" icon="dashboard" :label="t('att.statistics')" class="print:hidden" />
             </div>
         </template>
 

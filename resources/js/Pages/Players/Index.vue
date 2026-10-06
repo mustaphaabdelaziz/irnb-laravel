@@ -18,6 +18,7 @@ import StatDoughnut from '@/Components/StatDoughnut.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import ExportMenu from '@/Components/ExportMenu.vue';
 import Icon from '@/Components/Icon.vue';
+import IconButton from '@/Components/IconButton.vue';
 import AcademicResultsPrint from '@/Pages/Players/Partials/AcademicResultsPrint.vue';
 
 const { t } = useI18n();
@@ -290,17 +291,11 @@ function runBulk() {
                     </div>
 
                     <!-- Template and export: format menus, always in the toolbar -->
-                    <ExportMenu :href="route('players.import.template')" :label="t('template')" collapse>
-                        <template #icon><Icon name="document" /></template>
-                    </ExportMenu>
-                    <ExportMenu :href="exportHref" :label="t('export')" collapse>
-                        <template #icon><Icon name="download" /></template>
-                    </ExportMenu>
+                    <ExportMenu :href="route('players.import.template')" :label="t('template')" icon="document" />
+                    <ExportMenu :href="exportHref" :label="t('export')" />
 
                     <ExportMenu v-if="singleCategory" :href="route('players.board-table', { category_id: singleCategory })"
-                        :label="t('print_board_table')" :formats="['pdf', 'xlsx', 'csv']" collapse>
-                        <template #icon><Icon name="print" /></template>
-                    </ExportMenu>
+                        :label="t('print_board_table')" :formats="['pdf', 'xlsx', 'csv']" icon="print" />
                     <AcademicResultsPrint :categories="categories" :category-id="singleCategory" :current-school-year="currentSchoolYear" />
 
                     <!-- ...folded into an overflow menu below xl -->
@@ -336,15 +331,7 @@ function runBulk() {
                     </Dropdown>
 
                     <!-- Primary action: always visible, icon-only on phones -->
-                    <Link
-                        :href="route('players.create')"
-                        :aria-label="t('new_player')"
-                        :title="t('new_player')"
-                        class="inline-flex h-9 min-w-9 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-primary-600 px-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-slate-900 sm:px-4"
-                    >
-                        <Icon name="plus" class="text-base" :stroke-width="2" />
-                        <span class="hidden sm:inline">{{ t('new_player') }}</span>
-                    </Link>
+                    <IconButton :href="route('players.create')" icon="plus" :label="t('new_player')" variant="primary" />
                 </div>
             </div>
         </template>
@@ -374,14 +361,7 @@ function runBulk() {
                 <MultiSelectFilter v-model="academicFilter" :options="academicOptions" :label="t('filter.studies')" :placeholder="t('academic_all')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
                 <MultiSelectFilter v-model="certificateFilter" :options="certificateOptions" :label="t('certificate')" :placeholder="t('certificate_filter_all')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
                 <MultiSelectFilter v-model="documentsFilter" :options="documentOptions" :label="t('documents')" :placeholder="t('doc_filter_all')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
-                <button
-                    v-if="hasActiveFilters"
-                    type="button"
-                    @click="clearFilters"
-                    class="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-rose-700 ring-1 ring-rose-200 hover:bg-rose-50 dark:text-rose-300 dark:ring-rose-800 dark:hover:bg-rose-900/30"
-                >
-                    <Icon name="xcircle" class="text-sm" /> {{ t('clear_filters') }}
-                </button>
+                <IconButton v-if="hasActiveFilters" icon="filteroff" :label="t('clear_filters')" variant="danger" @click="clearFilters" />
                 <!-- Toggles share a row on phones: status left, view right -->
                 <div class="flex w-full items-center justify-between gap-3 sm:w-auto sm:flex-1">
                     <div class="inline-flex rounded-xl bg-slate-100 p-0.5 dark:bg-slate-800">
@@ -391,16 +371,8 @@ function runBulk() {
                             :class="archivedView ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">{{ t('archived') }}</button>
                     </div>
                     <div class="inline-flex rounded-xl bg-slate-100 p-0.5 dark:bg-slate-800">
-                        <button type="button" @click="view = 'list'" :title="t('list_view')" :aria-label="t('list_view')" :aria-pressed="view === 'list'" class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors"
-                            :class="view === 'list' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">
-                            <Icon name="menu" class="text-sm" />
-                            <span class="hidden sm:inline">{{ t('list_view') }}</span>
-                        </button>
-                        <button type="button" @click="view = 'grid'" :title="t('grid_view')" :aria-label="t('grid_view')" :aria-pressed="view === 'grid'" class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors"
-                            :class="view === 'grid' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">
-                            <Icon name="dashboard" class="text-sm" />
-                            <span class="hidden sm:inline">{{ t('grid_view') }}</span>
-                        </button>
+                        <IconButton icon="menu" :label="t('list_view')" variant="ghost" size="sm" :pressed="view === 'list'" @click="view = 'list'" />
+                        <IconButton icon="dashboard" :label="t('grid_view')" variant="ghost" size="sm" :pressed="view === 'grid'" @click="view = 'grid'" />
                     </div>
                 </div>
             </div>
@@ -409,14 +381,11 @@ function runBulk() {
             <div v-if="view === 'list' && selected.length" class="flex flex-wrap items-center gap-3 rounded-xl bg-primary-50 dark:bg-primary-900/20 px-4 py-2.5 ring-1 ring-primary-200 dark:ring-primary-800">
                 <span class="text-sm font-medium text-primary-800 dark:text-primary-200">{{ t('selected_count', { count: selected.length }) }}</span>
                 <div class="ms-auto flex flex-wrap items-center gap-2">
-                    <button v-if="!archivedView" @click="showBulkEdit = true" class="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700">{{ t('bulk_edit') }}</button>
-                    <button v-if="!archivedView" @click="bulkAction = 'archive'" class="rounded-lg bg-white dark:bg-slate-900 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-200 ring-1 ring-slate-300 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800">{{ t('archive_selected') }}</button>
-                    <button v-if="archivedView" @click="bulkAction = 'restore'" class="rounded-lg bg-white dark:bg-slate-900 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-300 dark:ring-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/30">{{ t('restore_selected') }}</button>
-                    <button v-if="archivedView" @click="bulkAction = 'force'" class="rounded-lg bg-white dark:bg-slate-900 px-3 py-1.5 text-sm font-medium text-rose-700 dark:text-rose-300 ring-1 ring-rose-300 dark:ring-rose-800 hover:bg-rose-50 dark:hover:bg-rose-900/30">{{ t('delete_permanently_selected') }}</button>
-                    <a :href="route('players.labels', { ids: selected.join(',') })" target="_blank"
-                        class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800">
-                        <Icon name="print" /> {{ t('print_selected_labels') }}
-                    </a>
+                    <IconButton v-if="!archivedView" icon="pencil" :label="t('bulk_edit')" variant="primary" @click="showBulkEdit = true" />
+                    <IconButton v-if="!archivedView" icon="archive" :label="t('archive_selected')" @click="bulkAction = 'archive'" />
+                    <IconButton v-if="archivedView" icon="restore" :label="t('restore_selected')" variant="success" @click="bulkAction = 'restore'" />
+                    <IconButton v-if="archivedView" icon="trash" :label="t('delete_permanently_selected')" variant="danger" @click="bulkAction = 'force'" />
+                    <IconButton :href="route('players.labels', { ids: selected.join(',') })" external target="_blank" icon="print" :label="t('print_selected_labels')" />
                 </div>
             </div>
 
@@ -441,10 +410,10 @@ function runBulk() {
                             <Badge v-else :label="t('active')" color="emerald" />
                             <span class="font-semibold" :class="player.total_debt > 0 ? 'text-rose-700' : 'text-emerald-700'">{{ formatMoney(player.total_debt || 0) }}</span>
                         </div>
-                        <div class="mt-2 flex items-center justify-end gap-3 text-xs">
-                            <button v-if="!player.archived" @click.prevent.stop="archiveId = player.id" class="text-rose-500 hover:text-rose-700">{{ t('delete') }}</button>
-                            <button v-if="player.archived" @click.prevent.stop="restoreId = player.id" class="text-emerald-600 hover:text-emerald-800">{{ t('restore') }}</button>
-                            <button v-if="player.archived" @click.prevent.stop="forceId = player.id" class="text-rose-600 hover:text-rose-800">{{ t('delete_permanently') }}</button>
+                        <div class="mt-2 flex items-center justify-end gap-1">
+                            <IconButton v-if="!player.archived" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click.prevent.stop="archiveId = player.id" />
+                            <IconButton v-if="player.archived" icon="restore" :label="t('restore')" variant="success" plain size="sm" @click.prevent.stop="restoreId = player.id" />
+                            <IconButton v-if="player.archived" icon="trash" :label="t('delete_permanently')" variant="danger" plain size="sm" @click.prevent.stop="forceId = player.id" />
                         </div>
                     </Link>
                 </div>
@@ -520,12 +489,12 @@ function runBulk() {
                                     {{ formatMoney(player.total_debt || 0) }}
                                 </td>
                                 <td class="whitespace-nowrap px-4 py-3 text-end">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <Link :href="route('players.show', player.id)" class="text-sm text-primary-600 hover:text-primary-800">{{ t('details') }}</Link>
-                                        <Link :href="route('players.edit', player.id)" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">{{ t('edit') }}</Link>
-                                        <button v-if="!player.archived" @click="archiveId = player.id" class="text-sm text-rose-500 hover:text-rose-700">{{ t('delete') }}</button>
-                                        <button v-if="player.archived" @click="restoreId = player.id" class="text-sm text-emerald-600 hover:text-emerald-800">{{ t('restore') }}</button>
-                                        <button v-if="player.archived" @click="forceId = player.id" class="text-sm text-rose-600 hover:text-rose-800">{{ t('delete_permanently') }}</button>
+                                    <div class="flex items-center justify-end gap-1">
+                                        <IconButton :href="route('players.show', player.id)" icon="eye" :label="t('details')" variant="primary" plain size="sm" />
+                                        <IconButton :href="route('players.edit', player.id)" icon="pencil" :label="t('edit')" plain size="sm" />
+                                        <IconButton v-if="!player.archived" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="archiveId = player.id" />
+                                        <IconButton v-if="player.archived" icon="restore" :label="t('restore')" variant="success" plain size="sm" @click="restoreId = player.id" />
+                                        <IconButton v-if="player.archived" icon="trash" :label="t('delete_permanently')" variant="danger" plain size="sm" @click="forceId = player.id" />
                                     </div>
                                 </td>
                             </tr>

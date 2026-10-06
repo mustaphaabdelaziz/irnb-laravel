@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
-import Icon from '@/Components/Icon.vue';
+import IconButton from '@/Components/IconButton.vue';
 import { useCan } from '@/Composables/useCan';
 import { useAttendanceCodes } from '@/Composables/useAttendanceCodes';
 import { hours, pct, periodQuery } from '@/lib/attendanceStats';
@@ -101,7 +101,7 @@ const columns = computed(() => [
                     <td class="p-2 text-end tabular-nums">{{ hours(row.missed_hours) }}</td>
                     <td class="p-2 text-end font-semibold tabular-nums"><bdi dir="ltr">{{ pct(row.score_pct) }}</bdi></td>
                     <td class="whitespace-nowrap p-2 text-end">
-                        <a :href="letterHref(row)" target="_blank" :title="t('att.letter.print')" class="inline-flex items-center rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"><Icon name="mail" /><span class="sr-only">{{ t('att.letter.print') }}</span></a>
+                        <IconButton :href="letterHref(row)" external target="_blank" icon="mail" :label="t('att.letter.print')" plain size="sm" />
                     </td>
                 </tr>
             </tbody>

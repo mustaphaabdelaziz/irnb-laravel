@@ -4,6 +4,7 @@ import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Icon from '@/Components/Icon.vue';
+import IconButton from '@/Components/IconButton.vue';
 import InputError from '@/Components/InputError.vue';
 
 const props = defineProps({
@@ -164,8 +165,8 @@ function destroyCustom(s) {
                             <td dir="ltr" class="text-start">{{ s.start_time }}–{{ s.end_time }}</td>
                             <td class="text-slate-500">{{ s.valid_from }} → {{ s.valid_to ?? '…' }}</td>
                             <td class="text-end">
-                                <button class="p-1 text-slate-400 hover:text-primary-600" :title="t('att.edit')" @click="editSchedule(s)"><Icon name="pencil" /></button>
-                                <button class="p-1 text-slate-400 hover:text-rose-600" :title="t('att.delete')" @click="destroy('attendance.schedules.destroy', s.id)"><Icon name="trash" /></button>
+                                <IconButton icon="pencil" :label="t('att.edit')" plain size="sm" @click="editSchedule(s)" />
+                                <IconButton icon="trash" :label="t('att.delete')" variant="danger" plain size="sm" @click="destroy('attendance.schedules.destroy', s.id)" />
                             </td>
                         </tr>
                     </tbody>
@@ -185,7 +186,7 @@ function destroyCustom(s) {
                 <ul class="space-y-1 text-sm">
                     <li v-for="c in closures" :key="c.id" class="flex items-center justify-between border-t border-slate-100 pt-1 dark:border-slate-800">
                         <span><b>{{ c.reason }}</b> · {{ c.start_date }} → {{ c.end_date }}</span>
-                        <button class="p-1 text-slate-400 hover:text-rose-600" :title="t('att.delete')" @click="destroy('attendance.closures.destroy', c.id)"><Icon name="trash" /></button>
+                        <IconButton icon="trash" :label="t('att.delete')" variant="danger" plain size="sm" @click="destroy('attendance.closures.destroy', c.id)" />
                     </li>
                 </ul>
             </section>
@@ -349,9 +350,9 @@ function destroyCustom(s) {
                                 <td class="py-2 pe-2 text-slate-600 dark:text-slate-300">{{ t(`att.custom.behaviour.${s.behaviour}`) }}</td>
                                 <td class="py-2 pe-2 text-xs text-slate-500">{{ s.is_active ? t('att.custom.shown') : t('att.custom.hidden') }}</td>
                                 <td class="whitespace-nowrap py-2 text-end">
-                                    <button type="button" class="p-1 text-slate-400 hover:text-primary-600" :title="t('att.edit')" @click="editCustom(s)"><Icon name="pencil" /></button>
-                                    <button type="button" class="rounded px-2 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800" @click="toggleCustom(s)">{{ s.is_active ? t('att.custom.hide') : t('att.custom.show') }}</button>
-                                    <button type="button" class="p-1 text-slate-400 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-40" :disabled="s.used" :title="s.used ? t('att.error.code_in_use') : t('att.delete')" @click="destroyCustom(s)"><Icon name="trash" /></button>
+                                    <IconButton icon="pencil" :label="t('att.edit')" plain size="sm" @click="editCustom(s)" />
+                                    <IconButton :icon="s.is_active ? 'archive' : 'restore'" :label="s.is_active ? t('att.custom.hide') : t('att.custom.show')" :variant="s.is_active ? 'neutral' : 'success'" plain size="sm" @click="toggleCustom(s)" />
+                                    <IconButton icon="trash" :label="t('att.delete')" variant="danger" plain size="sm" :disabled="s.used" :title="s.used ? t('att.error.code_in_use') : t('att.delete')" @click="destroyCustom(s)" />
                                 </td>
                             </tr>
                         </tbody>

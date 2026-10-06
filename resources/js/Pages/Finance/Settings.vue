@@ -4,6 +4,7 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Icon from '@/Components/Icon.vue';
+import IconButton from '@/Components/IconButton.vue';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 import { useCan } from '@/Composables/useCan';
@@ -126,14 +127,11 @@ function resetFinance() {
                                     <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold" :class="y.status === 'closed' ? 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'">{{ y.status === 'closed' ? t('closed') : t('open') }}</span>
                                 </td>
                                 <td class="px-5 py-2.5 text-end">
-                                    <div class="flex items-center justify-end gap-3">
-                                        <button v-if="y.status !== 'closed'" @click="closeYear(y)" class="text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-slate-300">{{ t('close_year') }}</button>
-                                        <button v-else @click="reopenYear(y)" class="text-xs font-bold text-primary-600 hover:text-primary-700">{{ t('reopen_year') }}</button>
+                                    <div class="flex items-center justify-end gap-1">
+                                        <IconButton v-if="y.status !== 'closed'" icon="archive" :label="t('close_year')" plain size="sm" @click="closeYear(y)" />
+                                        <IconButton v-else icon="refresh" :label="t('reopen_year')" variant="primary" plain size="sm" @click="reopenYear(y)" />
                                         <!-- Only an open year with no active transaction can go. -->
-                                        <button v-if="y.can_delete" type="button" @click="deleteYear(y)" :title="t('delete_year')" :aria-label="t('delete_year')"
-                                            class="rounded-lg p-1 text-base text-rose-500 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-900/30">
-                                            <Icon name="trash" />
-                                        </button>
+                                        <IconButton v-if="y.can_delete" icon="trash" :label="t('delete_year')" variant="danger" plain size="sm" @click="deleteYear(y)" />
                                     </div>
                                 </td>
                             </tr>
@@ -189,7 +187,7 @@ function resetFinance() {
                                     <span class="truncate">{{ c.localized_name || c.name }}</span>
                                     <span v-if="c.transactions_count" class="text-xs text-slate-400">· {{ c.transactions_count }}</span>
                                 </span>
-                                <button @click="deleteCategory(c)" class="shrink-0 text-slate-300 hover:text-rose-500" :title="t('delete')"><Icon name="xcircle" /></button>
+                                <IconButton icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteCategory(c)" />
                             </li>
                         </ul>
                     </div>
@@ -202,7 +200,7 @@ function resetFinance() {
                                     <span class="truncate">{{ c.localized_name || c.name }}</span>
                                     <span v-if="c.transactions_count" class="text-xs text-slate-400">· {{ c.transactions_count }}</span>
                                 </span>
-                                <button @click="deleteCategory(c)" class="shrink-0 text-slate-300 hover:text-rose-500" :title="t('delete')"><Icon name="xcircle" /></button>
+                                <IconButton icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteCategory(c)" />
                             </li>
                         </ul>
                     </div>
@@ -233,7 +231,7 @@ function resetFinance() {
                         </span>
                         <span class="flex items-center gap-3">
                             <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ formatMoney(a.current_balance) }}</span>
-                            <button @click="deleteAccount(a)" class="text-slate-300 hover:text-rose-500" :title="t('delete')"><Icon name="xcircle" /></button>
+                            <IconButton icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteAccount(a)" />
                         </span>
                     </li>
                 </ul>

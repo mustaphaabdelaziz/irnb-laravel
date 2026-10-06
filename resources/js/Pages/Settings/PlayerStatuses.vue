@@ -5,6 +5,7 @@ import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
+import IconButton from '@/Components/IconButton.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref } from 'vue';
@@ -134,9 +135,11 @@ function destroy() {
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ s.name_en || '—' }}</td>
                                 <td class="px-4 py-3 text-end text-sm text-slate-600 dark:text-slate-300">{{ s.players_count }}</td>
                                 <td class="px-4 py-3 text-end">
-                                    <button @click="startEdit(s)" class="text-sm text-slate-500 hover:text-slate-700">{{ t('edit') }}</button>
-                                    <!-- Deletion is refused server-side while players reference it. -->
-                                    <button v-if="s.players_count === 0" @click="deleteId = s.id" class="ms-3 text-sm text-rose-500 hover:text-rose-700">{{ t('delete') }}</button>
+                                    <div class="flex justify-end gap-1">
+                                        <IconButton icon="pencil" :label="t('edit')" plain size="sm" @click="startEdit(s)" />
+                                        <!-- Deletion is refused server-side while players reference it. -->
+                                        <IconButton v-if="s.players_count === 0" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteId = s.id" />
+                                    </div>
                                 </td>
                             </template>
                         </tr>

@@ -4,7 +4,8 @@ import StatStrip from '@/Components/Dashboard/StatStrip.vue';
 import Pagination from '@/Components/Pagination.vue';
 import Badge from '@/Components/Badge.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import IconButton from '@/Components/IconButton.vue';
+import { Head, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { computed, ref, watch } from 'vue';
@@ -67,10 +68,7 @@ function destroy() {
         <template #header>
             <div class="flex items-center justify-between">
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('subscriptions') }}</h1>
-                <Link :href="route('subscriptions.create')" class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 transition-colors">
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    {{ t('add_subscription') }}
-                </Link>
+                <IconButton :href="route('subscriptions.create')" icon="plus" :label="t('add_subscription')" variant="primary" />
             </div>
         </template>
 
@@ -161,10 +159,10 @@ function destroy() {
                                     </div>
                                 </td>
                                 <td class="px-4 py-3 text-end">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <Link :href="route('subscriptions.show', sub.id)" class="text-sm text-primary-600 hover:text-primary-800">{{ t('details') }}</Link>
-                                        <Link :href="route('subscriptions.edit', sub.id)" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">{{ t('edit') }}</Link>
-                                        <button @click="confirmDelete(sub.id)" class="text-sm text-rose-500 hover:text-rose-700">{{ t('delete') }}</button>
+                                    <div class="flex items-center justify-end gap-1">
+                                        <IconButton :href="route('subscriptions.show', sub.id)" icon="eye" :label="t('details')" variant="primary" plain size="sm" />
+                                        <IconButton :href="route('subscriptions.edit', sub.id)" icon="pencil" :label="t('edit')" plain size="sm" />
+                                        <IconButton icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="confirmDelete(sub.id)" />
                                     </div>
                                 </td>
                             </tr>

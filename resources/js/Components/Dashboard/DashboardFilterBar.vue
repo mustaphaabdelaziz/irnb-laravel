@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import Icon from '@/Components/Icon.vue';
-import { Button } from '@/Components/ui/button';
+import IconButton from '@/Components/IconButton.vue';
 
 /**
  * The dashboard's controls, and the only thing that writes its URL.
@@ -81,19 +81,14 @@ const branchLabel = (branch) => branch.localized_name || branch.name;
 
         <!-- All-time has no previous period, so the control says why it is off
              rather than silently producing nothing. -->
-        <Button
-            variant="outline"
-            size="sm"
-            class="h-9 gap-1.5"
-            :class="filters.compare ? 'border-primary/40 text-primary' : 'text-muted-foreground'"
+        <IconButton
+            icon="refresh"
+            :label="t('dashboard.compare')"
+            :pressed="!!filters.compare"
             :disabled="isAllTime"
             :title="isAllTime ? t('dashboard.compare_unavailable') : t('dashboard.compare')"
-            :aria-pressed="filters.compare"
             @click="apply({ compare: !filters.compare })"
-        >
-            <Icon name="refresh" class="size-4" />
-            {{ t('dashboard.compare') }}
-        </Button>
+        />
 
         <span v-if="loading" class="text-xs text-muted-foreground">{{ t('dashboard.updating') }}</span>
     </div>

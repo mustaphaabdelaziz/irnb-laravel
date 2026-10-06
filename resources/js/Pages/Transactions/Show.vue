@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Badge from '@/Components/Badge.vue';
+import IconButton from '@/Components/IconButton.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
@@ -33,12 +34,8 @@ const statusColor = (s) => s === 'Paid' ? 'emerald' : s === 'Partial' ? 'amber' 
                     <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('transaction') }} #{{ transaction.id }}</h1>
                 </div>
                 <div class="flex items-center gap-2">
-                    <a :href="route('transactions.receipt', transaction.id)" target="_blank" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                        🧾 {{ t('receipt') }}
-                    </a>
-                    <Link :href="route('transactions.edit', transaction.id)" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                        {{ t('edit') }}
-                    </Link>
+                    <IconButton :href="route('transactions.receipt', transaction.id)" external target="_blank" icon="print" :label="t('receipt')" />
+                    <IconButton :href="route('transactions.edit', transaction.id)" icon="pencil" :label="t('edit')" />
                 </div>
             </div>
         </template>

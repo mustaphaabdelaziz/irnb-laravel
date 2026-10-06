@@ -2,6 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
+import IconButton from '@/Components/IconButton.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref } from 'vue';
@@ -57,7 +58,7 @@ function roleName(role) {
         <template #header>
             <div class="flex items-center justify-between">
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('roles') }}</h1>
-                <PrimaryButton @click="openCreate">{{ t('add') }}</PrimaryButton>
+                <IconButton icon="plus" :label="t('add')" variant="primary" @click="openCreate" />
             </div>
         </template>
 
@@ -71,9 +72,9 @@ function roleName(role) {
                     </p>
                     <p class="text-xs text-slate-400">{{ role.users_count }} {{ t('users') }}</p>
                 </div>
-                <div class="flex gap-2">
-                    <SecondaryButton @click="openEdit(role)">{{ t('edit') }}</SecondaryButton>
-                    <SecondaryButton v-if="!role.is_system" @click="destroy(role)">{{ t('delete') }}</SecondaryButton>
+                <div class="flex gap-1">
+                    <IconButton icon="pencil" :label="t('edit')" plain size="sm" @click="openEdit(role)" />
+                    <IconButton v-if="!role.is_system" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="destroy(role)" />
                 </div>
             </div>
         </div>

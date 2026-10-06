@@ -1,5 +1,6 @@
 <script setup>
 import Modal from '@/Components/Modal.vue';
+import IconButton from '@/Components/IconButton.vue';
 import { router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref } from 'vue';
@@ -110,8 +111,8 @@ function remove(cat) {
                             <div class="flex items-center gap-2">
                                 <input type="color" v-model="cat.color" @change="saveColor(cat)" class="h-7 w-7 rounded border-0 bg-transparent p-0" />
                                 <span class="flex-1 truncate text-sm text-slate-800 dark:text-slate-200">{{ label(cat) }}</span>
-                                <button type="button" @click="toggleEdit(cat)" class="text-slate-400 hover:text-primary-600" :title="t('edit')">&#9998;</button>
-                                <button type="button" @click="remove(cat)" class="text-rose-500 hover:text-rose-700" :title="t('delete')">&times;</button>
+                                <IconButton icon="pencil" :label="t('edit')" plain size="sm" @click="toggleEdit(cat)" />
+                                <IconButton icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="remove(cat)" />
                             </div>
                             <div v-if="editingId === cat.id" class="mt-2 space-y-1.5 rounded-lg bg-slate-50 p-2 dark:bg-slate-800/50">
                                 <label class="block text-xs text-slate-500 dark:text-slate-400">
@@ -132,7 +133,7 @@ function remove(cat) {
                     <div class="mt-2 flex items-center gap-2">
                         <input type="color" v-model="draft[type].color" class="h-7 w-7 rounded border-0 bg-transparent p-0" />
                         <input v-model="draft[type].name" @keyup.enter="add(type)" :placeholder="t('new_category')" :class="['flex-1', inputClass]" />
-                        <button type="button" @click="add(type)" class="rounded-lg bg-primary-600 px-3 py-1 text-sm font-medium text-white hover:bg-primary-700">+</button>
+                        <IconButton icon="plus" :label="t('add')" variant="primary" size="sm" @click="add(type)" />
                     </div>
                     <button type="button" @click="draft[type].showTranslations = !draft[type].showTranslations" class="mt-1 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
                         {{ draft[type].showTranslations ? '▾' : '▸' }} {{ t('translations') }}

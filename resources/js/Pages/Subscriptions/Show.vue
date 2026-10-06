@@ -3,6 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Badge from '@/Components/Badge.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import ExportMenu from '@/Components/ExportMenu.vue';
+import IconButton from '@/Components/IconButton.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
@@ -128,32 +129,14 @@ const tabCount = (tab) => {
                 </div>
                 <div class="no-print flex flex-wrap gap-2">
                     <!-- Add single player -->
-                    <button @click="showAddPlayerModal = true"
-                        class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 transition-colors">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                        {{ t('add_player') }}
-                    </button>
+                    <IconButton icon="plus" :label="t('add_player')" variant="success" @click="showAddPlayerModal = true" />
                     <!-- Assign all -->
-                    <button @click="showAssignModal = true"
-                        class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 transition-colors">
-                        {{ t('assign_subscription') }}
-                    </button>
+                    <IconButton icon="players" :label="t('assign_subscription')" variant="primary" @click="showAssignModal = true" />
                     <!-- Export (current tab) -->
-                    <ExportMenu :href="exportHref" :label="t('export')">
-                        <template #icon>
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                        </template>
-                    </ExportMenu>
+                    <ExportMenu :href="exportHref" :label="t('export')" />
                     <!-- Print -->
-                    <button @click="printList"
-                        class="inline-flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                        {{ t('print') }}
-                    </button>
-                    <Link :href="route('subscriptions.edit', subscription.id)"
-                        class="inline-flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                        {{ t('edit') }}
-                    </Link>
+                    <IconButton icon="print" :label="t('print')" @click="printList" />
+                    <IconButton :href="route('subscriptions.edit', subscription.id)" icon="pencil" :label="t('edit')" />
                 </div>
             </div>
         </template>
@@ -246,11 +229,7 @@ const tabCount = (tab) => {
                     </button>
                     <!-- Export current tab -->
                     <div class="no-print ml-auto flex items-center pr-4 gap-2">
-                        <ExportMenu :href="exportHref" :label="`${t('export')} ${t(activeTab)}`">
-                            <template #icon>
-                                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                            </template>
-                        </ExportMenu>
+                        <ExportMenu :href="exportHref" :label="`${t('export')} ${t(activeTab)}`" />
                     </div>
                 </div>
 
@@ -298,10 +277,7 @@ const tabCount = (tab) => {
                                     <Badge :label="statusLabel('payment', ps.payment_status)" :color="statusColor(ps.payment_status)" />
                                 </td>
                                 <td class="no-print px-4 py-3 text-end">
-                                    <Link :href="route('players.show', ps.player_id)"
-                                        class="text-xs text-slate-400 dark:text-slate-500 hover:text-primary-600">
-                                        {{ t('view') }} →
-                                    </Link>
+                                    <IconButton :href="route('players.show', ps.player_id)" icon="eye" :label="t('view')" plain size="sm" />
                                 </td>
                             </tr>
                         </tbody>

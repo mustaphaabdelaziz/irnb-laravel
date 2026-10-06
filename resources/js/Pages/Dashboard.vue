@@ -5,8 +5,7 @@ import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import DashboardFilterBar from '@/Components/Dashboard/DashboardFilterBar.vue';
 import StatTile from '@/Components/Dashboard/StatTile.vue';
-import Icon from '@/Components/Icon.vue';
-import { Button } from '@/Components/ui/button';
+import IconButton from '@/Components/IconButton.vue';
 import FinanceTab from '@/Pages/Dashboard/Partials/FinanceTab.vue';
 import MembersTab from '@/Pages/Dashboard/Partials/MembersTab.vue';
 import OperationsTab from '@/Pages/Dashboard/Partials/OperationsTab.vue';
@@ -135,11 +134,7 @@ const heroTiles = computed(() => props.hero.map((tile) => ({
                         :active-tab="activeTab"
                         :loading="loadingTab"
                     />
-                    <a :href="route('reports.financial')" target="_blank" rel="noopener noreferrer">
-                        <Button as="span" variant="outline" size="sm" class="h-9">
-                            <Icon name="document" /> PDF
-                        </Button>
-                    </a>
+                    <IconButton :href="route('reports.financial')" external target="_blank" rel="noopener noreferrer" icon="document" :label="t('export.format.pdf')" />
                 </div>
             </div>
         </template>

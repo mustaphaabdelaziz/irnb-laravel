@@ -4,6 +4,7 @@ import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
+import IconButton from '@/Components/IconButton.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref } from 'vue';
@@ -184,13 +185,16 @@ function doMerge() {
                                 </div>
                                 <div v-else class="flex flex-col items-end gap-2">
                                     <div class="flex justify-end gap-2">
-                                        <button @click="startEdit(job)" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">{{ t('edit') }}</button>
-                                        <button
-                                            @click="deleteId = job.id"
+                                        <IconButton icon="pencil" :label="t('edit')" plain size="sm" @click="startEdit(job)" />
+                                        <IconButton
+                                            icon="trash"
+                                            :label="usageCount(job) > 0 ? t('in_use_by', { count: usageCount(job) }) : t('delete')"
+                                            variant="danger"
+                                            plain
+                                            size="sm"
                                             :disabled="usageCount(job) > 0"
-                                            :title="usageCount(job) > 0 ? t('in_use_by', { count: usageCount(job) }) : ''"
-                                            class="text-sm text-rose-500 hover:text-rose-700 disabled:cursor-not-allowed disabled:text-slate-300 dark:disabled:text-slate-600"
-                                        >{{ t('delete') }}</button>
+                                            @click="deleteId = job.id"
+                                        />
                                     </div>
                                     <!-- Merging repoints every member to another job then deletes this one,
                                          so it needs the same delete permission destroy() needs. -->

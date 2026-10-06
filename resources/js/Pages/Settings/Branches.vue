@@ -4,6 +4,7 @@ import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
+import IconButton from '@/Components/IconButton.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
@@ -164,9 +165,9 @@ function saveMembers() {
                                     <button @click="editingId = null" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">{{ t('cancel') }}</button>
                                 </div>
                                 <div v-else class="flex justify-end gap-2">
-                                    <button @click="openMembers(branch)" class="text-sm text-primary-600 hover:text-primary-800">{{ t('members') }}</button>
-                                    <button @click="startEdit(branch)" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">{{ t('edit') }}</button>
-                                    <button @click="deleteId = branch.id" class="text-sm text-rose-500 hover:text-rose-700">{{ t('delete') }}</button>
+                                    <IconButton icon="players" :label="t('members')" variant="primary" plain size="sm" @click="openMembers(branch)" />
+                                    <IconButton icon="pencil" :label="t('edit')" plain size="sm" @click="startEdit(branch)" />
+                                    <IconButton icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteId = branch.id" />
                                 </div>
                             </td>
                         </tr>

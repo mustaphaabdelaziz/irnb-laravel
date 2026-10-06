@@ -4,7 +4,7 @@ import Pagination from '@/Components/Pagination.vue';
 import SearchInput from '@/Components/SearchInput.vue';
 import Badge from '@/Components/Badge.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
-import Icon from '@/Components/Icon.vue';
+import IconButton from '@/Components/IconButton.vue';
 import ExportMenu from '@/Components/ExportMenu.vue';
 import StatCard from '@/Components/StatCard.vue';
 import CategoryManager from '@/Components/CategoryManager.vue';
@@ -108,18 +108,12 @@ function bulkDestroy() {
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('transactions') }}</h1>
                 <div class="flex flex-wrap items-center gap-2">
-                    <ExportMenu :href="route('transactions.import.template')" :label="t('template')" collapse>
-                        <template #icon><Icon name="document" /></template>
-                    </ExportMenu>
-                    <button @click="importInput?.click()" class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800"><Icon name="upload" /> {{ t('import') }}</button>
+                    <ExportMenu :href="route('transactions.import.template')" :label="t('template')" icon="document" />
+                    <IconButton icon="upload" :label="t('import')" @click="importInput?.click()" />
                     <input ref="importInput" type="file" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="hidden" @change="onImport" />
-                    <ExportMenu :href="exportUrl" :label="t('export')">
-                        <template #icon><Icon name="download" /></template>
-                    </ExportMenu>
-                    <button @click="showCategories = true" class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800"><Icon name="settings" /> {{ t('manage_categories') }}</button>
-                    <Link :href="route('transactions.create')" class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 transition-colors">
-                        <Icon name="plus" /> {{ t('add_transaction') }}
-                    </Link>
+                    <ExportMenu :href="exportUrl" :label="t('export')" />
+                    <IconButton icon="settings" :label="t('manage_categories')" @click="showCategories = true" />
+                    <IconButton :href="route('transactions.create')" icon="plus" :label="t('add_transaction')" variant="primary" />
                 </div>
             </div>
         </template>
@@ -148,16 +142,8 @@ function bulkDestroy() {
                     {{ t('selected_count', { count: selected.length }) }}
                 </span>
                 <div class="flex items-center gap-2">
-                    <button type="button" class="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-white/60 dark:text-slate-300 dark:hover:bg-slate-800" @click="clear">
-                        {{ t('cancel') }}
-                    </button>
-                    <button
-                        type="button"
-                        class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-rose-700 ring-1 ring-rose-300 transition-colors hover:bg-rose-50 dark:bg-slate-900 dark:text-rose-300 dark:ring-rose-800 dark:hover:bg-rose-900/30"
-                        @click="bulkDeletePending = true"
-                    >
-                        <Icon name="trash" /> {{ t('delete_selected') }}
-                    </button>
+                    <IconButton icon="close" :label="t('cancel')" variant="ghost" @click="clear" />
+                    <IconButton icon="trash" :label="t('delete_selected')" variant="danger" @click="bulkDeletePending = true" />
                 </div>
             </div>
 
@@ -224,14 +210,8 @@ function bulkDestroy() {
                                 </td>
                                 <td class="sticky end-0 whitespace-nowrap bg-white px-3 py-2 text-end shadow-[-8px_0_8px_-8px_rgba(15,23,42,0.15)] group-hover:bg-slate-50 rtl:shadow-[8px_0_8px_-8px_rgba(15,23,42,0.15)] dark:bg-slate-900 dark:group-hover:bg-slate-800">
                                     <div class="flex items-center justify-end gap-1">
-                                        <Link :href="route('transactions.edit', tx.id)" :title="t('edit')" :aria-label="t('edit')"
-                                            class="rounded-lg p-1.5 text-base text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-100">
-                                            <Icon name="pencil" />
-                                        </Link>
-                                        <button type="button" @click="deleteId = tx.id" :title="t('delete')" :aria-label="t('delete')"
-                                            class="rounded-lg p-1.5 text-base text-rose-500 transition-colors hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-900/30">
-                                            <Icon name="trash" />
-                                        </button>
+                                        <IconButton :href="route('transactions.edit', tx.id)" icon="pencil" :label="t('edit')" plain size="sm" />
+                                        <IconButton icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteId = tx.id" />
                                     </div>
                                 </td>
                             </tr>

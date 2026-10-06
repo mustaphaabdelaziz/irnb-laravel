@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import { Bar } from 'vue-chartjs';
 import { useI18n } from 'vue-i18n';
 import '@/lib/registerCharts';
@@ -9,7 +9,7 @@ import PeriodFilter from '@/Components/Activity/PeriodFilter.vue';
 import ChartCard from '@/Components/Dashboard/ChartCard.vue';
 import StatusBreakdown from '@/Components/Attendance/StatusBreakdown.vue';
 import ExportMenu from '@/Components/ExportMenu.vue';
-import Icon from '@/Components/Icon.vue';
+import IconButton from '@/Components/IconButton.vue';
 import { useAttendanceCodes } from '@/Composables/useAttendanceCodes';
 import { barDataset, baseOptions } from '@/lib/chartTheme';
 import { hasMarks, hours, monthTick, pct, periodQuery, statusBars } from '@/lib/attendanceStats';
@@ -74,7 +74,6 @@ const preseasonText = (p) => (!p ? '—' : p.target ? `${p.done}/${p.target}` : 
 
 const input = 'h-9 rounded-lg border-slate-300 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-900';
 const card = 'rounded-xl bg-white ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800';
-const linkButton = 'rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800';
 </script>
 
 <template>
@@ -84,13 +83,11 @@ const linkButton = 'rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <h1 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('att.stats_title') }}</h1>
                 <div class="flex items-center gap-2 print:hidden">
-                    <Link :href="route('attendance.index')" :class="linkButton">{{ t('attendance') }}</Link>
-                    <Link :href="route('attendance.alerts')" :class="linkButton">{{ t('att.risk.title') }}</Link>
-                    <Link :href="route('attendance.ranking')" :class="linkButton">{{ t('att.ranking.title') }}</Link>
-                    <Link :href="route('attendance.injuries')" :class="linkButton">{{ t('att.injury.title') }}</Link>
-                    <ExportMenu :href="exportHref" :label="t('export')" :formats="['xlsx', 'csv', 'pdf']">
-                        <template #icon><Icon name="download" /></template>
-                    </ExportMenu>
+                    <IconButton :href="route('attendance.index')" icon="calendar" :label="t('attendance')" />
+                    <IconButton :href="route('attendance.alerts')" icon="alert" :label="t('att.risk.title')" />
+                    <IconButton :href="route('attendance.ranking')" icon="flag" :label="t('att.ranking.title')" />
+                    <IconButton :href="route('attendance.injuries')" icon="drop" :label="t('att.injury.title')" />
+                    <ExportMenu :href="exportHref" :label="t('export')" :formats="['xlsx', 'csv', 'pdf']" />
                 </div>
             </div>
         </template>

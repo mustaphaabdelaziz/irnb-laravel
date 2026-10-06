@@ -2,6 +2,7 @@
 import Badge from '@/Components/Badge.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import Icon from '@/Components/Icon.vue';
+import IconButton from '@/Components/IconButton.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import Modal from '@/Components/Modal.vue';
@@ -52,9 +53,6 @@ const reasonLabels = computed(() => ({
 
 const items = computed(() => props.checklist?.items ?? []);
 
-const buttonPrimary = 'inline-flex items-center gap-1 rounded-md bg-primary-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-700';
-const buttonOutline = 'inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium text-primary-700 ring-1 ring-inset ring-primary-300 hover:bg-primary-50 dark:text-primary-300 dark:ring-primary-700 dark:hover:bg-primary-900/30';
-const buttonQuiet = 'inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800';
 const fileInputClass = 'mt-1 block w-full text-xs text-slate-500 file:me-3 file:rounded-lg file:border-0 file:bg-primary-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-700 hover:file:bg-primary-100 dark:text-slate-400 dark:file:bg-primary-500/10 dark:file:text-primary-300';
 
 function formatDate(value) {
@@ -224,17 +222,17 @@ function confirmRemoveFile() {
                         <Icon name="document" class="text-primary-500" />
                         <a :href="fileUrl(file)" target="_blank" rel="noopener" class="min-w-0 max-w-xs truncate font-medium text-primary-600 hover:underline dark:text-primary-300">{{ file.original_name }}</a>
                         <span class="text-slate-400">{{ formatSize(file.size) }} · {{ formatDate(file.uploaded_at) }}</span>
-                        <a :href="downloadUrl(file)" class="text-slate-500 hover:text-slate-700 dark:hover:text-slate-200" :title="t('doc_download')" :aria-label="t('doc_download')"><Icon name="download" /></a>
-                        <button v-if="can('documents', 'delete')" type="button" class="text-slate-300 hover:text-rose-500" :title="t('remove')" :aria-label="t('remove')" @click="removingFile = file"><Icon name="xcircle" /></button>
+                        <IconButton :href="downloadUrl(file)" external icon="download" :label="t('doc_download')" plain size="sm" />
+                        <IconButton v-if="can('documents', 'delete')" icon="trash" :label="t('remove')" variant="danger" plain size="sm" @click="removingFile = file" />
                     </li>
                 </ul>
 
                 <div class="mt-3 flex flex-wrap gap-2">
-                    <button v-if="canReceive(item)" type="button" :class="buttonPrimary" @click="openReceive(item)"><Icon name="check" /> {{ t('doc_mark_received') }}</button>
-                    <button v-if="canRenew(item)" type="button" :class="buttonOutline" @click="openReceive(item)"><Icon name="refresh" /> {{ t('doc_renew') }}</button>
-                    <button v-if="canUpload(item)" type="button" :class="buttonOutline" @click="openUpload(item)"><Icon name="upload" /> {{ t('doc_upload_files') }}</button>
-                    <button v-if="canExempt(item)" type="button" :class="buttonQuiet" @click="openExempt(item)">{{ t('doc_exempt') }}</button>
-                    <button v-if="canUnexempt(item)" type="button" :class="buttonQuiet" @click="unexempting = item">{{ t('doc_unexempt') }}</button>
+                    <IconButton v-if="canReceive(item)" icon="check" :label="t('doc_mark_received')" variant="success" size="sm" @click="openReceive(item)" />
+                    <IconButton v-if="canRenew(item)" icon="refresh" :label="t('doc_renew')" size="sm" @click="openReceive(item)" />
+                    <IconButton v-if="canUpload(item)" icon="upload" :label="t('doc_upload_files')" size="sm" @click="openUpload(item)" />
+                    <IconButton v-if="canExempt(item)" icon="xcircle" :label="t('doc_exempt')" size="sm" @click="openExempt(item)" />
+                    <IconButton v-if="canUnexempt(item)" icon="restore" :label="t('doc_unexempt')" size="sm" @click="unexempting = item" />
                 </div>
             </li>
         </ul>

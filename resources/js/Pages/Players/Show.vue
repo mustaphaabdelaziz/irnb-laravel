@@ -10,6 +10,7 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import RentalTypeBadge from '@/Components/RentalTypeBadge.vue';
 import Icon from '@/Components/Icon.vue';
+import IconButton from '@/Components/IconButton.vue';
 import PlayerFieldRow from '@/Components/PlayerFieldRow.vue';
 import { formatPhone } from '@/lib/phone';
 import AcademicSection from '@/Pages/Players/Partials/AcademicSection.vue';
@@ -331,7 +332,7 @@ function formatDate(val) {
                 <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 lg:col-span-2">
                     <div class="flex items-start justify-between">
                         <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('basic_info') }}</h2>
-                        <Link :href="route('players.edit', player.id)" class="text-sm text-primary-600 hover:text-primary-800">{{ t('edit') }}</Link>
+                        <IconButton :href="route('players.edit', player.id)" icon="pencil" :label="t('edit')" plain size="sm" />
                     </div>
                     <div class="mt-4 flex items-center gap-4">
                         <img v-if="player.picture_url" :src="player.picture_url" :alt="player.fullname || player.firstname" class="h-20 w-20 shrink-0 rounded-xl object-cover ring-1 ring-slate-200 dark:ring-slate-700" />
@@ -410,32 +411,16 @@ function formatDate(val) {
                         <p class="mt-2 text-3xl font-bold" :class="totalDebt > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'">
                             {{ formatMoney(totalDebt) }} <span class="text-base font-normal text-slate-400 dark:text-slate-500">DZD</span>
                         </p>
-                        <button
-                            @click="showPaymentModal = true"
-                            class="mt-4 w-full rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 transition-colors"
-                        >
-                            {{ t('add_payment') }}
-                        </button>
+                        <div class="mt-4">
+                            <IconButton icon="money" :label="t('add_payment')" variant="primary" @click="showPaymentModal = true" />
+                        </div>
                     </div>
 
-                    <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
-                        <div class="flex justify-between">
-                            <Link :href="route('players.edit', player.id)" class="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-center text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                                {{ t('edit_player') }}
-                            </Link>
-                        </div>
-                        <a :href="route('players.card', player.id)" target="_blank" class="mt-2 block w-full rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-center text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                            <Icon name="idcard" /> {{ t('member_card') }}
-                        </a>
-                        <a :href="route('players.label', player.id)" target="_blank" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
-                            <Icon name="print" /> {{ t('print_folder_label') }}
-                        </a>
-                        <button
-                            @click="showDeleteModal = true"
-                            class="mt-2 w-full rounded-lg border border-rose-300 px-4 py-2 text-center text-sm font-medium text-rose-700 hover:bg-rose-50 transition-colors"
-                        >
-                            {{ t('delete') }}
-                        </button>
+                    <div class="flex flex-wrap items-center gap-2 rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+                        <IconButton :href="route('players.edit', player.id)" icon="pencil" :label="t('edit_player')" />
+                        <IconButton :href="route('players.card', player.id)" external target="_blank" icon="idcard" :label="t('member_card')" />
+                        <IconButton :href="route('players.label', player.id)" external target="_blank" icon="print" :label="t('print_folder_label')" />
+                        <IconButton icon="trash" :label="t('delete')" variant="danger" @click="showDeleteModal = true" />
                     </div>
                 </div>
             </div>
@@ -453,9 +438,7 @@ function formatDate(val) {
             <div class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-5 py-4">
                     <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('subscriptions') }}</h3>
-                    <button type="button" @click="showAddDebtModal = true" class="rounded-md px-3 py-1.5 text-xs font-medium text-primary-700 ring-1 ring-inset ring-primary-300 hover:bg-primary-50 dark:text-primary-300 dark:ring-primary-700 dark:hover:bg-primary-900/30">
-                        {{ t('add_previous_debt') }}
-                    </button>
+                    <IconButton icon="plus" :label="t('add_previous_debt')" size="sm" @click="showAddDebtModal = true" />
                 </div>
                 <div v-if="!subscriptions.length" class="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_data') }}</div>
                 <div v-else class="overflow-x-auto">
@@ -492,12 +475,10 @@ function formatDate(val) {
                                     <Badge :label="t(paymentStatus(sub))" :color="statusColor(paymentStatus(sub))" />
                                 </td>
                                 <td class="px-4 py-3 text-end whitespace-nowrap">
-                                    <button type="button" @click="openSubEdit(sub)" class="rounded-md px-2 py-1 text-xs font-medium text-primary-700 ring-1 ring-inset ring-primary-300 hover:bg-primary-50 dark:text-primary-300 dark:ring-primary-700 dark:hover:bg-primary-900/30">
-                                        {{ t('edit') }}
-                                    </button>
-                                    <button type="button" @click="askRemoveSub(sub)" class="ms-2 rounded-md px-2 py-1 text-xs font-medium text-rose-700 ring-1 ring-inset ring-rose-300 hover:bg-rose-50 dark:text-rose-300 dark:ring-rose-800 dark:hover:bg-rose-900/30">
-                                        {{ t('remove') }}
-                                    </button>
+                                    <div class="inline-flex items-center gap-1">
+                                        <IconButton icon="pencil" :label="t('edit')" plain size="sm" @click="openSubEdit(sub)" />
+                                        <IconButton icon="trash" :label="t('remove')" variant="danger" plain size="sm" @click="askRemoveSub(sub)" />
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>
@@ -534,12 +515,10 @@ function formatDate(val) {
                                     {{ tx.transaction_type === 'income' ? '+' : '-' }}{{ formatMoney(tx.amount) }}
                                 </td>
                                 <td class="px-4 py-3 text-end whitespace-nowrap">
-                                    <button type="button" @click="openEdit(tx)" class="rounded-md px-2 py-1 text-xs font-medium text-primary-700 ring-1 ring-inset ring-primary-300 hover:bg-primary-50 dark:text-primary-300 dark:ring-primary-700 dark:hover:bg-primary-900/30">
-                                        {{ t('edit') }}
-                                    </button>
-                                    <button type="button" @click="askRemove(tx)" class="ms-2 rounded-md px-2 py-1 text-xs font-medium text-rose-700 ring-1 ring-inset ring-rose-300 hover:bg-rose-50 dark:text-rose-300 dark:ring-rose-800 dark:hover:bg-rose-900/30">
-                                        {{ t('remove') }}
-                                    </button>
+                                    <div class="inline-flex items-center gap-1">
+                                        <IconButton icon="pencil" :label="t('edit')" plain size="sm" @click="openEdit(tx)" />
+                                        <IconButton icon="trash" :label="t('remove')" variant="danger" plain size="sm" @click="askRemove(tx)" />
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>

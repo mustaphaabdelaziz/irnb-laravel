@@ -6,6 +6,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import StatCard from '@/Components/StatCard.vue';
 import Icon from '@/Components/Icon.vue';
 import ExportMenu from '@/Components/ExportMenu.vue';
+import IconButton from '@/Components/IconButton.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 
 const props = defineProps({
@@ -135,8 +136,8 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
                 <h1 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ session.reference }}</h1>
                 <span class="rounded-full px-2.5 py-0.5 text-xs font-bold" :class="isOpen ? 'bg-primary-100 text-primary-700 dark:bg-primary-500/20 dark:text-primary-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'">{{ t(session.status) }}</span>
                 <span class="ms-auto flex gap-2">
-                    <ExportMenu :href="route('inventory.export', session.id)" :label="t('export')"><template #icon><Icon name="download" /></template></ExportMenu>
-                    <a :href="route('inventory.report', session.id)" target="_blank" class="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800"><Icon name="print" /> {{ t('report') }}</a>
+                    <ExportMenu :href="route('inventory.export', session.id)" :label="t('export')" />
+                    <IconButton :href="route('inventory.report', session.id)" external target="_blank" icon="print" :label="t('report')" />
                 </span>
             </div>
         </template>
@@ -156,7 +157,7 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
                     <div class="min-w-[12rem] flex-1">
                         <SearchableSelect v-model="participantPick" :options="participantOptions" :placeholder="t('add_participant')" />
                     </div>
-                    <button @click="addParticipant" class="rounded-xl bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800">{{ t('add') }}</button>
+                    <IconButton icon="plus" :label="t('add')" @click="addParticipant" />
                     <button @click="saveParticipants" class="rounded-xl bg-slate-900 px-3 py-1.5 text-sm font-bold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900">{{ t('save') }}</button>
                 </div>
             </div>
@@ -173,7 +174,7 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
                 <div class="flex flex-wrap items-center justify-between gap-2">
                     <p class="text-sm text-slate-500 dark:text-slate-400">{{ fmtDate(session.session_date) }} · {{ t(session.type) }}</p>
                     <div class="flex gap-2">
-                        <button @click="markAllFound" class="rounded-xl bg-white px-3.5 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800">{{ t('mark_all_found') }}</button>
+                        <IconButton icon="check" :label="t('mark_all_found')" variant="success" @click="markAllFound" />
                         <button @click="saveCounts" class="rounded-xl bg-slate-900 px-3.5 py-2 text-sm font-bold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900">{{ t('save_counts') }}</button>
                         <button @click="complete" class="rounded-xl bg-emerald-600 px-3.5 py-2 text-sm font-bold text-white hover:bg-emerald-700">{{ t('complete_inventory') }}</button>
                     </div>

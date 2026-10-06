@@ -10,6 +10,7 @@ import { Link, usePage, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import SidebarLink from '@/Components/SidebarLink.vue';
 import SidebarSection from '@/Components/Sidebar/SidebarSection.vue';
+import CommandPalette from '@/Components/CommandPalette.vue';
 import { useNavigation } from '@/Composables/useNavigation.js';
 import { useSidebarState } from '@/Composables/useSidebarState.js';
 import { isActive } from '@/lib/navigation';
@@ -28,6 +29,8 @@ const { sections, url } = useNavigation();
 const { isOpen, toggleSection } = useSidebarState();
 
 const mobileMenuOpen = ref(false);
+const paletteOpen = ref(false);
+const shortcutHint = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/i.test(navigator.platform) ? '⌘K' : 'Ctrl K';
 
 // The layout remounts on every Inertia visit, which resets the sidebar's
 // scroll position to the top — annoying when clicking items near the bottom.
@@ -112,6 +115,7 @@ function switchLocale(code) {
 <template>
     <div class="min-h-screen bg-slate-50 dark:bg-slate-950 print:bg-white">
         <FlashMessages />
+        <CommandPalette v-model:open="paletteOpen" :sections="sections" />
 
         <!-- Mobile overlay -->
         <div
@@ -139,6 +143,15 @@ function switchLocale(code) {
 
             <!-- Navigation -->
             <nav ref="navEl" @scroll.passive="rememberNavScroll" class="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+                <button
+                    type="button"
+                    class="mb-2 flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-400 transition-colors hover:border-slate-300 hover:text-slate-600 dark:border-slate-800 dark:bg-slate-800/50 dark:hover:border-slate-700 dark:hover:text-slate-300"
+                    @click="paletteOpen = true"
+                >
+                    <Icon name="search" class="shrink-0 text-base" />
+                    <span class="flex-1 text-start">{{ t('nav.search') }}</span>
+                    <kbd class="rounded border border-slate-200 px-1.5 font-sans text-[0.65rem] font-semibold dark:border-slate-700" dir="ltr">{{ shortcutHint }}</kbd>
+                </button>
                 <template v-for="section in sections" :key="section.key">
                     <template v-if="section.standalone">
                         <SidebarLink

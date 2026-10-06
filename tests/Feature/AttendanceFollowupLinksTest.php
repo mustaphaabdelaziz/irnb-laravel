@@ -50,7 +50,17 @@ class AttendanceFollowupLinksTest extends TestCase
         $source = (string) file_get_contents(resource_path("js/Pages/{$file}"));
 
         $this->assertStringContainsString($route, $source);
-        $this->assertStringContainsString($link, $source);
+        $this->assertMatchesRegularExpression(self::newTabLink($link), $source);
         $this->assertStringNotContainsString('@click="window', $source);
+    }
+
+    /**
+     * ':href="x" target="_blank"' as a pattern that also accepts the
+     * IconButton form ':href="x" external target="_blank"' — both render a
+     * plain <a> opening a new tab (IconButton passes `target` through).
+     */
+    public static function newTabLink(string $link): string
+    {
+        return '/'.str_replace(preg_quote('" target', '/'), '"(?: external)? target', preg_quote($link, '/')).'/';
     }
 }

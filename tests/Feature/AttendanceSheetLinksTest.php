@@ -28,8 +28,8 @@ class AttendanceSheetLinksTest extends TestCase
         $source = (string) file_get_contents(resource_path("js/Pages/{$file}"));
 
         $this->assertStringContainsString($route, $source);
-        $this->assertStringContainsString(':href="sheetHref" target="_blank"', $source);
-        $this->assertSame($withMarks, str_contains($source, ':href="filledSheetHref" target="_blank"'));
+        $this->assertMatchesRegularExpression(AttendanceFollowupLinksTest::newTabLink(':href="sheetHref" target="_blank"'), $source);
+        $this->assertSame($withMarks, (bool) preg_match(AttendanceFollowupLinksTest::newTabLink(':href="filledSheetHref" target="_blank"'), $source));
         $this->assertStringNotContainsString('@click="window', $source);
     }
 }

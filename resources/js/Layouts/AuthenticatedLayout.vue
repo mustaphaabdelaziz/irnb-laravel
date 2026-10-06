@@ -9,6 +9,12 @@ import { ref, computed, onMounted } from 'vue';
 import { Link, usePage, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import SidebarLink from '@/Components/SidebarLink.vue';
+import SidebarFlyout from '@/Components/Sidebar/SidebarFlyout.vue';
+import SidebarSection from '@/Components/Sidebar/SidebarSection.vue';
+import CommandPalette from '@/Components/CommandPalette.vue';
+import { useNavigation } from '@/Composables/useNavigation.js';
+import { useSidebarState } from '@/Composables/useSidebarState.js';
+import { isActive } from '@/lib/navigation';
 import { useCan } from '@/Composables/useCan.js';
 import { useClubIdentity } from '@/Composables/useClubIdentity';
 import FlashMessages from '@/Components/FlashMessages.vue';
@@ -19,9 +25,13 @@ import ThemeToggle from '@/Components/ThemeToggle.vue';
 
 const { t, locale: i18nLocale } = useI18n();
 const page = usePage();
-const { can, isSuperadmin } = useCan();
+const { isSuperadmin } = useCan();
+const { sections, url } = useNavigation();
+const { isOpen, toggleSection, compact, toggleNarrow } = useSidebarState();
 
 const mobileMenuOpen = ref(false);
+const paletteOpen = ref(false);
+const shortcutHint = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/i.test(navigator.platform) ? '⌘K' : 'Ctrl K';
 
 // The layout remounts on every Inertia visit, which resets the sidebar's
 // scroll position to the top — annoying when clicking items near the bottom.
@@ -78,82 +88,12 @@ const user = computed(() => page.props.auth.user);
 const impersonator = computed(() => page.props.auth.impersonator ?? null);
 const isAdmin = computed(() => page.props.auth?.isAdmin ?? false);
 const isDesktop = computed(() => page.props.isDesktop ?? false);
-const pendingApprovals = computed(() => page.props.pendingApprovals ?? 0);
 const currentLocale = computed(() => page.props.locale || 'en');
 const { appName, appShortName } = useClubIdentity();
 const appLogo = computed(() => page.props.branding?.logo ?? null);
-const currentUrl = computed(() => page.url);
 
 const userInitial = computed(() => (user.value?.firstname || user.value?.name || '?').charAt(0).toUpperCase());
 const userRole = computed(() => (isAdmin.value ? t('administrator') : t('user')));
-
-function isActive(item) {
-    const url = currentUrl.value ?? '';
-    // `match` items decide with their own pattern (Members vs its Activity pages).
-    if (item.match) return item.match.test(url);
-    // `exact` items (e.g. the Board hub) must not stay highlighted on their
-    // own sub-pages, which have their own menu entries.
-    return item.exact ? url === item.prefix || url.startsWith(item.prefix + '?') : url.startsWith(item.prefix);
-}
-
-// Menu grouped by functionality. Every item declares the `module` it belongs to;
-// items are shown only when the user can view that module (superadmin sees all).
-// `always` items (dashboard) are ungated; `superadminOnly` items (roles) need the
-// god flag. Empty sections are dropped.
-const sections = computed(() => {
-    const raw = [
-        { label: t('nav_overview'), items: [
-            { label: t('dashboard'), href: '/dashboard', icon: 'dashboard', prefix: '/dashboard', always: true },
-        ] },
-        { label: t('nav_members'), items: [
-            { label: t('players'), href: '/players', icon: 'players', prefix: '/players', module: 'players' },
-            { label: t('subscriptions'), href: '/subscriptions', icon: 'subscriptions', prefix: '/subscriptions', module: 'subscriptions' },
-            { label: t('attendance'), href: '/attendance', icon: 'calendar', prefix: '/attendance', module: 'attendance' },
-        ] },
-        { label: t('nav_finance'), items: [
-            { label: t('transactions'), href: '/transactions', icon: 'transactions', prefix: '/transactions', module: 'transactions' },
-            { label: t('finance'), href: '/finance', icon: 'money', prefix: '/finance', module: 'finance' },
-        ] },
-        { label: t('nav_equipment'), items: [
-            { label: t('equipments'), href: '/equipment/catalogs', icon: 'equipment', prefix: '/equipment/catalogs', module: 'equipment' },
-            { label: t('equipment_out'), href: '/equipment/out', icon: 'box', prefix: '/equipment/out', module: 'equipment' },
-            { label: t('inventory'), href: '/equipment/stocktake', icon: 'clipboard', prefix: '/equipment/stocktake', module: 'inventory' },
-            { label: t('equipment_categories'), href: '/equipment-categories', icon: 'equipment', prefix: '/equipment-categories', module: 'categories' },
-            { label: t('storage_locations'), href: '/storage-locations', icon: 'equipment', prefix: '/storage-locations', module: 'categories' },
-        ] },
-        { label: t('nav_governance'), items: [
-            { label: t('board'), href: '/board', icon: 'board', prefix: '/board', exact: true, module: 'board' },
-            { label: t('calendar'), href: '/board/calendar', icon: 'calendar', prefix: '/board/calendar', module: 'board' },
-            { label: t('meetings'), href: '/board/meetings', icon: 'clipboard', prefix: '/board/meetings', module: 'board' },
-            { label: t('tasks'), href: '/board/tasks', icon: 'task', prefix: '/board/tasks', module: 'board' },
-        ] },
-        { label: t('nav_access'), items: [
-            { label: t('users'), href: '/users', icon: 'members', prefix: '/users', match: /^\/users(?!\/(\d+\/)?activity)/, badge: pendingApprovals.value, module: 'users' },
-            { label: t('activity.title'), href: '/users/activity', icon: 'task', prefix: '/users/activity', match: /^\/users\/(\d+\/)?activity/, module: 'users' },
-            { label: t('roles'), href: '/roles', icon: 'flag', prefix: '/roles', superadminOnly: true },
-        ] },
-        { label: t('administration'), items: [
-            { label: t('categories'), href: '/categories', icon: 'categories', prefix: '/categories', module: 'categories' },
-            { label: t('branches'), href: '/branches', icon: 'categories', prefix: '/branches', module: 'categories' },
-            { label: t('board_roles'), href: '/board-roles', icon: 'board', prefix: '/board-roles', module: 'board' },
-            { label: t('jobs'), href: '/jobs', icon: 'jobs', prefix: '/jobs', module: 'categories' },
-            { label: t('positions'), href: '/positions', icon: 'positions', prefix: '/positions', module: 'categories' },
-            { label: t('player_statuses'), href: '/player-statuses', icon: 'positions', prefix: '/player-statuses', module: 'categories' },
-            { label: t('document_types'), href: '/document-types', icon: 'document', prefix: '/document-types', module: 'categories' },
-            { label: t('settings'), href: '/settings', icon: 'settings', prefix: '/settings', module: 'settings' },
-            { label: t('backup'), href: '/backups', icon: 'archive', prefix: '/backups', superadminOnly: true, desktopOnly: true },
-        ] },
-    ];
-
-    return raw
-        .map((section) => ({
-            ...section,
-            items: section.items.filter((i) =>
-                (!i.desktopOnly || isDesktop.value)
-                && (i.always || (i.superadminOnly ? isSuperadmin.value : can(i.module, 'view')))),
-        }))
-        .filter((section) => section.items.length > 0);
-});
 
 const locales = [
     { code: 'ar', label: 'ع' },
@@ -163,6 +103,8 @@ const locales = [
 
 function switchLocale(code) {
     if (code === currentLocale.value) return;
+    // This GET changes server state, so drop prefetched pages: they carry the old locale and would flip the UI back.
+    router.flushAll();
     router.get(route('lang.switch', { locale: code }), {}, {
         preserveState: false,
         onSuccess: () => {
@@ -177,6 +119,7 @@ function switchLocale(code) {
 <template>
     <div class="min-h-screen bg-slate-50 dark:bg-slate-950 print:bg-white">
         <FlashMessages />
+        <CommandPalette v-model:open="paletteOpen" :sections="sections" />
 
         <!-- Mobile overlay -->
         <div
@@ -187,62 +130,132 @@ function switchLocale(code) {
 
         <!-- ===== SIDEBAR ===== -->
         <aside
-            class="fixed inset-y-0 start-0 z-50 flex w-64 flex-col border-e border-slate-200 bg-white text-slate-700 transition-transform duration-300 ease-out dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 print:hidden"
-            :class="mobileMenuOpen ? 'translate-x-0' : 'max-lg:-translate-x-full max-lg:rtl:translate-x-full'"
+            class="fixed inset-y-0 start-0 z-50 flex flex-col border-e border-slate-200 bg-white text-slate-700 transition-[width,transform] duration-200 ease-out motion-reduce:transition-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 print:hidden"
+            :class="[
+                compact ? 'w-16' : 'w-64',
+                mobileMenuOpen ? 'translate-x-0' : 'max-lg:-translate-x-full max-lg:rtl:translate-x-full',
+            ]"
         >
             <!-- Crest -->
-            <div class="flex h-16 shrink-0 items-center gap-3 border-b border-slate-200 px-5 dark:border-slate-800">
+            <div
+                class="flex h-16 shrink-0 items-center border-b border-slate-200 dark:border-slate-800"
+                :class="compact ? 'justify-center px-0' : 'gap-3 px-5'"
+            >
                 <div class="flex h-10 w-10 items-center justify-center rounded-xl" :class="appLogo ? '' : 'bg-primary-50 ring-1 ring-primary-200 dark:bg-primary-500/10 dark:ring-primary-500/25'">
                     <img v-if="appLogo" :src="appLogo" :alt="appShortName" class="h-full w-full object-contain" />
                     <span v-else class="text-lg font-extrabold text-primary-600 dark:text-primary-400">{{ appShortName.charAt(0) }}</span>
                 </div>
-                <div class="min-w-0">
+                <div v-if="!compact" class="min-w-0">
                     <p class="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{{ appShortName }}</p>
                     <p class="eyebrow truncate !text-[0.65rem] text-slate-400">{{ t('club_management') }}</p>
                 </div>
             </div>
 
             <!-- Navigation -->
-            <nav ref="navEl" @scroll.passive="rememberNavScroll" class="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-                <template v-for="(section, si) in sections" :key="section.label">
-                    <div class="flex items-center gap-2 px-3 pb-1" :class="si === 0 ? 'pt-0' : 'pt-5'">
-                        <p class="eyebrow !text-[0.65rem] text-slate-400">{{ section.label }}</p>
-                        <span class="h-px flex-1 bg-slate-200 dark:bg-slate-800"></span>
-                    </div>
-                    <SidebarLink
-                        v-for="item in section.items"
-                        :key="item.href"
-                        :href="item.href"
-                        :active="isActive(item)"
-                        :icon="item.icon"
-                        :badge="item.badge"
-                    >{{ item.label }}</SidebarLink>
+            <nav ref="navEl" @scroll.passive="rememberNavScroll" class="flex-1 space-y-1 overflow-y-auto py-4" :class="compact ? 'px-2' : 'px-3'">
+                <template v-if="!compact">
+                    <button
+                        type="button"
+                        class="mb-2 flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-400 transition-colors hover:border-slate-300 hover:text-slate-600 dark:border-slate-800 dark:bg-slate-800/50 dark:hover:border-slate-700 dark:hover:text-slate-300"
+                        @click="paletteOpen = true"
+                    >
+                        <Icon name="search" class="shrink-0 text-base" />
+                        <span class="flex-1 text-start">{{ t('nav.search') }}</span>
+                        <kbd class="rounded border border-slate-200 px-1.5 font-sans text-[0.65rem] font-semibold dark:border-slate-700" dir="ltr">{{ shortcutHint }}</kbd>
+                    </button>
+                    <template v-for="section in sections" :key="section.key">
+                        <template v-if="section.standalone">
+                            <SidebarLink
+                                v-for="item in section.items"
+                                :key="item.href"
+                                :href="item.href"
+                                :active="isActive(item, url)"
+                                :icon="item.icon"
+                                :badge="item.badge"
+                            >{{ item.label }}</SidebarLink>
+                        </template>
+                        <SidebarSection
+                            v-else
+                            :section="section"
+                            :url="url"
+                            :user-open="isOpen(section.key)"
+                            @toggle="toggleSection"
+                        />
+                    </template>
+                </template>
+                <template v-else>
+                    <button
+                        type="button"
+                        class="mb-2 flex w-full items-center justify-center rounded-xl p-1.5 text-slate-500 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                        :title="t('nav.search')"
+                        :aria-label="t('nav.search')"
+                        @click="paletteOpen = true"
+                    >
+                        <span class="flex h-7 w-7 items-center justify-center text-[1.05rem]"><Icon name="search" /></span>
+                    </button>
+                    <template v-for="section in sections" :key="section.key">
+                        <template v-if="section.standalone">
+                            <SidebarLink
+                                v-for="item in section.items"
+                                :key="item.href"
+                                :href="item.href"
+                                :active="isActive(item, url)"
+                                :icon="item.icon"
+                                :badge="item.badge"
+                                :title="item.label"
+                                icon-only
+                            >{{ item.label }}</SidebarLink>
+                        </template>
+                        <SidebarFlyout v-else :section="section" :url="url" />
+                    </template>
                 </template>
             </nav>
 
             <!-- Footer: user + language -->
-            <div class="shrink-0 space-y-3 border-t border-slate-200 p-3 dark:border-slate-800">
-                <Link :href="route('profile.edit')" class="flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800">
+            <div class="shrink-0 space-y-3 border-t border-slate-200 p-3 dark:border-slate-800" :class="compact ? 'px-2' : ''">
+                <Link
+                    :href="route('profile.edit')"
+                    class="flex items-center rounded-xl p-2 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
+                    :class="compact ? 'justify-center' : 'gap-3'"
+                    :title="compact ? (user?.firstname || user?.name) : null"
+                >
                     <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-sm font-bold text-white ring-1 ring-inset ring-primary-400/40">{{ userInitial }}</span>
-                    <span class="min-w-0 flex-1">
+                    <span v-if="!compact" class="min-w-0 flex-1">
                         <span class="block truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{{ user?.firstname || user?.name }}</span>
                         <span class="block truncate text-xs text-slate-500 dark:text-slate-400">{{ userRole }}</span>
                     </span>
                 </Link>
-                <div class="flex items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
+                <div class="flex items-center gap-2" :class="compact ? 'flex-col' : ''">
+                    <div class="flex flex-1 items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800" :class="compact ? 'w-full flex-col' : ''">
+                        <button
+                            v-for="loc in locales"
+                            :key="loc.code"
+                            @click="switchLocale(loc.code)"
+                            class="flex-1 rounded-lg py-1.5 text-xs font-bold transition-colors"
+                            :class="[compact ? 'w-full' : '', currentLocale === loc.code ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200']"
+                        >{{ loc.label }}</button>
+                    </div>
+                    <!-- Desktop-width only: the mobile drawer is always wide. -->
                     <button
-                        v-for="loc in locales"
-                        :key="loc.code"
-                        @click="switchLocale(loc.code)"
-                        class="flex-1 rounded-lg py-1.5 text-xs font-bold transition-colors"
-                        :class="currentLocale === loc.code ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'"
-                    >{{ loc.label }}</button>
+                        type="button"
+                        class="hidden shrink-0 items-center justify-center rounded-xl p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 lg:flex"
+                        :title="compact ? t('nav.expand_sidebar') : t('nav.collapse_sidebar')"
+                        :aria-label="compact ? t('nav.expand_sidebar') : t('nav.collapse_sidebar')"
+                        @click="toggleNarrow"
+                    >
+                        <!-- Chevron points toward the inline start to collapse, the end to expand. -->
+                        <Icon
+                            name="chevron"
+                            class="text-base transition-transform duration-200 motion-reduce:transition-none"
+                            :class="compact ? '-rotate-90 rtl:rotate-90' : 'rotate-90 rtl:-rotate-90'"
+                        />
+                    </button>
                 </div>
             </div>
         </aside>
 
         <!-- ===== MAIN ===== -->
-        <div class="lg:ms-64 print:ms-0">
+        <div class="transition-[margin] duration-200 ease-out motion-reduce:transition-none print:ms-0" :class="compact ? 'lg:ms-16' : 'lg:ms-64'">
             <!-- "Log in as": always visible, with the way back to the admin's own account. -->
             <div v-if="impersonator" class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-amber-500 px-4 py-2 text-sm font-medium text-amber-950 print:hidden" role="status">
                 <span>{{ t('impersonate.banner', { user: user?.name, admin: impersonator.name }) }}</span>

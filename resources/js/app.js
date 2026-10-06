@@ -24,6 +24,19 @@ const rememberClubName = (pageProps) => {
     clubShortName = pageProps?.appShortName || DEFAULT_CLUB_SHORT_NAME;
 };
 
+// Sidebar and quick-search links prefetch pages on hover and keep them for
+// 30s. Any write can change what those pages show, so drop the cache before
+// a POST/PUT/PATCH/DELETE rather than ever serving a stale page after it.
+// flushAll() only clears finished entries, so a prefetch still in flight when
+// the write starts would land in the cache afterwards; flushing again when the
+// write finishes drops it too.
+router.on('before', (event) => {
+    if (event.detail.visit.method !== 'get') router.flushAll();
+});
+router.on('finish', (event) => {
+    if (event.detail.visit.method !== 'get') router.flushAll();
+});
+
 createInertiaApp({
     title: (title) => (title ? `${title} - ${clubShortName}` : clubShortName),
     resolve: (name) =>

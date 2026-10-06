@@ -9,6 +9,10 @@ import { ref, computed, onMounted } from 'vue';
 import { Link, usePage, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import SidebarLink from '@/Components/SidebarLink.vue';
+import SidebarSection from '@/Components/Sidebar/SidebarSection.vue';
+import { useNavigation } from '@/Composables/useNavigation.js';
+import { useSidebarState } from '@/Composables/useSidebarState.js';
+import { isActive } from '@/lib/navigation';
 import { useCan } from '@/Composables/useCan.js';
 import { useClubIdentity } from '@/Composables/useClubIdentity';
 import FlashMessages from '@/Components/FlashMessages.vue';
@@ -19,7 +23,9 @@ import ThemeToggle from '@/Components/ThemeToggle.vue';
 
 const { t, locale: i18nLocale } = useI18n();
 const page = usePage();
-const { can, isSuperadmin } = useCan();
+const { isSuperadmin } = useCan();
+const { sections, url } = useNavigation();
+const { isOpen, toggleSection } = useSidebarState();
 
 const mobileMenuOpen = ref(false);
 
@@ -77,82 +83,12 @@ onMounted(() => {
 const user = computed(() => page.props.auth.user);
 const isAdmin = computed(() => page.props.auth?.isAdmin ?? false);
 const isDesktop = computed(() => page.props.isDesktop ?? false);
-const pendingApprovals = computed(() => page.props.pendingApprovals ?? 0);
 const currentLocale = computed(() => page.props.locale || 'en');
 const { appName, appShortName } = useClubIdentity();
 const appLogo = computed(() => page.props.branding?.logo ?? null);
-const currentUrl = computed(() => page.url);
 
 const userInitial = computed(() => (user.value?.firstname || user.value?.name || '?').charAt(0).toUpperCase());
 const userRole = computed(() => (isAdmin.value ? t('administrator') : t('member')));
-
-function isActive(item) {
-    const url = currentUrl.value ?? '';
-    // `match` items decide with their own pattern (Members vs its Activity pages).
-    if (item.match) return item.match.test(url);
-    // `exact` items (e.g. the Board hub) must not stay highlighted on their
-    // own sub-pages, which have their own menu entries.
-    return item.exact ? url === item.prefix || url.startsWith(item.prefix + '?') : url.startsWith(item.prefix);
-}
-
-// Menu grouped by functionality. Every item declares the `module` it belongs to;
-// items are shown only when the user can view that module (superadmin sees all).
-// `always` items (dashboard) are ungated; `superadminOnly` items (roles) need the
-// god flag. Empty sections are dropped.
-const sections = computed(() => {
-    const raw = [
-        { label: t('nav_overview'), items: [
-            { label: t('dashboard'), href: '/dashboard', icon: 'dashboard', prefix: '/dashboard', always: true },
-        ] },
-        { label: t('nav_members'), items: [
-            { label: t('players'), href: '/players', icon: 'players', prefix: '/players', module: 'players' },
-            { label: t('subscriptions'), href: '/subscriptions', icon: 'subscriptions', prefix: '/subscriptions', module: 'subscriptions' },
-            { label: t('attendance'), href: '/attendance', icon: 'calendar', prefix: '/attendance', module: 'attendance' },
-        ] },
-        { label: t('nav_finance'), items: [
-            { label: t('transactions'), href: '/transactions', icon: 'transactions', prefix: '/transactions', module: 'transactions' },
-            { label: t('finance'), href: '/finance', icon: 'money', prefix: '/finance', module: 'finance' },
-        ] },
-        { label: t('nav_equipment'), items: [
-            { label: t('equipments'), href: '/equipment/catalogs', icon: 'equipment', prefix: '/equipment/catalogs', module: 'equipment' },
-            { label: t('equipment_out'), href: '/equipment/out', icon: 'box', prefix: '/equipment/out', module: 'equipment' },
-            { label: t('inventory'), href: '/equipment/stocktake', icon: 'clipboard', prefix: '/equipment/stocktake', module: 'inventory' },
-            { label: t('equipment_categories'), href: '/equipment-categories', icon: 'equipment', prefix: '/equipment-categories', module: 'categories' },
-            { label: t('storage_locations'), href: '/storage-locations', icon: 'equipment', prefix: '/storage-locations', module: 'categories' },
-        ] },
-        { label: t('nav_governance'), items: [
-            { label: t('board'), href: '/board', icon: 'board', prefix: '/board', exact: true, module: 'board' },
-            { label: t('calendar'), href: '/board/calendar', icon: 'calendar', prefix: '/board/calendar', module: 'board' },
-            { label: t('meetings'), href: '/board/meetings', icon: 'clipboard', prefix: '/board/meetings', module: 'board' },
-            { label: t('tasks'), href: '/board/tasks', icon: 'task', prefix: '/board/tasks', module: 'board' },
-        ] },
-        { label: t('nav_access'), items: [
-            { label: t('members'), href: '/users', icon: 'members', prefix: '/users', match: /^\/users(?!\/(\d+\/)?activity)/, badge: pendingApprovals.value, module: 'users' },
-            { label: t('activity.title'), href: '/users/activity', icon: 'task', prefix: '/users/activity', match: /^\/users\/(\d+\/)?activity/, module: 'users' },
-            { label: t('roles'), href: '/roles', icon: 'flag', prefix: '/roles', superadminOnly: true },
-        ] },
-        { label: t('administration'), items: [
-            { label: t('categories'), href: '/categories', icon: 'categories', prefix: '/categories', module: 'categories' },
-            { label: t('branches'), href: '/branches', icon: 'categories', prefix: '/branches', module: 'categories' },
-            { label: t('board_roles'), href: '/board-roles', icon: 'board', prefix: '/board-roles', module: 'board' },
-            { label: t('jobs'), href: '/jobs', icon: 'jobs', prefix: '/jobs', module: 'categories' },
-            { label: t('positions'), href: '/positions', icon: 'positions', prefix: '/positions', module: 'categories' },
-            { label: t('player_statuses'), href: '/player-statuses', icon: 'positions', prefix: '/player-statuses', module: 'categories' },
-            { label: t('document_types'), href: '/document-types', icon: 'document', prefix: '/document-types', module: 'categories' },
-            { label: t('settings'), href: '/settings', icon: 'settings', prefix: '/settings', module: 'settings' },
-            { label: t('backup'), href: '/backups', icon: 'archive', prefix: '/backups', superadminOnly: true, desktopOnly: true },
-        ] },
-    ];
-
-    return raw
-        .map((section) => ({
-            ...section,
-            items: section.items.filter((i) =>
-                (!i.desktopOnly || isDesktop.value)
-                && (i.always || (i.superadminOnly ? isSuperadmin.value : can(i.module, 'view')))),
-        }))
-        .filter((section) => section.items.length > 0);
-});
 
 const locales = [
     { code: 'ar', label: 'ع' },
@@ -203,19 +139,24 @@ function switchLocale(code) {
 
             <!-- Navigation -->
             <nav ref="navEl" @scroll.passive="rememberNavScroll" class="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-                <template v-for="(section, si) in sections" :key="section.label">
-                    <div class="flex items-center gap-2 px-3 pb-1" :class="si === 0 ? 'pt-0' : 'pt-5'">
-                        <p class="eyebrow !text-[0.65rem] text-slate-400">{{ section.label }}</p>
-                        <span class="h-px flex-1 bg-slate-200 dark:bg-slate-800"></span>
-                    </div>
-                    <SidebarLink
-                        v-for="item in section.items"
-                        :key="item.href"
-                        :href="item.href"
-                        :active="isActive(item)"
-                        :icon="item.icon"
-                        :badge="item.badge"
-                    >{{ item.label }}</SidebarLink>
+                <template v-for="section in sections" :key="section.key">
+                    <template v-if="section.standalone">
+                        <SidebarLink
+                            v-for="item in section.items"
+                            :key="item.href"
+                            :href="item.href"
+                            :active="isActive(item, url)"
+                            :icon="item.icon"
+                            :badge="item.badge"
+                        >{{ item.label }}</SidebarLink>
+                    </template>
+                    <SidebarSection
+                        v-else
+                        :section="section"
+                        :url="url"
+                        :user-open="isOpen(section.key)"
+                        @toggle="toggleSection"
+                    />
                 </template>
             </nav>
 

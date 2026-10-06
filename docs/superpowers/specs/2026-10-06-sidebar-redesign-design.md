@@ -146,9 +146,11 @@ other users. `npm run i18n:check` must pass.
   (`node --test tests/js/*.mjs`). No extra dependency. Covered:
   - Search normalisation: "اعدادات" matches "الإعدادات"; "parametrage" matches
     "Paramétrage".
-  - `useNavigation` filtering: a user with only `board:view` in `config` sees only
-    Board roles there; a user with no visible item in a section does not see that
-    section.
+  - Permission filtering (`visibleSections`, which `useNavigation` feeds): a user
+    with only `board:view` in `config` sees only Board roles there; a user with no
+    visible item in a section does not see that section.
+  - Active-item matching, section badges, safe storage, and that every `nav.*`
+    key resolves in ar/en/fr.
 - Manual QA at 127.0.0.1:2026 in all three locales (Arabic for RTL):
   - Forced-open section follows navigation.
   - Opened and closed state survives a reload.

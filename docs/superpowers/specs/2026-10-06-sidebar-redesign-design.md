@@ -82,8 +82,9 @@ section becomes `system`.
 - `SidebarLink` passes `prefetch` with `cacheFor: '30s'` to Inertia's `<Link>`
   (Inertia v2 hover prefetch, which waits 75 ms before fetching).
 - Command palette results prefetch the highlighted item the same way.
-- Inertia drops prefetched pages after a non-GET visit, so a page is never shown stale
-  after a form save.
+- The app flushes the prefetch cache itself, so a page is never shown stale: before and
+  after any non-GET Inertia visit (`app.js`), after any non-GET axios request
+  (`bootstrap.js` interceptor), and on a language switch.
 
 ### Icon-only narrow mode
 
@@ -106,9 +107,11 @@ section becomes `system`.
 
 Frontend only. No routes, controllers or migrations change.
 
-- `resources/js/Layouts/navigation.js`: exports `useNavigation()`. Returns
-  `{ dashboard, sections }` (computed, permission-filtered, translated), plus
-  `isActive(item)`. It is the single source for the sidebar and the palette.
+- `resources/js/lib/navigation.js`: the pure helpers (active-link matching, search
+  normalisation and filtering, section badges). No Vue, so Node can test them.
+- `resources/js/Composables/useNavigation.js`: exports `useNavigation()`. Returns
+  `{ sections, url }` (computed, permission-filtered, translated), with Dashboard as a
+  `standalone` section. It is the single source for the sidebar and the palette.
 - `resources/js/Composables/useSidebarState.js`: `userState`, `narrow`, and
   `toggleSection(key)` / `toggleNarrow()`. Module-scoped refs with safe
   `localStorage` persistence.
@@ -139,8 +142,8 @@ other users. `npm run i18n:check` must pass.
 
 - Pest feature test (existing pattern): an authenticated page responds 200. No
   backend behaviour changes, so there are no new backend tests.
-- No JS test runner is configured, and this batch does not add one. These are checked
-  by hand:
+- Pure helpers are tested with Node's built-in runner: `npm run test:js`
+  (`node --test tests/js/*.mjs`). No extra dependency. Covered:
   - Search normalisation: "اعدادات" matches "الإعدادات"; "parametrage" matches
     "Paramétrage".
   - `useNavigation` filtering: a user with only `board:view` in `config` sees only
@@ -163,6 +166,7 @@ other users. `npm run i18n:check` must pass.
 
 ## Merge note
 
-`feat/users-batch-oct` changes `AuthenticatedLayout.vue` (impersonation banner, about
-10 lines in the main column). A small, mechanical conflict is expected when the two
-branches meet.
+`feat/users-batch-oct` changes `AuthenticatedLayout.vue`: the impersonation banner (about
+10 lines in the main column), `userRole`, and one line of the old inline `sections`
+array. It also adds about 100 i18n lines per locale. Conflicts are expected but small.
+Take the sidebar side for `sections`, since `useNavigation` already uses `t('users')`.

@@ -27,3 +27,18 @@ test('writeJson never throws', () => {
     assert.doesNotThrow(() => writeJson('k', 1, broken));
     assert.doesNotThrow(() => writeJson('k', 1, undefined));
 });
+
+test('readJson and writeJson survive a throwing localStorage getter', () => {
+    try {
+        Object.defineProperty(globalThis, 'localStorage', {
+            configurable: true,
+            get() {
+                throw new Error('SecurityError: localStorage access blocked');
+            }
+        });
+        assert.equal(readJson('k', 'fb'), 'fb');
+        assert.doesNotThrow(() => writeJson('k', 1));
+    } finally {
+        delete globalThis.localStorage;
+    }
+});

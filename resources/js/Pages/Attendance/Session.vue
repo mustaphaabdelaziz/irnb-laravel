@@ -4,6 +4,7 @@ import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Icon from '@/Components/Icon.vue';
+import IconButton from '@/Components/IconButton.vue';
 import Modal from '@/Components/Modal.vue';
 import InputError from '@/Components/InputError.vue';
 import { useCan } from '@/Composables/useCan';
@@ -139,14 +140,14 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                     </div>
                 </div>
                 <div class="flex flex-wrap gap-2 print:hidden">
-                    <a v-if="!cancelled" :href="sheetHref" target="_blank" :title="t('att.sheet.print_hint')" class="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800"><Icon name="print" />{{ t('att.sheet.print_session') }}</a>
-                    <a v-if="!cancelled && saved" :href="filledSheetHref" target="_blank" class="rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800">{{ t('att.sheet.print_filled') }}</a>
+                    <IconButton v-if="!cancelled" :href="sheetHref" external target="_blank" :title="t('att.sheet.print_hint')" icon="print" :label="t('att.sheet.print_session')" />
+                    <IconButton v-if="!cancelled && saved" :href="filledSheetHref" external target="_blank" icon="clipboard" :label="t('att.sheet.print_filled')" />
                     <template v-if="editable">
-                        <button v-if="canEditCategories" class="rounded-lg px-3 py-1.5 text-sm font-semibold text-amber-700 ring-1 ring-amber-200 hover:bg-amber-50 dark:text-amber-300 dark:ring-amber-900" @click="openCategories">{{ t('att.edit_categories') }}</button>
-                        <button class="rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:text-slate-300 dark:ring-slate-700" @click="showMove = true">{{ t('att.move') }}</button>
-                        <button class="rounded-lg px-3 py-1.5 text-sm font-semibold text-rose-600 ring-1 ring-rose-200 hover:bg-rose-50 dark:ring-rose-900" @click="showCancel = true">{{ t('att.cancel') }}</button>
+                        <IconButton v-if="canEditCategories" icon="categories" :label="t('att.edit_categories')" @click="openCategories" />
+                        <IconButton icon="calendar" :label="t('att.move')" @click="showMove = true" />
+                        <IconButton icon="xcircle" :label="t('att.cancel')" variant="danger" @click="showCancel = true" />
                     </template>
-                    <button v-if="can('attendance', 'edit')" class="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-rose-700" @click="openDelete"><Icon name="trash" />{{ t('att.delete_session') }}</button>
+                    <IconButton v-if="can('attendance', 'edit')" icon="trash" :label="t('att.delete_session')" variant="danger" @click="openDelete" />
                 </div>
             </div>
         </template>
@@ -161,7 +162,7 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                     <div class="flex flex-wrap gap-2 text-xs">
                         <span v-for="s in statuses" :key="s" v-show="counts[s]" class="rounded-full px-2 py-0.5" :style="chipStyle(s)">{{ label(s) }}: {{ counts[s] }}</span>
                     </div>
-                    <button v-if="editable" class="rounded-lg px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-50 dark:text-emerald-300 dark:ring-emerald-900" @click="allPresent">{{ t('att.all_present') }}</button>
+                    <IconButton v-if="editable" icon="check" :label="t('att.all_present')" variant="success" size="sm" @click="allPresent" />
                 </div>
                 <ul>
                     <li v-for="(row, i) in rows" :key="row.player_id" class="border-b border-slate-100 p-3 last:border-0 dark:border-slate-800">
@@ -171,7 +172,7 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                                 <span v-if="row.category" class="ms-1 text-xs font-normal text-slate-400">{{ row.category }}</span>
                             </span>
                             <button v-for="s in statuses.filter((st) => offered(row, st))" :key="s" type="button" :disabled="!editable" class="rounded-lg px-2 py-1 text-xs font-semibold" :class="row.status === s ? '' : idleChip" :style="row.status === s ? chipStyle(s) : null" @click="setStatus(row, s)">{{ label(s) }}</button>
-                            <button v-if="editable" type="button" class="p-1 text-slate-300 hover:text-rose-600" :title="t('att.remove')" @click="removeRow(row)"><Icon name="trash" /></button>
+                            <IconButton v-if="editable" icon="trash" :label="t('att.remove')" variant="danger" plain size="sm" @click="removeRow(row)" />
                         </div>
                         <div v-if="takesMinutes(row.status) || takesReason(row.status) || row.note" class="mt-2 flex flex-wrap items-center gap-2">
                             <label v-if="takesMinutes(row.status)" class="text-xs text-slate-500">{{ t('att.minutes') }}

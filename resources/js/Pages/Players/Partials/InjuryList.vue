@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import Icon from '@/Components/Icon.vue';
+import IconButton from '@/Components/IconButton.vue';
 import InputError from '@/Components/InputError.vue';
 import Modal from '@/Components/Modal.vue';
 import { useCan } from '@/Composables/useCan';
@@ -68,7 +68,6 @@ async function remove(note) {
 }
 
 const input = 'mt-1 block w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900';
-const smallButton = 'inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-primary-700 ring-1 ring-inset ring-primary-200 hover:bg-primary-50 dark:text-primary-300 dark:ring-primary-800 dark:hover:bg-primary-500/10';
 </script>
 
 <template>
@@ -90,9 +89,7 @@ const smallButton = 'inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs
                     <span class="text-xs text-slate-500">{{ t('att.injury.col.sessions') }}: {{ spell.sessions }}</span>
                     <span v-if="!spell.open && spell.returned_on" class="text-xs text-emerald-600 dark:text-emerald-400">{{ t('att.injury.returned_on', { date: day(spell.returned_on) }) }}</span>
                     <span v-else-if="spell.open && spell.returned_on" class="text-xs text-amber-600 dark:text-amber-400">{{ t('att.injury.expected_back', { date: day(spell.returned_on) }) }}</span>
-                    <button v-if="canEdit" type="button" :class="[smallButton, 'ms-auto']" @click="open(spell.start, spell.note)">
-                        <Icon name="pencil" />{{ spell.note ? t('att.injury.edit_details') : t('att.injury.add_details') }}
-                    </button>
+                    <IconButton v-if="canEdit" class="ms-auto" icon="pencil" :label="spell.note ? t('att.injury.edit_details') : t('att.injury.add_details')" variant="primary" plain size="sm" @click="open(spell.start, spell.note)" />
                 </div>
                 <div v-if="spell.note" class="mt-1 text-sm text-slate-600 dark:text-slate-300">
                     <p><b v-if="spell.note.body_part">{{ spell.note.body_part }}</b></p>
@@ -109,8 +106,8 @@ const smallButton = 'inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs
                     <span class="font-medium">{{ day(note.start_date) }}</span>
                     <span v-if="note.body_part">— {{ note.body_part }}</span>
                     <span v-if="canEdit" class="ms-auto inline-flex gap-1">
-                        <button type="button" :class="smallButton" @click="open(note.start_date, note)"><Icon name="pencil" />{{ t('att.edit') }}</button>
-                        <button type="button" class="inline-flex items-center rounded-md p-1 text-slate-400 hover:text-rose-600" :title="t('att.delete')" @click="remove(note)"><Icon name="trash" /></button>
+                        <IconButton icon="pencil" :label="t('att.edit')" variant="primary" plain size="sm" @click="open(note.start_date, note)" />
+                        <IconButton icon="trash" :label="t('att.delete')" variant="danger" plain size="sm" @click="remove(note)" />
                     </span>
                 </li>
             </ul>

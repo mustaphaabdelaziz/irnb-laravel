@@ -7,6 +7,7 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import JobQuickCreateModal from '@/Components/JobQuickCreateModal.vue';
+import IconButton from '@/Components/IconButton.vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -412,8 +413,7 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                 <div v-if="!form.is_student">
                     <div class="flex items-center justify-between">
                         <InputLabel :value="t('job')" />
-                        <button v-if="can('categories', 'add')" type="button" @click="showJobModal = true"
-                            class="text-xs font-semibold text-primary-600 hover:text-primary-700">+ {{ t('new_job') }}</button>
+                        <IconButton v-if="can('categories', 'add')" icon="plus" :label="t('new_job')" variant="primary" plain size="sm" @click="showJobModal = true" />
                     </div>
                     <select v-model="form.member_job_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                         <option value="">-</option>
@@ -458,7 +458,7 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                         <span class="text-sm text-slate-500 dark:text-slate-400">{{ t('drag_drop_image') }}</span>
                         <input type="file" accept="image/*" class="hidden" @change="onFileChange" />
                     </label>
-                    <button v-if="previewUrl" type="button" @click="clearPicture" class="mt-2 text-xs text-rose-500 hover:text-rose-700">{{ t('remove') }}</button>
+                    <IconButton v-if="previewUrl" class="mt-2" icon="trash" :label="t('remove')" variant="danger" plain size="sm" @click="clearPicture" />
                     <InputError :message="form.errors.picture" class="mt-1" />
                 </div>
             </div>

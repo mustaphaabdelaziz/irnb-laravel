@@ -7,6 +7,7 @@ import '@/lib/registerCharts';
 import PeriodFilter from '@/Components/Activity/PeriodFilter.vue';
 import StatDoughnut from '@/Components/StatDoughnut.vue';
 import Icon from '@/Components/Icon.vue';
+import IconButton from '@/Components/IconButton.vue';
 import InjuryList from './InjuryList.vue';
 import { useAttendanceCodes } from '@/Composables/useAttendanceCodes';
 import { baseOptions } from '@/lib/chartTheme';
@@ -91,12 +92,8 @@ const th = 'p-2 text-start text-xs font-semibold text-slate-500 dark:text-slate-
             <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('attendance') }}</h3>
             <div v-if="data" class="flex flex-wrap items-center gap-2">
                 <PeriodFilter :period="data.period" @change="load" />
-                <a :href="reportHref" target="_blank" class="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-800">
-                    <Icon name="print" /> {{ t('att.print_report') }}
-                </a>
-                <a :href="letterHref" target="_blank" class="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-800">
-                    <Icon name="mail" /> {{ t('att.letter.print') }}
-                </a>
+                <IconButton :href="reportHref" external target="_blank" icon="print" :label="t('att.print_report')" size="sm" />
+                <IconButton :href="letterHref" external target="_blank" icon="mail" :label="t('att.letter.print')" size="sm" />
             </div>
         </div>
 
@@ -107,7 +104,7 @@ const th = 'p-2 text-start text-xs font-semibold text-slate-500 dark:text-slate-
 
         <div v-else-if="failed" class="flex flex-col items-center gap-2 px-5 py-8 text-sm text-slate-500">
             <p>{{ t('att.profile.load_error') }}</p>
-            <button type="button" class="rounded-lg px-3 py-1.5 font-semibold text-primary-700 ring-1 ring-primary-300 hover:bg-primary-50 dark:text-primary-300 dark:ring-primary-700" @click="retry">{{ t('att.retry') }}</button>
+            <IconButton icon="refresh" :label="t('att.retry')" size="sm" @click="retry" />
         </div>
 
         <div v-else-if="data" class="space-y-5 px-5 py-4 transition-opacity" :class="{ 'opacity-60': loading }">

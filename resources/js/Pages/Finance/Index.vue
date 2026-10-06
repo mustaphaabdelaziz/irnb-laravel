@@ -1,10 +1,11 @@
 <script setup>
 import { computed } from 'vue';
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import StatCard from '@/Components/StatCard.vue';
 import Icon from '@/Components/Icon.vue';
+import IconButton from '@/Components/IconButton.vue';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 import '@/lib/registerCharts';
@@ -97,18 +98,9 @@ const currentBalance = computed(() => props.accounts.reduce((s, a) => s + Number
                     </button>
                 </div>
                 <div class="flex items-center gap-2">
-                    <Link
-                        :href="route('finance.registers.index')"
-                        class="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 transition-colors hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800"
-                    ><Icon name="money" /> {{ t('cash_registers') }}</Link>
-                    <a
-                        :href="route('reports.financial', { year: selectedYear })" target="_blank"
-                        class="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 transition-colors hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800"
-                    ><Icon name="print" /> {{ t('export') }}</a>
-                    <Link
-                        v-if="isAdmin" :href="route('finance.settings')"
-                        class="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 transition-colors hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800"
-                    ><Icon name="settings" /> {{ t('finance_settings') }}</Link>
+                    <IconButton :href="route('finance.registers.index')" icon="money" :label="t('cash_registers')" />
+                    <IconButton :href="route('reports.financial', { year: selectedYear })" external target="_blank" icon="print" :label="t('export')" />
+                    <IconButton v-if="isAdmin" :href="route('finance.settings')" icon="settings" :label="t('finance_settings')" />
                 </div>
             </div>
 
@@ -131,12 +123,8 @@ const currentBalance = computed(() => props.accounts.reduce((s, a) => s + Number
                         </div>
                     </div>
                     <div v-if="isAdmin" class="flex items-center gap-2">
-                        <button v-if="!isClosed" @click="closeYear" class="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white">
-                            <Icon name="archive" /> {{ t('close_year') }}
-                        </button>
-                        <button v-else @click="reopenYear" class="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-sm font-bold text-slate-700 ring-1 ring-slate-200 transition-colors hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-200 dark:ring-slate-700">
-                            <Icon name="refresh" /> {{ t('reopen_year') }}
-                        </button>
+                        <IconButton v-if="!isClosed" icon="archive" :label="t('close_year')" @click="closeYear" />
+                        <IconButton v-else icon="refresh" :label="t('reopen_year')" @click="reopenYear" />
                     </div>
                 </div>
 

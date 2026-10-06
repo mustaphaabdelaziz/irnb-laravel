@@ -8,7 +8,7 @@ import { baseOptions, lineDataset, mutedInk } from '@/lib/chartTheme';
 import { PERIODS, yearLabel } from '@/lib/academic';
 import { useCan } from '@/Composables/useCan';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
-import Icon from '@/Components/Icon.vue';
+import IconButton from '@/Components/IconButton.vue';
 import AcademicGradeModal from '@/Pages/Players/Partials/AcademicGradeModal.vue';
 import AcademicYearModal from '@/Pages/Players/Partials/AcademicYearModal.vue';
 
@@ -141,12 +141,8 @@ const gradeClass = (grade, scale) => (passes(grade, scale) ? 'text-emerald-700 d
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 px-5 py-4">
             <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('academic_progress') }}</h3>
             <div class="flex items-center gap-2">
-                <a :href="route('players.academic-report', player.id)" target="_blank" class="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-800">
-                    <Icon name="print" /> {{ t('print_academic_report') }}
-                </a>
-                <button v-if="can('players', 'add')" type="button" @click="openAdd()" class="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-primary-700 ring-1 ring-inset ring-primary-300 hover:bg-primary-50 dark:text-primary-300 dark:ring-primary-700 dark:hover:bg-primary-900/30">
-                    <Icon name="plus" /> {{ t('add_gpa') }}
-                </button>
+                <IconButton :href="route('players.academic-report', player.id)" external target="_blank" icon="print" :label="t('print_academic_report')" size="sm" />
+                <IconButton v-if="can('players', 'add')" icon="plus" :label="t('add_gpa')" variant="primary" size="sm" @click="openAdd()" />
             </div>
         </div>
 
@@ -223,11 +219,9 @@ const gradeClass = (grade, scale) => (passes(grade, scale) ? 'text-emerald-700 d
                                     class="rounded-full px-2 py-0.5 text-[10px] font-semibold leading-tight ring-1 ring-inset"
                                     :class="CERTIFICATE_CLASSES[cell.record.certificate]">{{ t(`certificate_short_${cell.record.certificate}`) }}</span>
                             </component>
-                            <button v-else-if="can('players', 'add')" type="button" @click="openAdd(y.academic_year, cell.period)"
-                                :aria-label="t('add_gpa')" :title="t('add_gpa')"
-                                class="rounded-md border border-dashed border-slate-300 px-2 py-1 text-slate-400 hover:bg-slate-50 hover:text-primary-600 dark:border-slate-700 dark:hover:bg-slate-800">
-                                <Icon name="plus" />
-                            </button>
+                            <IconButton v-else-if="can('players', 'add')" icon="plus" :label="t('add_gpa')" plain size="sm"
+                                class="border border-dashed border-slate-300 dark:border-slate-700"
+                                @click="openAdd(y.academic_year, cell.period)" />
                             <span v-else class="text-sm text-slate-400">—</span>
                         </td>
                         <td class="whitespace-nowrap px-3 py-3 text-center">
@@ -240,10 +234,10 @@ const gradeClass = (grade, scale) => (passes(grade, scale) ? 'text-emerald-700 d
                             <span v-else class="text-sm text-slate-400">—</span>
                         </td>
                         <td class="whitespace-nowrap px-3 py-3 text-end">
-                            <button v-if="can('players', 'edit')" type="button" @click="openYear(y)"
-                                class="rounded-md px-2 py-1 text-xs font-medium text-primary-700 ring-1 ring-inset ring-primary-300 hover:bg-primary-50 dark:text-primary-300 dark:ring-primary-700 dark:hover:bg-primary-900/30">{{ t('edit_year') }}</button>
-                            <button v-if="can('players', 'delete')" type="button" @click="removingYearId = y.id"
-                                class="ms-2 rounded-md px-2 py-1 text-xs font-medium text-rose-700 ring-1 ring-inset ring-rose-300 hover:bg-rose-50 dark:text-rose-300 dark:ring-rose-800 dark:hover:bg-rose-900/30">{{ t('delete_year') }}</button>
+                            <div class="inline-flex items-center gap-1">
+                                <IconButton v-if="can('players', 'edit')" icon="pencil" :label="t('edit_year')" plain size="sm" @click="openYear(y)" />
+                                <IconButton v-if="can('players', 'delete')" icon="trash" :label="t('delete_year')" variant="danger" plain size="sm" @click="removingYearId = y.id" />
+                            </div>
                         </td>
                     </tr>
                 </tbody>

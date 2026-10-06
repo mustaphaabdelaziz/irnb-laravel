@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Icon from '@/Components/Icon.vue';
+import IconButton from '@/Components/IconButton.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import Modal from '@/Components/Modal.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
@@ -39,10 +40,7 @@ const href = computed(() => route('players.academic-results', {
 </script>
 
 <template>
-    <button type="button" @click="open"
-        class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800">
-        <Icon name="print" /> {{ t('print_academic_results') }}
-    </button>
+    <IconButton icon="print" :label="t('print_academic_results')" @click="open" />
 
     <Modal :show="show" @close="show = false" max-width="md">
         <div class="p-6">

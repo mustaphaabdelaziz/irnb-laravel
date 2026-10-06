@@ -2,7 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Badge from '@/Components/Badge.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
-import Icon from '@/Components/Icon.vue';
+import IconButton from '@/Components/IconButton.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import Modal from '@/Components/Modal.vue';
@@ -95,9 +95,7 @@ function destroy() {
         <template #header>
             <div class="flex items-center justify-between gap-3">
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('document_types') }}</h1>
-                <PrimaryButton type="button" @click="openCreate">
-                    <Icon name="plus" class="me-1" /> {{ t('doc_add_type') }}
-                </PrimaryButton>
+                <IconButton icon="plus" :label="t('doc_add_type')" variant="primary" @click="openCreate" />
             </div>
         </template>
 
@@ -135,12 +133,19 @@ function destroy() {
                             <td class="px-4 py-3 text-end text-sm text-slate-600 dark:text-slate-300">{{ type.copies }}</td>
                             <td class="px-4 py-3 text-end text-sm text-slate-600 dark:text-slate-300">{{ type.player_documents_count }}</td>
                             <td class="whitespace-nowrap px-4 py-3 text-end">
-                                <button type="button" class="text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-200" @click="openEdit(type)">{{ t('edit') }}</button>
-                                <button type="button" class="ms-3 text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-200" @click="toggleActive(type)">
-                                    {{ type.is_active ? t('doc_deactivate') : t('doc_activate') }}
-                                </button>
-                                <!-- Refused server-side too while any player has a record of this type. -->
-                                <button v-if="type.player_documents_count === 0" type="button" class="ms-3 text-sm text-rose-500 hover:text-rose-700" @click="deleteId = type.id">{{ t('delete') }}</button>
+                                <div class="flex justify-end gap-1">
+                                    <IconButton icon="pencil" :label="t('edit')" plain size="sm" @click="openEdit(type)" />
+                                    <IconButton
+                                        :icon="type.is_active ? 'archive' : 'restore'"
+                                        :label="type.is_active ? t('doc_deactivate') : t('doc_activate')"
+                                        :variant="type.is_active ? 'neutral' : 'success'"
+                                        plain
+                                        size="sm"
+                                        @click="toggleActive(type)"
+                                    />
+                                    <!-- Refused server-side too while any player has a record of this type. -->
+                                    <IconButton v-if="type.player_documents_count === 0" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteId = type.id" />
+                                </div>
                             </td>
                         </tr>
                         <tr v-if="!documentTypes.length">

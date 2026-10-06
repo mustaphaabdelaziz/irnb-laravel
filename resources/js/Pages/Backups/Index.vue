@@ -7,6 +7,7 @@ import DangerButton from '@/Components/DangerButton.vue';
 import Modal from '@/Components/Modal.vue';
 import InputError from '@/Components/InputError.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
+import IconButton from '@/Components/IconButton.vue';
 import Icon from '@/Components/Icon.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
@@ -158,9 +159,7 @@ function destroy() {
                         <p class="text-xs font-semibold uppercase tracking-wide opacity-80">{{ t('snapshot') }}</p>
                         <div class="mt-1 flex flex-wrap items-start gap-2">
                             <code class="min-w-0 flex-1 select-all whitespace-pre-wrap break-all rounded-lg bg-white/70 px-3 py-2 text-xs dark:bg-black/20">{{ lastRestore.snapshot }}</code>
-                            <button type="button" @click="copyPath(lastRestore.snapshot)" class="shrink-0 text-xs font-semibold underline underline-offset-2 opacity-80 hover:opacity-100">
-                                {{ copiedPath === lastRestore.snapshot ? t('copied') : t('copy') }}
-                            </button>
+                            <IconButton :icon="copiedPath === lastRestore.snapshot ? 'check' : 'copy'" :label="copiedPath === lastRestore.snapshot ? t('copied') : t('copy')" plain size="sm" @click="copyPath(lastRestore.snapshot)" />
                         </div>
                     </div>
 
@@ -168,16 +167,12 @@ function destroy() {
                         <p class="text-xs font-semibold uppercase tracking-wide opacity-80">{{ t('leftover_media') }}</p>
                         <div class="mt-1 flex flex-wrap items-start gap-2">
                             <code class="min-w-0 flex-1 select-all whitespace-pre-wrap break-all rounded-lg bg-white/70 px-3 py-2 text-xs dark:bg-black/20">{{ lastRestore.leftover_media }}</code>
-                            <button type="button" @click="copyPath(lastRestore.leftover_media)" class="shrink-0 text-xs font-semibold underline underline-offset-2 opacity-80 hover:opacity-100">
-                                {{ copiedPath === lastRestore.leftover_media ? t('copied') : t('copy') }}
-                            </button>
+                            <IconButton :icon="copiedPath === lastRestore.leftover_media ? 'check' : 'copy'" :label="copiedPath === lastRestore.leftover_media ? t('copied') : t('copy')" plain size="sm" @click="copyPath(lastRestore.leftover_media)" />
                         </div>
                     </div>
                 </div>
 
-                <button type="button" @click="dismissRestore" class="shrink-0 opacity-60 transition-opacity hover:opacity-100" :title="t('close')">
-                    <Icon name="xcircle" class="text-lg" />
-                </button>
+                <IconButton icon="close" :label="t('close')" plain size="sm" @click="dismissRestore" />
             </div>
 
             <!-- Destination -->
@@ -191,8 +186,8 @@ function destroy() {
                     </code>
                     <p v-else class="flex-1 text-sm text-slate-500 dark:text-slate-400">{{ t('backup_no_destination') }}</p>
 
-                    <SecondaryButton @click="chooseFolder">{{ t('choose_folder') }}</SecondaryButton>
-                    <SecondaryButton v-if="settings.destination" @click="openFolder()">{{ t('open_folder') }}</SecondaryButton>
+                    <IconButton icon="folder" :label="t('choose_folder')" @click="chooseFolder" />
+                    <IconButton v-if="settings.destination" icon="external" :label="t('open_folder')" @click="openFolder()" />
                 </div>
 
                 <p v-if="settings.destination && !destinationWritable" class="mt-3 rounded-lg bg-rose-50 dark:bg-rose-950 px-3 py-2 text-sm text-rose-700 dark:text-rose-300">
@@ -238,7 +233,7 @@ function destroy() {
             <section class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div class="flex items-center justify-between p-5">
                     <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ t('backups') }}</h2>
-                    <PrimaryButton :disabled="backingUp || !destinationWritable" @click="backupNow">{{ t('backup_now') }}</PrimaryButton>
+                    <IconButton icon="save" :label="t('backup_now')" variant="primary" :disabled="backingUp || !destinationWritable" @click="backupNow" />
                 </div>
 
                 <div class="overflow-x-auto">
@@ -255,10 +250,10 @@ function destroy() {
                                 <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-900 dark:text-slate-100">{{ formatDate(backup.created_at) }}</td>
                                 <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-500 dark:text-slate-400">{{ formatSize(backup.bytes) }}</td>
                                 <td class="px-4 py-3 text-end">
-                                    <div class="flex justify-end gap-3">
-                                        <button @click="askRestore(backup)" class="text-sm text-primary-600 hover:text-primary-800">{{ t('restore') }}</button>
-                                        <button @click="openFolder(backup.name)" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">{{ t('open_folder') }}</button>
-                                        <button @click="deleting = backup" class="text-sm text-rose-500 hover:text-rose-700">{{ t('delete') }}</button>
+                                    <div class="flex justify-end gap-1">
+                                        <IconButton icon="restore" :label="t('restore')" variant="success" plain size="sm" @click="askRestore(backup)" />
+                                        <IconButton icon="external" :label="t('open_folder')" plain size="sm" @click="openFolder(backup.name)" />
+                                        <IconButton icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleting = backup" />
                                     </div>
                                 </td>
                             </tr>

@@ -1,9 +1,9 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import Icon from '@/Components/Icon.vue';
+import IconButton from '@/Components/IconButton.vue';
 import { useCan } from '@/Composables/useCan';
 import { dateKey } from '@/lib/attendanceCalendar';
 import AddSessionModal from './Partials/AddSessionModal.vue';
@@ -83,10 +83,10 @@ function openCreate(kind, date = today) {
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <h1 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('attendance') }}</h1>
                 <div class="flex gap-2 print:hidden">
-                    <Link :href="route('attendance.stats')" class="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800"><Icon name="dashboard" />{{ t('att.statistics') }}</Link>
-                    <Link v-if="categoryId" :href="route('attendance.grid', { category_id: categoryId, month })" class="rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800">{{ t('att.grid') }}</Link>
-                    <a v-if="categoryId && view === 'month'" :href="sheetHref" target="_blank" :title="t('att.sheet.print_hint')" class="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800"><Icon name="print" />{{ t('att.sheet.print') }}</a>
-                    <Link v-if="can('attendance', 'edit')" :href="route('attendance.settings')" class="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800"><Icon name="settings" />{{ t('att.settings') }}</Link>
+                    <IconButton :href="route('attendance.stats')" icon="dashboard" :label="t('att.statistics')" />
+                    <IconButton v-if="categoryId" :href="route('attendance.grid', { category_id: categoryId, month })" icon="menu" :label="t('att.grid')" />
+                    <IconButton v-if="categoryId && view === 'month'" :href="sheetHref" external target="_blank" :title="t('att.sheet.print_hint')" icon="print" :label="t('att.sheet.print')" />
+                    <IconButton v-if="can('attendance', 'edit')" :href="route('attendance.settings')" icon="settings" :label="t('att.settings')" />
                 </div>
             </div>
         </template>
@@ -97,8 +97,8 @@ function openCreate(kind, date = today) {
             <div class="flex flex-wrap items-center justify-between gap-3 print:hidden">
                 <ViewSwitcher :view="view" @switch="switchView" />
                 <div v-if="can('attendance', 'add')" class="flex gap-2">
-                    <button class="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-primary-700" @click="openCreate('extra')">+ {{ t('att.add_extra') }}</button>
-                    <button class="rounded-lg bg-amber-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-amber-600" @click="openCreate('preseason')">+ {{ t('att.add_preseason') }}</button>
+                    <IconButton icon="plus" :label="t('att.add_extra')" variant="primary" @click="openCreate('extra')" />
+                    <IconButton icon="flag" :label="t('att.add_preseason')" @click="openCreate('preseason')" />
                 </div>
             </div>
 

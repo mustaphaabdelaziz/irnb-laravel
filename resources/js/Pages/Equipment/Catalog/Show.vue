@@ -10,6 +10,7 @@ import SearchableSelect from '@/Components/SearchableSelect.vue';
 import RentalTypeBadge from '@/Components/RentalTypeBadge.vue';
 import ReturnRentalModal from '@/Components/ReturnRentalModal.vue';
 import ExportMenu from '@/Components/ExportMenu.vue';
+import IconButton from '@/Components/IconButton.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
@@ -378,20 +379,12 @@ function submitImport() {
                     <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ catalog.name }}</h1>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                    <button @click="showReceiveModal = true" class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 transition-colors">
-                        + {{ t('equipment.receive_stock') }}
-                    </button>
+                    <IconButton icon="plus" :label="t('equipment.receive_stock')" variant="primary" @click="showReceiveModal = true" />
                     <!-- Serialized catalogs keep the one-unit-at-a-time flow, which generates a serial. -->
-                    <button v-if="isSerialized" @click="openAddItem" class="inline-flex items-center rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                        + {{ t('add') }}
-                    </button>
-                    <button @click="showImport = true" class="inline-flex items-center rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                        {{ t('import') }}
-                    </button>
+                    <IconButton v-if="isSerialized" icon="plus" :label="t('add')" @click="openAddItem" />
+                    <IconButton icon="upload" :label="t('import')" @click="showImport = true" />
                     <ExportMenu :href="route('equipment.items.export', catalog.id)" :label="t('export')" />
-                    <Link :href="route('equipment.catalogs.edit', catalog.id)" class="inline-flex items-center rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                        {{ t('edit') }}
-                    </Link>
+                    <IconButton :href="route('equipment.catalogs.edit', catalog.id)" icon="pencil" :label="t('edit')" />
                 </div>
             </div>
         </template>
@@ -446,13 +439,7 @@ function submitImport() {
                         <span class="text-sm font-medium text-primary-700 dark:text-primary-300">
                             {{ t('selected_count', { count: selectedItems.length }) }}
                         </span>
-                        <button
-                            type="button"
-                            class="rounded-lg bg-rose-50 px-3 py-1.5 text-sm font-medium text-rose-700 ring-1 ring-rose-200 transition-colors hover:bg-rose-100 dark:bg-rose-900/20 dark:text-rose-300 dark:ring-rose-800 dark:hover:bg-rose-900/30"
-                            @click="bulkDeleteItemsPending = true"
-                        >
-                            {{ t('delete_selected') }}
-                        </button>
+                        <IconButton icon="trash" :label="t('delete_selected')" variant="danger" @click="bulkDeleteItemsPending = true" />
                     </div>
                 </div>
                 <div v-if="!catalog.items?.length" class="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</div>
@@ -521,24 +508,23 @@ function submitImport() {
                                             <RentalTypeBadge :type="r.type" />
                                             <span>{{ r.recipient_name || '—' }}</span>
                                             <span v-if="(r.quantity ?? 1) > 1" class="text-xs text-slate-400">({{ r.quantity - (r.returned_quantity ?? 0) }})</span>
-                                            <button @click="openReturn(item, r)" class="text-xs font-medium text-emerald-600 hover:text-emerald-800">{{ t('return') }}</button>
+                                            <IconButton icon="back" :label="t('return')" variant="success" plain size="sm" @click="openReturn(item, r)" />
                                         </li>
                                     </ul>
                                     <span v-else>-</span>
                                 </td>
                                 <td class="px-4 py-3 text-end">
-                                    <div class="flex items-center justify-end gap-2">
+                                    <div class="flex items-center justify-end gap-1">
                                         <!-- Driven by available units, not status: a lot of 20 with 10 out is still lendable. -->
-                                        <button v-if="(item.available_quantity ?? 0) > 0" @click="openRent(item)" class="text-sm text-amber-600 hover:text-amber-800">{{ t('rent') }}</button>
-                                        <button v-if="(item.quantity ?? 1) > 1 && (item.available_quantity ?? 0) > 0" @click="openSplit(item)"
-                                            :title="t('equipment.mark_damaged')" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">⚖️</button>
-                                        <button v-if="item.status === 'Available'" @click="repairItemId = item.id" :title="t('send_to_repair')" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">🔧</button>
-                                        <button v-if="item.status === 'Under Repair'" @click="fixedItemId = item.id" class="text-sm text-emerald-600 hover:text-emerald-800">{{ t('mark_fixed') }}</button>
-                                        <button v-if="['Available','Rented'].includes(item.status)" @click="lostItemId = item.id" class="text-sm text-rose-500 hover:text-rose-700">{{ t('lost') }}</button>
-                                        <button v-if="item.status === 'Lost'" @click="foundItemId = item.id" class="text-sm text-emerald-600 hover:text-emerald-800">{{ t('restore') }}</button>
-                                        <Link :href="route('equipment.items.history', item.id)" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200" :title="t('history')">🕘</Link>
-                                        <button @click="openEdit(item)" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200" :title="t('edit')">✏️</button>
-                                        <button v-if="!item.open_rentals?.length" @click="deleteItemId = item.id" class="text-sm text-rose-500 hover:text-rose-700" :title="t('delete')">🗑️</button>
+                                        <IconButton v-if="(item.available_quantity ?? 0) > 0" icon="send" :label="t('rent')" variant="primary" plain size="sm" @click="openRent(item)" />
+                                        <IconButton v-if="(item.quantity ?? 1) > 1 && (item.available_quantity ?? 0) > 0" icon="alert" :label="t('equipment.mark_damaged')" plain size="sm" @click="openSplit(item)" />
+                                        <IconButton v-if="item.status === 'Available'" icon="wrench" :label="t('send_to_repair')" plain size="sm" @click="repairItemId = item.id" />
+                                        <IconButton v-if="item.status === 'Under Repair'" icon="check" :label="t('mark_fixed')" variant="success" plain size="sm" @click="fixedItemId = item.id" />
+                                        <IconButton v-if="['Available','Rented'].includes(item.status)" icon="xcircle" :label="t('lost')" variant="danger" plain size="sm" @click="lostItemId = item.id" />
+                                        <IconButton v-if="item.status === 'Lost'" icon="restore" :label="t('restore')" variant="success" plain size="sm" @click="foundItemId = item.id" />
+                                        <IconButton :href="route('equipment.items.history', item.id)" icon="calendar" :label="t('history')" plain size="sm" />
+                                        <IconButton icon="pencil" :label="t('edit')" plain size="sm" @click="openEdit(item)" />
+                                        <IconButton v-if="!item.open_rentals?.length" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteItemId = item.id" />
                                     </div>
                                 </td>
                             </tr>

@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
-import Icon from '@/Components/Icon.vue';
+import IconButton from '@/Components/IconButton.vue';
 import { useAttendanceCodes } from '@/Composables/useAttendanceCodes';
 import { useClubIdentity } from '@/Composables/useClubIdentity';
 import { KIND_DOT, dayLabel as formatDayLabel, parseDay } from '@/lib/attendanceCalendar';
@@ -40,9 +40,7 @@ const print = () => window.print();
                 <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
             </select>
             <MonthNav :month="month" @change="(m) => go({ month: m })" />
-            <button type="button" class="ms-auto inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800" @click="print">
-                <Icon name="print" /> {{ t('print') }}
-            </button>
+            <IconButton icon="print" :label="t('print')" class="ms-auto" @click="print" />
         </div>
 
         <div class="att-agenda-print space-y-3">

@@ -13,6 +13,7 @@ import { useI18n } from 'vue-i18n';
 import { computed, ref } from 'vue';
 import { asList, useListFilters } from '@/Composables/useListFilters';
 import MultiSelectFilter from '@/Components/MultiSelectFilter.vue';
+import IconButton from '@/Components/IconButton.vue';
 import { useCan } from '@/Composables/useCan';
 
 const { t, locale } = useI18n();
@@ -113,9 +114,7 @@ function initial(user) {
                 <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <Badge v-if="pendingCount" :label="`${pendingCount} ${t('pending_approval')}`" color="amber" />
                     <Link :href="route('users.activity.index')" class="text-sm font-medium text-primary-700 hover:underline dark:text-primary-300">{{ t('activity.title') }}</Link>
-                    <Link v-if="can('users', 'add')" :href="route('users.create')">
-                        <PrimaryButton type="button">{{ t('new_user') }}</PrimaryButton>
-                    </Link>
+                    <IconButton v-if="can('users', 'add')" :href="route('users.create')" icon="plus" :label="t('new_user')" variant="primary" />
                 </div>
             </div>
         </template>
@@ -176,20 +175,20 @@ function initial(user) {
                                     </p>
                                 </td>
                                 <td class="whitespace-nowrap px-4 py-3 text-end">
-                                    <div class="flex items-center justify-end gap-3">
-                                        <button v-if="!user.approved" @click="approve(user.id)" class="text-sm font-medium text-emerald-600 hover:text-emerald-800">{{ t('approve') }}</button>
+                                    <div class="flex items-center justify-end gap-1">
+                                        <IconButton v-if="!user.approved" icon="check" :label="t('approve')" variant="success" plain size="sm" @click="approve(user.id)" />
                                         <!-- Log in as: admins only, never a superadmin, yourself or a blocked account. -->
-                                        <button v-if="canImpersonate && !user.is_superadmin && user.id !== currentUserId && user.approved && user.is_active"
-                                            @click="impersonate(user.id)" class="text-sm font-medium text-primary-600 hover:text-primary-800">{{ t('impersonate.action') }}</button>
-                                        <Link :href="route('users.edit', user.id)" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">{{ t('edit') }}</Link>
+                                        <IconButton v-if="canImpersonate && !user.is_superadmin && user.id !== currentUserId && user.approved && user.is_active"
+                                            icon="login" :label="t('impersonate.action')" variant="primary" plain size="sm" @click="impersonate(user.id)" />
+                                        <IconButton :href="route('users.edit', user.id)" icon="pencil" :label="t('edit')" plain size="sm" />
                                         <!-- Reset password: superadmin only, never on yourself (use your profile). -->
-                                        <button v-if="canManageAccess && user.id !== currentUserId" @click="openReset(user)" class="text-sm text-slate-500 dark:text-slate-400 hover:text-primary-600">{{ t('reset_password') }}</button>
+                                        <IconButton v-if="canManageAccess && user.id !== currentUserId" icon="key" :label="t('reset_password')" plain size="sm" @click="openReset(user)" />
                                         <!-- Disable / enable sign-in. -->
-                                        <button v-if="user.id !== currentUserId" @click="toggleActive(user.id)"
-                                            :class="user.is_active ? 'text-amber-600 hover:text-amber-800' : 'text-emerald-600 hover:text-emerald-800'"
-                                            class="text-sm">{{ user.is_active ? t('disable') : t('enable') }}</button>
+                                        <IconButton v-if="user.id !== currentUserId"
+                                            :icon="user.is_active ? 'xcircle' : 'check'" :label="user.is_active ? t('disable') : t('enable')"
+                                            :variant="user.is_active ? 'neutral' : 'success'" plain size="sm" @click="toggleActive(user.id)" />
                                         <!-- Delete: the backend refuses the last superadmin and self. -->
-                                        <button v-if="user.id !== currentUserId" @click="deleteId = user.id" class="text-sm text-rose-500 hover:text-rose-700">{{ t('delete') }}</button>
+                                        <IconButton v-if="user.id !== currentUserId" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteId = user.id" />
                                     </div>
                                 </td>
                             </tr>

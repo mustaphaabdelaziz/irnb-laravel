@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import StatCard from '@/Components/StatCard.vue';
 import Icon from '@/Components/Icon.vue';
+import IconButton from '@/Components/IconButton.vue';
 
 const props = defineProps({
     sessions: { type: Array, default: () => [] },
@@ -53,7 +54,7 @@ const lastDate = props.sessions[0]?.session_date;
             </div>
 
             <div class="flex justify-end">
-                <button @click="showForm = !showForm" class="inline-flex items-center gap-1.5 rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><Icon name="plus" /> {{ t('start_inventory') }}</button>
+                <IconButton icon="plus" :label="t('start_inventory')" variant="primary" @click="showForm = !showForm" />
             </div>
 
             <form v-if="showForm" @submit.prevent="start" class="card flex flex-wrap items-end gap-3 p-5">
@@ -96,7 +97,7 @@ const lastDate = props.sessions[0]?.session_date;
                             <span v-if="s.total_missing" class="font-bold text-rose-500">{{ s.total_missing }} {{ t('missing') }}</span>
                         </template>
                         <span class="inline-flex rounded-full px-2.5 py-0.5 font-bold" :class="statusChip[s.status]">{{ t(s.status) }}</span>
-                        <button @click="remove(s)" class="text-slate-300 hover:text-rose-500"><Icon name="xcircle" /></button>
+                        <IconButton icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="remove(s)" />
                     </div>
                 </div>
                 <p v-if="!sessions.length" class="py-10 text-center text-sm text-slate-400">{{ t('no_sessions') }}</p>

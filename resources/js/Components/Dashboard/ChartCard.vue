@@ -1,8 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import Icon from '@/Components/Icon.vue';
-import { Button } from '@/Components/ui/button';
+import IconButton from '@/Components/IconButton.vue';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
 
 /**
@@ -36,17 +35,15 @@ const showTable = ref(false);
             </div>
             <div class="flex shrink-0 items-center gap-1">
                 <slot name="actions" />
-                <Button
+                <IconButton
                     v-if="hasTable && !empty"
+                    :icon="showTable ? 'dashboard' : 'clipboard'"
+                    :label="t('dashboard.toggle_table')"
                     variant="ghost"
                     size="sm"
-                    class="text-muted-foreground"
-                    :aria-pressed="showTable"
+                    :pressed="showTable"
                     @click="showTable = !showTable"
-                >
-                    <Icon :name="showTable ? 'dashboard' : 'clipboard'" />
-                    <span class="sr-only">{{ t('dashboard.toggle_table') }}</span>
-                </Button>
+                />
             </div>
         </CardHeader>
 

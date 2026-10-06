@@ -6,6 +6,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PeriodFilter from '@/Components/Activity/PeriodFilter.vue';
 import ExportMenu from '@/Components/ExportMenu.vue';
 import Icon from '@/Components/Icon.vue';
+import IconButton from '@/Components/IconButton.vue';
 import { useCan } from '@/Composables/useCan';
 import { pct, periodQuery } from '@/lib/attendanceStats';
 
@@ -43,8 +44,6 @@ const rules = computed(() => [
 
 const input = 'h-9 rounded-lg border-slate-300 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-900';
 const card = 'rounded-xl bg-white ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800';
-const linkButton = 'rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800';
-const rowAction = 'inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-800';
 const th = 'p-2 font-semibold';
 </script>
 
@@ -55,10 +54,8 @@ const th = 'p-2 font-semibold';
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <h1 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('att.risk.title') }}</h1>
                 <div class="flex items-center gap-2 print:hidden">
-                    <Link :href="route('attendance.stats')" :class="linkButton">{{ t('att.statistics') }}</Link>
-                    <ExportMenu :href="exportHref" :label="t('export')" :formats="['xlsx', 'csv']">
-                        <template #icon><Icon name="download" /></template>
-                    </ExportMenu>
+                    <IconButton :href="route('attendance.stats')" icon="dashboard" :label="t('att.statistics')" />
+                    <ExportMenu :href="exportHref" :label="t('export')" :formats="['xlsx', 'csv']" />
                 </div>
             </div>
         </template>
@@ -114,8 +111,8 @@ const th = 'p-2 font-semibold';
                             </td>
                             <td class="whitespace-nowrap p-2 text-end">
                                 <span class="inline-flex gap-1">
-                                    <a :href="letterHref(row)" target="_blank" :class="rowAction"><Icon name="mail" />{{ t('att.letter.print') }}</a>
-                                    <Link v-if="can('players', 'view')" :href="route('players.show', row.player_id)" :class="rowAction"><Icon name="user" />{{ t('att.risk.open_profile') }}</Link>
+                                    <IconButton :href="letterHref(row)" external target="_blank" icon="mail" :label="t('att.letter.print')" plain size="sm" />
+                                    <IconButton v-if="can('players', 'view')" :href="route('players.show', row.player_id)" icon="user" :label="t('att.risk.open_profile')" variant="primary" plain size="sm" />
                                 </span>
                             </td>
                         </tr>

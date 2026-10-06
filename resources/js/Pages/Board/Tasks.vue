@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Icon from '@/Components/Icon.vue';
 import ExportMenu from '@/Components/ExportMenu.vue';
+import IconButton from '@/Components/IconButton.vue';
 import StatDoughnut from '@/Components/StatDoughnut.vue';
 import '@/lib/registerCharts';
 import { Bar } from 'vue-chartjs';
@@ -213,8 +214,8 @@ function onDrop(col) {
                 <button @click="view = 'timeline'" class="rounded-lg px-3 py-1.5 text-xs font-bold transition-colors" :class="view === 'timeline' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">{{ t('timeline') }}</button>
                 <button @click="view = 'stats'" class="rounded-lg px-3 py-1.5 text-xs font-bold transition-colors" :class="view === 'stats' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">{{ t('statistics') }}</button>
             </div>
-            <ExportMenu :href="route('board.tasks.export')" :label="t('export')"><template #icon><Icon name="download" /></template></ExportMenu>
-            <button @click="openCreate" class="inline-flex items-center gap-1.5 rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><Icon name="plus" /> {{ t('add_task') }}</button>
+            <ExportMenu :href="route('board.tasks.export')" :label="t('export')" />
+            <IconButton icon="plus" :label="t('add_task')" variant="primary" @click="openCreate" />
         </div>
 
         <div v-if="view === 'board'" class="grid gap-4 lg:grid-cols-4">

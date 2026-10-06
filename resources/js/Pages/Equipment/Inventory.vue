@@ -2,6 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import StatCard from '@/Components/StatCard.vue';
 import Icon from '@/Components/Icon.vue';
+import IconButton from '@/Components/IconButton.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -38,9 +39,7 @@ const hasBranchValues = computed(
                     </Link>
                     <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('inventory_report') }}</h1>
                 </div>
-                <button onclick="window.print()" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm transition hover:border-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-[0.98] print:hidden">
-                    <Icon name="print" class="text-base" /> {{ t('print') }}
-                </button>
+                <IconButton icon="print" :label="t('print')" onclick="window.print()" class="print:hidden" />
             </div>
         </template>
 

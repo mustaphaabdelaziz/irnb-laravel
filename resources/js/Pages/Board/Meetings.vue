@@ -4,6 +4,7 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Icon from '@/Components/Icon.vue';
+import IconButton from '@/Components/IconButton.vue';
 
 const props = defineProps({
     meetings: { type: Array, default: () => [] },
@@ -59,7 +60,7 @@ const filterOptions = ['', 'scheduled', 'held', 'cancelled'];
                         {{ s ? t(s) : t('all') }}
                     </button>
                 </div>
-                <button @click="showForm = !showForm" class="inline-flex items-center gap-1.5 rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"><Icon name="plus" /> {{ t('add_meeting') }}</button>
+                <IconButton icon="plus" :label="t('add_meeting')" variant="primary" @click="showForm = !showForm" />
             </div>
 
             <form v-if="showForm" @submit.prevent="submit" class="card space-y-4 p-5">

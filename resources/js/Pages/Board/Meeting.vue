@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import Icon from '@/Components/Icon.vue';
+import IconButton from '@/Components/IconButton.vue';
 import { useCan } from '@/Composables/useCan';
 
 const props = defineProps({
@@ -115,8 +116,8 @@ const attStyle = {
                 <Link :href="route('board.meetings')" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"><Icon name="back" /></Link>
                 <h1 class="truncate text-lg font-bold text-slate-900 dark:text-slate-100" :class="isCancelled ? 'line-through decoration-slate-400' : ''">{{ meeting.title }}</h1>
                 <div class="ms-auto flex items-center gap-2">
-                    <button v-if="canCancel" type="button" @click="openCancel" class="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-sm font-semibold text-rose-600 ring-1 ring-rose-200 hover:bg-rose-50 dark:bg-slate-900 dark:text-rose-300 dark:ring-rose-500/30"><Icon name="xcircle" /> {{ t('cancel_meeting') }}</button>
-                    <a :href="route('board.meetings.minutes', meeting.id)" target="_blank" class="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800"><Icon name="print" /> {{ t('minutes') }}</a>
+                    <IconButton v-if="canCancel" icon="xcircle" :label="t('cancel_meeting')" variant="danger" @click="openCancel" />
+                    <IconButton :href="route('board.meetings.minutes', meeting.id)" external target="_blank" icon="print" :label="t('minutes')" />
                 </div>
             </div>
         </template>
@@ -179,13 +180,12 @@ const attStyle = {
                         <div v-if="meeting.attachment_url" class="mb-2 flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/50">
                             <Icon name="document" class="text-primary-500" />
                             <a :href="meeting.attachment_url" target="_blank" class="min-w-0 flex-1 truncate text-sm font-medium text-primary-600 hover:underline dark:text-primary-300">{{ attachmentName || t('view_file') }}</a>
-                            <button type="button" @click="confirmRemoveAttachment = true" class="text-slate-300 hover:text-rose-500" :title="t('remove')"><Icon name="xcircle" /></button>
+                            <IconButton icon="trash" :label="t('remove')" variant="danger" plain size="sm" @click="confirmRemoveAttachment = true" />
                         </div>
                         <div v-if="!isCancelled" class="flex flex-wrap items-center gap-2">
                             <input type="file" accept=".pdf,.doc,.docx,image/*" @change="fileForm.attachment = $event.target.files[0]"
                                 class="block w-full max-w-xs text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-primary-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-700 hover:file:bg-primary-100 dark:text-slate-400 dark:file:bg-primary-500/10 dark:file:text-primary-300" />
-                            <button type="button" @click="uploadAttachment" :disabled="!fileForm.attachment || fileForm.processing"
-                                class="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-40 dark:bg-slate-100 dark:text-slate-900"><Icon name="upload" /> {{ t('upload') }}</button>
+                            <IconButton icon="upload" :label="t('upload')" :disabled="!fileForm.attachment || fileForm.processing" @click="uploadAttachment" />
                         </div>
                         <p v-if="fileForm.errors.attachment" class="mt-1 text-xs text-rose-500">{{ fileForm.errors.attachment }}</p>
                     </div>
@@ -215,7 +215,7 @@ const attStyle = {
                                 <span class="text-xs text-slate-400">{{ tk.member?.name || t('unassigned') }} · {{ t(tk.status) }}</span>
                             </span>
                             <span class="text-xs font-bold text-slate-500">{{ tk.progress }}%</span>
-                            <button v-if="!isCancelled" @click="deleteTaskId = tk.id" class="text-slate-300 hover:text-rose-500"><Icon name="xcircle" /></button>
+                            <IconButton v-if="!isCancelled" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteTaskId = tk.id" />
                         </li>
                     </ul>
                     <form v-if="!isCancelled" @submit.prevent="addTask" class="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
@@ -225,7 +225,7 @@ const attStyle = {
                             <option v-for="m in allMembers" :key="m.id" :value="m.id">{{ m.name }}</option>
                         </select>
                         <input v-model="taskForm.due_date" type="date" class="rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
-                        <button class="rounded-xl bg-primary-600 px-3 py-2 text-sm font-bold text-white hover:bg-primary-700"><Icon name="plus" /></button>
+                        <IconButton type="submit" icon="plus" :label="t('add_task')" variant="primary" />
                     </form>
                 </section>
             </fieldset>

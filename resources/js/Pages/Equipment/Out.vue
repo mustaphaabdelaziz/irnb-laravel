@@ -2,6 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Badge from '@/Components/Badge.vue';
 import Icon from '@/Components/Icon.vue';
+import IconButton from '@/Components/IconButton.vue';
 import Pagination from '@/Components/Pagination.vue';
 import RentalTypeBadge from '@/Components/RentalTypeBadge.vue';
 import ReturnRentalModal from '@/Components/ReturnRentalModal.vue';
@@ -94,7 +95,7 @@ const returning = ref(null);
                                     <Badge v-if="r.is_overdue" :label="t('overdue')" color="rose" class="ms-2" />
                                 </td>
                                 <td class="px-4 py-3 text-end">
-                                    <button v-if="can('equipment', 'edit')" type="button" @click="returning = r" class="text-sm font-medium text-emerald-600 hover:text-emerald-800">{{ t('return') }}</button>
+                                    <IconButton v-if="can('equipment', 'edit')" icon="back" :label="t('return')" variant="success" plain size="sm" @click="returning = r" />
                                 </td>
                             </tr>
                             <tr v-if="!rentals.data?.length">

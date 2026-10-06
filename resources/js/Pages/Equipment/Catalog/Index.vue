@@ -6,6 +6,7 @@ import Badge from '@/Components/Badge.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import Pagination from '@/Components/Pagination.vue';
 import ExportMenu from '@/Components/ExportMenu.vue';
+import IconButton from '@/Components/IconButton.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
@@ -87,17 +88,10 @@ function submitImport() {
             <div class="flex items-center justify-between">
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('equipments') }}</h1>
                 <div class="flex flex-wrap gap-2">
-                    <Link :href="route('equipment.catalogs.create')" class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 transition-colors">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                        {{ t('add_equipment') }}
-                    </Link>
-                    <button @click="showImport = true" class="inline-flex items-center rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                        {{ t('import') }}
-                    </button>
+                    <IconButton :href="route('equipment.catalogs.create')" icon="plus" :label="t('add_equipment')" variant="primary" />
+                    <IconButton icon="upload" :label="t('import')" @click="showImport = true" />
                     <ExportMenu :href="route('equipment.catalogs.export')" :label="t('export')" />
-                    <Link :href="route('equipment.inventory')" class="inline-flex items-center rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                        {{ t('inventory_report') }}
-                    </Link>
+                    <IconButton :href="route('equipment.inventory')" icon="clipboard" :label="t('inventory_report')" />
                 </div>
             </div>
         </template>
@@ -117,13 +111,7 @@ function submitImport() {
                 <span class="text-sm font-medium text-primary-800 dark:text-primary-200">
                     {{ t('selected_count', { count: selected.length }) }}
                 </span>
-                <button
-                    type="button"
-                    class="rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-rose-700 ring-1 ring-rose-300 transition-colors hover:bg-rose-50 dark:bg-slate-900 dark:text-rose-300 dark:ring-rose-800 dark:hover:bg-rose-900/30"
-                    @click="bulkDeletePending = true"
-                >
-                    {{ t('delete_selected') }}
-                </button>
+                <IconButton icon="trash" :label="t('delete_selected')" variant="danger" @click="bulkDeletePending = true" />
             </div>
 
             <!-- Catalog table -->
@@ -180,10 +168,10 @@ function submitImport() {
                                     </span>
                                 </td>
                                 <td class="px-4 py-3 text-end">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <Link :href="route('equipment.catalogs.show', cat.id)" class="text-sm text-primary-600 hover:text-primary-800">{{ t('details') }}</Link>
-                                        <Link :href="route('equipment.catalogs.edit', cat.id)" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">{{ t('edit') }}</Link>
-                                        <button @click="deleteId = cat.id" class="text-sm text-rose-500 hover:text-rose-700">{{ t('delete') }}</button>
+                                    <div class="flex items-center justify-end gap-1">
+                                        <IconButton :href="route('equipment.catalogs.show', cat.id)" icon="eye" :label="t('details')" variant="primary" plain size="sm" />
+                                        <IconButton :href="route('equipment.catalogs.edit', cat.id)" icon="pencil" :label="t('edit')" plain size="sm" />
+                                        <IconButton icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteId = cat.id" />
                                     </div>
                                 </td>
                             </tr>

@@ -4,6 +4,7 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Icon from '@/Components/Icon.vue';
+import IconButton from '@/Components/IconButton.vue';
 import InputError from '@/Components/InputError.vue';
 import Pagination from '@/Components/Pagination.vue';
 import { useCan } from '@/Composables/useCan';
@@ -142,9 +143,7 @@ function saveTransfer() {
                         <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('cash_registers_subtitle') }}</p>
                     </div>
                 </div>
-                <Link :href="route('transactions.create')" class="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700">
-                    <Icon name="plus" /> {{ t('add_transaction') }}
-                </Link>
+                <IconButton :href="route('transactions.create')" icon="plus" :label="t('add_transaction')" variant="primary" />
             </div>
         </template>
 
@@ -180,7 +179,7 @@ function saveTransfer() {
                         <p class="text-2xl font-extrabold" :class="Number(openingFund.current_balance) >= 0 ? 'text-slate-900 dark:text-white' : 'text-rose-600'">
                             {{ formatMoney(openingFund.current_balance) }}
                         </p>
-                        <button v-if="can('finance', 'edit')" type="button" class="mt-1 text-xs font-semibold text-primary-600 hover:text-primary-700" @click="editRegister(openingFund)">{{ t('adjust_opening_fund') }}</button>
+                        <IconButton v-if="can('finance', 'edit')" icon="pencil" :label="t('adjust_opening_fund')" variant="primary" plain size="sm" class="mt-1" @click="editRegister(openingFund)" />
                     </div>
                 </div>
                 <div class="bg-white px-5 py-3 dark:bg-slate-900">
@@ -214,7 +213,7 @@ function saveTransfer() {
                                 <p class="text-2xl font-extrabold" :class="Number(group.treasury.current_balance) >= 0 ? 'text-slate-900 dark:text-white' : 'text-rose-600'">
                                     {{ formatMoney(group.treasury.current_balance) }}
                                 </p>
-                                <button v-if="can('finance', 'edit')" type="button" class="mt-1 text-xs font-semibold text-primary-600 hover:text-primary-700" @click="editRegister(group.treasury)">{{ t('edit_treasury') }}</button>
+                                <IconButton v-if="can('finance', 'edit')" icon="pencil" :label="t('edit_treasury')" variant="primary" plain size="sm" class="mt-1" @click="editRegister(group.treasury)" />
                             </div>
                         </div>
 
@@ -234,7 +233,7 @@ function saveTransfer() {
                                 <p class="mt-4 text-xl font-extrabold" :class="Number(register.current_balance) >= 0 ? 'text-slate-900 dark:text-white' : 'text-rose-600'">{{ formatMoney(register.current_balance) }}</p>
                                 <div class="mt-2 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                                     <span>{{ register.transactions_count }} {{ t('transactions').toLowerCase() }}</span>
-                                    <button v-if="can('finance', 'edit')" type="button" class="font-semibold text-primary-600 hover:text-primary-700" @click="editRegister(register)">{{ t('edit') }}</button>
+                                    <IconButton v-if="can('finance', 'edit')" icon="pencil" :label="t('edit')" plain size="sm" @click="editRegister(register)" />
                                 </div>
                             </div>
                         </div>

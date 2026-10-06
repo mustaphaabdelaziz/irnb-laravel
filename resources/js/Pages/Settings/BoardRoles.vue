@@ -4,6 +4,7 @@ import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
+import IconButton from '@/Components/IconButton.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref } from 'vue';
@@ -90,9 +91,8 @@ function destroy() {
                                     <button @click="editingId = null" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400">{{ t('cancel') }}</button>
                                 </div>
                                 <div v-else class="flex justify-end gap-2">
-                                    <button @click="startEdit(r)" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400">{{ t('edit') }}</button>
-                                    <button @click="deleteId = r.id" :disabled="r.members_count > 0" :title="r.members_count > 0 ? t('role_in_use') : ''"
-                                        class="text-sm text-rose-500 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-30">{{ t('delete') }}</button>
+                                    <IconButton icon="pencil" :label="t('edit')" plain size="sm" @click="startEdit(r)" />
+                                    <IconButton icon="trash" :label="r.members_count > 0 ? t('role_in_use') : t('delete')" variant="danger" plain size="sm" :disabled="r.members_count > 0" @click="deleteId = r.id" />
                                 </div>
                             </td>
                         </tr>

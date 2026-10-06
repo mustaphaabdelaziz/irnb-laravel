@@ -1800,7 +1800,7 @@
     "user_role_ignored": "Un super administrateur a toujours l'accès complet ; le rôle est sans effet.",
     "user_save_failed": "Les modifications n'ont pas été enregistrées :",
     "username": "Nom d'utilisateur",
-    "username_hint": "Sert à se connecter. Lettres, chiffres et . _ - @ + uniquement, sans espaces. Majuscules indifférentes.",
+    "username_hint": "Sert à se connecter. Lettres, chiffres et . _ - {'@'} + uniquement, sans espaces. Majuscules indifférentes.",
     "users": "Utilisateurs",
     "validation.branch_required": "Veuillez choisir au moins une section.",
     "validation.check_required": "Veuillez cocher cette case.",

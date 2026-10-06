@@ -6,6 +6,7 @@ use App\Models\ActivityLog;
 use App\Models\Player;
 use App\Models\Transaction;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
@@ -165,6 +166,7 @@ final class ActivityReport
             ->whereBetween('occurred_at', [$period->start, $period->end])
             ->orderByDesc('occurred_at')
             ->orderByDesc('id')
+            ->with('impersonator:id,name')
             ->paginate($perPage, ['*'], 'page', $page);
 
         ActivitySubjectLink::preload($paginator->getCollection());
@@ -174,7 +176,74 @@ final class ActivityReport
             'occurred_at' => $log->occurred_at->toIso8601String(),
             'properties' => $log->properties ?? [],
             'subject' => ActivitySubjectLink::for($log, $viewer),
+            // Done by an admin while logged in as this user.
+            'impersonator' => $log->impersonator?->name,
         ]);
+    }
+
+    /** Beyond this many days the timeline counts per week instead of per day. */
+    private const DAILY_LIMIT = 92;
+
+    /**
+     * Chart data for the period, for everyone or one user: events over time
+     * per area, the share of each area, and the most frequent actions. One
+     * GROUP BY query (day × action) feeds all three.
+     *
+     * @return array{unit: 'day'|'week', buckets: list<string>, timeline: array<string, list<int>>, areas: array<string, int>, actions: list<array{action: string, area: string, count: int}>}
+     */
+    public static function charts(ActivityPeriod $period, ?int $userId = null): array
+    {
+        $rows = self::inPeriod($period)
+            ->when($userId !== null, fn (QueryBuilder $q) => $q->where('user_id', $userId))
+            ->selectRaw('DATE(occurred_at) as day, action, COUNT(*) as aggregate')
+            ->groupByRaw('DATE(occurred_at), action')
+            ->get();
+
+        $weekly = $period->start->diffInDays($period->end) > self::DAILY_LIMIT;
+        $bucketOf = fn ($date) => $weekly
+            ? $date->startOfWeek()->toDateString()
+            : $date->toDateString();
+
+        // Every bucket of the period, so quiet days show as zero, not as gaps.
+        $buckets = [];
+        for ($d = $period->start->startOfDay(); $d->lte($period->end); $d = $d->addDay()) {
+            $buckets[$bucketOf($d)] = true;
+        }
+        $buckets = array_keys($buckets);
+        $position = array_flip($buckets);
+
+        $areaOf = self::areaIndex();
+        $timeline = array_fill_keys(array_keys(ActivityAction::AREAS), array_fill(0, count($buckets), 0));
+        $areas = array_fill_keys(array_keys(ActivityAction::AREAS), 0);
+        $actions = [];
+
+        foreach ($rows as $row) {
+            $area = $areaOf[$row->action] ?? null;
+            if ($area === null) {
+                continue;
+            }
+            $n = (int) $row->aggregate;
+            $bucket = $bucketOf(CarbonImmutable::parse($row->day));
+            if (isset($position[$bucket])) {
+                $timeline[$area][$position[$bucket]] += $n;
+            }
+            $areas[$area] += $n;
+            $actions[$row->action] = ($actions[$row->action] ?? 0) + $n;
+        }
+
+        arsort($actions);
+        $top = [];
+        foreach (array_slice($actions, 0, 10, true) as $action => $count) {
+            $top[] = ['action' => $action, 'area' => $areaOf[$action], 'count' => $count];
+        }
+
+        return [
+            'unit' => $weekly ? 'week' : 'day',
+            'buckets' => $buckets,
+            'timeline' => $timeline,
+            'areas' => $areas,
+            'actions' => $top,
+        ];
     }
 
     /**

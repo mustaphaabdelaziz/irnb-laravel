@@ -9,7 +9,8 @@ use Tests\TestCase;
 
 /**
  * Guards the "explicit recording" rule: every action code is recorded by some
- * controller or service, and none is recorded from a model observer.
+ * controller or service, or by a route in config/activity.php, and none is
+ * recorded from a model observer.
  */
 class ActivityCoverageTest extends TestCase
 {
@@ -36,7 +37,8 @@ class ActivityCoverageTest extends TestCase
             fn (string $path) => ! str_starts_with($path, $activityDir),
             ARRAY_FILTER_USE_KEY,
         );
-        $code = implode("\n", $sources);
+        // Edits, deletions and settings changes are recorded from the route map.
+        $code = implode("\n", $sources)."\n".file_get_contents(config_path('activity.php'));
 
         $constants = (new ReflectionClass(ActivityAction::class))->getConstants();
         foreach ($constants as $name => $value) {

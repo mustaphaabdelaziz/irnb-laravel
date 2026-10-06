@@ -140,7 +140,7 @@ class ActivityReportTest extends TestCase
         $rows = $this->byUser($rows);
         $this->assertSame(['id' => $many->id, 'name' => 'Karim'], $rows[$many->id]['user']);
         $this->assertSame(['count' => 3, 'amount' => 1850.5], $rows[$many->id]['payments']);
-        $this->assertSame(['players' => 0, 'money' => 4, 'equipment' => 0, 'board' => 0, 'documents' => 0, 'attendance' => 0], $rows[$many->id]['areas']);
+        $this->assertSame(['players' => 0, 'money' => 4, 'equipment' => 0, 'board' => 0, 'documents' => 0, 'attendance' => 0, 'access' => 0, 'settings' => 0], $rows[$many->id]['areas']);
         $this->assertSame(4, $rows[$many->id]['total']);
 
         $this->assertSame(['count' => 1, 'amount' => 1000.0], $rows[$few->id]['payments']);
@@ -152,7 +152,7 @@ class ActivityReportTest extends TestCase
 
         $this->assertSame(['count' => 0, 'amount' => 0.0], $rows[$idle->id]['payments']);
         $this->assertSame(0, $rows[$idle->id]['total']);
-        $this->assertSame(['players' => 0, 'money' => 0, 'equipment' => 0, 'board' => 0, 'documents' => 0, 'attendance' => 0], $rows[$idle->id]['areas']);
+        $this->assertSame(['players' => 0, 'money' => 0, 'equipment' => 0, 'board' => 0, 'documents' => 0, 'attendance' => 0, 'access' => 0, 'settings' => 0], $rows[$idle->id]['areas']);
     }
 
     #[Test]

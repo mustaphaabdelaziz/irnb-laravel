@@ -97,6 +97,13 @@ class AttendancePermissionTest extends TestCase
             ActivityAction::TRAINING_SESSION_CATEGORIES_CHANGED,
             ActivityAction::TRAINING_SESSION_DELETED,
             ActivityAction::TRAINING_SESSION_RESET,
+            ActivityAction::SCHEDULE_CREATED,
+            ActivityAction::SCHEDULE_UPDATED,
+            ActivityAction::SCHEDULE_DELETED,
+            ActivityAction::CLOSURE_ADDED,
+            ActivityAction::CLOSURE_REMOVED,
+            ActivityAction::INJURY_NOTE_SAVED,
+            ActivityAction::INJURY_NOTE_DELETED,
         ], ActivityAction::AREAS['attendance']);
     }
 }

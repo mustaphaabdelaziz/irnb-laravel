@@ -24,9 +24,8 @@ class StoreUserRequest extends FormRequest
         return [
             'username' => Username::rules(),
             'password' => ['required', 'confirmed', Password::defaults()],
-            'name' => ['required', 'string', 'max:255'],
-            'firstname' => ['nullable', 'string', 'max:255'],
-            'lastname' => ['nullable', 'string', 'max:255'],
+            'firstname' => ['required', 'string', 'max:255'],
+            'lastname' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')],
             'phones' => ['nullable', 'array'],
             'phones.*' => ['string', 'max:20'],

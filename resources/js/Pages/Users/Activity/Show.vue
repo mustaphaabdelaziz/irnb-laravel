@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PeriodFilter from '@/Components/Activity/PeriodFilter.vue';
+import ActivityCharts from '@/Components/Activity/ActivityCharts.vue';
 import Pagination from '@/Components/Pagination.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
@@ -15,6 +16,7 @@ const props = defineProps({
     mine: { type: Boolean, default: false },
     period: { type: Object, required: true },
     summary: { type: Array, default: () => [] },
+    charts: { type: Object, default: null },
     areas: { type: Object, default: () => ({}) },
     action: { type: String, default: null },
     area: { type: String, default: null },
@@ -92,6 +94,8 @@ const cardClass = 'rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-
         <div class="space-y-4">
             <PeriodFilter :period="period" :href="baseUrl" :keep="keep" />
 
+            <ActivityCharts v-if="charts" :charts="charts" />
+
             <!-- Summary, one card per area -->
             <div v-if="groups.length" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 <section
@@ -140,6 +144,7 @@ const cardClass = 'rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-
                             <span v-else class="text-slate-700 dark:text-slate-200">{{ entry.subject.label }}</span>
                         </div>
                         <div class="flex flex-wrap items-center gap-1.5">
+                            <span v-if="entry.impersonator" class="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">{{ t('impersonate.done_by', { admin: entry.impersonator }) }}</span>
                             <span v-for="(chip, i) in chips(entry)" :key="i" class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-200">{{ chip }}</span>
                             <span
                                 v-if="entry.properties?.backfilled"

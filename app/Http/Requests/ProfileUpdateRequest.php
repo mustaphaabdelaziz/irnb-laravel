@@ -18,7 +18,8 @@ class ProfileUpdateRequest extends FormRequest
     {
         // Email is an optional contact field; sign-in uses the username.
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'firstname' => ['required', 'string', 'max:255'],
+            'lastname' => ['required', 'string', 'max:255'],
             'email' => [
                 'nullable',
                 'string',

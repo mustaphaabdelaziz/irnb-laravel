@@ -58,7 +58,7 @@ class ActivityRecorderTest extends TestCase
         sort($all);
 
         $this->assertSame($all, $inAreas);
-        $this->assertCount(35, ActivityAction::ALL);
+        $this->assertCount(91, ActivityAction::ALL);
         $this->assertSame(count($inAreas), count(array_unique($inAreas)));
     }
 

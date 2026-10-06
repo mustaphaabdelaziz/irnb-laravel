@@ -60,7 +60,8 @@ class UserManagementTest extends TestCase
 
         $this->actingAs($this->admin())
             ->put(route('users.update', $member), [
-                'name' => 'Updated Name',
+                'firstname' => 'Updated',
+                'lastname' => 'Name',
                 'privileges' => ['user', 'admin'],
                 'approved' => true,
                 'is_active' => true,

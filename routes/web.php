@@ -33,6 +33,7 @@ use App\Http\Controllers\FinanceCategoryController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\FinanceResetController;
 use App\Http\Controllers\FiscalYearController;
+use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\MemberJobController;
@@ -119,6 +120,11 @@ Route::get('/lang/{locale}', [LanguageController::class, 'switch'])->name('lang.
 // Reachable by a logged-in but not-yet-approved member (outside the approval gate).
 Route::middleware('auth')->get('/account/pending', fn () => Inertia::render('Auth/Pending'))
     ->name('account.pending');
+
+// Back to the admin's own account after "log in as" — whatever the viewed
+// user's approval or permissions are.
+Route::middleware('auth')->post('/impersonate/leave', [ImpersonationController::class, 'destroy'])
+    ->name('impersonate.leave');
 
 // Authenticated routes — require an approved, active account.
 // The `permission` middleware enforces per-module (view/add/edit/delete) access
@@ -264,6 +270,8 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
         Route::post('/users/{user}/approve', [UserController::class, 'approve'])->name('users.approve');
         Route::post('/users/{user}/password', [UserController::class, 'resetPassword'])->name('users.password');
         Route::post('/users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggleActive');
+        // Log in as this user (admin/superadmin privilege only, checked in the controller).
+        Route::post('/users/{user}/impersonate', [ImpersonationController::class, 'store'])->name('users.impersonate');
 
         // Settings - lookup tables
         Route::resource('categories', CategoryController::class)->except(['show', 'create', 'edit']);

@@ -25,6 +25,7 @@ class UserActivityController extends Controller
             'period' => $period->toArray(),
             'rows' => ActivityReport::comparison($period),
             'areas' => array_keys(ActivityAction::AREAS),
+            'charts' => ActivityReport::charts($period),
         ]);
     }
 
@@ -45,10 +46,11 @@ class UserActivityController extends Controller
         $action = $this->validCode($request->query('action'), ActivityAction::ALL);
 
         $props = [
-            'user' => ['id' => $user->id, 'name' => $user->name],
+            'user' => ['id' => $user->id, 'name' => $user->fullname],
             'mine' => $mine,
             'period' => $period->toArray(),
             'summary' => ActivityReport::summary($user->id, $period),
+            'charts' => ActivityReport::charts($period, $user->id),
             'areas' => ActivityAction::AREAS,
             'action' => $action,
             'area' => $this->validCode($request->query('area'), array_keys(ActivityAction::AREAS)),

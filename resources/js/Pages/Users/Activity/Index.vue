@@ -1,6 +1,8 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PeriodFilter from '@/Components/Activity/PeriodFilter.vue';
+import ActivityCharts from '@/Components/Activity/ActivityCharts.vue';
+import { computed } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
@@ -12,7 +14,11 @@ const props = defineProps({
     period: { type: Object, required: true },
     rows: { type: Array, default: () => [] },
     areas: { type: Array, default: () => [] },
+    charts: { type: Object, default: null },
 });
+
+// Most active users first, for the chart.
+const ranked = computed(() => [...props.rows].map((r) => ({ name: r.user.name, total: r.total })).sort((a, b) => b.total - a.total));
 
 // The period as query params: presets need only their name, a custom range its dates.
 function periodQuery() {
@@ -36,12 +42,14 @@ const cellLink = 'rounded px-1 tabular-nums hover:bg-primary-50 hover:text-prima
         <template #header>
             <div class="flex items-center justify-between gap-3">
                 <h1 class="truncate text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('activity.title') }}</h1>
-                <Link :href="route('users.index')" class="shrink-0 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">{{ t('members') }}</Link>
+                <Link :href="route('users.index')" class="shrink-0 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">{{ t('users') }}</Link>
             </div>
         </template>
 
         <div class="space-y-4">
             <PeriodFilter :period="period" :href="route('users.activity.index')" />
+
+            <ActivityCharts v-if="charts" :charts="charts" :users="ranked" />
 
             <div class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
                 <div class="overflow-x-auto">

@@ -28,7 +28,8 @@ class ProfileTest extends TestCase
         $response = $this
             ->actingAs($user)
             ->patch('/profile', [
-                'name' => 'Test User',
+                'firstname' => 'Test',
+                'lastname' => 'User',
                 'email' => 'test@example.com',
             ]);
 
@@ -47,7 +48,7 @@ class ProfileTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($user)
-            ->patch('/profile', ['name' => 'Test User', 'email' => ''])
+            ->patch('/profile', ['firstname' => 'Test', 'lastname' => 'User', 'email' => ''])
             ->assertSessionHasNoErrors()
             ->assertRedirect('/profile');
 

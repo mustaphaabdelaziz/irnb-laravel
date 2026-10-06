@@ -149,13 +149,15 @@ class ActivityPlayerEventsTest extends TestCase
     }
 
     #[Test]
-    public function restoring_a_player_records_nothing(): void
+    public function restoring_players_records_one_event_with_the_count(): void
     {
         $player = $this->makePlayer(archived: true);
 
         $this->actingAs($this->admin())->post(route('players.bulkRestore'), ['ids' => [$player->id]])->assertRedirect();
 
-        $this->assertSame(0, ActivityLog::query()->count());
+        $log = ActivityLog::query()->sole();
+        $this->assertSame(ActivityAction::PLAYER_RESTORED, $log->action);
+        $this->assertSame(['count' => 1], $log->properties);
     }
 
     #[Test]
@@ -222,12 +224,15 @@ class ActivityPlayerEventsTest extends TestCase
         $this->assertSame($record->getMorphClass(), $events[0]->subject_type);
         $this->assertSame($record->id, (int) $events[0]->subject_id);
 
-        // Editing a grade records nothing more.
+        // Editing a grade records an edit, on the grade itself.
         $this->actingAs($admin)->put(route('players.academic-records.update', [$player, $record]), [
             'academic_year' => 2025,
             'period' => 'T1',
             'gpa' => 14,
         ]);
-        $this->assertSame(1, ActivityLog::query()->count());
+        $this->assertCount(1, $this->events(ActivityAction::ACADEMIC_RECORD_ADDED));
+        $edits = $this->events(ActivityAction::ACADEMIC_RECORD_UPDATED);
+        $this->assertCount(1, $edits);
+        $this->assertSame($record->id, (int) $edits[0]->subject_id);
     }
 }

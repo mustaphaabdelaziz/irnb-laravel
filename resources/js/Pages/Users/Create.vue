@@ -7,6 +7,8 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { Head, useForm, Link, usePage } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
+import { computed } from 'vue';
+import SearchableSelect from '@/Components/SearchableSelect.vue';
 
 const { t } = useI18n();
 
@@ -21,7 +23,6 @@ const form = useForm({
     username: '',
     password: '',
     password_confirmation: '',
-    name: '',
     firstname: '',
     lastname: '',
     email: '',
@@ -31,9 +32,12 @@ const form = useForm({
     preferred_lng: 'ar',
 });
 
-function roleLabel(role) {
-    return role.name?.[lng] || role.name?.en || role.key;
-}
+// Searchable by its name in every language and its key.
+const roleOptions = computed(() => props.roles.map((r) => ({
+    value: r.id,
+    label: r.name?.[lng] || r.name?.en || r.key,
+    keywords: [r.key, ...Object.values(r.name ?? {})].join(' '),
+})));
 
 function submit() {
     form.transform((data) => {
@@ -64,18 +68,18 @@ function submit() {
                 <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('sign_in_details') }}</h2>
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div class="sm:col-span-2">
-                        <InputLabel for="username" :value="t('username')" />
+                        <InputLabel for="username" :value="t('username')" required />
                         <TextInput id="username" v-model="form.username" class="mt-1 w-full" required autofocus autocomplete="off" autocapitalize="none" spellcheck="false" />
                         <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('username_hint') }}</p>
                         <InputError :message="form.errors.username" class="mt-1" />
                     </div>
                     <div>
-                        <InputLabel for="password" :value="t('password')" />
+                        <InputLabel for="password" :value="t('password')" required />
                         <TextInput id="password" v-model="form.password" type="password" class="mt-1 w-full" required autocomplete="new-password" />
                         <InputError :message="form.errors.password" class="mt-1" />
                     </div>
                     <div>
-                        <InputLabel for="password_confirmation" :value="t('confirm_password')" />
+                        <InputLabel for="password_confirmation" :value="t('confirm_password')" required />
                         <TextInput id="password_confirmation" v-model="form.password_confirmation" type="password" class="mt-1 w-full" required autocomplete="new-password" />
                     </div>
                 </div>
@@ -86,22 +90,19 @@ function submit() {
                 <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('basic_info') }}</h2>
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
-                        <InputLabel for="name" :value="t('name')" />
-                        <TextInput id="name" v-model="form.name" class="mt-1 w-full" required />
-                        <InputError :message="form.errors.name" class="mt-1" />
+                        <InputLabel for="firstname" :value="t('firstname')" required />
+                        <TextInput id="firstname" v-model="form.firstname" class="mt-1 w-full" required />
+                        <InputError :message="form.errors.firstname" class="mt-1" />
+                    </div>
+                    <div>
+                        <InputLabel for="lastname" :value="t('lastname')" required />
+                        <TextInput id="lastname" v-model="form.lastname" class="mt-1 w-full" required />
+                        <InputError :message="form.errors.lastname" class="mt-1" />
                     </div>
                     <div>
                         <InputLabel for="email" :value="t('email')" />
                         <TextInput id="email" v-model="form.email" type="email" class="mt-1 w-full" />
                         <InputError :message="form.errors.email" class="mt-1" />
-                    </div>
-                    <div>
-                        <InputLabel :value="t('firstname')" />
-                        <TextInput v-model="form.firstname" class="mt-1 w-full" />
-                    </div>
-                    <div>
-                        <InputLabel :value="t('lastname')" />
-                        <TextInput v-model="form.lastname" class="mt-1 w-full" />
                     </div>
                     <div>
                         <InputLabel :value="t('phone')" />
@@ -124,10 +125,7 @@ function submit() {
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div v-if="canManageAccess">
                         <InputLabel :value="t('role')" />
-                        <select v-model="form.role_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                            <option :value="null">{{ t('no_role') }}</option>
-                            <option v-for="r in props.roles" :key="r.id" :value="r.id">{{ roleLabel(r) }}</option>
-                        </select>
+                        <SearchableSelect v-model="form.role_id" :options="roleOptions" :placeholder="t('no_role')" class="mt-1" />
                         <InputError :message="form.errors.role_id" class="mt-1" />
                     </div>
                     <div>

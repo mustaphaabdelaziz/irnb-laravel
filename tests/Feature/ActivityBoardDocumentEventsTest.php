@@ -231,7 +231,7 @@ class ActivityBoardDocumentEventsTest extends TestCase
     }
 
     #[Test]
-    public function editing_or_deleting_an_open_task_records_nothing(): void
+    public function editing_or_deleting_an_open_task_records_an_edit_and_a_deletion_not_a_completion(): void
     {
         $admin = $this->admin();
         $this->actingAs($admin)->post(route('board.tasks.store'), $this->taskPayload());
@@ -240,7 +240,10 @@ class ActivityBoardDocumentEventsTest extends TestCase
         $this->actingAs($admin)->put(route('board.tasks.update', $task), $this->taskPayload(['status' => 'in_progress', 'progress' => 40]));
         $this->actingAs($admin)->delete(route('board.tasks.destroy', $task));
 
-        $this->assertSame([ActivityAction::TASK_CREATED], ActivityLog::query()->pluck('action')->all());
+        $this->assertSame(
+            [ActivityAction::TASK_CREATED, ActivityAction::TASK_UPDATED, ActivityAction::TASK_DELETED],
+            ActivityLog::query()->orderBy('id')->pluck('action')->all(),
+        );
     }
 
     // ── Documents ────────────────────────────────────────────────────

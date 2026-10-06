@@ -25,7 +25,8 @@ class UserRoleAssignmentTest extends TestCase
 
         $this->actingAs($this->superadmin())
             ->put(route('users.update', $member), [
-                'name' => $member->name,
+                'firstname' => 'Ali',
+                'lastname' => 'Bensaid',
                 'role_id' => $role->id,
                 'permission_overrides' => ['grant' => ['finance' => ['view']]],
             ])->assertRedirect(route('users.index'));
@@ -45,12 +46,13 @@ class UserRoleAssignmentTest extends TestCase
 
         $this->actingAs($admin)
             ->put(route('users.update', $member), [
-                'name' => 'Renamed',
+                'firstname' => 'Re',
+                'lastname' => 'Named',
                 'role_id' => $role->id,
             ])->assertRedirect();
 
         $member->refresh();
         $this->assertNull($member->role_id);          // role change ignored
-        $this->assertSame('Renamed', $member->name);  // profile edit still works
+        $this->assertSame('Re Named', $member->name);  // profile edit still works
     }
 }

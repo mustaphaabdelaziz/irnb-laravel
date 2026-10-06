@@ -12,6 +12,7 @@ class ActivityLog extends Model
 
     protected $fillable = [
         'user_id',
+        'impersonator_id',
         'action',
         'subject_type',
         'subject_id',
@@ -30,6 +31,12 @@ class ActivityLog extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /** The admin who did this while logged in as `user`, if any. */
+    public function impersonator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'impersonator_id');
     }
 
     public function subject(): MorphTo

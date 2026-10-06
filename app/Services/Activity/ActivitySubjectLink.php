@@ -14,6 +14,7 @@ use App\Models\MemberJob;
 use App\Models\Player;
 use App\Models\PlayerAcademicRecord;
 use App\Models\PlayerDocument;
+use App\Models\Role;
 use App\Models\Subscription;
 use App\Models\TrainingSession;
 use App\Models\Transaction;
@@ -62,6 +63,8 @@ final class ActivitySubjectLink
         BoardMeeting::class => ['board'],
         BoardTask::class => ['board'],
         TrainingSession::class => ['attendance'],
+        User::class => ['users'],
+        Role::class => ['users'],
     ];
 
     /**
@@ -125,6 +128,11 @@ final class ActivitySubjectLink
         }
 
         [$label, $url] = self::describe($subject);
+
+        // Settings lists share one action code: say which list.
+        if (($kind = self::kindLabel($log->properties ?? [])) !== null) {
+            $label = $kind.' · '.$label;
+        }
 
         return ['label' => $label, 'url' => $url, 'deleted' => false];
     }
@@ -192,7 +200,17 @@ final class ActivitySubjectLink
                 ((string) $subject->category?->localized_name).' · '.$subject->date,
                 route('attendance.sessions.show', $subject),
             ],
-            default => [class_basename($subject).' #'.$subject->getKey(), null],
+            $subject instanceof User => [$subject->fullname, route('users.edit', $subject)],
+            $subject instanceof Role => [
+                (string) ($subject->name[app()->getLocale()] ?? $subject->name['en'] ?? $subject->key),
+                route('roles.index'),
+            ],
+            default => [
+                self::filled($subject->getAttribute('localized_name'))
+                    ?? self::filled(is_string($subject->getAttribute('name')) ? $subject->getAttribute('name') : null)
+                    ?? '#'.$subject->getKey(),
+                null,
+            ],
         };
     }
 
@@ -221,9 +239,21 @@ final class ActivitySubjectLink
             ?? '#'.$item->getKey();
     }
 
-    /** Events without a subject (imports) are described by their row count. */
+    /** The list a settings event belongs to ("Categories"), from its `kind`. */
+    private static function kindLabel(array $properties): ?string
+    {
+        $kind = $properties['kind'] ?? null;
+
+        return is_string($kind) && $kind !== '' ? UiLang::get('activity.kind.'.$kind, $kind) : null;
+    }
+
+    /** Events without a subject: imports by their row count, settings by their list. */
     private static function propertiesLabel(array $properties): string
     {
+        if (($kind = self::kindLabel($properties)) !== null) {
+            return $kind;
+        }
+
         if (isset($properties['count']) && is_numeric($properties['count'])) {
             return str_replace('{count}', (string) (int) $properties['count'], UiLang::get('activity.rows_count', '{count} rows'));
         }

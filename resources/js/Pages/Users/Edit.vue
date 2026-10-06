@@ -7,7 +7,8 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { Head, useForm, Link } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
+import SearchableSelect from '@/Components/SearchableSelect.vue';
 
 const { t } = useI18n();
 
@@ -23,7 +24,6 @@ const preferredLng = props.user.preferred_lng || 'ar';
 const showAdvanced = ref(false);
 
 const form = useForm({
-    name: props.user.name || '',
     username: props.user.username || '',
     firstname: props.user.firstname || '',
     lastname: props.user.lastname || '',
@@ -41,9 +41,12 @@ const form = useForm({
     picture: null,
 });
 
-function roleLabel(role) {
-    return role.name?.[preferredLng] || role.name?.en || role.key;
-}
+// Searchable by its name in every language and its key.
+const roleOptions = computed(() => props.roles.map((r) => ({
+    value: r.id,
+    label: r.name?.[preferredLng] || r.name?.en || r.key,
+    keywords: [r.key, ...Object.values(r.name ?? {})].join(' '),
+})));
 
 function toggleOverride(bucket, module, action) {
     const set = form.permission_overrides[bucket];
@@ -86,28 +89,25 @@ function submit() {
                 <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('basic_info') }}</h2>
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div class="sm:col-span-2">
-                        <InputLabel :value="t('username')" />
+                        <InputLabel :value="t('username')" required />
                         <TextInput v-model="form.username" class="mt-1 w-full" required autocomplete="off" autocapitalize="none" spellcheck="false" />
                         <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('username_hint') }}</p>
                         <InputError :message="form.errors.username" class="mt-1" />
                     </div>
                     <div>
-                        <InputLabel :value="t('name')" />
-                        <TextInput v-model="form.name" class="mt-1 w-full" required />
-                        <InputError :message="form.errors.name" class="mt-1" />
+                        <InputLabel :value="t('firstname')" required />
+                        <TextInput v-model="form.firstname" class="mt-1 w-full" required />
+                        <InputError :message="form.errors.firstname" class="mt-1" />
+                    </div>
+                    <div>
+                        <InputLabel :value="t('lastname')" required />
+                        <TextInput v-model="form.lastname" class="mt-1 w-full" required />
+                        <InputError :message="form.errors.lastname" class="mt-1" />
                     </div>
                     <div>
                         <InputLabel :value="t('email')" />
                         <TextInput v-model="form.email" type="email" class="mt-1 w-full" />
                         <InputError :message="form.errors.email" class="mt-1" />
-                    </div>
-                    <div>
-                        <InputLabel :value="t('firstname')" />
-                        <TextInput v-model="form.firstname" class="mt-1 w-full" />
-                    </div>
-                    <div>
-                        <InputLabel :value="t('lastname')" />
-                        <TextInput v-model="form.lastname" class="mt-1 w-full" />
                     </div>
                     <div>
                         <InputLabel :value="t('phone')" />
@@ -134,10 +134,7 @@ function submit() {
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div v-if="canManageAccess">
                         <InputLabel :value="t('role')" />
-                        <select v-model="form.role_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                            <option :value="null">{{ t('no_role') }}</option>
-                            <option v-for="r in roles" :key="r.id" :value="r.id">{{ roleLabel(r) }}</option>
-                        </select>
+                        <SearchableSelect v-model="form.role_id" :options="roleOptions" :placeholder="t('no_role')" class="mt-1" />
                         <InputError :message="form.errors.role_id" class="mt-1" />
                         <button type="button" class="mt-2 text-sm font-medium text-primary-600 hover:text-primary-700" @click="showAdvanced = !showAdvanced">
                             {{ showAdvanced ? t('hide_advanced') : t('advanced_overrides') }}
@@ -189,7 +186,7 @@ function submit() {
             <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('picture') }}</h2>
                 <div v-if="user.picture_url" class="mb-3">
-                    <img :src="user.picture_url" :alt="user.name" class="h-24 w-24 rounded-full object-cover" />
+                    <img :src="user.picture_url" :alt="user.fullname" class="h-24 w-24 rounded-full object-cover" />
                 </div>
                 <input type="file" accept="image/*" @change="form.picture = $event.target.files[0]"
                     class="text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 hover:file:bg-primary-100" />

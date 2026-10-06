@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\User;
 use App\Models\WebsiteConfig;
 use App\Support\ClubIdentity;
+use App\Support\Impersonation;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -34,6 +35,12 @@ class HandleInertiaRequests extends Middleware
                 'isAdmin' => $isAdmin,
                 'isSuperadmin' => $isSuperadmin,
                 'permissions' => $permissions,
+                // Set while an admin is logged in as this user ("log in as").
+                'impersonator' => fn () => ($id = Impersonation::impersonatorId())
+                    ? User::query()->find($id, ['id', 'name'])?->only(['id', 'name'])
+                    : null,
+                // Who may "log in as" others: the admin/superadmin privileges.
+                'canImpersonate' => (bool) $user?->isGodAdmin() && ! Impersonation::active(),
             ],
             'locale' => app()->getLocale(),
             // Gates desktop-only UI (the Backup page) — there is no folder picker on the web.

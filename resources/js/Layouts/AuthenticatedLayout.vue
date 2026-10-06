@@ -75,6 +75,7 @@ onMounted(() => {
 });
 
 const user = computed(() => page.props.auth.user);
+const impersonator = computed(() => page.props.auth.impersonator ?? null);
 const isAdmin = computed(() => page.props.auth?.isAdmin ?? false);
 const isDesktop = computed(() => page.props.isDesktop ?? false);
 const pendingApprovals = computed(() => page.props.pendingApprovals ?? 0);
@@ -84,7 +85,7 @@ const appLogo = computed(() => page.props.branding?.logo ?? null);
 const currentUrl = computed(() => page.url);
 
 const userInitial = computed(() => (user.value?.firstname || user.value?.name || '?').charAt(0).toUpperCase());
-const userRole = computed(() => (isAdmin.value ? t('administrator') : t('member')));
+const userRole = computed(() => (isAdmin.value ? t('administrator') : t('user')));
 
 function isActive(item) {
     const url = currentUrl.value ?? '';
@@ -127,7 +128,7 @@ const sections = computed(() => {
             { label: t('tasks'), href: '/board/tasks', icon: 'task', prefix: '/board/tasks', module: 'board' },
         ] },
         { label: t('nav_access'), items: [
-            { label: t('members'), href: '/users', icon: 'members', prefix: '/users', match: /^\/users(?!\/(\d+\/)?activity)/, badge: pendingApprovals.value, module: 'users' },
+            { label: t('users'), href: '/users', icon: 'members', prefix: '/users', match: /^\/users(?!\/(\d+\/)?activity)/, badge: pendingApprovals.value, module: 'users' },
             { label: t('activity.title'), href: '/users/activity', icon: 'task', prefix: '/users/activity', match: /^\/users\/(\d+\/)?activity/, module: 'users' },
             { label: t('roles'), href: '/roles', icon: 'flag', prefix: '/roles', superadminOnly: true },
         ] },
@@ -242,6 +243,13 @@ function switchLocale(code) {
 
         <!-- ===== MAIN ===== -->
         <div class="lg:ms-64 print:ms-0">
+            <!-- "Log in as": always visible, with the way back to the admin's own account. -->
+            <div v-if="impersonator" class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-amber-500 px-4 py-2 text-sm font-medium text-amber-950 print:hidden" role="status">
+                <span>{{ t('impersonate.banner', { user: user?.name, admin: impersonator.name }) }}</span>
+                <Link :href="route('impersonate.leave')" method="post" as="button" class="rounded-md bg-amber-950/90 px-3 py-1 text-xs font-semibold text-amber-50 hover:bg-amber-950">
+                    {{ t('impersonate.leave') }}
+                </Link>
+            </div>
             <header class="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-slate-200/80 bg-white/75 px-4 backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-900/75 sm:px-6 print:static print:border-0 print:shadow-none">
                 <button
                     @click="mobileMenuOpen = !mobileMenuOpen"

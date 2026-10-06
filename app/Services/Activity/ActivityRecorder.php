@@ -4,6 +4,7 @@ namespace App\Services\Activity;
 
 use App\Models\ActivityLog;
 use App\Models\User;
+use App\Support\Impersonation;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
@@ -35,6 +36,7 @@ class ActivityRecorder
 
         return ActivityLog::create([
             'user_id' => $user?->id,
+            'impersonator_id' => Impersonation::impersonatorId(),
             'action' => $action,
             'subject_type' => $subject?->getMorphClass(),
             'subject_id' => $subject?->getKey(),

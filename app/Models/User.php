@@ -26,6 +26,14 @@ class User extends Authenticatable
                 $user->username = $user->email;
             }
         });
+
+        // The display name is never typed: it follows firstname + lastname.
+        static::saving(function (User $user) {
+            $full = trim(trim((string) $user->firstname).' '.trim((string) $user->lastname));
+            if ($full !== '') {
+                $user->name = $full;
+            }
+        });
     }
 
     /** Normalise the stored photo URL to a host-relative /media path (web + desktop). */

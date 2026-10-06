@@ -23,7 +23,8 @@ class UsernameAccountsTest extends TestCase
             'username' => 'mustapha',
             'password' => 'secret-pass-1',
             'password_confirmation' => 'secret-pass-1',
-            'name' => 'Mustapha',
+            'firstname' => 'Mustapha',
+            'lastname' => 'Benali',
             ...$overrides,
         ];
     }
@@ -149,7 +150,7 @@ class UsernameAccountsTest extends TestCase
         $member = User::factory()->create(['username' => 'old-name']);
 
         $this->actingAs(User::factory()->admin()->create())
-            ->put(route('users.update', $member), ['name' => $member->name, 'username' => 'New-Name'])
+            ->put(route('users.update', $member), ['firstname' => 'Ali', 'lastname' => 'Bensaid', 'username' => 'New-Name'])
             ->assertSessionHasNoErrors();
 
         $this->assertSame('new-name', $member->fresh()->username);

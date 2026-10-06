@@ -4,7 +4,7 @@ import Pagination from '@/Components/Pagination.vue';
 import SearchInput from '@/Components/SearchInput.vue';
 import Badge from '@/Components/Badge.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
@@ -15,7 +15,7 @@ import { asList, useListFilters } from '@/Composables/useListFilters';
 import MultiSelectFilter from '@/Components/MultiSelectFilter.vue';
 import { useCan } from '@/Composables/useCan';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const { can } = useCan();
 
 const props = defineProps({
@@ -64,6 +64,13 @@ function destroy() {
     });
 }
 
+const page = usePage();
+const canImpersonate = computed(() => page.props.auth?.canImpersonate ?? false);
+
+function impersonate(id) {
+    router.post(route('users.impersonate', id));
+}
+
 function toggleActive(id) {
     router.post(route('users.toggleActive', id), {}, { preserveScroll: true });
 }
@@ -91,12 +98,12 @@ function initial(user) {
 </script>
 
 <template>
-    <Head :title="t('members')" />
+    <Head :title="t('users')" />
 
     <AuthenticatedLayout>
         <template #header>
             <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('members') }}</h1>
+                <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('users') }}</h1>
                 <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <Badge v-if="pendingCount" :label="`${pendingCount} ${t('pending_approval')}`" color="amber" />
                     <Link :href="route('users.activity.index')" class="text-sm font-medium text-primary-700 hover:underline dark:text-primary-300">{{ t('activity.title') }}</Link>
@@ -157,10 +164,16 @@ function initial(user) {
                                         <Badge v-else :label="t('pending')" color="amber" />
                                         <Badge v-if="!user.is_active" :label="t('inactive')" color="rose" />
                                     </div>
+                                    <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                                        {{ t('last_login') }}: {{ user.logged_in_at ? new Date(user.logged_in_at).toLocaleString(locale) : t('never') }}
+                                    </p>
                                 </td>
                                 <td class="whitespace-nowrap px-4 py-3 text-end">
                                     <div class="flex items-center justify-end gap-3">
                                         <button v-if="!user.approved" @click="approve(user.id)" class="text-sm font-medium text-emerald-600 hover:text-emerald-800">{{ t('approve') }}</button>
+                                        <!-- Log in as: admins only, never a superadmin, yourself or a blocked account. -->
+                                        <button v-if="canImpersonate && !user.is_superadmin && user.id !== currentUserId && user.approved && user.is_active"
+                                            @click="impersonate(user.id)" class="text-sm font-medium text-primary-600 hover:text-primary-800">{{ t('impersonate.action') }}</button>
                                         <Link :href="route('users.edit', user.id)" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">{{ t('edit') }}</Link>
                                         <!-- Reset password: superadmin only, never on yourself (use your profile). -->
                                         <button v-if="canManageAccess && user.id !== currentUserId" @click="openReset(user)" class="text-sm text-slate-500 dark:text-slate-400 hover:text-primary-600">{{ t('reset_password') }}</button>

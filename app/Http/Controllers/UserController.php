@@ -78,6 +78,7 @@ class UserController extends Controller
                 'is_active' => $user->is_active,
                 'is_superadmin' => in_array('superadmin', $user->privileges ?? [], true),
                 'created_at' => $user->created_at,
+                'logged_in_at' => $user->logged_in_at,
             ]);
 
         return Inertia::render('Users/Index', [
@@ -153,6 +154,7 @@ class UserController extends Controller
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
+                'fullname' => $user->fullname,
                 'username' => $user->username,
                 'firstname' => $user->firstname,
                 'lastname' => $user->lastname,

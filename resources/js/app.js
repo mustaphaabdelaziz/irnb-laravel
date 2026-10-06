@@ -24,6 +24,13 @@ const rememberClubName = (pageProps) => {
     clubShortName = pageProps?.appShortName || DEFAULT_CLUB_SHORT_NAME;
 };
 
+// Sidebar and quick-search links prefetch pages on hover and keep them for
+// 30s. Any write can change what those pages show, so drop the cache before
+// a POST/PUT/PATCH/DELETE rather than ever serving a stale page after it.
+router.on('before', (event) => {
+    if (event.detail.visit.method !== 'get') router.flushAll();
+});
+
 createInertiaApp({
     title: (title) => (title ? `${title} - ${clubShortName}` : clubShortName),
     resolve: (name) =>

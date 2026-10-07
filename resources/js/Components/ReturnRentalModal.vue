@@ -47,6 +47,9 @@ function submit() {
 </script>
 
 <template>
+    <!-- On <body>: a transformed ancestor (<main> animates) would otherwise
+         confine `fixed` to the content area, under the sticky header. -->
+    <Teleport to="body">
     <div v-if="rental" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" @click.self="emit('close')">
         <div class="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
             <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
@@ -85,4 +88,5 @@ function submit() {
             </form>
         </div>
     </div>
+    </Teleport>
 </template>

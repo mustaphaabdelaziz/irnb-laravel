@@ -3,6 +3,8 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import IconButton from '@/Components/IconButton.vue';
+import InputLabel from '@/Components/InputLabel.vue';
+import InputError from '@/Components/InputError.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref } from 'vue';
@@ -79,15 +81,21 @@ function roleName(role) {
             </div>
         </div>
 
-        <!-- Editor modal -->
+        <!-- Editor modal. Teleported to <body>: <main> animates with a transform,
+             which would make `fixed` relative to it and slide the form's top
+             (the name fields) under the sticky header. -->
+        <Teleport to="body">
         <div v-if="editing" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="editing = null">
             <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
                 <h2 class="mb-4 text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('role') }}</h2>
-                <div class="grid gap-3 sm:grid-cols-3">
+                <InputLabel :value="t('name')" required />
+                <div class="mt-1 grid gap-3 sm:grid-cols-3">
                     <input v-model="form.name.en" placeholder="English" class="rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800" />
                     <input v-model="form.name.fr" placeholder="Français" class="rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800" />
-                    <input v-model="form.name.ar" placeholder="العربية" class="rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800" />
+                    <input v-model="form.name.ar" placeholder="العربية" dir="rtl" class="rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800" />
                 </div>
+                <InputError :message="form.errors.name || form.errors['name.en'] || form.errors['name.fr'] || form.errors['name.ar']" class="mt-1" />
+                <InputError :message="form.errors.permissions" class="mt-1" />
 
                 <div class="mt-4 overflow-x-auto rounded-lg ring-1 ring-slate-200 dark:ring-slate-800">
                     <table class="w-full text-sm">
@@ -115,5 +123,6 @@ function roleName(role) {
                 </div>
             </div>
         </div>
+        </Teleport>
     </AuthenticatedLayout>
 </template>

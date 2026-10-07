@@ -68,17 +68,16 @@ class SeasonTest extends TestCase
     }
 
     #[Test]
-    public function the_settings_form_stores_both_file_settings(): void
+    public function the_settings_form_stores_the_season_start_month(): void
     {
         $admin = User::factory()->admin()->create(['email_verified_at' => now()]);
 
         $this->actingAs($admin)
-            ->put(route('settings.update'), ['settings' => ['seasonStartMonth' => 7, 'fileDrawerSize' => 250]])
+            ->put(route('settings.update'), ['settings' => ['seasonStartMonth' => 7]])
             ->assertRedirect();
 
         $settings = WebsiteConfig::singleton()->fresh()->settings;
         $this->assertSame(7, $settings['seasonStartMonth']);
-        $this->assertSame(250, $settings['fileDrawerSize']);
         // The merge must not drop the keys the other tabs own.
         $this->assertArrayHasKey('currency', $settings);
     }
@@ -91,10 +90,6 @@ class SeasonTest extends TestCase
         $this->actingAs($admin)
             ->put(route('settings.update'), ['settings' => ['seasonStartMonth' => 13]])
             ->assertSessionHasErrors('settings.seasonStartMonth');
-
-        $this->actingAs($admin)
-            ->put(route('settings.update'), ['settings' => ['fileDrawerSize' => 0]])
-            ->assertSessionHasErrors('settings.fileDrawerSize');
     }
 
     #[Test]

@@ -202,7 +202,7 @@ class LocalizedExportsTest extends TestCase
         $this->actingAs($admin)->get(route('players.board-table', ['category_id' => $cadets->id]))
             ->assertOk()->assertHeader('content-type', 'application/pdf');
         $this->assertStringContainsString(
-            $this->xmlText(UiLang::get('col.drawer', null, 'ar')),
+            $this->xmlText(UiLang::get('col.membership_id', null, 'ar')),
             $this->sheet($this->actingAs($admin)->get(route('players.board-table', ['category_id' => $cadets->id, 'format' => 'xlsx']))->baseResponse),
         );
     }

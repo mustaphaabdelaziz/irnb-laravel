@@ -12,7 +12,6 @@ import { ref, watch, computed } from 'vue';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useBulkSelection } from '@/Composables/useBulkSelection';
 import { asList, useListFilters } from '@/Composables/useListFilters';
-import { formatFileNumber } from '@/lib/fileNumber';
 import BulkEditModal from '@/Components/BulkEditModal.vue';
 import StatDoughnut from '@/Components/StatDoughnut.vue';
 import Dropdown from '@/Components/Dropdown.vue';
@@ -385,7 +384,6 @@ function runBulk() {
                     <IconButton v-if="!archivedView" icon="archive" :label="t('archive_selected')" @click="bulkAction = 'archive'" />
                     <IconButton v-if="archivedView" icon="restore" :label="t('restore_selected')" variant="success" @click="bulkAction = 'restore'" />
                     <IconButton v-if="archivedView" icon="trash" :label="t('delete_permanently_selected')" variant="danger" @click="bulkAction = 'force'" />
-                    <IconButton :href="route('players.labels', { ids: selected.join(',') })" external target="_blank" icon="print" :label="t('print_selected_labels')" />
                 </div>
             </div>
 
@@ -440,7 +438,6 @@ function runBulk() {
                                     <input type="checkbox" :checked="allSelected" @change="toggleAll" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800" />
                                 </th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('membership_id') }}</th>
-                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('file_number') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('name') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('category') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('position') }}</th>
@@ -457,7 +454,6 @@ function runBulk() {
                                     <input type="checkbox" :checked="selected.includes(player.id)" @change="toggleOne(player.id)" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800" />
                                 </td>
                                 <td class="whitespace-nowrap px-4 py-3 text-sm font-mono text-slate-600 dark:text-slate-300">{{ player.membership_id }}</td>
-                                <td class="whitespace-nowrap px-4 py-3 text-sm font-mono text-slate-600 dark:text-slate-300">{{ formatFileNumber(player.file_number) }}</td>
                                 <td class="whitespace-nowrap px-4 py-3">
                                     <Link :href="route('players.show', player.id)" class="flex items-center gap-3 text-sm font-medium text-slate-900 dark:text-slate-100 hover:text-primary-600">
                                         <img v-if="player.picture_url" :src="player.picture_url" :alt="player.firstname" loading="lazy" class="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700" />
@@ -499,7 +495,7 @@ function runBulk() {
                                 </td>
                             </tr>
                             <tr v-if="!players.data.length">
-                                <td colspan="10" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
+                                <td colspan="9" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
                             </tr>
                         </tbody>
                     </table>

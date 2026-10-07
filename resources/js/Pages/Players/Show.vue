@@ -171,6 +171,25 @@ function submitAddDebt() {
     });
 }
 
+// --- Assign one catalog subscription to this player, unpaid (no payment recorded) ---
+const showAssignSubModal = ref(false);
+const assignSubForm = useForm({ subscription_id: '', player_id: props.player.id });
+
+// Catalog subscriptions open to the player that they are not on yet.
+const assignableSubscriptions = computed(() =>
+    props.availableSubscriptions.filter(s => !s.player_subscription_id)
+);
+
+function submitAssignSub() {
+    assignSubForm.post(route('subscriptions.assignOne', assignSubForm.subscription_id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            showAssignSubModal.value = false;
+            assignSubForm.reset('subscription_id');
+        },
+    });
+}
+
 function deletePlayer() {
     router.delete(route('players.destroy', props.player.id));
 }
@@ -438,7 +457,10 @@ function formatDate(val) {
             <div class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-5 py-4">
                     <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('subscriptions') }}</h3>
-                    <IconButton icon="plus" :label="t('add_previous_debt')" size="sm" @click="showAddDebtModal = true" />
+                    <div class="flex items-center gap-2">
+                        <IconButton v-if="can('subscriptions', 'edit')" icon="money" :label="t('assign_subscription')" variant="primary" size="sm" @click="showAssignSubModal = true" />
+                        <IconButton icon="plus" :label="t('add_previous_debt')" size="sm" @click="showAddDebtModal = true" />
+                    </div>
                 </div>
                 <div v-if="!subscriptions.length" class="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_data') }}</div>
                 <div v-else class="overflow-x-auto">
@@ -724,6 +746,31 @@ function formatDate(val) {
             @confirm="confirmRemoveSub"
             @cancel="showSubRemoveModal = false"
         />
+
+        <!-- Assign a catalog subscription (unpaid) modal -->
+        <Modal :show="showAssignSubModal" @close="showAssignSubModal = false" max-width="md">
+            <form @submit.prevent="submitAssignSub" class="p-6">
+                <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('assign_subscription') }}</h3>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('assign_subscription_hint') }}</p>
+                <div v-if="!assignableSubscriptions.length" class="mt-4 rounded-lg bg-slate-50 dark:bg-slate-950 px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
+                    {{ t('no_subscription_to_assign') }}
+                </div>
+                <div v-else class="mt-4">
+                    <InputLabel :value="t('subscription')" />
+                    <select v-model="assignSubForm.subscription_id" required class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-900 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                        <option value="" disabled>{{ t('subscription') }}</option>
+                        <option v-for="s in assignableSubscriptions" :key="s.subscription_id" :value="s.subscription_id">
+                            {{ s.name }} ({{ s.year_label || t('subscription_kind_exceptional') }}){{ s.is_mandatory ? '' : ' — ' + t('optional') }} — {{ t('amount_owed') }}: {{ formatMoney(s.amount_owed) }}
+                        </option>
+                    </select>
+                    <InputError :message="assignSubForm.errors.subscription_id || assignSubForm.errors.player_id" class="mt-1" />
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <SecondaryButton type="button" @click="showAssignSubModal = false">{{ t('cancel') }}</SecondaryButton>
+                    <PrimaryButton :disabled="!assignSubForm.subscription_id || assignSubForm.processing">{{ t('assign') }}</PrimaryButton>
+                </div>
+            </form>
+        </Modal>
 
         <!-- Add previous / manual debt modal -->
         <Modal :show="showAddDebtModal" @close="showAddDebtModal = false" max-width="md">

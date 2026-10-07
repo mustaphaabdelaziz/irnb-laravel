@@ -55,7 +55,7 @@ final class ActivitySubjectLink
         Transaction::class => ['transactions'],
         FinanceTransfer::class => ['finance'],
         Subscription::class => ['subscriptions'],
-        MemberJob::class => ['categories'],
+        MemberJob::class => ['jobs'],
         EquipmentCatalog::class => ['equipment'],
         EquipmentItem::class => ['equipment'],
         EquipmentRental::class => ['equipment'],

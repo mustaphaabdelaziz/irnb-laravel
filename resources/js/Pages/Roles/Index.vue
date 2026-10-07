@@ -5,6 +5,7 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 import IconButton from '@/Components/IconButton.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
+import PermissionGrid from '@/Components/PermissionGrid.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref } from 'vue';
@@ -12,7 +13,7 @@ import { ref } from 'vue';
 const { t, locale } = useI18n();
 const props = defineProps({
     roles: { type: Array, default: () => [] },
-    modules: { type: Array, default: () => [] },
+    moduleGroups: { type: Object, default: () => ({}) },
     actions: { type: Array, default: () => [] },
 });
 
@@ -29,15 +30,6 @@ function openEdit(role) {
     editing.value = role;
     form.name = { en: role.name?.en ?? '', fr: role.name?.fr ?? '', ar: role.name?.ar ?? '' };
     form.permissions = JSON.parse(JSON.stringify(role.permissions ?? {}));
-}
-function toggle(module, action) {
-    const list = new Set(form.permissions[module] ?? []);
-    list.has(action) ? list.delete(action) : list.add(action);
-    if (list.size) form.permissions[module] = [...list];
-    else delete form.permissions[module];
-}
-function has(module, action) {
-    return (form.permissions[module] ?? []).includes(action);
 }
 function save() {
     if (editing.value === 'new') {
@@ -97,25 +89,7 @@ function roleName(role) {
                 <InputError :message="form.errors.name || form.errors['name.en'] || form.errors['name.fr'] || form.errors['name.ar']" class="mt-1" />
                 <InputError :message="form.errors.permissions" class="mt-1" />
 
-                <div class="mt-4 overflow-x-auto rounded-lg ring-1 ring-slate-200 dark:ring-slate-800">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="text-left text-slate-500">
-                                <th class="p-2">{{ t('module') }}</th>
-                                <th v-for="a in actions" :key="a" class="p-2 text-center">{{ t(a) }}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="m in modules" :key="m" class="border-t border-slate-100 dark:border-slate-800">
-                                <td class="p-2 font-medium">{{ t(m) }}</td>
-                                <td v-for="a in actions" :key="a" class="p-2 text-center">
-                                    <input type="checkbox" :checked="has(m, a)" @change="toggle(m, a)"
-                                        class="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <PermissionGrid v-model="form.permissions" :groups="moduleGroups" :actions="actions" class="mt-4" />
 
                 <div class="mt-4 flex justify-end gap-2">
                     <SecondaryButton @click="editing = null">{{ t('cancel') }}</SecondaryButton>

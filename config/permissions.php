@@ -17,16 +17,17 @@ return [
         'equipment' => 'equipment',
         'inventory' => 'inventory',
         'board' => 'board',
-        'board-roles' => 'board',
+        'board-roles' => 'board_roles',
         'users' => 'users',
         'categories' => 'categories',
-        'branches' => 'categories',
-        'jobs' => 'categories',
-        'positions' => 'categories',
-        'player-statuses' => 'categories',
-        'document-types' => 'categories',
-        'equipment-categories' => 'categories',
-        'storage-locations' => 'categories',
+        // Each App Configuration list is its own module (own row in the role editor).
+        'branches' => 'branches',
+        'jobs' => 'jobs',
+        'positions' => 'positions',
+        'player-statuses' => 'player_statuses',
+        'document-types' => 'document_types',
+        'equipment-categories' => 'equipment_categories',
+        'storage-locations' => 'storage_locations',
         'settings' => 'settings',
     ],
 
@@ -44,7 +45,7 @@ return [
         // Merging a job deletes the duplicate, so it needs at least what
         // jobs.destroy needs — without this override, "merge" falls through
         // deriveAction()'s default and is only gated as 'edit'.
-        'jobs.merge' => ['categories', 'delete'],
+        'jobs.merge' => ['jobs', 'delete'],
         'players.transactions.update' => ['players', 'edit'],
         'players.transactions.destroy' => ['players', 'delete'],
         'players.card' => ['players', 'view'],

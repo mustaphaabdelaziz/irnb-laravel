@@ -50,12 +50,12 @@ class DocumentsPermissionTest extends TestCase
     }
 
     #[Test]
-    public function document_type_settings_ride_on_the_lookup_module(): void
+    public function document_type_settings_have_their_own_module(): void
     {
-        $this->assertSame(['categories', 'view'], PermissionMap::resolve('document-types.index'));
-        $this->assertSame(['categories', 'add'], PermissionMap::resolve('document-types.store'));
-        $this->assertSame(['categories', 'edit'], PermissionMap::resolve('document-types.update'));
-        $this->assertSame(['categories', 'delete'], PermissionMap::resolve('document-types.destroy'));
+        $this->assertSame(['document_types', 'view'], PermissionMap::resolve('document-types.index'));
+        $this->assertSame(['document_types', 'add'], PermissionMap::resolve('document-types.store'));
+        $this->assertSame(['document_types', 'edit'], PermissionMap::resolve('document-types.update'));
+        $this->assertSame(['document_types', 'delete'], PermissionMap::resolve('document-types.destroy'));
     }
 
     #[Test]

@@ -15,7 +15,7 @@ class RoleController extends Controller
     {
         return Inertia::render('Roles/Index', [
             'roles' => Role::query()->withCount('users')->orderByDesc('is_system')->orderBy('key')->get(),
-            'modules' => Role::MODULES,
+            'moduleGroups' => Role::MODULE_GROUPS,
             'actions' => Role::ACTIONS,
         ]);
     }

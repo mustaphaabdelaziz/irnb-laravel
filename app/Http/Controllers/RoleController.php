@@ -62,7 +62,12 @@ class RoleController extends Controller
     private function validateRole(Request $request): array
     {
         return $request->validate([
-            'name' => ['required', 'array'],
+            'name' => ['required', 'array', function ($attr, $value, $fail) {
+                // A role must be findable by name in at least one language.
+                if (collect((array) $value)->only(['en', 'fr', 'ar'])->filter(fn ($v) => is_string($v) && trim($v) !== '')->isEmpty()) {
+                    $fail(__('validation.required', ['attribute' => __('validation.attributes.name')]));
+                }
+            }],
             'name.en' => ['nullable', 'string', 'max:255'],
             'name.fr' => ['nullable', 'string', 'max:255'],
             'name.ar' => ['nullable', 'string', 'max:255'],

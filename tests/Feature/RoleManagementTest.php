@@ -55,4 +55,16 @@ class RoleManagementTest extends TestCase
         $this->actingAs($admin)->get(route('roles.index'))->assertForbidden();
         $this->actingAs($admin)->post(route('roles.store'), ['name' => ['en' => 'X']])->assertForbidden();
     }
+
+    #[Test]
+    public function a_role_needs_a_name_in_at_least_one_language(): void
+    {
+        $this->actingAs($this->superadmin())
+            ->post(route('roles.store'), ['name' => ['en' => '', 'fr' => ' ', 'ar' => ''], 'permissions' => []])
+            ->assertSessionHasErrors('name');
+
+        $this->actingAs($this->superadmin())
+            ->post(route('roles.store'), ['name' => ['en' => '', 'fr' => '', 'ar' => 'مدرب'], 'permissions' => []])
+            ->assertSessionHasNoErrors();
+    }
 }

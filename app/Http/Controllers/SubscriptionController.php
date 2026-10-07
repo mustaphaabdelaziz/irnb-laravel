@@ -330,13 +330,11 @@ class SubscriptionController extends Controller
             ->exists();
 
         if ($alreadyAssigned) {
-            return redirect()->route('subscriptions.show', $subscription)
-                ->with('error', 'flash.player_already_subscribed');
+            return back()->with('error', 'flash.player_already_subscribed');
         }
 
         if (! $subscription->appliesToCategory($player->category_id)) {
-            return redirect()->route('subscriptions.show', $subscription)
-                ->with('error', 'flash.player_not_eligible_for_subscription');
+            return back()->with('error', 'flash.player_not_eligible_for_subscription');
         }
 
         DB::transaction(function () use ($player, $subscription, $request) {
@@ -348,8 +346,7 @@ class SubscriptionController extends Controller
             ]);
         });
 
-        return redirect()->route('subscriptions.show', $subscription)
-            ->with('success', ['key' => 'flash.player_added_to_subscription', 'params' => ['name' => $player->firstname.' '.$player->lastname]]);
+        return back()->with('success', ['key' => 'flash.player_added_to_subscription', 'params' => ['name' => $player->firstname.' '.$player->lastname]]);
     }
 
     public function export(Request $request, Subscription $subscription): SymfonyResponse

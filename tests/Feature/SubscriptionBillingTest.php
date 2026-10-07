@@ -209,6 +209,28 @@ class SubscriptionBillingTest extends TestCase
     }
 
     #[Test]
+    public function assigning_from_the_player_page_returns_there_unpaid(): void
+    {
+        $admin = User::factory()->create(['privileges' => ['admin'], 'is_active' => true, 'email_verified_at' => now()]);
+        $player = $this->makePlayer();
+        $annual = Subscription::create([
+            'name' => 'Annual', 'year' => (int) now()->year,
+            'amount_student' => 2000, 'amount_worker' => 3000,
+            'is_mandatory' => true, 'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->from(route('players.show', $player))
+            ->post(route('subscriptions.assignOne', $annual), ['player_id' => $player->id])
+            ->assertRedirect(route('players.show', $player))
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseCount('transactions', 0);
+        $this->assertSame('unpaid', PlayerSubscription::first()->payment_status);
+        $this->assertSame(2000.0, (float) $player->fresh()->outstanding_debt);
+    }
+
+    #[Test]
     public function assigning_mandatory_subscription_adds_debt_without_income(): void
     {
         $admin = User::factory()->create(['privileges' => ['admin'], 'is_active' => true, 'email_verified_at' => now()]);

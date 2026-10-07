@@ -9,13 +9,14 @@ import { Head, useForm, Link } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { computed, ref } from 'vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
+import PermissionGrid from '@/Components/PermissionGrid.vue';
 
 const { t } = useI18n();
 
 const props = defineProps({
     user: Object,
     roles: { type: Array, default: () => [] },
-    modules: { type: Array, default: () => [] },
+    moduleGroups: { type: Object, default: () => ({}) },
     actions: { type: Array, default: () => [] },
     canManageAccess: { type: Boolean, default: false },
 });
@@ -47,18 +48,6 @@ const roleOptions = computed(() => props.roles.map((r) => ({
     label: r.name?.[preferredLng] || r.name?.en || r.key,
     keywords: [r.key, ...Object.values(r.name ?? {})].join(' '),
 })));
-
-function toggleOverride(bucket, module, action) {
-    const set = form.permission_overrides[bucket];
-    const list = new Set(set[module] ?? []);
-    list.has(action) ? list.delete(action) : list.add(action);
-    if (list.size) set[module] = [...list];
-    else delete set[module];
-}
-
-function hasOverride(bucket, module, action) {
-    return (form.permission_overrides[bucket][module] ?? []).includes(action);
-}
 
 function submit() {
     form.transform((data) => ({
@@ -154,23 +143,8 @@ const hasErrors = computed(() => Object.keys(form.errors).length > 0);
                             {{ showAdvanced ? t('hide_advanced') : t('advanced_overrides') }}
                         </button>
 
-                        <div v-if="showAdvanced" class="mt-3 overflow-x-auto rounded-lg ring-1 ring-slate-200 dark:ring-slate-800">
-                            <table class="w-full text-sm">
-                                <thead>
-                                    <tr class="text-left text-slate-500">
-                                        <th class="p-2">{{ t('module') }}</th>
-                                        <th v-for="a in actions" :key="a" class="p-2 text-center">{{ t(a) }}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="m in modules" :key="m" class="border-t border-slate-100 dark:border-slate-800">
-                                        <td class="p-2 font-medium">{{ t(m) }}</td>
-                                        <td v-for="a in actions" :key="a" class="p-2 text-center">
-                                            <input type="checkbox" :checked="hasOverride('grant', m, a)" @change="toggleOverride('grant', m, a)" class="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                        <div v-if="showAdvanced" class="mt-3">
+                            <PermissionGrid v-model="form.permission_overrides.grant" :groups="moduleGroups" :actions="actions" />
                             <p class="p-2 text-xs text-slate-400">{{ t('overrides_hint') }}</p>
                         </div>
                     </div>

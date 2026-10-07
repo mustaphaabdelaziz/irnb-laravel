@@ -8,7 +8,7 @@ use Tests\TestCase;
 class AttendanceSheetTranslationsTest extends TestCase
 {
     public const KEYS = [
-        'att.sheet.month_title', 'att.sheet.session_title', 'att.sheet.month', 'att.sheet.file_no',
+        'att.sheet.month_title', 'att.sheet.session_title', 'att.sheet.month',
         'att.sheet.legend', 'att.sheet.legend_help', 'att.sheet.off_roster', 'att.sheet.blank_columns',
         'att.sheet.blank_rows', 'att.sheet.tick_help', 'att.sheet.kind_mark.preseason', 'att.sheet.kind_mark.extra',
         'att.sheet.part', 'att.sheet.page', 'att.sheet.coach_name', 'att.sheet.signature',

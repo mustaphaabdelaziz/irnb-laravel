@@ -25,7 +25,6 @@ use App\Services\Attendance\AttendanceStatusCatalog;
 use App\Services\Dashboard\ModuleStats;
 use App\Services\Finance\DefaultRegisterResolver;
 use App\Services\Player\DocumentChecklist;
-use App\Services\Player\FileNumber;
 use App\Services\Player\MembershipNumber;
 use App\Services\Player\PlayerDocumentService;
 use App\Services\Player\RegisterPlayerService;
@@ -216,7 +215,6 @@ class PlayerController extends Controller
             'totalDebt' => $player->calculateTotalDebt(),
             'financeAccounts' => $financeAccounts,
             'defaultFinanceAccountId' => $registers->forPlayer($player)?->id,
-            'fileDrawerSize' => FileNumber::drawerSize(),
             'certificateThresholds' => CertificateThresholds::all(),
             // Default school year for a new grade: the club's season, not the browser's clock.
             'currentSchoolYear' => Season::current()->startYear,
@@ -589,7 +587,6 @@ class PlayerController extends Controller
 
         $rows = $query->orderBy('lastname')->orderBy('firstname')->get()->map(fn (Player $p) => [
             $p->membership_id,
-            FileNumber::format($p->file_number),
             $p->wilaya?->localized_name,
             $p->position?->abbreviation,
             $p->otherPositions->pluck('abbreviation')->implode(', '),
@@ -605,7 +602,7 @@ class PlayerController extends Controller
         ]);
 
         $headers = array_map(fn (string $key) => UiLang::get($key), [
-            'col.membership_id', 'col.file_number', 'col.wilaya', 'col.main_position', 'col.other_positions',
+            'col.membership_id', 'col.wilaya', 'col.main_position', 'col.other_positions',
             'col.full_name', 'col.category', 'col.status', 'col.player_type', 'col.join_year', 'col.debt',
             'col.phones', 'col.branches', 'col.job',
         ]);

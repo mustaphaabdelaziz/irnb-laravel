@@ -225,7 +225,6 @@ const settingsForm = useForm({
     enable_donations: props.config?.settings?.enableDonations ?? props.config?.settings?.enable_donations ?? true,
     maintenance_mode: props.config?.settings?.maintenanceMode ?? props.config?.settings?.maintenance_mode ?? false,
     seasonStartMonth: props.config?.settings?.seasonStartMonth ?? 9,
-    fileDrawerSize: props.config?.settings?.fileDrawerSize ?? 100,
 });
 
 // Month names come from the browser in the active language, so no catalog keys.
@@ -325,7 +324,6 @@ function saveSettings() {
             enableDonations: data.enable_donations,
             maintenanceMode: data.maintenance_mode,
             seasonStartMonth: Number(settingsForm.seasonStartMonth),
-            fileDrawerSize: Number(settingsForm.fileDrawerSize),
         },
     })).put(route('settings.update'));
 }
@@ -578,7 +576,7 @@ function saveSettings() {
                                     </select>
                                 </div>
                                 <div class="sm:col-span-2 mt-2 border-t border-slate-100 pt-4 dark:border-slate-800">
-                                    <p class="mb-3 text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('club_files') }}</p>
+                                    <p class="mb-3 text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('season') }}</p>
                                     <div class="grid gap-4 sm:grid-cols-2">
                                         <label class="block text-sm">
                                             <span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('season_start_month') }}</span>
@@ -587,12 +585,6 @@ function saveSettings() {
                                             </select>
                                             <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">{{ t('season_start_hint') }}</span>
                                             <span v-if="settingsForm.errors['settings.seasonStartMonth']" class="mt-1 block text-xs text-rose-500">{{ settingsForm.errors['settings.seasonStartMonth'] }}</span>
-                                        </label>
-                                        <label class="block text-sm">
-                                            <span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('file_drawer_size') }}</span>
-                                            <input v-model="settingsForm.fileDrawerSize" type="number" min="10" max="1000" class="w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800" />
-                                            <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">{{ t('file_drawer_hint') }}</span>
-                                            <span v-if="settingsForm.errors['settings.fileDrawerSize']" class="mt-1 block text-xs text-rose-500">{{ settingsForm.errors['settings.fileDrawerSize'] }}</span>
                                         </label>
                                     </div>
                                 </div>

@@ -85,7 +85,6 @@ class WebsiteConfig extends Model
                     'defaultLanguage' => 'ar',
                     'fiscalYearStart' => '01-01',
                     'seasonStartMonth' => 9,
-                    'fileDrawerSize' => 100,
                     'enableDonations' => true,
                     'maintenanceMode' => false,
                 ],

@@ -78,7 +78,6 @@ class AttendanceMonthSheetTest extends TestCase
         $this->assertSame([$early->id => ''], $sheet['cells'][$leftMid->id]);
         $this->assertSame([$held->id => 'R15'], $sheet['cells'][$moved->id]);
         $this->assertSame([$early->id => '', $planned->id => ''], $sheet['cells'][$newcomer->id]);
-        $this->assertArrayHasKey('file_number', $sheet['players']->first()->getAttributes());
     }
 
     #[Test]

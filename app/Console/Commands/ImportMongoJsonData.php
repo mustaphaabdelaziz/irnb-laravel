@@ -18,7 +18,6 @@ use App\Models\Subscription;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Models\WebsiteConfig;
-use App\Services\Player\FileNumber;
 use App\Services\Player\MembershipNumber;
 use Carbon\Carbon;
 use Illuminate\Console\Attributes\Description;
@@ -473,13 +472,6 @@ class ImportMongoJsonData extends Command
                     'outstanding_debt' => (float) ($row['outstandingDebt'] ?? 0),
                 ]
             );
-
-            // Legacy imports bypass RegisterPlayerService, which is where a file
-            // number is normally assigned; do it here too, so re-running the
-            // command never leaves an imported player without one (a no-op once
-            // they already have one).
-            FileNumber::assign($player);
-
             $player->emergencyContacts()->delete();
             foreach ($this->ensureArray($health['emergencyContact'] ?? []) as $contact) {
                 if (! is_array($contact)) {

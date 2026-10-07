@@ -13,7 +13,6 @@ use App\Models\TrainingSchedule;
 use App\Models\TrainingSession;
 use App\Models\User;
 use App\Services\Pdf\PdfService;
-use App\Services\Player\FileNumber;
 use App\Support\AttendanceSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery\MockInterface;
@@ -104,7 +103,6 @@ class AttendanceMonthSheetPdfTest extends TestCase
     {
         $u15 = $this->category('U15');
         $player = $this->player($u15);
-        FileNumber::assign($player);
         $this->training($u15, '2026-10-05', ['title' => 'Sprint 30 m']);
         $seen = $this->spyPdf();
 
@@ -113,7 +111,7 @@ class AttendanceMonthSheetPdfTest extends TestCase
         $this->assertFalse($seen['rtl']);
         $this->assertTrue($seen['landscape']);
         $this->assertSame("attendance-sheet-{$u15->id}-2026-10.pdf", $seen['filename']);
-        foreach (['Feuille de présence', 'U15', 'octobre 2026', '2026/27', 'Test001 P1', '0001', '05/10', '18:00', 'Sprint 30 m', 'Signature', '<thead>', '{PAGENO}', '{nbpg}'] as $text) {
+        foreach (['Feuille de présence', 'U15', 'octobre 2026', '2026/27', 'Test001 P1', '05/10', '18:00', 'Sprint 30 m', 'Signature', '<thead>', '{PAGENO}', '{nbpg}'] as $text) {
             $this->assertStringContainsString($text, $seen['html'], $text);
         }
         $this->assertStringNotContainsString('Imprimée avec les présences', $seen['html']);

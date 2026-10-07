@@ -32,12 +32,11 @@ class PlayerMembershipIdTest extends TestCase
     }
 
     #[Test]
-    public function it_keeps_the_membership_id_when_the_join_year_changes(): void
+    public function it_regenerates_membership_id_when_join_year_changes(): void
     {
-        // The id is printed on the member card and written on the paper folder:
-        // correcting the join year must not renumber the member.
+        // The id encodes the join year (YYYYNNNNN): changing the year renumbers
+        // the member under the new year. The file number stays the permanent id.
         $player = $this->makePlayer(2024);
-        $original = $player->membership_id;
 
         $this->actingAs($this->admin())
             ->put(route('players.update', $player), [
@@ -47,7 +46,7 @@ class PlayerMembershipIdTest extends TestCase
             ->assertRedirect();
 
         $player->refresh();
-        $this->assertSame($original, $player->membership_id);
+        $this->assertSame(MembershipNumber::format(2025, 1), $player->membership_id);
         $this->assertSame(2025, $player->join_year);
     }
 

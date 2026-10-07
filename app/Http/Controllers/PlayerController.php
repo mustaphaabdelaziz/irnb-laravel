@@ -423,9 +423,13 @@ class PlayerController extends Controller
             $validated['picture_filename'] = $stored['filename'];
         }
 
-        // The membership id is NOT regenerated when the join year changes: it is
-        // printed on the member card and written on the paper folder. The year it
-        // encodes is the year the member was first enrolled, which never changes.
+        // Membership id encodes the join year (YYYYNNNNN). If the year changes,
+        // regenerate the id for the new year so the two stay consistent. The
+        // file number is the permanent id written on the paper folder.
+        if (! empty($validated['join_year'])
+            && (int) $validated['join_year'] !== (int) $player->join_year) {
+            $validated['membership_id'] = MembershipNumber::generateUnique((int) $validated['join_year']);
+        }
 
         $player->update($validated);
 

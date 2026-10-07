@@ -51,7 +51,6 @@
         <thead>
             <tr>
                 <th style="width:6mm;">#</th>
-                <th style="width:13mm;">{{ $L('att.sheet.file_no') }}</th>
                 <th>{{ $L('att.player') }}</th>
                 @foreach ($statuses as $status)
                     <th style="width:10mm;"><span class="code" style="color: {{ $codes[$status]['color'] }};"><bdi dir="ltr">{{ $code($status) }}</bdi></span><br>{{ $labels[$status] }}</th>
@@ -65,7 +64,6 @@
             @foreach ($rows as $row)
                 <tr>
                     <td class="num">{{ $loop->iteration }}</td>
-                    <td class="num">{{ $row['file_number'] }}</td>
                     <td>{{ $row['name'] }}@if ($row['category']) <span class="guest">({{ $row['category'] }})</span>@endif</td>
                     @foreach ($statuses as $status)
                         @if ($row['status'] === $status)

@@ -63,7 +63,6 @@
             <thead>
                 <tr>
                     <th style="width:6mm;">#</th>
-                    <th style="width:14mm;">{{ $L('att.sheet.file_no') }}</th>
                     <th style="width:52mm;">{{ $L('att.player') }}</th>
                     @foreach ($group['columns'] as $column)
                         <th>{{ $column['day'] }}<br><bdi dir="ltr">{{ $column['date'] }}</bdi><br><bdi dir="ltr">{{ $column['time'] }}</bdi>@if (isset($marks[$column['kind']]))<br><span class="kind">{{ $marks[$column['kind']] }}</span>@endif @if ($column['title'])<br><span class="goal">{{ $column['title'] }}</span>@endif</th>
@@ -77,7 +76,6 @@
                 @foreach ($rows as $row)
                     <tr>
                         <td class="num">{{ $loop->iteration }}</td>
-                        <td class="num">{{ $row['file_number'] }}</td>
                         <td>{{ $row['name'] }}@if ($row['category']) <span class="guest">({{ $row['category'] }})</span>@endif</td>
                         @foreach ($group['columns'] as $column)
                             @if (array_key_exists($column['id'], $cells[$row['id']] ?? []))

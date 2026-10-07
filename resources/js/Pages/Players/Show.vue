@@ -22,7 +22,6 @@ import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 import { ref, computed, watch } from 'vue';
 import { useStatusLabel } from '@/Composables/useStatusLabel';
-import { formatFileNumber, fileDrawer } from '@/lib/fileNumber';
 import { useCan } from '@/Composables/useCan';
 
 const { t } = useI18n();
@@ -37,7 +36,6 @@ const props = defineProps({
     availableSubscriptions: { type: Array, default: () => [] },
     financeAccounts: { type: Array, default: () => [] },
     defaultFinanceAccountId: { type: [Number, String], default: '' },
-    fileDrawerSize: { type: Number, default: 100 },
     certificateThresholds: { type: Object, default: () => ({}) },
     currentSchoolYear: { type: Number, default: null },
     // null when the viewer lacks documents/view (the server does not send it).
@@ -365,12 +363,6 @@ function formatDate(val) {
                     </div>
                     <dl class="mt-5 grid gap-x-6 gap-y-4 sm:grid-cols-2">
                         <PlayerFieldRow icon="idcard" :label="t('membership_id')" :value="player.membership_id" mono />
-                        <PlayerFieldRow icon="folder" :label="t('file_number')" mono>
-                            {{ formatFileNumber(player.file_number) }}
-                            <span v-if="player.file_number" class="text-xs font-sans text-slate-500 dark:text-slate-400">
-                                · {{ t('drawer') }} {{ fileDrawer(player.file_number, fileDrawerSize) }}
-                            </span>
-                        </PlayerFieldRow>
                         <PlayerFieldRow icon="calendar" :label="t('birthdate')">
                             {{ formatDate(player.birthdate) }}
                             <span v-if="player.age != null" class="ms-1 text-slate-500 dark:text-slate-400">({{ t('age_years', { age: player.age }) }})</span>
@@ -438,7 +430,6 @@ function formatDate(val) {
                     <div class="flex flex-wrap items-center gap-2 rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                         <IconButton :href="route('players.edit', player.id)" icon="pencil" :label="t('edit_player')" />
                         <IconButton :href="route('players.card', player.id)" external target="_blank" icon="idcard" :label="t('member_card')" />
-                        <IconButton :href="route('players.label', player.id)" external target="_blank" icon="print" :label="t('print_folder_label')" />
                         <IconButton icon="trash" :label="t('delete')" variant="danger" @click="showDeleteModal = true" />
                     </div>
                 </div>

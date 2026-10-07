@@ -1,6 +1,3 @@
-@php
-    use App\Services\Player\FileNumber;
-@endphp
 <!DOCTYPE html>
 <html>
 <head>
@@ -29,17 +26,13 @@
             <tr>
                 <th style="width:8%;">#</th>
                 <th>{{ __('Member') }}</th>
-                <th style="width:22%;">{{ __('Membership ID') }}</th>
-                <th style="width:15%;">{{ __('File number') }}</th>
-                <th style="width:12%;">{{ __('Drawer') }}</th>
+                <th style="width:30%;">{{ __('Membership ID') }}</th>
             </tr>
             @foreach ($players as $player)
                 <tr>
                     <td class="num">{{ $loop->iteration }}</td>
                     <td>{{ $player->fullname }}</td>
                     <td class="num">{{ $player->membership_id }}</td>
-                    <td class="num">{{ FileNumber::format($player->file_number) ?: '—' }}</td>
-                    <td class="num">{{ $player->file_number ? FileNumber::drawer($player->file_number, $drawerSize ?? null) : '—' }}</td>
                 </tr>
             @endforeach
         </table>

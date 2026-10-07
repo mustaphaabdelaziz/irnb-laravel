@@ -12,7 +12,6 @@ use App\Services\Attendance\MonthSheet;
 use App\Services\Attendance\Roster;
 use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
-use App\Services\Player\FileNumber;
 use App\Support\Season;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -90,7 +89,6 @@ class AttendanceSheetController extends Controller
             'total' => count($columns),
             'rows' => $players->map(fn (Player $p) => [
                 'id' => $p->id,
-                'file_number' => self::fileNumber($p),
                 'name' => self::name($p),
                 'category' => $others->get((int) $p->category_id),
             ])->values()->all(),
@@ -140,7 +138,6 @@ class AttendanceSheetController extends Controller
                 $mark = $marks->get($p->id);
 
                 return [
-                    'file_number' => self::fileNumber($p),
                     'name' => self::name($p),
                     // Where a player comes from only matters when several categories share the session.
                     // Once marked, the mark's own category_id (fixed at marking time) wins over the
@@ -160,12 +157,6 @@ class AttendanceSheetController extends Controller
         ])->render();
 
         return $this->pdf->stream($html, "attendance-session-{$session->id}-{$session->date}.pdf", $locale === 'ar');
-    }
-
-    /** The folder number, zero-padded; a dash when the player has none yet. */
-    private static function fileNumber(Player $player): string
-    {
-        return FileNumber::format($player->file_number === null ? null : (int) $player->file_number) ?: '—';
     }
 
     /** Player::fullname, exactly as the month grid and the session page list the player. */

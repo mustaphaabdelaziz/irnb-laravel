@@ -24,9 +24,8 @@ use Illuminate\Support\Collection;
  */
 final class Roster
 {
-    // file_number: the session sheet prints the paper-folder number; nickname,
-    // father, grandfather: Player::fullname, the name every attendance list shows.
-    public const COLUMNS = ['id', 'firstname', 'lastname', 'nickname', 'father', 'grandfather', 'file_number', 'category_id'];
+    // nickname, father, grandfather: Player::fullname, the name every attendance list shows.
+    public const COLUMNS = ['id', 'firstname', 'lastname', 'nickname', 'father', 'grandfather', 'category_id'];
 
     /** @var list<int>|null the settings' default set, read once per instance */
     private ?array $defaultStatusIds = null;

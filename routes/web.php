@@ -149,7 +149,6 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
     Route::post('/players/bulk-restore', [PlayerController::class, 'bulkRestore'])->name('players.bulkRestore');
     Route::post('/players/bulk-force-delete', [PlayerController::class, 'bulkForceDelete'])->name('players.bulkForceDelete');
     Route::post('/players/bulk-update', [PlayerController::class, 'bulkUpdate'])->name('players.bulkUpdate');
-    Route::get('/players/labels', [PlayerPrintController::class, 'labels'])->name('players.labels');
     Route::get('/players/board-table', [PlayerPrintController::class, 'boardTable'])->name('players.board-table');
     Route::get('/players/academic-results', [PlayerPrintController::class, 'academicResults'])->name('players.academic-results');
 
@@ -213,7 +212,6 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
 
     // PDF documents
     Route::get('/players/{player}/card', [ReportController::class, 'playerCard'])->name('players.card');
-    Route::get('/players/{player}/label', [PlayerPrintController::class, 'label'])->name('players.label');
     Route::get('/players/{player}/academic-report', [ReportController::class, 'academicReport'])->name('players.academic-report');
     Route::get('/reports/financial', [ReportController::class, 'financialSummary'])->name('reports.financial');
 

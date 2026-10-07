@@ -35,10 +35,6 @@ class RegisterPlayerService
             /** @var Player $player */
             $player = Player::query()->create($attributes);
 
-            // The folder number is allocated once, inside the same transaction
-            // that creates the member, so a failed registration leaves no gap.
-            FileNumber::assign($player);
-
             return $player;
         });
     }

@@ -12,7 +12,6 @@ use App\Models\Role;
 use App\Models\TrainingSession;
 use App\Models\User;
 use App\Services\Pdf\PdfService;
-use App\Services\Player\FileNumber;
 use App\Support\AttendanceSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery\MockInterface;
@@ -93,7 +92,6 @@ class AttendanceSessionSheetPdfTest extends TestCase
         $u15 = $this->category('U15');
         $u17 = $this->category('U17');
         $player = $this->player($u15);
-        FileNumber::assign($player);
         $joint = $this->training($u15, '2026-10-05', ['kind' => SessionKind::Preseason, 'title' => 'Running 7.2 km', 'coach' => 'Karim']);
         $joint->categories()->syncWithoutDetaching([$u17->id]);
         $seen = $this->spyPdf();
@@ -103,7 +101,7 @@ class AttendanceSessionSheetPdfTest extends TestCase
         $this->assertFalse($seen['rtl']);
         $this->assertFalse($seen['landscape']);
         $this->assertSame("attendance-session-{$joint->id}-2026-10-05.pdf", $seen['filename']);
-        foreach (['Feuille de présence de la séance', 'U15 · U17', 'Préparation physique', 'lundi 5 octobre 2026', '18:00–19:30', 'Running 7.2 km', 'Karim', '0001', 'Signature', '<thead>'] as $text) {
+        foreach (['Feuille de présence de la séance', 'U15 · U17', 'Préparation physique', 'lundi 5 octobre 2026', '18:00–19:30', 'Running 7.2 km', 'Karim', 'Signature', '<thead>'] as $text) {
             $this->assertStringContainsString($text, $seen['html'], $text);
         }
     }

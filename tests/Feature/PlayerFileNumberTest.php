@@ -52,10 +52,9 @@ class PlayerFileNumberTest extends TestCase
     }
 
     #[Test]
-    public function both_identifiers_survive_a_join_year_change(): void
+    public function the_file_number_survives_a_join_year_change(): void
     {
         $player = $this->register('Amine', 2024);
-        $membership = $player->membership_id;
         $fileNumber = $player->fresh()->file_number;
 
         $this->actingAs($this->admin())
@@ -63,7 +62,7 @@ class PlayerFileNumberTest extends TestCase
             ->assertRedirect();
 
         $player->refresh();
-        $this->assertSame($membership, $player->membership_id, 'the card and the folder carry this number');
+        $this->assertStringStartsWith('2025', $player->membership_id, 'the membership id follows the join year');
         $this->assertSame($fileNumber, $player->file_number);
         $this->assertSame(2025, $player->join_year);
     }

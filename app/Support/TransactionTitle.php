@@ -31,7 +31,7 @@ final class TransactionTitle
     /** Eager loads that for() and decorate() read. */
     public const RELATIONS = [
         'financeCategory',
-        'relatedPlayer:id,firstname,lastname,membership_id',
+        'relatedPlayer:id,firstname,lastname,nickname,father,grandfather,gender,membership_id',
         'playerSubscription:id,subscription_id,label,year',
         'playerSubscription.subscription:id,name,year',
     ];
@@ -45,7 +45,7 @@ final class TransactionTitle
         $parts = [
             self::categoryLabel($transaction),
             self::subscriptionLabel($transaction),
-            self::player($transaction)?->short_name,
+            self::player($transaction)?->fullname,
         ];
 
         return implode(' · ', array_filter($parts, fn (?string $part) => filled($part)));
@@ -66,7 +66,7 @@ final class TransactionTitle
         $transaction->setAttribute('display_title', self::for($transaction));
         $transaction->setAttribute('player_summary', $player ? [
             'id' => $player->id,
-            'name' => $player->short_name,
+            'name' => $player->fullname,
             'membership_id' => $player->membership_id,
         ] : null);
 

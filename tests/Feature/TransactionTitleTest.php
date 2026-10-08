@@ -57,11 +57,11 @@ class TransactionTitleTest extends TestCase
         $tx = $this->subscriptionPayment();
 
         app()->setLocale('fr');
-        $this->assertSame('Cotisation · Saison 2026 · Amine Benali', TransactionTitle::for($tx));
+        $this->assertSame('Cotisation · Saison 2026 · Benali Amine', TransactionTitle::for($tx));
 
         // Not stored: the same row reads in Arabic after a language switch.
         app()->setLocale('ar');
-        $this->assertSame('اشتراك · Saison 2026 · Amine Benali', TransactionTitle::for($tx));
+        $this->assertSame('اشتراك · Saison 2026 · Benali Amine', TransactionTitle::for($tx));
     }
 
     #[Test]
@@ -70,8 +70,8 @@ class TransactionTitleTest extends TestCase
         app()->setLocale('fr');
         $array = TransactionTitle::decorate($this->subscriptionPayment())->toArray();
 
-        $this->assertSame('Cotisation · Saison 2026 · Amine Benali', $array['display_title']);
-        $this->assertSame('Amine Benali', $array['player_summary']['name']);
+        $this->assertSame('Cotisation · Saison 2026 · Benali Amine', $array['display_title']);
+        $this->assertSame('Benali Amine', $array['player_summary']['name']);
         $this->assertSame('202600017', $array['player_summary']['membership_id']);
         $this->assertArrayNotHasKey('related_player', $array);
         $this->assertArrayNotHasKey('player_subscription', $array);
@@ -96,7 +96,7 @@ class TransactionTitleTest extends TestCase
     {
         $player = Player::create(['membership_id' => '202600019', 'firstname' => 'Yanis']);
 
-        $this->assertSame('Yanis', $player->short_name);
+        $this->assertSame('Yanis', $player->fullname);
     }
 
     #[Test]
@@ -135,6 +135,6 @@ class TransactionTitleTest extends TestCase
         ])->load(TransactionTitle::RELATIONS);
 
         app()->setLocale('fr');
-        $this->assertSame('Cotisation · Hiver 2026 · Amine Benali', TransactionTitle::for($tx));
+        $this->assertSame('Cotisation · Hiver 2026 · Benali Amine', TransactionTitle::for($tx));
     }
 }

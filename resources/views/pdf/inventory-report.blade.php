@@ -43,7 +43,7 @@
             {{ __('Participants') }}:
             @foreach ($namedParticipants as $p)
                 {{ $p->participant instanceof \App\Models\Player
-                    ? trim(($p->participant->firstname ?? '').' '.($p->participant->lastname ?? ''))
+                    ? $p->participant->fullname
                     : ($p->participant->name ?? '') }}@if (! $loop->last), @endif
             @endforeach
         </div>

@@ -61,7 +61,7 @@ class BoardMemberController extends Controller
             $player = Player::find($data['player_id']);
             if ($player) {
                 if (empty($data['name'])) {
-                    $data['name'] = trim($player->firstname.' '.$player->lastname);
+                    $data['name'] = $player->fullname;
                 }
                 if (empty($data['photo_url']) && $player->picture_url) {
                     $data['photo_url'] = $player->picture_url;

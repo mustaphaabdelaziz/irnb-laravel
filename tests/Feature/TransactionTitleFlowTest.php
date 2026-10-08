@@ -134,7 +134,7 @@ class TransactionTitleFlowTest extends TestCase
         ])->assertRedirect();
 
         $props = $this->actingAs($admin)->get(route('players.show', $player))->assertOk()->viewData('page')['props'];
-        $this->assertStringContainsString('Amine Benali', $props['transactions'][0]['display_title']);
+        $this->assertStringContainsString('Benali Amine', $props['transactions'][0]['display_title']);
     }
 
     #[Test]

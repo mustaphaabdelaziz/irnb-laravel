@@ -65,7 +65,7 @@ const matches = computed(() => {
     return props.candidates.filter((c) => !listed.has(c.id) && fold(c.name).includes(q)).slice(0, 20);
 });
 function addPlayer(p) {
-    if (!rows.value.some((r) => r.player_id === p.id)) rows.value.push({ player_id: p.id, name: p.name, category: null, status: 'present', minutes: null, reason: null, note: '' });
+    if (!rows.value.some((r) => r.player_id === p.id)) rows.value.push({ player_id: p.id, name: p.name, picture: p.picture, category: null, status: 'present', minutes: null, reason: null, note: '' });
     query.value = '';
 }
 const removeRow = (row) => (rows.value = rows.value.filter((r) => r !== row));
@@ -74,7 +74,7 @@ const saving = ref(false);
 function save() {
     router.put(route('attendance.sessions.marks', props.session.id), {
         ...log,
-        marks: rows.value.map(({ name, category, ...mark }) => mark),
+        marks: rows.value.map(({ name, picture, category, ...mark }) => mark),
     }, { preserveScroll: true, preserveState: 'errors', onStart: () => (saving.value = true), onFinish: () => (saving.value = false) });
 }
 const rowError = (i) => ['minutes', 'reason', 'note', 'status'].map((f) => errors.value[`marks.${i}.${f}`]).map(tr).find(Boolean);
@@ -167,6 +167,8 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                 <ul>
                     <li v-for="(row, i) in rows" :key="row.player_id" class="border-b border-slate-100 p-3 last:border-0 dark:border-slate-800">
                         <div class="flex flex-wrap items-center gap-2">
+                            <img v-if="row.picture" :src="row.picture" :alt="row.name" loading="lazy" class="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700" />
+                            <span v-else class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-50 text-sm font-bold text-primary-600 ring-1 ring-primary-100 dark:bg-primary-500/10 dark:text-primary-300 dark:ring-primary-500/20">{{ (row.name || '?').charAt(0).toUpperCase() }}</span>
                             <span class="min-w-[10rem] flex-1 font-medium text-slate-900 dark:text-slate-100">
                                 {{ row.name }}
                                 <span v-if="row.category" class="ms-1 text-xs font-normal text-slate-400">{{ row.category }}</span>

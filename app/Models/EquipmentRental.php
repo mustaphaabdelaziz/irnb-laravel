@@ -73,6 +73,10 @@ class EquipmentRental extends Model
 
         $r = $this->rentable;
 
+        if ($r instanceof Player) {
+            return $r->fullname ?: null;
+        }
+
         return trim(($r->firstname ?? $r->name ?? '').' '.($r->lastname ?? '')) ?: null;
     }
 

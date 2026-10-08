@@ -49,6 +49,7 @@ class AttendanceController extends Controller
                 return [
                     'player_id' => $p->id,
                     'name' => $p->fullname,
+                    'picture' => $p->picture_url,
                     // Where a player comes from only matters when several categories share the session.
                     // Once marked, the mark's own category_id (fixed at marking time) wins over the
                     // player's current one, so a later category change never retags a frozen session.
@@ -74,6 +75,7 @@ class AttendanceController extends Controller
                 ->map(fn (Player $p) => [
                     'id' => $p->id,
                     'name' => $p->fullname,
+                    'picture' => $p->picture_url,
                     'status' => $p->status?->localized_name,
                     'category' => $p->category?->localized_name,
                 ]),

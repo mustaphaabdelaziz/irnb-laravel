@@ -25,7 +25,7 @@ final class PlayerNames
 
         $players = Player::with('category')
             ->whereIn('id', array_unique(array_column($rows, 'player_id')))
-            ->get(['id', 'firstname', 'lastname', 'nickname', 'father', 'grandfather', 'membership_id', 'category_id', 'archived', 'left_at'])
+            ->get(['id', ...Player::NAME_COLUMNS, 'membership_id', 'category_id', 'archived', 'left_at'])
             ->keyBy('id');
 
         return array_values(array_map(function (array $row) use ($players): array {

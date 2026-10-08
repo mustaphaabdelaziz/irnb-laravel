@@ -71,7 +71,7 @@ const filteredAvailable = computed(() => {
     const q = playerSearch.value.trim().toLowerCase();
     if (!q) return props.availablePlayers ?? [];
     return (props.availablePlayers ?? []).filter(p =>
-        `${p.firstname} ${p.lastname} ${p.membership_id}`.toLowerCase().includes(q)
+        `${p.fullname} ${p.membership_id}`.toLowerCase().includes(q)
     );
 });
 
@@ -261,8 +261,7 @@ const tabCount = (tab) => {
                                 <td class="px-4 py-3 text-sm text-slate-400 dark:text-slate-500">{{ idx + 1 }}</td>
                                 <td class="px-4 py-3">
                                     <Link :href="route('players.show', ps.player_id)" class="text-sm font-medium text-primary-600 hover:text-primary-800">
-                                        {{ ps.player?.lastname }} {{ ps.player?.firstname }}
-                                        <span v-if="ps.player?.nickname" class="text-slate-400 dark:text-slate-500 text-xs">({{ ps.player.nickname }})</span>
+                                        {{ ps.player?.fullname }}
                                     </Link>
                                     <p class="text-xs text-slate-400 dark:text-slate-500">{{ ps.player?.membership_id }}</p>
                                 </td>
@@ -349,9 +348,7 @@ const tabCount = (tab) => {
                             :class="addPlayerForm.player_id === player.id ? 'bg-primary-50' : ''">
                             <input type="radio" :value="player.id" v-model="addPlayerForm.player_id" class="text-primary-600" />
                             <div>
-                                <p class="text-sm font-medium text-slate-800 dark:text-slate-200">{{ player.lastname }} {{ player.firstname }}
-                                    <span v-if="player.nickname" class="text-slate-400 dark:text-slate-500 text-xs">({{ player.nickname }})</span>
-                                </p>
+                                <p class="text-sm font-medium text-slate-800 dark:text-slate-200">{{ player.fullname }}</p>
                                 <p class="text-xs text-slate-400 dark:text-slate-500">
                                     {{ player.membership_id }}
                                     <span v-if="player.category" class="ml-2">· {{ player.category?.localized_name || player.category?.name }}</span>

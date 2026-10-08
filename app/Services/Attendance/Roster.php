@@ -24,9 +24,9 @@ use Illuminate\Support\Collection;
  */
 final class Roster
 {
-    // nickname, father, grandfather: Player::fullname, the name every attendance list shows.
+    // Player::NAME_COLUMNS: Player::fullname, the name every attendance list shows.
     // picture_url: the photo beside each name on the session page.
-    public const COLUMNS = ['id', 'firstname', 'lastname', 'nickname', 'father', 'grandfather', 'category_id', 'picture_url'];
+    public const COLUMNS = ['id', ...Player::NAME_COLUMNS, 'category_id', 'picture_url'];
 
     /** @var list<int>|null the settings' default set, read once per instance */
     private ?array $defaultStatusIds = null;

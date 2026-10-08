@@ -3,6 +3,7 @@
 namespace App\Services\Dashboard;
 
 use App\Models\EquipmentRental;
+use App\Models\Player;
 use App\Models\PlayerSubscription;
 use App\Models\Transaction;
 use App\Services\Dashboard\Support\BranchScope;
@@ -249,7 +250,7 @@ class OverviewStats
                 'id' => $t->id,
             ]);
 
-        $registrations = DB::table('players')
+        $registrations = Player::query()
             ->where('archived', false)
             ->when($filters->branchId !== null, fn ($q) => $q->whereIn(
                 'players.id',
@@ -257,11 +258,11 @@ class OverviewStats
             ))
             ->orderByDesc('created_at')
             ->limit(10)
-            ->get(['id', 'created_at', 'firstname', 'lastname'])
-            ->map(fn (object $p): array => [
+            ->get(['id', 'created_at', ...Player::NAME_COLUMNS])
+            ->map(fn (Player $p): array => [
                 'type' => 'registration',
                 'at' => (string) $p->created_at,
-                'label' => trim("{$p->firstname} {$p->lastname}"),
+                'label' => $p->fullname,
                 'amount' => null,
                 'id' => $p->id,
             ]);

@@ -69,7 +69,7 @@ class TransactionPlayerLookupTest extends TestCase
         $players = collect($this->actingAs($this->admin())->get(route('transactions.create'))
             ->assertOk()->viewData('page')['props']['players'])->keyBy('membership_id');
 
-        $this->assertSame('Amine Benali', $players['202600017']['name']);
+        $this->assertSame('Benali Amine', $players['202600017']['name']);
         $this->assertSame('Cadets', $players['202600017']['category']);
         $this->assertSame(2010, $players['202600017']['birth_year']);
         $this->assertSame('Juniors', $players['202600018']['category']);

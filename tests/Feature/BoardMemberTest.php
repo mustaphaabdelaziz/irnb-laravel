@@ -39,7 +39,7 @@ class BoardMemberTest extends TestCase
             ])->assertRedirect();
 
         $member = BoardMember::firstOrFail();
-        $this->assertSame('Sami Zidane', $member->name);
+        $this->assertSame('Zidane Sami', $member->name);
         $this->assertSame($player->id, $member->player_id);
         $this->assertSame($term->id, $member->board_term_id);
     }

@@ -87,7 +87,7 @@ class EquipmentAssignmentTest extends TestCase
             ->assertOk()->viewData('page')['props'];
 
         $holders = collect($props['catalog']['items'][0]['open_rentals']);
-        $this->assertSame(['Ali B', 'Karim Visitor'], $holders->pluck('recipient_name')->all());
+        $this->assertSame(['B Ali', 'Karim Visitor'], $holders->pluck('recipient_name')->all());
         $this->assertSame(['assignment', 'rental'], $holders->pluck('type')->all());
     }
 

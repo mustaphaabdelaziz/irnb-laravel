@@ -104,13 +104,13 @@ class BoardController extends Controller
 
         $subscriptions = PlayerSubscription::whereNotNull('due_date')
             ->whereBetween('due_date', [$from->toDateString(), $to->toDateString()])
-            ->with('player:id,firstname,lastname')
+            ->with('player:id,'.implode(',', Player::NAME_COLUMNS))
             ->get()
             ->filter(fn (PlayerSubscription $s) => $s->payment_status !== 'paid')
             ->map(fn (PlayerSubscription $s) => [
                 'kind' => 'subscription',
                 'id' => $s->id,
-                'title' => trim(($s->player?->firstname ?? '').' '.($s->player?->lastname ?? '')) ?: 'Subscription',
+                'title' => $s->player?->fullname ?: 'Subscription',
                 'date' => $s->due_date->toDateString(),
                 'amount' => (float) $s->remaining_amount,
             ])->values();
@@ -144,10 +144,10 @@ class BoardController extends Controller
             'selectedTermId' => $selectedTermId,
             'players' => Player::where('archived', false)
                 ->orderBy('lastname')->orderBy('firstname')
-                ->get(['id', 'firstname', 'lastname', 'membership_id'])
+                ->get(['id', ...Player::NAME_COLUMNS, 'membership_id'])
                 ->map(fn (Player $p) => [
                     'id' => $p->id,
-                    'name' => trim($p->firstname.' '.$p->lastname),
+                    'name' => $p->fullname,
                     'membership_id' => $p->membership_id,
                 ]),
         ]);

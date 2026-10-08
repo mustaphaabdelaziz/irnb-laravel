@@ -171,7 +171,7 @@ class SubscriptionController extends Controller
             ->whereNotIn('id', $assignedPlayerIds)
             ->with('category')
             ->orderBy('lastname')
-            ->get(['id', 'firstname', 'lastname', 'nickname', 'is_student', 'category_id', 'membership_id'])
+            ->get(['id', ...Player::NAME_COLUMNS, 'is_student', 'category_id', 'membership_id'])
             // What each would owe, category price override included.
             ->each(fn (Player $player) => $player->setAttribute('price', $subscription->amountFor($player)));
 
@@ -346,7 +346,7 @@ class SubscriptionController extends Controller
             ]);
         });
 
-        return back()->with('success', ['key' => 'flash.player_added_to_subscription', 'params' => ['name' => $player->firstname.' '.$player->lastname]]);
+        return back()->with('success', ['key' => 'flash.player_added_to_subscription', 'params' => ['name' => $player->fullname]]);
     }
 
     public function export(Request $request, Subscription $subscription): SymfonyResponse
@@ -380,7 +380,7 @@ class SubscriptionController extends Controller
         $rowNum = 1;
         foreach ($playerSubscriptions as $ps) {
             $player = $ps->player;
-            $name = $player ? ($player->lastname.' '.$player->firstname) : 'N/A';
+            $name = $player ? $player->fullname : 'N/A';
 
             $rows[] = [
                 $rowNum++,

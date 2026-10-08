@@ -373,13 +373,13 @@ class TransactionController extends Controller
                 ->with(['branches:id,name,name_ar,name_fr,name_en', 'category:id,name,name_ar,name_fr,name_en'])
                 ->orderBy('lastname')->orderBy('firstname')
                 ->get([
-                    'id', 'firstname', 'lastname', 'nickname', 'father', 'grandfather',
+                    'id', ...Player::NAME_COLUMNS,
                     'membership_id', 'category_id', 'birthdate', 'picture_url', 'picture_filename',
                     'outstanding_debt', 'archived',
                 ])
                 ->map(fn (Player $player) => [
                     'id' => $player->id,
-                    'name' => $player->short_name,
+                    'name' => $player->fullname,
                     'fullname' => $player->fullname,
                     'membership_id' => $player->membership_id,
                     'category' => $player->category?->localized_name,

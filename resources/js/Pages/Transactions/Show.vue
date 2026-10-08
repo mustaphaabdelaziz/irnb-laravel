@@ -98,7 +98,7 @@ const statusColor = (s) => s === 'Paid' ? 'emerald' : s === 'Partial' ? 'amber' 
                 <div class="space-y-2">
                     <div v-for="ps in transaction.player_subscriptions" :key="ps.id" class="flex items-center justify-between rounded-lg bg-slate-50 dark:bg-slate-950 px-4 py-3">
                         <Link :href="route('players.show', ps.player_id)" class="text-sm font-medium text-primary-600 hover:underline">
-                            {{ ps.player?.firstname }} {{ ps.player?.lastname }}
+                            {{ ps.player?.fullname }}
                         </Link>
                         <span class="text-sm text-slate-600 dark:text-slate-300">{{ formatMoney(ps.amount_paid) }}</span>
                     </div>

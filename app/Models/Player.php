@@ -18,6 +18,9 @@ class Player extends Model
 {
     use HasFactory;
 
+    /** What the fullname accessor reads: add these to any query that narrows its columns. */
+    public const NAME_COLUMNS = ['firstname', 'lastname', 'nickname', 'father', 'grandfather', 'gender'];
+
     protected $fillable = [
         'membership_id',
         'firstname',
@@ -137,7 +140,7 @@ class Player extends Model
      * and the paper-folder file number.
      *
      * The full name is spread over several columns (lastname firstname (nickname)
-     * بن father grandfather), so matching the raw term against single columns fails
+     * بن father بن grandfather), so matching the raw term against single columns fails
      * for anything but one word. Instead each whitespace-separated token must match
      * SOME column (AND across tokens, OR across columns). That makes the search
      * order-independent and works with a full name, a partial one, and with or
@@ -152,9 +155,9 @@ class Player extends Model
     {
         $columns = ['firstname', 'lastname', 'nickname', 'father', 'grandfather', 'membership_id'];
 
-        // بن is a connector in the rendered full name, not part of any column.
+        // بن / بنت are connectors in the rendered full name, not part of any column.
         $tokens = collect(preg_split('/\s+/u', trim($search), -1, PREG_SPLIT_NO_EMPTY) ?: [])
-            ->reject(fn ($token) => $token === 'بن')
+            ->reject(fn ($token) => $token === 'بن' || $token === 'بنت')
             ->values();
 
         if ($tokens->isEmpty()) {
@@ -266,12 +269,12 @@ class Player extends Model
         return $this->birthdate?->age;
     }
 
-    /** "Firstname Lastname" for lists and labels; never "Amine null". */
-    public function getShortNameAttribute(): string
-    {
-        return trim($this->firstname.' '.($this->lastname ?? ''));
-    }
-
+    /**
+     * The one name every screen, export and PDF shows:
+     * "lastname firstname (nickname) بن father بن grandfather".
+     * A girl is "بنت" her father; the grandfather link stays "بن".
+     * Queries that narrow their columns must select NAME_COLUMNS.
+     */
     public function getFullnameAttribute(): string
     {
         $parts = [
@@ -286,10 +289,10 @@ class Player extends Model
         $full = trim(implode(' ', array_filter($parts)));
 
         if ($this->father) {
-            $full .= ' بن '.$this->father;
+            $full .= (strtolower(trim((string) $this->gender)) === 'female' ? ' بنت ' : ' بن ').$this->father;
 
             if ($this->grandfather) {
-                $full .= ' '.$this->grandfather;
+                $full .= ' بن '.$this->grandfather;
             }
         }
 

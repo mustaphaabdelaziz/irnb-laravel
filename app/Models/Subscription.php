@@ -118,7 +118,7 @@ class Subscription extends Model
             // a one-off charge takes the year it was assigned in.
             'year' => $this->year ?? (int) now()->year,
             'status_at_time' => $player->is_student ? 'student' : 'worker',
-            // A one-off charge is never debt.
+            // A one-off charge is never mandatory (it still counts as debt).
             'is_mandatory' => ! $this->isExceptional() && (bool) $this->is_mandatory,
             'amount_owed' => $this->amountFor($player),
             'amount_paid' => 0,

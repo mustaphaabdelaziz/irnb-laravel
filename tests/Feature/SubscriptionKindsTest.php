@@ -133,7 +133,7 @@ class SubscriptionKindsTest extends TestCase
     }
 
     #[Test]
-    public function an_exceptional_charge_is_assigned_but_never_counted_as_debt(): void
+    public function an_exceptional_charge_is_assigned_and_counted_as_debt(): void
     {
         $sub = Subscription::create(['kind' => 'exceptional', 'name' => 'T-shirt', 'year' => null, 'amount_student' => 1500, 'amount_worker' => 1500, 'is_mandatory' => true]);
         $player = $this->makePlayer(null);
@@ -146,7 +146,7 @@ class SubscriptionKindsTest extends TestCase
         $this->assertFalse((bool) $ps->is_mandatory);
         $this->assertSame((int) now()->year, (int) $ps->year);
         $this->assertEquals(1500, $ps->amount_owed);
-        $this->assertEquals(0, $player->fresh()->outstanding_debt);
+        $this->assertEquals(1500, $player->fresh()->outstanding_debt);
     }
 
     #[Test]

@@ -1717,7 +1717,7 @@
     "subscription": "Subscription",
     "subscription_branch_hint": "Which branch(es) this subscription belongs to (e.g. Football, Swim). Leave empty for a general subscription.",
     "subscription_due": "Subscription due",
-    "subscription_exceptional_not_debt": "Exceptional charges are assigned by hand and are never counted in a player's debt.",
+    "subscription_exceptional_debt_note": "Exceptional charges are assigned by hand and count in a player's debt until paid.",
     "subscription_kind": "Type",
     "subscription_kind_annual": "Annual subscription",
     "subscription_kind_annual_hint": "Tied to a season, e.g. 2025/2026.",

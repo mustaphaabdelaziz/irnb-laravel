@@ -301,12 +301,13 @@ class Player extends Model
 
     /**
      * Outstanding debt = what is still owed across every obligation assigned to the
-     * player. Optional subscriptions count too: assigning one means the player owes
-     * it. Exempt obligations report a remaining_amount of 0, so they drop out here.
+     * player. Optional subscriptions and one-off (exceptional) charges count too:
+     * assigning one means the player owes it. Exempt obligations report a
+     * remaining_amount of 0, so they drop out here.
      */
     public function calculateTotalDebt(): float
     {
-        return (float) PlayerSubscription::whereCountsAsDebt($this->playerSubscriptions()->getQuery())
+        return (float) $this->playerSubscriptions()
             ->with('payments')
             ->get()
             ->sum(fn (PlayerSubscription $sub) => $sub->remaining_amount);

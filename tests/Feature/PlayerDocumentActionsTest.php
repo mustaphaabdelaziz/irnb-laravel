@@ -8,6 +8,7 @@ use App\Models\PlayerDocument;
 use App\Models\PlayerDocumentFile;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\Player\DocumentChecklist;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
@@ -162,15 +163,18 @@ class PlayerDocumentActionsTest extends TestCase
     }
 
     #[Test]
-    public function the_photo_comes_from_the_profile_picture_only(): void
+    public function a_paper_photo_can_be_marked_received_without_a_profile_picture(): void
     {
         $player = $this->player();
 
         $this->markReceived($player, 'photo')
             ->assertRedirect()
-            ->assertSessionHas('error', 'flash.document_photo_is_profile_picture');
+            ->assertSessionHas('success', 'flash.document_received');
 
-        $this->assertSame(0, PlayerDocument::count());
+        $document = PlayerDocument::firstOrFail();
+        $this->assertSame($this->type('photo')->id, $document->document_type_id);
+        $this->assertSame(PlayerDocument::RECEIVED, $document->state);
+        $this->assertSame('received_paper', DocumentChecklist::evaluate($this->type('photo'), $document, $player->fresh())['state']);
     }
 
     #[Test]

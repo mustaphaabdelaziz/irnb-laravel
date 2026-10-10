@@ -32,10 +32,6 @@ class PlayerDocumentController extends Controller
     {
         $type = $this->activeType($request);
 
-        if ($type->isPhoto()) {
-            return back()->with('error', 'flash.document_photo_is_profile_picture');
-        }
-
         if ($player->documents()->where('document_type_id', $type->id)->exists()) {
             return back()->with('error', 'flash.document_already_recorded');
         }
@@ -51,10 +47,6 @@ class PlayerDocumentController extends Controller
 
         if ($document->state !== PlayerDocument::RECEIVED) {
             return back()->with('error', 'flash.document_not_received');
-        }
-
-        if ($document->type->isPhoto()) {
-            return back()->with('error', 'flash.document_photo_is_profile_picture');
         }
 
         $this->documents->renew($document, $this->receipt($request, $document->type), $this->files($request), $request->user());
@@ -90,10 +82,6 @@ class PlayerDocumentController extends Controller
     public function storeFiles(Request $request, Player $player, PlayerDocument $document): RedirectResponse
     {
         $this->ensureBelongs($player, $document);
-
-        if ($document->type->isPhoto()) {
-            return back()->with('error', 'flash.document_photo_is_profile_picture');
-        }
 
         if ($document->state !== PlayerDocument::RECEIVED) {
             return back()->with('error', 'flash.document_not_received');

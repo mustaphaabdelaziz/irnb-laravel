@@ -132,10 +132,11 @@ class PlayerDocumentFiltersTest extends TestCase
     }
 
     #[Test]
-    public function the_missing_type_filter_on_the_photo_finds_players_without_a_picture(): void
+    public function the_missing_type_filter_on_the_photo_finds_players_without_a_picture_or_a_paper_photo(): void
     {
         $this->player('WithPicture', ['picture_url' => '/media/players/x.jpg']);
         $this->player('WithoutPicture');
+        $this->receive($this->player('PaperPhoto'), 'photo');
 
         $props = $this->props(['documents' => 'missing-'.$this->type('photo')->id]);
 

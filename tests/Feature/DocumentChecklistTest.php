@@ -159,6 +159,18 @@ class DocumentChecklistTest extends TestCase
     }
 
     #[Test]
+    public function a_photo_handed_in_on_paper_counts_without_a_profile_picture(): void
+    {
+        $player = $this->player();
+        $before = $this->missing($player);
+
+        $this->received($player, 'photo');
+
+        $this->assertSame('received_paper', $this->states($player)['photo']);
+        $this->assertSame($before - 1, $this->missing($player));
+    }
+
+    #[Test]
     public function each_item_says_how_many_copies_to_hand_in(): void
     {
         $this->type('photo')->update(['copies' => 4]);
@@ -308,6 +320,8 @@ class DocumentChecklistTest extends TestCase
             'expired optional' => $this->player(),
             'exempt' => $this->player(),
             'exempt photo' => $this->player(),
+            'paper photo' => $this->player(),
+            'paper photo and picture' => $this->player(['picture_url' => '/media/players/d.jpg']),
             'complete adult' => $this->player(['picture_url' => '/media/players/b.jpg']),
             'complete minor' => $this->player(['birthdate' => '2013-05-05', 'picture_url' => '/media/players/c.jpg']),
             'minor, expired parental' => $this->player(['birthdate' => '2011-01-01']),
@@ -320,6 +334,8 @@ class DocumentChecklistTest extends TestCase
         $this->received($players['expired optional'], 'school_certificate', '2026-08-31');
         $this->exempt($players['exempt'], 'medical_certificate');
         $this->exempt($players['exempt photo'], 'photo');
+        $this->received($players['paper photo'], 'photo');
+        $this->received($players['paper photo and picture'], 'photo');
 
         foreach (['complete adult', 'complete minor'] as $label) {
             $this->received($players[$label], 'birth_certificate', null, 1);

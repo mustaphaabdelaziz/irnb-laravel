@@ -77,12 +77,14 @@ function fileErrors(form) {
         .map(([, message]) => message);
 }
 
-const canReceive = (item) => !item.type.is_photo && !item.document && item.type.is_active && can('documents', 'add');
-const canRenew = (item) => !item.type.is_photo && item.document?.state === 'received' && can('documents', 'edit');
-const canUpload = (item) => !item.type.is_photo && item.document?.state === 'received' && can('documents', 'add');
+// The profile picture already settles the Photo: nothing left to receive or exempt.
+const settledByPicture = (item) => item.type.is_photo && !item.document && item.state === 'received_scanned';
+const canReceive = (item) => !item.document && !settledByPicture(item) && item.type.is_active && can('documents', 'add');
+const canRenew = (item) => item.document?.state === 'received' && can('documents', 'edit');
+const canUpload = (item) => item.document?.state === 'received' && can('documents', 'add');
 const canExempt = (item) => item.type.is_active
     && item.document?.state !== 'exempt'
-    && !(item.type.is_photo && item.state === 'received_scanned')
+    && !settledByPicture(item)
     && can('documents', 'edit');
 const canUnexempt = (item) => item.document?.state === 'exempt' && can('documents', 'edit');
 

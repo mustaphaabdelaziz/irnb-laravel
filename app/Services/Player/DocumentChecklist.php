@@ -90,20 +90,15 @@ final class DocumentChecklist
         $applies = $type->appliesTo($player, $today);
         $expected = $type->is_active && $type->is_required && $applies;
 
-        // Owner decision: the Photo is the profile picture. A received row for it
-        // is ignored — the picture is the only thing that makes it "received".
+        // Owner decision: the profile picture counts as the Photo, whatever its
+        // record says. Without a picture the Photo is a document like any other,
+        // so a paper photo can be marked received by hand.
         if ($type->isPhoto()) {
             $picture = $player->getAttributes()['picture_url'] ?? null;
 
             if ($picture !== null && $picture !== '') {
                 return self::result(self::RECEIVED_SCANNED);
             }
-
-            if ($document?->state === PlayerDocument::EXEMPT) {
-                return self::result(self::NOT_REQUIRED, 'exempt');
-            }
-
-            return self::absent($applies, $expected);
         }
 
         if ($document === null) {
@@ -174,7 +169,9 @@ final class DocumentChecklist
         return [
             'EXISTS (SELECT 1 FROM player_documents pd'
                 .' INNER JOIN document_types dt ON dt.id = pd.document_type_id'
-                .' WHERE pd.player_id = players.id AND dt.is_active = 1 AND dt.code <> ?'
+                .' WHERE pd.player_id = players.id AND dt.is_active = 1'
+                // A profile picture settles the Photo, so its record cannot expire.
+                ." AND (dt.code <> ? OR players.picture_url IS NULL OR players.picture_url = '')"
                 ." AND pd.state = 'received' AND pd.valid_until >= ? AND pd.valid_until < ?)",
             [
                 DocumentType::PHOTO,
@@ -198,18 +195,14 @@ final class DocumentChecklist
 
         if ($type->isPhoto()) {
             $conditions[] = "(players.picture_url IS NULL OR players.picture_url = '')";
-            $conditions[] = 'NOT EXISTS (SELECT 1 FROM player_documents pd'
-                .' WHERE pd.player_id = players.id AND pd.document_type_id = ?'
-                ." AND pd.state = 'exempt')";
-            $bindings[] = $type->id;
-        } else {
-            $conditions[] = 'NOT EXISTS (SELECT 1 FROM player_documents pd'
-                .' WHERE pd.player_id = players.id AND pd.document_type_id = ?'
-                ." AND (pd.state = 'exempt' OR (pd.state = 'received'"
-                .' AND (pd.valid_until IS NULL OR pd.valid_until >= ?))))';
-            $bindings[] = $type->id;
-            $bindings[] = $today->toDateString();
         }
+
+        $conditions[] = 'NOT EXISTS (SELECT 1 FROM player_documents pd'
+            .' WHERE pd.player_id = players.id AND pd.document_type_id = ?'
+            ." AND (pd.state = 'exempt' OR (pd.state = 'received'"
+            .' AND (pd.valid_until IS NULL OR pd.valid_until >= ?))))';
+        $bindings[] = $type->id;
+        $bindings[] = $today->toDateString();
 
         return ['(CASE WHEN '.implode(' AND ', $conditions).' THEN 1 ELSE 0 END)', $bindings];
     }

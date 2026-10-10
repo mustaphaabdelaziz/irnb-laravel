@@ -13,7 +13,7 @@ import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useBulkSelection } from '@/Composables/useBulkSelection';
 import { asList, useListFilters } from '@/Composables/useListFilters';
 import BulkEditModal from '@/Components/BulkEditModal.vue';
-import StatDoughnut from '@/Components/StatDoughnut.vue';
+import StatBars from '@/Components/StatBars.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import ExportMenu from '@/Components/ExportMenu.vue';
 import Icon from '@/Components/Icon.vue';
@@ -80,6 +80,22 @@ const { params: filterParams, loading: filtering } = useListFilters('players.ind
     archived: archivedView.value ? 1 : undefined,
     per_page: perPage.value,
 }), { only: ['players', 'filters', 'categoryStats', 'statusStats', 'positionStats', 'ageStats', 'familyStats'] });
+
+// A filter reload changes the height of the charts above the filter bar, which
+// would slide the bar (and the box being typed in) up or down the screen.
+// Measure it before the new rows are drawn and scroll back by the difference.
+// 'instant' because the page scrolls smoothly by default (app.css).
+const filterBar = ref(null);
+let filterBarTop = null;
+watch(() => props.players, () => {
+    filterBarTop = filterBar.value?.getBoundingClientRect().top ?? null;
+}, { flush: 'pre' });
+watch(() => props.players, () => {
+    const top = filterBar.value?.getBoundingClientRect().top;
+    if (filterBarTop === null || top === undefined) return;
+    const shift = top - filterBarTop;
+    if (Math.abs(shift) >= 1) window.scrollBy({ top: shift, behavior: 'instant' });
+}, { flush: 'post' });
 
 // --- Remembered filters ---
 // The filters stick until the user clears them, even after leaving the page or
@@ -158,7 +174,7 @@ const secondaryActions = computed(() => [
     { key: 'import', label: t('import'), icon: 'upload', onClick: () => { showImport.value = true; } },
 ]);
 
-// Distribution panels: map each stat source to StatDoughnut's {key, label, count}.
+// Distribution panels: map each stat source to the stat cards' {key, label, count}.
 const categoryChips = computed(() => props.categoryStats.map((s) => ({
     key: s.category_id ?? '', label: s.name || t('uncategorized'), count: s.count,
 })));
@@ -182,8 +198,10 @@ const familyOptions = computed(() => props.familyNames.map((f) => ({
     value: f.name, label: `${f.name} (${f.count})`,
 })));
 
-const statusPalette = ['#0284c7', '#d97706', '#e11d48', '#64748b', '#7c3aed', '#02a85c'];
-const agePalette = ['#7c3aed', '#0284c7', '#02a85c', '#d97706', '#e11d48', '#64748b'];
+
+// The statistics fold away so the list can sit at the top; remembered across visits.
+const statsOpen = ref(localStorage.getItem('players.stats') !== 'closed');
+watch(statsOpen, (open) => localStorage.setItem('players.stats', open ? 'open' : 'closed'));
 
 // List/grid view toggle, remembered across visits.
 const view = ref(localStorage.getItem('players.view') || 'list');
@@ -338,17 +356,26 @@ function runBulk() {
         <StatStrip :tiles="strip || []" class="mb-4" />
 
         <div class="space-y-4">
-            <!-- Distribution doughnuts (count + % of active players); click a slice or chip to filter -->
-            <div class="grid gap-4 lg:grid-cols-2">
-                <StatDoughnut v-if="categoryChips.length" v-model="categoryFilter" :title="t('by_category')" :stats="categoryChips" />
-                <StatDoughnut v-if="statusChips.length" v-model="statusFilter" :title="t('by_status')" :stats="statusChips" :palette="statusPalette" />
-                <StatDoughnut v-if="positionChips.length" v-model="positionFilter" :title="t('by_position')" :stats="positionChips" />
-                <StatDoughnut v-if="ageChips.length" v-model="ageFilter" :title="t('by_age')" :stats="ageChips" :palette="agePalette" />
-                <StatDoughnut v-if="familyChips.length" v-model="lastnameFilter" :title="t('by_family_name')" :stats="familyChips" />
-            </div>
+            <!-- Distributions as ranked bars (count + % of the players listed); click a row to filter.
+                 Two cards on the first wide row, three on the second: no empty cell.
+                 A card emptied by a filter stays in place, so the search box below does not jump. -->
+            <section class="space-y-3">
+                <button type="button" @click="statsOpen = !statsOpen" :aria-expanded="statsOpen" aria-controls="player-stats"
+                    class="inline-flex items-center gap-1.5 rounded-md text-sm font-semibold text-slate-600 transition-colors hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:text-slate-300 dark:hover:text-white dark:focus-visible:ring-offset-slate-950">
+                    <Icon name="chevron" class="text-base transition-transform" :class="statsOpen ? '' : '-rotate-90 rtl:rotate-90'" />
+                    {{ t('statistics') }}
+                </button>
+                <div v-if="statsOpen" id="player-stats" class="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+                    <StatBars v-if="statusChips.length || hasActiveFilters" v-model="statusFilter" :title="t('by_status')" :stats="statusChips" class="xl:col-span-3" />
+                    <StatBars v-if="categoryChips.length || hasActiveFilters" v-model="categoryFilter" :title="t('by_category')" :stats="categoryChips" class="xl:col-span-3" />
+                    <StatBars v-if="positionChips.length || hasActiveFilters" v-model="positionFilter" :title="t('by_position')" :stats="positionChips" class="xl:col-span-2" />
+                    <StatBars v-if="ageChips.length || hasActiveFilters" v-model="ageFilter" :title="t('by_age')" :stats="ageChips" class="xl:col-span-2" />
+                    <StatBars v-if="familyChips.length || hasActiveFilters" v-model="lastnameFilter" :title="t('by_family_name')" :stats="familyChips" class="md:col-span-2 xl:col-span-2" />
+                </div>
+            </section>
 
             <!-- Filters + view toggle -->
-            <div class="flex flex-wrap items-center gap-3">
+            <div ref="filterBar" class="flex flex-wrap items-center gap-3">
                 <div class="w-full sm:w-64">
                     <SearchInput v-model="search" :loading="filtering" :placeholder="t('search_for_member')" />
                 </div>
@@ -376,131 +403,49 @@ function runBulk() {
                 </div>
             </div>
 
-            <!-- Bulk action bar (list view) -->
-            <div v-if="view === 'list' && selected.length" class="flex flex-wrap items-center gap-3 rounded-xl bg-primary-50 dark:bg-primary-900/20 px-4 py-2.5 ring-1 ring-primary-200 dark:ring-primary-800">
-                <span class="text-sm font-medium text-primary-800 dark:text-primary-200">{{ t('selected_count', { count: selected.length }) }}</span>
-                <div class="ms-auto flex flex-wrap items-center gap-2">
-                    <IconButton v-if="!archivedView" icon="pencil" :label="t('bulk_edit')" variant="primary" @click="showBulkEdit = true" />
-                    <IconButton v-if="!archivedView" icon="archive" :label="t('archive_selected')" @click="bulkAction = 'archive'" />
-                    <IconButton v-if="archivedView" icon="restore" :label="t('restore_selected')" variant="success" @click="bulkAction = 'restore'" />
-                    <IconButton v-if="archivedView" icon="trash" :label="t('delete_permanently_selected')" variant="danger" @click="bulkAction = 'force'" />
+            <!-- Results. While a filter is on they keep at least a screen of height: a
+                 short result must not shorten the page and drag the scroll position up. -->
+            <div class="space-y-4" :class="{ 'min-h-screen': hasActiveFilters }">
+                <!-- Bulk action bar (list view) -->
+                <div v-if="view === 'list' && selected.length" class="flex flex-wrap items-center gap-3 rounded-xl bg-primary-50 dark:bg-primary-900/20 px-4 py-2.5 ring-1 ring-primary-200 dark:ring-primary-800">
+                    <span class="text-sm font-medium text-primary-800 dark:text-primary-200">{{ t('selected_count', { count: selected.length }) }}</span>
+                    <div class="ms-auto flex flex-wrap items-center gap-2">
+                        <IconButton v-if="!archivedView" icon="pencil" :label="t('bulk_edit')" variant="primary" @click="showBulkEdit = true" />
+                        <IconButton v-if="!archivedView" icon="archive" :label="t('archive_selected')" @click="bulkAction = 'archive'" />
+                        <IconButton v-if="archivedView" icon="restore" :label="t('restore_selected')" variant="success" @click="bulkAction = 'restore'" />
+                        <IconButton v-if="archivedView" icon="trash" :label="t('delete_permanently_selected')" variant="danger" @click="bulkAction = 'force'" />
+                    </div>
                 </div>
-            </div>
 
-            <!-- Grid view -->
-            <div v-if="view === 'grid'" class="space-y-4 transition-opacity" :class="{ 'opacity-60': filtering }" :aria-busy="filtering">
-                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    <Link v-for="player in players.data" :key="player.id" :href="route('players.show', player.id)"
-                        class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 transition-shadow hover:shadow-md dark:bg-slate-900 dark:ring-slate-800">
-                        <div class="flex items-center gap-3">
-                            <img v-if="player.picture_url" :src="player.picture_url" :alt="player.firstname" class="h-14 w-14 shrink-0 rounded-xl object-cover ring-1 ring-slate-200 dark:ring-slate-700" />
-                            <div v-else class="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-xl font-bold text-primary-600 ring-1 ring-primary-100 dark:bg-primary-500/10 dark:text-primary-300">
-                                {{ (player.firstname || '?').charAt(0).toUpperCase() }}
+                <!-- Grid view -->
+                <div v-if="view === 'grid'" class="space-y-4 transition-opacity" :class="{ 'opacity-60': filtering }" :aria-busy="filtering">
+                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        <Link v-for="player in players.data" :key="player.id" :href="route('players.show', player.id)"
+                            class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 transition-shadow hover:shadow-md dark:bg-slate-900 dark:ring-slate-800">
+                            <div class="flex items-center gap-3">
+                                <img v-if="player.picture_url" :src="player.picture_url" :alt="player.firstname" class="h-14 w-14 shrink-0 rounded-xl object-cover ring-1 ring-slate-200 dark:ring-slate-700" />
+                                <div v-else class="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-xl font-bold text-primary-600 ring-1 ring-primary-100 dark:bg-primary-500/10 dark:text-primary-300">
+                                    {{ (player.firstname || '?').charAt(0).toUpperCase() }}
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{{ player.fullname || `${player.lastname} ${player.firstname}` }}</p>
+                                    <p class="truncate font-mono text-xs text-slate-400">{{ player.membership_id }}</p>
+                                    <p class="truncate text-xs text-slate-500 dark:text-slate-400">{{ player.category?.localized_name || player.category?.name || '-' }}</p>
+                                </div>
                             </div>
-                            <div class="min-w-0">
-                                <p class="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{{ player.fullname || `${player.lastname} ${player.firstname}` }}</p>
-                                <p class="truncate font-mono text-xs text-slate-400">{{ player.membership_id }}</p>
-                                <p class="truncate text-xs text-slate-500 dark:text-slate-400">{{ player.category?.localized_name || player.category?.name || '-' }}</p>
+                            <div class="mt-3 flex items-center justify-between border-t border-slate-100 pt-2 text-xs dark:border-slate-800">
+                                <Badge v-if="player.archived" :label="t('archived')" color="slate" />
+                                <Badge v-else :label="t('active')" color="emerald" />
+                                <span class="font-semibold" :class="player.total_debt > 0 ? 'text-rose-700' : 'text-emerald-700'">{{ formatMoney(player.total_debt || 0) }}</span>
                             </div>
-                        </div>
-                        <div class="mt-3 flex items-center justify-between border-t border-slate-100 pt-2 text-xs dark:border-slate-800">
-                            <Badge v-if="player.archived" :label="t('archived')" color="slate" />
-                            <Badge v-else :label="t('active')" color="emerald" />
-                            <span class="font-semibold" :class="player.total_debt > 0 ? 'text-rose-700' : 'text-emerald-700'">{{ formatMoney(player.total_debt || 0) }}</span>
-                        </div>
-                        <div class="mt-2 flex items-center justify-end gap-1">
-                            <IconButton v-if="!player.archived" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click.prevent.stop="archiveId = player.id" />
-                            <IconButton v-if="player.archived" icon="restore" :label="t('restore')" variant="success" plain size="sm" @click.prevent.stop="restoreId = player.id" />
-                            <IconButton v-if="player.archived" icon="trash" :label="t('delete_permanently')" variant="danger" plain size="sm" @click.prevent.stop="forceId = player.id" />
-                        </div>
-                    </Link>
-                </div>
-                <p v-if="!players.data.length" class="py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</p>
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                    <label class="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                        <select v-model="perPage" class="rounded-lg border-slate-300 py-1 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-slate-700">
-                            <option value="">25</option>
-                            <option v-for="n in [50, 100, 200]" :key="n" :value="String(n)">{{ n }}</option>
-                        </select>
-                        {{ t('per_page') }}
-                    </label>
-                    <Pagination :links="players" />
-                </div>
-            </div>
-
-            <!-- Table -->
-            <div v-if="view === 'list'" :class="{ 'opacity-60': filtering }" :aria-busy="filtering" class="overflow-hidden transition-opacity rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
-                        <thead class="bg-slate-50 dark:bg-slate-950">
-                            <tr>
-                                <th class="w-10 px-4 py-3">
-                                    <input type="checkbox" :checked="allSelected" @change="toggleAll" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800" />
-                                </th>
-                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('membership_id') }}</th>
-                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('name') }}</th>
-                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('category') }}</th>
-                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('position') }}</th>
-                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('status') }}</th>
-                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('documents') }}</th>
-                                <th class="px-4 py-3 text-end text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('debt') }}</th>
-                                <th class="px-4 py-3 text-end text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('actions') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                            <tr v-for="player in players.data" :key="player.id" class="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                                :class="selected.includes(player.id) ? 'bg-primary-50/50 dark:bg-primary-900/10' : ''">
-                                <td class="px-4 py-3">
-                                    <input type="checkbox" :checked="selected.includes(player.id)" @change="toggleOne(player.id)" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800" />
-                                </td>
-                                <td class="whitespace-nowrap px-4 py-3 text-sm font-mono text-slate-600 dark:text-slate-300">{{ player.membership_id }}</td>
-                                <td class="whitespace-nowrap px-4 py-3">
-                                    <Link :href="route('players.show', player.id)" class="flex items-center gap-3 text-sm font-medium text-slate-900 dark:text-slate-100 hover:text-primary-600">
-                                        <img v-if="player.picture_url" :src="player.picture_url" :alt="player.firstname" loading="lazy" class="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700" />
-                                        <span v-else class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-50 text-sm font-bold text-primary-600 ring-1 ring-primary-100 dark:bg-primary-500/10 dark:text-primary-300 dark:ring-primary-500/20">
-                                            {{ (player.lastname || player.firstname || '?').charAt(0).toUpperCase() }}
-                                        </span>
-                                        {{ player.fullname || `${player.lastname} ${player.firstname}` }}
-                                    </Link>
-                                </td>
-                                <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ player.category?.localized_name || player.category?.name || '-' }}</td>
-                                <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
-                                    {{ player.position?.abbreviation || '-' }}
-                                    <span v-if="player.other_positions?.length" class="ms-1 rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400"
-                                        :title="player.other_positions.map((p) => p.abbreviation).join(', ')">
-                                        +{{ player.other_positions.length }}
-                                    </span>
-                                </td>
-                                <td class="whitespace-nowrap px-4 py-3">
-                                    <!-- Membership status (منخرط/معتزل…); the active/archived split is the view toggle. -->
-                                    <Badge v-if="player.status" :label="player.status.localized_name || player.status.name" color="primary" />
-                                    <span v-else class="text-sm text-slate-400">-</span>
-                                </td>
-                                <td class="whitespace-nowrap px-4 py-3">
-                                    <Badge v-if="Number(player.missing_documents_count) > 0" :label="t('doc_missing_count', { count: Number(player.missing_documents_count) })" color="rose" />
-                                    <Icon v-else name="check" class="text-emerald-500" :title="t('doc_complete')" />
-                                </td>
-                                <td class="whitespace-nowrap px-4 py-3 text-end text-sm font-semibold"
-                                    :class="player.total_debt > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'">
-                                    {{ formatMoney(player.total_debt || 0) }}
-                                </td>
-                                <td class="whitespace-nowrap px-4 py-3 text-end">
-                                    <div class="flex items-center justify-end gap-1">
-                                        <IconButton :href="route('players.show', player.id)" icon="eye" :label="t('details')" variant="primary" plain size="sm" />
-                                        <IconButton :href="route('players.edit', player.id)" icon="pencil" :label="t('edit')" plain size="sm" />
-                                        <IconButton v-if="!player.archived" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="archiveId = player.id" />
-                                        <IconButton v-if="player.archived" icon="restore" :label="t('restore')" variant="success" plain size="sm" @click="restoreId = player.id" />
-                                        <IconButton v-if="player.archived" icon="trash" :label="t('delete_permanently')" variant="danger" plain size="sm" @click="forceId = player.id" />
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr v-if="!players.data.length">
-                                <td colspan="9" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="px-4 py-2">
+                            <div class="mt-2 flex items-center justify-end gap-1">
+                                <IconButton v-if="!player.archived" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click.prevent.stop="archiveId = player.id" />
+                                <IconButton v-if="player.archived" icon="restore" :label="t('restore')" variant="success" plain size="sm" @click.prevent.stop="restoreId = player.id" />
+                                <IconButton v-if="player.archived" icon="trash" :label="t('delete_permanently')" variant="danger" plain size="sm" @click.prevent.stop="forceId = player.id" />
+                            </div>
+                        </Link>
+                    </div>
+                    <p v-if="!players.data.length" class="py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</p>
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <label class="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                             <select v-model="perPage" class="rounded-lg border-slate-300 py-1 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-slate-700">
@@ -510,6 +455,92 @@ function runBulk() {
                             {{ t('per_page') }}
                         </label>
                         <Pagination :links="players" />
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div v-if="view === 'list'" :class="{ 'opacity-60': filtering }" :aria-busy="filtering" class="overflow-hidden transition-opacity rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
+                            <thead class="bg-slate-50 dark:bg-slate-950">
+                                <tr>
+                                    <th class="w-10 px-4 py-3">
+                                        <input type="checkbox" :checked="allSelected" @change="toggleAll" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800" />
+                                    </th>
+                                    <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('membership_id') }}</th>
+                                    <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('name') }}</th>
+                                    <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('category') }}</th>
+                                    <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('position') }}</th>
+                                    <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('status') }}</th>
+                                    <th class="px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('documents') }}</th>
+                                    <th class="px-4 py-3 text-end text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('debt') }}</th>
+                                    <th class="px-4 py-3 text-end text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('actions') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                                <tr v-for="player in players.data" :key="player.id" class="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                    :class="selected.includes(player.id) ? 'bg-primary-50/50 dark:bg-primary-900/10' : ''">
+                                    <td class="px-4 py-3">
+                                        <input type="checkbox" :checked="selected.includes(player.id)" @change="toggleOne(player.id)" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800" />
+                                    </td>
+                                    <td class="whitespace-nowrap px-4 py-3 text-sm font-mono text-slate-600 dark:text-slate-300">{{ player.membership_id }}</td>
+                                    <td class="whitespace-nowrap px-4 py-3">
+                                        <Link :href="route('players.show', player.id)" class="flex items-center gap-3 text-sm font-medium text-slate-900 dark:text-slate-100 hover:text-primary-600">
+                                            <img v-if="player.picture_url" :src="player.picture_url" :alt="player.firstname" loading="lazy" class="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700" />
+                                            <span v-else class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-50 text-sm font-bold text-primary-600 ring-1 ring-primary-100 dark:bg-primary-500/10 dark:text-primary-300 dark:ring-primary-500/20">
+                                                {{ (player.lastname || player.firstname || '?').charAt(0).toUpperCase() }}
+                                            </span>
+                                            {{ player.fullname || `${player.lastname} ${player.firstname}` }}
+                                        </Link>
+                                    </td>
+                                    <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ player.category?.localized_name || player.category?.name || '-' }}</td>
+                                    <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
+                                        {{ player.position?.abbreviation || '-' }}
+                                        <span v-if="player.other_positions?.length" class="ms-1 rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                                            :title="player.other_positions.map((p) => p.abbreviation).join(', ')">
+                                            +{{ player.other_positions.length }}
+                                        </span>
+                                    </td>
+                                    <td class="whitespace-nowrap px-4 py-3">
+                                        <!-- Membership status (منخرط/معتزل…); the active/archived split is the view toggle. -->
+                                        <Badge v-if="player.status" :label="player.status.localized_name || player.status.name" color="primary" />
+                                        <span v-else class="text-sm text-slate-400">-</span>
+                                    </td>
+                                    <td class="whitespace-nowrap px-4 py-3">
+                                        <Badge v-if="Number(player.missing_documents_count) > 0" :label="t('doc_missing_count', { count: Number(player.missing_documents_count) })" color="rose" />
+                                        <Icon v-else name="check" class="text-emerald-500" :title="t('doc_complete')" />
+                                    </td>
+                                    <td class="whitespace-nowrap px-4 py-3 text-end text-sm font-semibold"
+                                        :class="player.total_debt > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'">
+                                        {{ formatMoney(player.total_debt || 0) }}
+                                    </td>
+                                    <td class="whitespace-nowrap px-4 py-3 text-end">
+                                        <div class="flex items-center justify-end gap-1">
+                                            <IconButton :href="route('players.show', player.id)" icon="eye" :label="t('details')" variant="primary" plain size="sm" />
+                                            <IconButton :href="route('players.edit', player.id)" icon="pencil" :label="t('edit')" plain size="sm" />
+                                            <IconButton v-if="!player.archived" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="archiveId = player.id" />
+                                            <IconButton v-if="player.archived" icon="restore" :label="t('restore')" variant="success" plain size="sm" @click="restoreId = player.id" />
+                                            <IconButton v-if="player.archived" icon="trash" :label="t('delete_permanently')" variant="danger" plain size="sm" @click="forceId = player.id" />
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr v-if="!players.data.length">
+                                    <td colspan="9" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="px-4 py-2">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <label class="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                                <select v-model="perPage" class="rounded-lg border-slate-300 py-1 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-slate-700">
+                                    <option value="">25</option>
+                                    <option v-for="n in [50, 100, 200]" :key="n" :value="String(n)">{{ n }}</option>
+                                </select>
+                                {{ t('per_page') }}
+                            </label>
+                            <Pagination :links="players" />
+                        </div>
                     </div>
                 </div>
             </div>

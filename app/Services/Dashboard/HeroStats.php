@@ -4,7 +4,6 @@ namespace App\Services\Dashboard;
 
 use App\Models\EquipmentRental;
 use App\Models\Player;
-use App\Models\PlayerSubscription;
 use App\Models\Transaction;
 use App\Services\Dashboard\Support\BranchScope;
 use App\Services\Dashboard\Support\DeltaCalculator;
@@ -294,7 +293,7 @@ class HeroStats
         )->sum('outstanding_debt');
 
         $bucket = MonthBucket::expression($this->effectiveDueDate());
-        $accrued = PlayerSubscription::whereCountsAsDebt($this->subscriptionLines($filters, null, null))
+        $accrued = $this->subscriptionLines($filters, null, null)
             ->selectRaw("{$bucket} as bucket, SUM(amount_owed - amount_paid) as unpaid")
             ->groupBy('bucket')
             ->pluck('unpaid', 'bucket')
@@ -314,7 +313,7 @@ class HeroStats
         $delta = null;
         if ($filters->hasComparison()) {
             $due = $this->effectiveDueDate();
-            $windows = PlayerSubscription::whereCountsAsDebt($this->subscriptionLines($filters, null, null))->selectRaw(
+            $windows = $this->subscriptionLines($filters, null, null)->selectRaw(
                 "SUM(CASE WHEN {$due} BETWEEN ? AND ? THEN amount_owed - amount_paid ELSE 0 END) as current_window, "
                 ."SUM(CASE WHEN {$due} BETWEEN ? AND ? THEN amount_owed - amount_paid ELSE 0 END) as previous_window",
                 [

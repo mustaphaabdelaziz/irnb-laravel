@@ -52,6 +52,7 @@ final class ValidationAttributes
         'logo' => 'logo',
         'emergency_contacts.*.name' => 'emergency_contact',
         'emergency_contacts.*.phones' => 'phone',
+        'emergency_contacts.*.phones.*' => 'phone',
         'amount' => 'amount',
         'amount_student' => 'student',
         'amount_worker' => 'worker',

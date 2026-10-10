@@ -1717,7 +1717,7 @@
     "subscription": "Abonnement",
     "subscription_branch_hint": "À quelle(s) section(s) cet abonnement appartient (ex. Football, Natation). Laisser vide pour un abonnement général.",
     "subscription_due": "Cotisation à échéance",
-    "subscription_exceptional_not_debt": "Les achats exceptionnels sont affectés à la main et ne comptent jamais dans la dette du joueur.",
+    "subscription_exceptional_debt_note": "Les achats exceptionnels sont affectés à la main et comptent dans la dette du joueur jusqu'à leur paiement.",
     "subscription_kind": "Type",
     "subscription_kind_annual": "Cotisation annuelle",
     "subscription_kind_annual_hint": "Liée à une saison, ex. 2025/2026.",

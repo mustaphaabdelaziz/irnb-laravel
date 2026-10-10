@@ -23,7 +23,7 @@ class RecalculatePlayerDebtService
 
     /**
      * Recompute a player's cached outstanding_debt = sum of remaining over
-     * their mandatory, non-exempt subscriptions.
+     * their non-exempt obligations.
      */
     public function forPlayer(Player $player): void
     {

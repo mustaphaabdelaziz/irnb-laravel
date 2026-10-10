@@ -4,7 +4,6 @@ namespace App\Services\Dashboard;
 
 use App\Models\EquipmentRental;
 use App\Models\Player;
-use App\Models\PlayerSubscription;
 use App\Models\Transaction;
 use App\Services\Dashboard\Support\BranchScope;
 use App\Services\Dashboard\Support\MonthBucket;
@@ -129,9 +128,6 @@ class OverviewStats
             ->where('players.archived', false)
             ->where('player_subscriptions.is_exempt', false)
             ->whereRaw('(amount_owed - amount_paid) > 0');
-
-        // A one-off charge (t-shirt) left unpaid is not a debt to age.
-        PlayerSubscription::whereCountsAsDebt($query);
 
         if ($branchIds = BranchScope::playerIdsQuery($filters->branchId)) {
             $query->whereIn('player_subscriptions.player_id', $branchIds);

@@ -358,6 +358,9 @@ class PlayerController extends Controller
             $attributes['picture_filename'] = $stored['filename'];
         }
 
+        // players.city is NOT NULL; an empty city is stored like the imports do.
+        $attributes['city'] ??= 'Unknown';
+
         $player = $service->handle($attributes);
 
         $player->branches()->sync($branchIds);
@@ -401,13 +404,14 @@ class PlayerController extends Controller
     {
         $validated = $request->validated();
 
-        $emergencyContacts = $validated['emergency_contacts'] ?? null;
         // The key must be PRESENT (not just non-null) to trigger a sync: Inertia's
         // forceFormData conversion drops empty arrays entirely, so a form that
-        // clears every branch (or every other position) sends the field as '' —
-        // which ConvertEmptyStringsToNull turns into a present-but-null key.
-        // Omitted entirely (e.g. another client that never touches this field)
-        // must leave the existing branches/other positions untouched.
+        // clears every branch (or every other position, or the emergency
+        // contact) sends the field as '' — which ConvertEmptyStringsToNull turns
+        // into a present-but-null key. Omitted entirely (e.g. another client
+        // that never touches this field) must leave the existing rows untouched.
+        $emergencyContactsPresent = array_key_exists('emergency_contacts', $validated);
+        $emergencyContacts = $validated['emergency_contacts'] ?? [];
         $branchIdsPresent = array_key_exists('branch_ids', $validated);
         $branchIds = $validated['branch_ids'] ?? null;
         $otherPositionIdsPresent = array_key_exists('other_position_ids', $validated);
@@ -429,6 +433,11 @@ class PlayerController extends Controller
             $validated['membership_id'] = MembershipNumber::generateUnique((int) $validated['join_year']);
         }
 
+        // players.city is NOT NULL; an emptied city is stored like the imports do.
+        if (array_key_exists('city', $validated)) {
+            $validated['city'] ??= 'Unknown';
+        }
+
         $player->update($validated);
 
         if ($branchIdsPresent) {
@@ -445,7 +454,7 @@ class PlayerController extends Controller
             $player->otherPositions()->detach($player->position_id);
         }
 
-        if ($emergencyContacts !== null) {
+        if ($emergencyContactsPresent) {
             $player->emergencyContacts()->delete();
             foreach ($emergencyContacts as $contact) {
                 PlayerEmergencyContact::create([

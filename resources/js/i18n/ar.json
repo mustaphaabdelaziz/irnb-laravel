@@ -1717,7 +1717,7 @@
     "subscription": "الاشتراك",
     "subscription_branch_hint": "الفرع أو الفروع التي ينتمي إليها هذا الاشتراك (مثل كرة القدم، السباحة). اتركه فارغاً للاشتراك العام.",
     "subscription_due": "اشتراك مستحق",
-    "subscription_exceptional_not_debt": "تُسند المبالغ الاستثنائية يدويًا ولا تُحتسب أبدًا ضمن ديون اللاعب.",
+    "subscription_exceptional_debt_note": "تُسند المبالغ الاستثنائية يدويًا وتُحتسب ضمن ديون اللاعب إلى أن تُدفع.",
     "subscription_kind": "النوع",
     "subscription_kind_annual": "اشتراك سنوي",
     "subscription_kind_annual_hint": "مرتبط بموسم، مثل 2025/2026.",

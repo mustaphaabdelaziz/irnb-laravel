@@ -124,7 +124,7 @@ const kinds = [
                     <input type="checkbox" v-model="form.is_mandatory" class="rounded border-gray-300 text-primary-600 shadow-sm focus:ring-primary-500" />
                     <span class="text-sm text-slate-700 dark:text-slate-200">{{ t('mandatory') }}</span>
                 </label>
-                <p v-else class="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('subscription_exceptional_not_debt') }}</p>
+                <p v-else class="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('subscription_exceptional_debt_note') }}</p>
 
                 <!-- Categories + their own prices -->
                 <div>

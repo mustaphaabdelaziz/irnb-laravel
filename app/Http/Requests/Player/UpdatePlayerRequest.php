@@ -58,6 +58,7 @@ class UpdatePlayerRequest extends FormRequest
             'emergency_contacts.*.name' => ['required', 'string', 'max:255'],
             'emergency_contacts.*.relationship' => ['nullable', 'string', 'max:255'],
             'emergency_contacts.*.phones' => ['nullable', 'array'],
+            'emergency_contacts.*.phones.*' => ['string', 'max:20'],
         ];
     }
 

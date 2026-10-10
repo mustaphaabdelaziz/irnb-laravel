@@ -46,6 +46,11 @@ export function useListFilters(routeName, getParams, { only = [] } = {}) {
         Object.entries(getParams()).filter(([, v]) => !isEmpty(v)),
     ));
 
+    // `loading` only turns on for a reload that is actually slow: a fast one
+    // would otherwise dim and restore the list on every keystroke, which reads
+    // as the page reloading.
+    let slow = null;
+
     function apply() {
         router.get(route(routeName), params.value, {
             only,
@@ -53,8 +58,14 @@ export function useListFilters(routeName, getParams, { only = [] } = {}) {
             preserveScroll: true,
             replace: true,
             showProgress: false,
-            onStart: () => { loading.value = true; },
-            onFinish: () => { loading.value = false; },
+            onStart: () => {
+                clearTimeout(slow);
+                slow = setTimeout(() => { loading.value = true; }, 400);
+            },
+            onFinish: () => {
+                clearTimeout(slow);
+                loading.value = false;
+            },
         });
     }
 

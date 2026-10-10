@@ -45,7 +45,8 @@ const form = useForm({
     phone: p.phones?.[0] || '',
     email: p.email || '',
     wilaya_id: p.wilaya_id || '',
-    city: p.city || '',
+    // "Unknown" is how an empty city is stored (the column is NOT NULL).
+    city: p.city && p.city !== 'Unknown' ? p.city : '',
     // New players default to "worker"; edits keep the stored value.
     is_student: isEdit ? (p.is_student ?? true) : false,
     // New players default to "enrolled" (منخرط); edits keep the stored value.
@@ -181,7 +182,28 @@ function submit() {
         return;
     }
 
-    form.transform((data) => ({
+    form.transform((data) => {
+        // The form edits the first phone and the first emergency contact only;
+        // any further ones (imported players) are sent back as they were, since
+        // the server replaces the whole list.
+        const phone = phoneDigits(data.phone);
+        const phones = [...(phone ? [phone] : []), ...(p.phones || []).slice(1)];
+
+        const emergencyPhone = phoneDigits(data.emergency_contact_phone);
+        const [firstContact, ...otherContacts] = p.emergency_contacts || [];
+        // A phone typed without a name is still sent, so the server can ask for
+        // the name instead of the number being dropped without a word.
+        const editedContact = (data.emergency_contact_name || emergencyPhone) ? [{
+            name: data.emergency_contact_name,
+            relationship: data.emergency_contact_relationship || null,
+            phones: [...(emergencyPhone ? [emergencyPhone] : []), ...(firstContact?.phones || []).slice(1)],
+        }] : [];
+        const emergencyContacts = [
+            ...editedContact,
+            ...otherContacts.map((c) => ({ name: c.name, relationship: c.relationship || null, phones: c.phones || [] })),
+        ];
+
+        return {
         ...(isEdit ? { _method: 'put' } : {}),
         firstname: data.firstname,
         lastname: data.lastname,
@@ -191,7 +213,9 @@ function submit() {
         birthdate: data.birthdate || null,
         gender: data.gender,
         health_blood_group_rhesus: data.health_blood_group_rhesus || null,
-        phones: phoneDigits(data.phone) ? [phoneDigits(data.phone)] : [],
+        // '' when empty, for the reason given at other_position_ids below: an
+        // empty array never reaches the server, so the number could not be removed.
+        phones: phones.length ? phones : '',
         email: data.email || null,
         wilaya_id: data.wilaya_id || null,
         city: data.city || null,
@@ -216,13 +240,9 @@ function submit() {
         skill_level: data.skill_level || null,
         picture: data.picture,
         health_medical_conditions: data.health_medical_conditions || null,
-        emergency_contacts: data.emergency_contact_name ? [{
-            name: data.emergency_contact_name,
-            relationship: data.emergency_contact_relationship || null,
-            phones: phoneDigits(data.emergency_contact_phone) ? [phoneDigits(data.emergency_contact_phone)] : [],
-        }] : [],
+        emergency_contacts: emergencyContacts.length ? emergencyContacts : '',
         ...(isEdit ? { archived: data.archived } : {}),
-    })).post(isEdit ? route('players.update', p.id) : route('players.store'), { forceFormData: true });
+    }; }).post(isEdit ? route('players.update', p.id) : route('players.store'), { forceFormData: true });
 }
 
 // The built-in "left the club" status is found by its code, never its editable name.
@@ -431,10 +451,12 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                 <div>
                     <InputLabel :value="t('emergency_contact') + ' - ' + t('name')" />
                     <TextInput v-model="form.emergency_contact_name" class="mt-1 w-full" />
+                    <InputError :message="form.errors['emergency_contacts.0.name']" class="mt-1" />
                 </div>
                 <div>
                     <InputLabel :value="t('emergency_contact') + ' - ' + t('phone')" />
                     <PhoneInput v-model="form.emergency_contact_phone" class="mt-1 w-full" />
+                    <InputError :message="form.errors['emergency_contacts.0.phones.0']" class="mt-1" />
                 </div>
             </div>
         </div>

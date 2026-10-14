@@ -9,7 +9,10 @@
  * at ΔE 10.3, indistinguishable to readers with full colour vision.
  *
  * Rules that travel with these colours:
- *   - Assign slots in order. Never cycle, never generate a ninth hue.
+ *   - Assign slots in order. The palette has nine validated slots (the ninth,
+ *     purple, was added 2026-10-14 by owner decision for the competitions
+ *     activity area and validated on adjacent pairs like the others). Never
+ *     cycle, never generate a tenth hue.
  *   - Money in is slot 1 (blue). Money out is slot 2 (orange). Always.
  *   - Emerald and rose stay semantic in UI chrome; they are not chart series.
  *     Green-vs-red as two adjacent marks fails CVD at ΔE 5.8.
@@ -17,8 +20,8 @@
 
 /** Categorical slots, in assignment order. Dark is re-stepped, not lightened. */
 const CATEGORICAL = {
-    light: ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948'],
-    dark: ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9', '#e66767'],
+    light: ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948', '#9c4dcc'],
+    dark: ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9', '#e66767', '#b36ae0'],
 };
 
 /** Single-hue ramp for magnitude. Light to dark; index 0 is nearest the surface. */

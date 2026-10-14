@@ -21,7 +21,7 @@ const props = defineProps({
 const { t, locale } = useI18n();
 const rtl = computed(() => locale.value === 'ar');
 
-// One fixed colour slot per area (8 areas, 8 palette slots — never cycled).
+// One fixed colour slot per area (9 areas, 9 palette slots — never cycled).
 const areaKeys = computed(() => Object.keys(props.charts.areas ?? {}));
 const slotOf = (area) => Math.max(0, areaKeys.value.indexOf(area));
 const areaLabel = (area) => t(`activity.area.${area}`);

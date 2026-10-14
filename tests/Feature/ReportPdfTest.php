@@ -103,14 +103,14 @@ class ReportPdfTest extends TestCase
         Carbon::setTestNow('2026-10-14');
         $category = FinanceCategory::create(['type' => 'expense', 'name' => 'مصاريف اشغال المقر', 'is_active' => true]);
         Transaction::create(['amount' => 770, 'transaction_date' => '2026-10-11', 'transaction_type' => 'expense', 'category' => 'msaryf_ashghal_almkr', 'finance_category_id' => $category->id, 'payment_method' => 'cash', 'status' => 'Paid']);
-        Transaction::create(['amount' => 999, 'transaction_date' => '2026-03-01', 'transaction_type' => 'expense', 'category' => 'other', 'payment_method' => 'cash', 'status' => 'Paid']);
+        Transaction::create(['amount' => 987.65, 'transaction_date' => '2026-03-01', 'transaction_type' => 'expense', 'category' => 'other', 'payment_method' => 'cash', 'status' => 'Paid']);
 
         $html = $this->renderFinancialSummary(['year' => 2027]);
 
         $this->assertStringContainsString('2026/2027', $html);
         $this->assertStringContainsString('مصاريف اشغال المقر', $html);
         $this->assertStringNotContainsString('msaryf_ashghal_almkr', $html);
-        $this->assertStringNotContainsString('999', $html);
+        $this->assertStringNotContainsString('987.65', $html);
     }
 
     #[Test]

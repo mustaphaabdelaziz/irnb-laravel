@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Exceptions\ClosedFiscalYearException;
+use App\Models\EquipmentCatalog;
+use App\Models\EquipmentItem;
 use App\Models\FinanceAccount;
 use App\Models\FinanceCategory;
 use App\Models\FiscalYear;
@@ -194,6 +196,46 @@ class ClosedSeasonLockTest extends TestCase
             ->assertSessionHas('error');
 
         Log::shouldNotHaveReceived('error');
+    }
+
+    #[Test]
+    public function an_imported_row_dated_in_a_closed_season_is_reported_and_skipped(): void
+    {
+        $this->tx('2026-10-01');
+        $this->close(2027);
+        $admin = User::factory()->admin()->create(['email_verified_at' => now(), 'preferred_lng' => 'en']);
+        $path = tempnam(sys_get_temp_dir(), 'lock').'.csv';
+        file_put_contents($path, "\xEF\xBB\xBFDate,Title,Type,Category,Amount,Status,Payment method,Cash register,Description\r\n"
+            ."2026-05-03,Open season,income,other,100,Paid,cash,,\r\n"
+            ."2026-10-10,Closed season,income,other,200,Paid,cash,,\r\n");
+
+        $this->actingAs($admin)->post(route('transactions.import.store'), [
+            'file' => new UploadedFile($path, 't.csv', 'text/csv', null, true),
+        ])
+            ->assertSessionHas('success', '1 transactions imported successfully.')
+            ->assertSessionHas('error', 'Row 3: Season 2026/2027 is closed. Reopen it to change its transactions.');
+
+        $this->assertSame(1, Transaction::where('title', 'Open season')->count());
+        $this->assertSame(0, Transaction::where('title', 'Closed season')->count());
+    }
+
+    #[Test]
+    public function an_equipment_purchase_dated_in_a_closed_season_is_refused(): void
+    {
+        $this->tx('2026-10-01');
+        $this->close(2027);
+        $admin = User::factory()->admin()->create(['email_verified_at' => now()]);
+        $catalog = EquipmentCatalog::create(['name' => 'Dossards', 'category' => 'Apparel']);
+
+        $this->actingAs($admin)->from(route('equipment.catalogs.index'))
+            ->post(route('equipment.stock.receive'), [
+                'catalog_id' => $catalog->id, 'quantity' => 10, 'unit_price' => 100,
+                'purchase_date' => '2026-10-10', 'condition' => 'New', 'record_expense' => true,
+            ])
+            ->assertSessionHas('error', ['key' => 'flash.season_closed', 'params' => ['season' => '2026/2027']]);
+
+        $this->assertSame(1, Transaction::count());
+        $this->assertSame(0, EquipmentItem::count());
     }
 
     private function playerWithPayment(string $membershipId, string $date, ?int $accountId = null): array

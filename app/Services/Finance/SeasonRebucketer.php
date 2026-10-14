@@ -51,8 +51,30 @@ class SeasonRebucketer
                 $this->finance->recomputeYear($fy);
             }
 
+            $this->carryClosedBalancesForward();
+
             return ['moved' => $moved, 'years' => $years->count()];
         });
+    }
+
+    /**
+     * A closed season's closing balance may have changed now that its rows
+     * moved, so the open season after it must open on the new figure — the
+     * same rule closeYear follows. A season that is itself closed stands.
+     */
+    private function carryClosedBalancesForward(): void
+    {
+        $years = FiscalYear::query()->orderBy('year')->get()->keyBy('year');
+
+        foreach ($years as $closed) {
+            $next = $years->get($closed->year + 1);
+            if (! $closed->isClosed() || ! $next || $next->isClosed()) {
+                continue;
+            }
+
+            $next->opening_balance = $closed->closing_balance;
+            $this->finance->recomputeYear($next);
+        }
     }
 
     private function yearRow(int $key): FiscalYear

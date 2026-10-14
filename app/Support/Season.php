@@ -22,7 +22,7 @@ final class Season
     public static function startMonth(): int
     {
         return once(function (): int {
-            $month = (int) ((WebsiteConfig::singleton()->settings ?? [])['seasonStartMonth'] ?? self::DEFAULT_START_MONTH);
+            $month = (int) ((WebsiteConfig::query()->first()?->settings ?? [])['seasonStartMonth'] ?? self::DEFAULT_START_MONTH);
 
             return ($month >= 1 && $month <= 12) ? $month : self::DEFAULT_START_MONTH;
         });

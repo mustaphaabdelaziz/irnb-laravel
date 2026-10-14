@@ -8,6 +8,7 @@ use App\Models\Player;
 use App\Models\Role;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Models\WebsiteConfig;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia;
@@ -336,6 +337,8 @@ class DashboardPageTest extends TestCase
     {
         $this->seedSomeData();
         $admin = $this->admin();
+        // A set-up club already has its settings row; creating it mid-request would count against the budget.
+        WebsiteConfig::singleton();
 
         $queries = 0;
         DB::listen(function () use (&$queries): void {

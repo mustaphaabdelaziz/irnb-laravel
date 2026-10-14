@@ -8,6 +8,7 @@ use App\Models\PlayerAcademicRecord;
 use App\Services\Dashboard\Support\BranchScope;
 use App\Services\Dashboard\Support\DeltaCalculator;
 use App\Services\Dashboard\Support\MonthBucket;
+use App\Support\FiscalPeriod;
 use App\Support\Season;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -222,14 +223,14 @@ class MemberStats
     }
 
     /**
-     * How many of last year's subscribed members subscribed again.
+     * How many of last season's subscribed members subscribed again this season.
      *
-     * Null when there is no previous year on record — a first season has
+     * Null when there is no previous season on record — a first season has
      * nothing to renew from, and reporting 0% would read as total collapse.
      */
     private function renewalRate(DashboardFilters $filters): ?float
     {
-        $year = $filters->anchor()->year;
+        $year = FiscalPeriod::keyForDate($filters->anchor());
 
         $previous = $this->subscribedPlayerIds($filters, $year - 1);
 

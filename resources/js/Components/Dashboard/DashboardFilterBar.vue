@@ -22,7 +22,7 @@ const props = defineProps({
 
 const { t } = useI18n();
 
-const RANGES = ['month', 'last_month', 'quarter', 'year', 'last12', 'all'];
+const RANGES = ['month', 'last_month', 'quarter', 'season', 'last12', 'all'];
 
 const isAllTime = computed(() => props.filters.range === 'all');
 

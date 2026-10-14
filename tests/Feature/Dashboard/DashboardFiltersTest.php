@@ -6,12 +6,15 @@ use App\Services\Dashboard\DashboardFilters;
 use App\Services\Dashboard\Support\DeltaCalculator;
 use App\Services\Dashboard\Support\MonthBucket;
 use Carbon\CarbonImmutable;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class DashboardFiltersTest extends TestCase
 {
+    use RefreshDatabase;
+
     private function filters(array $query = []): DashboardFilters
     {
         return DashboardFilters::fromRequest(Request::create('/dashboard', 'GET', $query));
@@ -47,7 +50,7 @@ class DashboardFiltersTest extends TestCase
     }
 
     #[Test]
-    public function quarter_and_year_resolve_to_their_whole_periods(): void
+    public function quarter_and_season_resolve_to_their_whole_periods(): void
     {
         $this->travelTo('2026-05-14 10:00:00');
 
@@ -57,11 +60,14 @@ class DashboardFiltersTest extends TestCase
         $this->assertSame('2026-01-01', $quarter->prevFrom->toDateString());
         $this->assertSame('2026-03-31', $quarter->prevTo->toDateString());
 
-        $year = $this->filters(['range' => 'year']);
-        $this->assertSame('2026-01-01', $year->from->toDateString());
-        $this->assertSame('2026-12-31', $year->to->toDateString());
-        $this->assertSame('2025-01-01', $year->prevFrom->toDateString());
-        $this->assertSame('2025-12-31', $year->prevTo->toDateString());
+        $season = $this->filters(['range' => 'season']);
+        $this->assertSame('2025-09-01', $season->from->toDateString());
+        $this->assertSame('2026-08-31', $season->to->toDateString());
+        $this->assertSame('2024-09-01', $season->prevFrom->toDateString());
+        $this->assertSame('2025-08-31', $season->prevTo->toDateString());
+
+        // Old bookmarks with range=year open the season view.
+        $this->assertSame('season', $this->filters(['range' => 'year'])->range);
     }
 
     #[Test]

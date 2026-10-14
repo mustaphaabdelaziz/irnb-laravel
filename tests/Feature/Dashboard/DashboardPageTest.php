@@ -150,9 +150,9 @@ class DashboardPageTest extends TestCase
         $branch = Branch::create(['name' => 'North']);
 
         $this->actingAs($this->admin())
-            ->get(route('dashboard', ['range' => 'year', 'branch' => $branch->id, 'compare' => '0', 'tab' => 'members']))
+            ->get(route('dashboard', ['range' => 'season', 'branch' => $branch->id, 'compare' => '0', 'tab' => 'members']))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('filters.range', 'year')
+                ->where('filters.range', 'season')
                 ->where('filters.branch', $branch->id)
                 ->where('filters.compare', false)
                 ->where('filters.tab', 'members'));

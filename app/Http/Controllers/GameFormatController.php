@@ -10,6 +10,7 @@ use App\Models\GameFormat;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -36,7 +37,21 @@ class GameFormatController extends Controller
 
     public function update(Request $request, GameFormat $gameFormat): RedirectResponse
     {
-        $gameFormat->update($this->validated($request));
+        $data = $this->validated($request);
+        // Teams, competitions and matches using the format belong to its sport.
+        if ($gameFormat->inUse()) {
+            $errors = [];
+            if ((int) ($data['branch_id'] ?? 0) !== (int) $gameFormat->branch_id) {
+                $errors['branch_id'] = 'comp.error.format_in_use_sport';
+            }
+            if ($data['sport'] !== $gameFormat->sport->value) {
+                $errors['sport'] = 'comp.error.format_in_use_sport';
+            }
+            if ($errors !== []) {
+                throw ValidationException::withMessages($errors);
+            }
+        }
+        $gameFormat->update($data);
 
         return back()->with('success', 'flash.game_format_updated');
     }

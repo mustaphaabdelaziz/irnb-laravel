@@ -31,8 +31,11 @@ function reload(params) {
     router.get(route('competitions.index'), { season: props.season, ...props.filters, ...params }, { preserveState: true });
 }
 
+// The season is read at submit time: the page keeps its state across season
+// switches (preserveState), so the form's initial value would go stale.
 function create() {
-    form.transform((data) => ({ ...data, game_format_id: data.game_format_id || null })).post(route('competitions.store'));
+    form.transform((data) => ({ ...data, season_start_year: props.season, game_format_id: data.game_format_id || null }))
+        .post(route('competitions.store'));
 }
 
 const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };

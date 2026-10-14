@@ -92,12 +92,14 @@ function destroy() {
                         <select v-model="form.sport" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
                             <option v-for="s in sports" :key="s" :value="s">{{ t(`comp.sport_${s}`) }}</option>
                         </select>
+                        <InputError :message="form.errors.sport ? t(form.errors.sport) : ''" class="mt-1" />
                     </label>
                     <label class="text-sm">{{ t('branch') }}
                         <select v-model="form.branch_id" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
                             <option value="">—</option>
                             <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.localized_name || b.name }}</option>
                         </select>
+                        <InputError :message="form.errors.branch_id ? t(form.errors.branch_id) : ''" class="mt-1" />
                     </label>
                     <label class="text-sm sm:col-span-2">{{ t('name') }}
                         <TextInput v-model="form.name" class="mt-1 w-full" required />

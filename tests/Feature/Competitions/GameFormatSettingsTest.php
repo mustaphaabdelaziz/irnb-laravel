@@ -67,6 +67,24 @@ class GameFormatSettingsTest extends TestCase
     }
 
     #[Test]
+    public function a_format_in_use_keeps_its_sport_and_branch(): void
+    {
+        $admin = $this->admin();
+        $team = $this->team();
+        $format = $team->defaultFormat;
+        $handball = $this->sportBranch('Handball');
+        $update = fn (array $extra) => $this->actingAs($admin)->put(route('game-formats.update', $format), $this->payload($extra));
+
+        $update(['sport' => 'handball'])->assertSessionHasErrors(['sport' => 'comp.error.format_in_use_sport']);
+        $update(['branch_id' => $handball->id])->assertSessionHasErrors(['branch_id' => 'comp.error.format_in_use_sport']);
+        $this->assertSame($team->branch_id, $format->fresh()->branch_id);
+        $this->assertSame('football', $format->fresh()->sport->value);
+
+        $update(['name' => 'Renamed'])->assertSessionHasNoErrors();
+        $this->assertSame('Renamed', $format->fresh()->name);
+    }
+
+    #[Test]
     public function positions_belong_to_a_sport(): void
     {
         $admin = $this->admin();

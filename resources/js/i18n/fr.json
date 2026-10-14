@@ -759,6 +759,7 @@
     "comp.delete_team_confirm": "Supprimer cette équipe ? Une équipe avec des compétitions ou des matchs est archivée à la place.",
     "comp.ends_play": "Exclut le joueur",
     "comp.error.competition_other_team": "Cette compétition appartient à une autre équipe.",
+    "comp.error.format_in_use_sport": "Ce format est utilisé ; son sport et sa section ne peuvent pas changer.",
     "comp.error.format_other_sport": "Ce format de jeu appartient à un autre sport.",
     "comp.error.team_exists": "Ce sport et cette catégorie ont déjà une équipe de ce nom.",
     "comp.error.too_many_called": "Trop de joueurs convoqués pour ce format de jeu.",

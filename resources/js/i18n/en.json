@@ -759,6 +759,7 @@
     "comp.delete_team_confirm": "Delete this team? A team with competitions or matches is archived instead.",
     "comp.ends_play": "Sends the player off",
     "comp.error.competition_other_team": "This competition belongs to another team.",
+    "comp.error.format_in_use_sport": "This format is in use; its sport and branch can't change.",
     "comp.error.format_other_sport": "This game format belongs to another sport.",
     "comp.error.team_exists": "This sport and category already have a team with this name.",
     "comp.error.too_many_called": "Too many players called up for this game format.",

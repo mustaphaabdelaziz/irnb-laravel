@@ -18,7 +18,7 @@ return new class extends Migration
         'futsal' => ['futsal', 'football', 'soccer', 'foot', 'كرة القدم'],
         'handball' => ['handball', 'hand', 'كرة اليد'],
         'basketball' => ['basketball', 'basket', 'كرة السلة'],
-        'volleyball' => ['volleyball', 'volley', 'كرة الطائرة'],
+        'volleyball' => ['volleyball', 'volley', 'كرة الطائرة', 'الكرة الطائرة'],
     ];
 
     public function up(): void
@@ -46,25 +46,29 @@ return new class extends Migration
             $formations = $preset['formations'];
             unset($preset['formations']);
 
-            $id = DB::table('game_formats')->insertGetId([
-                ...$preset,
-                'branch_id' => $branchFor($preset['sport']),
-                'sanction_types' => json_encode($preset['sanction_types']),
-                'is_preset' => true,
-                'active' => true,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
-
-            foreach ($formations as $name => $slots) {
-                DB::table('formations')->insert([
-                    'game_format_id' => $id,
-                    'name' => $name,
-                    'slots' => json_encode(array_map(fn (array $s) => ['label' => $s[0], 'x' => $s[1], 'y' => $s[2]], $slots)),
+            // A preset and its formations land together: an interrupted run never
+            // leaves a preset without formations that the next run would skip.
+            DB::transaction(function () use ($preset, $formations, $branchFor, $now) {
+                $id = DB::table('game_formats')->insertGetId([
+                    ...$preset,
+                    'branch_id' => $branchFor($preset['sport']),
+                    'sanction_types' => json_encode($preset['sanction_types']),
+                    'is_preset' => true,
+                    'active' => true,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ]);
-            }
+
+                foreach ($formations as $name => $slots) {
+                    DB::table('formations')->insert([
+                        'game_format_id' => $id,
+                        'name' => $name,
+                        'slots' => json_encode(array_map(fn (array $s) => ['label' => $s[0], 'x' => $s[1], 'y' => $s[2]], $slots)),
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]);
+                }
+            });
         }
 
         $football = $branchFor('football');

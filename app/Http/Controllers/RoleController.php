@@ -25,7 +25,7 @@ class RoleController extends Controller
         $validated = $this->validateRole($request);
         $validated['key'] = $this->uniqueKey($validated['name']);
         $validated['permissions'] = $this->sanitisePermissions($validated['permissions'] ?? []);
-        $validated['own_teams_only'] = $request->boolean('own_teams_only');
+        $validated['own_teams_only'] = $validated['key'] !== 'superadmin' && $request->boolean('own_teams_only');
 
         Role::create($validated);
 
@@ -36,7 +36,8 @@ class RoleController extends Controller
     {
         $validated = $this->validateRole($request);
         $validated['permissions'] = $this->sanitisePermissions($validated['permissions'] ?? []);
-        $validated['own_teams_only'] = $request->boolean('own_teams_only');
+        // System roles (superadmin included) are never limited to their own teams.
+        $validated['own_teams_only'] = ! $role->is_system && $role->key !== 'superadmin' && $request->boolean('own_teams_only');
 
         // The superadmin system role always keeps full access.
         if ($role->key === 'superadmin') {

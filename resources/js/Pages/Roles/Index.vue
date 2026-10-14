@@ -92,7 +92,7 @@ function roleName(role) {
                 <InputError :message="form.errors.permissions" class="mt-1" />
 
                 <PermissionGrid v-model="form.permissions" :groups="moduleGroups" :actions="actions" class="mt-4" />
-                <label class="mt-4 flex items-start gap-2 text-sm text-slate-700 dark:text-slate-200">
+                <label v-if="!editing?.is_system" class="mt-4 flex items-start gap-2 text-sm text-slate-700 dark:text-slate-200">
                     <input v-model="form.own_teams_only" type="checkbox" class="mt-0.5 rounded border-slate-300 dark:border-slate-700" />
                     <span>
                         <span class="font-medium">{{ t('comp.own_teams_only') }}</span>

@@ -50,4 +50,15 @@ class GameFormatPresetsTest extends TestCase
         $this->assertNull(GameFormat::where('name', 'Volleyball')->value('branch_id'));
         $this->assertSame($football->id, $position->fresh()->branch_id);
     }
+
+    #[Test]
+    public function the_volleyball_preset_finds_a_branch_named_with_the_arabic_article(): void
+    {
+        GameFormat::query()->delete();
+        $volleyball = Branch::create(['name' => 'الكرة الطائرة']);
+
+        $this->runPresets();
+
+        $this->assertSame($volleyball->id, GameFormat::where('name', 'Volleyball')->value('branch_id'));
+    }
 }

@@ -759,6 +759,7 @@
     "comp.delete_team_confirm": "حذف هذا الفريق؟ الفريق الذي له منافسات أو مباريات يُؤرشف بدلاً من ذلك.",
     "comp.ends_play": "يُخرج اللاعب",
     "comp.error.competition_other_team": "هذه المنافسة تابعة لفريق آخر.",
+    "comp.error.format_in_use_sport": "هذا النظام مستعمل؛ لا يمكن تغيير رياضته وفرعه.",
     "comp.error.format_other_sport": "نظام اللعب هذا تابع لرياضة أخرى.",
     "comp.error.team_exists": "يوجد فريق بهذا الاسم في هذه الرياضة والفئة.",
     "comp.error.too_many_called": "عدد المستدعين يتجاوز حد نظام اللعب.",

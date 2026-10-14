@@ -90,4 +90,19 @@ class CompetitionPermissionsTest extends TestCase
 
         $this->assertTrue(Role::latest('id')->first()->own_teams_only);
     }
+
+    #[Test]
+    public function system_roles_can_never_be_limited_to_own_teams(): void
+    {
+        $superadmin = User::factory()->create(['privileges' => ['superadmin']]);
+        $system = Role::factory()->create(['key' => 'admin_sys', 'is_system' => true]);
+        $root = Role::where('key', 'superadmin')->first() ?? Role::factory()->create(['key' => 'superadmin', 'is_system' => true]);
+        $payload = ['name' => ['en' => 'Locked'], 'permissions' => ['games' => ['view']], 'own_teams_only' => true];
+
+        $this->actingAs($superadmin)->put(route('roles.update', $system), $payload)->assertSessionHasNoErrors();
+        $this->actingAs($superadmin)->put(route('roles.update', $root), $payload)->assertSessionHasNoErrors();
+
+        $this->assertFalse($system->fresh()->own_teams_only);
+        $this->assertFalse($root->fresh()->own_teams_only);
+    }
 }

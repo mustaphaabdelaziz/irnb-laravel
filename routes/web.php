@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AttendanceAlertsController;
+use App\Http\Controllers\GameController;
 use App\Http\Controllers\GameFormatController;
 use App\Http\Controllers\AttendanceCalendarController;
 use App\Http\Controllers\AttendanceController;
@@ -408,6 +409,12 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
         Route::put('/competitions/{competition}', [CompetitionController::class, 'update'])->name('competitions.update');
         Route::delete('/competitions/{competition}', [CompetitionController::class, 'destroy'])->name('competitions.destroy');
         Route::put('/competitions/{competition}/squad', [CompetitionSquadController::class, 'update'])->name('competitions.squad.update');
+
+        Route::get('/games', [GameController::class, 'index'])->name('games.index');
+        Route::post('/games', [GameController::class, 'store'])->name('games.store');
+        Route::get('/games/{game}', [GameController::class, 'show'])->name('games.show');
+        Route::put('/games/{game}', [GameController::class, 'update'])->name('games.update');
+        Route::delete('/games/{game}', [GameController::class, 'destroy'])->name('games.destroy');
 
         // Website configuration
         Route::get('/settings', [WebsiteConfigController::class, 'show'])->name('settings.show');

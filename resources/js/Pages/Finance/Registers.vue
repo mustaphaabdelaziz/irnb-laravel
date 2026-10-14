@@ -75,12 +75,12 @@ const formatDate = (value) => (value ? new Date(`${value}T00:00:00`).toLocaleDat
                         <Icon name="back" class="rtl:rotate-180" />
                     </Link>
                     <div class="min-w-0">
-                        <h1 class="truncate text-lg font-bold text-slate-900 dark:text-slate-100 sm:text-xl">{{ t('cash_registers') }}</h1>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('caisses.subtitle') }}</p>
+                        <h1 class="text-lg font-bold text-slate-900 dark:text-slate-100 sm:text-xl">{{ t('cash_registers') }}</h1>
+                        <p class="hidden text-xs text-slate-500 dark:text-slate-400 sm:block">{{ t('caisses.subtitle') }}</p>
                     </div>
                 </div>
                 <div class="flex shrink-0 items-center gap-2">
-                    <IconButton v-if="can('finance', 'add') && movable.length > 1" icon="arrow" :label="t('caisses.move_money')" @click="moveMoney()" />
+                    <IconButton v-if="can('finance', 'add') && movable.length > 1" icon="arrow" icon-class="rtl:rotate-180" :label="t('caisses.move_money')" @click="moveMoney()" />
                     <IconButton v-if="can('finance', 'add')" icon="plus" :label="t('caisses.add')" variant="primary" @click="addCaisse()" />
                 </div>
             </div>
@@ -104,7 +104,7 @@ const formatDate = (value) => (value ? new Date(`${value}T00:00:00`).toLocaleDat
                 <Icon name="alert" class="shrink-0 text-lg text-amber-600 dark:text-amber-400" />
                 <p class="min-w-0 flex-1 text-sm font-medium text-amber-900 dark:text-amber-200">{{ t('caisses.opening_fund_left') }}</p>
                 <p class="break-words text-lg font-extrabold tabular-nums" :class="balanceClass(openingFund.current_balance)">{{ formatMoney(openingFund.current_balance) }}</p>
-                <IconButton v-if="can('finance', 'add')" icon="arrow" :label="t('caisses.move_money')" variant="primary" size="sm" @click="moveMoney(openingFund.id)" />
+                <IconButton v-if="can('finance', 'add')" icon="arrow" icon-class="rtl:rotate-180" :label="t('caisses.move_money')" variant="primary" size="sm" @click="moveMoney(openingFund.id)" />
             </section>
 
             <!-- One card per branch: its coffre and the caisses inside it -->
@@ -126,7 +126,7 @@ const formatDate = (value) => (value ? new Date(`${value}T00:00:00`).toLocaleDat
                         <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('caisses.branch_total') }}</p>
                         <p class="break-words text-2xl font-extrabold tabular-nums" :class="balanceClass(g.coffre?.current_balance ?? 0)">{{ formatMoney(g.coffre?.current_balance ?? 0) }}</p>
                         <div class="mt-1 flex items-center justify-end gap-1">
-                            <IconButton v-if="g.coffre && g.coffre.is_active && can('finance', 'add')" icon="arrow" :label="t('caisses.move_money')" plain size="sm" @click="moveMoney(g.coffre.id)" />
+                            <IconButton v-if="g.coffre && g.coffre.is_active && can('finance', 'add')" icon="arrow" icon-class="rtl:rotate-180" :label="t('caisses.move_money')" plain size="sm" @click="moveMoney(g.coffre.id)" />
                             <IconButton v-if="can('finance', 'add')" icon="plus" :label="t('caisses.add')" variant="primary" plain size="sm" @click="addCaisse(g.branch.id)" />
                             <IconButton v-if="g.coffre && can('finance', 'edit')" icon="pencil" :label="t('caisses.edit_coffre')" plain size="sm" @click="editAccount(g.coffre)" />
                         </div>
@@ -145,7 +145,7 @@ const formatDate = (value) => (value ? new Date(`${value}T00:00:00`).toLocaleDat
                         </div>
                         <p class="ms-auto break-words text-end text-base font-extrabold tabular-nums" :class="balanceClass(c.current_balance)">{{ formatMoney(c.current_balance) }}</p>
                         <div class="flex items-center gap-1">
-                            <IconButton v-if="c.is_active && can('finance', 'add')" icon="arrow" :label="t('caisses.move_money')" plain size="sm" @click="moveMoney(c.id)" />
+                            <IconButton v-if="c.is_active && can('finance', 'add')" icon="arrow" icon-class="rtl:rotate-180" :label="t('caisses.move_money')" plain size="sm" @click="moveMoney(c.id)" />
                             <IconButton v-if="can('finance', 'edit')" icon="pencil" :label="t('caisses.edit')" plain size="sm" @click="editAccount(c)" />
                             <IconButton v-if="deletable(c) && can('finance', 'delete')" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleting = c" />
                         </div>
@@ -172,7 +172,7 @@ const formatDate = (value) => (value ? new Date(`${value}T00:00:00`).toLocaleDat
                         </div>
                         <p class="ms-auto break-words text-end text-base font-extrabold tabular-nums" :class="balanceClass(a.current_balance)">{{ formatMoney(a.current_balance) }}</p>
                         <div class="flex items-center gap-1">
-                            <IconButton v-if="a.is_active && can('finance', 'add')" icon="arrow" :label="t('caisses.move_money')" plain size="sm" @click="moveMoney(a.id)" />
+                            <IconButton v-if="a.is_active && can('finance', 'add')" icon="arrow" icon-class="rtl:rotate-180" :label="t('caisses.move_money')" plain size="sm" @click="moveMoney(a.id)" />
                             <IconButton v-if="can('finance', 'edit')" icon="pencil" :label="t('caisses.edit_account')" plain size="sm" @click="editAccount(a)" />
                             <IconButton v-if="deletable(a) && can('finance', 'delete')" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleting = a" />
                         </div>

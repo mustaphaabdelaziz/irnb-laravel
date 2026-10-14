@@ -125,7 +125,7 @@ function submit() {
             </template>
 
             <label class="block text-sm">
-                <span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('opening_balance') }}</span>
+                <span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('finance.opening_balance') }}</span>
                 <input v-model="form.opening_balance" type="number" step="0.01" class="w-full rounded-lg border-slate-200 bg-white text-sm tabular-nums dark:border-slate-700 dark:bg-slate-800" />
                 <InputError :message="form.errors.opening_balance" class="mt-1" />
             </label>

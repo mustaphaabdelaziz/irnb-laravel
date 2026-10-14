@@ -108,7 +108,7 @@ const currentBalance = computed(() => props.accounts.reduce((s, a) => s + Number
                             <p class="text-sm font-bold text-slate-900 dark:text-slate-100">{{ detail.season_label }} — {{ isClosed ? t('closed') : t('open') }}</p>
                             <p class="text-xs text-slate-500 dark:text-slate-400">
                                 <template v-if="isClosed">{{ t('closing_balance') }}: {{ formatMoney(detail.closing_balance) }}<span v-if="detail.closed_by"> · {{ detail.closed_by }}</span></template>
-                                <template v-else>{{ t('opening_balance') }}: {{ formatMoney(detail.opening_balance) }}</template>
+                                <template v-else>{{ t('finance.opening_balance') }}: {{ formatMoney(detail.opening_balance) }}</template>
                             </p>
                         </div>
                     </div>
@@ -116,7 +116,7 @@ const currentBalance = computed(() => props.accounts.reduce((s, a) => s + Number
 
                 <!-- KPIs -->
                 <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                    <StatCard :label="t('opening_balance')" :value="formatMoney(detail.opening_balance)" icon="money" color="slate" />
+                    <StatCard :label="t('finance.opening_balance')" :value="formatMoney(detail.opening_balance)" icon="money" color="slate" />
                     <StatCard :label="t('total_income')" :value="formatMoney(detail.income)" icon="arrow" color="emerald" />
                     <StatCard :label="t('total_expense')" :value="formatMoney(detail.expense)" icon="transactions" color="rose" />
                     <StatCard :label="t('net_balance')" :value="formatMoney(detail.net)" icon="check" :color="detail.net >= 0 ? 'primary' : 'rose'" />

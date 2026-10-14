@@ -116,7 +116,7 @@ function resetFinance() {
                         <thead class="text-xs uppercase tracking-wide text-slate-400">
                             <tr class="border-b border-slate-100 dark:border-slate-800">
                                 <th class="px-5 py-2.5 text-start font-semibold">{{ t('fiscal_year') }}</th>
-                                <th class="px-5 py-2.5 text-end font-semibold">{{ t('opening_balance') }}</th>
+                                <th class="px-5 py-2.5 text-end font-semibold">{{ t('finance.opening_balance') }}</th>
                                 <th class="px-5 py-2.5 text-end font-semibold">{{ t('net') }}</th>
                                 <th class="px-5 py-2.5 text-center font-semibold">{{ t('status') }}</th>
                                 <th class="px-5 py-2.5 text-end font-semibold">{{ t('actions') }}</th>
@@ -156,7 +156,7 @@ function resetFinance() {
                         <select v-model="yearForm.year" class="w-36 rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800">
                             <option v-for="s in seasonOptions" :key="s.value" :value="s.value">{{ s.label }}</option>
                         </select></label>
-                    <label class="text-sm"><span class="mb-1 block text-xs font-medium text-slate-500">{{ t('opening_balance') }}</span>
+                    <label class="text-sm"><span class="mb-1 block text-xs font-medium text-slate-500">{{ t('finance.opening_balance') }}</span>
                         <input v-model="yearForm.opening_balance" type="number" step="0.01" class="w-36 rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
                     <button class="inline-flex items-center gap-1.5 rounded-xl bg-primary-600 px-3.5 py-2 text-sm font-bold text-white hover:bg-primary-700"><Icon name="plus" /> {{ t('add_year') }}</button>
                 </form>

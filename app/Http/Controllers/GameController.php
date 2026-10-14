@@ -8,10 +8,13 @@ use App\Enums\SessionState;
 use App\Models\Competition;
 use App\Models\Game;
 use App\Models\Opponent;
+use App\Models\Player;
 use App\Models\Team;
 use App\Models\TrainingSession;
 use App\Models\Venue;
 use App\Services\Attendance\SessionGenerator;
+use App\Services\Competitions\CallUpCandidates;
+use App\Services\Competitions\PlayerFlags;
 use App\Services\Competitions\TeamAccess;
 use App\Services\Competitions\TrainingCanceller;
 use App\Support\Season;
@@ -104,9 +107,9 @@ class GameController extends Controller
             ->with('success', $cancelled > 0 ? 'flash.game_created_training_cancelled' : 'flash.game_created');
     }
 
-    public function show(Request $request, Game $game): Response
+    public function show(Request $request, Game $game, CallUpCandidates $candidates, PlayerFlags $flags): Response
     {
-        $game->load(['team.category', 'competition', 'opponent', 'venue', 'format']);
+        $game->load(['team.category', 'competition', 'opponent', 'venue', 'format', 'players']);
 
         return Inertia::render('Games/Show', [
             'game' => [
@@ -123,7 +126,20 @@ class GameController extends Controller
                     'max_called_up' => $game->format->max_called_up,
                 ],
             ],
-            'candidates' => [],
+            'candidates' => (function () use ($game, $candidates, $flags) {
+                $injured = $flags->injured();
+                $rows = $game->players->keyBy('player_id');
+
+                return $candidates->for($game)->map(fn (Player $p) => [
+                    'player_id' => $p->id,
+                    'name' => $p->fullname,
+                    'category' => $p->category?->localized_name,
+                    'shirt_number' => $rows->get($p->id)?->shirt_number ?? $p->shirt_number,
+                    'called_up' => (bool) $rows->get($p->id)?->called_up,
+                    'not_called_reason' => $rows->get($p->id)?->not_called_reason,
+                    'injured' => isset($injured[$p->id]),
+                ])->values();
+            })(),
             'opponents' => Opponent::query()->orderBy('name')->get(['id', 'name'])->map(fn (Opponent $o) => ['value' => $o->id, 'label' => $o->name]),
             'venues' => Venue::query()->orderByDesc('is_home')->orderBy('name')->get(['id', 'name']),
             'canManage' => TeamAccess::canManage($request->user(), $game->team, $game->season_start_year),

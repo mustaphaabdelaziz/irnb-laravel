@@ -8,13 +8,22 @@ import SearchableSelect from '@/Components/SearchableSelect.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useCan } from '@/Composables/useCan.js';
 
 const { t } = useI18n();
 const { can } = useCan();
 
 const props = defineProps({ game: Object, candidates: Array, opponents: Array, venues: Array, canManage: Boolean });
+
+const callRows = ref(props.candidates.map((c) => ({ ...c, not_called_reason: c.not_called_reason ?? '' })));
+const calledCount = computed(() => callRows.value.filter((r) => r.called_up).length);
+const callForm = useForm({ players: [] });
+
+function saveCallUp() {
+    callForm.players = callRows.value.map((r) => ({ player_id: r.player_id, called_up: r.called_up, not_called_reason: r.not_called_reason }));
+    callForm.put(route('games.call-up.update', props.game.id), { preserveScroll: true });
+}
 
 const tab = ref('info');
 const confirmDelete = ref(false);
@@ -115,8 +124,40 @@ function destroy() {
                 </div>
             </section>
 
-            <section v-if="tab === 'callup'" class="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
-                <p class="text-sm text-slate-500">{{ t('comp.callup_coming') }}</p>
+            <section v-if="tab === 'callup'" class="space-y-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="text-sm" :class="calledCount > game.format.max_called_up ? 'font-semibold text-rose-600' : 'text-slate-600 dark:text-slate-300'">
+                        {{ t('comp.called_count', { n: calledCount, max: game.format.max_called_up }) }}
+                    </span>
+                    <a :href="route('games.convocation', game.id)" target="_blank" class="text-sm text-primary-600 hover:underline">{{ t('comp.convocation_pdf') }}</a>
+                </div>
+                <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
+                    <thead class="text-xs uppercase text-slate-500 dark:text-slate-400">
+                        <tr>
+                            <th class="w-10 py-2"></th>
+                            <th class="w-12 py-2 text-start">{{ t('comp.shirt') }}</th>
+                            <th class="py-2 text-start">{{ t('comp.player') }}</th>
+                            <th class="py-2 text-start">{{ t('comp.not_called_reason') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                        <tr v-for="row in callRows" :key="row.player_id" :class="{ 'bg-primary-50/50 dark:bg-primary-900/10': row.called_up }">
+                            <td class="py-2 text-center"><input v-model="row.called_up" :disabled="!canManage" type="checkbox" class="rounded" /></td>
+                            <td class="py-2 font-mono text-slate-500">{{ row.shirt_number }}</td>
+                            <td class="py-2">
+                                <span class="font-medium text-slate-900 dark:text-slate-100">{{ row.name }}</span>
+                                <span class="ms-2 text-xs text-slate-400">{{ row.category }}</span>
+                                <span v-if="row.injured" class="ms-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">{{ t('comp.badge_injured') }}</span>
+                            </td>
+                            <td class="py-2">
+                                <TextInput v-if="!row.called_up" v-model="row.not_called_reason" :disabled="!canManage" class="w-full" :placeholder="t('comp.not_called_reason_hint')" />
+                            </td>
+                        </tr>
+                        <tr v-if="!callRows.length"><td colspan="4" class="py-6 text-center text-slate-500">{{ t(game.competition ? 'comp.callup_empty_squad' : 'comp.roster_empty') }}</td></tr>
+                    </tbody>
+                </table>
+                <InputError :message="callForm.errors.players ? t(callForm.errors.players) : ''" />
+                <PrimaryButton v-if="canManage" :disabled="callForm.processing" @click="saveCallUp">{{ t('save') }}</PrimaryButton>
             </section>
         </div>
 

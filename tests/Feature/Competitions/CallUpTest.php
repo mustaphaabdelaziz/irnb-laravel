@@ -1,0 +1,125 @@
+<?php
+
+namespace Tests\Feature\Competitions;
+
+use App\Enums\AttendanceStatus;
+use App\Enums\SessionKind;
+use App\Enums\SessionState;
+use App\Models\Attendance;
+use App\Models\GamePlayer;
+use App\Models\TrainingSession;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
+use PHPUnit\Framework\Attributes\Test;
+use Tests\Support\CompetitionFixtures;
+use Tests\TestCase;
+
+class CallUpTest extends TestCase
+{
+    use CompetitionFixtures, RefreshDatabase;
+
+    #[Test]
+    public function a_competition_match_calls_up_from_the_visible_squad_and_flags_injured_players(): void
+    {
+        $team = $this->team();
+        [$a, $b, $c] = [$this->player($team->category), $this->player($team->category), $this->player($team->category)];
+        $this->onRoster($team, 2026, [$a, $b, $c]);
+        $competition = $this->competition($team, 2026);
+        $competition->players()->attach([$a->id => ['hidden' => false], $b->id => ['hidden' => false], $c->id => ['hidden' => true]]);
+        $game = $this->game($team, ['competition_id' => $competition->id]);
+
+        $session = TrainingSession::create([
+            'category_id' => $team->category_id, 'date' => now()->subDays(2)->toDateString(), 'start_time' => '18:00', 'end_time' => '19:30',
+            'kind' => SessionKind::Extra, 'state' => SessionState::Held,
+        ]);
+        Attendance::create(['training_session_id' => $session->id, 'player_id' => $b->id, 'category_id' => $team->category_id, 'status' => AttendanceStatus::NotTraining->value]);
+
+        $this->actingAs($this->admin())->get(route('games.show', $game))->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->component('Games/Show')
+                ->has('candidates', 2)
+                ->where('candidates.0.player_id', $a->id)->where('candidates.0.shirt_number', 1)->where('candidates.0.injured', false)
+                ->where('candidates.1.player_id', $b->id)->where('candidates.1.injured', true));
+    }
+
+    #[Test]
+    public function a_friendly_calls_up_from_the_team_roster(): void
+    {
+        $team = $this->team();
+        $a = $this->player($team->category);
+        $this->onRoster($team, 2026, [$a]);
+        $game = $this->game($team);
+
+        $this->actingAs($this->admin())->get(route('games.show', $game))
+            ->assertInertia(fn (Assert $page) => $page->has('candidates', 1)->where('candidates.0.player_id', $a->id));
+    }
+
+    #[Test]
+    public function the_call_up_is_saved_with_roster_shirts_and_reasons(): void
+    {
+        $team = $this->team();
+        [$a, $b, $c] = [$this->player($team->category), $this->player($team->category), $this->player($team->category)];
+        $outsider = $this->player($team->category);
+        $this->onRoster($team, 2026, [$a, $b, $c]);
+        $game = $this->game($team);
+        $admin = $this->admin();
+        $save = fn (array $players) => $this->actingAs($admin)->put(route('games.call-up.update', $game), ['players' => $players]);
+
+        $save([['player_id' => $outsider->id, 'called_up' => true]])->assertSessionHasErrors('players.0.player_id');
+
+        $save([
+            ['player_id' => $a->id, 'called_up' => true],
+            ['player_id' => $b->id, 'called_up' => false, 'not_called_reason' => 'Exams'],
+            ['player_id' => $c->id, 'called_up' => false, 'not_called_reason' => ''],
+        ])->assertSessionHas('success', 'flash.call_up_saved');
+
+        $rows = GamePlayer::where('game_id', $game->id)->orderBy('player_id')->get();
+        $this->assertCount(2, $rows);
+        $this->assertTrue($rows[0]->called_up);
+        $this->assertSame(1, $rows[0]->shirt_number);
+        $this->assertFalse($rows[1]->called_up);
+        $this->assertSame('Exams', $rows[1]->not_called_reason);
+        $this->assertNull($rows[1]->shirt_number);
+    }
+
+    #[Test]
+    public function the_call_up_respects_the_formats_maximum(): void
+    {
+        $team = $this->team();
+        $team->defaultFormat->update(['max_called_up' => 1]);
+        [$a, $b] = [$this->player($team->category), $this->player($team->category)];
+        $this->onRoster($team, 2026, [$a, $b]);
+        $game = $this->game($team);
+
+        $this->actingAs($this->admin())->put(route('games.call-up.update', $game), ['players' => [
+            ['player_id' => $a->id, 'called_up' => true], ['player_id' => $b->id, 'called_up' => true],
+        ]])->assertSessionHasErrors('players');
+        $this->assertSame(0, GamePlayer::count());
+    }
+
+    #[Test]
+    public function only_the_assigned_coach_saves_the_call_up(): void
+    {
+        $team = $this->team();
+        $a = $this->player($team->category);
+        $this->onRoster($team, 2026, [$a]);
+        $game = $this->game($team);
+        $coach = $this->coach();
+
+        $this->actingAs($coach)->put(route('games.call-up.update', $game), ['players' => [['player_id' => $a->id, 'called_up' => true]]])
+            ->assertForbidden();
+    }
+
+    #[Test]
+    public function the_convocation_sheet_is_a_pdf(): void
+    {
+        $team = $this->team();
+        $a = $this->player($team->category);
+        $this->onRoster($team, 2026, [$a]);
+        $game = $this->game($team, ['meeting_time' => '13:30', 'meeting_place' => 'Club house']);
+        GamePlayer::create(['game_id' => $game->id, 'player_id' => $a->id, 'called_up' => true, 'shirt_number' => 1]);
+
+        $response = $this->actingAs($this->admin())->get(route('games.convocation', $game));
+        $response->assertOk();
+        $this->assertStringStartsWith('application/pdf', (string) $response->headers->get('content-type'));
+    }
+}

@@ -7,6 +7,7 @@ use App\Models\FinanceTransfer;
 use App\Models\FiscalYear;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Support\FiscalPeriod;
 use Illuminate\Support\Facades\DB;
 
 class FinanceService
@@ -111,23 +112,24 @@ class FinanceService
                 'closed_by_user_id' => $user->id,
             ])->save();
 
-            // Carry the closing balance into the next year as its opening balance.
-            $next = FiscalYear::firstOrNew(['year' => $fiscalYear->year + 1]);
-            $next->fill([
-                'start_date' => ($fiscalYear->year + 1).'-01-01',
-                'end_date' => ($fiscalYear->year + 1).'-12-31',
-                'status' => $next->exists ? $next->status : 'open',
-                'opening_balance' => $closing,
-            ])->save();
+            // Carry the closing balance into the next season as its opening
+            // balance — unless that season is already closed (its figures stand).
+            $nextKey = $fiscalYear->year + 1;
+            $next = FiscalYear::firstOrNew(['year' => $nextKey]);
+            if (! $next->isClosed()) {
+                $next->fill([
+                    'start_date' => FiscalPeriod::start($nextKey)->toDateString(),
+                    'end_date' => FiscalPeriod::end($nextKey)->toDateString(),
+                    'status' => $next->exists ? $next->status : 'open',
+                    'opening_balance' => $closing,
+                ])->save();
+            }
 
             return $fiscalYear;
         });
     }
 
-    /**
-     * Reopen a closed year (and clear the carried-forward opening balance on the
-     * next year if it is still open and was set from this year's close).
-     */
+    /** Reopen a closed season. The next season keeps the opening balance it was given at close. */
     public function reopenYear(FiscalYear $fiscalYear): FiscalYear
     {
         $fiscalYear->forceFill([

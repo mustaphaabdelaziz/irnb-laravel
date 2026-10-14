@@ -9,6 +9,7 @@ use App\Models\FinanceCategory;
 use App\Models\FiscalYear;
 use App\Models\Transaction;
 use App\Services\FinanceService;
+use App\Support\FiscalPeriod;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -76,6 +77,9 @@ class FinanceController extends Controller
             ]),
             'years' => $this->yearsWithDeletability(),
             'budgets' => $budgets,
+            'seasonOptions' => collect(range(FiscalPeriod::currentKey() + 1, FiscalPeriod::currentKey() - 5))
+                ->map(fn (int $key) => ['value' => $key, 'label' => FiscalPeriod::label($key)])
+                ->values(),
         ]);
     }
 

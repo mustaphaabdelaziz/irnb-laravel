@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Game;
+use App\Models\GameEvent;
 use App\Models\GamePlayer;
 use App\Models\User;
 use App\Services\Competitions\CallUpCandidates;
@@ -40,49 +41,91 @@ class GameCallUpController extends Controller
             throw ValidationException::withMessages(['players' => 'comp.error.too_many_called']);
         }
 
-        DB::transaction(function () use ($game, $data, $allowed) {
-            // Numbers are cleared first (like TeamRoster::replace), so a renumbered
-            // roster never trips the unique (game, shirt number) index. Phase 1 has
-            // no per-match override: a called-up player wears their roster number.
-            $departed = GamePlayer::where('game_id', $game->id)->whereNotIn('player_id', $allowed->keys())
-                ->whereNotNull('shirt_number')->pluck('shirt_number', 'player_id');
+        $removedEvents = 0;
+        DB::transaction(function () use ($game, $data, $allowed, &$removedEvents) {
+            // A number the coach set for this match (shirt_override) wins; everyone else
+            // wears their roster number unless an override already took it. Numbers are
+            // cleared first so a renumbered roster never trips the unique index.
+            $before = GamePlayer::where('game_id', $game->id)->get()->keyBy('player_id');
+            $departed = $before->filter(fn (GamePlayer $gp) => ! $allowed->has($gp->player_id) && $gp->shirt_number !== null)
+                ->map(fn (GamePlayer $gp) => $gp->shirt_number);
+            $overrides = $before->filter(fn (GamePlayer $gp) => $gp->shirt_override && $gp->shirt_number !== null)
+                ->map(fn (GamePlayer $gp) => (int) $gp->shirt_number);
             GamePlayer::where('game_id', $game->id)->update(['shirt_number' => null]);
+            // Reloaded AFTER clearing, so every number written below is seen as a change.
             $existing = GamePlayer::where('game_id', $game->id)->get()->keyBy('player_id');
+
+            $calledIds = [];
             $keep = [];
-            $taken = [];
             foreach ($data['players'] as $row) {
                 $calledUp = (bool) $row['called_up'];
                 $reason = $calledUp ? null : (trim((string) ($row['not_called_reason'] ?? '')) ?: null);
                 if (! $calledUp && $reason === null) {
                     continue;
                 }
-                $playerId = (int) $row['player_id'];
-                $keep[] = $playerId;
-                $current = $existing->get($playerId);
-
-                $attributes = ['called_up' => $calledUp, 'not_called_reason' => $reason];
+                $keep[] = (int) $row['player_id'];
                 if ($calledUp) {
-                    $attributes['shirt_number'] = $taken[] = $allowed[$playerId]->shirt_number;
-                } else {
-                    $attributes += ['role' => 'none', 'slot' => null, 'is_captain' => false, 'is_goalkeeper' => false];
+                    $calledIds[] = (int) $row['player_id'];
                 }
+            }
 
+            $taken = [];
+            foreach ($calledIds as $playerId) {
+                if ($overrides->has($playerId)) {
+                    $taken[$playerId] = $overrides[$playerId];
+                }
+            }
+            $assign = [];
+            foreach ($calledIds as $playerId) {
+                if (isset($taken[$playerId])) {
+                    $assign[$playerId] = [$taken[$playerId], true];
+
+                    continue;
+                }
+                $rosterShirt = $allowed[$playerId]->shirt_number;
+                $assign[$playerId] = [$rosterShirt !== null && ! in_array($rosterShirt, $taken, true) ? $rosterShirt : null, false];
+            }
+
+            foreach ($data['players'] as $row) {
+                $playerId = (int) $row['player_id'];
+                if (! in_array($playerId, $keep, true)) {
+                    continue;
+                }
+                $calledUp = (bool) $row['called_up'];
+                $attributes = $calledUp
+                    ? ['called_up' => true, 'not_called_reason' => null, 'shirt_number' => $assign[$playerId][0], 'shirt_override' => $assign[$playerId][1]]
+                    : ['called_up' => false, 'not_called_reason' => trim((string) $row['not_called_reason']), 'shirt_number' => null, 'shirt_override' => false,
+                        'role' => 'none', 'slot' => null, 'pos_x' => null, 'pos_y' => null, 'is_captain' => false, 'is_goalkeeper' => false];
+                $current = $existing->get($playerId);
                 $current
                     ? $current->update($attributes)
                     : GamePlayer::create($attributes + ['game_id' => $game->id, 'player_id' => $playerId]);
             }
+
             // Only current candidates can be dropped: a player who has since left
             // the roster or squad keeps their row (and number, if still free), so
             // re-saving an old match never erases who played in it.
             GamePlayer::where('game_id', $game->id)->whereIn('player_id', $allowed->keys())->whereNotIn('player_id', $keep)->delete();
+            $used = array_filter(array_column($assign, 0), fn ($n) => $n !== null);
             foreach ($departed as $playerId => $shirt) {
-                if (! in_array((int) $shirt, $taken, true)) {
+                if (! in_array((int) $shirt, $used, true)) {
                     GamePlayer::where('game_id', $game->id)->where('player_id', $playerId)->update(['shirt_number' => $shirt]);
                 }
             }
+
+            // Players no longer called up leave the report: their events go, and an
+            // assist they gave is cleared from the scorer's goal.
+            $out = $allowed->keys()->map(fn ($id) => (int) $id)->diff($calledIds)->values()->all();
+            if ($out !== []) {
+                $removedEvents = GameEvent::where('game_id', $game->id)->where(fn ($q) => $q
+                    ->whereIn('player_id', $out)
+                    ->orWhere(fn ($q) => $q->where('type', 'substitution')->whereIn('related_player_id', $out)))->delete();
+                $removedEvents += GameEvent::where('game_id', $game->id)->where('type', '!=', 'substitution')
+                    ->whereIn('related_player_id', $out)->update(['related_player_id' => null]);
+            }
         });
 
-        return back()->with('success', 'flash.call_up_saved');
+        return back()->with('success', $removedEvents > 0 ? 'flash.call_up_saved_events_removed' : 'flash.call_up_saved');
     }
 
     /** The convocation sheet to post or share: match, meeting point and the called-up players. */

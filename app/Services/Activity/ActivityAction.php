@@ -114,6 +114,8 @@ class ActivityAction
 
     const CALL_UP_SAVED = 'call_up_saved';
 
+    const LINEUP_SAVED = 'lineup_saved';
+
     // Edits, deletions, sign-ins and settings (2026-10 users batch) — most are
     // recorded from the route map in config/activity.php.
 
@@ -314,6 +316,7 @@ class ActivityAction
         self::GAME_UPDATED,
         self::GAME_DELETED,
         self::CALL_UP_SAVED,
+        self::LINEUP_SAVED,
         self::USER_LOGGED_IN,
         self::USER_LOGGED_OUT,
         self::USER_CREATED,
@@ -460,6 +463,7 @@ class ActivityAction
             self::GAME_UPDATED,
             self::GAME_DELETED,
             self::CALL_UP_SAVED,
+            self::LINEUP_SAVED,
         ],
     ];
 

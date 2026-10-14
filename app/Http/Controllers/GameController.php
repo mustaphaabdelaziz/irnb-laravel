@@ -14,6 +14,7 @@ use App\Models\TrainingSession;
 use App\Models\Venue;
 use App\Services\Attendance\SessionGenerator;
 use App\Services\Competitions\CallUpCandidates;
+use App\Services\Competitions\MatchPage;
 use App\Services\Competitions\PlayerFlags;
 use App\Services\Competitions\TeamAccess;
 use App\Services\Competitions\TrainingCanceller;
@@ -107,7 +108,7 @@ class GameController extends Controller
             ->with('success', $cancelled > 0 ? 'flash.game_created_training_cancelled' : 'flash.game_created');
     }
 
-    public function show(Request $request, Game $game, CallUpCandidates $candidates, PlayerFlags $flags): Response
+    public function show(Request $request, Game $game, CallUpCandidates $candidates, PlayerFlags $flags, MatchPage $page): Response
     {
         $game->load(['team.category', 'competition', 'opponent', 'venue', 'format', 'players']);
 
@@ -140,6 +141,7 @@ class GameController extends Controller
                     'injured' => isset($injured[$p->id]),
                 ])->values();
             })(),
+            'lineup' => $page->lineup($game),
             'opponents' => Opponent::query()->orderBy('name')->get(['id', 'name'])->map(fn (Opponent $o) => ['value' => $o->id, 'label' => $o->name]),
             'venues' => Venue::query()->orderByDesc('is_home')->orderBy('name')->get(['id', 'name']),
             'canManage' => TeamAccess::canManage($request->user(), $game->team, $game->season_start_year),

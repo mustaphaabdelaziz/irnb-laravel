@@ -39,36 +39,60 @@ class CashRegisterManagementTest extends TestCase
     }
 
     #[Test]
-    public function every_branch_gets_one_treasury_and_one_register_per_category(): void
+    public function a_new_branch_gets_only_its_coffre(): void
     {
-        $junior = Category::create(['name' => 'Junior']);
-        $senior = Category::create(['name' => 'Senior']);
+        Category::create(['name' => 'Junior']);
         $branch = Branch::create(['name' => 'Football']);
 
-        $treasury = FinanceAccount::where('branch_id', $branch->id)
-            ->where('is_treasury', true)
-            ->sole();
-        $registers = FinanceAccount::where('branch_id', $branch->id)
-            ->whereNotNull('category_id')
-            ->get();
+        $accounts = FinanceAccount::where('branch_id', $branch->id)->get();
 
-        $this->assertCount(2, $registers);
-        $this->assertEqualsCanonicalizing([$junior->id, $senior->id], $registers->pluck('category_id')->all());
-        $this->assertTrue($registers->every(fn (FinanceAccount $register) => $register->parent_account_id === $treasury->id));
+        $this->assertCount(1, $accounts);
+        $this->assertTrue($accounts->first()->is_treasury);
+        $this->assertNull($accounts->first()->category_id);
     }
 
     #[Test]
-    public function a_new_category_gets_one_register_in_every_existing_branch(): void
+    public function a_new_category_creates_no_caisse(): void
     {
-        $swimming = Branch::create(['name' => 'Swimming']);
-        $football = Branch::create(['name' => 'Football']);
+        Branch::create(['name' => 'Football']);
+        $before = FinanceAccount::count();
 
-        $category = Category::create(['name' => 'Under 18']);
+        Category::create(['name' => 'Cadet']);
 
-        $registers = FinanceAccount::where('category_id', $category->id)->get();
-        $this->assertCount(2, $registers);
-        $this->assertEqualsCanonicalizing([$swimming->id, $football->id], $registers->pluck('branch_id')->all());
-        $this->assertTrue($registers->every(fn (FinanceAccount $register) => $register->parentAccount?->is_treasury));
+        $this->assertSame($before, FinanceAccount::count());
+    }
+
+    #[Test]
+    public function deleting_a_category_unlinks_its_caisses_but_keeps_them_active(): void
+    {
+        $branch = Branch::create(['name' => 'Football']);
+        $category = Category::create(['name' => 'Cadet']);
+        $caisse = FinanceAccount::create([
+            'branch_id' => $branch->id, 'category_id' => $category->id, 'parent_account_id' => $branch->treasury->id,
+            'name' => 'Caisse cadets', 'type' => 'cash', 'is_active' => true, 'currency' => 'DZD',
+        ]);
+
+        $category->delete();
+
+        $caisse->refresh();
+        $this->assertNull($caisse->category_id);
+        $this->assertTrue($caisse->is_active);
+        $this->assertSame('Caisse cadets', $caisse->name);
+    }
+
+    #[Test]
+    public function renaming_a_category_does_not_rename_a_hand_named_caisse(): void
+    {
+        $branch = Branch::create(['name' => 'Football']);
+        $category = Category::create(['name' => 'Cadet']);
+        $caisse = FinanceAccount::create([
+            'branch_id' => $branch->id, 'category_id' => $category->id, 'parent_account_id' => $branch->treasury->id,
+            'name' => 'Caisse cadets', 'type' => 'cash', 'is_active' => true, 'currency' => 'DZD',
+        ]);
+
+        $category->update(['name' => 'Cadets U17']);
+
+        $this->assertSame('Caisse cadets', $caisse->fresh()->name);
     }
 
     #[Test]
@@ -78,8 +102,14 @@ class CashRegisterManagementTest extends TestCase
         $senior = Category::create(['name' => 'Senior']);
         $branch = Branch::create(['name' => 'Football']);
         $treasury = $branch->treasury()->sole();
-        $juniorRegister = FinanceAccount::where('branch_id', $branch->id)->where('category_id', $junior->id)->sole();
-        $seniorRegister = FinanceAccount::where('branch_id', $branch->id)->where('category_id', $senior->id)->sole();
+        $juniorRegister = FinanceAccount::create([
+            'branch_id' => $branch->id, 'category_id' => $junior->id, 'parent_account_id' => $branch->treasury->id,
+            'name' => 'Caisse '.$junior->name, 'type' => 'cash', 'is_active' => true, 'currency' => 'DZD',
+        ]);
+        $seniorRegister = FinanceAccount::create([
+            'branch_id' => $branch->id, 'category_id' => $senior->id, 'parent_account_id' => $branch->treasury->id,
+            'name' => 'Caisse '.$senior->name, 'type' => 'cash', 'is_active' => true, 'currency' => 'DZD',
+        ]);
         $income = FinanceCategory::where('type', 'income')->firstOrFail();
 
         Transaction::create([
@@ -126,7 +156,10 @@ class CashRegisterManagementTest extends TestCase
             'join_year' => 2026,
         ]);
         $player->branches()->attach($branch);
-        $register = FinanceAccount::where('branch_id', $branch->id)->where('category_id', $category->id)->sole();
+        $register = FinanceAccount::create([
+            'branch_id' => $branch->id, 'category_id' => $category->id, 'parent_account_id' => $branch->treasury->id,
+            'name' => 'Caisse '.$category->name, 'type' => 'cash', 'is_active' => true, 'currency' => 'DZD',
+        ]);
 
         $this->actingAs($this->admin())->post(route('players.transactions.store', $player), [
             'category' => 'donation',
@@ -176,9 +209,10 @@ class CashRegisterManagementTest extends TestCase
             'amount_paid' => 0,
         ]);
 
-        $register = FinanceAccount::where('branch_id', $football->id)
-            ->where('category_id', $senior->id)
-            ->sole();
+        $register = FinanceAccount::create([
+            'branch_id' => $football->id, 'category_id' => $senior->id, 'parent_account_id' => $football->treasury->id,
+            'name' => 'Caisse '.$senior->name, 'type' => 'cash', 'is_active' => true, 'currency' => 'DZD',
+        ]);
         $admin = $this->admin();
 
         $this->actingAs($admin)

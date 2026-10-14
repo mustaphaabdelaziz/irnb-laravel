@@ -37,6 +37,7 @@ use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\MemberJobController;
+use App\Http\Controllers\OpponentController;
 use App\Http\Controllers\PlayerAcademicRecordController;
 use App\Http\Controllers\PlayerAcademicYearController;
 use App\Http\Controllers\PlayerController;
@@ -58,6 +59,7 @@ use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\TransactionImportController;
 use App\Http\Controllers\UserActivityController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\VenueController;
 use App\Http\Controllers\WebsiteConfigController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
@@ -283,6 +285,9 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
         Route::resource('positions', PositionController::class)->except(['show', 'create', 'edit']);
         Route::resource('player-statuses', PlayerStatusController::class)->except(['show', 'create', 'edit']);
         Route::resource('document-types', DocumentTypeController::class)->except(['show', 'create', 'edit']);
+        // Competitions & matches — configuration lists
+        Route::resource('opponents', OpponentController::class)->except(['show', 'create', 'edit']);
+        Route::resource('venues', VenueController::class)->except(['show', 'create', 'edit']);
 
         // Finance management — fiscal years (close/reopen), budgets, chart of accounts, accounts
         Route::get('/finance/settings', [FinanceController::class, 'settings'])->name('finance.settings');

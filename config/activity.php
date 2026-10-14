@@ -33,6 +33,8 @@ $settingLists = [
     'finance.categories' => 'finance_categories',
     'finance.years' => 'fiscal_years',
     'attendance.custom-statuses' => 'attendance_codes',
+    'opponents' => 'opponents',
+    'venues' => 'venues',
 ];
 
 $routes = [

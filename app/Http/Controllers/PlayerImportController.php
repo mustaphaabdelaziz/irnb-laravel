@@ -10,6 +10,7 @@ use App\Services\Activity\ActivityRecorder;
 use App\Services\Player\RegisterPlayerService;
 use App\Support\Export;
 use App\Support\Import\ImportColumns;
+use App\Support\Import\PositionMatcher;
 use App\Support\NameNormalizer;
 use App\Support\Spreadsheet;
 use App\Support\UiLang;
@@ -205,18 +206,14 @@ class PlayerImportController extends Controller
         return $data;
     }
 
+    /**
+     * The import file has no sport column and imported players start with no
+     * branch, so a shared abbreviation ("GK" in football and handball) goes to
+     * a position tied to no sport, else the oldest (see PositionMatcher).
+     */
     private function resolvePosition($positions, ?string $value): ?int
     {
-        if (! $value) {
-            return null;
-        }
-
-        $needle = mb_strtolower(trim($value));
-
-        $match = $positions->first(fn (Position $p) => mb_strtolower((string) $p->abbreviation) === $needle
-            || mb_strtolower((string) $p->name) === $needle);
-
-        return $match?->id;
+        return PositionMatcher::match($positions, $value);
     }
 
     private function clampSkill(?string $value): int

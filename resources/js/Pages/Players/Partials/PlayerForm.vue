@@ -12,6 +12,7 @@ import { Link, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { phoneDigits } from '@/lib/phone';
+import { positionLabeller } from '@/lib/positionLabels';
 import { useCan } from '@/Composables/useCan';
 
 const { t } = useI18n();
@@ -96,10 +97,12 @@ function branchLabel(id) {
 // either numbers (fresh from `positions`/`other_position_ids`) or strings
 // (e.g. bounced back through a validation error round-trip), so every
 // comparison below normalizes with Number() before matching.
+// Two sports may share a position name; those get " · Sport" appended.
+const positionLabel = computed(() => positionLabeller(props.positions, (pos) => `${pos.abbreviation} - ${pos.name}`));
 const otherPositionOptions = computed(() => props.positions
     .filter((pos) => String(pos.id) !== String(form.position_id)
         && !form.other_position_ids.some((id) => Number(id) === Number(pos.id)))
-    .map((pos) => ({ value: pos.id, label: `${pos.abbreviation} - ${pos.name}` })));
+    .map((pos) => ({ value: pos.id, label: positionLabel.value(pos) })));
 const chosenOtherPositions = computed(() => form.other_position_ids
     .map((id) => props.positions.find((pos) => Number(pos.id) === Number(id)))
     .filter(Boolean));
@@ -355,7 +358,7 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                     <InputLabel :value="t('main_position')" />
                     <select v-model="form.position_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                         <option value="">-</option>
-                        <option v-for="pos in positions" :key="pos.id" :value="pos.id">{{ pos.abbreviation }} - {{ pos.name }}</option>
+                        <option v-for="pos in positions" :key="pos.id" :value="pos.id">{{ positionLabel(pos) }}</option>
                     </select>
                 </div>
                 <div>

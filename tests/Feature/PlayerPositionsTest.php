@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Branch;
 use App\Models\Category;
 use App\Models\Player;
 use App\Models\Position;
@@ -140,6 +141,25 @@ class PlayerPositionsTest extends TestCase
         $player = Player::query()->firstOrFail();
         $this->assertSame('MF', $player->position->abbreviation);
         $this->assertSame(['LB', 'WG'], $player->otherPositions()->orderBy('abbreviation')->pluck('abbreviation')->all());
+    }
+
+    #[Test]
+    public function the_import_prefers_a_position_not_tied_to_a_sport_when_an_abbreviation_is_shared(): void
+    {
+        $football = Branch::create(['name' => 'Football']);
+        Position::create(['branch_id' => $football->id, 'abbreviation' => 'GK', 'name' => 'Goalkeeper']);
+        $anySport = Position::create(['branch_id' => null, 'abbreviation' => 'GK', 'name' => 'Keeper']);
+
+        $cells = array_fill(0, 21, '');
+        $cells[0] = 'Amine';
+        $cells[12] = 'GK';
+        $csv = "\xEF\xBB\xBF".implode(',', array_fill(0, 21, 'h'))."\n".implode(',', $cells)."\n";
+
+        $this->actingAs($this->admin())->post(route('players.import.store'), [
+            'file' => UploadedFile::fake()->createWithContent('players.csv', $csv),
+        ])->assertRedirect();
+
+        $this->assertSame($anySport->id, Player::query()->firstOrFail()->position_id);
     }
 
     #[Test]

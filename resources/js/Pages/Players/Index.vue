@@ -19,6 +19,7 @@ import ExportMenu from '@/Components/ExportMenu.vue';
 import Icon from '@/Components/Icon.vue';
 import IconButton from '@/Components/IconButton.vue';
 import AcademicResultsPrint from '@/Pages/Players/Partials/AcademicResultsPrint.vue';
+import { positionLabeller } from '@/lib/positionLabels';
 
 const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
@@ -181,9 +182,12 @@ const categoryChips = computed(() => props.categoryStats.map((s) => ({
 const statusChips = computed(() => props.statusStats.map((s) => ({
     key: s.status_id ?? 'none', label: s.status_id ? s.name : t('filter.no_status'), count: s.count,
 })));
-const positionChips = computed(() => props.positionStats.map((s) => ({
-    key: s.position_id ?? '', label: s.name || t('unassigned'), count: s.count,
-})));
+// Two sports may share a position name; those get " · Sport" appended.
+const positionLabel = computed(() => positionLabeller(props.positions));
+const positionChips = computed(() => props.positionStats.map((s) => {
+    const position = props.positions.find((p) => p.id === s.position_id);
+    return { key: s.position_id ?? '', label: position ? positionLabel.value(position) : (s.name || t('unassigned')), count: s.count };
+}));
 const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 const ageLabel = (bucket) => (bucket === 'u10' ? '< 10' : bucket === 'unknown' ? t('unknown') : bucket);
 const ageChips = computed(() => props.ageStats.map((s) => ({
@@ -253,7 +257,7 @@ const bulkFields = computed(() => [
     {
         key: 'position_id',
         label: t('position'),
-        options: props.positions.map((p) => ({ value: p.id, label: p.name })),
+        options: props.positions.map((p) => ({ value: p.id, label: positionLabel.value(p) })),
     },
     {
         key: 'status_id',

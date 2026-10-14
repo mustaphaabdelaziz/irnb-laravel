@@ -135,7 +135,8 @@ class PlayerController extends Controller
             'categories' => fn () => Category::orderBy('name')->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
             'branches' => fn () => Branch::orderBy('name')->get(),
             // positions feeds the bulk-edit field picker as well as the filter.
-            'positions' => fn () => Position::orderBy('name')->get(['id', 'name']),
+            // Its branch tells apart two sports' positions sharing a name.
+            'positions' => fn () => Position::with('branch')->orderBy('name')->get(['id', 'name', 'branch_id']),
             'playerStatuses' => fn () => PlayerStatus::orderBy('sort_order')->get(),
             // Every family name on file, for the family filter's searchable list.
             'familyNames' => fn () => Player::query()
@@ -333,7 +334,7 @@ class PlayerController extends Controller
 
         return Inertia::render('Players/Create', [
             'categories' => Category::orderBy('name')->get(),
-            'positions' => Position::orderBy('name')->get(),
+            'positions' => Position::with('branch')->orderBy('name')->get(),
             'playerStatuses' => PlayerStatus::where('is_active', true)->orderBy('sort_order')->get(),
             'jobs' => MemberJob::orderBy('name')->get(),
             'branches' => Branch::orderBy('name')->get(),
@@ -389,7 +390,7 @@ class PlayerController extends Controller
         return Inertia::render('Players/Edit', [
             'player' => $player,
             'categories' => Category::orderBy('name')->get(),
-            'positions' => Position::orderBy('name')->get(),
+            'positions' => Position::with('branch')->orderBy('name')->get(),
             'playerStatuses' => PlayerStatus::where('is_active', true)->orderBy('sort_order')->get(),
             'jobs' => MemberJob::orderBy('name')->get(),
             'branches' => Branch::orderBy('name')->get(),

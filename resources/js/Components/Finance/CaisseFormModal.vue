@@ -4,18 +4,25 @@ import { useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import Modal from '@/Components/Modal.vue';
 import InputError from '@/Components/InputError.vue';
+import { useFormatMoney } from '@/Composables/useFormatMoney';
+import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 
 // account: the account being edited, or null to add a caisse.
 // presetBranchId: branch pre-selected when adding from a coffre card.
+// caisses: every caisse inside a coffre ({ id, branch_id, category_id }), to
+// grey out categories that already have a caisse in the chosen branch.
 const props = defineProps({
     show: { type: Boolean, default: false },
     account: { type: Object, default: null },
     presetBranchId: { type: [Number, null], default: null },
     branches: { type: Array, default: () => [] },
     categories: { type: Array, default: () => [] },
+    caisses: { type: Array, default: () => [] },
 });
 const emit = defineEmits(['close']);
 const { t } = useI18n();
+const { formatMoney } = useFormatMoney();
+const { caisseName, isLegacyAutoName } = useFinanceAccountLabel();
 
 const form = useForm({
     name: '', type: 'cash', branch_id: '', category_id: '', opening_balance: 0,
@@ -31,11 +38,23 @@ const title = computed(() => {
     return props.account.branch_id ? t('caisses.edit') : t('caisses.edit_account');
 });
 
+// Categories that already have another caisse in the selected branch.
+const takenCategoryIds = computed(() => new Set(
+    props.caisses
+        .filter((c) => c.category_id && String(c.branch_id) === String(form.branch_id) && c.id !== props.account?.id)
+        .map((c) => c.category_id),
+));
+
+// Switching a caisse off while it still holds money leaves that money out of reach.
+const holdsMoney = computed(() => Math.abs(Number(props.account?.current_balance || 0)) >= 0.005);
+
 watch(() => props.show, (open) => {
     if (!open) return;
     form.clearErrors();
     const a = props.account;
-    form.name = a?.name ?? '';
+    // An old auto-created caisse ("Senior Cash Register") is shown under its
+    // category's name; saving stores that name.
+    form.name = a ? (isLegacyAutoName(a) ? caisseName(a) : (a.name ?? '')) : '';
     form.type = a?.type ?? 'cash';
     form.branch_id = a ? (a.branch_id ?? '') : (props.presetBranchId ?? '');
     form.category_id = a?.category_id ?? '';
@@ -84,7 +103,7 @@ function submit() {
                     <span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('caisses.linked_category') }}</span>
                     <select v-model="form.category_id" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
                         <option value="">{{ t('caisses.no_category') }}</option>
-                        <option v-for="c in categories" :key="c.id" :value="c.id">{{ label(c) }}</option>
+                        <option v-for="c in categories" :key="c.id" :value="c.id" :disabled="takenCategoryIds.has(c.id)">{{ takenCategoryIds.has(c.id) ? `${label(c)} ${t('caisses.category_taken_suffix')}` : label(c) }}</option>
                     </select>
                     <p class="mt-1 text-xs text-slate-500">{{ t('caisses.linked_category_hint') }}</p>
                     <InputError :message="form.errors.category_id" class="mt-1" />
@@ -120,6 +139,9 @@ function submit() {
                 <input v-model="form.is_active" type="checkbox" class="rounded border-slate-300" />
                 <span>{{ t('active') }}</span>
             </label>
+            <p v-if="account && !structural && !form.is_active && holdsMoney" role="status" class="rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 ring-1 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:ring-amber-900">
+                {{ t('caisses.inactive_money_warning', { amount: formatMoney(account.current_balance) }) }}
+            </p>
 
             <div class="flex justify-end gap-2">
                 <button type="button" class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800" @click="emit('close')">{{ t('cancel') }}</button>

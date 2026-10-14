@@ -26,7 +26,10 @@ const props = defineProps({
 const { t } = useI18n();
 const { can } = useCan();
 const { formatMoney } = useFormatMoney();
-const { accountLabel, branchLabel, caisseName } = useFinanceAccountLabel();
+const { accountLabel, branchLabel, caisseName, isLegacyAutoName } = useFinanceAccountLabel();
+
+// Every caisse inside a coffre, so the form can grey out categories already taken in a branch.
+const caisseLinks = computed(() => props.coffres.flatMap((g) => g.caisses.map((c) => ({ id: c.id, branch_id: c.branch_id, category_id: c.category_id }))));
 
 // Every active account money can move between, labelled for the pickers.
 const movable = computed(() => {
@@ -52,8 +55,9 @@ function confirmDelete() {
     router.delete(route('finance.accounts.destroy', deleting.value.id), { preserveScroll: true, onFinish: () => { deleting.value = null; } });
 }
 
-// Only an account that was never used (no transaction, no move) can be deleted.
-const deletable = (account) => account.transactions_count === 0 && !account.transfers_count;
+// Only an account that was never used (no transaction, no move) and holds no money can be deleted.
+const deletable = (account) => account.transactions_count === 0 && !account.transfers_count
+    && Math.abs(Number(account.current_balance || 0)) < 0.005;
 
 const balanceClass = (value) => (Number(value) >= 0 ? 'text-slate-900 dark:text-white' : 'text-rose-600 dark:text-rose-400');
 const categoryLabel = (category) => category?.localized_name || category?.name;
@@ -134,7 +138,7 @@ const formatDate = (value) => (value ? new Date(`${value}T00:00:00`).toLocaleDat
                         <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-2">
                                 <p class="break-words text-sm font-bold text-slate-800 dark:text-slate-100">{{ caisseName(c) }}</p>
-                                <span v-if="c.category" class="rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-semibold text-primary-700 dark:bg-primary-500/10 dark:text-primary-300">{{ categoryLabel(c.category) }}</span>
+                                <span v-if="c.category && !isLegacyAutoName(c)" class="rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-semibold text-primary-700 dark:bg-primary-500/10 dark:text-primary-300">{{ categoryLabel(c.category) }}</span>
                                 <span v-if="!c.is_active" class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('caisses.inactive') }}</span>
                             </div>
                             <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{{ c.transactions_count }} {{ t('transactions').toLowerCase() }}</p>
@@ -220,7 +224,7 @@ const formatDate = (value) => (value ? new Date(`${value}T00:00:00`).toLocaleDat
             </section>
         </div>
 
-        <CaisseFormModal :show="formOpen" :account="formAccount" :preset-branch-id="presetBranchId" :branches="branches" :categories="categories" @close="formOpen = false" />
+        <CaisseFormModal :show="formOpen" :account="formAccount" :preset-branch-id="presetBranchId" :branches="branches" :categories="categories" :caisses="caisseLinks" @close="formOpen = false" />
         <MoveMoneyModal :show="moveOpen" :accounts="movable" :from-id="moveFrom" @close="moveOpen = false" />
         <ConfirmModal :show="!!deleting" :title="deleting?.branch_id ? t('caisses.delete_title') : t('caisses.delete_account_title')" :message="t('caisses.delete_message')" :confirm-label="t('delete')" @confirm="confirmDelete" @cancel="deleting = null" />
     </AuthenticatedLayout>

@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue';
-import { Head, router, usePage } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import StatCard from '@/Components/StatCard.vue';
@@ -24,15 +24,12 @@ const { t, locale } = useI18n();
 const { accountLabel } = useFinanceAccountLabel();
 const { formatMoney } = useFormatMoney();
 const { can } = useCan();
-const page = usePage();
-const isAdmin = computed(() => page.props.auth?.isAdmin ?? false);
 
 function selectYear(year) {
     router.get(route('finance.index'), { year }, { preserveScroll: true, preserveState: true, only: ['detail', 'selectedYear', 'accounts'] });
 }
 
 const isClosed = computed(() => props.detail?.status === 'closed');
-
 
 const monthFormatter = computed(() => new Intl.DateTimeFormat(locale.value === 'ar' ? 'ar' : (locale.value === 'fr' ? 'fr' : 'en'), { month: 'short' }));
 const monthLabels = computed(() => (props.detail?.monthly || []).map((m) => monthFormatter.value.format(new Date(2000, m.month - 1, 1))));
@@ -93,7 +90,7 @@ const currentBalance = computed(() => props.accounts.reduce((s, a) => s + Number
                 <div class="flex items-center gap-2">
                     <IconButton :href="route('finance.registers.index')" icon="wallet" :label="t('cash_registers')" />
                     <IconButton :href="route('reports.financial', { year: selectedYear })" external target="_blank" icon="print" :label="t('export')" />
-                    <IconButton v-if="isAdmin" :href="route('finance.settings')" icon="settings" :label="t('finance_settings')" />
+                    <IconButton v-if="can('finance', 'edit')" :href="route('finance.settings')" icon="settings" :label="t('finance_settings')" />
                 </div>
             </div>
 
@@ -115,7 +112,6 @@ const currentBalance = computed(() => props.accounts.reduce((s, a) => s + Number
                             </p>
                         </div>
                     </div>
-                    <IconButton v-if="can('finance', 'edit')" :href="route('finance.settings')" icon="settings" :label="t('finance_settings')" plain size="sm" />
                 </div>
 
                 <!-- KPIs -->

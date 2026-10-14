@@ -1,10 +1,17 @@
 import { useI18n } from 'vue-i18n';
 
 /**
+ * Caisses created automatically before 2026-10 carry an English name
+ * ("Senior Cash Register"). Any linked caisse still named that way shows its
+ * category's localized name — even after the category was renamed.
+ */
+export function isLegacyAutoName(account) {
+    return !!(account?.category && typeof account.name === 'string' && account.name.endsWith(' Cash Register'));
+}
+
+/**
  * One label for a money account on every page: "Football safe" for a coffre,
  * "Caisse seniors — Football" for a caisse, the name alone at club level.
- * Caisses created automatically before 2026-10 carry an English name
- * ("Senior Cash Register"); those show their category's localized name.
  */
 export function useFinanceAccountLabel() {
     const { t } = useI18n();
@@ -12,9 +19,8 @@ export function useFinanceAccountLabel() {
     const branchLabel = (branch) => branch?.localized_name || branch?.name || t('caisses.club_level');
 
     const caisseName = (account) => {
-        const category = account.category;
-        if (category && account.name === `${category.name} Cash Register`) {
-            return category.localized_name || category.name;
+        if (isLegacyAutoName(account)) {
+            return account.category.localized_name || account.category.name;
         }
         return account.name;
     };
@@ -26,5 +32,5 @@ export function useFinanceAccountLabel() {
         return account.branch ? `${caisseName(account)} — ${branchLabel(account.branch)}` : caisseName(account);
     };
 
-    return { accountLabel, branchLabel, caisseName };
+    return { accountLabel, branchLabel, caisseName, isLegacyAutoName };
 }

@@ -30,6 +30,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
 
 class TransactionController extends Controller
 {
@@ -160,16 +161,23 @@ class TransactionController extends Controller
             $validated['receipt_filename'] = $stored['path'];
         }
 
-        $transaction = DB::transaction(function () use ($validated, $request) {
-            $transaction = Transaction::create($validated);
+        try {
+            $transaction = DB::transaction(function () use ($validated, $request) {
+                $transaction = Transaction::create($validated);
 
-            ActivityRecorder::record($request->user(), ActivityAction::TRANSACTION_RECORDED, $transaction, [
-                'amount' => (float) $transaction->amount,
-                'type' => $transaction->transaction_type,
-            ]);
+                ActivityRecorder::record($request->user(), ActivityAction::TRANSACTION_RECORDED, $transaction, [
+                    'amount' => (float) $transaction->amount,
+                    'type' => $transaction->transaction_type,
+                ]);
 
-            return $transaction;
-        });
+                return $transaction;
+            });
+        } catch (Throwable $e) {
+            // Rejected (e.g. closed season): do not leave the upload orphaned.
+            $receipts->delete($validated['receipt_filename'] ?? null);
+
+            throw $e;
+        }
 
         return redirect()->route('transactions.show', $transaction)
             ->with('success', 'flash.transaction_created');
@@ -194,18 +202,31 @@ class TransactionController extends Controller
         $financeCategory = FinanceCategory::find($validated['finance_category_id']);
         $validated['category'] = Str::slug($financeCategory->name, '_');
 
+        $previousFile = null;
+
         if ($request->hasFile('receipt')) {
-            // The previous file, wherever it lives: private, or public for a row the
-            // receipts migration could not move.
-            $receipts->delete($transaction->receipt_filename);
-            $files->delete($transaction->receipt_filename);
+            $previousFile = $transaction->receipt_filename;
 
             $stored = $receipts->store($request->file('receipt'), 'receipts');
             $validated['receipt_url'] = null;
             $validated['receipt_filename'] = $stored['path'];
         }
 
-        $transaction->update($validated);
+        try {
+            $transaction->update($validated);
+        } catch (Throwable $e) {
+            // Rejected (e.g. closed season): keep the old file, drop the new upload.
+            $receipts->delete($validated['receipt_filename'] ?? null);
+
+            throw $e;
+        }
+
+        if ($previousFile) {
+            // The previous file, wherever it lives: private, or public for a row the
+            // receipts migration could not move.
+            $receipts->delete($previousFile);
+            $files->delete($previousFile);
+        }
 
         return redirect()->route('transactions.show', $transaction)
             ->with('success', 'flash.transaction_updated');

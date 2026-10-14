@@ -9,7 +9,9 @@ use App\Models\Player;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -106,5 +108,73 @@ class ClosedSeasonLockTest extends TestCase
                 'payment_method' => 'cash', 'status' => 'Paid',
             ])
             ->assertSessionHas('error', ['key' => 'flash.season_closed', 'params' => ['season' => '2026/2027']]);
+    }
+
+    /** @return array<string, mixed> */
+    private function formPayload(array $overrides = []): array
+    {
+        $category = FinanceCategory::firstOrCreate(['type' => 'income', 'name' => 'Donations'], ['is_active' => true]);
+
+        return [
+            'title' => 'Donation', 'transaction_type' => 'income', 'finance_category_id' => $category->id,
+            'amount' => 500, 'transaction_date' => '2026-10-10', 'status' => 'Paid',
+            ...$overrides,
+        ];
+    }
+
+    #[Test]
+    public function a_rejected_receipt_replacement_keeps_the_old_file_and_leaves_no_new_one(): void
+    {
+        Storage::fake('local');
+        $admin = User::factory()->admin()->create();
+        $this->actingAs($admin)->post(route('transactions.store'), $this->formPayload([
+            'receipt' => UploadedFile::fake()->create('old.pdf', 100, 'application/pdf'),
+        ]))->assertSessionHasNoErrors();
+        $tx = Transaction::latest('id')->firstOrFail();
+        $old = $tx->receipt_filename;
+        Storage::disk('local')->assertExists($old);
+        $this->close(2027);
+
+        $this->actingAs($admin)->from(route('transactions.edit', $tx))
+            ->put(route('transactions.update', $tx), $this->formPayload([
+                'receipt' => UploadedFile::fake()->create('new.pdf', 100, 'application/pdf'),
+            ]))
+            ->assertSessionHas('error', ['key' => 'flash.season_closed', 'params' => ['season' => '2026/2027']]);
+
+        $this->assertSame($old, $tx->fresh()->receipt_filename);
+        Storage::disk('local')->assertExists($old);
+        $this->assertSame([$old], Storage::disk('local')->allFiles('receipts'));
+    }
+
+    #[Test]
+    public function a_rejected_new_transaction_leaves_no_receipt_file_behind(): void
+    {
+        Storage::fake('local');
+        $this->tx('2026-10-01');
+        $this->close(2027);
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)->from(route('transactions.create'))
+            ->post(route('transactions.store'), $this->formPayload([
+                'receipt' => UploadedFile::fake()->create('late.pdf', 100, 'application/pdf'),
+            ]))
+            ->assertSessionHas('error', ['key' => 'flash.season_closed', 'params' => ['season' => '2026/2027']]);
+
+        $this->assertSame(1, Transaction::count());
+        $this->assertSame([], Storage::disk('local')->allFiles('receipts'));
+    }
+
+    #[Test]
+    public function deleting_a_transaction_of_a_closed_season_is_refused_and_it_stays_unarchived(): void
+    {
+        $tx = $this->tx('2026-10-01');
+        $this->close(2027);
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)->from(route('transactions.index'))
+            ->delete(route('transactions.destroy', $tx))
+            ->assertSessionHas('error', ['key' => 'flash.season_closed', 'params' => ['season' => '2026/2027']]);
+
+        $this->assertFalse((bool) $tx->fresh()->archived);
     }
 }

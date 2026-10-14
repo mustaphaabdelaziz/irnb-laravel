@@ -134,6 +134,22 @@ class CaisseRulesTest extends TestCase
     }
 
     #[Test]
+    public function updating_without_a_branch_key_leaves_branch_parent_and_category_unchanged(): void
+    {
+        $category = Category::create(['name' => 'Cadet']);
+        $caisse = $this->caisse(['category_id' => $category->id]);
+
+        $this->actingAs($this->admin)->put(route('finance.accounts.update', $caisse), [
+            'name' => 'Renamed', 'type' => 'cash',
+        ])->assertSessionHas('success', 'flash.account_updated');
+
+        $caisse->refresh();
+        $this->assertSame($this->branch->id, $caisse->branch_id);
+        $this->assertSame($this->branch->treasury->id, $caisse->parent_account_id);
+        $this->assertSame($category->id, $caisse->category_id);
+    }
+
+    #[Test]
     public function an_unused_caisse_can_be_deleted(): void
     {
         $caisse = $this->caisse();

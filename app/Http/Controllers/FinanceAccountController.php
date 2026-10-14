@@ -43,6 +43,12 @@ class FinanceAccountController extends Controller
             $request->merge(['category_id' => null]);
         }
 
+        // Leaving branch_id out means "unchanged"; only an explicit empty value
+        // moves the caisse to club level.
+        if (! $structural && ! $request->has('branch_id')) {
+            $request->merge(['branch_id' => $financeAccount->branch_id]);
+        }
+
         $data = $this->validateData($request, $financeAccount);
 
         // The Fonds Initial and a coffre are structural: renamable, opening

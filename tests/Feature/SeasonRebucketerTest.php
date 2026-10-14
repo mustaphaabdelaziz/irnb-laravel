@@ -94,16 +94,24 @@ class SeasonRebucketerTest extends TestCase
     }
 
     #[Test]
-    public function a_closed_next_season_keeps_its_opening_balance(): void
+    public function consecutive_closed_seasons_hand_their_corrected_balances_down_the_chain(): void
     {
-        $cal2026 = $this->legacyYear(2026, ['status' => 'closed', 'closing_balance' => 1500]);
-        $cal2027 = $this->legacyYear(2027, ['status' => 'closed', 'opening_balance' => 777, 'closing_balance' => 777]);
-        $this->legacyRow('2026-03-01', 'income', 500, $cal2026);
+        $cal2025 = $this->legacyYear(2025, ['status' => 'closed', 'opening_balance' => 0, 'closing_balance' => 300]);
+        $cal2026 = $this->legacyYear(2026, ['status' => 'closed', 'opening_balance' => 300, 'closing_balance' => 420]);
+        $cal2027 = $this->legacyYear(2027, ['opening_balance' => 420]);
+        $this->legacyRow('2025-03-01', 'income', 100, $cal2025);   // stays in season 2025
+        $this->legacyRow('2025-10-01', 'income', 200, $cal2025);   // moves to season 2026
+        $this->legacyRow('2026-03-01', 'income', 50, $cal2026);    // stays in season 2026
+        $this->legacyRow('2026-10-01', 'income', 70, $cal2026);    // moves to season 2027
 
         app(SeasonRebucketer::class)->run();
 
-        $this->assertEquals(500, (float) $cal2026->fresh()->closing_balance);
-        $this->assertEquals(777, (float) $cal2027->fresh()->opening_balance);
+        $this->assertEquals(100, (float) $cal2025->fresh()->closing_balance);
+        $this->assertEquals(100, (float) $cal2026->fresh()->opening_balance);
+        $this->assertEquals(350, (float) $cal2026->fresh()->closing_balance);
+        $s2027 = $cal2027->fresh();
+        $this->assertEquals(350, (float) $s2027->opening_balance);
+        $this->assertEquals(420, (float) $s2027->opening_balance + (float) $s2027->total_income - (float) $s2027->total_expense);
     }
 
     #[Test]

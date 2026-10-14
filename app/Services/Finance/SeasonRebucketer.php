@@ -58,22 +58,25 @@ class SeasonRebucketer
     }
 
     /**
-     * A closed season's closing balance may have changed now that its rows
-     * moved, so the open season after it must open on the new figure — the
-     * same rule closeYear follows. A season that is itself closed stands.
+     * Rows moved between seasons, so a closed season's closing balance may
+     * have changed and the season after it must open on the new figure — even
+     * when that season is closed too, since its contents changed as well. The
+     * first closed season of a chain keeps the opening balance the club set.
      */
     private function carryClosedBalancesForward(): void
     {
         $years = FiscalYear::query()->orderBy('year')->get()->keyBy('year');
 
-        foreach ($years as $closed) {
-            $next = $years->get($closed->year + 1);
-            if (! $closed->isClosed() || ! $next || $next->isClosed()) {
+        foreach ($years as $year) {
+            $previous = $years->get($year->year - 1);
+            if (! $previous?->isClosed()) {
                 continue;
             }
 
-            $next->opening_balance = $closed->closing_balance;
-            $this->finance->recomputeYear($next);
+            // Same model instances throughout: recomputeYear updates a closed
+            // row's closing_balance in place, and the next iteration reads it.
+            $year->opening_balance = $previous->closing_balance;
+            $this->finance->recomputeYear($year);
         }
     }
 

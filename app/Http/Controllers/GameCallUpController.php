@@ -41,6 +41,10 @@ class GameCallUpController extends Controller
         }
 
         DB::transaction(function () use ($game, $data, $allowed) {
+            // Numbers are cleared first (like TeamRoster::replace), so a renumbered
+            // roster never trips the unique (game, shirt number) index. Phase 1 has
+            // no per-match override: a called-up player wears their roster number.
+            GamePlayer::where('game_id', $game->id)->update(['shirt_number' => null]);
             $existing = GamePlayer::where('game_id', $game->id)->get()->keyBy('player_id');
             $keep = [];
             foreach ($data['players'] as $row) {
@@ -54,11 +58,10 @@ class GameCallUpController extends Controller
                 $current = $existing->get($playerId);
 
                 $attributes = ['called_up' => $calledUp, 'not_called_reason' => $reason];
-                if ($calledUp && $current?->shirt_number === null) {
+                if ($calledUp) {
                     $attributes['shirt_number'] = $allowed[$playerId]->shirt_number;
-                }
-                if (! $calledUp) {
-                    $attributes += ['shirt_number' => null, 'role' => 'none', 'slot' => null, 'is_captain' => false, 'is_goalkeeper' => false];
+                } else {
+                    $attributes += ['role' => 'none', 'slot' => null, 'is_captain' => false, 'is_goalkeeper' => false];
                 }
 
                 $current

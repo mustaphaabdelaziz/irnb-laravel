@@ -9,6 +9,7 @@ use App\Models\Attendance;
 use App\Models\GamePlayer;
 use App\Models\TrainingSession;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\CompetitionFixtures;
@@ -79,6 +80,56 @@ class CallUpTest extends TestCase
         $this->assertFalse($rows[1]->called_up);
         $this->assertSame('Exams', $rows[1]->not_called_reason);
         $this->assertNull($rows[1]->shirt_number);
+    }
+
+    #[Test]
+    public function a_call_up_after_the_roster_is_renumbered_follows_the_new_numbers(): void
+    {
+        $team = $this->team();
+        [$a, $b] = [$this->player($team->category), $this->player($team->category)];
+        $this->onRoster($team, 2026, [$a, $b]);
+        $game = $this->game($team);
+        $admin = $this->admin();
+        $save = fn (array $players) => $this->actingAs($admin)->put(route('games.call-up.update', $game), ['players' => $players]);
+
+        $save([['player_id' => $a->id, 'called_up' => true]])->assertSessionHas('success');
+        $this->assertSame(1, GamePlayer::where('player_id', $a->id)->value('shirt_number'));
+
+        $roster = fn () => DB::table('team_players')->where('team_id', $team->id)->where('season_start_year', 2026);
+        $roster()->update(['shirt_number' => null]);
+        $roster()->where('player_id', $a->id)->update(['shirt_number' => 5]);
+        $roster()->where('player_id', $b->id)->update(['shirt_number' => 1]);
+
+        $save([['player_id' => $a->id, 'called_up' => true], ['player_id' => $b->id, 'called_up' => true]])
+            ->assertSessionHas('success', 'flash.call_up_saved');
+
+        $this->assertSame(5, GamePlayer::where('game_id', $game->id)->where('player_id', $a->id)->value('shirt_number'));
+        $this->assertSame(1, GamePlayer::where('game_id', $game->id)->where('player_id', $b->id)->value('shirt_number'));
+    }
+
+    #[Test]
+    public function uncalling_a_player_clears_the_lineup_fields(): void
+    {
+        $team = $this->team();
+        $a = $this->player($team->category);
+        $this->onRoster($team, 2026, [$a]);
+        $game = $this->game($team);
+        GamePlayer::create([
+            'game_id' => $game->id, 'player_id' => $a->id, 'called_up' => true, 'shirt_number' => 1,
+            'role' => 'starter', 'slot' => 3, 'is_captain' => true, 'is_goalkeeper' => true,
+        ]);
+
+        $this->actingAs($this->admin())->put(route('games.call-up.update', $game), ['players' => [
+            ['player_id' => $a->id, 'called_up' => false, 'not_called_reason' => 'Injured'],
+        ]])->assertSessionHas('success');
+
+        $row = GamePlayer::where('game_id', $game->id)->where('player_id', $a->id)->firstOrFail();
+        $this->assertFalse($row->called_up);
+        $this->assertSame('none', $row->role);
+        $this->assertNull($row->slot);
+        $this->assertNull($row->shirt_number);
+        $this->assertFalse($row->is_captain);
+        $this->assertFalse($row->is_goalkeeper);
     }
 
     #[Test]

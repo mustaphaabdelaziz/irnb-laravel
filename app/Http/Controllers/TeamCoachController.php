@@ -12,9 +12,10 @@ use Illuminate\Validation\Rule;
 
 class TeamCoachController extends Controller
 {
-    /** Replaces the team's coaches for one season. */
+    /** Replaces the team's coaches for one season. Admin-only: coach assignment is what TeamAccess scopes coaches by. */
     public function update(Request $request, Team $team): RedirectResponse
     {
+        abort_if(TeamAccess::isScoped($request->user()), 403);
         $data = $request->validate([
             'season' => ['required', 'integer', 'min:2000', 'max:2100'],
             'coaches' => ['present', 'array'],
@@ -22,7 +23,6 @@ class TeamCoachController extends Controller
             'coaches.*.role' => ['required', Rule::enum(CoachRole::class)],
         ]);
         $season = (int) $data['season'];
-        TeamAccess::authorize($request->user(), $team, $season);
 
         DB::transaction(function () use ($team, $season, $data) {
             DB::table('team_coaches')->where('team_id', $team->id)->where('season_start_year', $season)->delete();

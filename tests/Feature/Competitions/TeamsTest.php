@@ -139,12 +139,38 @@ class TeamsTest extends TestCase
         $this->assignCoach($team, $coach, 2026);
         $this->actingAs($coach)->put(route('teams.roster.update', $team), $rows)->assertSessionHasNoErrors();
 
+        // Coach assignment is the root of team access: only admins change it.
         $assistant = $this->coach();
-        $this->actingAs($coach)->put(route('teams.coaches.update', $team), [
+        $coaches = [
             'season' => 2026,
             'coaches' => [['user_id' => $coach->id, 'role' => 'head'], ['user_id' => $assistant->id, 'role' => 'assistant']],
-        ])->assertSessionHas('success', 'flash.team_coaches_saved');
+        ];
+        $this->actingAs($coach)->put(route('teams.coaches.update', $team), $coaches)->assertForbidden();
+        $this->assertNull($team->coachesFor(2026)->where('users.id', $assistant->id)->first());
+
+        $this->actingAs($this->admin())->put(route('teams.coaches.update', $team), $coaches)
+            ->assertSessionHas('success', 'flash.team_coaches_saved');
         $this->assertSame('assistant', $team->coachesFor(2026)->where('users.id', $assistant->id)->first()->pivot->role);
+    }
+
+    #[Test]
+    public function an_assigned_coach_cannot_change_the_team_settings(): void
+    {
+        $team = $this->team();
+        $coach = $this->coach();
+        $this->assignCoach($team, $coach, Season::current()->startYear);
+        $name = $team->name;
+
+        $this->actingAs($coach)->put(route('teams.update', $team), [
+            'branch_id' => $team->branch_id, 'category_id' => $team->category_id,
+            'name' => 'Renamed', 'default_game_format_id' => $team->default_game_format_id,
+        ])->assertForbidden();
+        $this->assertSame($name, $team->fresh()->name);
+
+        $this->actingAs($coach)->get(route('teams.show', $team))
+            ->assertInertia(fn (Assert $page) => $page->where('canManage', true)->where('canEditTeam', false));
+        $this->actingAs($this->admin())->get(route('teams.show', $team))
+            ->assertInertia(fn (Assert $page) => $page->where('canEditTeam', true));
     }
 
     #[Test]

@@ -18,7 +18,7 @@ const { can } = useCan();
 
 const props = defineProps({
     team: Object, season: Number, seasons: Array, roster: Array, candidates: Array, previousRosterCount: Number,
-    coaches: Array, users: Array, competitions: Array, games: Array, formats: Array, categories: Array, canManage: Boolean,
+    coaches: Array, users: Array, competitions: Array, games: Array, formats: Array, categories: Array, canManage: Boolean, canEditTeam: Boolean,
 });
 
 const tab = ref('roster');
@@ -154,16 +154,16 @@ const tabs = ['roster', 'coaches', 'competitions', 'games', 'settings'];
             <!-- Coaches -->
             <section v-if="tab === 'coaches'" class="space-y-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div v-for="(c, i) in coachRows" :key="i" class="flex flex-wrap items-center gap-3">
-                    <SearchableSelect v-model="c.user_id" :options="users" :disabled="!canManage" class="min-w-64 flex-1" />
-                    <select v-model="c.role" :disabled="!canManage" class="rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
+                    <SearchableSelect v-model="c.user_id" :options="users" :disabled="!canEditTeam" class="min-w-64 flex-1" />
+                    <select v-model="c.role" :disabled="!canEditTeam" class="rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
                         <option value="head">{{ t('comp.coach_head') }}</option>
                         <option value="assistant">{{ t('comp.coach_assistant') }}</option>
                     </select>
-                    <IconButton v-if="canManage" icon="trash" :label="t('comp.remove')" variant="danger" plain size="sm" @click="coachRows.splice(i, 1)" />
+                    <IconButton v-if="canEditTeam" icon="trash" :label="t('comp.remove')" variant="danger" plain size="sm" @click="coachRows.splice(i, 1)" />
                 </div>
                 <p v-if="!coachRows.length" class="text-sm text-slate-500">{{ t('comp.no_coach') }}</p>
                 <InputError :message="coachForm.errors.coaches" />
-                <div v-if="canManage" class="flex gap-2">
+                <div v-if="canEditTeam" class="flex gap-2">
                     <SecondaryButton @click="coachRows.push({ user_id: '', role: 'head' })">{{ t('add') }}</SecondaryButton>
                     <PrimaryButton :disabled="coachForm.processing" @click="saveCoaches">{{ t('save') }}</PrimaryButton>
                 </div>
@@ -196,23 +196,23 @@ const tabs = ['roster', 'coaches', 'competitions', 'games', 'settings'];
             <section v-if="tab === 'settings'" class="space-y-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div class="grid gap-3 sm:grid-cols-3">
                     <label class="text-sm">{{ t('name') }}
-                        <TextInput v-model="teamForm.name" :disabled="!canManage" class="mt-1 w-full" />
+                        <TextInput v-model="teamForm.name" :disabled="!canEditTeam" class="mt-1 w-full" />
                         <InputError :message="teamForm.errors.name ? t(teamForm.errors.name) : ''" />
                     </label>
                     <label class="text-sm">{{ t('category') }}
-                        <select v-model="teamForm.category_id" :disabled="!canManage" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
+                        <select v-model="teamForm.category_id" :disabled="!canEditTeam" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
                             <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.localized_name || c.name }}</option>
                         </select>
                     </label>
                     <label class="text-sm">{{ t('comp.game_format') }}
-                        <select v-model="teamForm.default_game_format_id" :disabled="!canManage" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
+                        <select v-model="teamForm.default_game_format_id" :disabled="!canEditTeam" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
                             <option v-for="f in formats" :key="f.id" :value="f.id">{{ f.localized_name }}</option>
                         </select>
                     </label>
                 </div>
-                <label class="flex items-center gap-2 text-sm"><input v-model="teamForm.archived" :disabled="!canManage" type="checkbox" class="rounded" /> {{ t('archived') }}</label>
+                <label class="flex items-center gap-2 text-sm"><input v-model="teamForm.archived" :disabled="!canEditTeam" type="checkbox" class="rounded" /> {{ t('archived') }}</label>
                 <div class="flex justify-between">
-                    <PrimaryButton v-if="canManage" :disabled="teamForm.processing" @click="saveTeam">{{ t('save') }}</PrimaryButton>
+                    <PrimaryButton v-if="canEditTeam" :disabled="teamForm.processing" @click="saveTeam">{{ t('save') }}</PrimaryButton>
                     <SecondaryButton v-if="can('teams', 'delete')" @click="confirmDelete = true">{{ t('delete') }}</SecondaryButton>
                 </div>
             </section>

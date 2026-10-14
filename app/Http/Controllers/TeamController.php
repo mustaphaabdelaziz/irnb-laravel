@@ -121,12 +121,13 @@ class TeamController extends Controller
                 ->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
             'categories' => Category::query()->orderBy('name')->get(),
             'canManage' => TeamAccess::canManage($request->user(), $team, $season),
+            'canEditTeam' => ! TeamAccess::isScoped($request->user()) && $request->user()->hasPermission('teams', 'edit'),
         ]);
     }
 
     public function update(Request $request, Team $team): RedirectResponse
     {
-        TeamAccess::authorize($request->user(), $team, Season::current()->startYear);
+        abort_if(TeamAccess::isScoped($request->user()), 403);
         $team->update($this->validated($request, $team));
 
         return back()->with('success', 'flash.team_updated');

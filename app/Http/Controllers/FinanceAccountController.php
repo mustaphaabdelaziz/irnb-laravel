@@ -9,6 +9,7 @@ use App\Services\FinanceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class FinanceAccountController extends Controller
 {
@@ -26,8 +27,7 @@ class FinanceAccountController extends Controller
             return back()->with('error', 'flash.club_bank_account_already_exists');
         }
 
-        $data = $this->prepareHierarchy($data);
-        FinanceAccount::create($data);
+        FinanceAccount::create($this->prepareHierarchy($data));
         $this->finance->recomputeAccountBalances();
 
         return back()->with('success', 'flash.account_added');
@@ -35,13 +35,20 @@ class FinanceAccountController extends Controller
 
     public function update(Request $request, FinanceAccount $financeAccount): RedirectResponse
     {
-        $data = $this->validateData($request);
+        $structural = $financeAccount->is_opening_fund || $financeAccount->is_treasury;
 
-        // The branch treasury, opening fund, and automatic category-register identity are
-        // structural. They can be renamed or given an opening balance, but not
-        // detached from their branch/category or disabled.
-        if ($financeAccount->is_treasury || $financeAccount->category_id || $financeAccount->is_opening_fund) {
-            unset($data['branch_id']);
+        // A coffre and the Fonds Initial never link to a category: drop it
+        // before validation so a stray value cannot trip the club-level check.
+        if ($structural) {
+            $request->merge(['category_id' => null]);
+        }
+
+        $data = $this->validateData($request, $financeAccount);
+
+        // The Fonds Initial and a coffre are structural: renamable, opening
+        // balance editable, but never moved, linked or switched off.
+        if ($structural) {
+            unset($data['branch_id'], $data['category_id']);
             $data['is_active'] = true;
         } else {
             $data = $this->prepareHierarchy($data);
@@ -55,24 +62,20 @@ class FinanceAccountController extends Controller
 
     public function destroy(FinanceAccount $financeAccount): RedirectResponse
     {
-        // Opening fund cannot be deleted (always system required)
         if ($financeAccount->is_opening_fund) {
-            return back()->with('error', 'flash.system_register_required');
+            return back()->with('error', 'flash.opening_fund_required');
         }
 
-        // Check if account has any transactions
-        if ($financeAccount->transactions()->exists()) {
-            return back()->with('error', 'flash.account_has_transactions');
-        }
-
-        // Check if account has any transfers
-        if ($financeAccount->incomingTransfers()->exists() || $financeAccount->outgoingTransfers()->exists()) {
-            return back()->with('error', 'flash.account_has_transfers');
-        }
-
-        // If it's a treasury, check if it has child accounts (category registers)
         if ($financeAccount->is_treasury && $financeAccount->childAccounts()->exists()) {
-            return back()->with('error', 'flash.treasury_has_child_accounts');
+            return back()->with('error', 'flash.coffre_has_caisses');
+        }
+
+        $used = $financeAccount->transactions()->exists()
+            || $financeAccount->incomingTransfers()->exists()
+            || $financeAccount->outgoingTransfers()->exists();
+
+        if ($used) {
+            return back()->with('error', $financeAccount->is_treasury ? 'flash.coffre_cannot_be_deleted' : 'flash.caisse_used_deactivate');
         }
 
         $financeAccount->delete();
@@ -81,36 +84,60 @@ class FinanceAccountController extends Controller
     }
 
     /** @return array<string, mixed> */
-    private function validateData(Request $request): array
+    private function validateData(Request $request, ?FinanceAccount $account = null): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'type' => ['required', Rule::in(['cash', 'bank', 'other'])],
-            // No category_id: category registers are provisioned per branch, never entered.
             'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
+            // A member category this caisse collects for by default — only inside a coffre.
+            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'account_number' => ['nullable', 'string', 'max:120'],
             'opening_balance' => ['nullable', 'numeric'],
             'currency' => ['nullable', 'string', 'max:8'],
             'is_active' => ['nullable', 'boolean'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
+
+        if (! empty($data['category_id']) && empty($data['branch_id'])) {
+            // Only a caisse inside a coffre collects for a category.
+            throw ValidationException::withMessages([
+                'category_id' => __('Only a caisse inside a safe can be linked to a category.'),
+            ]);
+        }
+
+        if (! empty($data['category_id'])) {
+            $taken = FinanceAccount::where('branch_id', $data['branch_id'])
+                ->where('category_id', $data['category_id'])
+                ->when($account, fn ($q) => $q->whereKeyNot($account->id))
+                ->exists();
+
+            if ($taken) {
+                throw ValidationException::withMessages([
+                    'category_id' => __('This category already has a caisse in this branch.'),
+                ]);
+            }
+        }
+
+        return $data;
     }
 
     /** @param array<string, mixed> $data */
     private function prepareHierarchy(array $data): array
     {
+        $data['is_treasury'] = false;
+
         if (empty($data['branch_id'])) {
             $data['parent_account_id'] = null;
+            $data['category_id'] = null;
 
             return $data;
         }
 
         $branch = Branch::findOrFail($data['branch_id']);
-        $treasury = $branch->treasury()->first()
-            ?? app(CashRegisterProvisioner::class)->forBranch($branch);
-
-        $data['parent_account_id'] = $treasury->id;
-        $data['is_treasury'] = false;
+        $data['parent_account_id'] = ($branch->treasury()->first()
+            ?? app(CashRegisterProvisioner::class)->forBranch($branch))->id;
+        $data['category_id'] ??= null;
 
         return $data;
     }

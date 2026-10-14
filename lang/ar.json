@@ -47,5 +47,7 @@
     "Type": "النوع",
     "members": "عضو",
     "Season :season is closed. Reopen it to change its transactions.": "الموسم :season مغلق. أعد فتحه لتعديل معاملاته.",
-    "Reopen the closed seasons before changing the season start month.": "أعد فتح المواسم المغلقة قبل تغيير شهر بداية الموسم."
+    "Reopen the closed seasons before changing the season start month.": "أعد فتح المواسم المغلقة قبل تغيير شهر بداية الموسم.",
+    "This category already has a caisse in this branch.": "لهذه الفئة صندوق في هذا الفرع بالفعل.",
+    "Only a caisse inside a safe can be linked to a category.": "لا يمكن ربط فئة إلا بصندوق داخل خزينة."
 }

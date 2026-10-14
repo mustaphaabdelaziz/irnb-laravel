@@ -3,11 +3,15 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
+use App\Models\FinanceCategory;
 use App\Models\Player;
 use App\Models\Role;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\Pdf\PdfService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Mockery\MockInterface;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -18,6 +22,23 @@ class ReportPdfTest extends TestCase
     private function admin(): User
     {
         return User::factory()->admin()->create(['email_verified_at' => now()]);
+    }
+
+    /** Calls the financial summary with mPDF swapped for a spy and returns the HTML it was given. */
+    private function renderFinancialSummary(array $query): string
+    {
+        $seen = new \ArrayObject;
+        $this->mock(PdfService::class, function (MockInterface $mock) use ($seen) {
+            $mock->shouldReceive('stream')->once()->andReturnUsing(function (string $html) use ($seen) {
+                $seen['html'] = $html;
+
+                return response('%PDF-spy', 200, ['Content-Type' => 'application/pdf']);
+            });
+        });
+
+        $this->actingAs($this->admin())->get(route('reports.financial', $query))->assertOk();
+
+        return $seen['html'];
     }
 
     #[Test]
@@ -74,6 +95,22 @@ class ReportPdfTest extends TestCase
 
         $response->assertOk();
         $this->assertSame('application/pdf', $response->headers->get('content-type'));
+    }
+
+    #[Test]
+    public function the_financial_summary_covers_one_season_and_names_categories(): void
+    {
+        Carbon::setTestNow('2026-10-14');
+        $category = FinanceCategory::create(['type' => 'expense', 'name' => 'مصاريف اشغال المقر', 'is_active' => true]);
+        Transaction::create(['amount' => 770, 'transaction_date' => '2026-10-11', 'transaction_type' => 'expense', 'category' => 'msaryf_ashghal_almkr', 'finance_category_id' => $category->id, 'payment_method' => 'cash', 'status' => 'Paid']);
+        Transaction::create(['amount' => 999, 'transaction_date' => '2026-03-01', 'transaction_type' => 'expense', 'category' => 'other', 'payment_method' => 'cash', 'status' => 'Paid']);
+
+        $html = $this->renderFinancialSummary(['year' => 2027]);
+
+        $this->assertStringContainsString('2026/2027', $html);
+        $this->assertStringContainsString('مصاريف اشغال المقر', $html);
+        $this->assertStringNotContainsString('msaryf_ashghal_almkr', $html);
+        $this->assertStringNotContainsString('999', $html);
     }
 
     #[Test]

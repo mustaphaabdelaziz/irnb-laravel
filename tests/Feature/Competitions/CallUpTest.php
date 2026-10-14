@@ -43,6 +43,41 @@ class CallUpTest extends TestCase
     }
 
     #[Test]
+    public function a_squad_member_no_longer_on_the_roster_is_not_a_candidate(): void
+    {
+        $team = $this->team();
+        [$a, $gone] = [$this->player($team->category), $this->player($team->category)];
+        $this->onRoster($team, 2026, [$a]);
+        $competition = $this->competition($team, 2026);
+        $competition->players()->attach([$a->id => ['hidden' => false], $gone->id => ['hidden' => false]]);
+        $game = $this->game($team, ['competition_id' => $competition->id]);
+
+        $this->actingAs($this->admin())->get(route('games.show', $game))
+            ->assertInertia(fn (Assert $page) => $page->has('candidates', 1)->where('candidates.0.player_id', $a->id));
+    }
+
+    #[Test]
+    public function re_saving_an_old_call_up_keeps_a_departed_players_row(): void
+    {
+        $team = $this->team();
+        [$a, $gone] = [$this->player($team->category), $this->player($team->category)];
+        $this->onRoster($team, 2026, [$a, $gone]);
+        $game = $this->game($team);
+        GamePlayer::create(['game_id' => $game->id, 'player_id' => $a->id, 'called_up' => true, 'shirt_number' => 1]);
+        GamePlayer::create(['game_id' => $game->id, 'player_id' => $gone->id, 'called_up' => true, 'shirt_number' => 2]);
+        DB::table('team_players')->where('team_id', $team->id)->where('player_id', $gone->id)->delete();
+
+        $this->actingAs($this->admin())->put(route('games.call-up.update', $game), ['players' => [
+            ['player_id' => $a->id, 'called_up' => true],
+        ]])->assertSessionHas('success', 'flash.call_up_saved');
+
+        $row = GamePlayer::where('game_id', $game->id)->where('player_id', $gone->id)->first();
+        $this->assertNotNull($row);
+        $this->assertTrue($row->called_up);
+        $this->assertSame(2, $row->shirt_number);
+    }
+
+    #[Test]
     public function a_friendly_calls_up_from_the_team_roster(): void
     {
         $team = $this->team();

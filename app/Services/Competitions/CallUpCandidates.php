@@ -8,9 +8,9 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Who may be called up for a game: the competition's visible squad, or the
- * team's season roster for a friendly. Each player carries the roster's
- * shirt number; ordered by number, then name.
+ * Who may be called up for a game: the competition's visible squad members
+ * still on the team's season roster, or that roster for a friendly. Each
+ * player carries the roster's shirt number; ordered by number, then name.
  */
 final class CallUpCandidates
 {
@@ -21,7 +21,8 @@ final class CallUpCandidates
             ->where('team_id', $game->team_id)->where('season_start_year', $game->season_start_year)
             ->pluck('shirt_number', 'player_id');
         $ids = $game->competition_id !== null
-            ? DB::table('competition_players')->where('competition_id', $game->competition_id)->where('hidden', false)->pluck('player_id')
+            ? DB::table('competition_players')->where('competition_id', $game->competition_id)->where('hidden', false)
+                ->whereIn('player_id', $shirts->keys())->pluck('player_id')
             : $shirts->keys();
 
         return Player::query()->whereIn('id', $ids)->with('category')->get()

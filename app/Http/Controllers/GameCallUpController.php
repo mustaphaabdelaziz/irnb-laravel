@@ -44,9 +44,12 @@ class GameCallUpController extends Controller
             // Numbers are cleared first (like TeamRoster::replace), so a renumbered
             // roster never trips the unique (game, shirt number) index. Phase 1 has
             // no per-match override: a called-up player wears their roster number.
+            $departed = GamePlayer::where('game_id', $game->id)->whereNotIn('player_id', $allowed->keys())
+                ->whereNotNull('shirt_number')->pluck('shirt_number', 'player_id');
             GamePlayer::where('game_id', $game->id)->update(['shirt_number' => null]);
             $existing = GamePlayer::where('game_id', $game->id)->get()->keyBy('player_id');
             $keep = [];
+            $taken = [];
             foreach ($data['players'] as $row) {
                 $calledUp = (bool) $row['called_up'];
                 $reason = $calledUp ? null : (trim((string) ($row['not_called_reason'] ?? '')) ?: null);
@@ -59,7 +62,7 @@ class GameCallUpController extends Controller
 
                 $attributes = ['called_up' => $calledUp, 'not_called_reason' => $reason];
                 if ($calledUp) {
-                    $attributes['shirt_number'] = $allowed[$playerId]->shirt_number;
+                    $attributes['shirt_number'] = $taken[] = $allowed[$playerId]->shirt_number;
                 } else {
                     $attributes += ['role' => 'none', 'slot' => null, 'is_captain' => false, 'is_goalkeeper' => false];
                 }
@@ -68,7 +71,15 @@ class GameCallUpController extends Controller
                     ? $current->update($attributes)
                     : GamePlayer::create($attributes + ['game_id' => $game->id, 'player_id' => $playerId]);
             }
-            GamePlayer::where('game_id', $game->id)->whereNotIn('player_id', $keep)->delete();
+            // Only current candidates can be dropped: a player who has since left
+            // the roster or squad keeps their row (and number, if still free), so
+            // re-saving an old match never erases who played in it.
+            GamePlayer::where('game_id', $game->id)->whereIn('player_id', $allowed->keys())->whereNotIn('player_id', $keep)->delete();
+            foreach ($departed as $playerId => $shirt) {
+                if (! in_array((int) $shirt, $taken, true)) {
+                    GamePlayer::where('game_id', $game->id)->where('player_id', $playerId)->update(['shirt_number' => $shirt]);
+                }
+            }
         });
 
         return back()->with('success', 'flash.call_up_saved');

@@ -2,10 +2,13 @@
 
 namespace Tests\Feature\Competitions;
 
+use App\Enums\GameStatus;
 use App\Models\Category;
+use App\Models\GamePlayer;
 use App\Models\Team;
 use App\Support\Season;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\CompetitionFixtures;
@@ -77,6 +80,33 @@ class TeamsTest extends TestCase
 
         $save([['player_id' => $b->id, 'shirt_number' => null]])->assertSessionHasNoErrors();
         $this->assertSame([$b->id], $team->rosterFor(2026)->pluck('players.id')->all());
+    }
+
+    #[Test]
+    public function players_removed_from_the_roster_leave_that_seasons_squads_unless_they_played(): void
+    {
+        $team = $this->team();
+        [$a, $b, $c] = [$this->player($team->category), $this->player($team->category), $this->player($team->category)];
+        $this->onRoster($team, 2026, [$a, $b, $c]);
+        $this->onRoster($team, 2025, [$b]);
+        $league = $this->competition($team, 2026);
+        $league->players()->attach([$a->id => ['hidden' => false], $b->id => ['hidden' => false], $c->id => ['hidden' => false]]);
+        $lastSeason = $this->competition($team, 2025);
+        $lastSeason->players()->attach([$b->id => ['hidden' => false]]);
+        $played = $this->game($team, ['competition_id' => $league->id, 'status' => GameStatus::Played]);
+        GamePlayer::create(['game_id' => $played->id, 'player_id' => $b->id, 'called_up' => true]);
+        $upcoming = $this->game($team, ['competition_id' => $league->id]);
+        GamePlayer::create(['game_id' => $upcoming->id, 'player_id' => $c->id, 'called_up' => true]);
+
+        $this->actingAs($this->admin())->put(route('teams.roster.update', $team), [
+            'season' => 2026, 'players' => [['player_id' => $a->id, 'shirt_number' => 1]],
+        ])->assertSessionHasNoErrors();
+
+        $squad = DB::table('competition_players')->where('competition_id', $league->id)->pluck('hidden', 'player_id');
+        $this->assertEqualsCanonicalizing([$a->id, $b->id], $squad->keys()->all());
+        $this->assertFalse((bool) $squad[$a->id]);
+        $this->assertTrue((bool) $squad[$b->id]);
+        $this->assertSame(1, DB::table('competition_players')->where('competition_id', $lastSeason->id)->where('hidden', false)->count());
     }
 
     #[Test]

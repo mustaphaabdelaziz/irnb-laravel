@@ -12,6 +12,7 @@ final class TeamRoster
     /**
      * Makes the season's roster exactly $rows. Numbers are cleared first, so
      * swapping two players' numbers never trips the unique (team, season, number) index.
+     * Removed players also leave that season's competition squads (see CompetitionSquad::remove).
      *
      * @param  list<array{player_id: int, shirt_number: ?int}>  $rows
      */
@@ -21,7 +22,14 @@ final class TeamRoster
             $scope = fn () => DB::table('team_players')->where('team_id', $team->id)->where('season_start_year', $season);
             $ids = array_map(fn (array $row) => (int) $row['player_id'], $rows);
 
+            $removed = $scope()->whereNotIn('player_id', $ids)->pluck('player_id')->map(fn ($id) => (int) $id)->all();
             $scope()->whereNotIn('player_id', $ids)->delete();
+            // A squad is a subset of the roster: those leaving the roster leave
+            // the team's competitions of that season too.
+            $competitionIds = DB::table('competitions')->where('team_id', $team->id)->where('season_start_year', $season)->pluck('id');
+            foreach ($competitionIds as $competitionId) {
+                CompetitionSquad::remove((int) $competitionId, $removed);
+            }
             $scope()->update(['shirt_number' => null]);
             $existing = $scope()->pluck('player_id')->map(fn ($id) => (int) $id)->all();
 

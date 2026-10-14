@@ -13,13 +13,14 @@ const { t } = useI18n();
 
 const props = defineProps({
     positions: Array,
+    branches: Array,
 });
 
 const editingId = ref(null);
 const deleteId = ref(null);
 
-const form = useForm({ name: '', abbreviation: '' });
-const editForm = useForm({ name: '', abbreviation: '' });
+const form = useForm({ name: '', abbreviation: '', branch_id: '' });
+const editForm = useForm({ name: '', abbreviation: '', branch_id: '' });
 
 function addPosition() {
     form.post(route('positions.store'), {
@@ -31,6 +32,7 @@ function startEdit(pos) {
     editingId.value = pos.id;
     editForm.name = pos.name;
     editForm.abbreviation = pos.abbreviation || '';
+    editForm.branch_id = pos.branch_id ?? '';
 }
 
 function saveEdit(id) {
@@ -57,9 +59,17 @@ function destroy() {
         <div class="mx-auto max-w-3xl space-y-6">
             <!-- Add form -->
             <form @submit.prevent="addPosition" class="flex items-end gap-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+                <div class="w-40">
+                    <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('comp.sport') }}</label>
+                    <select v-model="form.branch_id" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
+                        <option value="">—</option>
+                        <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.localized_name || b.name }}</option>
+                    </select>
+                </div>
                 <div class="w-24">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('abbreviation') }}</label>
                     <TextInput v-model="form.abbreviation" class="mt-1 w-full" placeholder="GK" required />
+                    <InputError :message="form.errors.abbreviation" class="mt-1" />
                 </div>
                 <div class="flex-1">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('name') }}</label>
@@ -74,6 +84,7 @@ function destroy() {
                 <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
                     <thead class="bg-slate-50 dark:bg-slate-950">
                         <tr>
+                            <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('comp.sport') }}</th>
                             <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('abbreviation') }}</th>
                             <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('name') }}</th>
                             <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('actions') }}</th>
@@ -81,6 +92,13 @@ function destroy() {
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                         <tr v-for="pos in positions" :key="pos.id">
+                            <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
+                                <select v-if="editingId === pos.id" v-model="editForm.branch_id" class="rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
+                                    <option value="">—</option>
+                                    <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.localized_name || b.name }}</option>
+                                </select>
+                                <span v-else>{{ pos.branch?.localized_name || pos.branch?.name || '—' }}</span>
+                            </td>
                             <td class="px-4 py-3">
                                 <TextInput v-if="editingId === pos.id" v-model="editForm.abbreviation" class="w-16" />
                                 <span v-else class="rounded bg-slate-100 dark:bg-slate-800 px-2 py-0.5 font-mono text-xs font-bold text-slate-700 dark:text-slate-200">{{ pos.abbreviation }}</span>
@@ -101,7 +119,7 @@ function destroy() {
                             </td>
                         </tr>
                         <tr v-if="!positions?.length">
-                            <td colspan="3" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
+                            <td colspan="4" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
                         </tr>
                     </tbody>
                 </table>

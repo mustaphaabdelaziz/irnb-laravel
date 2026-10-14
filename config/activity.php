@@ -34,6 +34,7 @@ $settingLists = [
     'finance.years' => 'fiscal_years',
     'attendance.custom-statuses' => 'attendance_codes',
     'opponents' => 'opponents',
+    'game-formats' => 'game_formats',
     'venues' => 'venues',
 ];
 

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AttendanceAlertsController;
+use App\Http\Controllers\GameFormatController;
 use App\Http\Controllers\AttendanceCalendarController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceCustomStatusController;
@@ -288,6 +289,7 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
         // Competitions & matches — configuration lists
         Route::resource('opponents', OpponentController::class)->except(['show', 'create', 'edit']);
         Route::resource('venues', VenueController::class)->except(['show', 'create', 'edit']);
+        Route::resource('game-formats', GameFormatController::class)->except(['show', 'create', 'edit']);
 
         // Finance management — fiscal years (close/reopen), budgets, chart of accounts, accounts
         Route::get('/finance/settings', [FinanceController::class, 'settings'])->name('finance.settings');

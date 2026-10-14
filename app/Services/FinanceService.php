@@ -90,6 +90,23 @@ class FinanceService
     }
 
     /**
+     * The cash held in the account itself. A coffre's current_balance is a
+     * roll-up of its own cash plus its caisses; this removes the caisses, so
+     * a coffre can never hand out money that sits in one of its caisses.
+     * Reads the stored balances: run recomputeAccountBalances() first.
+     */
+    public function ownBalance(FinanceAccount $account): float
+    {
+        $balance = (float) $account->current_balance;
+
+        if ($account->is_treasury) {
+            $balance -= (float) $account->childAccounts()->sum('current_balance');
+        }
+
+        return round($balance, 2);
+    }
+
+    /**
      * Close (enclose) a fiscal year: lock it, compute its closing balance, and
      * carry that balance forward as the opening balance of the next year.
      */

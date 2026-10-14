@@ -9,6 +9,7 @@ use App\Models\FinanceTransfer;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
 use App\Services\FinanceService;
+use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -27,10 +28,16 @@ class CashRegisterController extends Controller
 
         $accounts = FinanceAccount::query()
             ->with(['branch:id,name,name_ar,name_fr,name_en', 'category:id,name,name_ar,name_fr,name_en'])
-            ->withCount('transactions')
+            ->withCount(['transactions', 'incomingTransfers', 'outgoingTransfers'])
             ->orderBy('sort_order')->orderBy('id')
             ->get();
         $branches = Branch::query()->orderBy('name')->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']);
+
+        $accounts->each(function (FinanceAccount $account) {
+            // One number for the page: a caisse that took part in a move can't be deleted.
+            $account->transfers_count = $account->incoming_transfers_count + $account->outgoing_transfers_count;
+            unset($account->incoming_transfers_count, $account->outgoing_transfers_count);
+        });
 
         $coffres = $branches->map(function (Branch $branch) use ($accounts) {
             $coffre = $accounts->first(fn (FinanceAccount $a) => $a->is_treasury && $a->branch_id === $branch->id);
@@ -40,7 +47,7 @@ class CashRegisterController extends Controller
                 'branch' => $branch,
                 'coffre' => $coffre,
                 // The coffre's balance is a roll-up; this is the cash held in it directly.
-                'own_balance' => $coffre ? round((float) $coffre->current_balance - $caisses->sum(fn ($c) => (float) $c->current_balance), 2) : 0.0,
+                'own_balance' => $coffre ? $this->finance->ownBalance($coffre) : 0.0,
                 'caisses' => $caisses,
             ];
         })->values();
@@ -93,6 +100,11 @@ class CashRegisterController extends Controller
                 'required',
                 Rule::exists('finance_accounts', 'id')->where('is_active', true),
                 'different:from_account_id',
+                function (string $attribute, mixed $value, Closure $fail) {
+                    if (FinanceAccount::whereKey($value)->where('is_opening_fund', true)->exists()) {
+                        $fail(__('Money cannot be moved into the opening fund.'));
+                    }
+                },
             ],
             'amount' => ['required', 'numeric', 'gt:0'],
             'transfer_date' => ['required', 'date'],
@@ -116,7 +128,8 @@ class CashRegisterController extends Controller
             $this->finance->recomputeAccountBalances();
             $source = FinanceAccount::findOrFail($validated['from_account_id']);
 
-            if ((float) $source->current_balance < (float) $validated['amount']) {
+            // A coffre only gives the cash it holds itself, not its caisses' money.
+            if ($this->finance->ownBalance($source) < round((float) $validated['amount'], 2)) {
                 throw ValidationException::withMessages([
                     'amount' => __('The source cash register does not have enough money for this transfer.'),
                 ]);

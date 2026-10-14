@@ -348,6 +348,52 @@ class CashRegisterManagementTest extends TestCase
     }
 
     #[Test]
+    public function a_coffre_cannot_send_money_that_sits_in_its_caisses(): void
+    {
+        $branch = Branch::create(['name' => 'Football']);
+        $coffre = $branch->treasury;
+        $caisse = FinanceAccount::create(['branch_id' => $branch->id, 'parent_account_id' => $coffre->id, 'name' => 'Caisse seniors', 'type' => 'cash', 'opening_balance' => 1000, 'is_active' => true, 'currency' => 'DZD']);
+        $bank = FinanceAccount::create(['name' => 'Bank', 'type' => 'bank', 'opening_balance' => 0, 'is_active' => true, 'currency' => 'DZD']);
+        $admin = $this->admin();
+
+        // The coffre shows 1000 (its caisse rolled up) but holds nothing itself.
+        $this->actingAs($admin)->post(route('finance.transfers.store'), [
+            'from_account_id' => $coffre->id,
+            'to_account_id' => $bank->id,
+            'amount' => 500,
+            'transfer_date' => now()->toDateString(),
+        ])->assertSessionHasErrors('amount');
+        $this->assertSame(0, FinanceTransfer::count());
+
+        $this->actingAs($admin)->post(route('finance.transfers.store'), [
+            'from_account_id' => $caisse->id,
+            'to_account_id' => $bank->id,
+            'amount' => 500,
+            'transfer_date' => now()->toDateString(),
+        ])->assertSessionHasNoErrors();
+        $this->assertSame(1, FinanceTransfer::count());
+        $this->assertEqualsWithDelta(500, (float) $caisse->fresh()->current_balance, 0.01);
+        $this->assertEqualsWithDelta(500, (float) $bank->fresh()->current_balance, 0.01);
+    }
+
+    #[Test]
+    public function money_cannot_be_moved_into_the_opening_fund(): void
+    {
+        $fund = FinanceAccount::where('is_opening_fund', true)->first()
+            ?? FinanceAccount::create(['name' => 'Opening Fund', 'type' => 'cash', 'is_opening_fund' => true, 'is_active' => true, 'currency' => 'DZD']);
+        $source = FinanceAccount::create(['name' => 'Cash', 'type' => 'cash', 'opening_balance' => 100, 'is_active' => true, 'currency' => 'DZD']);
+
+        $this->actingAs($this->admin())->post(route('finance.transfers.store'), [
+            'from_account_id' => $source->id,
+            'to_account_id' => $fund->id,
+            'amount' => 50,
+            'transfer_date' => now()->toDateString(),
+        ])->assertSessionHasErrors(['to_account_id' => __('Money cannot be moved into the opening fund.')]);
+
+        $this->assertSame(0, FinanceTransfer::count());
+    }
+
+    #[Test]
     public function the_default_register_is_never_the_opening_fund(): void
     {
         FinanceAccount::query()->delete();

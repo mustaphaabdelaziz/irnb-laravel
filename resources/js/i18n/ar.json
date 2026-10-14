@@ -1215,6 +1215,7 @@
     "flash.equipment_stock_received": "تم استلام المخزون بنجاح.",
     "flash.finance_reset_done": "تم حذف كل البيانات المالية. حُفظت نسخة احتياطية قبل ذلك.",
     "flash.fiscal_year_closed": "تم إقفال سنة {year}. تم ترحيل الرصيد إلى {next}.",
+    "flash.fiscal_year_closed_no_carry": "تم إقفال موسم {year}. الموسم {next} مغلق مسبقًا، لذا لم يُرحَّل الرصيد إليه.",
     "flash.fiscal_year_created": "تم إنشاء السنة المالية {year}.",
     "flash.fiscal_year_deleted": "تم حذف السنة المالية {year}.",
     "flash.fiscal_year_not_empty": "لا يمكن حذف السنة المالية {year}: إنها مغلقة أو ما زالت تحتوي على معاملات.",

@@ -1215,6 +1215,7 @@
     "flash.equipment_stock_received": "Stock reçu avec succès.",
     "flash.finance_reset_done": "Toutes les données financières ont été supprimées. Une sauvegarde a été faite avant.",
     "flash.fiscal_year_closed": "Exercice {year} clôturé. Solde reporté sur {next}.",
+    "flash.fiscal_year_closed_no_carry": "Saison {year} clôturée. La saison {next} est déjà clôturée, le solde n'a donc pas été reporté.",
     "flash.fiscal_year_created": "Exercice {year} créé.",
     "flash.fiscal_year_deleted": "Exercice {year} supprimé.",
     "flash.fiscal_year_not_empty": "L'exercice {year} ne peut pas être supprimé : il est clôturé ou contient encore des transactions.",

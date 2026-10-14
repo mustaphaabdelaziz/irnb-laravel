@@ -1215,6 +1215,7 @@
     "flash.equipment_stock_received": "Stock received successfully.",
     "flash.finance_reset_done": "All financial data was deleted. A backup was saved first.",
     "flash.fiscal_year_closed": "Year {year} closed. Balance carried forward to {next}.",
+    "flash.fiscal_year_closed_no_carry": "Season {year} closed. Season {next} is already closed, so the balance was not carried forward.",
     "flash.fiscal_year_created": "Fiscal year {year} created.",
     "flash.fiscal_year_deleted": "Fiscal year {year} deleted.",
     "flash.fiscal_year_not_empty": "Fiscal year {year} cannot be deleted: it is closed or still has transactions.",

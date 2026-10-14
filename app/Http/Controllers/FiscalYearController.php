@@ -50,9 +50,17 @@ class FiscalYearController extends Controller
 
     public function close(FiscalYear $fiscalYear, Request $request): RedirectResponse
     {
+        // closeYear never rewrites a closed next season, so say so instead of
+        // claiming the balance was carried forward.
+        $nextAlreadyClosed = FiscalYear::query()
+            ->where('year', $fiscalYear->year + 1)->where('status', 'closed')->exists();
+
         $this->finance->closeYear($fiscalYear, $request->user());
 
-        return back()->with('success', ['key' => 'flash.fiscal_year_closed', 'params' => ['year' => FiscalPeriod::label($fiscalYear->year), 'next' => FiscalPeriod::label($fiscalYear->year + 1)]]);
+        return back()->with('success', [
+            'key' => $nextAlreadyClosed ? 'flash.fiscal_year_closed_no_carry' : 'flash.fiscal_year_closed',
+            'params' => ['year' => FiscalPeriod::label($fiscalYear->year), 'next' => FiscalPeriod::label($fiscalYear->year + 1)],
+        ]);
     }
 
     public function reopen(FiscalYear $fiscalYear): RedirectResponse

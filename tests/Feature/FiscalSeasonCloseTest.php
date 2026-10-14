@@ -48,8 +48,10 @@ class FiscalSeasonCloseTest extends TestCase
         $fy = FiscalYear::create(['year' => 2027, 'start_date' => '2026-09-01', 'end_date' => '2027-08-31', 'status' => 'open', 'opening_balance' => 0]);
         FiscalYear::create(['year' => 2028, 'start_date' => '2027-09-01', 'end_date' => '2028-08-31', 'status' => 'closed', 'opening_balance' => 500, 'closing_balance' => 500]);
 
-        $this->actingAs(User::factory()->admin()->create())->post(route('finance.years.close', $fy));
+        $this->actingAs(User::factory()->admin()->create())->post(route('finance.years.close', $fy))
+            ->assertSessionHas('success', ['key' => 'flash.fiscal_year_closed_no_carry', 'params' => ['year' => '2026/2027', 'next' => '2027/2028']]);
 
+        $this->assertSame('closed', $fy->fresh()->status);
         $this->assertEquals(500, (float) FiscalYear::where('year', 2028)->value('opening_balance'));
     }
 

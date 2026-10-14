@@ -8,6 +8,7 @@ use App\Models\WebsiteConfig;
 use App\Support\FiscalPeriod;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Once;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -71,17 +72,30 @@ class FiscalPeriodTest extends TestCase
     }
 
     #[Test]
-    public function startMonth_memoization_does_not_break_functionality(): void
+    public function repeated_labels_read_the_start_month_from_the_database_at_most_once(): void
     {
-        // Verify initial state (September)
-        $this->assertSame('2026/2027', FiscalPeriod::label(2027));
-        $this->assertSame('2026/2027', FiscalPeriod::label(2027)); // Repeated call
+        WebsiteConfig::singleton();
+        Once::flush();
 
-        // Changing the config causes memoization to be invalidated and new value is read
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        foreach (range(1, 5) as $_) {
+            $this->assertSame('2026/2027', FiscalPeriod::label(2027));
+        }
+        DB::disableQueryLog();
+
+        $this->assertLessThanOrEqual(1, count(DB::getQueryLog()));
+    }
+
+    #[Test]
+    public function a_changed_start_month_is_seen_immediately(): void
+    {
+        $this->assertSame('2026/2027', FiscalPeriod::label(2027));
+
+        // Saving the setting flushes the memo, so the next read sees the new month.
         $this->startMonth(1);
         $this->assertSame('2027', FiscalPeriod::label(2027));
 
-        // Change back to September
         $this->startMonth(9);
         $this->assertSame('2026/2027', FiscalPeriod::label(2027));
     }

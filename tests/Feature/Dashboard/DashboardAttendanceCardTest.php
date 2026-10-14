@@ -19,6 +19,7 @@ use App\Services\Dashboard\AttendanceCard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Once;
 use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\AttendanceFixtures;
@@ -247,10 +248,10 @@ class DashboardAttendanceCardTest extends TestCase
         };
 
         $flag(3);
-        \Illuminate\Support\Once::flush();
+        Once::flush();
         $few = $measure();
         $flag(27);
-        \Illuminate\Support\Once::flush();
+        Once::flush();
 
         $this->assertSame($few, $measure());
     }

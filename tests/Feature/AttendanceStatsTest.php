@@ -14,6 +14,7 @@ use App\Services\Attendance\AttendanceStats;
 use App\Support\AttendanceSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Once;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\AttendanceFixtures;
 use Tests\TestCase;
@@ -294,8 +295,6 @@ class AttendanceStatsTest extends TestCase
     #[Test]
     public function the_query_count_does_not_grow_with_the_roster(): void
     {
-        // Need to use Once to avoid the import
-        $flushOnce = fn () => \Illuminate\Support\Once::flush();
         $u15 = $this->category();
         $trainings = [$this->training($u15, '2026-10-05'), $this->training($u15, '2026-10-07')];
         $addPlayers = function (int $n) use ($u15, $trainings): void {
@@ -320,10 +319,10 @@ class AttendanceStatsTest extends TestCase
         };
 
         $addPlayers(3);
-        $flushOnce();
+        Once::flush();
         $few = $measure();
         $addPlayers(30);
-        $flushOnce();
+        Once::flush();
 
         $this->assertSame($few, $measure());
         // 2 (players) + 1 (monthly) + 8 (categories: grouped counts, missed

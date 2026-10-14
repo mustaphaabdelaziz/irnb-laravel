@@ -73,6 +73,67 @@ class CaisseRulesTest extends TestCase
     }
 
     #[Test]
+    public function updating_without_a_category_keeps_the_existing_link(): void
+    {
+        $category = Category::create(['name' => 'Cadet']);
+        $caisse = $this->caisse(['category_id' => $category->id]);
+
+        $this->actingAs($this->admin)->put(route('finance.accounts.update', $caisse), [
+            'name' => 'Renamed', 'type' => 'cash', 'branch_id' => $this->branch->id,
+        ])->assertSessionHas('success', 'flash.account_updated');
+
+        $this->assertSame($category->id, $caisse->fresh()->category_id);
+        $this->assertSame('Renamed', $caisse->fresh()->name);
+    }
+
+    #[Test]
+    public function resaving_the_same_category_link_is_not_flagged_as_taken(): void
+    {
+        $category = Category::create(['name' => 'Cadet']);
+        $caisse = $this->caisse(['category_id' => $category->id]);
+
+        $this->actingAs($this->admin)->put(route('finance.accounts.update', $caisse), [
+            'name' => 'Caisse', 'type' => 'cash', 'branch_id' => $this->branch->id, 'category_id' => $category->id,
+        ])->assertSessionHasNoErrors()->assertSessionHas('success', 'flash.account_updated');
+
+        $this->assertSame($category->id, $caisse->fresh()->category_id);
+    }
+
+    #[Test]
+    public function moving_a_linked_caisse_to_club_level_clears_the_link(): void
+    {
+        $category = Category::create(['name' => 'Cadet']);
+        $caisse = $this->caisse(['category_id' => $category->id]);
+
+        $this->actingAs($this->admin)->put(route('finance.accounts.update', $caisse), [
+            'name' => 'Caisse', 'type' => 'cash', 'branch_id' => null,
+        ])->assertSessionHas('success', 'flash.account_updated');
+
+        $caisse->refresh();
+        $this->assertNull($caisse->branch_id);
+        $this->assertNull($caisse->parent_account_id);
+        $this->assertNull($caisse->category_id);
+    }
+
+    #[Test]
+    public function moving_a_linked_caisse_into_a_branch_that_already_has_that_category_is_refused(): void
+    {
+        $category = Category::create(['name' => 'Cadet']);
+        $caisse = $this->caisse(['category_id' => $category->id]);
+        $other = Branch::create(['name' => 'Handball']);
+        FinanceAccount::create([
+            'branch_id' => $other->id, 'parent_account_id' => $other->treasury->id, 'category_id' => $category->id,
+            'name' => 'Caisse HB', 'type' => 'cash', 'is_active' => true, 'currency' => 'DZD',
+        ]);
+
+        $this->actingAs($this->admin)->put(route('finance.accounts.update', $caisse), [
+            'name' => 'Caisse', 'type' => 'cash', 'branch_id' => $other->id,
+        ])->assertSessionHasErrors(['category_id' => __('This category already has a caisse in this branch.')]);
+
+        $this->assertSame($this->branch->id, $caisse->fresh()->branch_id);
+    }
+
+    #[Test]
     public function an_unused_caisse_can_be_deleted(): void
     {
         $caisse = $this->caisse();

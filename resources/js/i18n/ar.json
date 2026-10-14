@@ -1343,7 +1343,6 @@
     "flash.branch_updated": "تم تحديث الفرع بنجاح.",
     "flash.budget_saved": "تم حفظ الميزانية.",
     "flash.bulk_items_include_rented": "تتضمن العناصر المحددة معدات مُعارة. يجب إرجاعها قبل الحذف.",
-    "flash.caisse_category_taken": "لهذه الفئة صندوق في هذا الفرع بالفعل.",
     "flash.caisse_used_deactivate": "هذا الصندوق مستعمل ولا يمكن حذفه. يمكنك تعطيله بدلاً من ذلك.",
     "flash.call_up_saved": "تم حفظ الاستدعاء.",
     "flash.cannot_delete_self": "لا يمكنك حذف حسابك الخاص.",

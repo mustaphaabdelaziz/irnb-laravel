@@ -1343,7 +1343,6 @@
     "flash.branch_updated": "Branche mise à jour avec succès.",
     "flash.budget_saved": "Budget enregistré.",
     "flash.bulk_items_include_rented": "La sélection contient du matériel prêté. Rendez-le avant de le supprimer.",
-    "flash.caisse_category_taken": "Cette catégorie a déjà une caisse dans cette section.",
     "flash.caisse_used_deactivate": "Cette caisse a déjà été utilisée : elle ne peut pas être supprimée. Désactivez-la plutôt.",
     "flash.call_up_saved": "Convocation enregistrée.",
     "flash.cannot_delete_self": "Vous ne pouvez pas supprimer votre propre compte.",

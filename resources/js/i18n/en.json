@@ -1343,7 +1343,6 @@
     "flash.branch_updated": "Branch updated successfully.",
     "flash.budget_saved": "Budget saved.",
     "flash.bulk_items_include_rented": "The selected items include rented material. Return it before deleting.",
-    "flash.caisse_category_taken": "This category already has a caisse in this branch.",
     "flash.caisse_used_deactivate": "This caisse has been used, so it cannot be deleted. Deactivate it instead.",
     "flash.call_up_saved": "Call-up saved.",
     "flash.cannot_delete_self": "You cannot delete your own account.",

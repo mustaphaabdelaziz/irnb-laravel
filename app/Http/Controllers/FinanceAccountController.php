@@ -99,16 +99,20 @@ class FinanceAccountController extends Controller
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
+        // Only a caisse inside a coffre collects for a category. Leaving the
+        // field out on an update keeps the existing link (it is judged below
+        // against the branch the caisse ends up in).
         if (! empty($data['category_id']) && empty($data['branch_id'])) {
-            // Only a caisse inside a coffre collects for a category.
             throw ValidationException::withMessages([
                 'category_id' => __('Only a caisse inside a safe can be linked to a category.'),
             ]);
         }
 
-        if (! empty($data['category_id'])) {
+        $categoryId = array_key_exists('category_id', $data) ? $data['category_id'] : $account?->category_id;
+
+        if (! empty($categoryId) && ! empty($data['branch_id'])) {
             $taken = FinanceAccount::where('branch_id', $data['branch_id'])
-                ->where('category_id', $data['category_id'])
+                ->where('category_id', $categoryId)
                 ->when($account, fn ($q) => $q->whereKeyNot($account->id))
                 ->exists();
 
@@ -137,7 +141,6 @@ class FinanceAccountController extends Controller
         $branch = Branch::findOrFail($data['branch_id']);
         $data['parent_account_id'] = ($branch->treasury()->first()
             ?? app(CashRegisterProvisioner::class)->forBranch($branch))->id;
-        $data['category_id'] ??= null;
 
         return $data;
     }

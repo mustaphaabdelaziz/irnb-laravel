@@ -66,6 +66,11 @@ class Game extends Model
         return $this->hasMany(GamePlayer::class);
     }
 
+    public function events(): HasMany
+    {
+        return $this->hasMany(GameEvent::class);
+    }
+
     protected static function booted(): void
     {
         static::creating(function (Game $game) {

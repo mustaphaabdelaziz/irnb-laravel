@@ -764,6 +764,7 @@
     "comp.error.format_other_sport": "نظام اللعب هذا تابع لرياضة أخرى.",
     "comp.error.one_captain": "قائد واحد فقط.",
     "comp.error.one_goalkeeper": "حارس مرمى واحد فقط (وفي الرياضات التي فيها حارس).",
+    "comp.error.shirt_taken": "لاعبان بنفس رقم القميص.",
     "comp.error.slot_taken": "لاعبان في نفس المركز.",
     "comp.error.team_exists": "يوجد فريق بهذا الاسم في هذه الرياضة والفئة.",
     "comp.error.too_many_called": "عدد المستدعين يتجاوز حد نظام اللعب.",

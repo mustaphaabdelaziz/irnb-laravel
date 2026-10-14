@@ -60,9 +60,22 @@ class GameLineupController extends Controller
         $roster = DB::table('team_players')->where('team_id', $game->team_id)->where('season_start_year', $game->season_start_year)
             ->pluck('shirt_number', 'player_id');
 
-        DB::transaction(function () use ($game, $rows, $formation, $positions, $roster, $minutes) {
+        // The number each called-up player will wear: the typed one, else the roster's, else the one already on the match.
+        $byPlayer = $rows->keyBy('player_id');
+        $effective = [];
+        foreach (GamePlayer::where('game_id', $game->id)->where('called_up', true)->get() as $gp) {
+            $row = $byPlayer->get($gp->player_id);
+            $effective[$gp->player_id] = $row !== null && isset($row['shirt_number'])
+                ? (int) $row['shirt_number']
+                : (isset($roster[$gp->player_id]) ? (int) $roster[$gp->player_id] : $gp->shirt_number);
+        }
+        $numbers = array_filter($effective, fn ($n) => $n !== null);
+        if (count($numbers) !== count(array_unique($numbers))) {
+            throw ValidationException::withMessages(['players' => 'comp.error.shirt_taken']);
+        }
+
+        DB::transaction(function () use ($game, $byPlayer, $effective, $formation, $positions, $roster, $minutes) {
             $game->update(['formation_id' => $formation?->id]);
-            $byPlayer = $rows->keyBy('player_id');
             // Numbers first cleared, so moving #7 from one player to another never trips the unique index.
             GamePlayer::where('game_id', $game->id)->update(['shirt_number' => null]);
 
@@ -71,8 +84,7 @@ class GameLineupController extends Controller
                 $starter = ($row['role'] ?? 'bench') === 'starter';
                 $label = $starter && $formation && isset($row['slot']) ? ($formation->slots[$row['slot']]['label'] ?? null) : null;
                 $rosterShirt = isset($roster[$gp->player_id]) ? (int) $roster[$gp->player_id] : null;
-                $shirt = $row !== null && array_key_exists('shirt_number', $row) && $row['shirt_number'] !== null
-                    ? (int) $row['shirt_number'] : $rosterShirt;
+                $shirt = $effective[$gp->player_id];
 
                 $gp->update([
                     'role' => $starter ? 'starter' : 'bench',

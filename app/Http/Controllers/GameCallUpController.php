@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\GameStatus;
 use App\Models\Game;
 use App\Models\GameEvent;
 use App\Models\GamePlayer;
 use App\Models\User;
 use App\Services\Competitions\CallUpCandidates;
+use App\Services\Competitions\GameMinutes;
 use App\Services\Competitions\TeamAccess;
 use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
@@ -122,6 +124,9 @@ class GameCallUpController extends Controller
                     ->orWhere(fn ($q) => $q->where('type', 'substitution')->whereIn('related_player_id', $out)))->delete();
                 $removedEvents += GameEvent::where('game_id', $game->id)->where('type', '!=', 'substitution')
                     ->whereIn('related_player_id', $out)->update(['related_player_id' => null]);
+                if ($removedEvents > 0 && ($game->status === GameStatus::Played || $game->events()->exists())) {
+                    app(GameMinutes::class)->refresh($game);
+                }
             }
         });
 

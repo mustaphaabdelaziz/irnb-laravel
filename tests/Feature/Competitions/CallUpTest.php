@@ -3,9 +3,11 @@
 namespace Tests\Feature\Competitions;
 
 use App\Enums\AttendanceStatus;
+use App\Enums\GameStatus;
 use App\Enums\SessionKind;
 use App\Enums\SessionState;
 use App\Models\Attendance;
+use App\Models\GameEvent;
 use App\Models\GamePlayer;
 use App\Models\TrainingSession;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -207,5 +209,33 @@ class CallUpTest extends TestCase
         $response = $this->actingAs($this->admin())->get(route('games.convocation', $game));
         $response->assertOk();
         $this->assertStringStartsWith('application/pdf', (string) $response->headers->get('content-type'));
+    }
+
+    #[Test]
+    public function un_calling_a_player_refreshes_minutes_of_a_played_match(): void
+    {
+        $team = $this->team();
+        $players = array_map(fn () => $this->player($team->category), range(1, 4));
+        [$a, $b, $c, $d] = $players;
+        $this->onRoster($team, 2026, $players);
+        $game = $this->game($team);
+        $game->update(['status' => GameStatus::Played, 'our_score' => 0, 'their_score' => 0]);
+        foreach ($players as $p) {
+            GamePlayer::create(['game_id' => $game->id, 'player_id' => $p->id, 'called_up' => true,
+                'role' => $p->id === $d->id ? 'bench' : 'starter']);
+        }
+        GameEvent::create(['game_id' => $game->id, 'type' => 'substitution', 'minute' => 60, 'player_id' => $d->id, 'related_player_id' => $c->id]);
+
+        $this->actingAs($this->admin())->put(route('games.call-up.update', $game), ['players' => [
+            ['player_id' => $a->id, 'called_up' => true],
+            ['player_id' => $b->id, 'called_up' => true],
+            ['player_id' => $c->id, 'called_up' => false],
+            ['player_id' => $d->id, 'called_up' => true],
+        ]])->assertSessionHasNoErrors();
+
+        $rows = GamePlayer::where('game_id', $game->id)->get()->keyBy('player_id');
+        $this->assertSame(90, $rows[$a->id]->minutes_played);
+        $this->assertSame(0, $rows[$d->id]->minutes_played);
+        $this->assertFalse($rows[$d->id]->played);
     }
 }

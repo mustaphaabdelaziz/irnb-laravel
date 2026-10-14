@@ -764,6 +764,7 @@
     "comp.error.format_other_sport": "This game format belongs to another sport.",
     "comp.error.one_captain": "Only one captain.",
     "comp.error.one_goalkeeper": "Only one goalkeeper (and only in sports that have one).",
+    "comp.error.shirt_taken": "Two players have the same shirt number.",
     "comp.error.slot_taken": "Two players are on the same spot.",
     "comp.error.team_exists": "This sport and category already have a team with this name.",
     "comp.error.too_many_called": "Too many players called up for this game format.",

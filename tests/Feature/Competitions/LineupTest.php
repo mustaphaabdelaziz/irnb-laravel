@@ -157,4 +157,15 @@ class LineupTest extends TestCase
         $this->assertSame($a->id, $events[0]->player_id);
         $this->assertNull($events[0]->related_player_id);
     }
+
+    #[Test]
+    public function an_explicit_shirt_clashing_with_another_players_roster_number_is_a_validation_error(): void
+    {
+        [$game, $formation, [$a, $b]] = $this->matchWithCallUp(2);
+
+        $this->actingAs($this->admin())->put(route('games.lineup.update', $game), ['formation_id' => $formation->id, 'players' => [
+            $this->row($a, 'starter', 0, ['shirt_number' => 2]),
+            $this->row($b, 'starter', 1),
+        ]])->assertSessionHasErrors('players');
+    }
 }

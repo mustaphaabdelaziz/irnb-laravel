@@ -97,7 +97,7 @@ const currentBalance = computed(() => props.accounts.reduce((s, a) => s + Number
                     </button>
                 </div>
                 <div class="flex items-center gap-2">
-                    <IconButton :href="route('finance.registers.index')" icon="money" :label="t('cash_registers')" />
+                    <IconButton :href="route('finance.registers.index')" icon="wallet" :label="t('cash_registers')" />
                     <IconButton :href="route('reports.financial', { year: selectedYear })" external target="_blank" icon="print" :label="t('export')" />
                     <IconButton v-if="isAdmin" :href="route('finance.settings')" icon="settings" :label="t('finance_settings')" />
                 </div>

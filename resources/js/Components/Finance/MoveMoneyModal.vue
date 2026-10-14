@@ -2,11 +2,13 @@
 import { computed, watch } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
+import Icon from '@/Components/Icon.vue';
 import Modal from '@/Components/Modal.vue';
 import InputError from '@/Components/InputError.vue';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 
-// accounts: [{ id, label, balance }] — active accounts the money can move between.
+// accounts: [{ id, label, balance, is_opening_fund }] — active accounts the money can move between.
+// The opening fund can only give money, never receive it.
 const props = defineProps({
     show: { type: Boolean, default: false },
     accounts: { type: Array, default: () => [] },
@@ -17,11 +19,17 @@ const emit = defineEmits(['close']);
 const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
 
+// Today in the user's own time zone (toISOString would give the UTC date).
+const today = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
 const form = useForm({
     from_account_id: '',
     to_account_id: '',
     amount: '',
-    transfer_date: new Date().toISOString().slice(0, 10),
+    transfer_date: '',
     reference: '',
     notes: '',
 });
@@ -31,6 +39,7 @@ watch(() => props.show, (open) => {
     form.reset();
     form.clearErrors();
     form.from_account_id = props.fromId ?? '';
+    form.transfer_date = today();
 });
 
 const byId = (id) => props.accounts.find((a) => String(a.id) === String(id));
@@ -38,7 +47,9 @@ const from = computed(() => byId(form.from_account_id));
 const to = computed(() => byId(form.to_account_id));
 const amount = computed(() => Number(form.amount) || 0);
 const tooMuch = computed(() => !!from.value && amount.value > Number(from.value.balance));
-const destinations = computed(() => props.accounts.filter((a) => String(a.id) !== String(form.from_account_id)));
+const destinations = computed(() => props.accounts.filter((a) => !a.is_opening_fund && String(a.id) !== String(form.from_account_id)));
+// Picking as source the account chosen as destination clears the destination.
+watch(() => form.from_account_id, (id) => { if (String(id) === String(form.to_account_id)) form.to_account_id = ''; });
 
 function submit() {
     form.post(route('finance.transfers.store'), { preserveScroll: true, onSuccess: () => emit('close') });
@@ -72,7 +83,7 @@ function submit() {
                 <label class="block text-sm">
                     <span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('amount') }}</span>
                     <input v-model="form.amount" type="number" min="0.01" step="0.01" required class="w-full rounded-lg border-slate-200 bg-white text-sm tabular-nums dark:border-slate-700 dark:bg-slate-800" />
-                    <p v-if="tooMuch" class="mt-1 text-xs text-rose-600">{{ t('caisses.not_enough') }}</p>
+                    <p v-if="tooMuch" role="alert" class="mt-1 text-xs text-rose-600">{{ t('caisses.not_enough') }}</p>
                     <InputError :message="form.errors.amount" class="mt-1" />
                 </label>
                 <label class="block text-sm">
@@ -89,8 +100,8 @@ function submit() {
 
             <div v-if="from && to && amount > 0" class="rounded-xl bg-slate-50 p-3 text-sm dark:bg-slate-800/60">
                 <p class="mb-1 text-xs font-semibold text-slate-500">{{ t('caisses.after_move') }}</p>
-                <p class="tabular-nums">{{ from.label }}: {{ formatMoney(from.balance) }} → <strong>{{ formatMoney(Number(from.balance) - amount) }}</strong></p>
-                <p class="tabular-nums">{{ to.label }}: {{ formatMoney(to.balance) }} → <strong>{{ formatMoney(Number(to.balance) + amount) }}</strong></p>
+                <p class="tabular-nums">{{ from.label }}: {{ formatMoney(from.balance) }} <Icon name="arrow" class="mx-1 align-middle text-slate-400 rtl:rotate-180" /> <strong>{{ formatMoney(Number(from.balance) - amount) }}</strong></p>
+                <p class="tabular-nums">{{ to.label }}: {{ formatMoney(to.balance) }} <Icon name="arrow" class="mx-1 align-middle text-slate-400 rtl:rotate-180" /> <strong>{{ formatMoney(Number(to.balance) + amount) }}</strong></p>
             </div>
 
             <div class="flex justify-end gap-2">

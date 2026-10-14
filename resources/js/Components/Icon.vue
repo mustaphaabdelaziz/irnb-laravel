@@ -34,6 +34,7 @@ const icons = {
     check: '<circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/>',
     alert: '<path d="M12 4 2.5 20.5h19L12 4Z"/><path d="M12 10v4.2"/><circle cx="12" cy="17.3" r="0.9" fill="currentColor" stroke="none"/>',
     money: '<circle cx="12" cy="12" r="9"/><path d="M12 6.8v10.4"/><path d="M14.6 9.2c-.5-.9-1.5-1.4-2.6-1.4-1.6 0-2.6.9-2.6 2 0 2.6 5.2 1.4 5.2 4 0 1.2-1.1 2-2.6 2-1.1 0-2.1-.5-2.6-1.4"/>',
+    wallet: '<path d="M4 8a2.5 2.5 0 0 1 2.5-2.5H17V8"/><rect x="4" y="8" width="16" height="11.5" rx="2"/><path d="M20 11.5h-3.5a2 2 0 0 0 0 4H20"/><circle cx="16.6" cy="13.5" r="0.9" fill="currentColor" stroke="none"/>',
     menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
     chevron: '<path d="m6 9 6 6 6-6"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',

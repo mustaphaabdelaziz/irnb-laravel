@@ -24,6 +24,12 @@ const form = useForm({
 
 const structural = computed(() => !!(props.account?.is_treasury || props.account?.is_opening_fund));
 const label = (x) => x?.localized_name || x?.name;
+const title = computed(() => {
+    if (!props.account) return t('caisses.add');
+    if (props.account.is_treasury) return t('caisses.edit_coffre');
+    // A caisse sits in a branch; club-level accounts (bank…) get a neutral word.
+    return props.account.branch_id ? t('caisses.edit') : t('caisses.edit_account');
+});
 
 watch(() => props.show, (open) => {
     if (!open) return;
@@ -54,10 +60,11 @@ function submit() {
     <Modal :show="show" max-width="lg" @close="emit('close')">
         <form class="space-y-4 p-6" @submit.prevent="submit">
             <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">
-                {{ account?.is_treasury ? t('caisses.edit_coffre') : (account ? t('caisses.edit') : t('caisses.add')) }}
+                {{ title }}
             </h2>
 
-            <label class="block text-sm">
+            <!-- A coffre is always labelled by its branch, so its name is not asked. -->
+            <label v-if="!account?.is_treasury" class="block text-sm">
                 <span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('name') }}</span>
                 <input v-model="form.name" type="text" required maxlength="120" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
                 <InputError :message="form.errors.name" class="mt-1" />

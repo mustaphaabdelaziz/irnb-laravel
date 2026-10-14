@@ -34,7 +34,7 @@ const movable = computed(() => {
     if (props.openingFund) list.push(props.openingFund);
     props.coffres.forEach((g) => { if (g.coffre) list.push({ ...g.coffre, current_balance: g.own_balance }); list.push(...g.caisses); });
     list.push(...props.clubLevel);
-    return list.filter((a) => a.is_active).map((a) => ({ id: a.id, label: accountLabel(a), balance: Number(a.current_balance) }));
+    return list.filter((a) => a.is_active).map((a) => ({ id: a.id, label: accountLabel(a), balance: Number(a.current_balance), is_opening_fund: !!a.is_opening_fund }));
 });
 
 const formOpen = ref(false);
@@ -51,6 +51,9 @@ const deleting = ref(null);
 function confirmDelete() {
     router.delete(route('finance.accounts.destroy', deleting.value.id), { preserveScroll: true, onFinish: () => { deleting.value = null; } });
 }
+
+// Only an account that was never used (no transaction, no move) can be deleted.
+const deletable = (account) => account.transactions_count === 0 && !account.transfers_count;
 
 const balanceClass = (value) => (Number(value) >= 0 ? 'text-slate-900 dark:text-white' : 'text-rose-600 dark:text-rose-400');
 const categoryLabel = (category) => category?.localized_name || category?.name;
@@ -140,7 +143,7 @@ const formatDate = (value) => (value ? new Date(`${value}T00:00:00`).toLocaleDat
                         <div class="flex items-center gap-1">
                             <IconButton v-if="c.is_active && can('finance', 'add')" icon="arrow" :label="t('caisses.move_money')" plain size="sm" @click="moveMoney(c.id)" />
                             <IconButton v-if="can('finance', 'edit')" icon="pencil" :label="t('caisses.edit')" plain size="sm" @click="editAccount(c)" />
-                            <IconButton v-if="c.transactions_count === 0 && can('finance', 'delete')" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleting = c" />
+                            <IconButton v-if="deletable(c) && can('finance', 'delete')" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleting = c" />
                         </div>
                     </li>
                 </ul>
@@ -166,8 +169,8 @@ const formatDate = (value) => (value ? new Date(`${value}T00:00:00`).toLocaleDat
                         <p class="ms-auto break-words text-end text-base font-extrabold tabular-nums" :class="balanceClass(a.current_balance)">{{ formatMoney(a.current_balance) }}</p>
                         <div class="flex items-center gap-1">
                             <IconButton v-if="a.is_active && can('finance', 'add')" icon="arrow" :label="t('caisses.move_money')" plain size="sm" @click="moveMoney(a.id)" />
-                            <IconButton v-if="can('finance', 'edit')" icon="pencil" :label="t('caisses.edit')" plain size="sm" @click="editAccount(a)" />
-                            <IconButton v-if="a.transactions_count === 0 && can('finance', 'delete')" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleting = a" />
+                            <IconButton v-if="can('finance', 'edit')" icon="pencil" :label="t('caisses.edit_account')" plain size="sm" @click="editAccount(a)" />
+                            <IconButton v-if="deletable(a) && can('finance', 'delete')" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleting = a" />
                         </div>
                     </li>
                 </ul>
@@ -219,6 +222,6 @@ const formatDate = (value) => (value ? new Date(`${value}T00:00:00`).toLocaleDat
 
         <CaisseFormModal :show="formOpen" :account="formAccount" :preset-branch-id="presetBranchId" :branches="branches" :categories="categories" @close="formOpen = false" />
         <MoveMoneyModal :show="moveOpen" :accounts="movable" :from-id="moveFrom" @close="moveOpen = false" />
-        <ConfirmModal :show="!!deleting" :title="t('caisses.delete_title')" :message="t('caisses.delete_message')" :confirm-label="t('delete')" @confirm="confirmDelete" @cancel="deleting = null" />
+        <ConfirmModal :show="!!deleting" :title="deleting?.branch_id ? t('caisses.delete_title') : t('caisses.delete_account_title')" :message="t('caisses.delete_message')" :confirm-label="t('delete')" @confirm="confirmDelete" @cancel="deleting = null" />
     </AuthenticatedLayout>
 </template>

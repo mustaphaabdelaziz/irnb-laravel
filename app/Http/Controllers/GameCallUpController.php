@@ -36,7 +36,7 @@ class GameCallUpController extends Controller
         ]);
 
         $called = collect($data['players'])->filter(fn (array $row) => (bool) $row['called_up'])->count();
-        if ($called > $game->format->max_called_up) {
+        if ($called > (int) $game->rule('max_called_up')) {
             throw ValidationException::withMessages(['players' => 'comp.error.too_many_called']);
         }
 

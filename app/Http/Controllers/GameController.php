@@ -122,8 +122,8 @@ class GameController extends Controller
                 'venue' => $game->venue ? ['name' => $game->venue->name, 'address' => $game->venue->address] : null,
                 'format' => [
                     'name' => $game->format->localized_name,
-                    'players_on_field' => $game->format->players_on_field,
-                    'max_called_up' => $game->format->max_called_up,
+                    'players_on_field' => (int) $game->rule('players_on_field'),
+                    'max_called_up' => (int) $game->rule('max_called_up'),
                 ],
             ],
             'candidates' => (function () use ($game, $candidates, $flags) {

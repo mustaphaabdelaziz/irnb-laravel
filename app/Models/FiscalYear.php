@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Support\FiscalPeriod;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -14,6 +16,8 @@ class FiscalYear extends Model
         'opening_balance', 'closing_balance', 'total_income', 'total_expense',
         'closed_at', 'closed_by_user_id', 'notes',
     ];
+
+    protected $appends = ['season_label'];
 
     protected function casts(): array
     {
@@ -27,6 +31,11 @@ class FiscalYear extends Model
             'total_expense' => 'decimal:2',
             'closed_at' => 'datetime',
         ];
+    }
+
+    protected function seasonLabel(): Attribute
+    {
+        return Attribute::get(fn () => FiscalPeriod::label((int) $this->year));
     }
 
     public function isClosed(): bool

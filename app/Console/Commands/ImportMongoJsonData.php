@@ -269,7 +269,8 @@ class ImportMongoJsonData extends Command
             }
 
             $amount = is_array($row['amount'] ?? null) ? $row['amount'] : [];
-            $year = (int) ($row['year'] ?? now()->year);
+            // Subscription years are season keys, so a missing one means this season.
+            $year = (int) ($row['year'] ?? FiscalPeriod::currentKey());
 
             $subscription = Subscription::updateOrCreate(
                 [
@@ -618,9 +619,9 @@ class ImportMongoJsonData extends Command
                 ? ($this->transactionMap[$transactionLegacyId] ?? null)
                 : null;
 
-            $year = (int) ($row['year'] ?? now()->year);
+            $year = (int) ($row['year'] ?? FiscalPeriod::currentKey());
             if ($year < 1900 || $year > 9999) {
-                $year = (int) now()->year;
+                $year = FiscalPeriod::currentKey();
             }
 
             PlayerSubscription::query()->updateOrCreate(

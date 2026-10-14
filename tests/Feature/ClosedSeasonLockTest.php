@@ -13,6 +13,7 @@ use App\Services\FinanceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -178,6 +179,21 @@ class ClosedSeasonLockTest extends TestCase
             ->assertSessionHas('error', ['key' => 'flash.season_closed', 'params' => ['season' => '2026/2027']]);
 
         $this->assertFalse((bool) $tx->fresh()->archived);
+    }
+
+    #[Test]
+    public function a_closed_season_refusal_is_not_written_to_the_error_log(): void
+    {
+        $tx = $this->tx('2026-10-01');
+        $this->close(2027);
+        $admin = User::factory()->admin()->create();
+        Log::spy();
+
+        $this->actingAs($admin)->from(route('transactions.index'))
+            ->delete(route('transactions.destroy', $tx))
+            ->assertSessionHas('error');
+
+        Log::shouldNotHaveReceived('error');
     }
 
     private function playerWithPayment(string $membershipId, string $date, ?int $accountId = null): array

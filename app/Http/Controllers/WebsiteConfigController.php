@@ -53,7 +53,7 @@ class WebsiteConfigController extends Controller
         }
 
         // Settings forms submit a subset of keys; merge into the existing JSON so
-        // unrelated keys (currencySymbol, dateFormat, fiscalYearStart, ...) are preserved.
+        // unrelated keys (currencySymbol, dateFormat, ...) are preserved.
         if (isset($validated['settings']) && is_array($validated['settings'])) {
             $validated['settings'] = array_merge($config->settings ?? [], $validated['settings']);
         }

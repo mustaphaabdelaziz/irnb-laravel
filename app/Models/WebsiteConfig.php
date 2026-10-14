@@ -89,7 +89,6 @@ class WebsiteConfig extends Model
                     'timezone' => 'Africa/Algiers',
                     'dateFormat' => 'DD/MM/YYYY',
                     'defaultLanguage' => 'ar',
-                    'fiscalYearStart' => '01-01',
                     'seasonStartMonth' => 9,
                     'enableDonations' => true,
                     'maintenanceMode' => false,

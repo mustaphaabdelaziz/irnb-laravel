@@ -20,6 +20,9 @@ class ClosedFiscalYearException extends RuntimeException
         ]));
     }
 
+    /** An expected refusal, not a fault: keep it out of the error log. */
+    public function report(): void {}
+
     public function render(): RedirectResponse
     {
         return back()->withInput()->with('error', [

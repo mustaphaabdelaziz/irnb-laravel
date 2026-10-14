@@ -3,11 +3,13 @@
 namespace Tests\Feature;
 
 use App\Exceptions\ClosedFiscalYearException;
+use App\Models\FinanceAccount;
 use App\Models\FinanceCategory;
 use App\Models\FiscalYear;
 use App\Models\Player;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\FinanceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
@@ -176,5 +178,74 @@ class ClosedSeasonLockTest extends TestCase
             ->assertSessionHas('error', ['key' => 'flash.season_closed', 'params' => ['season' => '2026/2027']]);
 
         $this->assertFalse((bool) $tx->fresh()->archived);
+    }
+
+    private function playerWithPayment(string $membershipId, string $date, ?int $accountId = null): array
+    {
+        $player = Player::create(['membership_id' => $membershipId, 'firstname' => 'P', 'lastname' => 'Test', 'is_student' => true]);
+        $tx = Transaction::create([
+            'amount' => 1000, 'transaction_date' => $date, 'transaction_type' => 'income',
+            'category' => 'donation', 'payment_method' => 'cash', 'status' => 'Paid',
+            'related_entity_type' => 'Player', 'related_entity_id' => $player->id,
+            'finance_account_id' => $accountId,
+        ]);
+
+        return [$player, $tx];
+    }
+
+    #[Test]
+    public function a_player_with_payments_in_a_closed_season_cannot_be_permanently_deleted(): void
+    {
+        [$player, $tx] = $this->playerWithPayment('9000000001', '2026-10-01');
+        $this->close(2027);
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)->from(route('players.index', ['archived' => 1]))
+            ->delete(route('players.forceDelete', $player))
+            ->assertRedirect(route('players.index', ['archived' => 1]))
+            ->assertSessionHas('error', ['key' => 'flash.season_closed', 'params' => ['season' => '2026/2027']]);
+
+        $this->assertNotNull(Player::find($player->id));
+        $this->assertFalse((bool) $tx->fresh()->archived);
+    }
+
+    #[Test]
+    public function a_bulk_permanent_delete_touching_a_closed_season_deletes_nobody(): void
+    {
+        [$free] = $this->playerWithPayment('9000000001', '2026-05-01');
+        [$locked] = $this->playerWithPayment('9000000002', '2026-10-01');
+        $this->close(2027);
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)->from(route('players.index', ['archived' => 1]))
+            ->post(route('players.bulkForceDelete'), ['ids' => [$free->id, $locked->id]])
+            ->assertSessionHas('error', ['key' => 'flash.season_closed', 'params' => ['season' => '2026/2027']]);
+
+        $this->assertNotNull(Player::find($free->id));
+        $this->assertNotNull(Player::find($locked->id));
+        $this->assertSame(0, Transaction::where('archived', true)->count());
+    }
+
+    #[Test]
+    public function permanently_deleting_a_player_in_open_seasons_refreshes_season_totals_and_registers(): void
+    {
+        $account = FinanceAccount::create([
+            'name' => 'Cash box', 'type' => 'cash', 'opening_balance' => 0, 'current_balance' => 0,
+            'currency' => 'DZD', 'is_active' => true,
+        ]);
+        [$player, $tx] = $this->playerWithPayment('9000000001', '2026-10-01', $account->id);
+        app(FinanceService::class)->recomputeAccountBalances();
+        app(FinanceService::class)->recomputeYear(FiscalYear::where('year', 2027)->sole());
+        $this->assertEquals(1000, (float) $account->fresh()->current_balance);
+        $this->assertEquals(1000, (float) FiscalYear::where('year', 2027)->value('total_income'));
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)->delete(route('players.forceDelete', $player))
+            ->assertSessionHas('success', 'flash.player_permanently_deleted');
+
+        $this->assertNull(Player::find($player->id));
+        $this->assertTrue((bool) $tx->fresh()->archived);
+        $this->assertEquals(0, (float) $account->fresh()->current_balance);
+        $this->assertEquals(0, (float) FiscalYear::where('year', 2027)->value('total_income'));
     }
 }

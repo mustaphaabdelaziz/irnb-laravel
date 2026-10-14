@@ -26,6 +26,11 @@ export function useNavigation() {
                 { label: t('subscriptions'), href: '/subscriptions', icon: 'subscriptions', prefix: '/subscriptions', module: 'subscriptions' },
                 { label: t('attendance'), href: '/attendance', icon: 'calendar', prefix: '/attendance', module: 'attendance' },
             ] },
+            { key: 'competitions', label: t('nav.competitions'), icon: 'flag', items: [
+                { label: t('games'), href: '/games', icon: 'calendar', prefix: '/games', module: 'games' },
+                { label: t('teams'), href: '/teams', icon: 'players', prefix: '/teams', module: 'teams' },
+                { label: t('competitions'), href: '/competitions', icon: 'flag', prefix: '/competitions', module: 'competitions' },
+            ] },
             { key: 'finance', label: t('nav_finance'), icon: 'money', items: [
                 { label: t('transactions'), href: '/transactions', icon: 'transactions', prefix: '/transactions', module: 'transactions' },
                 { label: t('finance'), href: '/finance', icon: 'money', prefix: '/finance', module: 'finance' },
@@ -51,6 +56,9 @@ export function useNavigation() {
                 { label: t('board_roles'), href: '/board-roles', icon: 'board', prefix: '/board-roles', module: 'board_roles' },
                 { label: t('equipment_categories'), href: '/equipment-categories', icon: 'equipment', prefix: '/equipment-categories', module: 'equipment_categories' },
                 { label: t('storage_locations'), href: '/storage-locations', icon: 'location', prefix: '/storage-locations', module: 'storage_locations' },
+                { label: t('game_formats'), href: '/game-formats', icon: 'positions', prefix: '/game-formats', module: 'game_formats' },
+                { label: t('opponents'), href: '/opponents', icon: 'flag', prefix: '/opponents', module: 'opponents' },
+                { label: t('venues'), href: '/venues', icon: 'location', prefix: '/venues', module: 'venues' },
             ] },
             { key: 'system', label: t('nav.system'), icon: 'settings', items: [
                 { label: t('users'), href: '/users', icon: 'members', prefix: '/users', match: /^\/users(?!\/(\d+\/)?activity)/, badge: pendingApprovals, module: 'users' },

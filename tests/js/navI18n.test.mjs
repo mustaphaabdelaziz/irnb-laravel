@@ -9,7 +9,7 @@ const messages = { ar: load('ar'), en: load('en'), fr: load('fr') };
 const KEYS = [
     'nav.config', 'nav.system', 'nav.board_of_directors', 'nav.board_overview',
     'nav.search', 'nav.search_placeholder', 'nav.no_results',
-    'nav.collapse_sidebar', 'nav.expand_sidebar',
+    'nav.collapse_sidebar', 'nav.expand_sidebar', 'nav.competitions',
 ];
 
 test('every sidebar key resolves through t() in ar, en and fr', () => {

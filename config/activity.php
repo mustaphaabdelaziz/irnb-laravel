@@ -120,6 +120,22 @@ $routes = [
     'profile.update' => ActivityAction::PROFILE_UPDATED,
     'password.update' => ActivityAction::PASSWORD_CHANGED,
 
+    // competitions & matches
+    'teams.store' => ActivityAction::TEAM_CREATED,
+    'teams.update' => ActivityAction::TEAM_UPDATED,
+    'teams.destroy' => ActivityAction::TEAM_DELETED,
+    'teams.roster.update' => ActivityAction::TEAM_ROSTER_SAVED,
+    'teams.roster.copy' => ActivityAction::TEAM_ROSTER_SAVED,
+    'teams.coaches.update' => ActivityAction::TEAM_COACHES_SAVED,
+    'competitions.store' => ActivityAction::COMPETITION_CREATED,
+    'competitions.update' => ActivityAction::COMPETITION_UPDATED,
+    'competitions.destroy' => ActivityAction::COMPETITION_DELETED,
+    'competitions.squad.update' => ActivityAction::SQUAD_SAVED,
+    'games.store' => ActivityAction::GAME_CREATED,
+    'games.update' => ActivityAction::GAME_UPDATED,
+    'games.destroy' => ActivityAction::GAME_DELETED,
+    'games.call-up.update' => ActivityAction::CALL_UP_SAVED,
+
     // settings
     'settings.update' => [ActivityAction::SETTINGS_UPDATED, 'kind' => 'club_settings'],
     'settings.theme' => [ActivityAction::SETTINGS_UPDATED, 'kind' => 'theme'],

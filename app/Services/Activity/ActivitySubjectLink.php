@@ -5,10 +5,12 @@ namespace App\Services\Activity;
 use App\Models\ActivityLog;
 use App\Models\BoardMeeting;
 use App\Models\BoardTask;
+use App\Models\Competition;
 use App\Models\EquipmentCatalog;
 use App\Models\EquipmentItem;
 use App\Models\EquipmentRental;
 use App\Models\FinanceTransfer;
+use App\Models\Game;
 use App\Models\InventorySession;
 use App\Models\MemberJob;
 use App\Models\Player;
@@ -16,6 +18,7 @@ use App\Models\PlayerAcademicRecord;
 use App\Models\PlayerDocument;
 use App\Models\Role;
 use App\Models\Subscription;
+use App\Models\Team;
 use App\Models\TrainingSession;
 use App\Models\Transaction;
 use App\Models\User;
@@ -199,6 +202,12 @@ final class ActivitySubjectLink
             $subject instanceof TrainingSession => [
                 ((string) $subject->category?->localized_name).' · '.$subject->date,
                 route('attendance.sessions.show', $subject),
+            ],
+            $subject instanceof Team => [(string) $subject->name, route('teams.show', $subject)],
+            $subject instanceof Competition => [(string) $subject->name, route('competitions.show', $subject)],
+            $subject instanceof Game => [
+                ((string) $subject->opponent?->name).' · '.$subject->date,
+                route('games.show', $subject),
             ],
             $subject instanceof User => [$subject->fullname, route('users.edit', $subject)],
             $subject instanceof Role => [

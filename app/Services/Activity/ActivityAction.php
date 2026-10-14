@@ -86,6 +86,34 @@ class ActivityAction
 
     const TRAINING_SESSION_RESET = 'training_session_reset';
 
+    // Competitions & matches — recorded from the route map in config/activity.php.
+
+    const TEAM_CREATED = 'team_created';
+
+    const TEAM_UPDATED = 'team_updated';
+
+    const TEAM_DELETED = 'team_deleted';
+
+    const TEAM_ROSTER_SAVED = 'team_roster_saved';
+
+    const TEAM_COACHES_SAVED = 'team_coaches_saved';
+
+    const COMPETITION_CREATED = 'competition_created';
+
+    const COMPETITION_UPDATED = 'competition_updated';
+
+    const COMPETITION_DELETED = 'competition_deleted';
+
+    const SQUAD_SAVED = 'squad_saved';
+
+    const GAME_CREATED = 'game_created';
+
+    const GAME_UPDATED = 'game_updated';
+
+    const GAME_DELETED = 'game_deleted';
+
+    const CALL_UP_SAVED = 'call_up_saved';
+
     // Edits, deletions, sign-ins and settings (2026-10 users batch) — most are
     // recorded from the route map in config/activity.php.
 
@@ -273,6 +301,19 @@ class ActivityAction
         self::CLOSURE_REMOVED,
         self::INJURY_NOTE_SAVED,
         self::INJURY_NOTE_DELETED,
+        self::TEAM_CREATED,
+        self::TEAM_UPDATED,
+        self::TEAM_DELETED,
+        self::TEAM_ROSTER_SAVED,
+        self::TEAM_COACHES_SAVED,
+        self::COMPETITION_CREATED,
+        self::COMPETITION_UPDATED,
+        self::COMPETITION_DELETED,
+        self::SQUAD_SAVED,
+        self::GAME_CREATED,
+        self::GAME_UPDATED,
+        self::GAME_DELETED,
+        self::CALL_UP_SAVED,
         self::USER_LOGGED_IN,
         self::USER_LOGGED_OUT,
         self::USER_CREATED,
@@ -379,6 +420,21 @@ class ActivityAction
             self::CLOSURE_REMOVED,
             self::INJURY_NOTE_SAVED,
             self::INJURY_NOTE_DELETED,
+        ],
+        'competitions' => [
+            self::TEAM_CREATED,
+            self::TEAM_UPDATED,
+            self::TEAM_DELETED,
+            self::TEAM_ROSTER_SAVED,
+            self::TEAM_COACHES_SAVED,
+            self::COMPETITION_CREATED,
+            self::COMPETITION_UPDATED,
+            self::COMPETITION_DELETED,
+            self::SQUAD_SAVED,
+            self::GAME_CREATED,
+            self::GAME_UPDATED,
+            self::GAME_DELETED,
+            self::CALL_UP_SAVED,
         ],
         'access' => [
             self::USER_LOGGED_IN,

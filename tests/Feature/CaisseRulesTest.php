@@ -160,6 +160,16 @@ class CaisseRulesTest extends TestCase
     }
 
     #[Test]
+    public function a_caisse_that_still_holds_money_cannot_be_deleted(): void
+    {
+        $caisse = $this->caisse(['opening_balance' => 500]);
+
+        $this->actingAs($this->admin)->delete(route('finance.accounts.destroy', $caisse))
+            ->assertSessionHas('error', 'flash.caisse_has_money');
+        $this->assertModelExists($caisse);
+    }
+
+    #[Test]
     public function a_used_caisse_cannot_be_deleted_but_can_be_deactivated(): void
     {
         $caisse = $this->caisse();

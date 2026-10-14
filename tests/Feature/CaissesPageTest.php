@@ -41,6 +41,9 @@ class CaissesPageTest extends TestCase
                 ->where('clubLevel', fn ($accounts) => collect($accounts)->pluck('id')->contains($bank->id))
                 ->where('openingFund', null)
                 ->where('totals.cash', 1350)
+                // Caisses only: the seeded Cash and Club Bank Account, the caisse and Bank.
+                // The coffre and the Fonds Initial are not counted.
+                ->where('totals.active', 4)
                 ->where('transfers.data.0.transfer_date', '2026-10-05'));
     }
 }

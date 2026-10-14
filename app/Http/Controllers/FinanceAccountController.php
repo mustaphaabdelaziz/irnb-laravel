@@ -84,6 +84,12 @@ class FinanceAccountController extends Controller
             return back()->with('error', $financeAccount->is_treasury ? 'flash.coffre_cannot_be_deleted' : 'flash.caisse_used_deactivate');
         }
 
+        // Money must never vanish with the account (an opening balance counts).
+        $this->finance->recomputeAccountBalances();
+        if (round((float) $financeAccount->fresh()->current_balance, 2) != 0.0) {
+            return back()->with('error', 'flash.caisse_has_money');
+        }
+
         $financeAccount->delete();
 
         return back()->with('success', 'flash.account_deleted');

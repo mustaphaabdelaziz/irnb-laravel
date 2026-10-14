@@ -44,5 +44,6 @@
     "Total Expense": "Dépenses totales",
     "Total Income": "Revenus totaux",
     "Type": "Type",
-    "members": "membres"
+    "members": "membres",
+    "Season :season is closed. Reopen it to change its transactions.": "La saison :season est clôturée. Rouvrez-la pour modifier ses transactions."
 }

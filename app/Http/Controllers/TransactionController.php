@@ -18,7 +18,6 @@ use App\Services\FinanceService;
 use App\Services\Storage\FileStorageService;
 use App\Services\Storage\PrivateFileStorage;
 use App\Support\Export;
-use App\Support\FiscalPeriod;
 use App\Support\ListFilter;
 use App\Support\TransactionTitle;
 use App\Support\UiLang;
@@ -154,12 +153,6 @@ class TransactionController extends Controller
         $financeCategory = FinanceCategory::find($validated['finance_category_id']);
         $validated['category'] = Str::slug($financeCategory->name, '_');
 
-        $key = FiscalPeriod::keyForDate($validated['transaction_date'] ?? now());
-
-        if ($this->yearClosed($key)) {
-            return back()->withInput()->with('error', ['key' => 'flash.year_closed_add', 'params' => ['year' => $key]]);
-        }
-
         if ($request->hasFile('receipt')) {
             // Receipts are private: only receiptFile() serves them, behind login.
             $stored = $receipts->store($request->file('receipt'), 'receipts');
@@ -195,10 +188,6 @@ class TransactionController extends Controller
 
     public function update(StoreTransactionRequest $request, Transaction $transaction, PrivateFileStorage $receipts, FileStorageService $files): RedirectResponse
     {
-        if ($this->yearClosed((int) $transaction->fiscal_year)) {
-            return back()->with('error', ['key' => 'flash.year_closed_edit', 'params' => ['year' => $transaction->fiscal_year]]);
-        }
-
         $validated = $request->validated();
         unset($validated['receipt']);
 
@@ -234,10 +223,6 @@ class TransactionController extends Controller
 
     public function destroy(Request $request, Transaction $transaction): RedirectResponse
     {
-        if ($this->yearClosed((int) $transaction->fiscal_year)) {
-            return back()->with('error', ['key' => 'flash.year_closed_delete', 'params' => ['year' => $transaction->fiscal_year]]);
-        }
-
         // Already archived: nothing changes, so no second cancellation is recorded.
         if (! $transaction->archived) {
             DB::transaction(function () use ($request, $transaction) {
@@ -338,16 +323,6 @@ class TransactionController extends Controller
         if ($request->filled('date_to')) {
             $query->where('transaction_date', '<=', $request->input('date_to'));
         }
-    }
-
-    /** Whether the given fiscal year exists and is closed (locked). */
-    private function yearClosed(?int $year): bool
-    {
-        if (! $year) {
-            return false;
-        }
-
-        return FiscalYear::where('year', $year)->where('status', 'closed')->exists();
     }
 
     /**

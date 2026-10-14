@@ -85,4 +85,46 @@ class TransactionSeasonYearTest extends TestCase
         // A 2025/26 debt paid in October 2026 is 2026/27 cash.
         $this->assertSame(2027, Transaction::where('player_subscription_id', $owed->id)->value('fiscal_year'));
     }
+
+    #[Test]
+    public function editing_a_player_donation_keeps_its_original_date_and_season(): void
+    {
+        Carbon::setTestNow('2026-10-14');
+        $admin = User::factory()->admin()->create();
+        $player = Player::create(['membership_id' => '9000000001', 'firstname' => 'P', 'lastname' => 'Test', 'is_student' => true]);
+        $original = $this->tx('2026-08-20', ['related_entity_type' => 'Player', 'related_entity_id' => $player->id]);
+
+        $this->actingAs($admin)->put(route('players.transactions.update', [$player, $original]), [
+            'amount' => 1200, 'payment_method' => 'cash',
+        ])->assertSessionHasNoErrors();
+
+        $edited = Transaction::where('archived', false)->sole();
+        $this->assertNotSame($original->id, $edited->id);
+        $this->assertSame('2026-08-20', $edited->transaction_date->toDateString());
+        $this->assertSame(2026, $edited->fiscal_year);
+    }
+
+    #[Test]
+    public function editing_a_subscription_payment_keeps_its_original_date_and_season(): void
+    {
+        Carbon::setTestNow('2026-08-20');
+        $admin = User::factory()->admin()->create();
+        $player = Player::create(['membership_id' => '9000000001', 'firstname' => 'P', 'lastname' => 'Test', 'is_student' => true]);
+        $sub = Subscription::create(['name' => 'Annual', 'year' => 2026, 'amount_student' => 1000, 'amount_worker' => 1000, 'is_mandatory' => true, 'is_active' => true, 'kind' => 'annual']);
+        $owed = $sub->assignTo($player);
+        $this->actingAs($admin)->post(route('players.transactions.store', $player), [
+            'category' => 'subscription', 'player_subscription_id' => $owed->id, 'amount' => 600, 'payment_method' => 'cash',
+        ])->assertSessionHasNoErrors();
+        $original = Transaction::where('player_subscription_id', $owed->id)->sole();
+
+        Carbon::setTestNow('2026-10-14');
+        $this->actingAs($admin)->put(route('players.transactions.update', [$player, $original]), [
+            'amount' => 800, 'payment_method' => 'cash',
+        ])->assertSessionHasNoErrors();
+
+        $edited = Transaction::where('archived', false)->sole();
+        $this->assertSame('2026-08-20', $edited->transaction_date->toDateString());
+        $this->assertSame(2026, $edited->fiscal_year);
+        $this->assertEquals(800, (float) $owed->fresh()->amount_paid);
+    }
 }

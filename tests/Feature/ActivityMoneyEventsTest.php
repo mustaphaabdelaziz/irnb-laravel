@@ -16,6 +16,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Services\Activity\ActivityAction;
 use App\Services\Finance\RecalculatePlayerDebtService;
+use App\Support\FiscalPeriod;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
@@ -136,12 +137,12 @@ class ActivityMoneyEventsTest extends TestCase
     {
         $admin = $this->admin();
         $income = FinanceCategory::where('type', 'income')->firstOrFail();
-        $year = (int) now()->year;
+        $year = FiscalPeriod::currentKey();
         FiscalYear::firstOrCreate(['year' => $year])->update(['status' => 'closed']);
 
         $this->actingAs($admin)->post(route('transactions.store'), [
             'title' => 'X', 'amount' => 100, 'transaction_type' => 'income',
-            'finance_category_id' => $income->id, 'fiscal_year' => $year,
+            'finance_category_id' => $income->id, 'transaction_date' => now()->toDateString(),
         ]);
 
         $this->assertSame(0, ActivityLog::query()->count());

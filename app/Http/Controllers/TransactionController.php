@@ -18,6 +18,7 @@ use App\Services\FinanceService;
 use App\Services\Storage\FileStorageService;
 use App\Services\Storage\PrivateFileStorage;
 use App\Support\Export;
+use App\Support\FiscalPeriod;
 use App\Support\ListFilter;
 use App\Support\TransactionTitle;
 use App\Support\UiLang;
@@ -153,12 +154,10 @@ class TransactionController extends Controller
         $financeCategory = FinanceCategory::find($validated['finance_category_id']);
         $validated['category'] = Str::slug($financeCategory->name, '_');
 
-        if (empty($validated['fiscal_year'])) {
-            $validated['fiscal_year'] = now()->year;
-        }
+        $key = FiscalPeriod::keyForDate($validated['transaction_date'] ?? now());
 
-        if ($this->yearClosed((int) $validated['fiscal_year'])) {
-            return back()->withInput()->with('error', ['key' => 'flash.year_closed_add', 'params' => ['year' => $validated['fiscal_year']]]);
+        if ($this->yearClosed($key)) {
+            return back()->withInput()->with('error', ['key' => 'flash.year_closed_add', 'params' => ['year' => $key]]);
         }
 
         if ($request->hasFile('receipt')) {

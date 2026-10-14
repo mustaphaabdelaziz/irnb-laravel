@@ -7,7 +7,6 @@ use App\Models\FinanceCategory;
 use App\Models\FiscalYear;
 use App\Models\Transaction;
 use App\Services\FinanceService;
-use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
 
@@ -31,18 +30,18 @@ class BackfillFinance extends Command
 
     public function handle(FinanceService $finance): int
     {
-        // 1. Fiscal years for every year present in the data.
-        $years = Transaction::query()
-            ->selectRaw('DISTINCT COALESCE(fiscal_year, CAST(strftime("%Y", transaction_date) AS INTEGER)) as y')
-            ->pluck('y')->filter()->sort()->values();
+        // 1. Fiscal years (seasons) for every transaction date present in the data.
+        $years = Transaction::query()->pluck('transaction_date')->filter()
+            ->map(fn ($date) => FiscalPeriod::keyForDate($date))
+            ->unique()->sort()->values();
 
         foreach ($years as $y) {
             FiscalYear::firstOrCreate(
-                ['year' => (int) $y],
-                ['start_date' => "$y-01-01", 'end_date' => "$y-12-31", 'status' => 'open', 'opening_balance' => 0]
+                ['year' => $y],
+                ['start_date' => FiscalPeriod::start($y)->toDateString(), 'end_date' => FiscalPeriod::end($y)->toDateString(), 'status' => 'open', 'opening_balance' => 0]
             );
         }
-        $this->info('Fiscal years: '.$years->implode(', '));
+        $this->info('Fiscal years: '.$years->map(fn (int $y) => FiscalPeriod::label($y))->implode(', '));
 
         $cash = FinanceAccount::where('type', 'cash')->orderBy('id')->first();
         $linked = 0;
@@ -50,7 +49,7 @@ class BackfillFinance extends Command
         // 2. Link each transaction.
         Transaction::query()->chunkById(200, function ($chunk) use (&$linked, $cash) {
             foreach ($chunk as $t) {
-                $year = $t->fiscal_year ?: (int) Carbon::parse($t->transaction_date)->format('Y');
+                $year = FiscalPeriod::keyForDate($t->transaction_date ?: now());
                 $fy = FiscalYear::where('year', $year)->first();
 
                 $name = $this->map[$t->category] ?? Str::title(str_replace(['_', '-'], ' ', (string) $t->category));

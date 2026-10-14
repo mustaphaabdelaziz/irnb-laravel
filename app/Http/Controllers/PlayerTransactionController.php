@@ -220,7 +220,6 @@ class PlayerTransactionController extends Controller
                     'recorded_by_user_id' => $userId,
                     'finance_account_id' => $financeAccountId,
                     'status' => $status,
-                    'fiscal_year' => $sub->year,
                 ]);
 
                 $sub->update(['transaction_id' => $transaction->id]);
@@ -297,7 +296,6 @@ class PlayerTransactionController extends Controller
             'recorded_by_user_id' => $userId,
             'finance_account_id' => $financeAccountId,
             'status' => 'Paid',
-            'fiscal_year' => (int) now()->year,
         ]);
     }
 

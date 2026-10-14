@@ -10,7 +10,7 @@ use App\Models\Transaction;
 use App\Services\Finance\DefaultRegisterResolver;
 use App\Services\Finance\RecalculatePlayerDebtService;
 use App\Services\FinanceService;
-use Carbon\Carbon;
+use App\Support\FiscalPeriod;
 use Illuminate\Support\Str;
 
 class TransactionObserver
@@ -21,14 +21,18 @@ class TransactionObserver
      */
     public function saving(Transaction $transaction): void
     {
-        if (empty($transaction->fiscal_year)) {
-            $date = $transaction->transaction_date ?: now();
-            $transaction->fiscal_year = (int) Carbon::parse($date)->format('Y');
-        }
+        // The season of the transaction's own date — never a caller's guess.
+        $key = FiscalPeriod::keyForDate($transaction->transaction_date ?: now());
+        $transaction->fiscal_year = $key;
 
         $fy = FiscalYear::firstOrCreate(
-            ['year' => $transaction->fiscal_year],
-            ['start_date' => $transaction->fiscal_year.'-01-01', 'end_date' => $transaction->fiscal_year.'-12-31', 'status' => 'open', 'opening_balance' => 0]
+            ['year' => $key],
+            [
+                'start_date' => FiscalPeriod::start($key)->toDateString(),
+                'end_date' => FiscalPeriod::end($key)->toDateString(),
+                'status' => 'open',
+                'opening_balance' => 0,
+            ]
         );
         $transaction->fiscal_year_id = $fy->id;
 

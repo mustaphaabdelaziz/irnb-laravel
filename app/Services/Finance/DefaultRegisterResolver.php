@@ -37,9 +37,11 @@ final class DefaultRegisterResolver
             ->filter(fn (FinanceAccount $account) => $account->branch_id && $account->is_treasury)
             ->keyBy('branch_id');
 
+        // Club level: cash accounts outside any branch, never the Fonds Initial,
+        // never a coffre whose branch was deleted.
         $this->clubWide = $accounts
             ->filter(fn (FinanceAccount $account) => $account->type === 'cash'
-                && ($account->is_treasury || ! $account->branch_id))
+                && ! $account->branch_id && ! $account->is_treasury && ! $account->is_opening_fund)
             ->sortBy([['sort_order', 'asc'], ['id', 'asc']])
             ->first();
     }
@@ -48,7 +50,7 @@ final class DefaultRegisterResolver
     {
         return new self(FinanceAccount::query()
             ->where('is_active', true)
-            ->get(['id', 'branch_id', 'category_id', 'type', 'is_treasury', 'sort_order']));
+            ->get(['id', 'branch_id', 'category_id', 'type', 'is_treasury', 'is_opening_fund', 'sort_order']));
     }
 
     public function for(?int $branchId, ?int $categoryId): ?FinanceAccount

@@ -12,6 +12,7 @@ use App\Models\PlayerSubscription;
 use App\Models\Subscription;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\Finance\DefaultRegisterResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -344,5 +345,39 @@ class CashRegisterManagementTest extends TestCase
         $this->assertSame(0, FinanceTransfer::count());
         $this->assertEqualsWithDelta(100, (float) $source->fresh()->current_balance, 0.01);
         $this->assertEqualsWithDelta(0, (float) $destination->fresh()->current_balance, 0.01);
+    }
+
+    #[Test]
+    public function the_default_register_is_never_the_opening_fund(): void
+    {
+        FinanceAccount::query()->delete();
+        FinanceAccount::create(['name' => 'Opening Fund', 'type' => 'cash', 'is_opening_fund' => true, 'is_active' => true, 'currency' => 'DZD', 'sort_order' => 0]);
+        $cash = FinanceAccount::create(['name' => 'Cash', 'type' => 'cash', 'is_active' => true, 'currency' => 'DZD', 'sort_order' => 5]);
+
+        $this->assertSame($cash->id, DefaultRegisterResolver::load()->for(null, null)?->id);
+    }
+
+    #[Test]
+    public function an_orphaned_coffre_is_never_the_club_default(): void
+    {
+        FinanceAccount::query()->delete();
+        FinanceAccount::create(['name' => 'Old Treasury', 'type' => 'cash', 'is_treasury' => true, 'branch_id' => null, 'is_active' => true, 'currency' => 'DZD', 'sort_order' => 0]);
+        $cash = FinanceAccount::create(['name' => 'Cash', 'type' => 'cash', 'is_active' => true, 'currency' => 'DZD', 'sort_order' => 5]);
+
+        $this->assertSame($cash->id, DefaultRegisterResolver::load()->for(null, null)?->id);
+    }
+
+    #[Test]
+    public function pickers_and_lists_hide_the_opening_fund(): void
+    {
+        $fund = FinanceAccount::where('is_opening_fund', true)->first()
+            ?? FinanceAccount::create(['name' => 'Opening Fund', 'type' => 'cash', 'is_opening_fund' => true, 'is_active' => true, 'currency' => 'DZD']);
+
+        $this->assertFalse(FinanceAccount::selectable()->get()->contains('id', $fund->id));
+
+        $this->actingAs($this->admin())->get(route('transactions.index'))
+            ->assertInertia(fn ($page) => $page->where('financeAccounts', fn ($accounts) => collect($accounts)->doesntContain('id', $fund->id)));
+        $this->actingAs($this->admin())->get(route('finance.index'))
+            ->assertInertia(fn ($page) => $page->where('accounts', fn ($accounts) => collect($accounts)->doesntContain('id', $fund->id)));
     }
 }

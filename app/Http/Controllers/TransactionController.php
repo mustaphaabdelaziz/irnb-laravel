@@ -79,6 +79,7 @@ class TransactionController extends Controller
             'financeCategories' => fn () => FinanceCategory::where('is_active', true)
                 ->orderBy('type')->orderBy('sort_order')->orderBy('name')->get(['id', 'type', 'name', 'name_ar', 'name_fr', 'name_en', 'color']),
             'financeAccounts' => fn () => FinanceAccount::query()
+                ->where('is_opening_fund', false)
                 ->with([
                     'branch:id,name,name_ar,name_fr,name_en',
                     'category:id,name,name_ar,name_fr,name_en',

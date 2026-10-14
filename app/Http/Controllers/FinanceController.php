@@ -45,6 +45,8 @@ class FinanceController extends Controller
             'selectedYear' => $selectedYear,
             'detail' => $fiscalYear ? $this->yearDetail($fiscalYear) : null,
             'accounts' => FinanceAccount::query()
+                // The Fonds Initial stays out of sight unless it still holds money.
+                ->where(fn ($query) => $query->where('is_opening_fund', false)->orWhere('current_balance', '!=', 0))
                 ->where(function ($query) {
                     $query->where('is_treasury', true)
                         ->orWhere(fn ($root) => $root->whereNull('branch_id')->whereNull('parent_account_id'));

@@ -33,7 +33,9 @@ export function useNavigation() {
             ] },
             { key: 'finance', label: t('nav_finance'), icon: 'money', items: [
                 { label: t('transactions'), href: '/transactions', icon: 'transactions', prefix: '/transactions', module: 'transactions' },
-                { label: t('finance'), href: '/finance', icon: 'money', prefix: '/finance', module: 'finance' },
+                { label: t('cash_registers'), href: '/finance/registers', icon: 'archive', prefix: '/finance/registers', module: 'finance' },
+                // Not highlighted on the Caisses page, which has its own entry.
+                { label: t('finance'), href: '/finance', icon: 'money', prefix: '/finance', match: /^\/finance(?!\/registers)/, module: 'finance' },
             ] },
             { key: 'equipment', label: t('nav_equipment'), icon: 'equipment', items: [
                 { label: t('equipments'), href: '/equipment/catalogs', icon: 'equipment', prefix: '/equipment/catalogs', module: 'equipment' },

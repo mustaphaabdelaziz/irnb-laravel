@@ -1,22 +1,30 @@
 import { useI18n } from 'vue-i18n';
 
 /**
- * One display label for a cash register on every page: "Branch — Treasury",
- * "Branch — Category", or the account's own name (with its branch, if any).
- * Expects the account's branch/category loaded with their localized_name.
+ * One label for a money account on every page: "Football safe" for a coffre,
+ * "Caisse seniors — Football" for a caisse, the name alone at club level.
+ * Caisses created automatically before 2026-10 carry an English name
+ * ("Senior Cash Register"); those show their category's localized name.
  */
 export function useFinanceAccountLabel() {
     const { t } = useI18n();
 
-    const branchLabel = (branch) => branch?.localized_name || branch?.name || t('club_wide');
+    const branchLabel = (branch) => branch?.localized_name || branch?.name || t('caisses.club_level');
+
+    const caisseName = (account) => {
+        const category = account.category;
+        if (category && account.name === `${category.name} Cash Register`) {
+            return category.localized_name || category.name;
+        }
+        return account.name;
+    };
 
     const accountLabel = (account) => {
         if (!account) return '-';
-        if (account.is_treasury) return `${branchLabel(account.branch)} — ${t('treasury')}`;
-        const category = account.category?.localized_name || account.category?.name;
-        if (category) return `${branchLabel(account.branch)} — ${category}`;
-        return account.branch ? `${account.name} — ${branchLabel(account.branch)}` : account.name;
+        if (account.is_opening_fund) return t('opening_fund');
+        if (account.is_treasury) return t('caisses.coffre_of', { branch: branchLabel(account.branch) });
+        return account.branch ? `${caisseName(account)} — ${branchLabel(account.branch)}` : caisseName(account);
     };
 
-    return { accountLabel, branchLabel };
+    return { accountLabel, branchLabel, caisseName };
 }

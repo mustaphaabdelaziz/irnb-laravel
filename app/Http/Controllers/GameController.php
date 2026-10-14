@@ -161,6 +161,10 @@ class GameController extends Controller
         // A friendly's season follows its date; a competition match keeps the competition's.
         if ($game->competition_id === null) {
             $data['season_start_year'] = Season::forDate($data['date'])->startYear;
+            // Moving it to another season needs the right to manage the team in that season too.
+            if ($data['season_start_year'] !== $game->season_start_year) {
+                TeamAccess::authorize($request->user(), $game->team, $data['season_start_year']);
+            }
         }
         $game->update($data);
 

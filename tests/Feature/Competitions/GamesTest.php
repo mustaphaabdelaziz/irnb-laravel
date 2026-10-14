@@ -82,6 +82,36 @@ class GamesTest extends TestCase
     }
 
     #[Test]
+    public function a_coach_cannot_move_a_friendly_into_a_season_they_do_not_coach(): void
+    {
+        $team = $this->team();
+        $game = $this->game($team);
+        $coach = $this->coach();
+        $this->assignCoach($team, $coach, 2026);
+
+        $this->actingAs($coach)->put(route('games.update', $game), $this->payload(['date' => '2027-10-01', 'status' => 'scheduled']))
+            ->assertForbidden();
+        $this->assertSame('2026-10-17', $game->fresh()->date);
+        $this->assertSame(2026, $game->fresh()->season_start_year);
+
+        $this->actingAs($coach)->put(route('games.update', $game), $this->payload(['date' => '2027-02-06', 'status' => 'scheduled']))
+            ->assertSessionHas('success', 'flash.game_updated');
+    }
+
+    #[Test]
+    public function a_coach_not_assigned_cannot_edit_or_delete_a_match(): void
+    {
+        $team = $this->team();
+        $game = $this->game($team);
+        $coach = $this->coach(['games' => ['view', 'add', 'edit', 'delete']]);
+
+        $this->actingAs($coach)->put(route('games.update', $game), $this->payload(['date' => '2026-10-18', 'status' => 'scheduled']))
+            ->assertForbidden();
+        $this->actingAs($coach)->delete(route('games.destroy', $game))->assertForbidden();
+        $this->assertSame('2026-10-17', $game->fresh()->date);
+    }
+
+    #[Test]
     public function a_played_match_needs_a_score_and_other_statuses_clear_it(): void
     {
         $team = $this->team();

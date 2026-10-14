@@ -132,6 +132,17 @@ class TeamsTest extends TestCase
     }
 
     #[Test]
+    public function a_scoped_coach_cannot_delete_teams_even_with_the_delete_right(): void
+    {
+        $team = $this->team();
+        $coach = $this->coach(['teams' => ['view', 'edit', 'delete']]);
+        $this->assignCoach($team, $coach, 2026);
+
+        $this->actingAs($coach)->delete(route('teams.destroy', $team))->assertForbidden();
+        $this->assertModelExists($team);
+    }
+
+    #[Test]
     public function a_category_or_branch_with_teams_cannot_be_deleted(): void
     {
         $team = $this->team();

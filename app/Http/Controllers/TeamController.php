@@ -133,8 +133,9 @@ class TeamController extends Controller
     }
 
     /** A team with competitions or matches keeps its history: it is archived, not deleted. */
-    public function destroy(Team $team): RedirectResponse
+    public function destroy(Request $request, Team $team): RedirectResponse
     {
+        abort_if(TeamAccess::isScoped($request->user()), 403);
         if ($team->games()->exists() || $team->competitions()->exists()) {
             $team->update(['archived' => true]);
 

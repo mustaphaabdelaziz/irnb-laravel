@@ -71,4 +71,15 @@ final class Season
 
         return $this->startYear.'/'.str_pad((string) (($this->startYear + 1) % 100), 2, '0', STR_PAD_LEFT);
     }
+
+    /** @return list<array{value: int, label: string}> what a season picker offers: next season, this one, two back. */
+    public static function options(): array
+    {
+        $current = self::current()->startYear;
+
+        return array_map(
+            fn (int $year) => ['value' => $year, 'label' => self::forStartYear($year)->label()],
+            range($current + 1, $current - 2),
+        );
+    }
 }

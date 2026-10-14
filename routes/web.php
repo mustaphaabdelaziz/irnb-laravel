@@ -55,6 +55,9 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\StorageLocationController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\TeamCoachController;
+use App\Http\Controllers\TeamController;
+use App\Http\Controllers\TeamRosterController;
 use App\Http\Controllers\TrainingSessionController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\TransactionImportController;
@@ -388,6 +391,15 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
         Route::post('/attendance/closures', [AttendanceSettingsController::class, 'storeClosure'])->name('attendance.closures.store');
         Route::delete('/attendance/closures/{closure}', [AttendanceSettingsController::class, 'destroyClosure'])->name('attendance.closures.destroy');
         Route::post('/attendance/preseason-targets', [AttendanceSettingsController::class, 'storeTarget'])->name('attendance.preseason-targets.store');
+        // Competitions & matches. Coaches are limited to their own teams in the controllers (TeamAccess).
+        Route::get('/teams', [TeamController::class, 'index'])->name('teams.index');
+        Route::post('/teams', [TeamController::class, 'store'])->name('teams.store');
+        Route::get('/teams/{team}', [TeamController::class, 'show'])->name('teams.show');
+        Route::put('/teams/{team}', [TeamController::class, 'update'])->name('teams.update');
+        Route::delete('/teams/{team}', [TeamController::class, 'destroy'])->name('teams.destroy');
+        Route::put('/teams/{team}/roster', [TeamRosterController::class, 'update'])->name('teams.roster.update');
+        Route::post('/teams/{team}/roster/copy', [TeamRosterController::class, 'copy'])->name('teams.roster.copy');
+        Route::put('/teams/{team}/coaches', [TeamCoachController::class, 'update'])->name('teams.coaches.update');
 
         // Website configuration
         Route::get('/settings', [WebsiteConfigController::class, 'show'])->name('settings.show');

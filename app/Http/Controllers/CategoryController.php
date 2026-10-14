@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\Team;
 use App\Models\TrainingSession;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -63,6 +64,10 @@ class CategoryController extends Controller
      */
     public function destroy(Category $category): RedirectResponse
     {
+        // A team's age category cannot vanish under its competitions and matches.
+        if (Team::where('category_id', $category->id)->exists()) {
+            return back()->with('error', 'flash.category_has_teams');
+        }
         DB::transaction(function () use ($category) {
             TrainingSession::where('category_id', $category->id)->with('categories')->get()
                 ->each(function (TrainingSession $session) use ($category) {

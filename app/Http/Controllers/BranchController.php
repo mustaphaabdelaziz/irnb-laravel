@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Branch;
 use App\Models\Player;
+use App\Models\Team;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -59,6 +60,9 @@ class BranchController extends Controller
 
     public function destroy(Branch $branch): RedirectResponse
     {
+        if (Team::where('branch_id', $branch->id)->exists()) {
+            return back()->with('error', 'flash.branch_has_teams');
+        }
         $branch->delete();
 
         return back()->with('success', 'flash.branch_deleted');

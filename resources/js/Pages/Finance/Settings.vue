@@ -15,6 +15,7 @@ const props = defineProps({
     branches: { type: Array, default: () => [] },
     years: { type: Array, default: () => [] },
     budgets: { type: Object, default: () => ({}) },
+    seasonOptions: { type: Array, default: () => [] },
 });
 
 const { t } = useI18n();
@@ -25,7 +26,7 @@ const income = computed(() => props.categories.filter((c) => c.type === 'income'
 const expense = computed(() => props.categories.filter((c) => c.type === 'expense'));
 
 /* ----- Fiscal years ----- */
-const yearForm = useForm({ year: new Date().getFullYear(), opening_balance: 0, label: '' });
+const yearForm = useForm({ year: props.seasonOptions[1]?.value ?? null, opening_balance: 0, label: '' });
 function addYear() {
     yearForm.post(route('finance.years.store'), { preserveScroll: true, onSuccess: () => yearForm.reset() });
 }
@@ -35,7 +36,7 @@ function saveOpening(y) {
 }
 function closeYear(y) { if (window.confirm(t('close_year_confirm'))) router.post(route('finance.years.close', y.id), {}, { preserveScroll: true }); }
 function reopenYear(y) { if (window.confirm(t('reopen_year_confirm'))) router.post(route('finance.years.reopen', y.id), {}, { preserveScroll: true }); }
-function deleteYear(y) { if (window.confirm(t('delete_fiscal_year_confirm', { year: y.year }))) router.delete(route('finance.years.destroy', y.id), { preserveScroll: true }); }
+function deleteYear(y) { if (window.confirm(t('delete_fiscal_year_confirm', { year: y.season_label }))) router.delete(route('finance.years.destroy', y.id), { preserveScroll: true }); }
 
 /* ----- Budgets ----- */
 const budgetYearId = ref(props.years[0]?.id ?? null);
@@ -111,7 +112,7 @@ function resetFinance() {
                         </thead>
                         <tbody>
                             <tr v-for="y in years" :key="y.id" class="border-b border-slate-50 dark:border-slate-800/50">
-                                <td class="px-5 py-2.5 font-bold text-slate-900 dark:text-slate-100">{{ y.year }}</td>
+                                <td class="px-5 py-2.5 font-bold text-slate-900 dark:text-slate-100">{{ y.season_label }}</td>
                                 <td class="px-5 py-2.5 text-end">
                                     <input
                                         v-if="y.status !== 'closed'" type="number" step="0.01"
@@ -140,7 +141,9 @@ function resetFinance() {
                 </div>
                 <form @submit.prevent="addYear" class="flex flex-wrap items-end gap-3 border-t border-slate-100 px-5 py-4 dark:border-slate-800">
                     <label class="text-sm"><span class="mb-1 block text-xs font-medium text-slate-500">{{ t('fiscal_year') }}</span>
-                        <input v-model="yearForm.year" type="number" class="w-28 rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
+                        <select v-model="yearForm.year" class="w-36 rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800">
+                            <option v-for="s in seasonOptions" :key="s.value" :value="s.value">{{ s.label }}</option>
+                        </select></label>
                     <label class="text-sm"><span class="mb-1 block text-xs font-medium text-slate-500">{{ t('opening_balance') }}</span>
                         <input v-model="yearForm.opening_balance" type="number" step="0.01" class="w-36 rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
                     <button class="inline-flex items-center gap-1.5 rounded-xl bg-primary-600 px-3.5 py-2 text-sm font-bold text-white hover:bg-primary-700"><Icon name="plus" /> {{ t('add_year') }}</button>
@@ -153,7 +156,7 @@ function resetFinance() {
                     <p class="text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('budget') }}</p>
                     <div class="flex items-center gap-2">
                         <select v-model="budgetYearId" class="rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800">
-                            <option v-for="y in years" :key="y.id" :value="y.id">{{ y.year }}</option>
+                            <option v-for="y in years" :key="y.id" :value="y.id">{{ y.season_label }}</option>
                         </select>
                         <button @click="saveBudget" class="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-sm font-bold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900">{{ t('save_budget') }}</button>
                     </div>

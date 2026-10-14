@@ -25,6 +25,7 @@ class FinanceController extends Controller
         $years = FiscalYear::query()->orderByDesc('year')->get()->map(fn (FiscalYear $fy) => [
             'id' => $fy->id,
             'year' => $fy->year,
+            'season_label' => FiscalPeriod::label($fy->year),
             'status' => $fy->status,
             'opening_balance' => (float) $fy->opening_balance,
             'total_income' => (float) $fy->total_income,
@@ -34,7 +35,9 @@ class FinanceController extends Controller
             'closed_at' => $fy->closed_at?->toDateString(),
         ]);
 
-        $selectedYear = (int) ($request->query('year') ?: ($years->first()['year'] ?? now()->year));
+        $selectedYear = (int) ($request->query('year') ?: (
+            $years->firstWhere('year', FiscalPeriod::currentKey())['year'] ?? ($years->first()['year'] ?? FiscalPeriod::currentKey())
+        ));
         $fiscalYear = FiscalYear::where('year', $selectedYear)->first();
 
         return Inertia::render('Finance/Index', [
@@ -137,7 +140,7 @@ class FinanceController extends Controller
             ->selectRaw("CAST(strftime('%m', transaction_date) AS INTEGER) as m, transaction_type, SUM(amount) as total")
             ->get();
         $monthly = [];
-        for ($m = 1; $m <= 12; $m++) {
+        foreach (FiscalPeriod::months() as $m) {
             $monthly[] = [
                 'month' => $m,
                 'income' => (float) $monthlyRows->where('m', $m)->where('transaction_type', 'income')->sum('total'),
@@ -165,6 +168,7 @@ class FinanceController extends Controller
         return [
             'id' => $fy->id,
             'year' => $fy->year,
+            'season_label' => FiscalPeriod::label($fy->year),
             'status' => $fy->status,
             'opening_balance' => (float) $fy->opening_balance,
             'income' => (float) $fy->total_income,

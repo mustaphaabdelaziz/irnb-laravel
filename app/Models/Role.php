@@ -10,7 +10,7 @@ class Role extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['key', 'name', 'permissions', 'is_system'];
+    protected $fillable = ['key', 'name', 'permissions', 'is_system', 'own_teams_only'];
 
     /**
      * Permission-controlled modules, grouped as in the sidebar so the role
@@ -50,6 +50,8 @@ class Role extends Model
             'name' => 'array',
             'permissions' => 'array',
             'is_system' => 'boolean',
+            // Coaches: edit only the teams they are assigned to for the season (see TeamAccess).
+            'own_teams_only' => 'boolean',
         ];
     }
 

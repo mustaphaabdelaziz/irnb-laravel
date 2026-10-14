@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -11,10 +12,13 @@ class Position extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'name',
-        'abbreviation',
-    ];
+    protected $fillable = ['branch_id', 'name', 'abbreviation'];
+
+    /** The sport this position belongs to; null for positions not tied to a sport yet. */
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
 
     public function players(): HasMany
     {

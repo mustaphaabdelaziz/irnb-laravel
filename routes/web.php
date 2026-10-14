@@ -23,6 +23,8 @@ use App\Http\Controllers\BranchController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\CashRegisterController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CompetitionController;
+use App\Http\Controllers\CompetitionSquadController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\EquipmentCatalogController;
@@ -400,6 +402,12 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
         Route::put('/teams/{team}/roster', [TeamRosterController::class, 'update'])->name('teams.roster.update');
         Route::post('/teams/{team}/roster/copy', [TeamRosterController::class, 'copy'])->name('teams.roster.copy');
         Route::put('/teams/{team}/coaches', [TeamCoachController::class, 'update'])->name('teams.coaches.update');
+        Route::get('/competitions', [CompetitionController::class, 'index'])->name('competitions.index');
+        Route::post('/competitions', [CompetitionController::class, 'store'])->name('competitions.store');
+        Route::get('/competitions/{competition}', [CompetitionController::class, 'show'])->name('competitions.show');
+        Route::put('/competitions/{competition}', [CompetitionController::class, 'update'])->name('competitions.update');
+        Route::delete('/competitions/{competition}', [CompetitionController::class, 'destroy'])->name('competitions.destroy');
+        Route::put('/competitions/{competition}/squad', [CompetitionSquadController::class, 'update'])->name('competitions.squad.update');
 
         // Website configuration
         Route::get('/settings', [WebsiteConfigController::class, 'show'])->name('settings.show');

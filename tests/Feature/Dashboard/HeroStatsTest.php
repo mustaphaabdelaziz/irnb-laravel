@@ -145,7 +145,7 @@ class HeroStatsTest extends TestCase
         // The year-end fallback puts the second line outside a May window.
         $this->assertSame(40.0, $this->tiles()['collection_rate']['value']);
         // ...and inside a whole-year window.
-        $this->assertSame(50.0, $this->tiles(['range' => 'year'])['collection_rate']['value']);
+        $this->assertSame(50.0, $this->tiles(['range' => 'season'])['collection_rate']['value']);
     }
 
     #[Test]

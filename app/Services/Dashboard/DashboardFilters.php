@@ -86,8 +86,8 @@ class DashboardFilters
                 $from->subQuarter()->endOfQuarter(),
             ],
             'season' => [
-                $from = Season::current()->start(),
-                Season::current()->end(),
+                $from = ($season = Season::current())->start(),
+                $season->end(),
                 $from->subYear(),
                 $from->subDay()->endOfDay(),
             ],

@@ -46,5 +46,6 @@
     "Total Income": "إجمالي المداخيل",
     "Type": "النوع",
     "members": "عضو",
-    "Season :season is closed. Reopen it to change its transactions.": "الموسم :season مغلق. أعد فتحه لتعديل معاملاته."
+    "Season :season is closed. Reopen it to change its transactions.": "الموسم :season مغلق. أعد فتحه لتعديل معاملاته.",
+    "Reopen the closed seasons before changing the season start month.": "أعد فتح المواسم المغلقة قبل تغيير شهر بداية الموسم."
 }

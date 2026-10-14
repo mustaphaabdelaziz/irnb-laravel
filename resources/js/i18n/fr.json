@@ -1657,6 +1657,7 @@
     "search_player": "Rechercher un joueur…",
     "search_wilaya": "Rechercher une wilaya…",
     "season": "Saison",
+    "season_start_finance_hint": "Le modifier reclasse toutes les transactions financières dans la saison de leur date.",
     "season_start_hint": "Utilisé pour les tableaux par catégorie et les documents renouvelés chaque saison.",
     "season_start_month": "La saison commence en",
     "secretary": "Secrétaire général",

@@ -46,5 +46,6 @@
     "Total Income": "Revenus totaux",
     "Type": "Type",
     "members": "membres",
-    "Season :season is closed. Reopen it to change its transactions.": "La saison :season est clôturée. Rouvrez-la pour modifier ses transactions."
+    "Season :season is closed. Reopen it to change its transactions.": "La saison :season est clôturée. Rouvrez-la pour modifier ses transactions.",
+    "Reopen the closed seasons before changing the season start month.": "Rouvrez les saisons clôturées avant de changer le mois de début de saison."
 }

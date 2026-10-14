@@ -14,7 +14,7 @@ use DateTimeInterface;
  */
 final class Season
 {
-    private const DEFAULT_START_MONTH = 9;
+    public const DEFAULT_START_MONTH = 9;
 
     private function __construct(public readonly int $startYear, private readonly int $startMonth) {}
 

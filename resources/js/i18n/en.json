@@ -1657,6 +1657,7 @@
     "search_player": "Search player…",
     "search_wilaya": "Search wilaya…",
     "season": "Season",
+    "season_start_finance_hint": "Changing it re-sorts every finance transaction into the season of its date.",
     "season_start_hint": "Used for board tables and documents renewed each season.",
     "season_start_month": "Season starts in",
     "secretary": "Secretary",

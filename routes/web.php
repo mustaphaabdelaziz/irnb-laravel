@@ -1,9 +1,6 @@
 <?php
 
 use App\Http\Controllers\AttendanceAlertsController;
-use App\Http\Controllers\GameCallUpController;
-use App\Http\Controllers\GameController;
-use App\Http\Controllers\GameFormatController;
 use App\Http\Controllers\AttendanceCalendarController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceCustomStatusController;
@@ -38,6 +35,9 @@ use App\Http\Controllers\FinanceCategoryController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\FinanceResetController;
 use App\Http\Controllers\FiscalYearController;
+use App\Http\Controllers\GameCallUpController;
+use App\Http\Controllers\GameController;
+use App\Http\Controllers\GameFormatController;
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LanguageController;

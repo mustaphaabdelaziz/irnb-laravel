@@ -25,8 +25,12 @@ final class CompetitionRecord
             $record['played']++;
             $record['goals_for'] += $game->our_score;
             $record['goals_against'] += $game->their_score;
-            $record[match ($outcome) { 1 => 'wins', 0 => 'draws', -1 => 'losses' }]++;
-            $results[] = [$game->date, match ($outcome) { 1 => 'W', 0 => 'D', -1 => 'L' }];
+            $record[match ($outcome) {
+                1 => 'wins', 0 => 'draws', -1 => 'losses'
+            }]++;
+            $results[] = [$game->date, match ($outcome) {
+                1 => 'W', 0 => 'D', -1 => 'L'
+            }];
         }
 
         usort($results, fn (array $a, array $b) => strcmp($a[0], $b[0]));

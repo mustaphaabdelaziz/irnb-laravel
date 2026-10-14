@@ -5,21 +5,18 @@ import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Icon from '@/Components/Icon.vue';
 import IconButton from '@/Components/IconButton.vue';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
-import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 import { useCan } from '@/Composables/useCan';
 
 const props = defineProps({
     categories: { type: Array, default: () => [] },
-    accounts: { type: Array, default: () => [] },
-    branches: { type: Array, default: () => [] },
     years: { type: Array, default: () => [] },
     budgets: { type: Object, default: () => ({}) },
     seasonOptions: { type: Array, default: () => [] },
 });
 
 const { t } = useI18n();
-const { accountLabel } = useFinanceAccountLabel();
 const { formatMoney } = useFormatMoney();
 
 const income = computed(() => props.categories.filter((c) => c.type === 'income'));
@@ -34,9 +31,35 @@ const openingEdits = reactive({});
 function saveOpening(y) {
     router.put(route('finance.years.update', y.id), { opening_balance: openingEdits[y.id] ?? y.opening_balance, label: y.label }, { preserveScroll: true });
 }
-function closeYear(y) { if (window.confirm(t('close_year_confirm'))) router.post(route('finance.years.close', y.id), {}, { preserveScroll: true }); }
-function reopenYear(y) { if (window.confirm(t('reopen_year_confirm'))) router.post(route('finance.years.reopen', y.id), {}, { preserveScroll: true }); }
-function deleteYear(y) { if (window.confirm(t('delete_fiscal_year_confirm', { year: y.season_label }))) router.delete(route('finance.years.destroy', y.id), { preserveScroll: true }); }
+
+/* ----- Confirmation (one modal for every destructive action on this page) ----- */
+// pending = { action: 'close' | 'reopen' | 'delete-year' | 'delete-category', item }
+const pending = ref(null);
+const askClose = (y) => { pending.value = { action: 'close', item: y }; };
+const askReopen = (y) => { pending.value = { action: 'reopen', item: y }; };
+const askDeleteYear = (y) => { pending.value = { action: 'delete-year', item: y }; };
+
+const pendingCopy = computed(() => {
+    const p = pending.value;
+    if (!p) return { title: '', message: '', label: '' };
+    switch (p.action) {
+        case 'close': return { title: t('close_year'), message: t('close_year_confirm'), label: t('close_year') };
+        case 'reopen': return { title: t('reopen_year'), message: t('reopen_year_confirm'), label: t('reopen_year') };
+        case 'delete-year': return { title: t('delete_year'), message: t('delete_fiscal_year_confirm', { year: p.item.season_label }), label: t('delete_year') };
+        default: return { title: t('delete'), message: t('confirm_delete'), label: t('delete') };
+    }
+});
+
+function runPending() {
+    const p = pending.value;
+    if (!p) return;
+    pending.value = null;
+    const opts = { preserveScroll: true };
+    if (p.action === 'close') router.post(route('finance.years.close', p.item.id), {}, opts);
+    else if (p.action === 'reopen') router.post(route('finance.years.reopen', p.item.id), {}, opts);
+    else if (p.action === 'delete-year') router.delete(route('finance.years.destroy', p.item.id), opts);
+    else router.delete(route('finance.categories.destroy', p.item.id), opts);
+}
 
 /* ----- Budgets ----- */
 const budgetYearId = ref(props.years[0]?.id ?? null);
@@ -59,18 +82,7 @@ const catForm = useForm({ type: 'income', name: '', code: '', color: '#10b981' }
 function addCategory() {
     catForm.post(route('finance.categories.store'), { preserveScroll: true, onSuccess: () => catForm.reset('name', 'code') });
 }
-function deleteCategory(c) {
-    if (window.confirm(t('confirm_delete'))) router.delete(route('finance.categories.destroy', c.id), { preserveScroll: true });
-}
-
-/* ----- Accounts ----- */
-const accForm = useForm({ name: '', type: 'cash', branch_id: '', opening_balance: 0, account_number: '' });
-function addAccount() {
-    accForm.post(route('finance.accounts.store'), { preserveScroll: true, onSuccess: () => accForm.reset() });
-}
-function deleteAccount(a) {
-    if (window.confirm(t('confirm_delete'))) router.delete(route('finance.accounts.destroy', a.id), { preserveScroll: true });
-}
+function deleteCategory(c) { pending.value = { action: 'delete-category', item: c }; }
 
 /* ----- Reset (superadmin) ----- */
 const { isSuperadmin } = useCan();
@@ -90,7 +102,7 @@ function resetFinance() {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center gap-2">
-                <Link :href="route('finance.index')" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"><Icon name="back" /></Link>
+                <Link :href="route('finance.index')" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"><Icon name="back" class="rtl:rotate-180" /></Link>
                 <h1 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('finance_settings') }}</h1>
             </div>
         </template>
@@ -129,10 +141,10 @@ function resetFinance() {
                                 </td>
                                 <td class="px-5 py-2.5 text-end">
                                     <div class="flex items-center justify-end gap-1">
-                                        <IconButton v-if="y.status !== 'closed'" icon="archive" :label="t('close_year')" plain size="sm" @click="closeYear(y)" />
-                                        <IconButton v-else icon="refresh" :label="t('reopen_year')" variant="primary" plain size="sm" @click="reopenYear(y)" />
+                                        <IconButton v-if="y.status !== 'closed'" icon="archive" :label="t('close_year')" plain size="sm" @click="askClose(y)" />
+                                        <IconButton v-else icon="refresh" :label="t('reopen_year')" variant="primary" plain size="sm" @click="askReopen(y)" />
                                         <!-- Only an open year with no active transaction can go. -->
-                                        <IconButton v-if="y.can_delete" icon="trash" :label="t('delete_year')" variant="danger" plain size="sm" @click="deleteYear(y)" />
+                                        <IconButton v-if="y.can_delete" icon="trash" :label="t('delete_year')" variant="danger" plain size="sm" @click="askDeleteYear(y)" />
                                     </div>
                                 </td>
                             </tr>
@@ -218,39 +230,13 @@ function resetFinance() {
                 </form>
             </section>
 
-            <!-- Accounts -->
-            <section class="card p-5">
-                <div class="mb-4 flex items-center justify-between gap-3">
+            <!-- Caisses live on their own page -->
+            <section class="card flex flex-wrap items-center justify-between gap-3 p-5">
+                <div class="min-w-0">
                     <p class="text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('cash_registers') }}</p>
-                    <Link :href="route('finance.registers.index')" class="text-sm font-semibold text-primary-600 hover:text-primary-700">
-                        {{ t('manage_cash_registers') }}
-                    </Link>
+                    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ t('caisses.subtitle') }}</p>
                 </div>
-                <ul class="space-y-1.5">
-                    <li v-for="a in accounts" :key="a.id" class="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/50">
-                        <span class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
-                            <Icon name="money" class="text-slate-400" />
-                            {{ accountLabel(a) }}
-                        </span>
-                        <span class="flex items-center gap-3">
-                            <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ formatMoney(a.current_balance) }}</span>
-                            <IconButton icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteAccount(a)" />
-                        </span>
-                    </li>
-                </ul>
-                <form @submit.prevent="addAccount" class="mt-4 flex flex-wrap items-end gap-3 border-t border-slate-100 pt-4 dark:border-slate-800">
-                    <input v-model="accForm.name" :placeholder="t('account')" required class="rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800" />
-                    <select v-model="accForm.type" class="rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800">
-                        <option value="cash">{{ t('cash') }}</option><option value="bank">{{ t('account') }}</option><option value="other">{{ t('other') }}</option>
-                    </select>
-                    <select v-model="accForm.branch_id" class="rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800">
-                        <option value="">{{ t('club_wide') }}</option>
-                        <option v-for="branch in branches" :key="branch.id" :value="branch.id">{{ branch.localized_name || branch.name }}</option>
-                    </select>
-                    <label class="text-sm"><span class="mb-1 block text-xs font-medium text-slate-500">{{ t('opening_balance') }}</span>
-                        <input v-model="accForm.opening_balance" type="number" step="0.01" class="w-32 rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
-                    <button class="inline-flex items-center gap-1.5 rounded-xl bg-primary-600 px-3.5 py-2 text-sm font-bold text-white hover:bg-primary-700"><Icon name="plus" /> {{ t('add_account') }}</button>
-                </form>
+                <IconButton :href="route('finance.registers.index')" icon="wallet" :label="t('caisses.manage')" />
             </section>
 
             <!-- Danger zone: start the books fresh -->
@@ -268,5 +254,14 @@ function resetFinance() {
                 <p v-if="resetMismatch" class="mt-2 text-sm font-semibold text-rose-600 dark:text-rose-400">{{ t('finance_reset_mismatch') }}</p>
             </section>
         </div>
+
+        <ConfirmModal
+            :show="pending !== null"
+            :title="pendingCopy.title"
+            :message="pendingCopy.message"
+            :confirm-label="pendingCopy.label"
+            @confirm="runPending"
+            @cancel="pending = null"
+        />
     </AuthenticatedLayout>
 </template>

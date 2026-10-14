@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Branch;
 use App\Models\Budget;
 use App\Models\FinanceAccount;
 use App\Models\FinanceCategory;
@@ -71,15 +70,6 @@ class FinanceController extends Controller
         return Inertia::render('Finance/Settings', [
             'categories' => FinanceCategory::withCount('transactions')
                 ->orderBy('type')->orderBy('sort_order')->orderBy('name')->get(),
-            'accounts' => FinanceAccount::with([
-                'branch:id,name,name_ar,name_fr,name_en',
-                'category:id,name,name_ar,name_fr,name_en',
-            ])
-                ->withCount('transactions')
-                ->orderBy('sort_order')->orderBy('id')->get(),
-            'branches' => Branch::orderBy('name')->get([
-                'id', 'name', 'name_ar', 'name_fr', 'name_en',
-            ]),
             'years' => $this->yearsWithDeletability(),
             'budgets' => $budgets,
             'seasonOptions' => collect(range(FiscalPeriod::currentKey() + 1, FiscalPeriod::currentKey() - 5))

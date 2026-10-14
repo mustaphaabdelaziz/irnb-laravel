@@ -539,7 +539,6 @@ class EquipmentItemController extends Controller
                             'description' => 'Equipment purchase: '.$item->unique_identifier,
                             'recorded_by_user_id' => $request->user()?->id,
                             'status' => 'Paid',
-                            'fiscal_year' => now()->year,
                         ]);
                         $item->purchase_transaction_id = $transaction->id;
                         $item->save();

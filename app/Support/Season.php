@@ -14,16 +14,18 @@ use DateTimeInterface;
  */
 final class Season
 {
-    private const DEFAULT_START_MONTH = 9;
+    public const DEFAULT_START_MONTH = 9;
 
     private function __construct(public readonly int $startYear, private readonly int $startMonth) {}
 
     /** The month a season starts in, 1-12. Falls back to September when unset or out of range. */
     public static function startMonth(): int
     {
-        $month = (int) ((WebsiteConfig::singleton()->settings ?? [])['seasonStartMonth'] ?? self::DEFAULT_START_MONTH);
+        return once(function (): int {
+            $month = (int) ((WebsiteConfig::query()->first()?->settings ?? [])['seasonStartMonth'] ?? self::DEFAULT_START_MONTH);
 
-        return ($month >= 1 && $month <= 12) ? $month : self::DEFAULT_START_MONTH;
+            return ($month >= 1 && $month <= 12) ? $month : self::DEFAULT_START_MONTH;
+        });
     }
 
     public static function current(): self

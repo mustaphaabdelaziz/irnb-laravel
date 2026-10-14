@@ -4,9 +4,11 @@ namespace Tests\Feature\Console;
 
 use App\Models\Player;
 use App\Models\PlayerSubscription;
+use App\Models\Subscription;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\File;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -44,6 +46,30 @@ class ImportMongoJsonDataTest extends TestCase
             $this->assertSame('student', $playerSubscription->status_at_time);
             $this->assertSame(2000.0, (float) $playerSubscription->amount_owed);
             $this->assertSame(1000.0, (float) $playerSubscription->amount_paid);
+        } finally {
+            File::deleteDirectory($directory);
+        }
+    }
+
+    #[Test]
+    public function a_subscription_without_a_year_falls_back_to_the_current_season(): void
+    {
+        Carbon::setTestNow('2026-10-14');
+        $directory = storage_path('framework/testing/mongo-import-'.uniqid('', true));
+        File::ensureDirectoryExists($directory);
+
+        try {
+            $this->writeImportFixtures($directory);
+            foreach (['subscriptions.json', 'playerSubscriptions.json'] as $file) {
+                $rows = json_decode(File::get($directory.'/'.$file), true);
+                $this->writeJson($directory.'/'.$file, array_map(fn (array $row) => array_diff_key($row, ['year' => true]), $rows));
+            }
+
+            $this->artisan('irnb:import-mongo-json', ['path' => $directory])->assertSuccessful();
+
+            // October 2026 is in the 2026/2027 season, keyed 2027 — not calendar 2026.
+            $this->assertSame(2027, (int) Subscription::query()->firstOrFail()->year);
+            $this->assertSame(2027, (int) PlayerSubscription::query()->firstOrFail()->year);
         } finally {
             File::deleteDirectory($directory);
         }

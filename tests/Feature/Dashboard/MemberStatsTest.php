@@ -123,6 +123,27 @@ class MemberStatsTest extends TestCase
     }
 
     #[Test]
+    public function renewal_rate_compares_last_season_to_this_season_on_the_season_range(): void
+    {
+        // October 2026 is in the 2026/27 season, keyed 2027; last season is keyed 2026.
+        $this->travelTo('2026-10-14 10:00:00');
+
+        $stayed = $this->player();
+        $left = $this->player();
+
+        foreach ([$stayed, $left] as $player) {
+            PlayerSubscription::create([
+                'player_id' => $player->id, 'year' => 2026, 'amount_owed' => 1000, 'amount_paid' => 1000,
+            ]);
+        }
+        PlayerSubscription::create([
+            'player_id' => $stayed->id, 'year' => 2027, 'amount_owed' => 1000, 'amount_paid' => 0,
+        ]);
+
+        $this->assertSame(50.0, $this->summary(['range' => 'season'])['renewal_rate']['value']);
+    }
+
+    #[Test]
     public function renewal_rate_is_null_without_a_previous_year_to_measure(): void
     {
         $this->player();

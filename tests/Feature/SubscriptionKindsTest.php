@@ -7,6 +7,7 @@ use App\Models\Player;
 use App\Models\PlayerSubscription;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Support\FiscalPeriod;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -144,7 +145,7 @@ class SubscriptionKindsTest extends TestCase
 
         $ps = PlayerSubscription::where('player_id', $player->id)->firstOrFail();
         $this->assertFalse((bool) $ps->is_mandatory);
-        $this->assertSame((int) now()->year, (int) $ps->year);
+        $this->assertSame(FiscalPeriod::currentKey(), (int) $ps->year);
         $this->assertEquals(1500, $ps->amount_owed);
         $this->assertEquals(1500, $player->fresh()->outstanding_debt);
     }

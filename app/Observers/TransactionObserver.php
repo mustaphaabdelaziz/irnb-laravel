@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Exceptions\ClosedFiscalYearException;
 use App\Models\FinanceCategory;
 use App\Models\FiscalYear;
 use App\Models\Player;
@@ -10,7 +11,7 @@ use App\Models\Transaction;
 use App\Services\Finance\DefaultRegisterResolver;
 use App\Services\Finance\RecalculatePlayerDebtService;
 use App\Services\FinanceService;
-use Carbon\Carbon;
+use App\Support\FiscalPeriod;
 use Illuminate\Support\Str;
 
 class TransactionObserver
@@ -21,16 +22,29 @@ class TransactionObserver
      */
     public function saving(Transaction $transaction): void
     {
-        if (empty($transaction->fiscal_year)) {
-            $date = $transaction->transaction_date ?: now();
-            $transaction->fiscal_year = (int) Carbon::parse($date)->format('Y');
-        }
+        // The season of the transaction's own date — never a caller's guess.
+        $key = FiscalPeriod::keyForDate($transaction->transaction_date ?: now());
+        $transaction->fiscal_year = $key;
 
         $fy = FiscalYear::firstOrCreate(
-            ['year' => $transaction->fiscal_year],
-            ['start_date' => $transaction->fiscal_year.'-01-01', 'end_date' => $transaction->fiscal_year.'-12-31', 'status' => 'open', 'opening_balance' => 0]
+            ['year' => $key],
+            [
+                'start_date' => FiscalPeriod::start($key)->toDateString(),
+                'end_date' => FiscalPeriod::end($key)->toDateString(),
+                'status' => 'open',
+                'opening_balance' => 0,
+            ]
         );
         $transaction->fiscal_year_id = $fy->id;
+
+        if ($fy->isClosed()) {
+            throw new ClosedFiscalYearException($key);
+        }
+
+        $originalKey = (int) $transaction->getOriginal('fiscal_year');
+        if ($transaction->exists && $originalKey && $originalKey !== $key && $this->isClosed($originalKey)) {
+            throw new ClosedFiscalYearException($originalKey);
+        }
 
         if (empty($transaction->finance_category_id) && $transaction->category) {
             $cat = FinanceCategory::firstOrCreate(
@@ -50,6 +64,18 @@ class TransactionObserver
                 ? $registers->forPlayer($player)
                 : $registers->for(null, null))?->id;
         }
+    }
+
+    public function deleting(Transaction $transaction): void
+    {
+        if ($transaction->fiscal_year && $this->isClosed((int) $transaction->fiscal_year)) {
+            throw new ClosedFiscalYearException((int) $transaction->fiscal_year);
+        }
+    }
+
+    private function isClosed(int $key): bool
+    {
+        return FiscalYear::where('year', $key)->where('status', 'closed')->exists();
     }
 
     public function saved(Transaction $transaction): void

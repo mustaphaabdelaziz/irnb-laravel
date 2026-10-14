@@ -3,10 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\WebsiteConfig\UpdateWebsiteConfigRequest;
+use App\Models\FiscalYear;
 use App\Models\WebsiteConfig;
+use App\Services\Finance\SeasonRebucketer;
+use App\Support\Season;
 use App\Support\Theme;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -28,6 +33,18 @@ class WebsiteConfigController extends Controller
         $validated = $request->validated();
         $validated['last_modified_by_user_id'] = $request->user()?->id;
 
+        // The start month decides which season every transaction belongs to,
+        // so changing it re-sorts the books. A closed season's figures are
+        // final, so the change waits until every closed season is reopened.
+        $startMonthChanges = array_key_exists('seasonStartMonth', $validated['settings'] ?? [])
+            && (int) ($validated['settings']['seasonStartMonth'] ?? Season::DEFAULT_START_MONTH) !== Season::startMonth();
+
+        if ($startMonthChanges && FiscalYear::query()->where('status', 'closed')->exists()) {
+            throw ValidationException::withMessages([
+                'settings.seasonStartMonth' => __('Reopen the closed seasons before changing the season start month.'),
+            ]);
+        }
+
         // An emptied short name arrives as null, but the column is NOT NULL.
         // Store it as blank instead — ClubIdentity reads blank as "not set" and
         // shows the neutral default, which is what clearing the field means.
@@ -36,7 +53,7 @@ class WebsiteConfigController extends Controller
         }
 
         // Settings forms submit a subset of keys; merge into the existing JSON so
-        // unrelated keys (currencySymbol, dateFormat, fiscalYearStart, ...) are preserved.
+        // unrelated keys (currencySymbol, dateFormat, ...) are preserved.
         if (isset($validated['settings']) && is_array($validated['settings'])) {
             $validated['settings'] = array_merge($config->settings ?? [], $validated['settings']);
         }
@@ -71,7 +88,14 @@ class WebsiteConfigController extends Controller
         // These are folded into `branding` above, not real columns.
         unset($validated['theme'], $validated['primary_color']);
 
-        $config->update($validated);
+        DB::transaction(function () use ($config, $validated, $startMonthChanges) {
+            // Saving flushes Season's memo, so the re-sort reads the new month.
+            $config->update($validated);
+
+            if ($startMonthChanges) {
+                app(SeasonRebucketer::class)->run();
+            }
+        });
 
         return back()->with('success', 'flash.configuration_updated');
     }

@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Support\Season;
+use App\Support\FiscalPeriod;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -115,8 +115,8 @@ class Subscription extends Model
             'player_id' => $player->id,
             'transaction_id' => null,
             // The obligation row always needs a year (dashboards group by it):
-            // a one-off charge takes the year it was assigned in.
-            'year' => $this->year ?? (int) now()->year,
+            // a one-off charge takes the season it was assigned in.
+            'year' => $this->year ?? FiscalPeriod::currentKey(),
             'status_at_time' => $player->is_student ? 'student' : 'worker',
             // A one-off charge is never mandatory (it still counts as debt).
             'is_mandatory' => ! $this->isExceptional() && (bool) $this->is_mandatory,
@@ -137,25 +137,17 @@ class Subscription extends Model
      */
     public static function seasonLabel(int $endYear): string
     {
-        return self::calendarSeason() ? (string) $endYear : ($endYear - 1).'/'.$endYear;
+        return FiscalPeriod::label($endYear);
     }
 
     /** The end year of the season running today — the default for a new annual subscription. */
     public static function currentSeasonEndYear(): int
     {
-        $season = Season::current();
-
-        return self::calendarSeason() ? $season->startYear : $season->startYear + 1;
+        return FiscalPeriod::currentKey();
     }
 
     public function getDesignationAttribute(): string
     {
         return $this->year_label ? $this->name.' - '.$this->year_label : $this->name;
-    }
-
-    /** Whether the club's season is the calendar year — read once per request, not once per row. */
-    private static function calendarSeason(): bool
-    {
-        return once(fn () => Season::startMonth() === 1);
     }
 }

@@ -14,6 +14,7 @@ use App\Services\Attendance\AttendanceStats;
 use App\Support\AttendanceSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Once;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\AttendanceFixtures;
 use Tests\TestCase;
@@ -318,8 +319,10 @@ class AttendanceStatsTest extends TestCase
         };
 
         $addPlayers(3);
+        Once::flush();
         $few = $measure();
         $addPlayers(30);
+        Once::flush();
 
         $this->assertSame($few, $measure());
         // 2 (players) + 1 (monthly) + 8 (categories: grouped counts, missed

@@ -4,15 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Enums\EducationLevel;
 use App\Models\BoardMeeting;
+use App\Models\FinanceCategory;
 use App\Models\InventorySession;
 use App\Models\Player;
 use App\Models\Transaction;
 use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
+use App\Support\FiscalPeriod;
 use App\Support\Media;
 use App\Support\TransactionTitle;
 use App\Support\UiLang;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
@@ -83,25 +84,30 @@ class ReportController extends Controller
 
     public function financialSummary(Request $request): Response
     {
-        $year = (int) ($request->query('year') ?: Carbon::now()->year);
+        $year = (int) ($request->query('year') ?: FiscalPeriod::currentKey());
 
-        $base = Transaction::query()->where('archived', false)->whereYear('transaction_date', $year);
+        $base = Transaction::query()->where('archived', false)->where('fiscal_year', $year);
 
         $totalIncome = (float) (clone $base)->where('transaction_type', 'income')->sum('amount');
         $totalExpense = (float) (clone $base)->where('transaction_type', 'expense')->sum('amount');
         $totalDonations = (float) (clone $base)->where('category', 'donation')->sum('amount');
 
+        $names = FinanceCategory::query()->get()->keyBy('id');
         $byCategory = DB::table('transactions')
             ->where('archived', false)
-            ->whereYear('transaction_date', $year)
-            ->groupBy('transaction_type', 'category')
-            ->selectRaw('transaction_type, category, SUM(amount) as total')
+            ->where('fiscal_year', $year)
+            ->groupBy('transaction_type', 'finance_category_id')
+            ->selectRaw('transaction_type, finance_category_id, SUM(amount) as total')
             ->orderBy('transaction_type')
-            ->get();
+            ->get()
+            ->each(function ($row) use ($names) {
+                $row->category = $names->get($row->finance_category_id)?->localized_name ?? __('Other');
+            });
 
         $html = view('pdf.financial-summary', [
             'club' => ClubHeader::data(),
             'year' => $year,
+            'season' => FiscalPeriod::label($year),
             'totalIncome' => $totalIncome,
             'totalExpense' => $totalExpense,
             'totalDonations' => $totalDonations,

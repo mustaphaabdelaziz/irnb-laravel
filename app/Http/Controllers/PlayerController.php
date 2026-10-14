@@ -11,6 +11,7 @@ use App\Models\Category;
 use App\Models\CountryState;
 use App\Models\DocumentType;
 use App\Models\FinanceAccount;
+use App\Models\FiscalYear;
 use App\Models\MemberJob;
 use App\Models\Player;
 use App\Models\PlayerAcademicRecord;
@@ -24,6 +25,7 @@ use App\Services\Activity\ActivityRecorder;
 use App\Services\Attendance\AttendanceStatusCatalog;
 use App\Services\Dashboard\ModuleStats;
 use App\Services\Finance\DefaultRegisterResolver;
+use App\Services\FinanceService;
 use App\Services\Player\DocumentChecklist;
 use App\Services\Player\MembershipNumber;
 use App\Services\Player\PlayerDocumentService;
@@ -31,6 +33,7 @@ use App\Services\Player\RegisterPlayerService;
 use App\Services\Storage\FileStorageService;
 use App\Support\CertificateThresholds;
 use App\Support\Export;
+use App\Support\FiscalPeriod;
 use App\Support\ListFilter;
 use App\Support\Season;
 use App\Support\TransactionTitle;
@@ -492,6 +495,10 @@ class PlayerController extends Controller
 
     public function forceDelete(Player $player, FileStorageService $files): RedirectResponse
     {
+        if ($season = $this->closedSeasonHolding([$player->id])) {
+            return $this->seasonClosed($season);
+        }
+
         $this->permanentlyDelete($player, $files);
 
         return redirect()->route('players.index', ['archived' => 1])
@@ -585,6 +592,12 @@ class PlayerController extends Controller
     public function bulkForceDelete(Request $request, FileStorageService $files): RedirectResponse
     {
         $ids = $this->validatedIds($request);
+
+        // All or nothing: one player tied to a closed season stops the batch.
+        if ($season = $this->closedSeasonHolding($ids)) {
+            return $this->seasonClosed($season);
+        }
+
         Player::whereIn('id', $ids)->get()->each(fn (Player $p) => $this->permanentlyDelete($p, $files));
 
         return back()->with('success', ['key' => 'flash.players_deleted', 'params' => ['count' => count($ids)]]);
@@ -908,17 +921,56 @@ class PlayerController extends Controller
     }
 
     /**
+     * The earliest closed season holding a live payment of any of these players,
+     * or null. Such a player cannot be permanently deleted: archiving the
+     * payment would change a closed season's figures.
+     *
+     * @param  array<int, int>  $playerIds
+     */
+    private function closedSeasonHolding(array $playerIds): ?int
+    {
+        $season = Transaction::query()
+            ->where('related_entity_type', 'Player')
+            ->whereIn('related_entity_id', $playerIds)
+            ->where('archived', false)
+            ->whereIn('fiscal_year', FiscalYear::query()->where('status', 'closed')->select('year'))
+            ->min('fiscal_year');
+
+        return $season === null ? null : (int) $season;
+    }
+
+    private function seasonClosed(int $season): RedirectResponse
+    {
+        return back()->with('error', [
+            'key' => 'flash.season_closed',
+            'params' => ['season' => FiscalPeriod::label($season)],
+        ]);
+    }
+
+    /**
      * Permanently remove a player and its owned records. Finance transactions are
-     * archived (kept for audit), not deleted.
+     * archived (kept for audit), not deleted, and the seasons and registers they
+     * counted in are recomputed. Callers check closedSeasonHolding() first.
      */
     private function permanentlyDelete(Player $player, FileStorageService $files): void
     {
         $documents = app(PlayerDocumentService::class);
 
         DB::transaction(function () use ($player, $documents) {
-            Transaction::where('related_entity_type', 'Player')
-                ->where('related_entity_id', $player->id)
-                ->update(['archived' => true]);
+            $payments = Transaction::where('related_entity_type', 'Player')
+                ->where('related_entity_id', $player->id);
+            $seasons = (clone $payments)->where('archived', false)->distinct()->pluck('fiscal_year')->filter();
+
+            // A query update skips the observer on purpose (no per-row debt and
+            // balance churn); the totals are refreshed once below instead.
+            $payments->update(['archived' => true]);
+
+            if ($seasons->isNotEmpty()) {
+                $finance = app(FinanceService::class);
+                $finance->recomputeAccountBalances();
+                FiscalYear::query()->whereIn('year', $seasons)->get()
+                    ->each(fn (FiscalYear $year) => $finance->recomputeYear($year));
+            }
 
             $player->emergencyContacts()->delete();
             $player->achievements()->delete();

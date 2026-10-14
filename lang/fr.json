@@ -23,6 +23,7 @@
     "Membership ID": "N° d'adhérent",
     "Net Balance": "Solde net",
     "No members in this category.": "Aucun membre dans cette catégorie.",
+    "Other": "Autre",
     "Payment Method": "Mode de paiement",
     "Payment Receipt": "Reçu de paiement",
     "Phone": "Téléphone",
@@ -44,5 +45,7 @@
     "Total Expense": "Dépenses totales",
     "Total Income": "Revenus totaux",
     "Type": "Type",
-    "members": "membres"
+    "members": "membres",
+    "Season :season is closed. Reopen it to change its transactions.": "La saison :season est clôturée. Rouvrez-la pour modifier ses transactions.",
+    "Reopen the closed seasons before changing the season start month.": "Rouvrez les saisons clôturées avant de changer le mois de début de saison."
 }

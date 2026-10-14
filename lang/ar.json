@@ -23,6 +23,7 @@
     "Membership ID": "رقم العضوية",
     "Net Balance": "الرصيد الصافي",
     "No members in this category.": "لا يوجد أعضاء في هذه الفئة.",
+    "Other": "أخرى",
     "Payment Method": "طريقة الدفع",
     "Payment Receipt": "وصل دفع",
     "Phone": "الهاتف",
@@ -44,5 +45,7 @@
     "Total Expense": "إجمالي المصاريف",
     "Total Income": "إجمالي المداخيل",
     "Type": "النوع",
-    "members": "عضو"
+    "members": "عضو",
+    "Season :season is closed. Reopen it to change its transactions.": "الموسم :season مغلق. أعد فتحه لتعديل معاملاته.",
+    "Reopen the closed seasons before changing the season start month.": "أعد فتح المواسم المغلقة قبل تغيير شهر بداية الموسم."
 }

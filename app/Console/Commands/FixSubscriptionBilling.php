@@ -13,7 +13,7 @@ class FixSubscriptionBilling extends Command
 {
     protected $signature = 'finance:fix-subscription-billing {--force : Actually delete bill transactions}';
 
-    protected $description = 'Cash-basis cleanup: snapshot is_mandatory, link payments, and recompute debts (always run); pass --force to also delete legacy Unpaid subscription bills.';
+    protected $description = 'Cash-basis cleanup: snapshot is_mandatory, link payments, and recompute debts (always run); pass --force to also delete legacy Unpaid subscription bills. Payments are linked by season key (transactions.fiscal_year = player_subscriptions.year), so a legacy payment made in a later season than its subscription is not linked (unless the subscription already points at it).';
 
     public function handle(RecalculatePlayerDebtService $debt): int
     {

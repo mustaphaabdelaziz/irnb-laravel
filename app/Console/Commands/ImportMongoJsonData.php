@@ -19,6 +19,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Models\WebsiteConfig;
 use App\Services\Player\MembershipNumber;
+use App\Support\FiscalPeriod;
 use Carbon\Carbon;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -268,7 +269,8 @@ class ImportMongoJsonData extends Command
             }
 
             $amount = is_array($row['amount'] ?? null) ? $row['amount'] : [];
-            $year = (int) ($row['year'] ?? now()->year);
+            // Subscription years are season keys, so a missing one means this season.
+            $year = (int) ($row['year'] ?? FiscalPeriod::currentKey());
 
             $subscription = Subscription::updateOrCreate(
                 [
@@ -617,9 +619,9 @@ class ImportMongoJsonData extends Command
                 ? ($this->transactionMap[$transactionLegacyId] ?? null)
                 : null;
 
-            $year = (int) ($row['year'] ?? now()->year);
+            $year = (int) ($row['year'] ?? FiscalPeriod::currentKey());
             if ($year < 1900 || $year > 9999) {
-                $year = (int) now()->year;
+                $year = FiscalPeriod::currentKey();
             }
 
             PlayerSubscription::query()->updateOrCreate(
@@ -1139,14 +1141,8 @@ class ImportMongoJsonData extends Command
 
     private function resolveFiscalYear(mixed $value, Carbon $transactionDate): int
     {
-        if (is_numeric($value)) {
-            $year = (int) $value;
-            if ($year >= 1900 && $year <= 9999) {
-                return $year;
-            }
-        }
-
-        return (int) $transactionDate->year;
+        // The legacy value is ignored by design: a transaction belongs to the season of its date.
+        return FiscalPeriod::keyForDate($transactionDate);
     }
 
     private function resolveTransactionId(mixed $value): ?int

@@ -8,6 +8,7 @@ use App\Models\Transaction;
 use App\Services\Dashboard\Support\BranchScope;
 use App\Services\Dashboard\Support\DeltaCalculator;
 use App\Services\Dashboard\Support\MonthBucket;
+use App\Support\FiscalPeriod;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
@@ -212,7 +213,8 @@ class HeroStats
 
     private function effectiveDueDate(): string
     {
-        return "COALESCE(player_subscriptions.due_date, (player_subscriptions.year || '-12-31'))";
+        // Without a due date a subscription is due when its season ends.
+        return "COALESCE(player_subscriptions.due_date, (player_subscriptions.year || '".FiscalPeriod::endSuffix()."'))";
     }
 
     /** @return list<float> */

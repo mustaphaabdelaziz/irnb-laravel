@@ -11,6 +11,7 @@ use App\Services\Activity\ActivityRecorder;
 use App\Services\Finance\DefaultRegisterResolver;
 use App\Services\Finance\RecalculatePlayerDebtService;
 use App\Services\Finance\ResolvePaymentStatusService;
+use DateTimeInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -113,16 +114,19 @@ class PlayerTransactionController extends Controller
         DB::transaction(function () use ($request, $transaction, $player, $validated, $method, $description, $userId, $financeAccountId) {
             $transaction->update(['archived' => true]);
             $created = [];
+            // The replacement is the same payment corrected, so it keeps the
+            // day the money came in — and with it, its season.
+            $date = $transaction->transaction_date;
 
             if ($transaction->category === 'subscription' && $transaction->player_subscription_id) {
                 $sub = PlayerSubscription::find($transaction->player_subscription_id);
                 if ($sub) {
                     // amount_paid was recomputed (minus the archived tx) by the observer.
                     $sub->refresh();
-                    $created = $this->createSubscriptionPayment($sub, $player, (float) $validated['amount'], $method, $description, $userId, $financeAccountId);
+                    $created = $this->createSubscriptionPayment($sub, $player, (float) $validated['amount'], $method, $description, $userId, $financeAccountId, $date);
                 }
             } else {
-                $created = [$this->createPlayerLevelPayment($player, $transaction->category, (float) $validated['amount'], $method, $description, $userId, $financeAccountId)];
+                $created = [$this->createPlayerLevelPayment($player, $transaction->category, (float) $validated['amount'], $method, $description, $userId, $financeAccountId, $date)];
             }
 
             // One event for the edit: the archive-and-recreate is not a
@@ -192,8 +196,9 @@ class PlayerTransactionController extends Controller
         ?string $description,
         ?int $userId,
         ?int $financeAccountId,
+        ?DateTimeInterface $date = null,
     ): array {
-        return DB::transaction(function () use ($sub, $player, $amount, $method, $description, $userId, $financeAccountId) {
+        return DB::transaction(function () use ($sub, $player, $amount, $method, $description, $userId, $financeAccountId, $date) {
             $created = [];
             // remaining_amount is discount- and exemption-aware: only what is
             // genuinely still owed may land on the subscription, the rest is a donation.
@@ -209,7 +214,7 @@ class PlayerTransactionController extends Controller
 
                 $transaction = Transaction::create([
                     'amount' => $subPortion,
-                    'transaction_date' => now(),
+                    'transaction_date' => $date ?? now(),
                     'transaction_type' => 'income',
                     'category' => 'subscription',
                     'description' => $description,
@@ -220,7 +225,6 @@ class PlayerTransactionController extends Controller
                     'recorded_by_user_id' => $userId,
                     'finance_account_id' => $financeAccountId,
                     'status' => $status,
-                    'fiscal_year' => $sub->year,
                 ]);
 
                 $sub->update(['transaction_id' => $transaction->id]);
@@ -228,7 +232,7 @@ class PlayerTransactionController extends Controller
             }
 
             if ($donationPortion > 0) {
-                $created[] = $this->createPlayerLevelPayment($player, 'donation', $donationPortion, $method, $description, $userId, $financeAccountId);
+                $created[] = $this->createPlayerLevelPayment($player, 'donation', $donationPortion, $method, $description, $userId, $financeAccountId, $date);
             }
 
             return $created;
@@ -283,10 +287,11 @@ class PlayerTransactionController extends Controller
         ?string $description,
         ?int $userId,
         ?int $financeAccountId,
+        ?DateTimeInterface $date = null,
     ): Transaction {
         return Transaction::create([
             'amount' => $amount,
-            'transaction_date' => now(),
+            'transaction_date' => $date ?? now(),
             'transaction_type' => 'income',
             'category' => $category,
             'description' => $description,
@@ -297,7 +302,6 @@ class PlayerTransactionController extends Controller
             'recorded_by_user_id' => $userId,
             'finance_account_id' => $financeAccountId,
             'status' => 'Paid',
-            'fiscal_year' => (int) now()->year,
         ]);
     }
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\FiscalYear;
 use App\Services\FinanceService;
+use App\Support\FiscalPeriod;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,13 +24,13 @@ class FiscalYearController extends Controller
         FiscalYear::create([
             'year' => $data['year'],
             'label' => $data['label'] ?? null,
-            'start_date' => $data['year'].'-01-01',
-            'end_date' => $data['year'].'-12-31',
+            'start_date' => FiscalPeriod::start($data['year'])->toDateString(),
+            'end_date' => FiscalPeriod::end($data['year'])->toDateString(),
             'status' => 'open',
             'opening_balance' => $data['opening_balance'] ?? 0,
         ]);
 
-        return back()->with('success', ['key' => 'flash.fiscal_year_created', 'params' => ['year' => $data['year']]]);
+        return back()->with('success', ['key' => 'flash.fiscal_year_created', 'params' => ['year' => FiscalPeriod::label($data['year'])]]);
     }
 
     public function update(Request $request, FiscalYear $fiscalYear): RedirectResponse
@@ -49,16 +50,24 @@ class FiscalYearController extends Controller
 
     public function close(FiscalYear $fiscalYear, Request $request): RedirectResponse
     {
+        // closeYear never rewrites a closed next season, so say so instead of
+        // claiming the balance was carried forward.
+        $nextAlreadyClosed = FiscalYear::query()
+            ->where('year', $fiscalYear->year + 1)->where('status', 'closed')->exists();
+
         $this->finance->closeYear($fiscalYear, $request->user());
 
-        return back()->with('success', ['key' => 'flash.fiscal_year_closed', 'params' => ['year' => $fiscalYear->year, 'next' => $fiscalYear->year + 1]]);
+        return back()->with('success', [
+            'key' => $nextAlreadyClosed ? 'flash.fiscal_year_closed_no_carry' : 'flash.fiscal_year_closed',
+            'params' => ['year' => FiscalPeriod::label($fiscalYear->year), 'next' => FiscalPeriod::label($fiscalYear->year + 1)],
+        ]);
     }
 
     public function reopen(FiscalYear $fiscalYear): RedirectResponse
     {
         $this->finance->reopenYear($fiscalYear);
 
-        return back()->with('success', ['key' => 'flash.fiscal_year_reopened', 'params' => ['year' => $fiscalYear->year]]);
+        return back()->with('success', ['key' => 'flash.fiscal_year_reopened', 'params' => ['year' => FiscalPeriod::label($fiscalYear->year)]]);
     }
 
     /**
@@ -69,7 +78,7 @@ class FiscalYearController extends Controller
     public function destroy(FiscalYear $fiscalYear): RedirectResponse
     {
         if (! $fiscalYear->isDeletable()) {
-            return back()->with('error', ['key' => 'flash.fiscal_year_not_empty', 'params' => ['year' => $fiscalYear->year]]);
+            return back()->with('error', ['key' => 'flash.fiscal_year_not_empty', 'params' => ['year' => FiscalPeriod::label($fiscalYear->year)]]);
         }
 
         DB::transaction(function () use ($fiscalYear) {
@@ -79,6 +88,6 @@ class FiscalYearController extends Controller
             $fiscalYear->delete();
         });
 
-        return back()->with('success', ['key' => 'flash.fiscal_year_deleted', 'params' => ['year' => $fiscalYear->year]]);
+        return back()->with('success', ['key' => 'flash.fiscal_year_deleted', 'params' => ['year' => FiscalPeriod::label($fiscalYear->year)]]);
     }
 }

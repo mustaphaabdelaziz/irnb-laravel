@@ -584,6 +584,7 @@ function saveSettings() {
                                                 <option v-for="m in 12" :key="m" :value="m">{{ monthName(m) }}</option>
                                             </select>
                                             <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">{{ t('season_start_hint') }}</span>
+                                            <span class="mt-1 block text-xs text-amber-600 dark:text-amber-400">{{ t('season_start_finance_hint') }}</span>
                                             <span v-if="settingsForm.errors['settings.seasonStartMonth']" class="mt-1 block text-xs text-rose-500">{{ settingsForm.errors['settings.seasonStartMonth'] }}</span>
                                         </label>
                                     </div>

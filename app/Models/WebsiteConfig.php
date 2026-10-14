@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Once;
 
 class WebsiteConfig extends Model
 {
@@ -60,6 +61,11 @@ class WebsiteConfig extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::saved(fn () => Once::flush());
+    }
+
     public function lastModifiedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'last_modified_by_user_id');
@@ -83,7 +89,6 @@ class WebsiteConfig extends Model
                     'timezone' => 'Africa/Algiers',
                     'dateFormat' => 'DD/MM/YYYY',
                     'defaultLanguage' => 'ar',
-                    'fiscalYearStart' => '01-01',
                     'seasonStartMonth' => 9,
                     'enableDonations' => true,
                     'maintenanceMode' => false,

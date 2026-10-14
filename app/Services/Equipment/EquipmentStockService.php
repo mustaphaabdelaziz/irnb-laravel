@@ -9,7 +9,6 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -208,9 +207,6 @@ class EquipmentStockService
                     'recorded_by_user_id' => $userId,
                     'finance_account_id' => $data['finance_account_id'] ?? null,
                     'status' => 'Paid',
-                    // The purchase date's year, not today's — a backdated
-                    // purchase belongs to the year it happened.
-                    'fiscal_year' => Carbon::parse($purchaseDate)->year,
                 ]);
                 $transactionId = $expense->id;
 

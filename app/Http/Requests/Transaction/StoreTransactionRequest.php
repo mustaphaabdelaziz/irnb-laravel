@@ -42,7 +42,6 @@ class StoreTransactionRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'status' => ['nullable', 'in:Paid,Partial,Unpaid,Exempt'],
             'receipt' => ['nullable', 'file', 'max:10240'],
-            'fiscal_year' => ['nullable', 'integer', 'min:2000', 'max:'.(date('Y') + 1)],
         ];
     }
 }

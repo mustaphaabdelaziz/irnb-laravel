@@ -40,9 +40,8 @@ function reopenYear() {
     router.post(route('finance.years.reopen', props.detail.id), {}, { preserveScroll: true });
 }
 
-const monthLabels = computed(() =>
-    Array.from({ length: 12 }, (_, i) => new Date(2000, i, 1).toLocaleString(locale.value === 'ar' ? 'ar' : (locale.value === 'fr' ? 'fr' : 'en'), { month: 'short' })),
-);
+const monthFormatter = computed(() => new Intl.DateTimeFormat(locale.value === 'ar' ? 'ar' : (locale.value === 'fr' ? 'fr' : 'en'), { month: 'short' }));
+const monthLabels = computed(() => (props.detail?.monthly || []).map((m) => monthFormatter.value.format(new Date(2000, m.month - 1, 1))));
 
 const monthlyChart = computed(() => ({
     labels: monthLabels.value,
@@ -93,7 +92,7 @@ const currentBalance = computed(() => props.accounts.reduce((s, a) => s + Number
                         class="flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-bold transition-colors"
                         :class="y.year === selectedYear ? 'bg-primary-600 text-white shadow-sm' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800'"
                     >
-                        {{ y.year }}
+                        {{ y.season_label }}
                         <span v-if="y.status === 'closed'" class="text-xs opacity-70"><Icon name="check" /></span>
                     </button>
                 </div>
@@ -115,7 +114,7 @@ const currentBalance = computed(() => props.accounts.reduce((s, a) => s + Number
                             <Icon :name="isClosed ? 'archive' : 'check'" />
                         </span>
                         <div>
-                            <p class="text-sm font-bold text-slate-900 dark:text-slate-100">{{ selectedYear }} — {{ isClosed ? t('closed') : t('open') }}</p>
+                            <p class="text-sm font-bold text-slate-900 dark:text-slate-100">{{ detail.season_label }} — {{ isClosed ? t('closed') : t('open') }}</p>
                             <p class="text-xs text-slate-500 dark:text-slate-400">
                                 <template v-if="isClosed">{{ t('closing_balance') }}: {{ formatMoney(detail.closing_balance) }}<span v-if="detail.closed_by"> · {{ detail.closed_by }}</span></template>
                                 <template v-else>{{ t('opening_balance') }}: {{ formatMoney(detail.opening_balance) }}</template>
@@ -225,7 +224,7 @@ const currentBalance = computed(() => props.accounts.reduce((s, a) => s + Number
                                 :class="y.year === selectedYear ? 'bg-primary-50/60 dark:bg-primary-500/5' : ''"
                                 @click="selectYear(y.year)"
                             >
-                                <td class="px-5 py-3 font-bold text-slate-900 dark:text-slate-100">{{ y.year }}</td>
+                                <td class="px-5 py-3 font-bold text-slate-900 dark:text-slate-100">{{ y.season_label }}</td>
                                 <td class="px-5 py-3 text-end text-emerald-700 dark:text-emerald-400">{{ formatMoney(y.total_income) }}</td>
                                 <td class="px-5 py-3 text-end text-rose-700 dark:text-rose-400">{{ formatMoney(y.total_expense) }}</td>
                                 <td class="px-5 py-3 text-end font-semibold" :class="y.net >= 0 ? 'text-slate-900 dark:text-slate-100' : 'text-rose-700 dark:text-rose-400'">{{ formatMoney(y.net) }}</td>

@@ -2,6 +2,7 @@
 
 namespace App\Services\Dashboard;
 
+use App\Support\Season;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 
@@ -15,7 +16,7 @@ use Illuminate\Http\Request;
  */
 class DashboardFilters
 {
-    public const RANGES = ['month', 'last_month', 'quarter', 'year', 'last12', 'all'];
+    public const RANGES = ['month', 'last_month', 'quarter', 'season', 'last12', 'all'];
 
     public const TABS = ['overview', 'finance', 'members', 'operations'];
 
@@ -33,6 +34,9 @@ class DashboardFilters
     public static function fromRequest(Request $request): self
     {
         $range = (string) $request->query('range', 'month');
+        if ($range === 'year') {
+            $range = 'season'; // old links
+        }
         if (! in_array($range, self::RANGES, true)) {
             $range = 'month';
         }
@@ -81,11 +85,11 @@ class DashboardFilters
                 $from->subQuarter()->startOfQuarter(),
                 $from->subQuarter()->endOfQuarter(),
             ],
-            'year' => [
-                $from = $now->startOfYear(),
-                $now->endOfYear(),
-                $from->subYear()->startOfYear(),
-                $from->subYear()->endOfYear(),
+            'season' => [
+                $from = ($season = Season::current())->start(),
+                $season->end(),
+                $from->subYear(),
+                $from->subDay()->endOfDay(),
             ],
             'last12' => [
                 $from = $now->startOfMonth()->subMonths(11),

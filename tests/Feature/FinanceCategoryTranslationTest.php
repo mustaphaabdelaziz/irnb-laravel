@@ -6,6 +6,7 @@ use App\Models\FinanceCategory;
 use App\Models\FiscalYear;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Support\FiscalPeriod;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
@@ -112,9 +113,9 @@ class FinanceCategoryTranslationTest extends TestCase
 
     private function donationTransaction(): Transaction
     {
-        FiscalYear::firstOrCreate(['year' => now()->year], [
-            'start_date' => now()->startOfYear()->toDateString(),
-            'end_date' => now()->endOfYear()->toDateString(),
+        FiscalYear::firstOrCreate(['year' => FiscalPeriod::currentKey()], [
+            'start_date' => FiscalPeriod::start(FiscalPeriod::currentKey())->toDateString(),
+            'end_date' => FiscalPeriod::end(FiscalPeriod::currentKey())->toDateString(),
             'status' => 'open',
             'opening_balance' => 0,
         ]);
@@ -123,7 +124,7 @@ class FinanceCategoryTranslationTest extends TestCase
         return Transaction::create([
             'amount' => 900, 'transaction_type' => 'income', 'category' => 'donations',
             'finance_category_id' => $donations->id, 'status' => 'Paid',
-            'transaction_date' => now(), 'fiscal_year' => now()->year,
+            'transaction_date' => now(),
         ]);
     }
 
@@ -167,7 +168,7 @@ class FinanceCategoryTranslationTest extends TestCase
         $this->donationTransaction();
 
         $this->actingAs($this->admin('ar'))
-            ->get(route('finance.index', ['year' => now()->year]))
+            ->get(route('finance.index', ['year' => FiscalPeriod::currentKey()]))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->where('detail.income_by_category.0.name', 'تبرعات')
@@ -197,7 +198,7 @@ class FinanceCategoryTranslationTest extends TestCase
     {
         Transaction::create([
             'amount' => 300, 'transaction_type' => 'income', 'category' => 'debt_payment',
-            'status' => 'Paid', 'transaction_date' => now(), 'fiscal_year' => now()->year,
+            'status' => 'Paid', 'transaction_date' => now(),
         ]);
 
         $cat = FinanceCategory::where('type', 'income')->where('name', 'Debt Payment')->firstOrFail();

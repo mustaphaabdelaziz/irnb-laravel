@@ -19,7 +19,7 @@
 <body>
     @include('pdf.partials.header')
 
-    <div class="title">{{ __('Financial Summary') }} — {{ $year }}</div>
+    <div class="title">{{ __('Financial Summary') }} — {{ $season }}</div>
 
     <table class="cards">
         <tr>

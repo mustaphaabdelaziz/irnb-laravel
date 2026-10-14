@@ -38,14 +38,14 @@ class FixSubscriptionBillingTest extends TestCase
 
         // a legacy bill (to be deleted) + a real payment (to be kept + linked)
         $bill = Transaction::create([
-            'amount' => 2000, 'transaction_date' => now(), 'transaction_type' => 'income',
+            'amount' => 2000, 'transaction_date' => '2025-03-01', 'transaction_type' => 'income',
             'category' => 'subscription', 'status' => 'Unpaid', 'payment_account' => '/',
-            'related_entity_type' => 'Player', 'related_entity_id' => $player->id, 'fiscal_year' => 2025,
+            'related_entity_type' => 'Player', 'related_entity_id' => $player->id,
         ]);
         $payment = Transaction::create([
-            'amount' => 1200, 'transaction_date' => now(), 'transaction_type' => 'income',
+            'amount' => 1200, 'transaction_date' => '2025-03-01', 'transaction_type' => 'income',
             'category' => 'subscription', 'status' => 'Partial',
-            'related_entity_type' => 'Player', 'related_entity_id' => $player->id, 'fiscal_year' => 2025,
+            'related_entity_type' => 'Player', 'related_entity_id' => $player->id,
         ]);
         $ps = PlayerSubscription::create([
             'player_id' => $player->id, 'subscription_id' => $sub->id, 'transaction_id' => $payment->id,
@@ -88,9 +88,9 @@ class FixSubscriptionBillingTest extends TestCase
         $player = $this->makePlayer();
         // real payment, but NO subscription exists for this player/year
         $payment = Transaction::create([
-            'amount' => 500, 'transaction_date' => now(), 'transaction_type' => 'income',
+            'amount' => 500, 'transaction_date' => '2025-03-01', 'transaction_type' => 'income',
             'category' => 'subscription', 'status' => 'Partial',
-            'related_entity_type' => 'Player', 'related_entity_id' => $player->id, 'fiscal_year' => 2025,
+            'related_entity_type' => 'Player', 'related_entity_id' => $player->id,
         ]);
 
         $this->artisan('finance:fix-subscription-billing --force')->assertSuccessful();
@@ -109,9 +109,9 @@ class FixSubscriptionBillingTest extends TestCase
         ]);
         // a real payment of 1200 for the same player/year, not yet linked
         Transaction::create([
-            'amount' => 1200, 'transaction_date' => now(), 'transaction_type' => 'income',
+            'amount' => 1200, 'transaction_date' => '2025-03-01', 'transaction_type' => 'income',
             'category' => 'subscription', 'status' => 'Partial',
-            'related_entity_type' => 'Player', 'related_entity_id' => $player->id, 'fiscal_year' => 2025,
+            'related_entity_type' => 'Player', 'related_entity_id' => $player->id,
         ]);
 
         $this->artisan('finance:fix-subscription-billing --force')->assertSuccessful();
@@ -131,9 +131,9 @@ class FixSubscriptionBillingTest extends TestCase
         ]);
         // an equipment income for the SAME player+year — must NOT be swept into the subscription
         $equip = Transaction::create([
-            'amount' => 700, 'transaction_date' => now(), 'transaction_type' => 'income',
+            'amount' => 700, 'transaction_date' => '2025-03-01', 'transaction_type' => 'income',
             'category' => 'equipment', 'status' => 'Paid',
-            'related_entity_type' => 'Player', 'related_entity_id' => $player->id, 'fiscal_year' => 2025,
+            'related_entity_type' => 'Player', 'related_entity_id' => $player->id,
         ]);
 
         $this->artisan('finance:fix-subscription-billing --force')->assertSuccessful();

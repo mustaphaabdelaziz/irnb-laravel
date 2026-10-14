@@ -150,5 +150,4 @@ class Subscription extends Model
     {
         return $this->year_label ? $this->name.' - '.$this->year_label : $this->name;
     }
-
 }

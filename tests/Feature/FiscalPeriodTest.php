@@ -8,6 +8,7 @@ use App\Models\WebsiteConfig;
 use App\Support\FiscalPeriod;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Once;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -67,5 +68,21 @@ class FiscalPeriodTest extends TestCase
         $fy = FiscalYear::create(['year' => 2027, 'start_date' => '2026-09-01', 'end_date' => '2027-08-31', 'status' => 'open', 'opening_balance' => 0]);
 
         $this->assertSame('2026/2027', $fy->toArray()['season_label']);
+    }
+
+    #[Test]
+    public function startMonth_memoization_does_not_break_functionality(): void
+    {
+        // Verify initial state (September)
+        $this->assertSame('2026/2027', FiscalPeriod::label(2027));
+        $this->assertSame('2026/2027', FiscalPeriod::label(2027)); // Repeated call
+
+        // Changing the config causes memoization to be invalidated and new value is read
+        $this->startMonth(1);
+        $this->assertSame('2027', FiscalPeriod::label(2027));
+
+        // Change back to September
+        $this->startMonth(9);
+        $this->assertSame('2026/2027', FiscalPeriod::label(2027));
     }
 }

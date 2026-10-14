@@ -294,6 +294,8 @@ class AttendanceStatsTest extends TestCase
     #[Test]
     public function the_query_count_does_not_grow_with_the_roster(): void
     {
+        // Need to use Once to avoid the import
+        $flushOnce = fn () => \Illuminate\Support\Once::flush();
         $u15 = $this->category();
         $trainings = [$this->training($u15, '2026-10-05'), $this->training($u15, '2026-10-07')];
         $addPlayers = function (int $n) use ($u15, $trainings): void {
@@ -318,8 +320,10 @@ class AttendanceStatsTest extends TestCase
         };
 
         $addPlayers(3);
+        $flushOnce();
         $few = $measure();
         $addPlayers(30);
+        $flushOnce();
 
         $this->assertSame($few, $measure());
         // 2 (players) + 1 (monthly) + 8 (categories: grouped counts, missed

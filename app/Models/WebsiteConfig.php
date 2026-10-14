@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Once;
 
 class WebsiteConfig extends Model
 {
@@ -58,6 +59,11 @@ class WebsiteConfig extends Model
             'seo' => 'array',
             'documents' => 'array',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saved(fn () => Once::flush());
     }
 
     public function lastModifiedBy(): BelongsTo

@@ -247,8 +247,10 @@ class DashboardAttendanceCardTest extends TestCase
         };
 
         $flag(3);
+        \Illuminate\Support\Once::flush();
         $few = $measure();
         $flag(27);
+        \Illuminate\Support\Once::flush();
 
         $this->assertSame($few, $measure());
     }

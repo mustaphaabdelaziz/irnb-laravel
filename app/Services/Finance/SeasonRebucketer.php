@@ -43,6 +43,7 @@ class SeasonRebucketer
                 });
 
             $years = FiscalYear::all();
+            $closingBefore = $years->mapWithKeys(fn (FiscalYear $fy) => [$fy->year => $fy->closing_balance]);
             foreach ($years as $fy) {
                 $fy->forceFill([
                     'start_date' => FiscalPeriod::start($fy->year)->toDateString(),
@@ -51,7 +52,7 @@ class SeasonRebucketer
                 $this->finance->recomputeYear($fy);
             }
 
-            $this->carryClosedBalancesForward();
+            $this->carryClosedBalancesForward($closingBefore->all());
 
             return ['moved' => $moved, 'years' => $years->count()];
         });
@@ -62,10 +63,19 @@ class SeasonRebucketer
      * have changed and the season after it must open on the new figure — even
      * when that season is closed too, since its contents changed as well. The
      * first closed season of a chain keeps the opening balance the club set.
+     *
+     * Only a season whose closed predecessor's closing actually changed in this
+     * run (or was itself re-chained here) is touched, so an opening balance the
+     * club typed by hand survives a run that moved nothing into the season
+     * before it. A closed → open → closed sequence is deliberately left alone:
+     * an open season stores no closing balance to hand on.
+     *
+     * @param  array<int, mixed>  $closingBefore  closing_balance per year before this run's recompute
      */
-    private function carryClosedBalancesForward(): void
+    private function carryClosedBalancesForward(array $closingBefore): void
     {
         $years = FiscalYear::query()->orderBy('year')->get()->keyBy('year');
+        $rechained = [];
 
         foreach ($years as $year) {
             $previous = $years->get($year->year - 1);
@@ -73,10 +83,17 @@ class SeasonRebucketer
                 continue;
             }
 
+            $closingChanged = round((float) $previous->closing_balance, 2)
+                !== round((float) ($closingBefore[$previous->year] ?? 0), 2);
+            if (! $closingChanged && ! isset($rechained[$previous->year])) {
+                continue;
+            }
+
             // Same model instances throughout: recomputeYear updates a closed
             // row's closing_balance in place, and the next iteration reads it.
             $year->opening_balance = $previous->closing_balance;
             $this->finance->recomputeYear($year);
+            $rechained[$year->year] = true;
         }
     }
 

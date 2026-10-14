@@ -115,6 +115,27 @@ class SeasonRebucketerTest extends TestCase
     }
 
     #[Test]
+    public function a_hand_set_opening_balance_survives_when_nothing_changed_the_closed_season_before_it(): void
+    {
+        // 2026 closed at 500 and its rows already sit in their seasons; the club
+        // then typed 999 as 2027's opening. Nothing moves, so 999 must stay.
+        $s2026 = FiscalYear::updateOrCreate(['year' => 2026], [
+            'start_date' => '2025-09-01', 'end_date' => '2026-08-31', 'status' => 'closed',
+            'opening_balance' => 0, 'closing_balance' => 500, 'total_income' => 500,
+        ]);
+        $s2027 = FiscalYear::updateOrCreate(['year' => 2027], [
+            'start_date' => '2026-09-01', 'end_date' => '2027-08-31', 'status' => 'open', 'opening_balance' => 999,
+        ]);
+        $this->legacyRow('2026-03-01', 'income', 500, $s2026);
+
+        $result = app(SeasonRebucketer::class)->run();
+
+        $this->assertSame(0, $result['moved']);
+        $this->assertEquals(500, (float) $s2026->fresh()->closing_balance);
+        $this->assertEquals(999, (float) $s2027->fresh()->opening_balance);
+    }
+
+    #[Test]
     public function a_transaction_whose_season_has_no_row_yet_gets_one(): void
     {
         $cal2026 = $this->legacyYear(2026);

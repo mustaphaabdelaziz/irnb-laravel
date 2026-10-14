@@ -18,18 +18,20 @@ const props = defineProps({
 });
 
 const editing = ref(null);
-const form = useForm({ name: { en: '', fr: '', ar: '' }, permissions: {} });
+const form = useForm({ name: { en: '', fr: '', ar: '' }, permissions: {}, own_teams_only: false });
 
 function openCreate() {
     editing.value = 'new';
     form.reset();
     form.name = { en: '', fr: '', ar: '' };
     form.permissions = {};
+    form.own_teams_only = false;
 }
 function openEdit(role) {
     editing.value = role;
     form.name = { en: role.name?.en ?? '', fr: role.name?.fr ?? '', ar: role.name?.ar ?? '' };
     form.permissions = JSON.parse(JSON.stringify(role.permissions ?? {}));
+    form.own_teams_only = !!role.own_teams_only;
 }
 function save() {
     if (editing.value === 'new') {
@@ -90,6 +92,13 @@ function roleName(role) {
                 <InputError :message="form.errors.permissions" class="mt-1" />
 
                 <PermissionGrid v-model="form.permissions" :groups="moduleGroups" :actions="actions" class="mt-4" />
+                <label class="mt-4 flex items-start gap-2 text-sm text-slate-700 dark:text-slate-200">
+                    <input v-model="form.own_teams_only" type="checkbox" class="mt-0.5 rounded border-slate-300 dark:border-slate-700" />
+                    <span>
+                        <span class="font-medium">{{ t('comp.own_teams_only') }}</span>
+                        <span class="block text-xs text-slate-500 dark:text-slate-400">{{ t('comp.own_teams_only_help') }}</span>
+                    </span>
+                </label>
 
                 <div class="mt-4 flex justify-end gap-2">
                     <SecondaryButton @click="editing = null">{{ t('cancel') }}</SecondaryButton>

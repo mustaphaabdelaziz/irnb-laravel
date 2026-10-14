@@ -38,10 +38,17 @@ class RoleSeeder extends Seeder
             'permissions' => [
                 'players' => ['view', 'add', 'edit'],
                 'attendance' => ['view', 'add', 'edit'],
+                'teams' => ['view', 'edit'],
+                'competitions' => ['view', 'add', 'edit'],
+                'games' => ['view', 'add', 'edit'],
+                'game_formats' => ['view'],
+                'opponents' => ['view', 'add'],
+                'venues' => ['view', 'add'],
                 'equipment' => ['view'],
                 'inventory' => ['view'],
             ],
             'is_system' => false,
+            'own_teams_only' => true,
         ]);
     }
 }

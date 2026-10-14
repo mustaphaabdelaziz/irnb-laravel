@@ -25,6 +25,7 @@ class RoleController extends Controller
         $validated = $this->validateRole($request);
         $validated['key'] = $this->uniqueKey($validated['name']);
         $validated['permissions'] = $this->sanitisePermissions($validated['permissions'] ?? []);
+        $validated['own_teams_only'] = $request->boolean('own_teams_only');
 
         Role::create($validated);
 
@@ -35,6 +36,7 @@ class RoleController extends Controller
     {
         $validated = $this->validateRole($request);
         $validated['permissions'] = $this->sanitisePermissions($validated['permissions'] ?? []);
+        $validated['own_teams_only'] = $request->boolean('own_teams_only');
 
         // The superadmin system role always keeps full access.
         if ($role->key === 'superadmin') {
@@ -82,6 +84,7 @@ class RoleController extends Controller
                     }
                 }
             }],
+            'own_teams_only' => ['sometimes', 'boolean'],
         ]);
     }
 

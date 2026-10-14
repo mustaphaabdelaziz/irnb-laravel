@@ -19,6 +19,7 @@ const { t } = useI18n();
 // Section keys → the sidebar's own labels.
 const SECTION_LABELS = {
     members: 'nav_members',
+    competitions: 'nav.competitions',
     finance: 'nav_finance',
     equipment: 'nav_equipment',
     board: 'nav.board_of_directors',

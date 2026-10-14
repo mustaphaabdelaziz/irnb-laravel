@@ -20,12 +20,14 @@ class Role extends Model
      */
     public const MODULE_GROUPS = [
         'members' => ['players', 'documents', 'attendance', 'subscriptions'],
+        'competitions' => ['teams', 'competitions', 'games'],
         'finance' => ['transactions', 'finance', 'reports'],
         'equipment' => ['equipment', 'inventory'],
         'board' => ['board'],
         'config' => [
             'categories', 'branches', 'positions', 'player_statuses', 'document_types', 'jobs',
             'board_roles', 'equipment_categories', 'storage_locations',
+            'game_formats', 'opponents', 'venues',
         ],
         'system' => ['users', 'settings'],
     ];
@@ -33,11 +35,13 @@ class Role extends Model
     /** Permission-controlled modules. */
     public const MODULES = [
         'players', 'documents', 'attendance', 'subscriptions',
+        'teams', 'competitions', 'games',
         'transactions', 'finance', 'reports',
         'equipment', 'inventory',
         'board',
         'categories', 'branches', 'positions', 'player_statuses', 'document_types', 'jobs',
         'board_roles', 'equipment_categories', 'storage_locations',
+        'game_formats', 'opponents', 'venues',
         'users', 'settings',
     ];
 

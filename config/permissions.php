@@ -10,6 +10,10 @@ return [
         // player record (medical certificates, ID copies).
         'players.documents' => 'documents',
         'attendance' => 'attendance',
+        // Competitions & matches. Coaches are further limited to their own teams (TeamAccess).
+        'teams' => 'teams',
+        'competitions' => 'competitions',
+        'games' => 'games',
         'subscriptions' => 'subscriptions',
         'transactions' => 'transactions',
         'finance' => 'finance',
@@ -28,6 +32,9 @@ return [
         'document-types' => 'document_types',
         'equipment-categories' => 'equipment_categories',
         'storage-locations' => 'storage_locations',
+        'game-formats' => 'game_formats',
+        'opponents' => 'opponents',
+        'venues' => 'venues',
         'settings' => 'settings',
     ],
 
@@ -83,6 +90,8 @@ return [
         // Custom codes are settings too: adding or deleting one changes how every mark reads.
         'attendance.custom-statuses.store' => ['attendance', 'edit'],
         'attendance.custom-statuses.destroy' => ['attendance', 'edit'],
+        // "convocation" is not a view verb: printing the call-up sheet must not need edit rights.
+        'games.convocation' => ['games', 'view'],
         'transactions.receipt' => ['transactions', 'view'],
         'reports.financial' => ['reports', 'view'],
         'finance.index' => ['finance', 'view'],

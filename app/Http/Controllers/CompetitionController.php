@@ -146,6 +146,9 @@ class CompetitionController extends Controller
                     'ends_on' => $s->ends_on,
                     'reason' => $s->reason,
                     'trigger' => $s->game ? ['date' => $s->game->date, 'opponent' => $s->game->opponent?->name] : null,
+                    // Same rule as CompetitionSuspensionController::destroy.
+                    'deletable' => $s->source === 'manual'
+                        && ($s->competition_id === $competition->id || ($s->competition_id === null && $s->team_id === (int) $competition->team_id)),
                 ])->sortByDesc('active')->values();
             })(),
         ]);

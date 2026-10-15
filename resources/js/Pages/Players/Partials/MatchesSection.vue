@@ -9,12 +9,16 @@ const { t } = useI18n();
 const props = defineProps({ player: Object });
 const data = ref(null);
 const loading = ref(true);
+const failed = ref(false);
 
 async function load(season = null) {
     loading.value = true;
+    failed.value = false;
     try {
         const response = await window.axios.get(route('games.players.show', { player: props.player.id, ...(season ? { season } : {}) }));
         data.value = response.data;
+    } catch {
+        failed.value = true;
     } finally {
         loading.value = false;
     }
@@ -32,9 +36,10 @@ const sanctionLabel = (key) => {
             <h2 class="text-lg font-semibold">{{ t('games') }}</h2>
             <SeasonSelect v-if="data" :model-value="data.season" :seasons="data.seasons" @update:model-value="load($event)" />
         </div>
+        <p v-if="failed" class="text-sm text-rose-600 dark:text-rose-400">{{ t('comp.load_failed') }}</p>
         <p v-if="loading && !data" class="text-sm text-slate-500">…</p>
         <template v-else-if="data">
-            <div v-for="s in data.suspensions" :key="`${s.competition}-${s.until}-${s.remaining}`" class="rounded-lg bg-rose-50 p-2 text-sm text-rose-800 dark:bg-rose-900/30 dark:text-rose-200">
+            <div v-for="s in data.suspensions" :key="s.id" class="rounded-lg bg-rose-50 p-2 text-sm text-rose-800 dark:bg-rose-900/30 dark:text-rose-200">
                 ⛔ {{ t('comp.flag.suspended') }} — {{ s.until ? t('comp.flag.suspended_until', { date: s.until }) : t('comp.flag.suspended_left', { n: s.remaining }) }}
                 <span v-if="s.competition">· {{ s.competition }}</span><span v-if="s.reason"> · {{ s.reason }}</span>
             </div>

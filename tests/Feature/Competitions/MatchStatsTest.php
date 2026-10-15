@@ -100,6 +100,20 @@ class MatchStatsTest extends TestCase
     }
 
     #[Test]
+    public function leaderboard_ties_are_broken_by_name(): void
+    {
+        $row = fn (int $id, string $name) => ['player_id' => $id, 'name' => $name, 'sport' => 'football', 'goals' => 2, 'assists' => 1, 'minutes' => 90,
+            'sets' => 0, 'appearances' => 1, 'reds' => 0, 'yellows' => 1, 'rated' => 3, 'avg_rating' => 7.0];
+        $rows = [$row(1, 'Zaid'), $row(2, 'Amine'), $row(3, 'Karim')];
+
+        foreach (MatchStats::leaderboards($rows) as $metric => $board) {
+            if ($metric !== 'sets') {
+                $this->assertSame(['Amine', 'Karim', 'Zaid'], array_column($board, 'name'), $metric);
+            }
+        }
+    }
+
+    #[Test]
     public function stats_need_games_view(): void
     {
         $team = $this->team();

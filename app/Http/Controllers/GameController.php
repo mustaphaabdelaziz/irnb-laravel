@@ -24,6 +24,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -173,11 +174,13 @@ class GameController extends Controller
                 TeamAccess::authorize($request->user(), $game->team, $data['season_start_year']);
             }
         }
-        $game->update($data);
-        // A status change (played <-> postponed) changes which reports count.
-        if ($game->competition_id !== null) {
-            $engine->recompute($game->competition);
-        }
+        DB::transaction(function () use ($game, $data, $engine) {
+            $game->update($data);
+            // A status change (played <-> postponed) changes which reports count.
+            if ($game->competition_id !== null) {
+                $engine->recompute($game->competition);
+            }
+        });
 
         return back()->with('success', 'flash.game_updated');
     }

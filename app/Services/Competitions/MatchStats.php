@@ -7,6 +7,7 @@ use App\Models\Game;
 use App\Models\GameEvent;
 use App\Models\GamePlayer;
 use App\Models\Player;
+use Illuminate\Support\Collection;
 
 /**
  * Player statistics from played matches: an appearance is a called-up player
@@ -101,20 +102,21 @@ final class MatchStats
     /** @return array{goals: list, assists: list, minutes: list, sets: list, appearances: list, cards: list, rating: list} */
     public static function leaderboards(array $rows, int $top = 5): array
     {
-        $board = fn (string $metric) => collect($rows)->filter(fn (array $r) => $r[$metric] > 0)
-            ->sortByDesc($metric)->take($top)->values()->all();
+        // Highest first; ties by name, so the board never reshuffles between loads.
+        $rank = fn (Collection $list, string $metric) => $list
+            ->sort(fn (array $a, array $b) => [$b[$metric], (string) ($a['name'] ?? '')] <=> [$a[$metric], (string) ($b['name'] ?? '')])
+            ->take($top)->values()->all();
+        $board = fn (string $metric) => $rank(collect($rows)->filter(fn (array $r) => $r[$metric] > 0), $metric);
 
         return [
             'goals' => $board('goals'),
             'assists' => $board('assists'),
-            'minutes' => collect($rows)->filter(fn (array $r) => ($r['sport'] ?? null) !== 'volleyball' && $r['minutes'] > 0)
-                ->sortByDesc('minutes')->take($top)->values()->all(),
-            'sets' => collect($rows)->filter(fn (array $r) => ($r['sport'] ?? null) === 'volleyball' && $r['sets'] > 0)
-                ->sortByDesc('sets')->take($top)->values()->all(),
+            'minutes' => $rank(collect($rows)->filter(fn (array $r) => ($r['sport'] ?? null) !== 'volleyball' && $r['minutes'] > 0), 'minutes'),
+            'sets' => $rank(collect($rows)->filter(fn (array $r) => ($r['sport'] ?? null) === 'volleyball' && $r['sets'] > 0), 'sets'),
             'appearances' => $board('appearances'),
-            'cards' => collect($rows)->map(fn (array $r) => $r + ['card_points' => $r['reds'] * 3 + $r['yellows']])
-                ->filter(fn (array $r) => $r['card_points'] > 0)->sortByDesc('card_points')->take($top)->values()->all(),
-            'rating' => collect($rows)->filter(fn (array $r) => $r['rated'] >= 3)->sortByDesc('avg_rating')->take($top)->values()->all(),
+            'cards' => $rank(collect($rows)->map(fn (array $r) => $r + ['card_points' => $r['reds'] * 3 + $r['yellows']])
+                ->filter(fn (array $r) => $r['card_points'] > 0), 'card_points'),
+            'rating' => $rank(collect($rows)->filter(fn (array $r) => $r['rated'] >= 3), 'avg_rating'),
         ];
     }
 

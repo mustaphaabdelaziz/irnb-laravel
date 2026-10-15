@@ -62,6 +62,28 @@ class ManualSuspensionsTest extends TestCase
     }
 
     #[Test]
+    public function the_tab_marks_only_this_competitions_manual_bans_deletable_and_others_are_refused(): void
+    {
+        $team = $this->team();
+        $competition = $this->competition($team, 2026);
+        $other = $this->competition($this->team(), 2026, ['name' => 'Other league']);
+        $p = $this->player($team->category);
+        $this->onRoster($team, 2026, [$p]);
+        $admin = $this->admin();
+        $mine = Suspension::create(['player_id' => $p->id, 'competition_id' => $competition->id, 'team_id' => $team->id, 'source' => 'manual', 'kind' => 'matches', 'matches_count' => 1, 'starts_on' => '2026-10-01']);
+        $teamWide = Suspension::create(['player_id' => $p->id, 'team_id' => $team->id, 'source' => 'manual', 'kind' => 'matches', 'matches_count' => 1, 'starts_on' => '2026-10-01']);
+        $elsewhere = Suspension::create(['player_id' => $p->id, 'team_id' => $other->team_id, 'source' => 'manual', 'kind' => 'matches', 'matches_count' => 1, 'starts_on' => '2026-10-01']);
+        $foreign = Suspension::create(['player_id' => $p->id, 'competition_id' => $other->id, 'team_id' => $other->team_id, 'source' => 'manual', 'kind' => 'matches', 'matches_count' => 1, 'starts_on' => '2026-10-01']);
+
+        $this->actingAs($admin)->get(route('competitions.show', $competition))
+            ->assertInertia(fn (Assert $page) => $page->has('suspensions', 3)
+                ->where('suspensions', fn ($rows) => collect($rows)->pluck('deletable', 'id')->sortKeys()->all() === [$mine->id => true, $teamWide->id => true, $elsewhere->id => false]));
+
+        $this->actingAs($admin)->delete(route('competitions.suspensions.destroy', [$competition, $foreign]))->assertForbidden();
+        $this->assertModelExists($foreign);
+    }
+
+    #[Test]
     public function coaches_are_scoped_and_routes_need_competition_edit(): void
     {
         $team = $this->team();

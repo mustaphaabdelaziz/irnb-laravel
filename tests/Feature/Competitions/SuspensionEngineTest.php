@@ -10,6 +10,7 @@ use App\Models\GamePlayer;
 use App\Models\Suspension;
 use App\Services\Competitions\SuspensionEngine;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\CompetitionFixtures;
 use Tests\TestCase;
@@ -136,8 +137,59 @@ class SuspensionEngineTest extends TestCase
             'red_ban_matches' => 3, 'yellow_threshold' => null, 'yellow_ban_matches' => 1, 'notes' => null,
         ])->assertSessionHasNoErrors();
         $this->assertSame(3, Suspension::sole()->matches_count);
+    }
 
-        $this->actingAs($admin)->delete(route('games.destroy', $game))->assertRedirect();
+    #[Test]
+    public function deleting_an_earlier_match_recomputes_the_bans_of_later_ones(): void
+    {
+        $team = $this->team();
+        $competition = $this->competition($team, 2026, ['yellow_threshold' => 2, 'yellow_ban_matches' => 1]);
+        $p = $this->player($team->category);
+        $first = $this->played($competition, '2026-10-01', [[$p, 'yellow']]);
+        $second = $this->played($competition, '2026-10-08', [[$p, 'yellow']]);
+        app(SuspensionEngine::class)->recompute($competition);
+        $this->assertSame($second->id, Suspension::sole()->game_id);
+
+        // The ban hangs on the SECOND match: only a recompute (not the foreign key cascade) can remove it.
+        $this->actingAs($this->admin())->delete(route('games.destroy', $first))->assertRedirect();
+
+        $this->assertSame(0, Suspension::count());
+    }
+
+    #[Test]
+    public function a_played_match_moved_to_postponed_loses_its_bans(): void
+    {
+        $team = $this->team();
+        $competition = $this->competition($team, 2026, ['red_ban_matches' => 1]);
+        $p = $this->player($team->category);
+        $game = $this->played($competition, '2026-10-01', [[$p, 'red']]);
+        app(SuspensionEngine::class)->recompute($competition);
+        $this->assertSame(1, Suspension::count());
+
+        $this->actingAs($this->admin())->put(route('games.update', $game), [
+            'opponent_id' => $game->opponent_id, 'side' => 'home', 'date' => '2026-10-01', 'status' => 'postponed',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(0, Suspension::count());
+    }
+
+    #[Test]
+    public function dropping_the_carded_player_from_the_call_up_removes_the_ban(): void
+    {
+        $team = $this->team();
+        $competition = $this->competition($team, 2026, ['red_ban_matches' => 1]);
+        $p = $this->player($team->category);
+        $this->onRoster($team, 2026, [$p]);
+        DB::table('competition_players')->insert(['competition_id' => $competition->id, 'player_id' => $p->id, 'hidden' => false]);
+        $this->played($competition, '2026-10-01', [[$p, 'red']]);
+        $game = Game::sole();
+        app(SuspensionEngine::class)->recompute($competition);
+        $this->assertSame(1, Suspension::count());
+
+        $this->actingAs($this->admin())->put(route('games.call-up.update', $game), ['players' => [
+            ['player_id' => $p->id, 'called_up' => false],
+        ]])->assertSessionHas('success', 'flash.call_up_saved_events_removed');
+
         $this->assertSame(0, Suspension::count());
     }
 }

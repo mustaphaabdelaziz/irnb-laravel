@@ -19,6 +19,8 @@ const competitionOptions = computed(() => props.competitions
     .filter((c) => !props.filters.team_id || c.team_id === props.filters.team_id)
     .map((c) => ({ value: c.id, label: c.name })));
 const exportHref = computed(() => route('games.stats.export', query.value));
+// Volleyball rows show sets in the minutes column.
+const hasSets = computed(() => props.rows.some((r) => r.sport === 'volleyball'));
 </script>
 
 <template>
@@ -42,7 +44,7 @@ const exportHref = computed(() => route('games.stats.export', query.value));
                 <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
                     <thead class="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-950"><tr>
                         <th class="px-3 py-2 text-start">{{ t('comp.player') }}</th>
-                        <th v-for="c in ['appearances', 'starts', 'minutes', 'goals', 'assists', 'yellows', 'reds', 'avg_rating', 'motm']" :key="c" class="px-3 py-2 text-center">{{ t(`comp.stats.col_${c}`) }}</th>
+                        <th v-for="c in ['appearances', 'starts', 'minutes', 'goals', 'assists', 'yellows', 'reds', 'avg_rating', 'motm']" :key="c" class="px-3 py-2 text-center">{{ c === 'minutes' && hasSets ? t('comp.stats.col_minutes_sets') : t(`comp.stats.col_${c}`) }}</th>
                     </tr></thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                         <tr v-for="r in rows" :key="`${r.player_id}-${r.sport}`">

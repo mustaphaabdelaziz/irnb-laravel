@@ -49,7 +49,10 @@ function addBan() {
     banForm.transform((d) => ({ ...d, matches_count: d.kind === 'matches' ? d.matches_count : null, starts_on: d.starts_on || null, ends_on: d.kind === 'dates' ? d.ends_on : null }))
         .post(route('competitions.suspensions.store', props.competition.id), { preserveScroll: true, onSuccess: () => banForm.reset() });
 }
-function removeBan(id) {
+const banToRemove = ref(null);
+function removeBan() {
+    const id = banToRemove.value;
+    banToRemove.value = null;
     router.delete(route('competitions.suspensions.destroy', [props.competition.id, id]), { preserveScroll: true });
 }
 const banLabel = (s) => (s.kind === 'dates'
@@ -142,7 +145,7 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
                             </td>
                             <td class="py-1"><bdi dir="ltr">{{ banLabel(s) }}</bdi></td>
                             <td class="py-1">{{ s.active ? t('comp.ban.active') : t('comp.ban.served') }}</td>
-                            <td class="py-1 text-end"><IconButton v-if="canManage && s.source === 'manual'" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="removeBan(s.id)" /></td>
+                            <td class="py-1 text-end"><IconButton v-if="canManage && s.deletable" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="banToRemove = s.id" /></td>
                         </tr>
                         <tr v-if="!suspensions.length"><td colspan="5" class="py-6 text-center text-slate-500">{{ t('comp.ban.none') }}</td></tr>
                     </tbody>
@@ -154,7 +157,7 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
                         <select v-model="banForm.player_id" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800" required>
                             <option v-for="r in roster" :key="r.player_id" :value="r.player_id">{{ r.name }}</option>
                         </select>
-                        <InputError :message="banForm.errors.player_id ? t(banForm.errors.player_id) : ''" />
+                        <InputError :message="banForm.errors.player_id" />
                     </label>
                     <label class="text-sm">{{ t('comp.ban.scope') }}
                         <select v-model="banForm.scope" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
@@ -220,5 +223,6 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
         </div>
 
         <ConfirmModal :show="confirmDelete" :message="t('comp.delete_competition_confirm')" @confirm="destroy" @cancel="confirmDelete = false" />
+        <ConfirmModal :show="banToRemove !== null" :message="t('comp.ban.remove_confirm')" @confirm="removeBan" @cancel="banToRemove = null" />
     </AuthenticatedLayout>
 </template>

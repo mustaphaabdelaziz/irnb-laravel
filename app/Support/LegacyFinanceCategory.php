@@ -17,11 +17,15 @@ use Illuminate\Support\Str;
  * rename is harmless) → a category already named like the slug (a club that
  * deleted the seeded one but kept the legacy twin) → the single "Other" of
  * that type, recreated once if it was deleted.
+ *
+ * A twin found by name takes the free seeded code (saved quietly), so a later
+ * rename in the manager no longer sends its payments to "Other". The data
+ * migration give_legacy_finance_categories_their_codes does the same up front.
  */
 final class LegacyFinanceCategory
 {
     /** Slug => code of the category seeded by create_finance_tables. */
-    private const CODES = [
+    public const CODES = [
         'income' => [
             'subscription' => 'SUB', 'subscriptions' => 'SUB',
             'membership_fee' => 'MEM', 'membership_fees' => 'MEM',
@@ -60,9 +64,15 @@ final class LegacyFinanceCategory
 
         if ($slug !== '') {
             $twin = FinanceCategory::where('type', $type)
-                ->where('name', Str::title(str_replace('_', ' ', $slug)))
+                ->where('name', self::twinName($slug))
                 ->orderBy('id')->first();
             if ($twin) {
+                // The code is free (the lookup above found nothing): claim it.
+                if ($code && blank($twin->code)) {
+                    $twin->code = $code;
+                    $twin->saveQuietly();
+                }
+
                 return $twin;
             }
         }
@@ -74,6 +84,12 @@ final class LegacyFinanceCategory
                 ['type' => $type, 'name' => $otherName],
                 ['code' => $otherCode, 'is_active' => true, 'is_system' => true],
             );
+    }
+
+    /** The name the old observer gave a slug's category: "debt_payment" → "Debt Payment". */
+    public static function twinName(string $slug): string
+    {
+        return Str::title(str_replace('_', ' ', $slug));
     }
 
     private static function byCode(string $type, string $code): ?FinanceCategory

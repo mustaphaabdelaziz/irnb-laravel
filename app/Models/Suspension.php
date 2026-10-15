@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -11,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Suspension extends Model
 {
+    use SerializesClubDates;
+
     protected $fillable = [
         'player_id', 'competition_id', 'team_id', 'source', 'kind', 'matches_count',
         'starts_on', 'ends_on', 'cause', 'game_id', 'reason', 'created_by',

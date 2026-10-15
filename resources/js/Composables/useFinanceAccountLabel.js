@@ -12,6 +12,7 @@ export function isLegacyAutoName(account) {
 /**
  * One label for a money account on every page: "Football safe" for a coffre,
  * "Caisse seniors — Football" for a caisse, the name alone at club level.
+ * Keep in step with app/Support/FinanceAccountLabel.php.
  */
 export function useFinanceAccountLabel() {
     const { t } = useI18n();
@@ -21,6 +22,10 @@ export function useFinanceAccountLabel() {
     const caisseName = (account) => {
         if (isLegacyAutoName(account)) {
             return account.category.localized_name || account.category.name;
+        }
+        // The club-level cash account the app seeded, under its English seed name.
+        if (!account.branch && !account.is_treasury && account.name === 'Cash') {
+            return t('caisses.club_cash');
         }
         return account.name;
     };

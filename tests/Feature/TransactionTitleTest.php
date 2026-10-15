@@ -8,6 +8,7 @@ use App\Models\PlayerSubscription;
 use App\Models\Subscription;
 use App\Models\Transaction;
 use App\Support\TransactionTitle;
+use App\Support\UiLang;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -100,18 +101,16 @@ class TransactionTitleTest extends TestCase
     }
 
     #[Test]
-    public function a_category_slug_that_collides_with_an_unrelated_ui_key_is_headlined_not_mistranslated(): void
+    public function without_its_category_an_entry_is_named_by_its_type_never_its_slug(): void
     {
-        // 'paid' is a UI key for payment status ("مدفوع" in Arabic); a finance
-        // category slug that happens to collide with it must not borrow that
-        // unrelated label. Deliberately not eager-loading financeCategory, so
-        // categoryLabel() falls through to the free-text slug branch.
+        // Deliberately not eager-loading financeCategory: the fallback path.
         $tx = Transaction::create([
-            'amount' => 100, 'transaction_type' => 'expense', 'category' => 'paid', 'status' => 'Paid',
+            'amount' => 100, 'transaction_type' => 'expense', 'category' => 'msaryf_ashghal_almkr', 'status' => 'Paid',
         ]);
 
-        app()->setLocale('ar');
-        $this->assertSame('Paid', TransactionTitle::for($tx));
+        app()->setLocale('fr');
+        $this->assertSame(UiLang::get('expense'), TransactionTitle::for($tx));
+        $this->assertStringNotContainsString('Msaryf', TransactionTitle::for($tx));
     }
 
     #[Test]

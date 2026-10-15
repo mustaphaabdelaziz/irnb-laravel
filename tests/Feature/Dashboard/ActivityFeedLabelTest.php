@@ -5,6 +5,7 @@ namespace Tests\Feature\Dashboard;
 use App\Models\EquipmentCatalog;
 use App\Models\EquipmentItem;
 use App\Models\EquipmentRental;
+use App\Models\FinanceCategory;
 use App\Models\Transaction;
 use App\Services\Dashboard\DashboardFilters;
 use App\Services\Dashboard\OverviewStats;
@@ -47,5 +48,18 @@ class ActivityFeedLabelTest extends TestCase
         ]);
 
         $this->assertSame('assignment', $this->activity()[0]['type']);
+    }
+
+    #[Test]
+    public function an_untitled_transaction_is_named_by_its_category_never_its_slug(): void
+    {
+        app()->setLocale('ar');
+        $works = FinanceCategory::create(['type' => 'expense', 'name' => 'مصاريف أشغال المقر', 'is_active' => true]);
+        Transaction::create([
+            'amount' => 770, 'transaction_type' => 'expense', 'category' => 'msaryf_ashghal_almkr',
+            'finance_category_id' => $works->id, 'status' => 'Paid', 'transaction_date' => now(),
+        ]);
+
+        $this->assertSame('مصاريف أشغال المقر', $this->activity()[0]['label']);
     }
 }

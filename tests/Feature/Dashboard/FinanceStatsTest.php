@@ -341,4 +341,13 @@ class FinanceStatsTest extends TestCase
         $this->assertNull($this->summary()['avg_transaction']['value']);
         $this->assertNull($this->summary()['runway']['value']);
     }
+
+    #[Test]
+    public function an_untitled_largest_expense_is_named_by_its_category(): void
+    {
+        $works = $this->category('expense', 'مصاريف أشغال المقر');
+        $this->transaction('expense', 770, '2026-05-02', ['category' => 'msaryf_ashghal_almkr', 'finance_category_id' => $works->id]);
+
+        $this->assertSame('مصاريف أشغال المقر', $this->summary()['largest_expense']['meta']['label']);
+    }
 }

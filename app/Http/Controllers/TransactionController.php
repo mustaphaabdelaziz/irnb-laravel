@@ -18,6 +18,7 @@ use App\Services\FinanceService;
 use App\Services\Storage\FileStorageService;
 use App\Services\Storage\PrivateFileStorage;
 use App\Support\Export;
+use App\Support\FinanceAccountLabel;
 use App\Support\ListFilter;
 use App\Support\TransactionTitle;
 use App\Support\UiLang;
@@ -96,18 +97,20 @@ class TransactionController extends Controller
 
     public function export(Request $request): SymfonyResponse
     {
-        $query = Transaction::query()->with(['recordedBy', 'financeAccount', ...TransactionTitle::RELATIONS])->where('archived', false);
+        $query = Transaction::query()->with(['recordedBy', ...TransactionTitle::RELATIONS, ...Transaction::FINANCE_ACCOUNT_LABEL])
+            ->where('archived', false);
         $this->applyFilters($query, $request);
 
         $rows = $query->latest('transaction_date')->get()->map(fn (Transaction $t) => [
             $t->transaction_date,
             TransactionTitle::for($t),
             UiLang::get((string) $t->transaction_type, $t->transaction_type),
-            $t->financeCategory?->localized_name ?? $t->category,
+            // The category's own name, never the stored slug.
+            $t->financeCategory?->localized_name ?? UiLang::get((string) $t->transaction_type),
             (float) $t->amount,
             $t->status ? UiLang::get(strtolower($t->status), $t->status) : null,
             $t->payment_method ? UiLang::get(self::PAYMENT_METHOD_KEYS[$t->payment_method] ?? $t->payment_method, $t->payment_method) : null,
-            $t->financeAccount?->name,
+            FinanceAccountLabel::for($t->financeAccount),
             $t->description,
             $t->recordedBy?->name,
         ])->all();

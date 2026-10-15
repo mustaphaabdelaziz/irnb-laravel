@@ -4,6 +4,7 @@ namespace App\Services\Dashboard;
 
 use App\Models\Transaction;
 use App\Services\Dashboard\Support\BranchScope;
+use App\Support\UiLang;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -46,9 +47,13 @@ class FinanceStats
         $average = $entries > 0 ? round((float) $row->amount_total / $entries, 2) : null;
 
         $largest = $this->windowed($filters)
-            ->where('transaction_type', 'expense')
-            ->orderByDesc('amount')
-            ->first(['id', 'amount', 'description', 'category', 'transaction_date']);
+            ->where('transactions.transaction_type', 'expense')
+            ->with('financeCategory:id,name,name_ar,name_fr,name_en')
+            ->orderByDesc('transactions.amount')
+            ->first([
+                'transactions.id', 'transactions.amount', 'transactions.title', 'transactions.description',
+                'transactions.finance_category_id', 'transactions.transaction_date',
+            ]);
 
         $burnRate = $this->burnRate($filters, (float) ($row->expense_total ?? 0));
         $treasury = $this->treasuryBalance($filters);
@@ -65,7 +70,8 @@ class FinanceStats
                 'value' => $largest ? round((float) $largest->amount, 2) : null,
                 'format' => 'money',
                 'meta' => $largest ? [
-                    'label' => $largest->description ?: $largest->category,
+                    // Never the stored slug: title, description, the category's name, else "Expense".
+                    'label' => $largest->title ?: ($largest->description ?: ($largest->financeCategory?->localized_name ?: UiLang::get('expense'))),
                     'date' => $largest->transaction_date?->toDateString(),
                 ] : null,
             ],

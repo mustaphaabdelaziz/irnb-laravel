@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Card } from '@/Components/ui/card';
+import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useStatSelection } from '@/Composables/useStatSelection';
 
 /**
@@ -17,10 +18,14 @@ const props = defineProps({
     modelValue: { type: [String, Number, Array], default: '' },
     // What the total counts; players by default.
     unit: { type: String, default: null },
+    // 'money' when count holds amounts (Transactions): shown as money
+    format: { type: String, default: 'number' },
 });
 const emit = defineEmits(['update:modelValue']);
 
 const { t } = useI18n();
+const { formatMoney } = useFormatMoney();
+const shown = (n) => (props.format === 'money' ? formatMoney(n) : n);
 const { total, pct, clickable, isActive, toggle, hasSelection, selectedTotal, filtered, clear } = useStatSelection(props, emit);
 
 // Bars are scaled to the biggest row, not to the total: with many small rows
@@ -39,7 +44,7 @@ const width = (count) => `${Math.max(2, Math.round((count / max.value) * 100))}%
                     {{ t('filter.clear') }}
                 </button>
                 <span class="font-medium tabular-nums text-slate-500 dark:text-slate-400">
-                    <template v-if="hasSelection">{{ selectedTotal }} / </template>{{ total }} {{ unit ?? t('players') }}
+                    <template v-if="hasSelection">{{ shown(selectedTotal) }} / </template>{{ shown(total) }} {{ unit ?? t('players') }}
                 </span>
             </div>
         </div>
@@ -74,7 +79,7 @@ const width = (count) => `${Math.max(2, Math.round((count / max.value) * 100))}%
                             :style="{ width: width(stat.count) }"></span>
                     </span>
                     <span class="flex items-baseline gap-2 tabular-nums">
-                        <span class="min-w-6 text-end font-semibold text-slate-900 dark:text-slate-100">{{ stat.count }}</span>
+                        <span class="min-w-6 text-end font-semibold text-slate-900 dark:text-slate-100">{{ shown(stat.count) }}</span>
                         <span class="w-9 text-end text-xs text-slate-500 dark:text-slate-400">{{ pct(stat.count) }}%</span>
                     </span>
                 </component>

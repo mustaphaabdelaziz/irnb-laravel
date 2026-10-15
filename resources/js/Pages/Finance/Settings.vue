@@ -41,12 +41,12 @@ const askDeleteYear = (y) => { pending.value = { action: 'delete-year', item: y 
 
 const pendingCopy = computed(() => {
     const p = pending.value;
-    if (!p) return { title: '', message: '', label: '' };
+    if (!p) return { title: '', message: '', label: '', variant: 'danger' };
     switch (p.action) {
-        case 'close': return { title: t('close_year'), message: t('close_year_confirm'), label: t('close_year') };
-        case 'reopen': return { title: t('reopen_year'), message: t('reopen_year_confirm'), label: t('reopen_year') };
-        case 'delete-year': return { title: t('delete_year'), message: t('delete_fiscal_year_confirm', { year: p.item.season_label }), label: t('delete_year') };
-        default: return { title: t('delete'), message: t('confirm_delete'), label: t('delete') };
+        case 'close': return { title: t('close_year'), message: t('close_year_confirm'), label: t('close_year'), variant: 'primary' };
+        case 'reopen': return { title: t('reopen_year'), message: t('reopen_year_confirm'), label: t('reopen_year'), variant: 'primary' };
+        case 'delete-year': return { title: t('delete_year'), message: t('delete_fiscal_year_confirm', { year: p.item.season_label }), label: t('delete_year'), variant: 'danger' };
+        default: return { title: t('delete'), message: t('confirm_delete'), label: t('delete'), variant: 'danger' };
     }
 });
 
@@ -260,6 +260,7 @@ function resetFinance() {
             :title="pendingCopy.title"
             :message="pendingCopy.message"
             :confirm-label="pendingCopy.label"
+            :variant="pendingCopy.variant"
             @confirm="runPending"
             @cancel="pending = null"
         />

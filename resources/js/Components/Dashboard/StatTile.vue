@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/Components/ui/card';
 import Icon from '@/Components/Icon.vue';
 import DeltaBadge from '@/Components/Dashboard/DeltaBadge.vue';
 import Sparkline from '@/Components/Dashboard/Sparkline.vue';
+import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 
 /**
@@ -28,6 +29,7 @@ const props = defineProps({
     href: { type: String, default: null },
 });
 
+const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
 
 const toneClasses = {
@@ -56,7 +58,7 @@ const isEmpty = computed(() => display.value === '—');
     <component
         :is="href ? Link : 'div'"
         :href="href || undefined"
-        class="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
+        class="block min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
     >
         <Card
             class="h-full border-border/70 shadow-none transition-colors"
@@ -70,10 +72,10 @@ const isEmpty = computed(() => display.value === '—');
                              "Outstandi…" is a label that has stopped working. -->
                         <p class="text-sm font-medium leading-snug text-muted-foreground">{{ label }}</p>
                         <p
-                            class="mt-2 text-[1.75rem] font-semibold leading-none tracking-tight tabular-nums"
+                            class="mt-2 text-2xl font-semibold leading-tight tracking-tight tabular-nums [overflow-wrap:anywhere] sm:text-[1.75rem] sm:leading-none"
                             :class="isEmpty ? 'text-muted-foreground/60' : 'text-foreground'"
                         >
-                            {{ display }}
+                            {{ display }}<span v-if="format === 'money' && !isEmpty" class="ms-1 text-sm font-medium text-muted-foreground">{{ t('currency_symbol') }}</span>
                         </p>
                         <DeltaBadge :delta="delta" :period-label="periodLabel" />
                         <p v-if="meta" class="mt-1.5 text-xs text-muted-foreground">{{ meta }}</p>

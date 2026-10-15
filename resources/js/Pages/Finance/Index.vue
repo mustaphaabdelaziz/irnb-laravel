@@ -116,10 +116,10 @@ const currentBalance = computed(() => props.accounts.reduce((s, a) => s + Number
 
                 <!-- KPIs -->
                 <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                    <StatCard :label="t('finance.opening_balance')" :value="formatMoney(detail.opening_balance)" icon="money" color="slate" />
-                    <StatCard :label="t('total_income')" :value="formatMoney(detail.income)" icon="arrow" color="emerald" />
-                    <StatCard :label="t('total_expense')" :value="formatMoney(detail.expense)" icon="transactions" color="rose" />
-                    <StatCard :label="t('net_balance')" :value="formatMoney(detail.net)" icon="check" :color="detail.net >= 0 ? 'primary' : 'rose'" />
+                    <StatCard :label="t('finance.opening_balance')" :value="formatMoney(detail.opening_balance)" icon="money" color="slate" currency />
+                    <StatCard :label="t('total_income')" :value="formatMoney(detail.income)" icon="arrow" color="emerald" currency />
+                    <StatCard :label="t('total_expense')" :value="formatMoney(detail.expense)" icon="transactions" color="rose" currency />
+                    <StatCard :label="t('net_balance')" :value="formatMoney(detail.net)" icon="check" :color="detail.net >= 0 ? 'primary' : 'rose'" currency />
                 </div>
 
                 <!-- Charts -->

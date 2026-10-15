@@ -26,7 +26,7 @@ const props = defineProps({
 const { t } = useI18n();
 const { can } = useCan();
 const { formatMoney } = useFormatMoney();
-const { accountLabel, branchLabel, caisseName, isLegacyAutoName } = useFinanceAccountLabel();
+const { accountLabel, branchLabel, caisseName } = useFinanceAccountLabel();
 
 // Every caisse inside a coffre, so the form can grey out categories already taken in a branch.
 const caisseLinks = computed(() => props.coffres.flatMap((g) => g.caisses.map((c) => ({ id: c.id, branch_id: c.branch_id, category_id: c.category_id }))));
@@ -138,7 +138,7 @@ const formatDate = (value) => (value ? new Date(`${value}T00:00:00`).toLocaleDat
                         <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-2">
                                 <p class="break-words text-sm font-bold text-slate-800 dark:text-slate-100">{{ caisseName(c) }}</p>
-                                <span v-if="c.category && !isLegacyAutoName(c)" class="rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-semibold text-primary-700 dark:bg-primary-500/10 dark:text-primary-300">{{ categoryLabel(c.category) }}</span>
+                                <span v-if="c.category && caisseName(c) !== categoryLabel(c.category)" class="rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-semibold text-primary-700 dark:bg-primary-500/10 dark:text-primary-300">{{ categoryLabel(c.category) }}</span>
                                 <span v-if="!c.is_active" class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('caisses.inactive') }}</span>
                             </div>
                             <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{{ c.transactions_count }} {{ t('transactions').toLowerCase() }}</p>

@@ -947,6 +947,7 @@
     "create": "إنشاء",
     "created_successfully": "تم الإنشاء بنجاح",
     "currency": "رمز العملة",
+    "currency_symbol": "د.ج",
     "current_balance": "الرصيد الحالي",
     "current_password": "كلمة المرور الحالية",
     "current_school": "المؤسسة الحالية",

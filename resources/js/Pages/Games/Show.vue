@@ -7,6 +7,7 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import LineupBoard from '@/Components/Competitions/LineupBoard.vue';
+import MatchReport from '@/Components/Competitions/MatchReport.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { computed, ref } from 'vue';
@@ -15,7 +16,7 @@ import { useCan } from '@/Composables/useCan.js';
 const { t } = useI18n();
 const { can } = useCan();
 
-const props = defineProps({ game: Object, candidates: Array, lineup: Object, opponents: Array, venues: Array, canManage: Boolean });
+const props = defineProps({ game: Object, candidates: Array, lineup: Object, report: Object, opponents: Array, venues: Array, canManage: Boolean });
 
 const callRows = ref(props.candidates.map((c) => ({ ...c, not_called_reason: c.not_called_reason ?? '' })));
 const calledCount = computed(() => callRows.value.filter((r) => r.called_up).length);
@@ -71,7 +72,7 @@ function destroy() {
 
         <div class="mx-auto max-w-5xl space-y-4">
             <nav class="flex flex-wrap gap-1 border-b border-slate-200 dark:border-slate-800">
-                <button v-for="key in ['info', 'callup', 'lineup']" :key="key" type="button" @click="tab = key" class="-mb-px border-b-2 px-3 py-2 text-sm"
+                <button v-for="key in ['info', 'callup', 'lineup', 'report']" :key="key" type="button" @click="tab = key" class="-mb-px border-b-2 px-3 py-2 text-sm"
                     :class="tab === key ? 'border-primary-600 font-semibold text-primary-700 dark:text-primary-300' : 'border-transparent text-slate-500 dark:text-slate-400'">
                     {{ t(`comp.tab_${key}`) }}
                 </button>
@@ -166,6 +167,10 @@ function destroy() {
                     <button type="button" class="text-primary-600 hover:underline" @click="tab = 'callup'">{{ t('comp.tab_callup') }}</button>
                 </p>
                 <LineupBoard v-else :game-id="game.id" :lineup="lineup" :can-manage="canManage" />
+            </section>
+            <section v-if="tab === 'report'" class="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+                <p v-if="!report.players.length" class="text-sm text-slate-500">{{ t('comp.do_callup_first') }}</p>
+                <MatchReport v-else :game-id="game.id" :report="report" :can-manage="canManage" />
             </section>
         </div>
 

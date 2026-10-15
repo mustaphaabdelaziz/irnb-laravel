@@ -21,8 +21,15 @@ class TransactionObserver
      */
     public function saving(Transaction $transaction): void
     {
+        // An entry saved without a date is dated now on the club's clock. Left
+        // empty, the column default (the database clock, UTC on SQLite) would
+        // date it — possibly a day and a season apart from the club's today.
+        if (empty($transaction->transaction_date)) {
+            $transaction->transaction_date = now();
+        }
+
         // The season of the transaction's own date — never a caller's guess.
-        $key = FiscalPeriod::keyForDate($transaction->transaction_date ?: now());
+        $key = FiscalPeriod::keyForDate($transaction->transaction_date);
         $transaction->fiscal_year = $key;
 
         $fy = FiscalYear::firstOrCreate(

@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Services\Backup\BackupService;
 use App\Services\Backup\BackupSettings;
+use App\Support\ClubTimezone;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
@@ -34,6 +35,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Run on the club's clock (Settings → timezone), not the server's, so
+        // "today" and the season of a payment are the club's local ones. The
+        // desktop app boots the same way: its database is wired up by the
+        // NativePHP package provider, which boots before this one.
+        ClubTimezone::apply();
+
         // Inside the NativePHP desktop app the server runs on a dynamic
         // localhost port, so public-disk URLs must be relative to resolve
         // against whatever host/port the window is using.

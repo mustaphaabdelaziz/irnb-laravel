@@ -24,13 +24,19 @@ const props = defineProps({
 
 const isEdit = !!props.transaction;
 
+// Today on the user's clock: toISOString() is UTC, a day behind before 1 AM in Algeria.
+const today = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
 const form = useForm({
     // An untitled (legacy/automatic) transaction pre-fills its generated label.
     title: props.transaction?.title || props.transaction?.display_title || '',
     transaction_type: props.transaction?.transaction_type || 'income',
     finance_category_id: props.transaction?.finance_category_id || '',
     amount: props.transaction?.amount || '',
-    transaction_date: props.transaction?.transaction_date ? String(props.transaction.transaction_date).slice(0, 10) : new Date().toISOString().slice(0, 10),
+    transaction_date: props.transaction?.transaction_date ? String(props.transaction.transaction_date).slice(0, 10) : today(),
     description: props.transaction?.description || '',
     payment_method: props.transaction?.payment_method || 'cash',
     payment_account: props.transaction?.payment_account || '',

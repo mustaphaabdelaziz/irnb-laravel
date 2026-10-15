@@ -133,6 +133,26 @@ const incomeChips = computed(() => props.incomeByCategory.map((r) => ({ key: r.k
 const expenseChips = computed(() => props.expenseByCategory.map((r) => ({ key: r.key ?? '', label: r.label || t('tx.uncategorised'), count: r.count })));
 const accountChips = computed(() => props.byAccount.map((r) => ({ key: r.key ?? '', label: r.label || t('tx.no_caisse'), count: r.count })));
 
+// Both category cards drive the one category filter, but each reads and
+// writes only its own type's ids: one card's Clear leaves the other's alone.
+function categoryCardModel(type, chips) {
+    const ids = computed(() => new Set([
+        ...props.financeCategories.filter((c) => c.type === type).map((c) => String(c.id)),
+        ...chips.value.map((c) => String(c.key)).filter((k) => k !== ''),
+    ]));
+    return computed({
+        get: () => categoryFilter.value.filter((id) => ids.value.has(String(id))),
+        set: (list) => {
+            categoryFilter.value = [
+                ...categoryFilter.value.filter((id) => !ids.value.has(String(id))),
+                ...list.map(String),
+            ];
+        },
+    });
+}
+const incomeCategoryFilter = categoryCardModel('income', incomeChips);
+const expenseCategoryFilter = categoryCardModel('expense', expenseChips);
+
 // --- Header "more" menu ---
 const FORMATS = ['xlsx', 'csv'];
 const withFormat = (href, format) => {
@@ -169,6 +189,7 @@ const isIncome = (tx) => tx.transaction_type === 'income';
 const signedAmount = (tx) => `${isIncome(tx) ? '+' : '−'}${formatMoney(tx.amount)}`;
 const amountClass = (tx) => (isIncome(tx) ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400');
 const categoryName = (tx) => tx.finance_category?.localized_name || tx.finance_category?.name || t('tx.uncategorised');
+const caisseName = (tx) => (tx.finance_account ? accountLabel(tx.finance_account) : t('tx.no_caisse'));
 const typeLabel = (tx) => (isIncome(tx) ? t('income') : t('expense'));
 // The server's title; never the stored slug — else the type, as on the server.
 const titleOf = (tx) => tx.display_title || typeLabel(tx);
@@ -212,21 +233,21 @@ function bulkDestroy() {
                             <IconButton icon="more" :label="t('more_actions')" />
                         </template>
                         <template #content>
-                            <div role="menu" class="py-1">
+                            <div class="py-1">
                                 <template v-if="can('transactions', 'add')">
-                                    <button type="button" role="menuitem" :class="menuItem" @click="importInput?.click()">
+                                    <button type="button" :class="menuItem" @click="importInput?.click()">
                                         <Icon name="upload" :class="menuIcon" /> {{ t('import') }}
                                     </button>
                                     <p :class="menuHeading">{{ t('template') }}</p>
-                                    <a v-for="f in FORMATS" :key="`tpl-${f}`" :href="withFormat(route('transactions.import.template'), f)" download role="menuitem" :class="menuItem">
+                                    <a v-for="f in FORMATS" :key="`tpl-${f}`" :href="withFormat(route('transactions.import.template'), f)" download :class="menuItem">
                                         <Icon name="document" :class="menuIcon" /> {{ t(`export.format.${f}`) }}
                                     </a>
                                 </template>
                                 <p :class="menuHeading">{{ t('export') }}</p>
-                                <a v-for="f in FORMATS" :key="`exp-${f}`" :href="withFormat(exportUrl, f)" download role="menuitem" :class="menuItem">
+                                <a v-for="f in FORMATS" :key="`exp-${f}`" :href="withFormat(exportUrl, f)" download :class="menuItem">
                                     <Icon name="download" :class="menuIcon" /> {{ t(`export.format.${f}`) }}
                                 </a>
-                                <button v-if="can('finance', 'edit')" type="button" role="menuitem" :class="[menuItem, 'mt-1 border-t border-slate-100 dark:border-slate-700']" @click="showCategories = true">
+                                <button v-if="can('finance', 'edit')" type="button" :class="[menuItem, 'mt-1 border-t border-slate-100 dark:border-slate-700']" @click="showCategories = true">
                                     <Icon name="categories" :class="menuIcon" /> {{ t('fincat.title') }}
                                 </button>
                             </div>
@@ -249,8 +270,8 @@ function bulkDestroy() {
                     {{ t('statistics') }}
                 </button>
                 <div v-if="statsOpen" id="transaction-stats" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    <StatBars v-model="categoryFilter" :title="t('tx.by_income_category')" :stats="incomeChips" format="money" :unit="t('currency_symbol')" />
-                    <StatBars v-model="categoryFilter" :title="t('tx.by_expense_category')" :stats="expenseChips" format="money" :unit="t('currency_symbol')" />
+                    <StatBars v-model="incomeCategoryFilter" :title="t('tx.by_income_category')" :stats="incomeChips" format="money" :unit="t('currency_symbol')" />
+                    <StatBars v-model="expenseCategoryFilter" :title="t('tx.by_expense_category')" :stats="expenseChips" format="money" :unit="t('currency_symbol')" />
                     <StatBars v-model="accountFilter" :title="t('tx.by_caisse')" :stats="accountChips" :unit="t('tx.entries')" class="md:col-span-2 xl:col-span-1" />
                 </div>
             </section>
@@ -314,7 +335,7 @@ function bulkDestroy() {
                                     <Link :href="route('transactions.show', tx.id)" class="min-w-0 break-words text-sm font-semibold text-slate-900 hover:text-primary-600 dark:text-slate-100 dark:hover:text-primary-400">{{ titleOf(tx) }}</Link>
                                     <span class="shrink-0 text-sm font-bold tabular-nums" :class="amountClass(tx)" dir="ltr">{{ signedAmount(tx) }}</span>
                                 </div>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">{{ formatDate(tx.transaction_date) }} · {{ accountLabel(tx.finance_account) }}</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">{{ formatDate(tx.transaction_date) }} · {{ caisseName(tx) }}</p>
                                 <div class="flex flex-wrap items-center gap-2">
                                     <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
                                         <span class="h-2 w-2 rounded-full" :style="{ backgroundColor: tx.finance_category?.color || '#94a3b8' }" aria-hidden="true"></span>
@@ -372,7 +393,7 @@ function bulkDestroy() {
                                             {{ categoryName(tx) }}
                                         </span>
                                     </td>
-                                    <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ accountLabel(tx.finance_account) }}</td>
+                                    <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ caisseName(tx) }}</td>
                                     <td class="whitespace-nowrap px-4 py-3 text-sm">
                                         <template v-if="tx.player_summary">
                                             <Link :href="route('players.show', tx.player_summary.id)" class="text-primary-600 hover:underline dark:text-primary-400">{{ tx.player_summary.name }}</Link>
@@ -392,7 +413,7 @@ function bulkDestroy() {
                                     </td>
                                 </tr>
                                 <tr v-if="!transactions.data.length">
-                                    <td colspan="9" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
+                                    <td :colspan="canDelete ? 9 : 8" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -413,7 +434,7 @@ function bulkDestroy() {
         </div>
 
         <ConfirmModal :show="!!deleteId" variant="danger" :title="t('tx.delete_title')" :message="t('tx.delete_message')" @confirm="destroy" @cancel="deleteId = null" />
-        <ConfirmModal :show="bulkDeletePending" variant="danger" :message="t('confirm_bulk_transaction_delete', { count: selected.length })" @confirm="bulkDestroy" @cancel="bulkDeletePending = false" />
+        <ConfirmModal :show="bulkDeletePending" variant="danger" :title="t('tx.bulk_delete_title')" :message="t('tx.bulk_delete_message', { count: selected.length })" @confirm="bulkDestroy" @cancel="bulkDeletePending = false" />
 
         <CategoryManager :show="showCategories" :categories="financeCategories" @close="showCategories = false" />
     </AuthenticatedLayout>

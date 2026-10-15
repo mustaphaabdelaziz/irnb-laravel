@@ -33,7 +33,7 @@ const off = 'text-slate-300 dark:text-slate-600';
 </script>
 
 <template>
-    <nav v-if="visible" class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-slate-200 px-1 py-3 dark:border-slate-800">
+    <nav v-if="visible" :aria-label="t('pagination')" class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-slate-200 px-1 py-3 dark:border-slate-800">
         <p v-if="meta" class="text-sm text-slate-500 dark:text-slate-400">
             {{ t('showing') }} <span class="tabular-nums">{{ meta.from }}–{{ meta.to }}</span>
             {{ t('of') }} <span class="tabular-nums">{{ meta.total }}</span> {{ t('results') }}

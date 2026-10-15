@@ -66,6 +66,21 @@ class MatchStatsTest extends TestCase
     }
 
     #[Test]
+    public function volleyball_sets_have_their_own_board_and_never_enter_minutes(): void
+    {
+        $team = $this->team();
+        $p = $this->player($team->category);
+        $g = $this->playedGame($team);
+        $g->update(['rules' => ['sport' => 'volleyball'] + $g->rules]);
+        GamePlayer::create(['game_id' => $g->id, 'player_id' => $p->id, 'called_up' => true, 'role' => 'starter', 'played' => true, 'sets_played' => 3]);
+
+        $leaders = MatchStats::leaderboards(app(MatchStats::class)->players(2026, $team->id));
+
+        $this->assertSame($p->id, $leaders['sets'][0]['player_id']);
+        $this->assertNotContains($p->id, array_column($leaders['minutes'], 'player_id'));
+    }
+
+    #[Test]
     public function team_and_competition_pages_carry_stats(): void
     {
         $team = $this->team();

@@ -98,7 +98,7 @@ final class MatchStats
         })->sortBy('name')->values()->all();
     }
 
-    /** @return array{goals: list, assists: list, minutes: list, appearances: list, cards: list, rating: list} */
+    /** @return array{goals: list, assists: list, minutes: list, sets: list, appearances: list, cards: list, rating: list} */
     public static function leaderboards(array $rows, int $top = 5): array
     {
         $board = fn (string $metric) => collect($rows)->filter(fn (array $r) => $r[$metric] > 0)
@@ -107,7 +107,10 @@ final class MatchStats
         return [
             'goals' => $board('goals'),
             'assists' => $board('assists'),
-            'minutes' => $board('minutes'),
+            'minutes' => collect($rows)->filter(fn (array $r) => ($r['sport'] ?? null) !== 'volleyball' && $r['minutes'] > 0)
+                ->sortByDesc('minutes')->take($top)->values()->all(),
+            'sets' => collect($rows)->filter(fn (array $r) => ($r['sport'] ?? null) === 'volleyball' && $r['sets'] > 0)
+                ->sortByDesc('sets')->take($top)->values()->all(),
             'appearances' => $board('appearances'),
             'cards' => collect($rows)->map(fn (array $r) => $r + ['card_points' => $r['reds'] * 3 + $r['yellows']])
                 ->filter(fn (array $r) => $r['card_points'] > 0)->sortByDesc('card_points')->take($top)->values()->all(),

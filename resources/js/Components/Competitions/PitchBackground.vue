@@ -19,7 +19,7 @@ defineProps({ sport: { type: String, default: 'football' } });
             </g>
         </template>
         <template v-else>
-            <rect x="0" y="0" width="68" height="105" class="fill-amber-200 dark:fill-amber-900" />
+            <rect x="0" y="0" width="68" height="105" class="fill-amber-600 dark:fill-amber-800" />
             <g fill="none" stroke="white" stroke-width="0.5" opacity="0.9">
                 <rect x="2" y="2" width="64" height="101" />
                 <line x1="2" y1="52.5" x2="66" y2="52.5" />

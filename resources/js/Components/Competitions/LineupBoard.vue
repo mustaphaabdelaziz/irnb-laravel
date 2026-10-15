@@ -27,7 +27,7 @@ function dot(slot, index) {
 }
 
 function toBench(r) {
-    Object.assign(r, { role: 'bench', slot: null, pos_x: null, pos_y: null });
+    Object.assign(r, { role: 'bench', slot: null, pos_x: null, pos_y: null, is_captain: false, is_goalkeeper: false });
 }
 
 function changeFormation(id) {
@@ -48,14 +48,19 @@ function startDrag(event, playerId) {
     event.dataTransfer.effectAllowed = 'move';
     event.dataTransfer.setData('text/plain', String(playerId));
 }
+function endDrag() {
+    dragging.value = null;
+}
 function take() {
     const id = dragging.value;
     dragging.value = null;
     return id === null ? null : find(id);
 }
-function dropOnSlot(index) {
-    const mover = take();
-    if (!mover) return;
+// Shared by drag-and-drop and the select/button fallbacks.
+function placeOnSlot(mover, index) {
+    if (!props.canManage || !mover || index === null || index === undefined || index === '') return;
+    index = Number(index);
+    if (!Number.isInteger(index) || index < 0 || index >= slots.value.length) return;
     const occupant = starterAt(index);
     if (occupant && occupant.player_id === mover.player_id) return;
     if (occupant) {
@@ -64,13 +69,19 @@ function dropOnSlot(index) {
     }
     Object.assign(mover, { role: 'starter', slot: index, pos_x: null, pos_y: null });
 }
+function sendToBench(row) {
+    if (!props.canManage || !row) return;
+    toBench(row);
+}
+function dropOnSlot(index) {
+    placeOnSlot(take(), index);
+}
 function dropOnBench() {
-    const mover = take();
-    if (mover) toBench(mover);
+    sendToBench(take());
 }
 function dropOnPitch(event) {
     const mover = take();
-    if (!mover || mover.role !== 'starter') return;
+    if (!props.canManage || !mover || mover.role !== 'starter') return;
     const box = event.currentTarget.getBoundingClientRect();
     const clamp = (v) => Math.max(0, Math.min(100, Math.round(v)));
     mover.pos_x = clamp(((event.clientX - box.left) / box.width) * 100);
@@ -123,6 +134,7 @@ function setKeeper(r) {
     rows.value.forEach((x) => { x.is_goalkeeper = false; });
     r.is_goalkeeper = value;
 }
+const isFootball = computed(() => ['football', 'futsal'].includes(props.lineup.sport));
 const shortName = (name) => String(name ?? '').split(' ').slice(0, 2).join(' ');
 </script>
 
@@ -149,15 +161,16 @@ const shortName = (name) => String(name ?? '').split(' ').slice(0, 2).join(' ');
                 <div v-for="(slot, i) in slots" :key="i" class="absolute -translate-x-1/2 translate-y-1/2"
                     :style="{ left: `${dot(slot, i).x}%`, bottom: `${dot(slot, i).y}%` }"
                     @dragover.prevent @drop.prevent.stop="dropOnSlot(i)">
-                    <div v-if="starterAt(i)" :draggable="canManage" class="flex w-16 cursor-grab flex-col items-center" @dragstart="startDrag($event, starterAt(i).player_id)">
+                    <div v-if="starterAt(i)" :draggable="canManage" class="flex w-16 cursor-grab flex-col items-center" @dragstart="startDrag($event, starterAt(i).player_id)" @dragend="endDrag">
                         <span class="relative flex h-9 w-9 items-center justify-center rounded-full bg-white text-sm font-bold text-slate-900 shadow ring-2 ring-primary-600">
                             {{ starterAt(i).shirt_number ?? '·' }}
-                            <span v-if="starterAt(i).is_captain" class="absolute -end-1 -top-1 rounded-full bg-amber-400 px-1 text-[10px] text-slate-900">C</span>
-                            <span v-if="starterAt(i).is_goalkeeper" class="absolute -bottom-1 -end-1 rounded-full bg-sky-500 px-1 text-[10px] text-white">GK</span>
+                            <span v-if="starterAt(i).is_captain" class="absolute -end-1 -top-1 rounded-full bg-amber-400 px-1 text-[10px] text-slate-900">{{ t('comp.captain_short') }}</span>
+                            <span v-if="starterAt(i).is_goalkeeper" class="absolute -bottom-1 -end-1 rounded-full bg-sky-500 px-1 text-[10px] text-white">{{ t('comp.goalkeeper_short') }}</span>
                         </span>
-                        <span class="mt-0.5 max-w-full truncate rounded bg-black/50 px-1 text-[10px] text-white" :dir="'auto'">{{ shortName(starterAt(i).name) }}</span>
+                        <span class="mt-0.5 max-w-full truncate rounded bg-black/50 px-1 text-[10px] text-white" dir="auto">{{ shortName(starterAt(i).name) }}</span>
                     </div>
-                    <div v-else class="flex h-9 w-9 items-center justify-center rounded-full border-2 border-dashed border-white/80 text-[10px] font-semibold text-white">{{ slot.label }}</div>
+                    <div v-else class="flex h-9 w-9 items-center justify-center rounded-full border-2 border-dashed text-[10px] font-semibold text-white"
+                        :class="isFootball ? 'border-white/80' : 'border-slate-800 bg-slate-900/40'">{{ slot.label }}</div>
                 </div>
             </div>
 
@@ -166,11 +179,21 @@ const shortName = (name) => String(name ?? '').split(' ').slice(0, 2).join(' ');
                 <div class="min-h-24 rounded-xl border border-dashed border-slate-300 p-3 dark:border-slate-700" @dragover.prevent @drop.prevent="dropOnBench">
                     <h3 class="mb-2 text-sm font-semibold">{{ t('comp.bench') }}</h3>
                     <div class="flex flex-wrap gap-2">
-                        <div v-for="r in bench" :key="r.player_id" :draggable="canManage" class="cursor-grab rounded-lg bg-slate-100 px-2 py-1 text-sm dark:bg-slate-800"
-                            @dragstart="startDrag($event, r.player_id)">
-                            <span class="font-mono text-slate-500">{{ r.shirt_number }}</span> {{ r.name }}
-                            <span v-if="r.usual_position" class="text-xs text-slate-400">· {{ r.usual_position }}</span>
-                            <span v-if="r.injured" class="ms-1 rounded bg-amber-100 px-1 text-xs text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">{{ t('comp.badge_injured') }}</span>
+                        <div v-for="r in bench" :key="r.player_id" class="rounded-lg bg-slate-100 px-2 py-1 text-sm dark:bg-slate-800">
+                            <div :draggable="canManage" class="cursor-grab" @dragstart="startDrag($event, r.player_id)" @dragend="endDrag">
+                                {{ r.name }}
+                                <span v-if="r.usual_position" class="text-xs text-slate-400">· {{ r.usual_position }}</span>
+                                <span v-if="r.injured" class="ms-1 rounded bg-amber-100 px-1 text-xs text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">{{ t('comp.badge_injured') }}</span>
+                            </div>
+                            <div class="mt-1 flex items-center gap-1">
+                                <input v-model="r.shirt_number" :disabled="!canManage" :aria-label="t('comp.shirt')" type="number" min="0" max="99" draggable="false"
+                                    class="w-14 rounded border-slate-300 py-0.5 text-sm dark:border-slate-700 dark:bg-slate-900" @mousedown.stop />
+                                <select :disabled="!canManage" :aria-label="t('comp.put_on_spot')" class="rounded border-slate-300 py-0.5 text-xs dark:border-slate-700 dark:bg-slate-900"
+                                    @change="placeOnSlot(r, $event.target.value); $event.target.value = ''">
+                                    <option value="">{{ t('comp.put_on_spot') }}</option>
+                                    <option v-for="(slot, i) in slots" :key="i" :value="i">{{ slot.label }}</option>
+                                </select>
+                            </div>
                         </div>
                         <p v-if="!bench.length" class="text-sm text-slate-500">{{ t('comp.bench_empty') }}</p>
                     </div>
@@ -180,15 +203,21 @@ const shortName = (name) => String(name ?? '').split(' ').slice(0, 2).join(' ');
                 <table class="min-w-full text-sm">
                     <thead class="text-xs uppercase text-slate-500"><tr>
                         <th class="py-1 text-start">{{ t('comp.spot') }}</th><th class="py-1 text-start">{{ t('comp.player') }}</th>
-                        <th class="w-20 py-1">{{ t('comp.shirt') }}</th><th class="py-1">C</th><th v-if="lineup.has_goalkeeper" class="py-1">GK</th>
+                        <th class="w-20 py-1">{{ t('comp.shirt') }}</th><th class="py-1">{{ t('comp.captain_short') }}</th><th v-if="lineup.has_goalkeeper" class="py-1">{{ t('comp.goalkeeper_short') }}</th><th class="py-1"></th>
                     </tr></thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                         <tr v-for="r in starters" :key="r.player_id">
-                            <td class="py-1 font-mono text-xs">{{ slots[r.slot]?.label }}</td>
+                            <td class="py-1">
+                                <select :value="r.slot" :disabled="!canManage" :aria-label="t('comp.choose_spot')" class="rounded border-slate-300 py-0.5 font-mono text-xs dark:border-slate-700 dark:bg-slate-800"
+                                    @change="placeOnSlot(r, $event.target.value); $event.target.value = r.slot">
+                                    <option v-for="(slot, i) in slots" :key="i" :value="i">{{ slot.label }}</option>
+                                </select>
+                            </td>
                             <td class="py-1">{{ r.name }}</td>
-                            <td class="py-1"><input v-model="r.shirt_number" :disabled="!canManage" type="number" min="0" max="99" class="w-16 rounded border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800" /></td>
-                            <td class="py-1 text-center"><input type="checkbox" :checked="r.is_captain" :disabled="!canManage" class="rounded" @change="setCaptain(r)" /></td>
-                            <td v-if="lineup.has_goalkeeper" class="py-1 text-center"><input type="checkbox" :checked="r.is_goalkeeper" :disabled="!canManage" class="rounded" @change="setKeeper(r)" /></td>
+                            <td class="py-1"><input v-model="r.shirt_number" :disabled="!canManage" :aria-label="t('comp.shirt')" type="number" min="0" max="99" class="w-16 rounded border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800" /></td>
+                            <td class="py-1 text-center"><input type="checkbox" :checked="r.is_captain" :disabled="!canManage" :aria-label="t('comp.captain_short')" class="rounded" @change="setCaptain(r)" /></td>
+                            <td v-if="lineup.has_goalkeeper" class="py-1 text-center"><input type="checkbox" :checked="r.is_goalkeeper" :disabled="!canManage" :aria-label="t('comp.goalkeeper_short')" class="rounded" @change="setKeeper(r)" /></td>
+                            <td class="py-1 text-end"><button type="button" :disabled="!canManage" class="rounded bg-slate-100 px-2 py-0.5 text-xs hover:bg-slate-200 disabled:opacity-50 dark:bg-slate-800 dark:hover:bg-slate-700" @click="sendToBench(r)">{{ t('comp.to_bench') }}</button></td>
                         </tr>
                     </tbody>
                 </table>

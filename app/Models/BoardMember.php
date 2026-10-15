@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\SerializesClubDates;
 use App\Support\Media;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,10 +19,49 @@ class BoardMember extends Model
         'email', 'phone', 'term_start', 'term_end', 'status', 'bio', 'sort_order',
     ];
 
+    /** The player columns a member reads its identity from (see withPlayer()). */
+    public const PLAYER_COLUMNS = ['id', ...Player::NAME_COLUMNS, 'email', 'phones', 'picture_url'];
+
+    /**
+     * The linked player carries the member's identity; it is read through the
+     * accessors below rather than serialised a second time.
+     */
+    protected $hidden = ['player'];
+
+    /** Load the linked player so name, contact and photo come from it, live. */
+    public function scopeWithPlayer(Builder $query): void
+    {
+        $query->with(['player' => fn ($q) => $q->select(self::PLAYER_COLUMNS)]);
+    }
+
+    /**
+     * The stored name is a copy kept for narrow `member:id,name` lookups (and in
+     * step with renames by Player); with the player loaded, its full name wins.
+     */
+    protected function name(): Attribute
+    {
+        return Attribute::make(get: fn ($value) => $this->loadedPlayer()?->fullname ?? $value);
+    }
+
+    protected function email(): Attribute
+    {
+        return Attribute::make(get: fn ($value) => ($player = $this->loadedPlayer()) ? $player->email : $value);
+    }
+
+    protected function phone(): Attribute
+    {
+        return Attribute::make(get: fn ($value) => ($player = $this->loadedPlayer()) ? (($player->phones ?? [])[0] ?? null) : $value);
+    }
+
     /** Normalise the stored photo URL to a host-relative /media path (web + desktop). */
     protected function photoUrl(): Attribute
     {
-        return Attribute::make(get: fn ($value) => Media::path($value));
+        return Attribute::make(get: fn ($value) => ($player = $this->loadedPlayer()) ? $player->picture_url : Media::path($value));
+    }
+
+    private function loadedPlayer(): ?Player
+    {
+        return $this->relationLoaded('player') ? $this->player : null;
     }
 
     protected function casts(): array

@@ -9,6 +9,8 @@ use App\Models\GameFormat;
 use App\Models\Player;
 use App\Models\Team;
 use App\Models\User;
+use App\Services\Competitions\CompetitionRecord;
+use App\Services\Competitions\MatchStats;
 use App\Services\Competitions\PlayerFlags;
 use App\Services\Competitions\TeamAccess;
 use App\Support\Season;
@@ -65,7 +67,7 @@ class TeamController extends Controller
         return redirect()->route('teams.show', $team)->with('success', 'flash.team_created');
     }
 
-    public function show(Request $request, Team $team, PlayerFlags $flags): Response
+    public function show(Request $request, Team $team, PlayerFlags $flags, MatchStats $stats): Response
     {
         $request->validate(['season' => ['nullable', 'integer', 'min:2000', 'max:2100']]);
         $season = $request->integer('season') ?: Season::current()->startYear;
@@ -123,6 +125,10 @@ class TeamController extends Controller
                 ->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
             'categories' => Category::query()->orderBy('name')->get(),
             'canManage' => TeamAccess::canManage($request->user(), $team, $season),
+            'stats' => [
+                'record' => CompetitionRecord::fromGames($team->games()->where('season_start_year', $season)->get(['id', 'date', 'status', 'our_score', 'their_score'])),
+                'leaders' => MatchStats::leaderboards($stats->players($season, $team->id)),
+            ],
             'canEditTeam' => ! TeamAccess::isScoped($request->user()) && $request->user()->hasPermission('teams', 'edit'),
         ]);
     }

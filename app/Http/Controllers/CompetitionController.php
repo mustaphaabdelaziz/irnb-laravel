@@ -10,6 +10,7 @@ use App\Models\Player;
 use App\Models\Suspension;
 use App\Models\Team;
 use App\Services\Competitions\CompetitionRecord;
+use App\Services\Competitions\MatchStats;
 use App\Services\Competitions\PlayerFlags;
 use App\Services\Competitions\SuspensionEngine;
 use App\Services\Competitions\SuspensionStatus;
@@ -82,7 +83,7 @@ class CompetitionController extends Controller
         return redirect()->route('competitions.show', $competition)->with('success', 'flash.competition_created');
     }
 
-    public function show(Request $request, Competition $competition, PlayerFlags $flags, SuspensionStatus $status): Response
+    public function show(Request $request, Competition $competition, PlayerFlags $flags, SuspensionStatus $status, MatchStats $stats): Response
     {
         $competition->load(['team.branch', 'team.category', 'team.defaultFormat', 'format']);
         $team = $competition->team;
@@ -115,6 +116,7 @@ class CompetitionController extends Controller
                 'our_score' => $g->our_score, 'their_score' => $g->their_score,
             ]),
             'record' => CompetitionRecord::fromGames($games),
+            'stats' => ['leaders' => MatchStats::leaderboards($stats->players($season, null, $competition->id))],
             'formats' => GameFormat::query()->where('branch_id', $team->branch_id)->where('active', true)->orderBy('name')
                 ->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
             'types' => CompetitionType::values(),

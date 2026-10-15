@@ -9,6 +9,7 @@ import IconButton from '@/Components/IconButton.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import SeasonSelect from '@/Components/Competitions/SeasonSelect.vue';
+import StatsLeaders from '@/Components/Competitions/StatsLeaders.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { computed, ref } from 'vue';
@@ -19,7 +20,7 @@ const { can } = useCan();
 
 const props = defineProps({
     team: Object, season: Number, seasons: Array, roster: Array, candidates: Array, previousRosterCount: Number,
-    coaches: Array, users: Array, competitions: Array, games: Array, formats: Array, categories: Array, canManage: Boolean, canEditTeam: Boolean,
+    coaches: Array, users: Array, competitions: Array, games: Array, stats: Object, formats: Array, categories: Array, canManage: Boolean, canEditTeam: Boolean,
 });
 
 const tab = ref('roster');
@@ -78,7 +79,7 @@ function destroyTeam() {
     router.delete(route('teams.destroy', props.team.id));
 }
 
-const tabs = ['roster', 'coaches', 'competitions', 'games', 'settings'];
+const tabs = ['roster', 'coaches', 'competitions', 'games', 'stats', 'settings'];
 </script>
 
 <template>
@@ -193,6 +194,12 @@ const tabs = ['roster', 'coaches', 'competitions', 'games', 'settings'];
                 <Link :href="route('games.index', { team_id: team.id })" class="inline-block text-sm text-primary-600 hover:underline">{{ t('games') }} →</Link>
             </section>
 
+            <section v-if="tab === 'stats'" class="space-y-4 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+                <div class="flex flex-wrap items-center gap-4 text-sm">
+                    <span v-for="key in ['played', 'wins', 'draws', 'losses', 'goals_for', 'goals_against']" :key="key"><b>{{ stats.record[key] }}</b> {{ t(`comp.record_${key}`) }}</span>
+                </div>
+                <StatsLeaders :leaders="stats.leaders" />
+            </section>
             <!-- Settings -->
             <section v-if="tab === 'settings'" class="space-y-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div class="grid gap-3 sm:grid-cols-3">

@@ -7,6 +7,7 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import IconButton from '@/Components/IconButton.vue';
+import StatsLeaders from '@/Components/Competitions/StatsLeaders.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref } from 'vue';
@@ -16,7 +17,7 @@ const { t } = useI18n();
 const { can } = useCan();
 
 const props = defineProps({
-    competition: Object, roster: Array, games: Array, record: Object, formats: Array, types: Array, suspensions: Array, canManage: Boolean,
+    competition: Object, roster: Array, games: Array, record: Object, stats: Object, formats: Array, types: Array, suspensions: Array, canManage: Boolean,
 });
 
 const tab = ref('squad');
@@ -55,7 +56,7 @@ const banLabel = (s) => (s.kind === 'dates'
     ? t('comp.ban.dates', { from: s.starts_on, to: s.ends_on })
     : t('comp.ban.matches', { served: s.served ?? 0, total: s.matches_count }));
 
-const tabs = ['squad', 'games', 'record', 'suspensions', 'rules'];
+const tabs = ['squad', 'games', 'record', 'stats', 'suspensions', 'rules'];
 const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
 </script>
 
@@ -121,6 +122,9 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
                 </div>
             </section>
 
+            <section v-if="tab === 'stats'" class="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+                <StatsLeaders :leaders="stats.leaders" />
+            </section>
             <section v-if="tab === 'suspensions'" class="space-y-4 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
                     <thead class="text-xs uppercase text-slate-500"><tr>

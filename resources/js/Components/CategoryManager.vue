@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import { router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import Modal from '@/Components/Modal.vue';
@@ -14,13 +14,14 @@ import { useCan } from '@/Composables/useCan';
  * The one place finance categories are managed — opened from the
  * Transactions "more" menu and from Finance settings.
  *
- * One name field per language. Older categories hold their only name in
- * `name`: Arabic text is shown in the Arabic field; Latin text in the English
- * field for built-in categories (seeded in English) and in the French field
- * for ones the club typed. The server keeps a base name (English, else French,
- * else Arabic) that fills any language left empty
- * (FinanceCategoryController). Edits go through a form, never into the
- * `categories` prop.
+ * One name field per language. Older categories hold their base `name` in no
+ * language field. The form shows it in an empty field of its script: Arabic
+ * text in the Arabic field; Latin text in the English field for built-in
+ * categories (seeded in English) and the French field for ones the club typed,
+ * else the other Latin one. The server keeps a base name (English, else
+ * French, else Arabic) that fills any language left empty, and keeps the old
+ * base when a save renames nothing (FinanceCategoryController). Edits go
+ * through a form, never into the `categories` prop.
  */
 const props = defineProps({
     show: { type: Boolean, default: false },
@@ -32,7 +33,7 @@ const emit = defineEmits(['close']);
 const { t } = useI18n();
 const { can } = useCan();
 
-const ARABIC = /[؀-ۿ]/;
+const ARABIC = /[\u0600-\u06FF]/;
 const DEFAULT_COLOR = { income: '#10b981', expense: '#ef4444' };
 
 const languages = computed(() => [
@@ -60,31 +61,50 @@ function fill(values) {
     form.clearErrors();
 }
 
+// The base shows in a field only when no field holds it yet, and only in an
+// empty one: a save that renames nothing must send the names as they are.
 function namesOf(c) {
-    const base = c.name || '';
-    const arabic = ARABIC.test(base);
-    return {
-        name_ar: c.name_ar || (arabic ? base : ''),
-        name_fr: c.name_fr || (!arabic && !c.is_system ? base : ''),
-        name_en: c.name_en || (!arabic && c.is_system ? base : ''),
-    };
+    const names = { name_ar: c.name_ar || '', name_fr: c.name_fr || '', name_en: c.name_en || '' };
+    const base = (c.name || '').trim();
+    if (!base || Object.values(names).some((n) => n.trim() === base)) return names;
+    const slots = ARABIC.test(base) ? ['name_ar'] : (c.is_system ? ['name_en', 'name_fr'] : ['name_fr', 'name_en']);
+    const slot = slots.find((key) => !names[key]);
+    if (slot) names[slot] = base;
+    return names;
+}
+
+// Focus: the first name field when the form opens; back to the button that
+// opened it (found again by key, the list re-renders) when it closes.
+const root = ref(null);
+const firstName = ref(null);
+let opener = null;
+
+function openForm(key) {
+    opener = key;
+    formOpen.value = true;
+    nextTick(() => firstName.value?.focus());
+}
+
+function closeForm() {
+    formOpen.value = false;
+    nextTick(() => root.value?.querySelector(`[data-opener="${opener}"]`)?.focus());
 }
 
 function openAdd(type) {
     editing.value = null;
     fill({ type, name_ar: '', name_fr: '', name_en: '', color: DEFAULT_COLOR[type], is_active: true });
-    formOpen.value = true;
+    openForm(`add-${type}`);
 }
 
 function openEdit(c) {
     editing.value = c;
     fill({ type: c.type, ...namesOf(c), color: c.color || DEFAULT_COLOR[c.type], is_active: c.is_active !== false });
-    formOpen.value = true;
+    openForm(`edit-${c.id}`);
 }
 
 function save() {
     // preserveState: the page keeps this dialog (and its filters) open across the reload.
-    const options = { preserveScroll: true, preserveState: true, onSuccess: () => { formOpen.value = false; } };
+    const options = { preserveScroll: true, preserveState: true, onSuccess: closeForm };
     if (editing.value) form.put(route('finance.categories.update', editing.value.id), options);
     else form.post(route('finance.categories.store'), options);
 }
@@ -101,12 +121,18 @@ function close() {
     formOpen.value = false;
     emit('close');
 }
+
+// Escape (or the backdrop) leaves an open form first, then the manager.
+function onModalClose() {
+    if (formOpen.value) closeForm();
+    else close();
+}
 </script>
 
 <template>
     <!-- Not closeable under the delete confirm: Escape there must close only the confirm. -->
-    <Modal :show="show" max-width="2xl" :closeable="!deleting" @close="close">
-        <div class="p-5 sm:p-6">
+    <Modal :show="show" max-width="2xl" :closeable="!deleting" @close="onModalClose">
+        <div ref="root" class="p-5 sm:p-6">
             <div class="mb-4 flex items-start justify-between gap-3">
                 <div class="min-w-0">
                     <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('fincat.title') }}</h2>
@@ -124,7 +150,7 @@ function close() {
                 <div class="grid gap-3 sm:grid-cols-3">
                     <label v-for="l in languages" :key="l.key" class="block text-xs font-medium text-slate-500 dark:text-slate-400">
                         {{ l.label }}
-                        <input v-model="form[l.key]" :dir="l.dir" maxlength="120"
+                        <input v-model="form[l.key]" :ref="(el) => { if (l.key === 'name_ar') firstName = el; }" :dir="l.dir" maxlength="120"
                             class="mt-1 w-full rounded-lg border-slate-300 bg-white py-1.5 text-sm text-slate-900 focus:border-primary-500 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
                         <InputError :message="form.errors[l.key]" class="mt-1" />
                     </label>
@@ -141,7 +167,7 @@ function close() {
                     </label>
                 </div>
                 <div class="flex flex-wrap justify-end gap-2">
-                    <SecondaryButton type="button" @click="formOpen = false">{{ t('cancel') }}</SecondaryButton>
+                    <SecondaryButton type="button" @click="closeForm">{{ t('cancel') }}</SecondaryButton>
                     <PrimaryButton type="submit" :disabled="form.processing">{{ t('save') }}</PrimaryButton>
                 </div>
             </form>
@@ -154,7 +180,7 @@ function close() {
                             :class="g.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'">
                             {{ g.type === 'income' ? t('income') : t('expense') }}
                         </h3>
-                        <IconButton v-if="can('finance', 'add')" icon="plus" :label="t('fincat.add')" variant="primary" plain size="sm" @click="openAdd(g.type)" />
+                        <IconButton v-if="can('finance', 'add')" icon="plus" :label="t('fincat.add')" variant="primary" plain size="sm" :data-opener="`add-${g.type}`" @click="openAdd(g.type)" />
                     </div>
                     <p v-if="!g.items.length" class="py-4 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('fincat.empty') }}</p>
                     <ul v-else class="max-h-80 space-y-1.5 overflow-y-auto">
@@ -168,7 +194,7 @@ function close() {
                                     <span v-if="c.is_active === false">{{ t('fincat.inactive') }}</span>
                                 </p>
                             </div>
-                            <IconButton v-if="can('finance', 'edit')" icon="pencil" :label="t('edit')" plain size="sm" @click="openEdit(c)" />
+                            <IconButton v-if="can('finance', 'edit')" icon="pencil" :label="t('edit')" plain size="sm" :data-opener="`edit-${c.id}`" @click="openEdit(c)" />
                             <IconButton v-if="deletable(c)" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleting = c" />
                         </li>
                     </ul>

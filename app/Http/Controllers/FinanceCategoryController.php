@@ -45,13 +45,45 @@ class FinanceCategoryController extends Controller
             // The app finds built-in categories by code and base name.
             unset($data['name'], $data['code']);
         } else {
-            $data['name'] = $this->baseName($data);
+            // A save that renames nothing (a colour, the active switch) keeps
+            // the base: older rows hold a base that sits in no language field.
+            $data['name'] = $this->namesUnchanged($financeCategory, $data)
+                ? $financeCategory->name
+                : $this->baseName($data);
             $this->assertNameFree($data['type'], $data['name'], $financeCategory->id);
         }
 
         $financeCategory->update($data);
 
         return back()->with('success', 'flash.category_updated');
+    }
+
+    /**
+     * True when no language name changes. A field that was empty and now
+     * holds the base itself counts as unchanged: the manager puts the base
+     * there so an older row shows its name.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function namesUnchanged(FinanceCategory $category, array $data): bool
+    {
+        if (filled($data['name'] ?? null)) {
+            return trim((string) $data['name']) === $category->name;
+        }
+
+        foreach (['name_ar', 'name_fr', 'name_en'] as $field) {
+            if (! array_key_exists($field, $data)) {
+                continue;
+            }
+            $sent = filled($data[$field]) ? trim((string) $data[$field]) : null;
+            $stored = filled($category->{$field}) ? $category->{$field} : null;
+
+            if ($sent !== $stored && ! ($stored === null && $sent === $category->name)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public function destroy(FinanceCategory $financeCategory): RedirectResponse

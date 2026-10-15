@@ -41,6 +41,12 @@ class FinanceCategoryController extends Controller
             $data['type'] = $financeCategory->type;
         }
 
+        // A code, once held, is how payments find the category (LegacyFinanceCategory):
+        // a rename or an older client sending `code` must never clear or move it.
+        if (filled($financeCategory->code)) {
+            unset($data['code']);
+        }
+
         if ($financeCategory->is_system) {
             // The app finds built-in categories by code and base name.
             unset($data['name'], $data['code']);

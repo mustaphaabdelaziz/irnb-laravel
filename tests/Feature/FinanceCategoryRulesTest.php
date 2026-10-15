@@ -228,4 +228,29 @@ class FinanceCategoryRulesTest extends TestCase
 
         $this->assertSame('Membership dues', $twin->fresh()->name);
     }
+
+    #[Test]
+    public function an_update_never_changes_a_code_already_held(): void
+    {
+        // A club twin (not is_system) that took the seeded code: payments find it by SUB.
+        FinanceCategory::where('code', 'SUB')->delete();
+        $twin = $this->legacyTwin();
+        $twin->update(['code' => 'SUB']);
+
+        foreach ([null, 'XYZ'] as $code) {
+            $this->actingAs($this->admin())->put(route('finance.categories.update', $twin), [
+                'type' => 'income', 'name_ar' => 'اشتراك', 'name_fr' => 'Abonnement', 'name_en' => 'Membership dues',
+                'code' => $code,
+            ])->assertSessionHasNoErrors();
+
+            $this->assertSame('SUB', $twin->fresh()->code);
+        }
+
+        // A category without a code can still be given one.
+        $rent = FinanceCategory::create(['type' => 'expense', 'name' => 'Rent', 'is_active' => true]);
+        $this->actingAs($this->admin())->put(route('finance.categories.update', $rent), [
+            'type' => 'expense', 'name_en' => 'Rent', 'code' => 'RNT',
+        ])->assertSessionHasNoErrors();
+        $this->assertSame('RNT', $rent->fresh()->code);
+    }
 }

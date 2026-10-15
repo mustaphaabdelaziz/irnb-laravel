@@ -10,7 +10,7 @@ import LineupBoard from '@/Components/Competitions/LineupBoard.vue';
 import MatchReport from '@/Components/Competitions/MatchReport.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useCan } from '@/Composables/useCan.js';
 
 const { t } = useI18n();
@@ -18,23 +18,45 @@ const { can } = useCan();
 
 const props = defineProps({ game: Object, candidates: Array, lineup: Object, report: Object, opponents: Array, venues: Array, canManage: Boolean });
 
-const callRows = ref(props.candidates.map((c) => ({ ...c, not_called_reason: c.not_called_reason ?? '' })));
+// Inertia v2 keeps component state across visits (preserveState: false is not an
+// option: it would remount the page and drop the open tab). So every save rebuilds
+// its local edit state from the server's answer in onSuccess (the page props
+// passed to it), the same way here, in LineupBoard and in MatchReport.
+const fromCandidates = (list) => list.map((c) => ({ ...c, not_called_reason: c.not_called_reason ?? '' }));
+const callRows = ref(fromCandidates(props.candidates));
 const calledCount = computed(() => callRows.value.filter((r) => r.called_up).length);
 const callForm = useForm({ players: [] });
 
 function saveCallUp() {
     callForm.players = callRows.value.map((r) => ({ player_id: r.player_id, called_up: r.called_up, not_called_reason: r.not_called_reason }));
-    callForm.put(route('games.call-up.update', props.game.id), { preserveScroll: true });
+    callForm.put(route('games.call-up.update', props.game.id), {
+        preserveScroll: true,
+        onSuccess: (page) => { callRows.value = fromCandidates(page.props.candidates); },
+    });
 }
 
 const tab = ref('info');
 const confirmDelete = ref(false);
 
-const form = useForm({
-    opponent_id: props.game.opponent_id, venue_id: props.game.venue_id ?? '', side: props.game.side,
-    round_label: props.game.round_label ?? '', date: props.game.date, kickoff_time: props.game.kickoff_time ?? '',
-    meeting_time: props.game.meeting_time ?? '', meeting_place: props.game.meeting_place ?? '', notes: props.game.notes ?? '',
-    status: props.game.status, our_score: props.game.our_score ?? '', their_score: props.game.their_score ?? '',
+const fromGame = (g) => ({
+    opponent_id: g.opponent_id, venue_id: g.venue_id ?? '', side: g.side,
+    round_label: g.round_label ?? '', date: g.date, kickoff_time: g.kickoff_time ?? '',
+    meeting_time: g.meeting_time ?? '', meeting_place: g.meeting_place ?? '', notes: g.notes ?? '',
+    status: g.status, our_score: g.our_score ?? '', their_score: g.their_score ?? '',
+});
+let saved = fromGame(props.game);
+const form = useForm({ ...saved });
+
+// Another tab's save (the report sets status, scores and notes) brings a fresh game:
+// every Info field the user has not touched follows it, so saving Info afterwards
+// never writes the old values back over a saved result. Fields being edited keep
+// what was typed (a failed save must not wipe them).
+watch(() => props.game, (game) => {
+    const next = fromGame(game);
+    const untouched = Object.keys(next).filter((key) => form[key] === saved[key]);
+    saved = next;
+    form.defaults(next);
+    if (untouched.length) form.reset(...untouched);
 });
 
 function save() {
@@ -42,7 +64,14 @@ function save() {
         ...d,
         venue_id: d.venue_id || null, kickoff_time: d.kickoff_time || null, meeting_time: d.meeting_time || null,
         our_score: d.our_score === '' ? null : d.our_score, their_score: d.their_score === '' ? null : d.their_score,
-    })).put(route('games.update', props.game.id), { preserveScroll: true });
+    })).put(route('games.update', props.game.id), {
+        preserveScroll: true,
+        onSuccess: (page) => {
+            saved = fromGame(page.props.game);
+            form.defaults(saved);
+            form.reset();
+        },
+    });
 }
 
 function destroy() {

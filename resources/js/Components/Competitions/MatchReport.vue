@@ -14,21 +14,35 @@ const isSets = rules.scoring === 'sets';
 const blank = (v) => (v === null || v === undefined ? '' : v);
 const num = (v) => (v === '' || v === null || v === undefined ? null : Number(v));
 
-const periods = ref(Array.from({ length: rules.periods_count }, (_, i) => {
-    const row = props.report.period_scores?.[i];
-    return { us: blank(row?.[0]), them: blank(row?.[1]) };
-}));
-const et = ref({
-    played: props.report.extra_time_played,
-    us: blank(props.report.period_scores?.[rules.periods_count]?.[0]),
-    them: blank(props.report.period_scores?.[rules.periods_count]?.[1]),
-});
-const shootout = ref({ us: blank(props.report.shootout_us), them: blank(props.report.shootout_them) });
-const typed = ref({ us: blank(props.report.our_score), them: blank(props.report.their_score) });
-const events = ref(props.report.events.map((e) => ({ ...e, minute: blank(e.minute), period: blank(e.period), player_id: blank(e.player_id), related_player_id: blank(e.related_player_id) })));
-const players = ref(props.report.players.map((p) => ({ ...p, minutes_played: blank(p.minutes_played), sets_played: blank(p.sets_played), rating: blank(p.rating), coach_note: p.coach_note ?? '' })));
-const mvp = ref(props.report.players.find((p) => p.is_mvp)?.player_id ?? null);
-const notes = ref(props.report.notes ?? '');
+const periods = ref([]);
+const et = ref({});
+const shootout = ref({});
+const typed = ref({});
+const events = ref([]);
+const players = ref([]);
+const mvp = ref(null);
+const notes = ref('');
+// Local edit state, rebuilt from the server's report on mount and after each
+// successful save (onSuccess page props; see Games/Show.vue): computed minutes,
+// the reconciled score and the timeline show as stored, not as typed.
+function load(report) {
+    periods.value = Array.from({ length: rules.periods_count }, (_, i) => {
+        const row = report.period_scores?.[i];
+        return { us: blank(row?.[0]), them: blank(row?.[1]) };
+    });
+    et.value = {
+        played: report.extra_time_played,
+        us: blank(report.period_scores?.[rules.periods_count]?.[0]),
+        them: blank(report.period_scores?.[rules.periods_count]?.[1]),
+    };
+    shootout.value = { us: blank(report.shootout_us), them: blank(report.shootout_them) };
+    typed.value = { us: blank(report.our_score), them: blank(report.their_score) };
+    events.value = report.events.map((e) => ({ ...e, minute: blank(e.minute), period: blank(e.period), player_id: blank(e.player_id), related_player_id: blank(e.related_player_id) }));
+    players.value = report.players.map((p) => ({ ...p, minutes_played: blank(p.minutes_played), sets_played: blank(p.sets_played), rating: blank(p.rating), coach_note: p.coach_note ?? '' }));
+    mvp.value = report.players.find((p) => p.is_mvp)?.player_id ?? null;
+    notes.value = report.notes ?? '';
+}
+load(props.report);
 
 const derived = computed(() => {
     const rows = [...periods.value, ...(et.value.played ? [et.value] : [])].filter((r) => r.us !== '' && r.them !== '');
@@ -79,7 +93,10 @@ function save() {
         })),
         mvp_player_id: mvp.value,
         notes: notes.value || null,
-    })).put(route('games.report.update', props.gameId), { preserveScroll: true });
+    })).put(route('games.report.update', props.gameId), {
+        preserveScroll: true,
+        onSuccess: (page) => load(page.props.report),
+    });
 }
 const err = (key) => (form.errors[key] ? t(form.errors[key]) : '');
 const icon = { goal: '⚽', sanction: '🟨', substitution: '🔁' };

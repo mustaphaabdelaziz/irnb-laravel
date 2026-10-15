@@ -10,10 +10,14 @@ import { computed, ref } from 'vue';
 const { t } = useI18n();
 const props = defineProps({ gameId: Number, lineup: Object, canManage: Boolean });
 
-const formationId = ref(props.lineup.formation_id ?? props.lineup.formations[0]?.id ?? null);
+// Local edit state, rebuilt from the server's line-up after each successful save
+// (onSuccess page props; see Games/Show.vue): saved numbers and benched players show as stored.
+const initialFormation = (lineup) => lineup.formation_id ?? lineup.formations[0]?.id ?? null;
+const fromLineup = (lineup) => lineup.players.map((p) => ({ ...p }));
+const formationId = ref(initialFormation(props.lineup));
 const formation = computed(() => props.lineup.formations.find((f) => f.id === formationId.value) ?? null);
 const slots = computed(() => formation.value?.slots ?? []);
-const rows = ref(props.lineup.players.map((p) => ({ ...p })));
+const rows = ref(fromLineup(props.lineup));
 
 const starterAt = (slot) => rows.value.find((r) => r.role === 'starter' && r.slot === slot) ?? null;
 const starters = computed(() => rows.value.filter((r) => r.role === 'starter').sort((a, b) => (a.slot ?? 99) - (b.slot ?? 99)));
@@ -121,7 +125,13 @@ function save() {
         is_captain: !!r.is_captain,
         is_goalkeeper: !!r.is_goalkeeper,
     }));
-    form.put(route('games.lineup.update', props.gameId), { preserveScroll: true });
+    form.put(route('games.lineup.update', props.gameId), {
+        preserveScroll: true,
+        onSuccess: (page) => {
+            formationId.value = initialFormation(page.props.lineup);
+            rows.value = fromLineup(page.props.lineup);
+        },
+    });
 }
 
 function setCaptain(r) {

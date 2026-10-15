@@ -178,7 +178,7 @@ const activityIcon = { transaction: 'money', registration: 'user', rental: 'box'
                     <Link v-for="g in matches[part]" :key="g.id" :href="route('games.show', g.id)" class="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-muted">
                         <span class="truncate">{{ g.team }} — {{ g.opponent }}</span>
                         <span class="flex items-center gap-2">
-                            <bdi dir="ltr" class="font-mono text-xs">{{ part === 'upcoming' ? `${g.date} ${g.kickoff_time ?? ''}` : `${g.our_score}–${g.their_score}` }}</bdi>
+                            <bdi dir="ltr" class="font-mono text-xs">{{ part === 'upcoming' ? `${g.date} ${g.kickoff_time ?? ''}` : (g.our_score === null || g.their_score === null ? "—" : `${g.our_score}–${g.their_score}`) }}</bdi>
                             <span v-if="g.outcome" class="flex h-5 w-5 items-center justify-center rounded text-xs font-bold text-white"
                                 :class="{ W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' }[g.outcome]">{{ t(`comp.form_${g.outcome}`) }}</span>
                         </span>

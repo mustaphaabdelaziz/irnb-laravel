@@ -387,6 +387,7 @@ function formatDate(val) {
                         <PlayerFieldRow icon="mail" :label="t('email')" :value="player.email" />
                         <PlayerFieldRow icon="jobs" :label="t('job')" :value="player.is_student ? t('student') : (player.member_job?.localized_name || player.member_job?.name)" />
                         <PlayerFieldRow icon="drop" :label="t('blood_group')" :value="player.health_blood_group_rhesus" />
+                        <PlayerFieldRow icon="idcard" :label="t('licence_number')" :value="player.licence_number" />
                         <PlayerFieldRow icon="calendar" :label="t('join_year')" :value="player.join_year" />
                         <PlayerFieldRow icon="home" :label="t('branches')">
                             <span v-if="player.branches?.length" class="flex flex-wrap gap-1">

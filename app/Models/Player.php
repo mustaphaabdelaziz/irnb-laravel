@@ -51,6 +51,7 @@ class Player extends Model
         'skill_level',
         'health_medical_conditions',
         'health_blood_group_rhesus',
+        'licence_number',
         'outstanding_debt',
     ];
 

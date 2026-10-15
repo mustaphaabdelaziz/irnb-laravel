@@ -36,6 +36,7 @@ class DocumentType extends Model
         'name_fr',
         'name_en',
         'is_required',
+        'required_for_matches',
         'validity',
         'max_age',
         'copies',
@@ -51,6 +52,7 @@ class DocumentType extends Model
     {
         return [
             'is_required' => 'boolean',
+            'required_for_matches' => 'boolean',
             'is_active' => 'boolean',
             'max_age' => 'integer',
             'copies' => 'integer',

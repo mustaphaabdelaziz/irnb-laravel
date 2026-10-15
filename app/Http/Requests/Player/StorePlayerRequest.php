@@ -52,6 +52,7 @@ class StorePlayerRequest extends FormRequest
             'skill_level' => ['nullable', 'integer', 'min:1', 'max:10'],
             'health_medical_conditions' => ['nullable', 'string'],
             'health_blood_group_rhesus' => ['nullable', 'string', 'max:10'],
+            'licence_number' => ['nullable', 'string', 'max:50'],
             'picture' => ['nullable', 'image', 'max:5120'],
             'emergency_contacts' => ['nullable', 'array'],
             'emergency_contacts.*.name' => ['required', 'string', 'max:255'],

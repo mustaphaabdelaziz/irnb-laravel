@@ -157,6 +157,18 @@ final class DocumentChecklist
     }
 
     /**
+     * One document type's "missing" test as an SQL expression over `players`
+     * (1 = missing, 0 = settled) — the per-type term missingCountSql() sums,
+     * for lists that need to know WHICH types are missing (match eligibility).
+     *
+     * @return array{0: string, 1: array<int, mixed>}
+     */
+    public static function missingTypeSql(DocumentType $type, ?CarbonInterface $today = null): array
+    {
+        return self::missingTermSql($type, self::today($today));
+    }
+
+    /**
      * "Has an active document that expires within 30 days", as an SQL
      * condition over `players` — the twin of for()['expiring_count'] > 0.
      *

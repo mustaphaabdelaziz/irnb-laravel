@@ -26,6 +26,7 @@ const FIELDS = {
     name_fr: '',
     name_en: '',
     is_required: false,
+    required_for_matches: false,
     validity: 'none',
     max_age: '',
     copies: 1,
@@ -124,6 +125,7 @@ function destroy() {
                             </td>
                             <td class="px-4 py-3">
                                 <Badge v-if="type.is_required" :label="t('doc_required')" color="primary" />
+                                <Badge v-if="type.required_for_matches" :label="t('doc_required_for_matches')" color="amber" />
                                 <Badge v-else :label="t('doc_optional')" color="slate" />
                             </td>
                             <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ validityLabels[type.validity] || type.validity }}</td>
@@ -204,6 +206,10 @@ function destroy() {
                     <label class="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
                         <input v-model="form.is_required" type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800" />
                         {{ t('doc_required') }}
+                    </label>
+                    <label class="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                        <input v-model="form.required_for_matches" type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800" />
+                        {{ t('doc_required_for_matches') }}
                     </label>
                     <label class="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
                         <input v-model="form.is_active" type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800" />

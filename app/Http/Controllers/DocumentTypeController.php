@@ -64,6 +64,7 @@ class DocumentTypeController extends Controller
             'name_fr' => ['nullable', 'string', 'max:255'],
             'name_en' => ['nullable', 'string', 'max:255'],
             'is_required' => ['boolean'],
+            'required_for_matches' => ['boolean'],
             'validity' => ['required', Rule::in(DocumentType::VALIDITIES)],
             'max_age' => ['nullable', 'integer', 'min:1', 'max:99'],
             'copies' => ['nullable', 'integer', 'min:1', 'max:99'],

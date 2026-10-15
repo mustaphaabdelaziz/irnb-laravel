@@ -43,6 +43,7 @@ const form = useForm({
     birthdate: p.birthdate ? String(p.birthdate).split('T')[0] : '',
     gender: p.gender || 'Male',
     health_blood_group_rhesus: p.health_blood_group_rhesus || '',
+    licence_number: p.licence_number || '',
     phone: p.phones?.[0] || '',
     email: p.email || '',
     wilaya_id: p.wilaya_id || '',
@@ -216,6 +217,7 @@ function submit() {
         birthdate: data.birthdate || null,
         gender: data.gender,
         health_blood_group_rhesus: data.health_blood_group_rhesus || null,
+        licence_number: data.licence_number || null,
         // '' when empty, for the reason given at other_position_ids below: an
         // empty array never reaches the server, so the number could not be removed.
         phones: phones.length ? phones : '',
@@ -307,6 +309,11 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                         <option value="">-</option>
                         <option v-for="bg in ['A+','A-','B+','B-','AB+','AB-','O+','O-']" :key="bg" :value="bg">{{ bg }}</option>
                     </select>
+                </div>
+                <div>
+                    <InputLabel :value="t('licence_number')" />
+                    <TextInput v-model="form.licence_number" class="mt-1 w-full" maxlength="50" dir="ltr" />
+                    <InputError :message="form.errors.licence_number" class="mt-1" />
                 </div>
                 <div>
                     <InputLabel :value="t('phone')" />

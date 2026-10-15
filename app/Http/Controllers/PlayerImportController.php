@@ -55,6 +55,8 @@ class PlayerImportController extends Controller
         ['key' => 'wilaya', 'label' => 'col.wilaya', 'hint' => 'col.hint.code_or_name', 'legacy' => ['الولاية (الرمز أو الاسم)'], 'example' => '47'],
         // Appended last: older files have no cell here.
         ['key' => 'other_positions', 'label' => 'col.other_positions', 'hint' => 'col.hint.comma_separated', 'legacy' => ['مراكز أخرى (مفصولة بفاصلة)'], 'example' => 'WG, LB'],
+        // Appended last: older files have no cell here.
+        ['key' => 'licence_number', 'label' => 'col.licence_number', 'legacy' => ['رقم الإجازة'], 'example' => ''],
     ];
 
     /** Stored gender code => UI label key. */
@@ -150,6 +152,7 @@ class PlayerImportController extends Controller
                     'is_student' => ImportColumns::value($data['status'], self::STATUSES) === 'student',
                     'skill_level' => $this->clampSkill($data['skill_level']),
                     'health_blood_group_rhesus' => $data['blood_group'] ?: null,
+                    'licence_number' => trim((string) ($data['licence_number'] ?? '')) ?: null,
                     'health_medical_conditions' => $data['medical_conditions'] ?: null,
                     'join_year' => is_numeric($data['join_year']) ? (int) $data['join_year'] : now()->year,
                 ];

@@ -169,6 +169,37 @@ class TransactionsIndexTest extends TestCase
         $this->assertSame(50, $this->props(['per_page' => 50])['transactions']['per_page']);
         $this->assertSame(25, $this->props(['per_page' => 7])['transactions']['per_page']);
         $this->assertSame('50', $this->props(['per_page' => 50])['filters']['per_page']);
+        // The size actually applied is echoed, never a refused one.
+        $this->assertSame('25', $this->props(['per_page' => 7])['filters']['per_page']);
+    }
+
+    #[Test]
+    public function a_date_sent_as_a_list_or_an_impossible_date_is_ignored(): void
+    {
+        $this->tx('now', '2026-10-01');
+        $this->tx('last-season', '2026-03-01');
+
+        // Not an error, and not a date range: the current-season default stays.
+        $this->assertSame(['now'], $this->listed(['date_from' => ['2026-03-01']]));
+        $this->assertSame(['now'], $this->listed(['date_to' => '2026-02-31']));
+    }
+
+    #[Test]
+    public function the_caisse_card_labels_a_missing_caisse_as_null_and_leaves_out_the_opening_fund(): void
+    {
+        $a = $this->account('A');
+        $fund = FinanceAccount::firstOrCreate(['is_opening_fund' => true], ['name' => 'Fonds Initial', 'type' => 'cash', 'is_active' => true, 'currency' => 'DZD']);
+        $this->tx('in-a', '2026-10-01', ['finance_account_id' => $a->id]);
+        $this->tx('in-fund', '2026-10-02', ['finance_account_id' => $fund->id]);
+        // A legacy row with no caisse (the observer would fill a default in on create).
+        Transaction::whereKey($this->tx('nowhere', '2026-10-03')->id)->update(['finance_account_id' => null]);
+
+        $cards = collect($this->props()['byAccount'])->keyBy(fn (array $row) => $row['key'] ?? 'none');
+
+        $this->assertEqualsCanonicalizing([$a->id, 'none'], $cards->keys()->all());
+        $this->assertNull($cards['none']['label']);
+        $this->assertSame(1, $cards['none']['count']);
+        $this->assertNotSame('', $cards[$a->id]['label']);
     }
 
     #[Test]

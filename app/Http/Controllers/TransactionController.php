@@ -91,7 +91,11 @@ class TransactionController extends Controller
             'expenseByCategory' => $this->categoryStats($request, 'expense'),
             'byAccount' => $this->accountStats($request),
             // Select filters come back as lists, whatever shape was sent.
-            'filters' => ListFilter::echo($request, self::LIST_FILTER_SPECS, ['search', 'date_from', 'date_to', 'per_page']),
+            // per_page echoes the size applied, never a refused one.
+            'filters' => [
+                ...ListFilter::echo($request, self::LIST_FILTER_SPECS, ['search', 'date_from', 'date_to']),
+                'per_page' => (string) $perPage,
+            ],
             // Lookups as closures so filter reloads (partial) skip these queries.
             // Every category, inactive too: old entries stay filterable, and the
             // categories manager needs each one's usage.
@@ -115,7 +119,8 @@ class TransactionController extends Controller
             ->where('archived', false);
         $this->applyFilters($query, $request);
 
-        $rows = $query->latest('transaction_date')->get()->map(fn (Transaction $t) => [
+        // Same order as the list.
+        $rows = $query->orderByDesc('transaction_date')->orderByDesc('id')->get()->map(fn (Transaction $t) => [
             $t->transaction_date,
             TransactionTitle::for($t),
             UiLang::get((string) $t->transaction_type, $t->transaction_type),
@@ -384,12 +389,16 @@ class TransactionController extends Controller
         }
     }
 
-    /** A Y-m-d date from the query string, or null for anything else. */
+    /** A real Y-m-d date from the query string, or null for anything else (a list, "2026-02-31"). */
     private function dateParam(Request $request, string $key): ?string
     {
-        $value = (string) $request->input($key, '');
+        $value = $request->input($key);
 
-        return preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1 ? $value : null;
+        if (! is_string($value) || preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $value, $m) !== 1) {
+            return null;
+        }
+
+        return checkdate((int) $m[2], (int) $m[3], (int) $m[1]) ? $value : null;
     }
 
     /**
@@ -431,8 +440,11 @@ class TransactionController extends Controller
 
     /**
      * Entries per caisse, most used first, labelled like the Caisses page.
+     * The opening fund is left out, as in the caisse filter. A row with no
+     * (or a vanished) caisse has a null label, like an uncategorised row in
+     * the category cards, so the page names both with one fallback word.
      *
-     * @return list<array{key: int|null, label: string, count: int}>
+     * @return list<array{key: int|null, label: string|null, count: int}>
      */
     private function accountStats(Request $request): array
     {
@@ -447,11 +459,13 @@ class TransactionController extends Controller
             ->whereIn('id', $rows->pluck('finance_account_id')->filter())
             ->get()->keyBy('id');
 
-        return $rows->map(fn (object $row): array => [
-            'key' => $row->finance_account_id ? (int) $row->finance_account_id : null,
-            'label' => FinanceAccountLabel::for($accounts->get($row->finance_account_id)),
-            'count' => (int) $row->total,
-        ])->values()->all();
+        return $rows
+            ->reject(fn (object $row): bool => (bool) $accounts->get($row->finance_account_id)?->is_opening_fund)
+            ->map(fn (object $row): array => [
+                'key' => $row->finance_account_id ? (int) $row->finance_account_id : null,
+                'label' => FinanceAccountLabel::for($accounts->get($row->finance_account_id)) ?: null,
+                'count' => (int) $row->total,
+            ])->values()->all();
     }
 
     /**

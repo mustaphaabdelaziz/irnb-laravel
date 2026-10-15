@@ -6,6 +6,7 @@ import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
+import { localToday } from '@/lib/localDate';
 
 /**
  * Take back one open rental or assignment, in full or in part. Shared by the
@@ -24,7 +25,7 @@ const CONDITIONS = ['New', 'Good', 'Fair', 'Poor', 'Damaged'];
 const form = useForm({
     quantity: 1,
     condition: 'Good',
-    return_date: new Date().toISOString().slice(0, 10),
+    return_date: localToday(),
     notes: '',
 });
 

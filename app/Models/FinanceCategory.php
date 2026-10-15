@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasLocalizedName;
+use App\Models\Concerns\SerializesClubDates;
 use App\Support\FinanceCategoryTranslations;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class FinanceCategory extends Model
 {
     use HasLocalizedName;
+    use SerializesClubDates;
 
     protected $fillable = [
         'type', 'name', 'name_ar', 'name_fr', 'name_en', 'code', 'parent_id', 'color', 'sort_order', 'is_active', 'is_system',

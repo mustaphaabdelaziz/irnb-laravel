@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -12,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class GamePlayer extends Model
 {
+    use SerializesClubDates;
+
     protected $fillable = [
         'game_id', 'player_id', 'called_up', 'not_called_reason', 'role', 'shirt_number', 'position_id',
         'slot', 'is_captain', 'is_goalkeeper', 'minutes_played', 'rating', 'coach_note', 'is_mvp',

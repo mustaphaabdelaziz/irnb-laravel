@@ -45,6 +45,51 @@ class BoardMemberTest extends TestCase
     }
 
     #[Test]
+    public function a_member_must_be_picked_from_the_players(): void
+    {
+        $this->actingAs($this->admin())
+            ->post(route('board.members.store'), [
+                'name' => 'Typed by hand',
+                'role' => 'president',
+                'status' => 'active',
+            ])->assertSessionHasErrors('player_id');
+
+        $this->assertDatabaseCount('board_members', 0);
+    }
+
+    #[Test]
+    public function contact_details_and_photo_come_from_the_player(): void
+    {
+        $player = Player::create([
+            'membership_id' => 'M3', 'firstname' => 'Sami', 'lastname' => 'Zidane',
+            'email' => 'sami@club.test', 'phones' => ['0550000001', '0550000002'],
+            'picture_url' => '/media/players/sami.jpg',
+        ]);
+        $member = BoardMember::create([
+            'player_id' => $player->id, 'name' => 'Old copy', 'role' => 'president', 'status' => 'active',
+            'email' => 'stale@club.test', 'phone' => '000', 'photo_url' => '/media/board/stale.jpg',
+        ]);
+
+        $member = BoardMember::withPlayer()->findOrFail($member->id);
+
+        $this->assertSame('Zidane Sami', $member->name);
+        $this->assertSame('sami@club.test', $member->email);
+        $this->assertSame('0550000001', $member->phone);
+        $this->assertSame('/media/players/sami.jpg', $member->photo_url);
+    }
+
+    #[Test]
+    public function renaming_a_player_renames_their_board_member(): void
+    {
+        $player = Player::create(['membership_id' => 'M4', 'firstname' => 'Sami', 'lastname' => 'Zidane']);
+        $member = BoardMember::create(['player_id' => $player->id, 'name' => 'Zidane Sami', 'role' => 'member', 'status' => 'active']);
+
+        $player->update(['firstname' => 'Samir']);
+
+        $this->assertSame('Zidane Samir', $member->fresh()->name);
+    }
+
+    #[Test]
     public function an_unknown_role_is_rejected(): void
     {
         $player = Player::create(['membership_id' => 'M2', 'firstname' => 'A', 'lastname' => 'B']);

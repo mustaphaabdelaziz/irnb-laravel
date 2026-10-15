@@ -8,6 +8,7 @@ use App\Models\Transaction;
 use App\Services\Dashboard\Support\BranchScope;
 use App\Services\Dashboard\Support\MonthBucket;
 use App\Support\FiscalPeriod;
+use App\Support\UiLang;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
@@ -230,20 +231,28 @@ class OverviewStats
      */
     private function activity(DashboardFilters $filters, bool $money = true): array
     {
+        $locale = in_array(app()->getLocale(), ['ar', 'fr', 'en'], true) ? app()->getLocale() : 'en';
+        $categoryName = "COALESCE(NULLIF(finance_categories.name_{$locale}, ''), finance_categories.name)";
+
         // Transactions (title and amount) are finance data: not even queried without the right.
         $transactions = ! $money ? Collection::make() : DB::table('transactions')
+            ->leftJoin('finance_categories', 'finance_categories.id', '=', 'transactions.finance_category_id')
             ->where('transactions.archived', false)
             ->when($filters->branchId !== null, fn ($q) => $q->whereIn(
                 'transactions.finance_account_id',
                 DB::table('finance_accounts')->where('branch_id', $filters->branchId)->select('id'),
             ))
-            ->orderByDesc('transaction_date')
+            ->orderByDesc('transactions.transaction_date')
             ->limit(10)
-            ->get(['id', 'transaction_date', 'amount', 'transaction_type', 'category', 'title', 'description'])
+            ->get([
+                'transactions.id', 'transactions.transaction_date', 'transactions.amount', 'transactions.transaction_type',
+                'transactions.title', 'transactions.description', DB::raw("{$categoryName} as category_name"),
+            ])
             ->map(fn (object $t): array => [
                 'type' => 'transaction',
                 'at' => (string) $t->transaction_date,
-                'label' => $t->title ?: ($t->description ?: $t->category),
+                // Never the stored slug: the category's own name, else the type.
+                'label' => $t->title ?: ($t->description ?: ($t->category_name ?: UiLang::get((string) $t->transaction_type))),
                 'amount' => $t->transaction_type === 'income' ? (float) $t->amount : -(float) $t->amount,
                 'id' => $t->id,
             ]);

@@ -13,6 +13,7 @@ import { useCan } from '@/Composables/useCan';
 import { router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { localToday } from '@/lib/localDate';
 
 const props = defineProps({
     playerId: { type: Number, required: true },
@@ -64,11 +65,7 @@ function formatSize(bytes) {
 }
 
 // Local date, not UTC: toISOString() alone would say "yesterday" before 1 a.m. in Algiers.
-function todayIso() {
-    const now = new Date();
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-    return now.toISOString().slice(0, 10);
-}
+const todayIso = localToday;
 
 // Laravel reports array uploads as files.0, files.1, ...
 function fileErrors(form) {

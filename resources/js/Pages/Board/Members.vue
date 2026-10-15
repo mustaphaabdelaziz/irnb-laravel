@@ -6,6 +6,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Icon from '@/Components/Icon.vue';
 import ExportMenu from '@/Components/ExportMenu.vue';
 import IconButton from '@/Components/IconButton.vue';
+import { formatPhone } from '@/lib/phone';
 
 const props = defineProps({
     members: { type: Array, default: () => [] },
@@ -60,9 +61,9 @@ const filtered = computed(() => {
 // ---- Member form ----
 const showForm = ref(false);
 const editingId = ref(null);
+// Name, contact and photo come from the picked player; the member adds its board role.
 const form = useForm({
-    player_id: null, name: '', role: props.roles[0]?.name || 'member', email: '', phone: '',
-    status: 'active', bio: '', sort_order: 0, board_term_id: props.selectedTermId, photo: null,
+    player_id: null, role: props.roles[0]?.name || 'member', status: 'active', board_term_id: props.selectedTermId,
 });
 
 // Searchable player picker
@@ -75,7 +76,6 @@ const filteredPlayers = computed(() => {
 });
 function pickPlayer(p) {
     form.player_id = p.id;
-    form.name = p.name;
     playerSearch.value = p.name;
     showPlayerList.value = false;
 }
@@ -94,14 +94,13 @@ function openCreate() {
 function openEdit(m) {
     editingId.value = m.id;
     form.reset(); form.clearErrors();
-    form.player_id = m.player_id; form.name = m.name; form.role = m.role; form.email = m.email || '';
-    form.phone = m.phone || ''; form.status = m.status; form.bio = m.bio || '';
-    form.sort_order = m.sort_order || 0; form.board_term_id = m.board_term_id || props.selectedTermId; form.photo = null;
+    form.player_id = m.player_id; form.role = m.role; form.status = m.status;
+    form.board_term_id = m.board_term_id || props.selectedTermId;
     playerSearch.value = m.player_id ? m.name : '';
     showForm.value = true;
 }
 function submit() {
-    const opts = { forceFormData: true, preserveScroll: true, onSuccess: () => { showForm.value = false; } };
+    const opts = { preserveScroll: true, onSuccess: () => { showForm.value = false; } };
     if (editingId.value) form.post(route('board.members.update', editingId.value), opts);
     else form.post(route('board.members.store'), opts);
 }
@@ -154,9 +153,9 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
 
             <!-- Member form -->
             <form v-if="showForm" @submit.prevent="submit" class="card space-y-4 p-5">
-                <div class="grid gap-4 sm:grid-cols-2">
+                <div class="grid gap-4 sm:grid-cols-3">
                     <!-- Searchable player picker -->
-                    <div class="relative block text-sm sm:col-span-2">
+                    <div class="relative block text-sm sm:col-span-3">
                         <span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('player') }}</span>
                         <div class="flex items-center gap-2">
                             <div class="relative flex-1">
@@ -174,18 +173,13 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                             <button v-if="form.player_id" type="button" @click="clearPlayer" class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-rose-500 dark:hover:bg-slate-800"><Icon name="xcircle" /></button>
                         </div>
                         <p class="mt-1 text-xs text-slate-400">{{ t('pick_player_hint') }}</p>
+                        <span v-if="form.errors.player_id" class="mt-1 block text-xs text-rose-500">{{ form.errors.player_id }}</span>
                     </div>
 
-                    <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('name') }}</span>
-                        <input v-model="form.name" :required="!form.player_id" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
                     <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('role') }}</span>
                         <select v-model="form.role" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
                             <option v-for="r in roles" :key="r.id" :value="r.name">{{ r.label || t(r.name) }}</option>
                         </select></label>
-                    <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('email') }}</span>
-                        <input v-model="form.email" type="email" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
-                    <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('phone') }}</span>
-                        <input v-model="form.phone" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
                     <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('term') }}</span>
                         <select v-model="form.board_term_id" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
                             <option v-for="tm in terms" :key="tm.id" :value="tm.id">{{ tm.name }}</option>
@@ -194,14 +188,10 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                         <select v-model="form.status" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
                             <option value="active">{{ t('active') }}</option><option value="former">{{ t('former') }}</option>
                         </select></label>
-                    <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('photo') }}</span>
-                        <input type="file" accept="image/*" @change="form.photo = $event.target.files[0]" class="w-full text-sm text-slate-500" /></label>
                 </div>
-                <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('bio') }}</span>
-                    <textarea v-model="form.bio" rows="2" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800"></textarea></label>
                 <div class="flex justify-end gap-2">
                     <button type="button" @click="showForm = false" class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">{{ t('cancel') }}</button>
-                    <button :disabled="form.processing" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('save') }}</button>
+                    <button :disabled="form.processing || !form.player_id" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('save') }}</button>
                 </div>
             </form>
 
@@ -216,6 +206,7 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                         <div class="min-w-0 flex-1">
                             <p class="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{{ m.name }}</p>
                             <p class="text-xs font-semibold text-primary-600 dark:text-primary-400">{{ roleLabel(m.role) }}</p>
+                            <p v-if="m.phone" dir="ltr" class="mt-0.5 truncate text-start font-mono text-xs text-slate-500 dark:text-slate-400">{{ formatPhone(m.phone) }}</p>
                             <p v-if="m.email" class="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">{{ m.email }}</p>
                         </div>
                         <div class="flex shrink-0 gap-1">

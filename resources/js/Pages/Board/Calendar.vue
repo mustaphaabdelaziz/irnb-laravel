@@ -4,6 +4,7 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Icon from '@/Components/Icon.vue';
+import { localDateKey, localToday } from '@/lib/localDate';
 
 const props = defineProps({
     month: { type: String, required: true }, // YYYY-MM
@@ -12,7 +13,7 @@ const props = defineProps({
 const { t, locale } = useI18n();
 
 const anchor = computed(() => new Date(`${props.month}-01T00:00:00`));
-const todayKey = new Date().toISOString().slice(0, 10);
+const todayKey = localToday();
 
 const monthLabel = computed(() =>
     anchor.value.toLocaleDateString(locale.value === 'ar' ? 'ar' : locale.value, { month: 'long', year: 'numeric' })
@@ -28,9 +29,7 @@ const weekdays = computed(() => {
     });
 });
 
-function key(d) {
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
+const key = localDateKey;
 
 // 6-week grid starting on the Monday on/before the 1st.
 const cells = computed(() => {

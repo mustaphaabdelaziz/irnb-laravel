@@ -83,7 +83,8 @@ class LocalizedExportsTest extends TestCase
             'amount' => 1500, 'status' => 'Paid', 'payment_method' => 'bank', 'recorded_by_user_id' => $admin->id,
         ]);
 
-        $xml = $this->sheet($this->actingAs($admin)->get(route('transactions.export'))->baseResponse);
+        // Dated in a past season: the list (and its export) default to the current one.
+        $xml = $this->sheet($this->actingAs($admin)->get(route('transactions.export', ['fiscal_year' => 'all']))->baseResponse);
 
         $this->assertStringContainsString($this->xmlText(UiLang::get('income', null, 'fr')), $xml);
         $this->assertStringContainsString($this->xmlText(UiLang::get('paid', null, 'fr')), $xml);

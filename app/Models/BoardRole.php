@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class BoardRole extends Model
 {
+    use SerializesClubDates;
+
     protected $fillable = ['name', 'label', 'sort_order'];
 
     protected function casts(): array

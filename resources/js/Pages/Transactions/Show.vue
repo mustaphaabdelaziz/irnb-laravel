@@ -1,24 +1,32 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Badge from '@/Components/Badge.vue';
+import Icon from '@/Components/Icon.vue';
 import IconButton from '@/Components/IconButton.vue';
 import { Head, Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useCurrency } from '@/Composables/useCurrency';
+import { useCan } from '@/Composables/useCan';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
+import { useFormatDate } from '@/Composables/useFormatDate';
 import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 import { useStatusLabel } from '@/Composables/useStatusLabel';
+import { paymentStatusColor } from '@/lib/statusLabels';
 
 const { t } = useI18n();
+const { currencyLabel } = useCurrency();
 const { statusLabel } = useStatusLabel();
 const { accountLabel } = useFinanceAccountLabel();
 const { formatMoney } = useFormatMoney();
 
-const props = defineProps({
-    transaction: Object,
-});
-
-const typeColor = (type) => type === 'income' ? 'emerald' : 'rose';
-const statusColor = (s) => s === 'Paid' ? 'emerald' : s === 'Partial' ? 'amber' : 'slate';
+const props = defineProps({ transaction: { type: Object, required: true } });
+const { can } = useCan();
+const { formatDate } = useFormatDate();
+const isIncome = computed(() => props.transaction.transaction_type === 'income');
+// The category's own name — never the stored slug.
+const categoryName = computed(() => props.transaction.finance_category?.localized_name
+    || props.transaction.finance_category?.name || t('tx.uncategorised'));
 </script>
 
 <template>
@@ -26,16 +34,14 @@ const statusColor = (s) => s === 'Paid' ? 'emerald' : s === 'Partial' ? 'amber' 
 
     <AuthenticatedLayout>
         <template #header>
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <Link :href="route('transactions.index')" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-                    </Link>
-                    <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('transaction') }} #{{ transaction.id }}</h1>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex min-w-0 items-center gap-2">
+                    <Link :href="route('transactions.index')" :aria-label="t('back')" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300"><Icon name="back" class="rtl:rotate-180" /></Link>
+                    <h1 class="min-w-0 truncate text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('transaction') }} #{{ transaction.id }}</h1>
                 </div>
                 <div class="flex items-center gap-2">
                     <IconButton :href="route('transactions.receipt', transaction.id)" external target="_blank" icon="print" :label="t('receipt')" />
-                    <IconButton :href="route('transactions.edit', transaction.id)" icon="pencil" :label="t('edit')" />
+                    <IconButton v-if="can('transactions', 'edit')" :href="route('transactions.edit', transaction.id)" icon="pencil" :label="t('edit')" />
                 </div>
             </div>
         </template>
@@ -53,25 +59,23 @@ const statusColor = (s) => s === 'Paid' ? 'emerald' : s === 'Partial' ? 'amber' 
                 <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     <div>
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('amount') }}</p>
-                        <p class="mt-1 text-2xl font-bold" :class="transaction.transaction_type === 'income' ? 'text-emerald-700' : 'text-rose-700'">
-                            {{ transaction.transaction_type === 'income' ? '+' : '-' }}{{ formatMoney(transaction.amount) }}
-                        </p>
+                        <p class="mt-1 text-2xl font-bold tabular-nums [overflow-wrap:anywhere]" :class="isIncome ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'"><span dir="ltr">{{ isIncome ? '+' : '−' }}{{ formatMoney(transaction.amount) }}</span> <span class="text-sm font-medium text-slate-400">{{ currencyLabel }}</span></p>
                     </div>
                     <div>
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('type') }}</p>
-                        <div class="mt-2"><Badge :label="transaction.transaction_type === 'income' ? t('income') : t('expense')" :color="typeColor(transaction.transaction_type)" /></div>
+                        <div class="mt-2"><Badge :label="isIncome ? t('income') : t('expense')" :color="isIncome ? 'emerald' : 'rose'" /></div>
                     </div>
                     <div>
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('status') }}</p>
-                        <div class="mt-2"><Badge :label="statusLabel('payment', transaction.status)" :color="statusColor(transaction.status)" /></div>
+                        <div class="mt-2"><Badge :label="statusLabel('payment', transaction.status)" :color="paymentStatusColor(transaction.status)" /></div>
                     </div>
                     <div>
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('category') }}</p>
-                        <p class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">{{ transaction.finance_category?.localized_name || transaction.finance_category?.name || transaction.category }}</p>
+                        <p class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">{{ categoryName }}</p>
                     </div>
                     <div>
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('date') }}</p>
-                        <p class="mt-1 text-sm text-slate-900 dark:text-slate-100">{{ transaction.transaction_date }}</p>
+                        <p class="mt-1 text-sm text-slate-900 dark:text-slate-100">{{ formatDate(transaction.transaction_date) }}</p>
                     </div>
                     <div>
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('payment_method') }}</p>
@@ -79,7 +83,7 @@ const statusColor = (s) => s === 'Paid' ? 'emerald' : s === 'Partial' ? 'amber' 
                     </div>
                     <div>
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">
-                            {{ transaction.transaction_type === 'income' ? t('destination_register') : t('source_register') }}
+                            {{ isIncome ? t('destination_register') : t('source_register') }}
                         </p>
                         <p class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">
                             {{ accountLabel(transaction.finance_account) }}

@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Budget extends Model
 {
+    use SerializesClubDates;
+
     protected $fillable = [
         'fiscal_year_id', 'finance_category_id', 'planned_amount', 'notes',
     ];

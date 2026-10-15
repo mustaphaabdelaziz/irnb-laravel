@@ -6,6 +6,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Icon from '@/Components/Icon.vue';
 import IconButton from '@/Components/IconButton.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
+import CategoryManager from '@/Components/CategoryManager.vue';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useCan } from '@/Composables/useCan';
 
@@ -19,9 +20,6 @@ const props = defineProps({
 const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
 
-const income = computed(() => props.categories.filter((c) => c.type === 'income'));
-const expense = computed(() => props.categories.filter((c) => c.type === 'expense'));
-
 /* ----- Fiscal years ----- */
 const yearForm = useForm({ year: props.seasonOptions[1]?.value ?? null, opening_balance: 0, label: '' });
 function addYear() {
@@ -33,7 +31,7 @@ function saveOpening(y) {
 }
 
 /* ----- Confirmation (one modal for every destructive action on this page) ----- */
-// pending = { action: 'close' | 'reopen' | 'delete-year' | 'delete-category', item }
+// pending = { action: 'close' | 'reopen' | 'delete-year', item }
 const pending = ref(null);
 const askClose = (y) => { pending.value = { action: 'close', item: y }; };
 const askReopen = (y) => { pending.value = { action: 'reopen', item: y }; };
@@ -41,12 +39,12 @@ const askDeleteYear = (y) => { pending.value = { action: 'delete-year', item: y 
 
 const pendingCopy = computed(() => {
     const p = pending.value;
-    if (!p) return { title: '', message: '', label: '' };
+    if (!p) return { title: '', message: '', label: '', variant: 'danger' };
     switch (p.action) {
-        case 'close': return { title: t('close_year'), message: t('close_year_confirm'), label: t('close_year') };
-        case 'reopen': return { title: t('reopen_year'), message: t('reopen_year_confirm'), label: t('reopen_year') };
-        case 'delete-year': return { title: t('delete_year'), message: t('delete_fiscal_year_confirm', { year: p.item.season_label }), label: t('delete_year') };
-        default: return { title: t('delete'), message: t('confirm_delete'), label: t('delete') };
+        case 'close': return { title: t('close_year'), message: t('close_year_confirm'), label: t('close_year'), variant: 'primary' };
+        case 'reopen': return { title: t('reopen_year'), message: t('reopen_year_confirm'), label: t('reopen_year'), variant: 'primary' };
+        case 'delete-year': return { title: t('delete_year'), message: t('delete_fiscal_year_confirm', { year: p.item.season_label }), label: t('delete_year'), variant: 'danger' };
+        default: return { title: '', message: '', label: '', variant: 'danger' };
     }
 });
 
@@ -58,7 +56,6 @@ function runPending() {
     if (p.action === 'close') router.post(route('finance.years.close', p.item.id), {}, opts);
     else if (p.action === 'reopen') router.post(route('finance.years.reopen', p.item.id), {}, opts);
     else if (p.action === 'delete-year') router.delete(route('finance.years.destroy', p.item.id), opts);
-    else router.delete(route('finance.categories.destroy', p.item.id), opts);
 }
 
 /* ----- Budgets ----- */
@@ -77,12 +74,8 @@ function saveBudget() {
     router.put(route('finance.budget.update', budgetYearId.value), { budgets: rows }, { preserveScroll: true });
 }
 
-/* ----- Categories ----- */
-const catForm = useForm({ type: 'income', name: '', code: '', color: '#10b981' });
-function addCategory() {
-    catForm.post(route('finance.categories.store'), { preserveScroll: true, onSuccess: () => catForm.reset('name', 'code') });
-}
-function deleteCategory(c) { pending.value = { action: 'delete-category', item: c }; }
+/* ----- Categories: one manager, shared with the Transactions page ----- */
+const showCategories = ref(false);
 
 /* ----- Reset (superadmin) ----- */
 const { isSuperadmin } = useCan();
@@ -189,45 +182,13 @@ function resetFinance() {
                 </div>
             </section>
 
-            <!-- Chart of accounts -->
-            <section class="card p-5">
-                <p class="mb-4 text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('chart_of_accounts') }}</p>
-                <div class="grid gap-6 lg:grid-cols-2">
-                    <div>
-                        <p class="mb-2 text-xs font-bold uppercase tracking-wide text-emerald-600">{{ t('income_categories') }}</p>
-                        <ul class="space-y-1.5">
-                            <li v-for="c in income" :key="c.id" class="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/50">
-                                <span class="flex min-w-0 items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
-                                    <span class="h-3 w-3 shrink-0 rounded-full" :style="{ background: c.color || '#94a3b8' }"></span>
-                                    <span class="truncate">{{ c.localized_name || c.name }}</span>
-                                    <span v-if="c.transactions_count" class="text-xs text-slate-400">· {{ c.transactions_count }}</span>
-                                </span>
-                                <IconButton icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteCategory(c)" />
-                            </li>
-                        </ul>
-                    </div>
-                    <div>
-                        <p class="mb-2 text-xs font-bold uppercase tracking-wide text-rose-600">{{ t('expense_categories') }}</p>
-                        <ul class="space-y-1.5">
-                            <li v-for="c in expense" :key="c.id" class="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/50">
-                                <span class="flex min-w-0 items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
-                                    <span class="h-3 w-3 shrink-0 rounded-full" :style="{ background: c.color || '#94a3b8' }"></span>
-                                    <span class="truncate">{{ c.localized_name || c.name }}</span>
-                                    <span v-if="c.transactions_count" class="text-xs text-slate-400">· {{ c.transactions_count }}</span>
-                                </span>
-                                <IconButton icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteCategory(c)" />
-                            </li>
-                        </ul>
-                    </div>
+            <!-- Finance categories: one manager, shared with the Transactions page -->
+            <section class="card flex flex-wrap items-center justify-between gap-3 p-5">
+                <div class="min-w-0">
+                    <p class="text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('fincat.title') }}</p>
+                    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ t('fincat.settings_hint') }}</p>
                 </div>
-                <form @submit.prevent="addCategory" class="mt-4 flex flex-wrap items-end gap-3 border-t border-slate-100 pt-4 dark:border-slate-800">
-                    <select v-model="catForm.type" class="rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800">
-                        <option value="income">{{ t('income') }}</option><option value="expense">{{ t('expense') }}</option>
-                    </select>
-                    <input v-model="catForm.name" :placeholder="t('category_name')" required class="rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800" />
-                    <input v-model="catForm.color" type="color" class="h-9 w-12 rounded-lg border-slate-200 dark:border-slate-700" />
-                    <button class="inline-flex items-center gap-1.5 rounded-xl bg-primary-600 px-3.5 py-2 text-sm font-bold text-white hover:bg-primary-700"><Icon name="plus" /> {{ t('add_category') }}</button>
-                </form>
+                <IconButton icon="categories" :label="t('fincat.manage')" @click="showCategories = true" />
             </section>
 
             <!-- Caisses live on their own page -->
@@ -260,8 +221,11 @@ function resetFinance() {
             :title="pendingCopy.title"
             :message="pendingCopy.message"
             :confirm-label="pendingCopy.label"
+            :variant="pendingCopy.variant"
             @confirm="runPending"
             @cancel="pending = null"
         />
+
+        <CategoryManager :show="showCategories" :categories="categories" @close="showCategories = false" />
     </AuthenticatedLayout>
 </template>

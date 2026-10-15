@@ -12,6 +12,9 @@ final class ValidationAttributes
     /** Request field => UI label key (resources/js/i18n/*.json). */
     private const LABELS = [
         'name' => 'name',
+        'name_ar' => 'fincat.name_ar',
+        'name_fr' => 'fincat.name_fr',
+        'name_en' => 'fincat.name_en',
         'firstname' => 'firstname',
         'lastname' => 'lastname',
         'nickname' => 'nickname',

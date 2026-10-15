@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\FinanceCategory;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Support\FiscalPeriod;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -72,17 +73,15 @@ class TransactionFinanceCategoryTest extends TestCase
         // here would collide with that seed data under RefreshDatabase.
         $inc = FinanceCategory::firstOrCreate(['type' => 'income', 'name' => 'Donations'], ['is_active' => true]);
         $exp = FinanceCategory::create(['type' => 'expense', 'name' => 'Rent', 'is_active' => true]);
-        Transaction::create(['amount' => 900, 'transaction_type' => 'income', 'category' => 'donations', 'finance_category_id' => $inc->id, 'status' => 'Paid', 'transaction_date' => now(), 'fiscal_year' => now()->year]);
-        Transaction::create(['amount' => 400, 'transaction_type' => 'expense', 'category' => 'rent', 'finance_category_id' => $exp->id, 'status' => 'Paid', 'transaction_date' => now(), 'fiscal_year' => now()->year]);
+        Transaction::create(['amount' => 900, 'transaction_type' => 'income', 'category' => 'donations', 'finance_category_id' => $inc->id, 'status' => 'Paid', 'transaction_date' => now(), 'fiscal_year' => FiscalPeriod::currentKey()]);
+        Transaction::create(['amount' => 400, 'transaction_type' => 'expense', 'category' => 'rent', 'finance_category_id' => $exp->id, 'status' => 'Paid', 'transaction_date' => now(), 'fiscal_year' => FiscalPeriod::currentKey()]);
 
         $this->actingAs($this->admin())
             ->get(route('transactions.index'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Transactions/Index')
-                ->where('stats.income', 900)
-                ->where('stats.expense', 400)
-                ->where('stats.net', 500)
-                ->has('stats.debts'));
+                ->where('strip', fn ($strip) => collect($strip)->pluck('value', 'key')->map(fn ($v) => (float) $v)->all()
+                    == ['tx_income' => 900.0, 'tx_expense' => 400.0, 'tx_net' => 500.0, 'tx_debts' => 0.0]));
     }
 }

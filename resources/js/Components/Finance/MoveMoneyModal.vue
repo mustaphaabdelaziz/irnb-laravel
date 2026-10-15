@@ -6,6 +6,7 @@ import Icon from '@/Components/Icon.vue';
 import Modal from '@/Components/Modal.vue';
 import InputError from '@/Components/InputError.vue';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
+import { localToday } from '@/lib/localDate';
 
 // accounts: [{ id, label, balance, is_opening_fund }] — active accounts the money can move between.
 // The opening fund can only give money, never receive it.
@@ -20,10 +21,7 @@ const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
 
 // Today in the user's own time zone (toISOString would give the UTC date).
-const today = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-};
+const today = localToday;
 
 const form = useForm({
     from_account_id: '',

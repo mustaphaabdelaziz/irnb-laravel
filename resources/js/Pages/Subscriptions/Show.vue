@@ -9,6 +9,7 @@ import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { ref, computed } from 'vue';
 import { useStatusLabel } from '@/Composables/useStatusLabel';
+import { paymentStatusColor } from '@/lib/statusLabels';
 
 const { t } = useI18n();
 const { statusLabel } = useStatusLabel();
@@ -95,13 +96,6 @@ function printList() {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────
-const statusColor = (s) => {
-    if (s === 'paid')    return 'emerald';
-    if (s === 'partial') return 'amber';
-    if (s === 'exempt')  return 'slate';
-    return 'rose';
-};
-
 const tabCount = (tab) => {
     if (tab === 'paid')    return props.stats?.paid_count ?? 0;
     if (tab === 'unpaid')  return props.stats?.unpaid_count ?? 0;
@@ -273,7 +267,7 @@ const tabCount = (tab) => {
                                     {{ formatMoney(ps.remaining_amount) }}
                                 </td>
                                 <td class="px-4 py-3">
-                                    <Badge :label="statusLabel('payment', ps.payment_status)" :color="statusColor(ps.payment_status)" />
+                                    <Badge :label="statusLabel('payment', ps.payment_status)" :color="paymentStatusColor(ps.payment_status)" />
                                 </td>
                                 <td class="no-print px-4 py-3 text-end">
                                     <IconButton :href="route('players.show', ps.player_id)" icon="eye" :label="t('view')" plain size="sm" />

@@ -6,6 +6,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import StatCard from '@/Components/StatCard.vue';
 import Icon from '@/Components/Icon.vue';
 import IconButton from '@/Components/IconButton.vue';
+import { localToday } from '@/lib/localDate';
 
 const props = defineProps({
     sessions: { type: Array, default: () => [] },
@@ -19,7 +20,7 @@ const filteredSessions = computed(() => props.sessions.filter((s) =>
     (!fType.value || s.type === fType.value) && (!fStatus.value || s.status === fStatus.value)));
 
 const showForm = ref(false);
-const today = new Date().toISOString().slice(0, 10);
+const today = localToday();
 const form = useForm({ type: 'yearly', session_date: today, notes: '' });
 function start() {
     form.post(route('inventory.store'));

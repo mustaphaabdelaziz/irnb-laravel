@@ -10,6 +10,7 @@ import { computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
+import { localToday } from '@/lib/localDate';
 
 const { t } = useI18n();
 const props = defineProps({
@@ -18,9 +19,14 @@ const props = defineProps({
     financeAccounts: { type: Array, default: () => [] },
     players: { type: Array, default: () => [] },
     clubCcp: { type: Object, default: null },
+    defaultFinanceAccountId: { type: Number, default: null },
+    lockedAccount: { type: Object, default: null },
 });
 
 const isEdit = !!props.transaction;
+
+// Today on the user's clock: toISOString() is UTC, a day behind before 1 AM in Algeria.
+const today = localToday;
 
 const form = useForm({
     // An untitled (legacy/automatic) transaction pre-fills its generated label.
@@ -28,7 +34,7 @@ const form = useForm({
     transaction_type: props.transaction?.transaction_type || 'income',
     finance_category_id: props.transaction?.finance_category_id || '',
     amount: props.transaction?.amount || '',
-    transaction_date: props.transaction?.transaction_date ? String(props.transaction.transaction_date).slice(0, 10) : new Date().toISOString().slice(0, 10),
+    transaction_date: props.transaction?.transaction_date ? String(props.transaction.transaction_date).slice(0, 10) : today(),
     description: props.transaction?.description || '',
     payment_method: props.transaction?.payment_method || 'cash',
     payment_account: props.transaction?.payment_account || '',
@@ -36,7 +42,8 @@ const form = useForm({
     payment_bank_name: props.transaction?.payment_bank_name || '',
     payment_holder: props.transaction?.payment_holder || '',
     payment_reference: props.transaction?.payment_reference || '',
-    finance_account_id: props.transaction?.finance_account_id || props.financeAccounts[0]?.id || '',
+    // The resolver's caisse (TransactionController::formOptions), never the Fonds Initial.
+    finance_account_id: props.transaction?.finance_account_id || props.defaultFinanceAccountId || '',
     status: props.transaction?.status || 'Paid',
     related_entity_id: props.transaction?.related_entity_id || '',
     receipt: null,
@@ -131,6 +138,8 @@ function submit() {
                     <InputLabel :value="form.transaction_type === 'income' ? t('destination_register') : t('source_register')" />
                     <select v-model="form.finance_account_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm" required>
                         <option value="" disabled>{{ t('select_cash_register') }}</option>
+                        <!-- Booked on an account the pickers hide (Fonds Initial, inactive caisse): shown, not choosable. -->
+                        <option v-if="lockedAccount" :value="lockedAccount.id" disabled>{{ accountLabel(lockedAccount) }}</option>
                         <option v-for="account in financeAccounts" :key="account.id" :value="account.id">
                             {{ accountLabel(account) }}
                         </option>

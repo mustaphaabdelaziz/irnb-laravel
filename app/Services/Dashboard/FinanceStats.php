@@ -2,8 +2,12 @@
 
 namespace App\Services\Dashboard;
 
+use App\Models\FinanceAccount;
+use App\Models\FinanceTransfer;
 use App\Models\Transaction;
 use App\Services\Dashboard\Support\BranchScope;
+use App\Support\FinanceAccountLabel;
+use App\Support\UiLang;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -46,9 +50,13 @@ class FinanceStats
         $average = $entries > 0 ? round((float) $row->amount_total / $entries, 2) : null;
 
         $largest = $this->windowed($filters)
-            ->where('transaction_type', 'expense')
-            ->orderByDesc('amount')
-            ->first(['id', 'amount', 'description', 'category', 'transaction_date']);
+            ->where('transactions.transaction_type', 'expense')
+            ->with('financeCategory:id,name,name_ar,name_fr,name_en')
+            ->orderByDesc('transactions.amount')
+            ->first([
+                'transactions.id', 'transactions.amount', 'transactions.title', 'transactions.description',
+                'transactions.finance_category_id', 'transactions.transaction_date',
+            ]);
 
         $burnRate = $this->burnRate($filters, (float) ($row->expense_total ?? 0));
         $treasury = $this->treasuryBalance($filters);
@@ -65,7 +73,8 @@ class FinanceStats
                 'value' => $largest ? round((float) $largest->amount, 2) : null,
                 'format' => 'money',
                 'meta' => $largest ? [
-                    'label' => $largest->description ?: $largest->category,
+                    // Never the stored slug: title, description, the category's name, else "Expense".
+                    'label' => $largest->title ?: ($largest->description ?: ($largest->financeCategory?->localized_name ?: UiLang::get('expense'))),
                     'date' => $largest->transaction_date?->toDateString(),
                 ] : null,
             ],
@@ -199,33 +208,28 @@ class FinanceStats
         return $result;
     }
 
+    /**
+     * Active accounts, labelled like the Caisses page. The Fonds Initial is
+     * bookkeeping rather than a place money sits: listed only while it still
+     * holds some, so no money disappears from view.
+     */
     private function accounts(DashboardFilters $filters): array
     {
-        return DB::table('finance_accounts')
-            ->leftJoin('branches', 'branches.id', '=', 'finance_accounts.branch_id')
-            ->where('finance_accounts.is_active', true)
-            ->when(
-                $filters->branchId !== null,
-                fn ($q) => $q->where('finance_accounts.branch_id', $filters->branchId),
-            )
-            ->orderByDesc('finance_accounts.is_treasury')
-            ->orderBy('finance_accounts.sort_order')
-            ->orderBy('finance_accounts.id')
-            ->get([
-                'finance_accounts.id as id',
-                'finance_accounts.name as name',
-                'finance_accounts.is_treasury as is_treasury',
-                'finance_accounts.opening_balance as opening',
-                'finance_accounts.current_balance as current',
-                'branches.name as branch',
-            ])
-            ->map(fn (object $row): array => [
-                'id' => (int) $row->id,
-                'name' => (string) $row->name,
-                'branch' => $row->branch,
-                'is_treasury' => (bool) $row->is_treasury,
-                'opening' => round((float) $row->opening, 2),
-                'current' => round((float) $row->current, 2),
+        return FinanceAccount::query()
+            ->with(['branch:id,name,name_ar,name_fr,name_en', 'category:id,name,name_ar,name_fr,name_en'])
+            ->where('is_active', true)
+            ->when($filters->branchId !== null, fn ($q) => $q->where('branch_id', $filters->branchId))
+            ->orderByDesc('is_treasury')->orderBy('sort_order')->orderBy('id')
+            ->get()
+            ->reject(fn (FinanceAccount $a): bool => $a->is_opening_fund && abs((float) $a->current_balance) < 0.005)
+            ->map(fn (FinanceAccount $a): array => [
+                'id' => $a->id,
+                'name' => (string) $a->name,
+                'label' => FinanceAccountLabel::for($a),
+                'branch' => $a->branch?->localized_name,
+                'is_treasury' => (bool) $a->is_treasury,
+                'opening' => round((float) $a->opening_balance, 2),
+                'current' => round((float) $a->current_balance, 2),
             ])
             ->values()
             ->all();
@@ -252,22 +256,24 @@ class FinanceStats
             ->selectRaw('COUNT(*) as entries, SUM(finance_transfers.amount) as total')
             ->first();
 
-        $recent = (clone $query)
+        $recentIds = (clone $query)
             ->orderByDesc('finance_transfers.transfer_date')
+            ->orderByDesc('finance_transfers.id')
             ->limit(5)
-            ->get([
-                'finance_transfers.id as id',
-                'finance_transfers.amount as amount',
-                'finance_transfers.transfer_date as date',
-                'source.name as source_name',
-                'target.name as target_name',
-            ])
-            ->map(fn (object $row): array => [
-                'id' => (int) $row->id,
-                'from' => (string) $row->source_name,
-                'to' => (string) $row->target_name,
-                'amount' => round((float) $row->amount, 2),
-                'date' => (string) $row->date,
+            ->pluck('finance_transfers.id');
+
+        $labelled = ['branch:id,name,name_ar,name_fr,name_en', 'category:id,name,name_ar,name_fr,name_en'];
+        $recent = FinanceTransfer::query()
+            ->with(['fromAccount' => fn ($q) => $q->with($labelled), 'toAccount' => fn ($q) => $q->with($labelled)])
+            ->whereIn('id', $recentIds)
+            ->orderByDesc('transfer_date')->orderByDesc('id')
+            ->get()
+            ->map(fn (FinanceTransfer $tr): array => [
+                'id' => $tr->id,
+                'from' => FinanceAccountLabel::for($tr->fromAccount),
+                'to' => FinanceAccountLabel::for($tr->toAccount),
+                'amount' => round((float) $tr->amount, 2),
+                'date' => $tr->transfer_date?->toDateString() ?? '',
             ])
             ->values()
             ->all();

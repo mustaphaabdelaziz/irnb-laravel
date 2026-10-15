@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class InventorySessionItem extends Model
 {
+    use SerializesClubDates;
+
     protected $fillable = [
         'inventory_session_id', 'equipment_item_id', 'expected_status',
         'expected_condition', 'expected_location', 'expected_quantity',

@@ -59,7 +59,7 @@ class ListMultiSelectFiltersTest extends TestCase
     /** @return list<string> */
     private function txTitles(array $query): array
     {
-        return collect($this->props('transactions.index', $query)['transactions']['data'])
+        return collect($this->props('transactions.index', $query + ['fiscal_year' => 'all'])['transactions']['data'])
             ->pluck('description')->sort()->values()->all();
     }
 
@@ -101,7 +101,7 @@ class ListMultiSelectFiltersTest extends TestCase
         $this->tx('t3', ['description' => 'desc-three', 'finance_account_id' => $c->id]);
 
         $content = $this->actingAs(User::factory()->admin()->create(['email_verified_at' => now()]))
-            ->get(route('transactions.export', ['format' => 'csv', 'finance_account_id' => [$a->id, $c->id]]))
+            ->get(route('transactions.export', ['format' => 'csv', 'finance_account_id' => [$a->id, $c->id], 'fiscal_year' => 'all']))
             ->assertOk()->streamedContent();
 
         $this->assertStringContainsString('desc-one', $content);

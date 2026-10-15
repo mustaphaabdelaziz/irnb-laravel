@@ -3,12 +3,15 @@
 namespace App\Models;
 
 use App\Enums\AcademicPeriod;
+use App\Models\Concerns\SerializesClubDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /** One graded trimester of a school year, on that year's scale (/10 primary, /20 otherwise). */
 class PlayerAcademicRecord extends Model
 {
+    use SerializesClubDates;
+
     /** Pass mark once a grade is converted to /20 (latestOn20Sql's scale). Half of 20. */
     public const PASS_MARK_ON_20 = 10;
 

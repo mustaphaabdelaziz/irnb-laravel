@@ -8,6 +8,7 @@ use App\Models\PlayerSubscription;
 use App\Models\Subscription;
 use App\Models\Transaction;
 use App\Support\TransactionTitle;
+use App\Support\UiLang;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -23,10 +24,7 @@ class TransactionTitleTest extends TestCase
 
     private function subscriptionPayment(): Transaction
     {
-        FinanceCategory::updateOrCreate(
-            ['type' => 'income', 'name' => 'Subscription'],
-            ['name_fr' => 'Cotisation', 'name_ar' => 'اشتراك', 'is_active' => true],
-        );
+        FinanceCategory::where('type', 'income')->where('code', 'SUB')->update(['name_fr' => 'Cotisation', 'name_ar' => 'اشتراك']);
         $player = $this->player();
         $line = PlayerSubscription::create([
             'player_id' => $player->id, 'label' => 'Saison', 'year' => 2026,
@@ -100,27 +98,33 @@ class TransactionTitleTest extends TestCase
     }
 
     #[Test]
-    public function a_category_slug_that_collides_with_an_unrelated_ui_key_is_headlined_not_mistranslated(): void
+    public function a_system_slug_without_its_category_gets_its_ui_label(): void
     {
-        // 'paid' is a UI key for payment status ("مدفوع" in Arabic); a finance
-        // category slug that happens to collide with it must not borrow that
-        // unrelated label. Deliberately not eager-loading financeCategory, so
-        // categoryLabel() falls through to the free-text slug branch.
         $tx = Transaction::create([
-            'amount' => 100, 'transaction_type' => 'expense', 'category' => 'paid', 'status' => 'Paid',
+            'amount' => 100, 'transaction_type' => 'income', 'category' => 'donation', 'status' => 'Paid',
         ]);
 
-        app()->setLocale('ar');
-        $this->assertSame('Paid', TransactionTitle::for($tx));
+        app()->setLocale('fr');
+        $this->assertSame(UiLang::get('donation'), TransactionTitle::for($tx));
+    }
+
+    #[Test]
+    public function without_its_category_an_entry_is_named_by_its_type_never_its_slug(): void
+    {
+        // Deliberately not eager-loading financeCategory: the fallback path.
+        $tx = Transaction::create([
+            'amount' => 100, 'transaction_type' => 'expense', 'category' => 'msaryf_ashghal_almkr', 'status' => 'Paid',
+        ]);
+
+        app()->setLocale('fr');
+        $this->assertSame(UiLang::get('expense'), TransactionTitle::for($tx));
+        $this->assertStringNotContainsString('Msaryf', TransactionTitle::for($tx));
     }
 
     #[Test]
     public function a_line_without_its_own_label_falls_back_to_the_subscriptions_name(): void
     {
-        FinanceCategory::updateOrCreate(
-            ['type' => 'income', 'name' => 'Subscription'],
-            ['name_fr' => 'Cotisation', 'name_ar' => 'اشتراك', 'is_active' => true],
-        );
+        FinanceCategory::where('type', 'income')->where('code', 'SUB')->update(['name_fr' => 'Cotisation', 'name_ar' => 'اشتراك']);
         $player = $this->player();
         $subscription = Subscription::create(['name' => 'Hiver', 'year' => 2026]);
         $line = PlayerSubscription::create([

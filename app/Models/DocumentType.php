@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasLocalizedName;
+use App\Models\Concerns\SerializesClubDates;
 use App\Support\Season;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class DocumentType extends Model
 {
     use HasLocalizedName;
+    use SerializesClubDates;
 
     /** The seeded Photo type: satisfied by the player's profile picture, never uploaded. */
     public const PHOTO = 'photo';

@@ -65,7 +65,8 @@ class BackupSettingsTest extends TestCase
             'message' => 'The restore failed partway through. Your previous data is safe in: C:\\b\\pre-restore\\x.zip',
             'snapshot' => 'C:\\b\\pre-restore\\x.zip',
             'leftover_media' => null,
-            'at' => '2026-07-13T10:00:00+00:00',
+            // Stamped on the club's clock (Algiers, UTC+1), offset included.
+            'at' => '2026-07-13T10:00:00+01:00',
         ], $this->settings->lastRestore());
 
         $this->settings->clearRestore();

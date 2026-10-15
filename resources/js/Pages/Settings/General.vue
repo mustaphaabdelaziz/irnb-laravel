@@ -6,7 +6,8 @@ import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
+import { currencyLabel } from '@/lib/currencyLabel';
 
 const { t, locale } = useI18n();
 
@@ -30,11 +31,12 @@ const tabs = [
     { key: 'certificates', label: 'academic_certificates' },
 ];
 
-// Helper to get a date string from a potential Date object or ISO string
+// The date part of a server date. Dates arrive on the club's clock
+// ("1990-03-15T00:00:00.000000+01:00"), so the part before the "T" is the
+// date itself; toISOString() would turn it into the UTC day before.
 function toDateInput(val) {
     if (!val) return '';
-    const d = new Date(val);
-    return isNaN(d.getTime()) ? '' : d.toISOString().split('T')[0];
+    return String(val).match(/^\d{4}-\d{2}-\d{2}/)?.[0] ?? '';
 }
 
 const basicForm = useForm({
@@ -218,14 +220,21 @@ function saveCertificates() {
     })).put(route('settings.update'), { preserveScroll: true });
 }
 
+const savedCurrency = props.config?.settings?.currency || 'DZD';
+const savedSymbol = String(props.config?.settings?.currencySymbol ?? '').trim();
+
 const settingsForm = useForm({
-    currency: props.config?.settings?.currency || 'DZD',
-    timezone: props.config?.settings?.timezone || 'Africa/Algiers',
+    currency: savedCurrency,
+    // Only a symbol that differs from the code is custom; older saves stored the code here.
+    currency_symbol: savedSymbol.toUpperCase() === savedCurrency.toUpperCase() ? '' : savedSymbol,
     default_language: props.config?.settings?.defaultLanguage || props.config?.settings?.default_language || 'ar',
     enable_donations: props.config?.settings?.enableDonations ?? props.config?.settings?.enable_donations ?? true,
     maintenance_mode: props.config?.settings?.maintenanceMode ?? props.config?.settings?.maintenance_mode ?? false,
     seasonStartMonth: props.config?.settings?.seasonStartMonth ?? 9,
 });
+
+// The standard sign of the chosen currency, shown when no custom symbol is typed.
+const standardCurrencySign = computed(() => currencyLabel({ code: settingsForm.currency, symbol: null }, t('currency_symbol')));
 
 // Month names come from the browser in the active language, so no catalog keys.
 function monthName(month) {
@@ -318,8 +327,8 @@ function saveSettings() {
     settingsForm.transform(data => ({
         settings: {
             currency: data.currency,
-            currencySymbol: data.currency,
-            timezone: data.timezone,
+            // Empty = the standard sign (ClubCurrency / useCurrency).
+            currencySymbol: data.currency_symbol.trim() || null,
             defaultLanguage: data.default_language,
             enableDonations: data.enable_donations,
             maintenanceMode: data.maintenance_mode,
@@ -566,6 +575,13 @@ function saveSettings() {
                                         <option value="EUR">EUR - Euro</option>
                                         <option value="USD">USD - US Dollar</option>
                                     </select>
+                                    <InputError class="mt-1" :message="settingsForm.errors['settings.currency']" />
+                                </div>
+                                <div>
+                                    <InputLabel for="currency_symbol" :value="t('currency_custom_symbol')" />
+                                    <TextInput id="currency_symbol" v-model="settingsForm.currency_symbol" class="mt-1 w-full" maxlength="8" :placeholder="standardCurrencySign" aria-describedby="currency_symbol_hint" />
+                                    <span id="currency_symbol_hint" class="mt-1 block text-xs text-slate-500 dark:text-slate-400">{{ t('currency_custom_symbol_hint') }}</span>
+                                    <InputError class="mt-1" :message="settingsForm.errors['settings.currencySymbol']" />
                                 </div>
                                 <div>
                                     <InputLabel :value="t('default_language')" />

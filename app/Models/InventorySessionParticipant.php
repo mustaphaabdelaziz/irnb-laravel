@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class InventorySessionParticipant extends Model
 {
+    use SerializesClubDates;
+
     protected $fillable = ['inventory_session_id', 'participant_type', 'participant_id'];
 
     public function participant(): MorphTo

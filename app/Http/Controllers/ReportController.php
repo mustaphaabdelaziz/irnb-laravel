@@ -37,7 +37,7 @@ class ReportController extends Controller
             'relatedName' => $relatedName,
             'receiptNumber' => str_pad((string) $transaction->id, 6, '0', STR_PAD_LEFT),
             'title' => TransactionTitle::for($transaction),
-            'categoryLabel' => $transaction->financeCategory?->localized_name ?? $transaction->category,
+            'categoryLabel' => TransactionTitle::categoryLabel($transaction),
             'statusLabel' => UiLang::get(strtolower((string) $transaction->status), (string) $transaction->status),
             'paymentLabel' => $transaction->payment_method
                 ? UiLang::get(strtolower((string) $transaction->payment_method), (string) $transaction->payment_method)

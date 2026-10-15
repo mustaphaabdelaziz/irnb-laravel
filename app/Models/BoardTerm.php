@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class BoardTerm extends Model
 {
+    use SerializesClubDates;
+
     protected $fillable = ['name', 'start_date', 'end_date', 'is_current'];
 
     protected function casts(): array

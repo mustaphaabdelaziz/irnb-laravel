@@ -51,5 +51,6 @@
     "This category already has a caisse in this branch.": "Cette catégorie a déjà une caisse dans cette section.",
     "Only a caisse inside a safe can be linked to a category.": "Seule une caisse située dans un coffre peut être liée à une catégorie.",
     "Money cannot be moved into the opening fund.": "On ne peut pas déplacer de l'argent vers le Fonds Initial.",
-    "The source cash register does not have enough money for this transfer.": "Pas assez d'argent disponible à la source pour ce mouvement."
+    "The source cash register does not have enough money for this transfer.": "Pas assez d'argent disponible à la source pour ce mouvement.",
+    "A finance category with this name already exists.": "Une catégorie financière porte déjà ce nom."
 }

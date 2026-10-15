@@ -7,6 +7,7 @@ use App\Models\EquipmentItem;
 use App\Models\EquipmentRental;
 use App\Models\Player;
 use App\Models\PlayerSubscription;
+use App\Models\Transaction;
 use App\Services\Dashboard\ModuleStats;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -130,6 +131,23 @@ class ModuleStatsTest extends TestCase
         ]);
 
         $this->assertSame(0, $this->strip('equipment')['equip_catalogs']['value']);
+    }
+
+    #[Test]
+    public function the_transactions_strip_sums_the_query_it_is_given(): void
+    {
+        foreach ([[500, 'income'], [120, 'expense']] as [$amount, $type]) {
+            Transaction::create(['amount' => $amount, 'transaction_type' => $type, 'category' => 'x', 'status' => 'Paid', 'transaction_date' => now()]);
+        }
+        $this->player(['outstanding_debt' => 300]);
+
+        $strip = collect(app(ModuleStats::class)->transactions(Transaction::query()->where('archived', false)))->keyBy('key');
+
+        $this->assertSame(500.0, $strip['tx_income']['value']);
+        $this->assertSame(120.0, $strip['tx_expense']['value']);
+        $this->assertSame(380.0, $strip['tx_net']['value']);
+        $this->assertSame(300.0, $strip['tx_debts']['value']);
+        $this->assertSame('money', $strip['tx_net']['format']);
     }
 
     #[Test]

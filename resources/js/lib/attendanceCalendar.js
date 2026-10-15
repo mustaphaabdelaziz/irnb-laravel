@@ -3,9 +3,11 @@
  * Dates travel as local 'Y-m-d' strings and months as 'Y-m' strings, never
  * through toISOString() (that is the UTC date and can be a day off).
  */
+import { localDateKey } from './localDate.js';
+
 const pad = (n) => String(n).padStart(2, '0');
 
-export const dateKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+export const dateKey = localDateKey;
 export const monthKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
 export const parseDay = (key) => new Date(`${key}T00:00:00`);
 

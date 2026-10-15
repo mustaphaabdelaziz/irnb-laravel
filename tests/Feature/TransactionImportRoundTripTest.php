@@ -23,7 +23,8 @@ class TransactionImportRoundTripTest extends TestCase
 
     private function download(User $user, string $format): UploadedFile
     {
-        $response = $this->actingAs($user)->get(route('transactions.export', ['format' => $format]));
+        // Every season: the fixtures are dated in a past one, and the export follows the list's current-season default.
+        $response = $this->actingAs($user)->get(route('transactions.export', ['format' => $format, 'fiscal_year' => 'all']));
         ob_start();
         $response->baseResponse->sendContent();
         $path = tempnam(sys_get_temp_dir(), 'rt').'.'.$format;

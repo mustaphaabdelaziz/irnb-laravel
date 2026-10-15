@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\DB;
  */
 class AttendanceCustomStatus extends Model
 {
+    use SerializesClubDates;
+
     public const BEHAVIOURS = ['present', 'absent_excused', 'absent_unexcused', 'not_counted'];
 
     public const KEY_PREFIX = 'c_';

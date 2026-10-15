@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class EquipmentCategory extends Model
 {
+    use SerializesClubDates;
+
     protected $fillable = ['name', 'code', 'description'];
 
     /**

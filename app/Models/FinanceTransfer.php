@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class FinanceTransfer extends Model
 {
+    use SerializesClubDates;
+
     protected $fillable = [
         'from_account_id',
         'to_account_id',
@@ -23,6 +27,12 @@ class FinanceTransfer extends Model
             'amount' => 'decimal:2',
             'transfer_date' => 'date:Y-m-d',
         ];
+    }
+
+    /** Timestamps reach the screens as "Y-m-d H:i", never as ISO strings with a timezone suffix. */
+    protected function serializeDate(DateTimeInterface $date): string
+    {
+        return $date->format('Y-m-d H:i');
     }
 
     public function fromAccount(): BelongsTo

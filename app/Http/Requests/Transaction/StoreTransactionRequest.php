@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Transaction;
 
+use App\Models\Transaction;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -14,6 +15,8 @@ class StoreTransactionRequest extends FormRequest
 
     public function rules(): array
     {
+        $current = $this->currentFinanceAccountId();
+
         return [
             'title' => ['required', 'string', 'max:150'],
             'amount' => ['required', 'numeric', 'min:0'],
@@ -31,10 +34,13 @@ class StoreTransactionRequest extends FormRequest
             'payment_bank_name' => ['nullable', 'string', 'max:255'],
             'payment_holder' => ['nullable', 'string', 'max:255'],
             'payment_reference' => ['nullable', 'string', 'max:255'],
+            // An active caisse — or the one the entry already sits on, so an entry
+            // whose caisse was deactivated later can still be edited.
             'finance_account_id' => [
                 'nullable',
                 Rule::exists('finance_accounts', 'id')
-                    ->where('is_active', true),
+                    ->where(fn ($query) => $query->where(fn ($query) => $query->where('is_active', true)
+                        ->when($current, fn ($query, $id) => $query->orWhere('id', $id)))),
             ],
             // A transaction points at a player by id, never by name — and the id must exist.
             'related_entity_type' => ['nullable', 'required_with:related_entity_id', 'in:Player'],
@@ -43,5 +49,13 @@ class StoreTransactionRequest extends FormRequest
             'status' => ['nullable', 'in:Paid,Partial,Unpaid,Exempt'],
             'receipt' => ['nullable', 'file', 'max:10240'],
         ];
+    }
+
+    /** The caisse the transaction being updated is booked on (route-bound), if any. */
+    private function currentFinanceAccountId(): ?int
+    {
+        $transaction = $this->route('transaction');
+
+        return $transaction instanceof Transaction ? $transaction->finance_account_id : null;
     }
 }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\SessionKind;
 use App\Enums\SessionState;
+use App\Models\Concerns\SerializesClubDates;
 use App\Services\Attendance\GenerationMarks;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -21,6 +22,8 @@ use Illuminate\Support\Facades\DB;
  */
 class TrainingSession extends Model
 {
+    use SerializesClubDates;
+
     protected $fillable = [
         'category_id', 'schedule_id', 'date', 'start_time', 'end_time', 'kind', 'state',
         'cancel_reason', 'moved_from', 'coach', 'title', 'notes', 'roster_status_ids',

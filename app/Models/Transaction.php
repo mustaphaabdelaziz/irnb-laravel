@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use App\Observers\TransactionObserver;
 use App\Support\Media;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Transaction extends Model
 {
     use HasFactory;
+    use SerializesClubDates;
 
     /** Eager loads that let the UI label a transaction's cash register. */
     public const FINANCE_ACCOUNT_LABEL = [
@@ -75,10 +78,16 @@ class Transaction extends Model
     {
         return [
             'amount' => 'decimal:2',
-            'transaction_date' => 'datetime',
+            'transaction_date' => 'datetime:Y-m-d',
             'archived' => 'boolean',
             'fiscal_year' => 'integer',
         ];
+    }
+
+    /** Timestamps reach the screens as "Y-m-d H:i", never as ISO strings with a timezone suffix. */
+    protected function serializeDate(DateTimeInterface $date): string
+    {
+        return $date->format('Y-m-d H:i');
     }
 
     public function recordedBy(): BelongsTo

@@ -54,6 +54,7 @@ class BoardController extends Controller
                 ->whereIn('status', ['not_started', 'in_progress'])
                 ->orderByRaw('due_date is null, due_date asc')->limit(6)->get(),
             'membersByRole' => BoardMember::where('status', 'active')
+                ->withPlayer()
                 ->with('roleModel:id,name,sort_order')
                 ->get()
                 ->sortBy(fn (BoardMember $m) => [$m->roleModel?->sort_order ?? 99, $m->sort_order])
@@ -130,6 +131,7 @@ class BoardController extends Controller
         $selectedTermId = $request->integer('term') ?: $currentTerm?->id;
 
         $members = BoardMember::withCount('tasks')
+            ->withPlayer()
             ->with('roleModel:id,name,sort_order')
             ->when($selectedTermId, fn ($q) => $q->where('board_term_id', $selectedTermId))
             ->orderBy('status')
@@ -268,7 +270,7 @@ class BoardController extends Controller
         // Role mirrors roleLabel() in Board/Members.vue: the role's own label
         // when it has one (custom roles), else t(name). Status renders as t(code).
         $roleLabels = BoardRole::pluck('label', 'name');
-        $rows = BoardMember::orderBy('sort_order')->get()->map(fn (BoardMember $m) => [
+        $rows = BoardMember::withPlayer()->orderBy('sort_order')->get()->map(fn (BoardMember $m) => [
             $m->name, ($roleLabels[$m->role] ?? null) ?: self::codeLabel($m->role), $m->email, $m->phone !== null ? (string) $m->phone : null,
             $m->term_start, $m->term_end, self::codeLabel($m->status),
         ])->all();

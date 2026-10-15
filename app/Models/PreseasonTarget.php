@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /** How many pre-season (préparation physique) sessions a category plans for a season. */
 class PreseasonTarget extends Model
 {
+    use SerializesClubDates;
+
     protected $fillable = ['category_id', 'season_start_year', 'target_count'];
 
     protected function casts(): array

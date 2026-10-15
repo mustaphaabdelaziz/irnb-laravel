@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\CompetitionType;
+use App\Models\Concerns\SerializesClubDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Competition extends Model
 {
+    use SerializesClubDates;
+
     protected $fillable = [
         'team_id', 'season_start_year', 'name', 'type', 'game_format_id',
         'red_ban_matches', 'yellow_threshold', 'yellow_ban_matches', 'archived', 'notes',

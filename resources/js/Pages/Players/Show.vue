@@ -19,13 +19,16 @@ import MatchesSection from '@/Pages/Players/Partials/MatchesSection.vue';
 import PlayerDocumentsCard from '@/Components/PlayerDocumentsCard.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
+import { useCurrency } from '@/Composables/useCurrency';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 import { ref, computed, watch } from 'vue';
 import { useStatusLabel } from '@/Composables/useStatusLabel';
+import { paymentStatusColor } from '@/lib/statusLabels';
 import { useCan } from '@/Composables/useCan';
 
 const { t } = useI18n();
+const { currencyLabel } = useCurrency();
 const { statusLabel } = useStatusLabel();
 const { formatMoney } = useFormatMoney();
 const { can } = useCan();
@@ -246,13 +249,6 @@ function confirmRemove() {
     });
 }
 
-const statusColor = (s) => {
-    if (s === 'paid') return 'emerald';
-    if (s === 'partial') return 'amber';
-    if (s === 'exempt') return 'slate';
-    return 'rose';
-};
-
 // --- Edit / remove a subscription obligation line ---
 const showSubEditModal = ref(false);
 const editingSubId = ref(null);
@@ -422,7 +418,7 @@ function formatDate(val) {
                     <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                         <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('outstanding_debt') }}</p>
                         <p class="mt-2 text-3xl font-bold" :class="totalDebt > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'">
-                            {{ formatMoney(totalDebt) }} <span class="text-base font-normal text-slate-400 dark:text-slate-500">DZD</span>
+                            {{ formatMoney(totalDebt) }} <span class="text-base font-normal text-slate-400 dark:text-slate-500">{{ currencyLabel }}</span>
                         </p>
                         <div class="mt-4">
                             <IconButton icon="money" :label="t('add_payment')" variant="primary" @click="showPaymentModal = true" />
@@ -488,7 +484,7 @@ function formatDate(val) {
                                     {{ formatMoney(sub.remaining_amount) }}
                                 </td>
                                 <td class="px-4 py-3">
-                                    <Badge :label="t(paymentStatus(sub))" :color="statusColor(paymentStatus(sub))" />
+                                    <Badge :label="t(paymentStatus(sub))" :color="paymentStatusColor(paymentStatus(sub))" />
                                 </td>
                                 <td class="px-4 py-3 text-end whitespace-nowrap">
                                     <div class="inline-flex items-center gap-1">

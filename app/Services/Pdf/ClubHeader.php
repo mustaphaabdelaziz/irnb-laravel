@@ -3,6 +3,7 @@
 namespace App\Services\Pdf;
 
 use App\Models\WebsiteConfig;
+use App\Support\ClubCurrency;
 use App\Support\Media;
 
 /**
@@ -26,7 +27,8 @@ final class ClubHeader
             'address' => $config->full_address ?: null,
             'phone' => $config->contact_phone,
             'email' => $config->contact_email,
-            'currency' => $config->settings['currencySymbol'] ?? $config->settings['currency'] ?? 'DZD',
+            // What follows a printed amount: the Settings currency, in the PDF's language.
+            'currency' => ClubCurrency::label($locale),
         ];
     }
 }

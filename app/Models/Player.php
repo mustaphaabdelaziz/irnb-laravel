@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use App\Support\Media;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -17,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 class Player extends Model
 {
     use HasFactory;
+    use SerializesClubDates;
 
     /** What the fullname accessor reads: add these to any query that narrows its columns. */
     public const NAME_COLUMNS = ['firstname', 'lastname', 'nickname', 'father', 'grandfather', 'gender'];
@@ -78,6 +80,13 @@ class Player extends Model
                 $player->left_at = null;
             } elseif ($player->left_at === null) {
                 $player->left_at = now()->toDateString();
+            }
+        });
+
+        // Board members keep a copy of their player's name for narrow lookups.
+        static::updated(function (Player $player) {
+            if ($player->wasChanged(self::NAME_COLUMNS)) {
+                BoardMember::where('player_id', $player->id)->update(['name' => $player->fullname]);
             }
         });
     }

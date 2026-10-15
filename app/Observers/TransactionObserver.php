@@ -3,7 +3,6 @@
 namespace App\Observers;
 
 use App\Exceptions\ClosedFiscalYearException;
-use App\Models\FinanceCategory;
 use App\Models\FiscalYear;
 use App\Models\Player;
 use App\Models\PlayerSubscription;
@@ -12,7 +11,7 @@ use App\Services\Finance\DefaultRegisterResolver;
 use App\Services\Finance\RecalculatePlayerDebtService;
 use App\Services\FinanceService;
 use App\Support\FiscalPeriod;
-use Illuminate\Support\Str;
+use App\Support\LegacyFinanceCategory;
 
 class TransactionObserver
 {
@@ -22,8 +21,15 @@ class TransactionObserver
      */
     public function saving(Transaction $transaction): void
     {
+        // An entry saved without a date is dated now on the club's clock. Left
+        // empty, the column default (the database clock, UTC on SQLite) would
+        // date it — possibly a day and a season apart from the club's today.
+        if (empty($transaction->transaction_date)) {
+            $transaction->transaction_date = now();
+        }
+
         // The season of the transaction's own date — never a caller's guess.
-        $key = FiscalPeriod::keyForDate($transaction->transaction_date ?: now());
+        $key = FiscalPeriod::keyForDate($transaction->transaction_date);
         $transaction->fiscal_year = $key;
 
         $fy = FiscalYear::firstOrCreate(
@@ -46,12 +52,13 @@ class TransactionObserver
             throw new ClosedFiscalYearException($originalKey);
         }
 
-        if (empty($transaction->finance_category_id) && $transaction->category) {
-            $cat = FinanceCategory::firstOrCreate(
-                ['type' => $transaction->transaction_type, 'name' => Str::title(str_replace(['_', '-'], ' ', (string) $transaction->category))],
-                ['is_active' => true, 'is_system' => false]
-            );
-            $transaction->finance_category_id = $cat->id;
+        // Every transaction gets a category; one only carrying a legacy slug is
+        // mapped to an existing category, never given a new one (LegacyFinanceCategory).
+        if (empty($transaction->finance_category_id)) {
+            $transaction->finance_category_id = LegacyFinanceCategory::resolve(
+                (string) $transaction->transaction_type,
+                $transaction->category,
+            )->id;
         }
 
         if (empty($transaction->finance_account_id)) {

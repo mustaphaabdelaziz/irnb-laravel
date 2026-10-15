@@ -35,3 +35,12 @@ export function statusLabel(t, domain, code) {
     const key = statusKey(domain, code);
     return key ? t(key) : String(code);
 }
+
+/** Badge colour of a payment status, the same on every screen. */
+export function paymentStatusColor(code) {
+    const key = String(code ?? '').toLowerCase();
+    if (key === 'paid') return 'emerald';
+    if (key === 'partial') return 'amber';
+    if (key === 'exempt') return 'slate';
+    return 'rose';
+}

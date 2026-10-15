@@ -1,5 +1,8 @@
 <script setup>
+import { useCurrency } from '@/Composables/useCurrency';
 import Icon from '@/Components/Icon.vue';
+
+const { currencyLabel } = useCurrency();
 
 defineProps({
     label: String,
@@ -7,6 +10,8 @@ defineProps({
     icon: { type: String, default: null },
     color: { type: String, default: 'slate' },
     suffix: { type: String, default: '' },
+    // money value: the club currency label (useCurrency) follows it
+    currency: { type: Boolean, default: false },
 });
 
 const valueColor = {
@@ -38,7 +43,7 @@ const accent = {
 
 <template>
     <article
-        class="card-interactive relative overflow-hidden p-5 before:absolute before:inset-x-5 before:top-0 before:h-px before:bg-gradient-to-r before:content-['']"
+        class="card-interactive relative min-w-0 overflow-hidden p-5 before:absolute before:inset-x-5 before:top-0 before:h-px before:bg-gradient-to-r before:content-['']"
         :class="accent[color] || accent.slate"
     >
         <div class="flex items-start justify-between gap-3">
@@ -49,8 +54,8 @@ const accent = {
                 :class="chip[color] || chip.slate"
             ><Icon :name="icon" /></span>
         </div>
-        <p class="figure mt-3 text-3xl font-extrabold" :class="valueColor[color] || valueColor.slate">
-            {{ value }}<span v-if="suffix" class="ms-1 text-base font-medium text-slate-400">{{ suffix }}</span>
+        <p class="figure mt-3 text-2xl font-extrabold [overflow-wrap:anywhere] sm:text-3xl" :class="valueColor[color] || valueColor.slate">
+            {{ value }}<span v-if="suffix || currency" class="ms-1 whitespace-nowrap text-base font-medium text-slate-400">{{ suffix || currencyLabel }}</span>
         </p>
         <slot />
     </article>

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\WebsiteConfig;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateWebsiteConfigRequest extends FormRequest
 {
@@ -44,6 +45,12 @@ class UpdateWebsiteConfigRequest extends FormRequest
             // A setting with a meaning the server must defend: a month outside
             // 1-12 would break the season.
             'settings.seasonStartMonth' => ['nullable', 'integer', 'min:1', 'max:12'],
+            // The whole app runs on this clock (ClubTimezone).
+            'settings.timezone' => ['nullable', 'string', Rule::in(timezone_identifiers_list())],
+            // A three-letter code (DZD, EUR, ...) and an optional short sign
+            // printed after amounts instead of the standard one (ClubCurrency).
+            'settings.currency' => ['nullable', 'string', 'regex:/^[A-Za-z]{3}$/'],
+            'settings.currencySymbol' => ['nullable', 'string', 'max:8'],
             'settings.academicCertificates' => ['nullable', 'array'],
             'settings.academicCertificates.20' => ['required_with:settings.academicCertificates', 'array'],
             'settings.academicCertificates.10' => ['required_with:settings.academicCertificates', 'array'],

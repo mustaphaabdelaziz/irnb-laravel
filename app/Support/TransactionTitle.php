@@ -83,19 +83,22 @@ final class TransactionTitle
         return $transaction->relatedPlayer;
     }
 
-    private static function categoryLabel(Transaction $transaction): string
+    public static function categoryLabel(Transaction $transaction): string
     {
         if ($transaction->relationLoaded('financeCategory') && $transaction->financeCategory) {
             return $transaction->financeCategory->localized_name;
         }
 
-        $slug = (string) ($transaction->category ?: 'transaction');
-
-        if (! in_array($slug, self::SYSTEM_CATEGORY_SLUGS, true)) {
-            return Str::headline($slug);
+        // No category to name it by (not loaded, deleted, never linked). The
+        // app's own payment kinds have labels; anything else is named by its
+        // type — never by the stored slug, which for an Arabic category name is
+        // an unreadable transliteration ("msaryf_ashghal_almkr").
+        $slug = (string) $transaction->category;
+        if (in_array($slug, self::SYSTEM_CATEGORY_SLUGS, true)) {
+            return UiLang::get($slug, Str::headline($slug));
         }
 
-        return UiLang::get($slug, Str::headline($slug));
+        return UiLang::get((string) ($transaction->transaction_type ?: 'transaction'), 'Transaction');
     }
 
     private static function subscriptionLabel(Transaction $transaction): ?string

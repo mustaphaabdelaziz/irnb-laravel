@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\AbsenceReason;
+use App\Models\Concerns\SerializesClubDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -13,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Attendance extends Model
 {
+    use SerializesClubDates;
+
     protected $fillable = ['training_session_id', 'player_id', 'category_id', 'status', 'minutes', 'reason', 'note', 'recorded_by'];
 
     protected function casts(): array

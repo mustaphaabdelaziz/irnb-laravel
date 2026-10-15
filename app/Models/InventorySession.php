@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class InventorySession extends Model
 {
+    use SerializesClubDates;
+
     protected $fillable = [
         'reference', 'type', 'session_date', 'status', 'conducted_by_user_id',
         'total_expected', 'total_found', 'total_missing', 'notes', 'completed_at',

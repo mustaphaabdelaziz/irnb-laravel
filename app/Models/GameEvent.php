@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -13,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class GameEvent extends Model
 {
+    use SerializesClubDates;
+
     public const TYPES = ['goal', 'sanction', 'substitution'];
 
     public const GOAL_KINDS = ['normal', 'penalty', 'free_kick', 'opponent_own_goal'];

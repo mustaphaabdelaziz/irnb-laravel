@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Competitions;
 
-use App\Models\Game;
 use App\Models\GameFormat;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;

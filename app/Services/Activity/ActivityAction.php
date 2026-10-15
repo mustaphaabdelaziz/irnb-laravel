@@ -115,6 +115,7 @@ class ActivityAction
     const CALL_UP_SAVED = 'call_up_saved';
 
     const LINEUP_SAVED = 'lineup_saved';
+
     const REPORT_SAVED = 'report_saved';
 
     // Edits, deletions, sign-ins and settings (2026-10 users batch) — most are

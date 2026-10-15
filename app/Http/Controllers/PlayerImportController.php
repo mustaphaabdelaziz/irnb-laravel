@@ -53,7 +53,6 @@ class PlayerImportController extends Controller
         ['key' => 'join_year', 'label' => 'col.join_year', 'legacy' => ['سنة الانضمام'], 'example' => ''],
         // Appended last on purpose: older files simply have no cell here.
         ['key' => 'wilaya', 'label' => 'col.wilaya', 'hint' => 'col.hint.code_or_name', 'legacy' => ['الولاية (الرمز أو الاسم)'], 'example' => '47'],
-        // Appended last: older files have no cell here.
         ['key' => 'other_positions', 'label' => 'col.other_positions', 'hint' => 'col.hint.comma_separated', 'legacy' => ['مراكز أخرى (مفصولة بفاصلة)'], 'example' => 'WG, LB'],
         // Appended last: older files have no cell here.
         ['key' => 'licence_number', 'label' => 'col.licence_number', 'legacy' => ['رقم الإجازة'], 'example' => ''],

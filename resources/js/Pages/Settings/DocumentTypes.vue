@@ -125,8 +125,8 @@ function destroy() {
                             </td>
                             <td class="px-4 py-3">
                                 <Badge v-if="type.is_required" :label="t('doc_required')" color="primary" />
-                                <Badge v-if="type.required_for_matches" :label="t('doc_required_for_matches')" color="amber" />
                                 <Badge v-else :label="t('doc_optional')" color="slate" />
+                                <Badge v-if="type.required_for_matches" :label="t('doc_required_for_matches')" color="amber" />
                             </td>
                             <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ validityLabels[type.validity] || type.validity }}</td>
                             <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">

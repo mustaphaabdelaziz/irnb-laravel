@@ -7,6 +7,7 @@ use App\Models\Player;
 use App\Models\PlayerDocument;
 use App\Services\Player\DocumentChecklist;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\CompetitionFixtures;
 use Tests\TestCase;
@@ -14,6 +15,26 @@ use Tests\TestCase;
 class LicenceAndMatchDocumentsTest extends TestCase
 {
     use CompetitionFixtures, RefreshDatabase;
+
+    private function makeCsv(array $dataRows): UploadedFile
+    {
+        $header = array_fill(0, 22, 'header'); // Updated for 22 columns including licence_number
+
+        $fh = fopen('php://temp', 'r+');
+        fwrite($fh, "\xEF\xBB\xBF"); // UTF-8 BOM
+        fputcsv($fh, $header);
+        foreach ($dataRows as $row) {
+            fputcsv($fh, $row);
+        }
+        rewind($fh);
+        $content = stream_get_contents($fh);
+        fclose($fh);
+
+        $path = tempnam(sys_get_temp_dir(), 'imp').'.csv';
+        file_put_contents($path, $content);
+
+        return new UploadedFile($path, 'players.csv', 'text/csv', null, true);
+    }
 
     #[Test]
     public function the_licence_number_is_saved_from_the_player_form(): void
@@ -51,5 +72,26 @@ class LicenceAndMatchDocumentsTest extends TestCase
             ->pluck('missing', 'id')->map(fn ($v) => (int) $v)->all();
 
         $this->assertSame([$has->id => 0, $lacks->id => 1], $missing);
+    }
+
+    #[Test]
+    public function licence_number_is_imported_from_csv(): void
+    {
+        $category = $this->category();
+        // firstname, lastname, father, grandfather, nickname, birthdate, gender, phone,
+        // email, city, state, category, position, job, status, skill_level, blood_group,
+        // medical_conditions, join_year, wilaya, other_positions, licence_number
+        $file = $this->makeCsv([
+            ['Karim', 'Safir', '', '', '', '2006-03-15', 'Male', '0550111222', '', 'Algiers', 'Algiers', 'Senior', 'CB', '', 'worker', '7', 'B+', '', (string) now()->year, '16', '', 'LIC-77'],
+        ]);
+
+        $this->actingAs($this->admin())
+            ->post(route('players.import.store'), ['file' => $file])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseCount('players', 1);
+        $player = Player::firstOrFail();
+        $this->assertSame('LIC-77', $player->licence_number);
     }
 }

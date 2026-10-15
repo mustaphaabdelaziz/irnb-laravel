@@ -496,7 +496,10 @@ class TransactionController extends Controller
         $ownPlayerId = $transaction?->related_entity_type === 'Player' ? $transaction->related_entity_id : null;
 
         return [
-            'financeCategories' => FinanceCategory::where('is_active', true)
+            // Active categories, plus the entry's own one if it was deactivated since.
+            'financeCategories' => FinanceCategory::query()
+                ->where(fn (Builder $q) => $q->where('is_active', true)
+                    ->when($transaction?->finance_category_id, fn (Builder $q, $id) => $q->orWhere('id', $id)))
                 ->orderBy('type')->orderBy('sort_order')->orderBy('name')
                 ->get(['id', 'type', 'name', 'name_ar', 'name_fr', 'name_en', 'color']),
             'clubCcp' => WebsiteConfig::query()->first()?->banking_info['ccp'] ?? null,
@@ -523,6 +526,17 @@ class TransactionController extends Controller
                     'default_finance_account_id' => $registers->forPlayer($player)?->id,
                 ]),
             'financeAccounts' => $financeAccounts,
+            // Where a new entry starts: the server's own default for an entry
+            // without a player (DefaultRegisterResolver), else the first caisse
+            // listed. The pickers never list the Fonds Initial.
+            'defaultFinanceAccountId' => $registers->for(null, null)?->id ?? $financeAccounts->first()?->id,
+            // An entry booked on an account the pickers hide (the Fonds Initial,
+            // an inactive caisse) keeps showing it — read-only — instead of a blank select.
+            'lockedAccount' => $transaction?->finance_account_id && ! $financeAccounts->contains('id', $transaction->finance_account_id)
+                ? FinanceAccount::query()
+                    ->with(['branch:id,name,name_ar,name_fr,name_en', 'category:id,name,name_ar,name_fr,name_en'])
+                    ->find($transaction->finance_account_id, ['id', 'branch_id', 'category_id', 'name', 'type', 'is_treasury', 'is_opening_fund'])
+                : null,
         ];
     }
 }

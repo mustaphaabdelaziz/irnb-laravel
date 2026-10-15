@@ -22,6 +22,7 @@ const props = defineProps({
     type: { type: String, default: 'button' },
     pressed: { type: Boolean, default: null }, // toggle buttons (view switchers)
     plain: { type: Boolean, default: false }, // no ring/background — dense rows (table actions)
+    iconClass: { type: String, default: '' }, // extra classes for the icon only (e.g. rtl:rotate-180 for directional arrows)
 });
 
 const tag = computed(() => {
@@ -71,7 +72,7 @@ const pressedClass = 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200 da
         class="group/ib inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-lg font-medium transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-slate-900"
         :class="[SIZES[size] ?? SIZES.md, pressed ? pressedClass : colorClass]"
     >
-        <Icon :name="icon" class="text-[1.1em]" />
+        <Icon :name="icon" class="text-[1.1em]" :class="iconClass" />
         <span
             class="grid grid-cols-[0fr] opacity-0 transition-all duration-200 ease-out group-hover/ib:grid-cols-[1fr] group-hover/ib:opacity-100 group-focus-visible/ib:grid-cols-[1fr] group-focus-visible/ib:opacity-100 motion-reduce:transition-none"
             aria-hidden="true"

@@ -1,12 +1,13 @@
 <script setup>
 import { computed } from 'vue';
-import { Head, router, usePage } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import StatCard from '@/Components/StatCard.vue';
 import Icon from '@/Components/Icon.vue';
 import IconButton from '@/Components/IconButton.vue';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
+import { useCan } from '@/Composables/useCan';
 import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 import '@/lib/registerCharts';
 import { Line, Doughnut } from 'vue-chartjs';
@@ -22,23 +23,13 @@ const props = defineProps({
 const { t, locale } = useI18n();
 const { accountLabel } = useFinanceAccountLabel();
 const { formatMoney } = useFormatMoney();
-const page = usePage();
-const isAdmin = computed(() => page.props.auth?.isAdmin ?? false);
+const { can } = useCan();
 
 function selectYear(year) {
     router.get(route('finance.index'), { year }, { preserveScroll: true, preserveState: true, only: ['detail', 'selectedYear', 'accounts'] });
 }
 
 const isClosed = computed(() => props.detail?.status === 'closed');
-
-function closeYear() {
-    if (!window.confirm(t('close_year_confirm'))) return;
-    router.post(route('finance.years.close', props.detail.id), {}, { preserveScroll: true });
-}
-function reopenYear() {
-    if (!window.confirm(t('reopen_year_confirm'))) return;
-    router.post(route('finance.years.reopen', props.detail.id), {}, { preserveScroll: true });
-}
 
 const monthFormatter = computed(() => new Intl.DateTimeFormat(locale.value === 'ar' ? 'ar' : (locale.value === 'fr' ? 'fr' : 'en'), { month: 'short' }));
 const monthLabels = computed(() => (props.detail?.monthly || []).map((m) => monthFormatter.value.format(new Date(2000, m.month - 1, 1))));
@@ -97,9 +88,9 @@ const currentBalance = computed(() => props.accounts.reduce((s, a) => s + Number
                     </button>
                 </div>
                 <div class="flex items-center gap-2">
-                    <IconButton :href="route('finance.registers.index')" icon="money" :label="t('cash_registers')" />
+                    <IconButton :href="route('finance.registers.index')" icon="wallet" :label="t('cash_registers')" />
                     <IconButton :href="route('reports.financial', { year: selectedYear })" external target="_blank" icon="print" :label="t('export')" />
-                    <IconButton v-if="isAdmin" :href="route('finance.settings')" icon="settings" :label="t('finance_settings')" />
+                    <IconButton v-if="can('finance', 'edit')" :href="route('finance.settings')" icon="settings" :label="t('finance_settings')" />
                 </div>
             </div>
 
@@ -117,19 +108,15 @@ const currentBalance = computed(() => props.accounts.reduce((s, a) => s + Number
                             <p class="text-sm font-bold text-slate-900 dark:text-slate-100">{{ detail.season_label }} — {{ isClosed ? t('closed') : t('open') }}</p>
                             <p class="text-xs text-slate-500 dark:text-slate-400">
                                 <template v-if="isClosed">{{ t('closing_balance') }}: {{ formatMoney(detail.closing_balance) }}<span v-if="detail.closed_by"> · {{ detail.closed_by }}</span></template>
-                                <template v-else>{{ t('opening_balance') }}: {{ formatMoney(detail.opening_balance) }}</template>
+                                <template v-else>{{ t('finance.opening_balance') }}: {{ formatMoney(detail.opening_balance) }}</template>
                             </p>
                         </div>
-                    </div>
-                    <div v-if="isAdmin" class="flex items-center gap-2">
-                        <IconButton v-if="!isClosed" icon="archive" :label="t('close_year')" @click="closeYear" />
-                        <IconButton v-else icon="refresh" :label="t('reopen_year')" @click="reopenYear" />
                     </div>
                 </div>
 
                 <!-- KPIs -->
                 <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                    <StatCard :label="t('opening_balance')" :value="formatMoney(detail.opening_balance)" icon="money" color="slate" />
+                    <StatCard :label="t('finance.opening_balance')" :value="formatMoney(detail.opening_balance)" icon="money" color="slate" />
                     <StatCard :label="t('total_income')" :value="formatMoney(detail.income)" icon="arrow" color="emerald" />
                     <StatCard :label="t('total_expense')" :value="formatMoney(detail.expense)" icon="transactions" color="rose" />
                     <StatCard :label="t('net_balance')" :value="formatMoney(detail.net)" icon="check" :color="detail.net >= 0 ? 'primary' : 'rose'" />

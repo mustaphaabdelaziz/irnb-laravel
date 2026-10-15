@@ -21,6 +21,7 @@ class FinanceAccount extends Model
             'opening_balance' => 'decimal:2',
             'current_balance' => 'decimal:2',
             'is_treasury' => 'boolean',
+            'is_opening_fund' => 'boolean',
             'is_active' => 'boolean',
             'sort_order' => 'integer',
         ];
@@ -33,13 +34,14 @@ class FinanceAccount extends Model
     public function scopeSelectable(Builder $query): void
     {
         $query->where('is_active', true)
+            ->where('is_opening_fund', false)
             ->with([
                 'branch:id,name,name_ar,name_fr,name_en',
                 'category:id,name,name_ar,name_fr,name_en',
             ])
             ->orderBy('sort_order')
             ->orderBy('name')
-            ->select(['id', 'branch_id', 'category_id', 'parent_account_id', 'name', 'type', 'is_treasury', 'sort_order', 'current_balance']);
+            ->select(['id', 'branch_id', 'category_id', 'parent_account_id', 'name', 'type', 'is_treasury', 'is_opening_fund', 'sort_order', 'current_balance']);
     }
 
     public function transactions(): HasMany

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Branch;
 use App\Models\Budget;
 use App\Models\FinanceAccount;
 use App\Models\FinanceCategory;
@@ -45,6 +44,8 @@ class FinanceController extends Controller
             'selectedYear' => $selectedYear,
             'detail' => $fiscalYear ? $this->yearDetail($fiscalYear) : null,
             'accounts' => FinanceAccount::query()
+                // The Fonds Initial stays out of sight unless it still holds money.
+                ->where(fn ($query) => $query->where('is_opening_fund', false)->orWhere('current_balance', '!=', 0))
                 ->where(function ($query) {
                     $query->where('is_treasury', true)
                         ->orWhere(fn ($root) => $root->whereNull('branch_id')->whereNull('parent_account_id'));
@@ -69,15 +70,6 @@ class FinanceController extends Controller
         return Inertia::render('Finance/Settings', [
             'categories' => FinanceCategory::withCount('transactions')
                 ->orderBy('type')->orderBy('sort_order')->orderBy('name')->get(),
-            'accounts' => FinanceAccount::with([
-                'branch:id,name,name_ar,name_fr,name_en',
-                'category:id,name,name_ar,name_fr,name_en',
-            ])
-                ->withCount('transactions')
-                ->orderBy('sort_order')->orderBy('id')->get(),
-            'branches' => Branch::orderBy('name')->get([
-                'id', 'name', 'name_ar', 'name_fr', 'name_en',
-            ]),
             'years' => $this->yearsWithDeletability(),
             'budgets' => $budgets,
             'seasonOptions' => collect(range(FiscalPeriod::currentKey() + 1, FiscalPeriod::currentKey() - 5))

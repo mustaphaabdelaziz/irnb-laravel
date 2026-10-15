@@ -3,7 +3,6 @@
 namespace App\Observers;
 
 use App\Exceptions\ClosedFiscalYearException;
-use App\Models\FinanceCategory;
 use App\Models\FiscalYear;
 use App\Models\Player;
 use App\Models\PlayerSubscription;
@@ -12,7 +11,7 @@ use App\Services\Finance\DefaultRegisterResolver;
 use App\Services\Finance\RecalculatePlayerDebtService;
 use App\Services\FinanceService;
 use App\Support\FiscalPeriod;
-use Illuminate\Support\Str;
+use App\Support\LegacyFinanceCategory;
 
 class TransactionObserver
 {
@@ -46,12 +45,13 @@ class TransactionObserver
             throw new ClosedFiscalYearException($originalKey);
         }
 
-        if (empty($transaction->finance_category_id) && $transaction->category) {
-            $cat = FinanceCategory::firstOrCreate(
-                ['type' => $transaction->transaction_type, 'name' => Str::title(str_replace(['_', '-'], ' ', (string) $transaction->category))],
-                ['is_active' => true, 'is_system' => false]
-            );
-            $transaction->finance_category_id = $cat->id;
+        // Every transaction gets a category; one only carrying a legacy slug is
+        // mapped to an existing category, never given a new one (LegacyFinanceCategory).
+        if (empty($transaction->finance_category_id)) {
+            $transaction->finance_category_id = LegacyFinanceCategory::resolve(
+                (string) $transaction->transaction_type,
+                $transaction->category,
+            )->id;
         }
 
         if (empty($transaction->finance_account_id)) {

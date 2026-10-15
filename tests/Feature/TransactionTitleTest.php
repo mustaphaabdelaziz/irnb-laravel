@@ -24,10 +24,7 @@ class TransactionTitleTest extends TestCase
 
     private function subscriptionPayment(): Transaction
     {
-        FinanceCategory::updateOrCreate(
-            ['type' => 'income', 'name' => 'Subscription'],
-            ['name_fr' => 'Cotisation', 'name_ar' => 'اشتراك', 'is_active' => true],
-        );
+        FinanceCategory::where('type', 'income')->where('code', 'SUB')->update(['name_fr' => 'Cotisation', 'name_ar' => 'اشتراك']);
         $player = $this->player();
         $line = PlayerSubscription::create([
             'player_id' => $player->id, 'label' => 'Saison', 'year' => 2026,
@@ -127,10 +124,7 @@ class TransactionTitleTest extends TestCase
     #[Test]
     public function a_line_without_its_own_label_falls_back_to_the_subscriptions_name(): void
     {
-        FinanceCategory::updateOrCreate(
-            ['type' => 'income', 'name' => 'Subscription'],
-            ['name_fr' => 'Cotisation', 'name_ar' => 'اشتراك', 'is_active' => true],
-        );
+        FinanceCategory::where('type', 'income')->where('code', 'SUB')->update(['name_fr' => 'Cotisation', 'name_ar' => 'اشتراك']);
         $player = $this->player();
         $subscription = Subscription::create(['name' => 'Hiver', 'year' => 2026]);
         $line = PlayerSubscription::create([

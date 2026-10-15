@@ -194,17 +194,15 @@ class FinanceCategoryTranslationTest extends TestCase
     }
 
     #[Test]
-    public function categories_auto_created_by_a_transaction_get_stock_translations(): void
+    public function a_debt_payment_lands_in_the_seeded_arrears_category(): void
     {
-        Transaction::create([
+        $tx = Transaction::create([
             'amount' => 300, 'transaction_type' => 'income', 'category' => 'debt_payment',
             'status' => 'Paid', 'transaction_date' => now(),
         ]);
 
-        $cat = FinanceCategory::where('type', 'income')->where('name', 'Debt Payment')->firstOrFail();
-        $this->assertSame('Paiement de dette', $cat->name_fr);
-        $this->assertSame('تسديد دين', $cat->name_ar);
-        $this->assertNull($cat->name_en);
+        $this->assertSame('ARR', $tx->financeCategory->code);
+        $this->assertFalse(FinanceCategory::where('name', 'Debt Payment')->exists());
     }
 
     #[Test]

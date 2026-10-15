@@ -51,5 +51,6 @@
     "This category already has a caisse in this branch.": "لهذه الفئة صندوق في هذا الفرع بالفعل.",
     "Only a caisse inside a safe can be linked to a category.": "لا يمكن ربط فئة إلا بصندوق داخل خزينة.",
     "Money cannot be moved into the opening fund.": "لا يمكن نقل المال إلى صندوق الرصيد الافتتاحي.",
-    "The source cash register does not have enough money for this transfer.": "لا يوجد مال كافٍ في المصدر لإتمام هذا النقل."
+    "The source cash register does not have enough money for this transfer.": "لا يوجد مال كافٍ في المصدر لإتمام هذا النقل.",
+    "A finance category with this name already exists.": "توجد فئة مالية بهذا الاسم مسبقاً."
 }

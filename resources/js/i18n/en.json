@@ -836,6 +836,7 @@
     "comp.no_events": "No events yet.",
     "comp.no_format_for_sport": "No game format is linked to this sport yet — link one in Game formats.",
     "comp.no_limit": "No limit",
+    "comp.no_mvp": "No man of the match",
     "comp.not_called_reason": "Reason if not called",
     "comp.not_called_reason_hint": "Optional — e.g. tactical choice, exams",
     "comp.only_team_category": "Only the team's category",

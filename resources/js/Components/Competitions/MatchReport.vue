@@ -100,6 +100,32 @@ function save() {
     });
 }
 const err = (key) => (form.errors[key] ? t(form.errors[key]) : '');
+// Which error keys have a visible slot next to their field; every other one is
+// listed above the save button, so no server error is ever silently dropped.
+function shownInline(key) {
+    if (key === 'our_score') return true;
+    const ev = key.match(/^events\.(\d+)\.(\w+)$/);
+    if (ev) {
+        const e = events.value[+ev[1]];
+        if (!e) return false;
+        return {
+            minute: !rules.untimed,
+            period: rules.untimed,
+            player_id: e.subtype !== 'opponent_own_goal',
+            related_player_id: e.type !== 'sanction' && e.subtype !== 'opponent_own_goal',
+            subtype: true,
+            type: true,
+        }[ev[2]] ?? false;
+    }
+    const pl = key.match(/^players\.(\d+)\.(minutes_played|sets_played)$/);
+    return !!pl && !!players.value[+pl[1]];
+}
+const otherErrors = computed(() => [...new Set(Object.entries(form.errors).filter(([key]) => !shownInline(key)).map(([, msg]) => t(msg)))]);
+function removeEvent(index) {
+    events.value.splice(index, 1);
+    // Error keys carry row indexes, which just shifted.
+    form.clearErrors();
+}
 const icon = { goal: '⚽', sanction: '🟨', substitution: '🔁' };
 </script>
 
@@ -184,7 +210,7 @@ const icon = { goal: '⚽', sanction: '🟨', substitution: '🔁' };
                     <InputError :message="err(`events.${index}.related_player_id`)" />
                 </div>
                 <InputError :message="err(`events.${index}.subtype`) || err(`events.${index}.type`)" />
-                <IconButton v-if="canManage" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="events.splice(index, 1)" />
+                <IconButton v-if="canManage" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="removeEvent(index)" />
             </div>
             <p v-if="!events.length" class="text-sm text-slate-500">{{ t('comp.no_events') }}</p>
         </section>
@@ -218,6 +244,9 @@ const icon = { goal: '⚽', sanction: '🟨', substitution: '🔁' };
                     </tr>
                 </tbody>
             </table>
+            <label class="flex items-center justify-end gap-2 text-sm text-slate-600 dark:text-slate-300">
+                <input v-model="mvp" :value="null" :disabled="!canManage" type="radio" name="mvp" /> {{ t('comp.no_mvp') }}
+            </label>
             <p class="text-xs text-slate-500">{{ t('comp.ratings_private') }}</p>
         </section>
 
@@ -226,6 +255,9 @@ const icon = { goal: '⚽', sanction: '🟨', substitution: '🔁' };
             <textarea v-model="notes" :disabled="!canManage" rows="3" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800"></textarea>
         </label>
 
+        <ul v-if="otherErrors.length" role="alert" class="list-inside list-disc rounded-lg bg-rose-50 p-3 text-sm text-rose-700 dark:bg-rose-900/30 dark:text-rose-200">
+            <li v-for="msg in otherErrors" :key="msg">{{ msg }}</li>
+        </ul>
         <div class="flex flex-wrap items-center gap-3">
             <PrimaryButton v-if="canManage" :disabled="form.processing" @click="save">{{ t('comp.save_report') }}</PrimaryButton>
             <a v-if="report.status === 'played'" :href="route('games.report-sheet', gameId)" target="_blank" class="text-sm text-primary-600 hover:underline">{{ t('comp.report_sheet_pdf') }}</a>

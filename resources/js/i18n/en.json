@@ -787,6 +787,7 @@
     "comp.error.player_required": "Choose a player.",
     "comp.error.score_required": "Enter the score per period or the final score.",
     "comp.error.shirt_taken": "Two players have the same shirt number.",
+    "comp.error.slot_required": "Put every starter on a spot.",
     "comp.error.slot_taken": "Two players are on the same spot.",
     "comp.error.team_exists": "This sport and category already have a team with this name.",
     "comp.error.too_many_called": "Too many players called up for this game format.",

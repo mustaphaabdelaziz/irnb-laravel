@@ -13,10 +13,11 @@ final class MatchPage
     public function __construct(private readonly PlayerFlags $flags) {}
 
     /** @return array<string, mixed> */
-    public function lineup(Game $game): array
+    /** @param  array<int, true>|null  $injured  PlayerFlags::injured(), when the caller already has it */
+    public function lineup(Game $game, ?array $injured = null): array
     {
         $game->loadMissing(['format.formations', 'players.player.position']);
-        $injured = $this->flags->injured();
+        $injured ??= $this->flags->injured();
         $formations = $game->format->formations
             ->map(fn (Formation $f) => ['id' => $f->id, 'name' => $f->name, 'slots' => $f->slots])->values();
         if ($formations->isEmpty()) {

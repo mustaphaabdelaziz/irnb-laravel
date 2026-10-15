@@ -59,7 +59,7 @@
     @if ($subs)
         <h3>{{ $L('comp.sheet.substitutions') }}</h3>
         @foreach ($subs as $s)
-            <div><bdi dir="ltr">{{ $s['minute'] }}'</bdi> ↑ {{ $s['in'] }} ↓ {{ $s['out'] }}</div>
+            <div>@if ($s['minute'] !== null)<bdi dir="ltr">{{ $s['minute'] }}'</bdi> @endif↑ {{ $s['in'] }} ↓ {{ $s['out'] }}</div>
         @endforeach
     @endif
 
@@ -67,7 +67,7 @@
     <table class="list">
         <thead><tr>
             <th>{{ $L('comp.shirt') }}</th><th>{{ $L('comp.player') }}</th><th></th>
-            <th>{{ $players && $players[0]['sets'] !== null ? $L('comp.sets_played') : $L('comp.minutes') }}</th>
+            <th>{{ $sets ? $L('comp.sets_played') : $L('comp.minutes') }}</th>
             <th>{{ $L('comp.sheet.goals') }}</th><th>{{ $L('comp.sanctions') }}</th>
         </tr></thead>
         <tbody>

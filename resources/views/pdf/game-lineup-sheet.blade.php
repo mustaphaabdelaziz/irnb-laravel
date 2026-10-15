@@ -39,7 +39,7 @@
                     <td class="num">{{ $s['shirt'] }}</td>
                     <td>{{ $s['name'] }}</td>
                     <td>{{ $s['position'] }}</td>
-                    <td>@if ($s['captain']) C @endif @if ($s['goalkeeper']) GK @endif</td>
+                    <td>@if ($s['captain']) {{ $L('comp.captain_short') }} @endif @if ($s['goalkeeper']) {{ $L('comp.goalkeeper_short') }} @endif</td>
                 </tr>
             @endforeach
         </tbody>

@@ -95,7 +95,8 @@ function dropOnPitch(event) {
 function autoFill() {
     slots.value.forEach((slot, i) => {
         if (starterAt(i)) return;
-        const match = bench.value.find((r) => r.usual_position && r.usual_position.toUpperCase() === String(slot.label).toUpperCase());
+        // Injured players are never picked for their usual spot; the second pass only falls back to them.
+        const match = bench.value.find((r) => !r.injured && r.usual_position && r.usual_position.toUpperCase() === String(slot.label).toUpperCase());
         if (match) Object.assign(match, { role: 'starter', slot: i });
     });
     slots.value.forEach((slot, i) => {

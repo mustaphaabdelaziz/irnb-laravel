@@ -64,6 +64,7 @@ final class MatchSheets
         return [
             'club' => ClubHeader::data(),
             'game' => $this->header($game),
+            'sets' => $sets, // the player table's column: sets played (true) or minutes
             'score' => [
                 'us' => $game->our_score,
                 'them' => $game->their_score,

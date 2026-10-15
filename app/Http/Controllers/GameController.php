@@ -111,6 +111,7 @@ class GameController extends Controller
     public function show(Request $request, Game $game, CallUpCandidates $candidates, PlayerFlags $flags, MatchPage $page): Response
     {
         $game->load(['team.category', 'competition', 'opponent', 'venue', 'format', 'players']);
+        $injured = $flags->injured(); // shared by the call-up list and the line-up
 
         return Inertia::render('Games/Show', [
             'game' => [
@@ -127,8 +128,7 @@ class GameController extends Controller
                     'max_called_up' => (int) $game->rule('max_called_up'),
                 ],
             ],
-            'candidates' => (function () use ($game, $candidates, $flags) {
-                $injured = $flags->injured();
+            'candidates' => (function () use ($game, $candidates, $injured) {
                 $rows = $game->players->keyBy('player_id');
 
                 return $candidates->for($game)->map(fn (Player $p) => [
@@ -141,7 +141,7 @@ class GameController extends Controller
                     'injured' => isset($injured[$p->id]),
                 ])->values();
             })(),
-            'lineup' => $page->lineup($game),
+            'lineup' => $page->lineup($game, $injured),
             'report' => $page->report($game),
             'opponents' => Opponent::query()->orderBy('name')->get(['id', 'name'])->map(fn (Opponent $o) => ['value' => $o->id, 'label' => $o->name]),
             'venues' => Venue::query()->orderByDesc('is_home')->orderBy('name')->get(['id', 'name']),

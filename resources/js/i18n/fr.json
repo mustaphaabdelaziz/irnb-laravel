@@ -787,6 +787,7 @@
     "comp.error.player_required": "Choisissez un joueur.",
     "comp.error.score_required": "Saisissez le score par période ou le score final.",
     "comp.error.shirt_taken": "Deux joueurs ont le même numéro de maillot.",
+    "comp.error.slot_required": "Placez chaque titulaire sur un poste.",
     "comp.error.slot_taken": "Deux joueurs occupent le même poste.",
     "comp.error.team_exists": "Ce sport et cette catégorie ont déjà une équipe de ce nom.",
     "comp.error.too_many_called": "Trop de joueurs convoqués pour ce format de jeu.",

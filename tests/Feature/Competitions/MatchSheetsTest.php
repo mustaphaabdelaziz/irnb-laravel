@@ -66,6 +66,22 @@ class MatchSheetsTest extends TestCase
         $flat = json_encode($data);
         $this->assertStringNotContainsString('SECRET-NOTE', $flat);
         $this->assertStringNotContainsString('rating', $flat);
+        $this->assertFalse($data['sets']);
+    }
+
+    #[Test]
+    public function the_sheets_label_captain_and_goalkeeper_in_the_ui_language_and_take_untimed_subs(): void
+    {
+        [$game] = $this->playedMatch();
+        app()->setLocale('ar');
+        $lineup = view('pdf.game-lineup-sheet', app(MatchSheets::class)->lineup($game))->render();
+
+        $this->assertStringContainsString('<td> ق  </td>', $lineup);
+        $this->assertStringContainsString('<td>  ح </td>', $lineup);
+
+        $game->events()->where('type', 'substitution')->update(['minute' => null]);
+        $report = view('pdf.game-report-sheet', app(MatchSheets::class)->report($game->fresh()))->render();
+        $this->assertStringNotContainsString("<bdi dir=\"ltr\">'</bdi>", $report);
     }
 
     #[Test]

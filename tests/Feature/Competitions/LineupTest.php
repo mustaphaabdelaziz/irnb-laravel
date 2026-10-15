@@ -92,7 +92,9 @@ class LineupTest extends TestCase
         $save([$this->row($a, 'starter', 0), $this->row($b, 'starter', 0)])->assertSessionHasErrors('players');
         $save([$this->row($a, 'starter', 0, ['is_captain' => true]), $this->row($b, 'starter', 1, ['is_captain' => true])])->assertSessionHasErrors('players');
         $save([$this->row($a, 'starter', 0, ['is_goalkeeper' => true]), $this->row($b, 'starter', 1, ['is_goalkeeper' => true])])->assertSessionHasErrors('players');
-        $save([$this->row($a, 'starter', 0, ['shirt_number' => 7]), $this->row($b, 'starter', 1, ['shirt_number' => 7])])->assertSessionHasErrors('players.1.shirt_number');
+        $save([$this->row($a, 'starter', 0, ['shirt_number' => 7]), $this->row($b, 'starter', 1, ['shirt_number' => 7])])
+            ->assertSessionHasErrors(['players' => 'comp.error.shirt_taken']);
+        $save([$this->row($a, 'starter', 0), $this->row($b, 'starter')])->assertSessionHasErrors(['players' => 'comp.error.slot_required']);
         $save([$this->row($outsider, 'starter', 0)])->assertSessionHasErrors('players.0.player_id');
     }
 

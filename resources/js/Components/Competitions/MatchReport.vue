@@ -51,7 +51,8 @@ const derived = computed(() => {
     return { us: rows.reduce((s, r) => s + +r.us, 0), them: rows.reduce((s, r) => s + +r.them, 0) };
 });
 
-const types = computed(() => (rules.rolling_subs ? ['goal', 'sanction'] : ['goal', 'sanction', 'substitution']));
+// No sanction kinds in the format's rules → no "+ Sanction" button.
+const types = computed(() => ['goal', ...(rules.sanction_types.length ? ['sanction'] : []), ...(rules.rolling_subs ? [] : ['substitution'])]);
 const goalKinds = ['normal', 'penalty', 'free_kick', 'opponent_own_goal'];
 const lineupPlayers = computed(() => props.report.players.map((p) => ({ id: p.player_id, label: `${p.shirt_number ?? ''} ${p.name}`.trim() })));
 const sanctionLabel = (key) => {
@@ -127,6 +128,12 @@ function removeEvent(index) {
     form.clearErrors();
 }
 const icon = { goal: '⚽', sanction: '🟨', substitution: '🔁' };
+// A send-off (or a kind counted as a red card) shows red; other sanctions yellow.
+function iconFor(e) {
+    if (e.type !== 'sanction') return icon[e.type];
+    const kind = rules.sanction_types.find((s) => s.key === e.subtype);
+    return kind && (kind.ends_play || kind.counts_as === 'red') ? '🟥' : '🟨';
+}
 </script>
 
 <template>
@@ -176,7 +183,7 @@ const icon = { goal: '⚽', sanction: '🟨', substitution: '🔁' };
                 </template>
             </div>
             <div v-for="{ e, index } in ordered" :key="index" class="flex flex-wrap items-start gap-2 rounded-lg bg-slate-50 p-2 text-sm dark:bg-slate-800/60">
-                <span class="w-6 text-center">{{ icon[e.type] }}</span>
+                <span class="w-6 text-center">{{ iconFor(e) }}</span>
                 <!-- Untimed formats (sets, no clock): the period/set number is the timing. -->
                 <div v-if="rules.untimed">
                     <select v-model="e.period" :disabled="!canManage" :aria-label="t(`comp.period_${rules.period_label}`)" class="rounded border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">

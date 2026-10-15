@@ -36,7 +36,8 @@ class GameLineupController extends Controller
             'players.*.slot' => ['nullable', 'integer', 'min:0', 'max:29'],
             'players.*.pos_x' => ['nullable', 'integer', 'min:0', 'max:100'],
             'players.*.pos_y' => ['nullable', 'integer', 'min:0', 'max:100'],
-            'players.*.shirt_number' => ['nullable', 'integer', 'min:0', 'max:99', 'distinct'],
+            // No "distinct" here: two equal numbers are caught below as comp.error.shirt_taken.
+            'players.*.shirt_number' => ['nullable', 'integer', 'min:0', 'max:99'],
             'players.*.is_captain' => ['sometimes', 'boolean'],
             'players.*.is_goalkeeper' => ['sometimes', 'boolean'],
         ]);
@@ -51,6 +52,7 @@ class GameLineupController extends Controller
         $goalkeepers = $rows->filter(fn (array $r) => ! empty($r['is_goalkeeper']))->count();
         $error = match (true) {
             $starters->count() > (int) $game->rule('players_on_field') => 'comp.error.too_many_starters',
+            $spots !== [] && $slots->count() !== $starters->count() => 'comp.error.slot_required',
             $slots->contains(fn (int $slot) => $slot >= count($spots)) => 'comp.error.invalid_slot',
             $slots->count() !== $slots->unique()->count() => 'comp.error.slot_taken',
             $rows->filter(fn (array $r) => ! empty($r['is_captain']))->count() > 1 => 'comp.error.one_captain',

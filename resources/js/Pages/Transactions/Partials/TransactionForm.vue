@@ -10,6 +10,7 @@ import { computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
+import { localToday } from '@/lib/localDate';
 
 const { t } = useI18n();
 const props = defineProps({
@@ -25,10 +26,7 @@ const props = defineProps({
 const isEdit = !!props.transaction;
 
 // Today on the user's clock: toISOString() is UTC, a day behind before 1 AM in Algeria.
-const today = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-};
+const today = localToday;
 
 const form = useForm({
     // An untitled (legacy/automatic) transaction pre-fills its generated label.

@@ -17,6 +17,7 @@ import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useBulkSelection } from '@/Composables/useBulkSelection';
 import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 import { ref, watch, computed } from 'vue';
+import { localDateKey, localToday } from '@/lib/localDate';
 
 const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
@@ -101,7 +102,7 @@ function openAddItem() {
 const addItemForm = useForm({
     catalog_id: props.catalog.id,
     designation: '',
-    purchase_date: new Date().toISOString().slice(0, 10),
+    purchase_date: localToday(),
     condition: 'New',
     location: '',
     purchase_price: props.catalog.purchase_price || '',
@@ -119,7 +120,7 @@ const rentForm = useForm({
     // given to someone to work with, open-ended.
     type: 'rental',
     quantity: 1,
-    checkout_date: new Date().toISOString().slice(0, 10),
+    checkout_date: localToday(),
     // How many days it is expected to be out; drives the overdue flag.
     expected_days: '',
     notes: '',
@@ -128,9 +129,9 @@ const rentForm = useForm({
 // The expected return date, shown read-only so the user sees when it is due.
 const expectedReturnDate = computed(() => {
     if (!rentForm.checkout_date || !rentForm.expected_days) return null;
-    const d = new Date(rentForm.checkout_date);
+    const d = new Date(`${rentForm.checkout_date}T00:00:00`);
     d.setDate(d.getDate() + Number(rentForm.expected_days));
-    return d.toISOString().slice(0, 10);
+    return localDateKey(d);
 });
 
 const showReceiveModal = ref(false);
@@ -139,7 +140,7 @@ const receiveForm = useForm({
     catalog_id: props.catalog.id,
     quantity: 1,
     unit_price: props.catalog.purchase_price || '',
-    purchase_date: new Date().toISOString().slice(0, 10),
+    purchase_date: localToday(),
     condition: 'New',
     location: '',
     branch_ids: [],

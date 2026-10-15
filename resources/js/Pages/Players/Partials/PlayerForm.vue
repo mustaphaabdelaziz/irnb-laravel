@@ -14,6 +14,7 @@ import { useI18n } from 'vue-i18n';
 import { phoneDigits } from '@/lib/phone';
 import { positionLabeller } from '@/lib/positionLabels';
 import { useCan } from '@/Composables/useCan';
+import { localToday } from '@/lib/localDate';
 
 const { t } = useI18n();
 const { can } = useCan();
@@ -254,8 +255,7 @@ const isLeftStatus = computed(() => props.playerStatuses.find((s) => s.id === fo
 // Picking "left" pre-fills today; the date stays editable for a past departure.
 watch(isLeftStatus, (left) => {
     if (!left || form.left_at) return;
-    const d = new Date();
-    form.left_at = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    form.left_at = localToday();
 });
 
 const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route('players.index')));

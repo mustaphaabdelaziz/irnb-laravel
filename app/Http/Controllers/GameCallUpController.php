@@ -97,7 +97,10 @@ class GameCallUpController extends Controller
                 $attributes = $calledUp
                     ? ['called_up' => true, 'not_called_reason' => null, 'shirt_number' => $assign[$playerId][0], 'shirt_override' => $assign[$playerId][1]]
                     : ['called_up' => false, 'not_called_reason' => trim((string) $row['not_called_reason']), 'shirt_number' => null, 'shirt_override' => false,
-                        'role' => 'none', 'slot' => null, 'pos_x' => null, 'pos_y' => null, 'is_captain' => false, 'is_goalkeeper' => false];
+                        'role' => 'none', 'slot' => null, 'pos_x' => null, 'pos_y' => null, 'is_captain' => false, 'is_goalkeeper' => false,
+                        // Out of the match, out of its report too.
+                        'played' => false, 'minutes_played' => null, 'sets_played' => null, 'rating' => null, 'coach_note' => null,
+                        'is_mvp' => false, 'position_id' => null];
                 $current = $existing->get($playerId);
                 $current
                     ? $current->update($attributes)

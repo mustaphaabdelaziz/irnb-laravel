@@ -9,6 +9,7 @@ use App\Enums\SessionState;
 use App\Models\Attendance;
 use App\Models\GameEvent;
 use App\Models\GamePlayer;
+use App\Models\Position;
 use App\Models\TrainingSession;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -167,6 +168,34 @@ class CallUpTest extends TestCase
         $this->assertNull($row->shirt_number);
         $this->assertFalse($row->is_captain);
         $this->assertFalse($row->is_goalkeeper);
+    }
+
+    #[Test]
+    public function uncalling_a_player_clears_their_report_fields_too(): void
+    {
+        $team = $this->team();
+        $a = $this->player($team->category);
+        $this->onRoster($team, 2026, [$a]);
+        $game = $this->game($team);
+        $position = Position::create(['name' => 'Striker', 'abbreviation' => 'ST', 'branch_id' => $team->branch_id]);
+        GamePlayer::create([
+            'game_id' => $game->id, 'player_id' => $a->id, 'called_up' => true, 'shirt_number' => 1, 'role' => 'starter',
+            'played' => true, 'minutes_played' => 90, 'sets_played' => 3, 'rating' => 8, 'coach_note' => 'Sharp',
+            'is_mvp' => true, 'position_id' => $position->id,
+        ]);
+
+        $this->actingAs($this->admin())->put(route('games.call-up.update', $game), ['players' => [
+            ['player_id' => $a->id, 'called_up' => false, 'not_called_reason' => 'Injured'],
+        ]])->assertSessionHas('success');
+
+        $row = GamePlayer::where('game_id', $game->id)->where('player_id', $a->id)->firstOrFail();
+        $this->assertFalse($row->played);
+        $this->assertNull($row->minutes_played);
+        $this->assertNull($row->sets_played);
+        $this->assertNull($row->rating);
+        $this->assertNull($row->coach_note);
+        $this->assertFalse($row->is_mvp);
+        $this->assertNull($row->position_id);
     }
 
     #[Test]

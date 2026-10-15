@@ -112,4 +112,16 @@ class Game extends Model
 
         return false;
     }
+
+    /** What a sanction of this kind counts as for bans ('yellow' / 'red'), per this match's own rules. */
+    public function countsAs(?string $sanctionKey): ?string
+    {
+        foreach ($this->rule('sanction_types', []) as $type) {
+            if (($type['key'] ?? null) === $sanctionKey) {
+                return in_array($type['counts_as'] ?? null, ['yellow', 'red'], true) ? $type['counts_as'] : null;
+            }
+        }
+
+        return null;
+    }
 }

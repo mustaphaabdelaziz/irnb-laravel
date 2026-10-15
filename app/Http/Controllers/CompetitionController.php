@@ -9,6 +9,7 @@ use App\Models\GameFormat;
 use App\Models\Player;
 use App\Models\Team;
 use App\Services\Competitions\CompetitionRecord;
+use App\Services\Competitions\SuspensionEngine;
 use App\Services\Competitions\TeamAccess;
 use App\Support\Season;
 use Illuminate\Http\RedirectResponse;
@@ -115,7 +116,7 @@ class CompetitionController extends Controller
         ]);
     }
 
-    public function update(Request $request, Competition $competition): RedirectResponse
+    public function update(Request $request, Competition $competition, SuspensionEngine $engine): RedirectResponse
     {
         TeamAccess::authorize($request->user(), $competition->team, $competition->season_start_year);
         $data = $request->validate([
@@ -129,7 +130,12 @@ class CompetitionController extends Controller
             'archived' => ['sometimes', 'boolean'],
         ]);
         $this->assertFormatFits($data['game_format_id'] ?? null, $competition->team);
-        $competition->update($data);
+        $competition->fill($data);
+        $rulesChanged = $competition->isDirty(['red_ban_matches', 'yellow_threshold', 'yellow_ban_matches']);
+        $competition->save();
+        if ($rulesChanged) {
+            $engine->recompute($competition);
+        }
 
         return back()->with('success', 'flash.competition_updated');
     }

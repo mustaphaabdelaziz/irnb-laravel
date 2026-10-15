@@ -16,6 +16,7 @@ use App\Services\Attendance\SessionGenerator;
 use App\Services\Competitions\CallUpCandidates;
 use App\Services\Competitions\MatchPage;
 use App\Services\Competitions\PlayerFlags;
+use App\Services\Competitions\SuspensionEngine;
 use App\Services\Competitions\TeamAccess;
 use App\Services\Competitions\TrainingCanceller;
 use App\Support\Season;
@@ -149,7 +150,7 @@ class GameController extends Controller
         ]);
     }
 
-    public function update(Request $request, Game $game): RedirectResponse
+    public function update(Request $request, Game $game, SuspensionEngine $engine): RedirectResponse
     {
         TeamAccess::authorize($request->user(), $game->team, $game->season_start_year);
         $data = $request->validate($this->rules() + [
@@ -170,14 +171,22 @@ class GameController extends Controller
             }
         }
         $game->update($data);
+        // A status change (played <-> postponed) changes which reports count.
+        if ($game->competition_id !== null) {
+            $engine->recompute($game->competition);
+        }
 
         return back()->with('success', 'flash.game_updated');
     }
 
-    public function destroy(Request $request, Game $game): RedirectResponse
+    public function destroy(Request $request, Game $game, SuspensionEngine $engine): RedirectResponse
     {
         TeamAccess::authorize($request->user(), $game->team, $game->season_start_year);
+        $competition = $game->competition;
         $game->delete();
+        if ($competition !== null) {
+            $engine->recompute($competition);
+        }
 
         return redirect()->route('games.index')->with('success', 'flash.game_deleted');
     }

@@ -9,6 +9,7 @@ use App\Models\GamePlayer;
 use App\Services\Competitions\GameMinutes;
 use App\Services\Competitions\ReportValidator;
 use App\Services\Competitions\ScoreCalculator;
+use App\Services\Competitions\SuspensionEngine;
 use App\Services\Competitions\TeamAccess;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,7 +24,7 @@ class GameReportController extends Controller
      * per-player grid. The match becomes "played"; minutes are worked out from
      * the line-up and timeline unless the format has rolling substitutions.
      */
-    public function update(Request $request, Game $game, ReportValidator $validator, GameMinutes $minutes): RedirectResponse
+    public function update(Request $request, Game $game, ReportValidator $validator, GameMinutes $minutes, SuspensionEngine $engine): RedirectResponse
     {
         TeamAccess::authorize($request->user(), $game->team, $game->season_start_year);
         $periods = (int) $game->rule('periods_count');
@@ -81,7 +82,7 @@ class GameReportController extends Controller
         }
         [$us, $them] = $score ?? [(int) $data['our_score'], (int) $data['their_score']];
 
-        DB::transaction(function () use ($game, $data, $rows, $us, $them, $minutes) {
+        DB::transaction(function () use ($game, $data, $rows, $us, $them, $minutes, $engine) {
             $game->update([
                 'period_scores' => $rows,
                 'extra_time_played' => $data['extra_time_played'],
@@ -126,6 +127,9 @@ class GameReportController extends Controller
             }
 
             $minutes->refresh($game->fresh());
+            if ($game->competition_id !== null) {
+                $engine->recompute($game->competition);
+            }
         });
 
         return back()->with('success', 'flash.report_saved');

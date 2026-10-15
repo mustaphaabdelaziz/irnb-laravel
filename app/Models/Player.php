@@ -254,6 +254,11 @@ class Player extends Model
         return $this->hasManyThrough(PlayerAcademicRecord::class, PlayerAcademicYear::class);
     }
 
+    public function suspensions(): HasMany
+    {
+        return $this->hasMany(Suspension::class);
+    }
+
     public function documents(): HasMany
     {
         return $this->hasMany(PlayerDocument::class);

@@ -9,6 +9,7 @@ use App\Models\GamePlayer;
 use App\Models\User;
 use App\Services\Competitions\CallUpCandidates;
 use App\Services\Competitions\GameMinutes;
+use App\Services\Competitions\SuspensionEngine;
 use App\Services\Competitions\TeamAccess;
 use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
@@ -129,6 +130,9 @@ class GameCallUpController extends Controller
                     ->whereIn('related_player_id', $out)->update(['related_player_id' => null]);
                 if ($removedEvents > 0 && ($game->status === GameStatus::Played || $game->events()->exists())) {
                     app(GameMinutes::class)->refresh($game);
+                    if ($game->competition_id !== null) {
+                        app(SuspensionEngine::class)->recompute($game->competition);
+                    }
                 }
             }
         });

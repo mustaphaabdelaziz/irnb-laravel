@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class FinanceTransfer extends Model
 {
+    use SerializesClubDates;
+
     protected $fillable = [
         'from_account_id',
         'to_account_id',

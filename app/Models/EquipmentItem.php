@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use App\Services\Equipment\EquipmentStockService;
 use App\Support\UiLang;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class EquipmentItem extends Model
 {
     use HasFactory;
+    use SerializesClubDates;
 
     protected $fillable = [
         'catalog_id',

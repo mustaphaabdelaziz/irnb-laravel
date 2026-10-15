@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use App\Support\FiscalPeriod;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Subscription extends Model
 {
     use HasFactory;
+    use SerializesClubDates;
 
     /** Bound to a season; `year` holds the season's END year (2026 = 2025/2026). */
     public const KIND_ANNUAL = 'annual';

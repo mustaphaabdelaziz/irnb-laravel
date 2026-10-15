@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use App\Support\Media;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
@@ -10,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class BoardMember extends Model
 {
+    use SerializesClubDates;
+
     protected $fillable = [
         'user_id', 'player_id', 'board_term_id', 'name', 'role', 'photo_url', 'photo_filename',
         'email', 'phone', 'term_start', 'term_end', 'status', 'bio', 'sort_order',

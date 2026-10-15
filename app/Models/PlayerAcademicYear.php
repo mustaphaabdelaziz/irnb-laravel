@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\AcademicPeriod;
 use App\Enums\EducationLevel;
+use App\Models\Concerns\SerializesClubDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -11,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /** One school year of a student player: where they studied, and their trimester grades. */
 class PlayerAcademicYear extends Model
 {
+    use SerializesClubDates;
+
     protected $fillable = ['player_id', 'academic_year', 'education_level', 'institution', 'field_of_study'];
 
     protected $appends = ['scale', 'average', 'is_provisional'];

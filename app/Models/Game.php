@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\GameSide;
 use App\Enums\GameStatus;
+use App\Models\Concerns\SerializesClubDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,6 +17,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Game extends Model
 {
+    use SerializesClubDates;
+
     protected $fillable = [
         'team_id', 'competition_id', 'season_start_year', 'game_format_id', 'opponent_id', 'venue_id',
         'side', 'round_label', 'date', 'kickoff_time', 'meeting_time', 'meeting_place', 'status',

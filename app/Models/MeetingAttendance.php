@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MeetingAttendance extends Model
 {
+    use SerializesClubDates;
+
     protected $fillable = ['board_meeting_id', 'board_member_id', 'status'];
 
     public function meeting(): BelongsTo

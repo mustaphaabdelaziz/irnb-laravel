@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use App\Observers\TransactionObserver;
 use App\Support\Media;
 use DateTimeInterface;
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Transaction extends Model
 {
     use HasFactory;
+    use SerializesClubDates;
 
     /** Eager loads that let the UI label a transaction's cash register. */
     public const FINANCE_ACCOUNT_LABEL = [

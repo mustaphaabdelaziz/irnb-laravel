@@ -31,11 +31,12 @@ const tabs = [
     { key: 'certificates', label: 'academic_certificates' },
 ];
 
-// Helper to get a date string from a potential Date object or ISO string
+// The date part of a server date. Dates arrive on the club's clock
+// ("1990-03-15T00:00:00.000000+01:00"), so the part before the "T" is the
+// date itself; toISOString() would turn it into the UTC day before.
 function toDateInput(val) {
     if (!val) return '';
-    const d = new Date(val);
-    return isNaN(d.getTime()) ? '' : d.toISOString().split('T')[0];
+    return String(val).match(/^\d{4}-\d{2}-\d{2}/)?.[0] ?? '';
 }
 
 const basicForm = useForm({
@@ -226,7 +227,6 @@ const settingsForm = useForm({
     currency: savedCurrency,
     // Only a symbol that differs from the code is custom; older saves stored the code here.
     currency_symbol: savedSymbol.toUpperCase() === savedCurrency.toUpperCase() ? '' : savedSymbol,
-    timezone: props.config?.settings?.timezone || 'Africa/Algiers',
     default_language: props.config?.settings?.defaultLanguage || props.config?.settings?.default_language || 'ar',
     enable_donations: props.config?.settings?.enableDonations ?? props.config?.settings?.enable_donations ?? true,
     maintenance_mode: props.config?.settings?.maintenanceMode ?? props.config?.settings?.maintenance_mode ?? false,
@@ -329,7 +329,6 @@ function saveSettings() {
             currency: data.currency,
             // Empty = the standard sign (ClubCurrency / useCurrency).
             currencySymbol: data.currency_symbol.trim() || null,
-            timezone: data.timezone,
             defaultLanguage: data.default_language,
             enableDonations: data.enable_donations,
             maintenanceMode: data.maintenance_mode,
@@ -580,8 +579,8 @@ function saveSettings() {
                                 </div>
                                 <div>
                                     <InputLabel for="currency_symbol" :value="t('currency_custom_symbol')" />
-                                    <TextInput id="currency_symbol" v-model="settingsForm.currency_symbol" class="mt-1 w-full" maxlength="8" :placeholder="standardCurrencySign" />
-                                    <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">{{ t('currency_custom_symbol_hint') }}</span>
+                                    <TextInput id="currency_symbol" v-model="settingsForm.currency_symbol" class="mt-1 w-full" maxlength="8" :placeholder="standardCurrencySign" aria-describedby="currency_symbol_hint" />
+                                    <span id="currency_symbol_hint" class="mt-1 block text-xs text-slate-500 dark:text-slate-400">{{ t('currency_custom_symbol_hint') }}</span>
                                     <InputError class="mt-1" :message="settingsForm.errors['settings.currencySymbol']" />
                                 </div>
                                 <div>

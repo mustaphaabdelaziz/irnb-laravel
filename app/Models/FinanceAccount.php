@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class FinanceAccount extends Model
 {
+    use SerializesClubDates;
+
     protected $fillable = [
         'branch_id', 'category_id', 'parent_account_id', 'name', 'type', 'is_treasury',
         'is_opening_fund', 'account_number', 'opening_balance', 'current_balance', 'currency', 'is_active',

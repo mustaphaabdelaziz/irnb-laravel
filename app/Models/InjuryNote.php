@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -11,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class InjuryNote extends Model
 {
+    use SerializesClubDates;
+
     protected $fillable = ['player_id', 'start_date', 'body_part', 'description', 'returned_on', 'created_by'];
 
     public function player(): BelongsTo

@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BoardTask extends Model
 {
+    use SerializesClubDates;
+
     protected $fillable = [
         'title', 'description', 'board_member_id', 'board_meeting_id', 'due_date',
         'status', 'progress', 'priority', 'completed_at', 'created_by_user_id',

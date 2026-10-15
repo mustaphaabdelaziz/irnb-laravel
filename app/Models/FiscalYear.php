@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use App\Support\FiscalPeriod;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -11,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class FiscalYear extends Model
 {
+    use SerializesClubDates;
+
     protected $fillable = [
         'year', 'label', 'start_date', 'end_date', 'status',
         'opening_balance', 'closing_balance', 'total_income', 'total_expense',

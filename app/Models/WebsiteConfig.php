@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use App\Support\ClubIdentity;
 use App\Support\Media;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -13,6 +14,7 @@ use Illuminate\Support\Once;
 class WebsiteConfig extends Model
 {
     use HasFactory;
+    use SerializesClubDates;
 
     protected $fillable = [
         'singleton_key',

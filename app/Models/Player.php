@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use App\Support\Media;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -17,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 class Player extends Model
 {
     use HasFactory;
+    use SerializesClubDates;
 
     /** What the fullname accessor reads: add these to any query that narrows its columns. */
     public const NAME_COLUMNS = ['firstname', 'lastname', 'nickname', 'father', 'grandfather', 'gender'];

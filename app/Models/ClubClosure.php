@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use App\Services\Attendance\GenerationMarks;
 use Illuminate\Database\Eloquent\Model;
 
 /** A period (holidays, closed stadium) in which no regular session is generated. */
 class ClubClosure extends Model
 {
+    use SerializesClubDates;
+
     protected $fillable = ['start_date', 'end_date', 'reason'];
 
     protected static function booted(): void

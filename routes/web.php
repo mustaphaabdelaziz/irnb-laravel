@@ -39,6 +39,7 @@ use App\Http\Controllers\GameCallUpController;
 use App\Http\Controllers\GameController;
 use App\Http\Controllers\GameFormatController;
 use App\Http\Controllers\GameLineupController;
+use App\Http\Controllers\GameReportController;
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LanguageController;
@@ -420,6 +421,7 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
         Route::put('/games/{game}/call-up', [GameCallUpController::class, 'update'])->name('games.call-up.update');
         Route::get('/games/{game}/convocation', [GameCallUpController::class, 'convocation'])->name('games.convocation');
         Route::put('/games/{game}/lineup', [GameLineupController::class, 'update'])->name('games.lineup.update');
+        Route::put('/games/{game}/report', [GameReportController::class, 'update'])->name('games.report.update');
 
         // Website configuration
         Route::get('/settings', [WebsiteConfigController::class, 'show'])->name('settings.show');

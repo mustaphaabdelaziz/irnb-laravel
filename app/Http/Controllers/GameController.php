@@ -142,6 +142,7 @@ class GameController extends Controller
                 ])->values();
             })(),
             'lineup' => $page->lineup($game),
+            'report' => $page->report($game),
             'opponents' => Opponent::query()->orderBy('name')->get(['id', 'name'])->map(fn (Opponent $o) => ['value' => $o->id, 'label' => $o->name]),
             'venues' => Venue::query()->orderByDesc('is_home')->orderBy('name')->get(['id', 'name']),
             'canManage' => TeamAccess::canManage($request->user(), $game->team, $game->season_start_year),

@@ -4,6 +4,7 @@ namespace App\Services\Competitions;
 
 use App\Models\Formation;
 use App\Models\Game;
+use App\Models\GameEvent;
 use App\Models\GamePlayer;
 
 /** The match page's line-up (and, from the report task, report) props. */
@@ -40,6 +41,52 @@ final class MatchPage
                     'is_captain' => $gp->is_captain,
                     'is_goalkeeper' => $gp->is_goalkeeper,
                 ])->values(),
+        ];
+    }
+
+    /** @return array<string, mixed> ratings and notes appear here only — never in a PDF. */
+    public function report(Game $game): array
+    {
+        $game->loadMissing(['players.player']);
+
+        return [
+            'rules' => [
+                'periods_count' => (int) $game->rule('periods_count'),
+                'period_label' => $game->rule('period_label'),
+                'scoring' => $game->rule('scoring'),
+                'has_extra_time' => (bool) $game->rule('has_extra_time'),
+                'extra_time_minutes' => (int) $game->rule('extra_time_minutes', 0),
+                'has_shootout' => (bool) $game->rule('has_shootout'),
+                'rolling_subs' => (bool) $game->rule('rolling_subs'),
+                'sanction_types' => $game->rule('sanction_types', []),
+                'sport' => $game->rule('sport'),
+                'length' => $game->matchLength(false),
+            ],
+            'period_scores' => $game->period_scores ?? [],
+            'extra_time_played' => (bool) $game->extra_time_played,
+            'our_score' => $game->our_score,
+            'their_score' => $game->their_score,
+            'shootout_us' => $game->shootout_us,
+            'shootout_them' => $game->shootout_them,
+            'notes' => $game->notes,
+            'status' => $game->status->value,
+            'events' => $game->events()->orderByRaw('minute is null')->orderBy('minute')->orderBy('id')->get()
+                ->map(fn (GameEvent $e) => $e->only(['type', 'subtype', 'period', 'minute', 'player_id', 'related_player_id']))->values(),
+            'players' => $game->players->where('called_up', true)
+                ->sortBy([fn ($a, $b) => ($a->role === 'starter' ? 0 : 1) <=> ($b->role === 'starter' ? 0 : 1), fn ($a, $b) => ($a->shirt_number ?? 999) <=> ($b->shirt_number ?? 999)])
+                ->map(fn (GamePlayer $gp) => [
+                    'player_id' => $gp->player_id,
+                    'name' => $gp->player->fullname,
+                    'shirt_number' => $gp->shirt_number,
+                    'role' => $gp->role === 'starter' ? 'starter' : 'bench',
+                    'played' => $gp->played,
+                    'minutes_played' => $gp->minutes_played,
+                    'sets_played' => $gp->sets_played,
+                    'rating' => $gp->rating,
+                    'coach_note' => $gp->coach_note,
+                    'is_mvp' => $gp->is_mvp,
+                ])->values(),
+            'warnings' => ReportWarnings::for($game),
         ];
     }
 }

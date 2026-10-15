@@ -136,6 +136,7 @@ $routes = [
     'games.destroy' => ActivityAction::GAME_DELETED,
     'games.call-up.update' => ActivityAction::CALL_UP_SAVED,
     'games.lineup.update' => ActivityAction::LINEUP_SAVED,
+    'games.report.update' => ActivityAction::REPORT_SAVED,
 
     // settings
     'settings.update' => [ActivityAction::SETTINGS_UPDATED, 'kind' => 'club_settings'],

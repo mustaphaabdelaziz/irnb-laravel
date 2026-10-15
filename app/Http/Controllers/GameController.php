@@ -129,10 +129,12 @@ class GameController extends Controller
                     'max_called_up' => (int) $game->rule('max_called_up'),
                 ],
             ],
-            'candidates' => (function () use ($game, $candidates, $injured) {
+            'candidates' => (function () use ($game, $candidates, $injured, $flags, $request) {
                 $rows = $game->players->keyBy('player_id');
+                $list = $candidates->for($game);
+                $badges = $flags->for($list->pluck('id')->all(), $request->user(), $game);
 
-                return $candidates->for($game)->map(fn (Player $p) => [
+                return $list->map(fn (Player $p) => [
                     'player_id' => $p->id,
                     'name' => $p->fullname,
                     'category' => $p->category?->localized_name,
@@ -140,6 +142,7 @@ class GameController extends Controller
                     'called_up' => (bool) $rows->get($p->id)?->called_up,
                     'not_called_reason' => $rows->get($p->id)?->not_called_reason,
                     'injured' => isset($injured[$p->id]),
+                    'flags' => $badges[$p->id] ?? null,
                 ])->values();
             })(),
             'lineup' => $page->lineup($game, $injured),

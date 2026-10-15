@@ -80,6 +80,8 @@ class TeamController extends Controller
                 'shirt_number' => $p->pivot->shirt_number,
                 'injured' => isset($injured[$p->id]),
             ])->sortBy('name')->values();
+        $badges = $flags->for($roster->pluck('player_id')->all(), $request->user());
+        $roster = $roster->map(fn (array $row) => $row + ['flags' => $badges[$row['player_id']] ?? null])->values();
 
         $candidates = Player::query()->where('archived', false)->notLeft()
             ->whereNotIn('id', $roster->pluck('player_id'))

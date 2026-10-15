@@ -1,4 +1,5 @@
 <script setup>
+import PlayerBadges from '@/Components/Competitions/PlayerBadges.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
@@ -129,7 +130,7 @@ const tabs = ['roster', 'coaches', 'competitions', 'games', 'settings'];
                             </td>
                             <td class="py-2 font-medium text-slate-900 dark:text-slate-100">
                                 {{ row.name }}
-                                <span v-if="row.injured" class="ms-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">{{ t('comp.badge_injured') }}</span>
+                                <PlayerBadges :flags="row.flags" class="ms-2" />
                             </td>
                             <td class="py-2 text-slate-500 dark:text-slate-400">{{ row.category }}</td>
                             <td class="py-2 text-end">

@@ -1,4 +1,5 @@
 <script setup>
+import PlayerBadges from '@/Components/Competitions/PlayerBadges.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
@@ -73,6 +74,7 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
                         <input v-model="selected" :value="r.player_id" :disabled="!canManage" type="checkbox" class="rounded" />
                         <span class="w-6 text-end font-mono text-slate-400">{{ r.shirt_number }}</span>
                         <span class="font-medium">{{ r.name }}</span>
+                        <PlayerBadges :flags="r.flags" />
                         <span class="text-xs text-slate-400">{{ r.category }}</span>
                     </label>
                 </div>

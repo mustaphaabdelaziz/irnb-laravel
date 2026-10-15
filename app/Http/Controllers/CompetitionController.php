@@ -9,6 +9,7 @@ use App\Models\GameFormat;
 use App\Models\Player;
 use App\Models\Team;
 use App\Services\Competitions\CompetitionRecord;
+use App\Services\Competitions\PlayerFlags;
 use App\Services\Competitions\SuspensionEngine;
 use App\Services\Competitions\TeamAccess;
 use App\Support\Season;
@@ -79,13 +80,23 @@ class CompetitionController extends Controller
         return redirect()->route('competitions.show', $competition)->with('success', 'flash.competition_created');
     }
 
-    public function show(Request $request, Competition $competition): Response
+    public function show(Request $request, Competition $competition, PlayerFlags $flags): Response
     {
         $competition->load(['team.branch', 'team.category', 'team.defaultFormat', 'format']);
         $team = $competition->team;
         $season = $competition->season_start_year;
         $squad = DB::table('competition_players')->where('competition_id', $competition->id)->pluck('hidden', 'player_id');
         $games = $competition->games()->with('opponent:id,name')->orderBy('date')->get();
+        $roster = $team->rosterFor($season)->with('category')->get()
+            ->map(fn (Player $p) => [
+                'player_id' => $p->id,
+                'name' => $p->fullname,
+                'category' => $p->category?->localized_name,
+                'shirt_number' => $p->pivot->shirt_number,
+                'in_squad' => $squad->has($p->id) && ! $squad[$p->id],
+            ])->sortBy('name')->values();
+        $badges = $flags->for($roster->pluck('player_id')->all(), $request->user(), null, $competition);
+        $roster = $roster->map(fn (array $row) => $row + ['flags' => $badges[$row['player_id']] ?? null])->values();
 
         return Inertia::render('Competitions/Show', [
             'competition' => [
@@ -95,14 +106,7 @@ class CompetitionController extends Controller
                 'season_label' => Season::forStartYear($season)->label(),
                 'format' => ($competition->format ?? $team->defaultFormat)?->localized_name,
             ],
-            'roster' => $team->rosterFor($season)->with('category')->get()
-                ->map(fn (Player $p) => [
-                    'player_id' => $p->id,
-                    'name' => $p->fullname,
-                    'category' => $p->category?->localized_name,
-                    'shirt_number' => $p->pivot->shirt_number,
-                    'in_squad' => $squad->has($p->id) && ! $squad[$p->id],
-                ])->sortBy('name')->values(),
+            'roster' => $roster,
             'games' => $games->map(fn (Game $g) => [
                 'id' => $g->id, 'date' => $g->date, 'opponent' => $g->opponent->name, 'side' => $g->side->value,
                 'round_label' => $g->round_label, 'status' => $g->status->value,

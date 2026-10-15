@@ -23,13 +23,15 @@ final class MatchSheets
         $formation = $game->formation_id ? Formation::find($game->formation_id) : null;
         $called = $game->players->where('called_up', true);
         $starters = $called->where('role', 'starter')->sortBy('slot');
+        // No formation: the spots come from the format's automatic shape, as on screen.
+        $spots = $formation?->slots ?? DefaultFormation::slots((int) $game->rule('players_on_field'));
 
         return [
             'club' => ClubHeader::data(),
             'game' => $this->header($game),
             'pitch' => PitchDrawing::svg((string) $game->rule('sport'), $starters->map(fn (GamePlayer $gp) => [
-                'x' => (int) ($gp->pos_x ?? $formation?->slots[$gp->slot]['x'] ?? 50),
-                'y' => (int) ($gp->pos_y ?? $formation?->slots[$gp->slot]['y'] ?? 50),
+                'x' => (int) ($gp->pos_x ?? ($gp->slot !== null ? $spots[$gp->slot]['x'] ?? null : null) ?? 50),
+                'y' => (int) ($gp->pos_y ?? ($gp->slot !== null ? $spots[$gp->slot]['y'] ?? null : null) ?? 50),
                 'label' => (string) ($gp->shirt_number ?? ''),
             ])->values()->all()),
             'formation' => $formation?->name,

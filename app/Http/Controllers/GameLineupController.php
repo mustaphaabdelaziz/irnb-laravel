@@ -7,6 +7,7 @@ use App\Models\Formation;
 use App\Models\Game;
 use App\Models\GamePlayer;
 use App\Models\Position;
+use App\Services\Competitions\DefaultFormation;
 use App\Services\Competitions\GameMinutes;
 use App\Services\Competitions\TeamAccess;
 use Illuminate\Http\RedirectResponse;
@@ -40,12 +41,17 @@ class GameLineupController extends Controller
             'players.*.is_goalkeeper' => ['sometimes', 'boolean'],
         ]);
 
+        $formation = isset($data['formation_id']) ? Formation::find($data['formation_id']) : null;
+        // Without a formation the format's automatic shape gives the spots (labels "1".."N", no positions).
+        $spots = $formation?->slots ?? DefaultFormation::slots((int) $game->rule('players_on_field'));
+
         $rows = collect($data['players']);
         $starters = $rows->where('role', 'starter');
         $slots = $starters->pluck('slot')->filter(fn ($slot) => $slot !== null);
         $goalkeepers = $rows->filter(fn (array $r) => ! empty($r['is_goalkeeper']))->count();
         $error = match (true) {
             $starters->count() > (int) $game->rule('players_on_field') => 'comp.error.too_many_starters',
+            $slots->contains(fn (int $slot) => $slot >= count($spots)) => 'comp.error.invalid_slot',
             $slots->count() !== $slots->unique()->count() => 'comp.error.slot_taken',
             $rows->filter(fn (array $r) => ! empty($r['is_captain']))->count() > 1 => 'comp.error.one_captain',
             $goalkeepers > 1 || ($goalkeepers > 0 && ! $game->hasGoalkeeper()) => 'comp.error.one_goalkeeper',
@@ -55,7 +61,6 @@ class GameLineupController extends Controller
             throw ValidationException::withMessages(['players' => $error]);
         }
 
-        $formation = isset($data['formation_id']) ? Formation::find($data['formation_id']) : null;
         $positions = Position::query()->where('branch_id', $game->team->branch_id)->pluck('id', 'abbreviation');
         $roster = DB::table('team_players')->where('team_id', $game->team_id)->where('season_start_year', $game->season_start_year)
             ->pluck('shirt_number', 'player_id');

@@ -140,6 +140,19 @@ class MatchReportTest extends TestCase
     }
 
     #[Test]
+    public function a_played_match_without_starters_warns_that_minutes_are_all_zero(): void
+    {
+        [$game] = $this->match();
+        $game->update(['status' => GameStatus::Played, 'our_score' => 0, 'their_score' => 0]);
+        $warnings = fn () => $this->actingAs($this->admin())->get(route('games.show', $game))->assertOk()
+            ->viewData('page')['props']['report']['warnings'];
+
+        $this->assertNotContains('comp.warn.no_starters', $warnings());
+        GamePlayer::where('game_id', $game->id)->update(['role' => 'bench']);
+        $this->assertContains('comp.warn.no_starters', $warnings());
+    }
+
+    #[Test]
     public function a_re_saved_report_replaces_its_events_and_coaches_are_scoped(): void
     {
         [$game, [$a]] = $this->match();

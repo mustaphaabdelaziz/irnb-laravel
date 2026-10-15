@@ -83,6 +83,19 @@ class MatchSheetsTest extends TestCase
     }
 
     #[Test]
+    public function without_a_formation_the_line_up_sheet_uses_the_default_shape(): void
+    {
+        [$game] = $this->playedMatch();
+        $game->update(['formation_id' => null]);
+        $svg = app(MatchSheets::class)->lineup($game->fresh())['pitch'];
+
+        // 11 on the field: spot 0 at (50, 8), spot 1 at (26, 30) — not piled at (50, 50).
+        $this->assertStringContainsString('cx="34" cy="96.6" r="3.4"', $svg);
+        $this->assertStringContainsString('cx="17.68" cy="73.5" r="3.4"', $svg);
+        $this->assertStringNotContainsString('cx="34" cy="52.5" r="3.4"', $svg);
+    }
+
+    #[Test]
     public function the_pitch_drawing_places_dots_in_svg_coordinates(): void
     {
         $svg = PitchDrawing::svg('football', [['x' => 50, 'y' => 0, 'label' => '1']]);

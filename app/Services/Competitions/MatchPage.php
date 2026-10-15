@@ -17,10 +17,15 @@ final class MatchPage
     {
         $game->loadMissing(['format.formations', 'players.player.position']);
         $injured = $this->flags->injured();
+        $formations = $game->format->formations
+            ->map(fn (Formation $f) => ['id' => $f->id, 'name' => $f->name, 'slots' => $f->slots])->values();
+        if ($formations->isEmpty()) {
+            // No formations for this format: one virtual shape (id null), named on screen via comp.formation_default.
+            $formations->push(['id' => null, 'name' => 'default', 'slots' => DefaultFormation::slots((int) $game->rule('players_on_field'))]);
+        }
 
         return [
-            'formations' => $game->format->formations
-                ->map(fn (Formation $f) => ['id' => $f->id, 'name' => $f->name, 'slots' => $f->slots])->values(),
+            'formations' => $formations,
             'formation_id' => $game->formation_id,
             'has_goalkeeper' => $game->hasGoalkeeper(),
             'players_on_field' => (int) $game->rule('players_on_field'),

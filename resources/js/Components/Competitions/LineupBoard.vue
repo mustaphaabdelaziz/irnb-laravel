@@ -152,8 +152,10 @@ const shortName = (name) => String(name ?? '').split(' ').slice(0, 2).join(' ');
     <div class="space-y-4">
         <div class="flex flex-wrap items-center gap-3">
             <label class="text-sm">{{ t('comp.formation') }}
-                <select :value="formationId" :disabled="!canManage" class="ms-2 rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800" @change="changeFormation(Number($event.target.value))">
-                    <option v-for="f in lineup.formations" :key="f.id" :value="f.id">{{ f.name }}</option>
+                <!-- A format without formations gets one automatic shape whose id is null. -->
+                <select :value="formationId ?? ''" :disabled="!canManage" class="ms-2 rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800"
+                    @change="changeFormation($event.target.value === '' ? null : Number($event.target.value))">
+                    <option v-for="f in lineup.formations" :key="f.id ?? 'default'" :value="f.id ?? ''">{{ f.id === null ? t('comp.formation_default') : f.name }}</option>
                 </select>
             </label>
             <span class="text-sm text-slate-600 dark:text-slate-300">{{ t('comp.starters_count', { n: starters.length, max: lineup.players_on_field }) }} · {{ t('comp.bench_count', { n: bench.length, max: lineup.max_bench }) }}</span>

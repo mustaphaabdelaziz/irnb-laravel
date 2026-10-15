@@ -168,4 +168,38 @@ class LineupTest extends TestCase
             $this->row($b, 'starter', 1),
         ]])->assertSessionHasErrors('players');
     }
+
+    #[Test]
+    public function a_format_without_formations_gets_a_default_shape_and_saves_with_no_formation(): void
+    {
+        [$game, $formation, [$a, $b]] = $this->matchWithCallUp(2);
+        $formation->delete();
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->get(route('games.show', $game))->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('lineup.formations', 1)
+                ->where('lineup.formations.0.id', null)
+                ->has('lineup.formations.0.slots', 3));
+
+        $this->actingAs($admin)->put(route('games.lineup.update', $game), ['formation_id' => null, 'players' => [
+            $this->row($a, 'starter', 0), $this->row($b, 'starter', 2),
+        ]])->assertSessionHasNoErrors();
+        $this->assertSame(2, GamePlayer::where('player_id', $b->id)->sole()->slot);
+        $this->assertNull($game->fresh()->formation_id);
+
+        $this->actingAs($admin)->put(route('games.lineup.update', $game), ['formation_id' => null, 'players' => [
+            $this->row($a, 'starter', 3),
+        ]])->assertSessionHasErrors(['players' => 'comp.error.invalid_slot']);
+    }
+
+    #[Test]
+    public function a_slot_outside_the_chosen_formation_is_refused(): void
+    {
+        [$game, $formation, [$a]] = $this->matchWithCallUp(1);
+
+        $this->actingAs($this->admin())->put(route('games.lineup.update', $game), ['formation_id' => $formation->id, 'players' => [
+            $this->row($a, 'starter', 3),
+        ]])->assertSessionHasErrors(['players' => 'comp.error.invalid_slot']);
+    }
 }

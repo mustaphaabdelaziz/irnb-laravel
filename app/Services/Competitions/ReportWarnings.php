@@ -28,6 +28,9 @@ final class ReportWarnings
         if ($limit !== null && $events->where('type', 'substitution')->count() > (int) $limit) {
             $warnings[] = 'comp.warn.too_many_subs';
         }
+        if (! $game->rule('rolling_subs') && ! in_array('starter', $roles, true)) {
+            $warnings[] = 'comp.warn.no_starters';
+        }
         if ($game->formation_id !== null && $game->players()->where('role', 'starter')->whereNull('position_id')->exists()) {
             $warnings[] = 'comp.warn.starter_without_position';
         }

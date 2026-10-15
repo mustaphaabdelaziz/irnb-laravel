@@ -7,10 +7,12 @@ use App\Models\Competition;
 use App\Models\Game;
 use App\Models\GameFormat;
 use App\Models\Player;
+use App\Models\Suspension;
 use App\Models\Team;
 use App\Services\Competitions\CompetitionRecord;
 use App\Services\Competitions\PlayerFlags;
 use App\Services\Competitions\SuspensionEngine;
+use App\Services\Competitions\SuspensionStatus;
 use App\Services\Competitions\TeamAccess;
 use App\Support\Season;
 use Illuminate\Http\RedirectResponse;
@@ -80,7 +82,7 @@ class CompetitionController extends Controller
         return redirect()->route('competitions.show', $competition)->with('success', 'flash.competition_created');
     }
 
-    public function show(Request $request, Competition $competition, PlayerFlags $flags): Response
+    public function show(Request $request, Competition $competition, PlayerFlags $flags, SuspensionStatus $status): Response
     {
         $competition->load(['team.branch', 'team.category', 'team.defaultFormat', 'format']);
         $team = $competition->team;
@@ -117,6 +119,31 @@ class CompetitionController extends Controller
                 ->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
             'types' => CompetitionType::values(),
             'canManage' => TeamAccess::canManage($request->user(), $team, $season),
+            'suspensions' => (function () use ($competition, $team, $season, $status) {
+                $rosterIds = DB::table('team_players')->where('team_id', $team->id)->where('season_start_year', $season)->pluck('player_id');
+                $list = Suspension::query()
+                    ->where(fn ($q) => $q->where('competition_id', $competition->id)
+                        ->orWhere(fn ($q) => $q->whereNull('competition_id')->whereIn('player_id', $rosterIds)))
+                    ->with(['player', 'game.opponent'])->orderByDesc('id')->get();
+                $eval = $status->evaluate($list);
+
+                return $list->map(fn (Suspension $s) => [
+                    'id' => $s->id,
+                    'player' => $s->player->fullname,
+                    'source' => $s->source,
+                    'kind' => $s->kind,
+                    'cause' => $s->cause,
+                    'scope' => $s->competition_id ? 'competition' : 'all',
+                    'matches_count' => $s->matches_count,
+                    'served' => $eval[$s->id]['served'],
+                    'remaining' => $eval[$s->id]['remaining'],
+                    'active' => $eval[$s->id]['active'],
+                    'starts_on' => $s->starts_on,
+                    'ends_on' => $s->ends_on,
+                    'reason' => $s->reason,
+                    'trigger' => $s->game ? ['date' => $s->game->date, 'opponent' => $s->game->opponent?->name] : null,
+                ])->sortByDesc('active')->values();
+            })(),
         ]);
     }
 

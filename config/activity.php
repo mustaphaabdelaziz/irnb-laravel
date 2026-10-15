@@ -137,6 +137,8 @@ $routes = [
     'games.call-up.update' => ActivityAction::CALL_UP_SAVED,
     'games.lineup.update' => ActivityAction::LINEUP_SAVED,
     'games.report.update' => ActivityAction::REPORT_SAVED,
+    'competitions.suspensions.store' => ActivityAction::SUSPENSION_ADDED,
+    'competitions.suspensions.destroy' => ActivityAction::SUSPENSION_REMOVED,
 
     // settings
     'settings.update' => [ActivityAction::SETTINGS_UPDATED, 'kind' => 'club_settings'],

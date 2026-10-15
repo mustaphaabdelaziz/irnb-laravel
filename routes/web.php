@@ -24,6 +24,7 @@ use App\Http\Controllers\CashRegisterController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CompetitionController;
 use App\Http\Controllers\CompetitionSquadController;
+use App\Http\Controllers\CompetitionSuspensionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\EquipmentCatalogController;
@@ -413,6 +414,8 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
         Route::put('/competitions/{competition}', [CompetitionController::class, 'update'])->name('competitions.update');
         Route::delete('/competitions/{competition}', [CompetitionController::class, 'destroy'])->name('competitions.destroy');
         Route::put('/competitions/{competition}/squad', [CompetitionSquadController::class, 'update'])->name('competitions.squad.update');
+        Route::post('/competitions/{competition}/suspensions', [CompetitionSuspensionController::class, 'store'])->name('competitions.suspensions.store');
+        Route::delete('/competitions/{competition}/suspensions/{suspension}', [CompetitionSuspensionController::class, 'destroy'])->name('competitions.suspensions.destroy');
 
         Route::get('/games', [GameController::class, 'index'])->name('games.index');
         Route::post('/games', [GameController::class, 'store'])->name('games.store');

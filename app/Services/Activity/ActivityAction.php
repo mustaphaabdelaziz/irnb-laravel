@@ -118,6 +118,10 @@ class ActivityAction
 
     const REPORT_SAVED = 'report_saved';
 
+    const SUSPENSION_ADDED = 'suspension_added';
+
+    const SUSPENSION_REMOVED = 'suspension_removed';
+
     // Edits, deletions, sign-ins and settings (2026-10 users batch) — most are
     // recorded from the route map in config/activity.php.
 
@@ -320,6 +324,8 @@ class ActivityAction
         self::CALL_UP_SAVED,
         self::LINEUP_SAVED,
         self::REPORT_SAVED,
+        self::SUSPENSION_ADDED,
+        self::SUSPENSION_REMOVED,
         self::USER_LOGGED_IN,
         self::USER_LOGGED_OUT,
         self::USER_CREATED,
@@ -468,6 +474,8 @@ class ActivityAction
             self::CALL_UP_SAVED,
             self::LINEUP_SAVED,
             self::REPORT_SAVED,
+            self::SUSPENSION_ADDED,
+            self::SUSPENSION_REMOVED,
         ],
     ];
 

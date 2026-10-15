@@ -40,6 +40,10 @@ return [
 
     // Exact route name => [module, action]. Wins over prefix derivation.
     'overrides' => [
+        // Manual bans change who may play: both need competitions/edit, not add/delete.
+        'competitions.suspensions.store' => ['competitions', 'edit'],
+        'competitions.suspensions.destroy' => ['competitions', 'edit'],
+
         'players.transactions.store' => ['players', 'add'],
 
         // Permanent deletion. Without these the action name falls through

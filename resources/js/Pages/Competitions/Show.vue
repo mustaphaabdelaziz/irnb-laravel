@@ -6,6 +6,7 @@ import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
+import IconButton from '@/Components/IconButton.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref } from 'vue';
@@ -15,7 +16,7 @@ const { t } = useI18n();
 const { can } = useCan();
 
 const props = defineProps({
-    competition: Object, roster: Array, games: Array, record: Object, formats: Array, types: Array, canManage: Boolean,
+    competition: Object, roster: Array, games: Array, record: Object, formats: Array, types: Array, suspensions: Array, canManage: Boolean,
 });
 
 const tab = ref('squad');
@@ -42,7 +43,19 @@ function destroy() {
     router.delete(route('competitions.destroy', props.competition.id));
 }
 
-const tabs = ['squad', 'games', 'record', 'rules'];
+const banForm = useForm({ player_id: '', scope: 'competition', kind: 'matches', matches_count: 1, starts_on: '', ends_on: '', reason: '' });
+function addBan() {
+    banForm.transform((d) => ({ ...d, matches_count: d.kind === 'matches' ? d.matches_count : null, starts_on: d.starts_on || null, ends_on: d.kind === 'dates' ? d.ends_on : null }))
+        .post(route('competitions.suspensions.store', props.competition.id), { preserveScroll: true, onSuccess: () => banForm.reset() });
+}
+function removeBan(id) {
+    router.delete(route('competitions.suspensions.destroy', [props.competition.id, id]), { preserveScroll: true });
+}
+const banLabel = (s) => (s.kind === 'dates'
+    ? t('comp.ban.dates', { from: s.starts_on, to: s.ends_on })
+    : t('comp.ban.matches', { served: s.served ?? 0, total: s.matches_count }));
+
+const tabs = ['squad', 'games', 'record', 'suspensions', 'rules'];
 const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
 </script>
 
@@ -106,6 +119,65 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
                     </div>
                     <div class="mt-1 text-xs uppercase text-slate-500">{{ t('comp.form') }}</div>
                 </div>
+            </section>
+
+            <section v-if="tab === 'suspensions'" class="space-y-4 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+                <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
+                    <thead class="text-xs uppercase text-slate-500"><tr>
+                        <th class="py-1 text-start">{{ t('comp.player') }}</th><th class="py-1 text-start">{{ t('comp.ban.cause') }}</th>
+                        <th class="py-1 text-start">{{ t('comp.ban.length') }}</th><th class="py-1 text-start">{{ t('status') }}</th><th class="w-10"></th>
+                    </tr></thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                        <tr v-for="s in suspensions" :key="s.id" :class="{ 'opacity-60': !s.active }">
+                            <td class="py-1 font-medium">{{ s.player }}</td>
+                            <td class="py-1">
+                                <template v-if="s.source === 'auto'">{{ t(`comp.flag.cause_${s.cause}`) }}<span v-if="s.trigger" class="text-xs text-slate-500"> · <bdi dir="ltr">{{ s.trigger.date }}</bdi> {{ s.trigger.opponent }}</span></template>
+                                <template v-else>{{ s.reason || t('comp.ban.manual') }}</template>
+                                <span v-if="s.scope === 'all'" class="ms-1 rounded bg-slate-100 px-1 text-xs dark:bg-slate-800">{{ t('comp.ban.all_competitions') }}</span>
+                            </td>
+                            <td class="py-1"><bdi dir="ltr">{{ banLabel(s) }}</bdi></td>
+                            <td class="py-1">{{ s.active ? t('comp.ban.active') : t('comp.ban.served') }}</td>
+                            <td class="py-1 text-end"><IconButton v-if="canManage && s.source === 'manual'" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="removeBan(s.id)" /></td>
+                        </tr>
+                        <tr v-if="!suspensions.length"><td colspan="5" class="py-6 text-center text-slate-500">{{ t('comp.ban.none') }}</td></tr>
+                    </tbody>
+                </table>
+
+                <form v-if="canManage" class="grid gap-3 border-t border-slate-100 pt-4 dark:border-slate-800 sm:grid-cols-3" @submit.prevent="addBan">
+                    <h3 class="text-sm font-semibold sm:col-span-3">{{ t('comp.ban.add_manual') }}</h3>
+                    <label class="text-sm">{{ t('comp.player') }}
+                        <select v-model="banForm.player_id" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800" required>
+                            <option v-for="r in roster" :key="r.player_id" :value="r.player_id">{{ r.name }}</option>
+                        </select>
+                        <InputError :message="banForm.errors.player_id ? t(banForm.errors.player_id) : ''" />
+                    </label>
+                    <label class="text-sm">{{ t('comp.ban.scope') }}
+                        <select v-model="banForm.scope" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
+                            <option value="competition">{{ t('comp.ban.this_competition') }}</option>
+                            <option value="all">{{ t('comp.ban.all_competitions') }}</option>
+                        </select>
+                    </label>
+                    <label class="text-sm">{{ t('comp.ban.kind') }}
+                        <select v-model="banForm.kind" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
+                            <option value="matches">{{ t('comp.ban.kind_matches') }}</option>
+                            <option value="dates">{{ t('comp.ban.kind_dates') }}</option>
+                        </select>
+                    </label>
+                    <label v-if="banForm.kind === 'matches'" class="text-sm">{{ t('comp.ban.matches_count') }}
+                        <TextInput v-model.number="banForm.matches_count" type="number" min="1" class="mt-1 w-full" />
+                        <InputError :message="banForm.errors.matches_count" />
+                    </label>
+                    <label class="text-sm">{{ t('comp.ban.starts_on') }}
+                        <TextInput v-model="banForm.starts_on" type="date" class="mt-1 w-full" :required="banForm.kind === 'dates'" />
+                        <InputError :message="banForm.errors.starts_on" />
+                    </label>
+                    <label v-if="banForm.kind === 'dates'" class="text-sm">{{ t('comp.ban.ends_on') }}
+                        <TextInput v-model="banForm.ends_on" type="date" class="mt-1 w-full" required />
+                        <InputError :message="banForm.errors.ends_on" />
+                    </label>
+                    <label class="text-sm sm:col-span-2">{{ t('comp.ban.reason') }} <TextInput v-model="banForm.reason" class="mt-1 w-full" /></label>
+                    <div class="flex items-end"><PrimaryButton :disabled="banForm.processing">{{ t('add') }}</PrimaryButton></div>
+                </form>
             </section>
 
             <section v-if="tab === 'rules'" class="space-y-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">

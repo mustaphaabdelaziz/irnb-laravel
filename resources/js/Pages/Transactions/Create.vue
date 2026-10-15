@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import TransactionForm from '@/Pages/Transactions/Partials/TransactionForm.vue';
+import Icon from '@/Components/Icon.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 
@@ -10,6 +11,8 @@ defineProps({
     financeAccounts: { type: Array, default: () => [] },
     players: { type: Array, default: () => [] },
     clubCcp: { type: Object, default: null },
+    defaultFinanceAccountId: { type: Number, default: null },
+    lockedAccount: { type: Object, default: null },
 });
 </script>
 
@@ -17,13 +20,11 @@ defineProps({
     <Head :title="t('add_transaction')" />
     <AuthenticatedLayout>
         <template #header>
-            <div class="flex items-center gap-3">
-                <Link :href="route('transactions.index')" class="text-slate-400 hover:text-slate-600">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-                </Link>
+            <div class="flex items-center gap-2">
+                <Link :href="route('transactions.index')" :aria-label="t('back')" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300"><Icon name="back" class="rtl:rotate-180" /></Link>
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('add_transaction') }}</h1>
             </div>
         </template>
-        <TransactionForm :finance-categories="financeCategories" :finance-accounts="financeAccounts" :players="players" :club-ccp="clubCcp" />
+        <TransactionForm :finance-categories="financeCategories" :finance-accounts="financeAccounts" :players="players" :club-ccp="clubCcp" :default-finance-account-id="defaultFinanceAccountId" :locked-account="lockedAccount" />
     </AuthenticatedLayout>
 </template>

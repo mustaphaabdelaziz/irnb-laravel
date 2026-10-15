@@ -18,6 +18,8 @@ const props = defineProps({
     financeAccounts: { type: Array, default: () => [] },
     players: { type: Array, default: () => [] },
     clubCcp: { type: Object, default: null },
+    defaultFinanceAccountId: { type: Number, default: null },
+    lockedAccount: { type: Object, default: null },
 });
 
 const isEdit = !!props.transaction;
@@ -36,7 +38,8 @@ const form = useForm({
     payment_bank_name: props.transaction?.payment_bank_name || '',
     payment_holder: props.transaction?.payment_holder || '',
     payment_reference: props.transaction?.payment_reference || '',
-    finance_account_id: props.transaction?.finance_account_id || props.financeAccounts[0]?.id || '',
+    // The resolver's caisse (TransactionController::formOptions), never the Fonds Initial.
+    finance_account_id: props.transaction?.finance_account_id || props.defaultFinanceAccountId || '',
     status: props.transaction?.status || 'Paid',
     related_entity_id: props.transaction?.related_entity_id || '',
     receipt: null,
@@ -131,6 +134,8 @@ function submit() {
                     <InputLabel :value="form.transaction_type === 'income' ? t('destination_register') : t('source_register')" />
                     <select v-model="form.finance_account_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm" required>
                         <option value="" disabled>{{ t('select_cash_register') }}</option>
+                        <!-- Booked on an account the pickers hide (Fonds Initial, inactive caisse): shown, not choosable. -->
+                        <option v-if="lockedAccount" :value="lockedAccount.id" disabled>{{ accountLabel(lockedAccount) }}</option>
                         <option v-for="account in financeAccounts" :key="account.id" :value="account.id">
                             {{ accountLabel(account) }}
                         </option>

@@ -15,6 +15,7 @@ import PlayerFieldRow from '@/Components/PlayerFieldRow.vue';
 import { formatPhone } from '@/lib/phone';
 import AcademicSection from '@/Pages/Players/Partials/AcademicSection.vue';
 import AttendanceSection from '@/Pages/Players/Partials/AttendanceSection.vue';
+import MatchesSection from '@/Pages/Players/Partials/MatchesSection.vue';
 import PlayerDocumentsCard from '@/Components/PlayerDocumentsCard.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
@@ -441,6 +442,7 @@ function formatDate(val) {
 
             <!-- Attendance: fetches its own data (attendance/view) after the profile has painted -->
             <AttendanceSection v-if="can('attendance', 'view')" :player="player" />
+            <MatchesSection v-if="can('games', 'view')" :player="player" />
 
             <!-- Documents: checklist + actions (absent without the documents permission) -->
             <PlayerDocumentsCard v-if="documents" :player-id="player.id" :checklist="documents" />

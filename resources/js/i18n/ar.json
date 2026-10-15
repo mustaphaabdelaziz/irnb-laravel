@@ -890,6 +890,7 @@
     "comp.no_events": "لا أحداث بعد.",
     "comp.no_format_for_sport": "لا يوجد نظام لعب مرتبط بهذه الرياضة — اربطه من أنظمة اللعب.",
     "comp.no_limit": "بدون حد",
+    "comp.no_matches_yet": "لا مباريات لُعبت هذا الموسم.",
     "comp.no_mvp": "بدون رجل المباراة",
     "comp.not_called_reason": "سبب عدم الاستدعاء",
     "comp.not_called_reason_hint": "اختياري — مثال: خيار فني، امتحانات",

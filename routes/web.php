@@ -40,6 +40,7 @@ use App\Http\Controllers\GameCallUpController;
 use App\Http\Controllers\GameController;
 use App\Http\Controllers\GameFormatController;
 use App\Http\Controllers\GameLineupController;
+use App\Http\Controllers\GamePlayerStatsController;
 use App\Http\Controllers\GameReportController;
 use App\Http\Controllers\GameSheetController;
 use App\Http\Controllers\GameStatsController;
@@ -422,6 +423,7 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
         Route::post('/games', [GameController::class, 'store'])->name('games.store');
         Route::get('/games/stats', [GameStatsController::class, 'index'])->name('games.stats');
         Route::get('/games/stats/export', [GameStatsController::class, 'export'])->name('games.stats.export');
+        Route::get('/games/players/{player}', [GamePlayerStatsController::class, 'show'])->name('games.players.show');
         Route::get('/games/{game}', [GameController::class, 'show'])->name('games.show');
         Route::put('/games/{game}', [GameController::class, 'update'])->name('games.update');
         Route::delete('/games/{game}', [GameController::class, 'destroy'])->name('games.destroy');

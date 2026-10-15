@@ -41,18 +41,65 @@ class TransactionFormOptionsTest extends TestCase
     }
 
     #[Test]
-    public function without_a_club_cash_the_first_caisse_listed_is_the_default_never_the_opening_fund(): void
+    public function without_an_active_club_cash_the_default_is_blank_never_a_bank_or_the_opening_fund(): void
     {
-        $fund = $this->fund();
+        $this->fund();
         FinanceAccount::whereNull('branch_id')->where('name', 'Cash')->update(['is_active' => false]);
-        $branch = Branch::create(['name' => 'Football']);
+        Branch::create(['name' => 'Football']);
 
         $props = $this->props('transactions.create');
 
-        // The first caisse the picker lists (the seeded club bank account sorts before the coffre).
-        $this->assertSame($props['financeAccounts'][0]['id'], $props['defaultFinanceAccountId']);
-        $this->assertTrue(collect($props['financeAccounts'])->contains('id', $branch->treasury->id));
-        $this->assertNotSame($fund->id, $props['defaultFinanceAccountId']);
+        // The seeded "Club Bank Account" and the coffre are listed, but the
+        // server would not book a blank entry there, so neither is preselected.
+        $this->assertTrue(collect($props['financeAccounts'])->contains('name', 'Club Bank Account'));
+        $this->assertNull($props['defaultFinanceAccountId']);
+    }
+
+    #[Test]
+    public function an_entry_whose_caisse_was_deactivated_can_still_be_saved_on_it(): void
+    {
+        $x = FinanceAccount::create(['name' => 'Old box', 'type' => 'cash', 'is_active' => true, 'currency' => 'DZD']);
+        $tx = Transaction::create([
+            'title' => 'Entry', 'amount' => 100, 'transaction_type' => 'income', 'category' => 'donation',
+            'status' => 'Paid', 'transaction_date' => now(), 'finance_account_id' => $x->id,
+        ]);
+        $category = FinanceCategory::where('type', 'income')->where('is_active', true)->firstOrFail();
+        $x->update(['is_active' => false]);
+
+        $this->actingAs(User::factory()->admin()->create())
+            ->put(route('transactions.update', $tx), $this->payload($category, ['amount' => 250, 'finance_account_id' => $x->id]))
+            ->assertRedirect()->assertSessionHasNoErrors();
+
+        $tx->refresh();
+        $this->assertEquals(250, $tx->amount);
+        $this->assertSame($x->id, $tx->finance_account_id);
+    }
+
+    #[Test]
+    public function switching_an_entry_to_another_inactive_caisse_is_still_refused(): void
+    {
+        $x = FinanceAccount::create(['name' => 'Old box', 'type' => 'cash', 'is_active' => true, 'currency' => 'DZD']);
+        $y = FinanceAccount::create(['name' => 'Other old box', 'type' => 'cash', 'is_active' => false, 'currency' => 'DZD']);
+        $tx = Transaction::create([
+            'title' => 'Entry', 'amount' => 100, 'transaction_type' => 'income', 'category' => 'donation',
+            'status' => 'Paid', 'transaction_date' => now(), 'finance_account_id' => $x->id,
+        ]);
+        $category = FinanceCategory::where('type', 'income')->where('is_active', true)->firstOrFail();
+        $x->update(['is_active' => false]);
+
+        $this->actingAs(User::factory()->admin()->create())
+            ->put(route('transactions.update', $tx), $this->payload($category, ['finance_account_id' => $y->id]))
+            ->assertSessionHasErrors('finance_account_id');
+
+        $this->assertSame($x->id, $tx->fresh()->finance_account_id);
+    }
+
+    private function payload(FinanceCategory $category, array $overrides = []): array
+    {
+        return array_merge([
+            'title' => 'Entry', 'amount' => 100, 'transaction_type' => 'income',
+            'finance_category_id' => $category->id, 'status' => 'Paid', 'transaction_date' => now()->toDateString(),
+        ], $overrides);
     }
 
     #[Test]

@@ -526,10 +526,10 @@ class TransactionController extends Controller
                     'default_finance_account_id' => $registers->forPlayer($player)?->id,
                 ]),
             'financeAccounts' => $financeAccounts,
-            // Where a new entry starts: the server's own default for an entry
-            // without a player (DefaultRegisterResolver), else the first caisse
-            // listed. The pickers never list the Fonds Initial.
-            'defaultFinanceAccountId' => $registers->for(null, null)?->id ?? $financeAccounts->first()?->id,
+            // Where a new entry starts: exactly the server's own default for an
+            // entry without a player (DefaultRegisterResolver) — null leaves the
+            // select blank. Never the Fonds Initial, never a bank by fallback.
+            'defaultFinanceAccountId' => $registers->for(null, null)?->id,
             // An entry booked on an account the pickers hide (the Fonds Initial,
             // an inactive caisse) keeps showing it — read-only — instead of a blank select.
             'lockedAccount' => $transaction?->finance_account_id && ! $financeAccounts->contains('id', $transaction->finance_account_id)

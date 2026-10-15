@@ -193,7 +193,11 @@ const largestBalance = computed(
                 <ul v-else class="divide-y divide-border/70">
                     <li v-for="account in accounts" :key="account.id" class="px-5 py-3.5">
                         <div class="mb-2 flex items-baseline justify-between gap-3">
-                            <span class="min-w-0 truncate text-sm font-medium">{{ account.label || account.name }}</span>
+                            <span class="min-w-0">
+                                <span class="block truncate text-sm font-medium">{{ account.label || account.name }}</span>
+                                <!-- A coffre's amount rolls up its branch's caisses. -->
+                                <span v-if="account.is_treasury" class="block text-xs text-muted-foreground">{{ t('caisses.branch_total') }}</span>
+                            </span>
                             <span
                                 class="shrink-0 text-sm font-semibold tabular-nums"
                                 :class="account.current < 0 ? 'text-rose-700 dark:text-rose-400' : 'text-foreground'"

@@ -291,11 +291,11 @@ function bulkDestroy() {
                         <option v-for="s in seasons" :key="s.value" :value="s.value">{{ t('tx.season_option', { season: s.label }) }}</option>
                     </select>
                 </label>
-                <label class="flex min-w-0 flex-1 items-center gap-2 text-sm text-slate-500 dark:text-slate-400 sm:flex-none">
+                <label class="flex min-w-[11rem] flex-1 items-center gap-2 text-sm text-slate-500 dark:text-slate-400 sm:min-w-0 sm:flex-none">
                     <span class="shrink-0">{{ t('tx.date_from') }}</span>
                     <input v-model="dateFrom" type="date" :max="dateTo || undefined" :class="fieldClass" />
                 </label>
-                <label class="flex min-w-0 flex-1 items-center gap-2 text-sm text-slate-500 dark:text-slate-400 sm:flex-none">
+                <label class="flex min-w-[11rem] flex-1 items-center gap-2 text-sm text-slate-500 dark:text-slate-400 sm:min-w-0 sm:flex-none">
                     <span class="shrink-0">{{ t('tx.date_to') }}</span>
                     <input v-model="dateTo" type="date" :min="dateFrom || undefined" :class="fieldClass" />
                 </label>

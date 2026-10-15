@@ -75,7 +75,7 @@ const isEmpty = computed(() => display.value === '—');
                             class="mt-2 text-2xl font-semibold leading-tight tracking-tight tabular-nums [overflow-wrap:anywhere] sm:text-[1.75rem] sm:leading-none"
                             :class="isEmpty ? 'text-muted-foreground/60' : 'text-foreground'"
                         >
-                            {{ display }}<span v-if="format === 'money' && !isEmpty" class="ms-1 text-sm font-medium text-muted-foreground">{{ t('currency_symbol') }}</span>
+                            {{ display }}<span v-if="format === 'money' && !isEmpty" class="ms-1 whitespace-nowrap text-sm font-medium text-muted-foreground">{{ t('currency_symbol') }}</span>
                         </p>
                         <DeltaBadge :delta="delta" :period-label="periodLabel" />
                         <p v-if="meta" class="mt-1.5 text-xs text-muted-foreground">{{ meta }}</p>

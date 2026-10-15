@@ -55,7 +55,7 @@ const accent = {
             ><Icon :name="icon" /></span>
         </div>
         <p class="figure mt-3 text-2xl font-extrabold [overflow-wrap:anywhere] sm:text-3xl" :class="valueColor[color] || valueColor.slate">
-            {{ value }}<span v-if="suffix || currency" class="ms-1 text-base font-medium text-slate-400">{{ suffix || t('currency_symbol') }}</span>
+            {{ value }}<span v-if="suffix || currency" class="ms-1 whitespace-nowrap text-base font-medium text-slate-400">{{ suffix || t('currency_symbol') }}</span>
         </p>
         <slot />
     </article>

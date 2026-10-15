@@ -82,6 +82,23 @@ class SuspensionEngineTest extends TestCase
     }
 
     #[Test]
+    public function a_matchs_cards_are_read_in_period_then_minute_order(): void
+    {
+        $team = $this->team();
+        $competition = $this->competition($team, 2026, ['red_ban_matches' => 1, 'yellow_threshold' => 1, 'yellow_ban_matches' => 1]);
+        $p = $this->player($team->category);
+        $game = $this->played($competition, '2026-10-01');
+        GamePlayer::create(['game_id' => $game->id, 'player_id' => $p->id, 'called_up' => true]);
+        GameEvent::create(['game_id' => $game->id, 'type' => 'sanction', 'subtype' => 'red', 'period' => 2, 'minute' => 5, 'player_id' => $p->id]);
+        GameEvent::create(['game_id' => $game->id, 'type' => 'sanction', 'subtype' => 'yellow', 'period' => 1, 'minute' => 40, 'player_id' => $p->id]);
+
+        app(SuspensionEngine::class)->recompute($competition);
+
+        // The first-half yellow comes before the second-half red, so its ban is served first.
+        $this->assertSame(['yellows', 'red'], Suspension::orderBy('id')->pluck('cause')->all());
+    }
+
+    #[Test]
     public function only_played_games_count_and_manual_bans_survive_a_recompute(): void
     {
         $team = $this->team();

@@ -29,7 +29,7 @@ final class SuspensionEngine
                 return;
             }
             $events = GameEvent::query()->whereIn('game_id', $games->modelKeys())->where('type', 'sanction')->whereNotNull('player_id')
-                ->orderByRaw('minute is null')->orderBy('minute')->orderBy('id')->get()->groupBy('game_id');
+                ->orderByRaw('period is null')->orderBy('period')->orderByRaw('minute is null')->orderBy('minute')->orderBy('id')->get()->groupBy('game_id');
 
             $red = (int) $competition->red_ban_matches;
             $threshold = $competition->yellow_threshold === null ? null : (int) $competition->yellow_threshold;

@@ -23,7 +23,8 @@ class GamePlayerStatsController extends Controller
             'seasons' => Season::options(),
             'totals' => $stats->players($season, null, null, $player->id),
             'games' => $stats->games($player->id, $season),
-            'suspensions' => $suspensions->filter(fn ($s) => $eval[$s->id]['active'])->map(fn ($s) => [
+            // In force now: still to serve AND already started (a future manual ban is not listed yet).
+            'suspensions' => $suspensions->filter(fn ($s) => $eval[$s->id]['active'] && $status->started($s))->map(fn ($s) => [
                 'competition' => $s->competition?->name,
                 'cause' => $s->cause,
                 'reason' => $s->reason,

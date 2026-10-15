@@ -18,7 +18,14 @@ class Suspension extends Model
 
     protected function casts(): array
     {
-        return ['matches_count' => 'integer'];
+        return [
+            'matches_count' => 'integer',
+            'player_id' => 'integer',
+            'competition_id' => 'integer',
+            'team_id' => 'integer',
+            'game_id' => 'integer',
+            'created_by' => 'integer',
+        ];
     }
 
     public function player(): BelongsTo

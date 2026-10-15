@@ -23,9 +23,9 @@ class GameFormat extends Model
 
     protected $fillable = [
         'branch_id', 'sport', 'name', 'name_ar', 'name_fr', 'name_en',
-        'players_on_field', 'max_bench', 'max_called_up',
+        'players_on_field', 'max_bench', 'max_called_up', 'max_substitutions',
         'periods_count', 'period_minutes', 'period_label', 'scoring', 'sets_to_win',
-        'has_extra_time', 'has_shootout', 'sanction_types', 'is_preset', 'active',
+        'has_extra_time', 'extra_time_minutes', 'has_shootout', 'rolling_subs', 'sanction_types', 'is_preset', 'active',
     ];
 
     protected $appends = ['localized_name'];
@@ -39,6 +39,9 @@ class GameFormat extends Model
             'sanction_types' => 'array',
             'has_extra_time' => 'boolean',
             'has_shootout' => 'boolean',
+            'rolling_subs' => 'boolean',
+            'max_substitutions' => 'integer',
+            'extra_time_minutes' => 'integer',
             'is_preset' => 'boolean',
             'active' => 'boolean',
         ];
@@ -60,5 +63,27 @@ class GameFormat extends Model
         return Team::where('default_game_format_id', $this->id)->exists()
             || Competition::where('game_format_id', $this->id)->exists()
             || Game::where('game_format_id', $this->id)->exists();
+    }
+
+    /** The rules a new match copies onto itself (games.rules), so later edits here never rewrite it. */
+    public function rulesSnapshot(): array
+    {
+        return [
+            'sport' => $this->sport->value,
+            'players_on_field' => $this->players_on_field,
+            'max_bench' => $this->max_bench,
+            'max_called_up' => $this->max_called_up,
+            'max_substitutions' => $this->max_substitutions,
+            'periods_count' => $this->periods_count,
+            'period_minutes' => $this->period_minutes,
+            'period_label' => $this->period_label->value,
+            'scoring' => $this->scoring->value,
+            'sets_to_win' => $this->sets_to_win,
+            'has_extra_time' => $this->has_extra_time,
+            'extra_time_minutes' => $this->extra_time_minutes,
+            'has_shootout' => $this->has_shootout,
+            'rolling_subs' => $this->rolling_subs,
+            'sanction_types' => $this->sanction_types ?? [],
+        ];
     }
 }

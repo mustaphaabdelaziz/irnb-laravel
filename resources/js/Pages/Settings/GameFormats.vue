@@ -28,6 +28,7 @@ const blank = () => ({
     players_on_field: 11, max_bench: 9, max_called_up: 20, periods_count: 2, period_minutes: 45,
     period_label: 'half', scoring: 'goals', sets_to_win: null,
     has_extra_time: false, has_shootout: false, active: true, sanction_types: [],
+    max_substitutions: null, extra_time_minutes: 0, rolling_subs: false,
 });
 const form = useForm(blank());
 
@@ -65,8 +66,9 @@ function addSanction() {
 
 function save() {
     const options = { preserveScroll: true, onSuccess: () => { editing.value = null; } };
-    if (editing.value === 'new') form.post(route('game-formats.store'), options);
-    else form.put(route('game-formats.update', editing.value.id), options);
+    const send = form.transform((d) => ({ ...d, max_substitutions: d.max_substitutions || null }));
+    if (editing.value === 'new') send.post(route('game-formats.store'), options);
+    else send.put(route('game-formats.update', editing.value.id), options);
 }
 
 function destroy() {
@@ -121,6 +123,9 @@ function destroy() {
                         <TextInput v-model.number="form.max_called_up" type="number" min="1" class="mt-1 w-full" />
                         <InputError :message="form.errors.max_called_up" class="mt-1" />
                     </label>
+                    <label class="text-sm">{{ t('comp.max_substitutions') }}
+                        <TextInput v-model.number="form.max_substitutions" type="number" min="1" class="mt-1 w-full" :placeholder="t('comp.no_limit')" />
+                    </label>
                     <label class="text-sm">{{ t('comp.scoring') }}
                         <select v-model="form.scoring" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
                             <option v-for="s in scorings" :key="s" :value="s">{{ t(`comp.scoring_${s}`) }}</option>
@@ -145,6 +150,10 @@ function destroy() {
 
                 <div class="flex flex-wrap gap-4 text-sm">
                     <label class="flex items-center gap-2"><input v-model="form.has_extra_time" type="checkbox" class="rounded" /> {{ t('comp.has_extra_time') }}</label>
+                    <label v-if="form.has_extra_time" class="flex items-center gap-2">{{ t('comp.extra_time_minutes') }}
+                        <TextInput v-model.number="form.extra_time_minutes" type="number" min="0" class="w-20" />
+                    </label>
+                    <label class="flex items-center gap-2"><input v-model="form.rolling_subs" type="checkbox" class="rounded" /> {{ t('comp.rolling_subs') }}</label>
                     <label class="flex items-center gap-2"><input v-model="form.has_shootout" type="checkbox" class="rounded" /> {{ t('comp.has_shootout') }}</label>
                     <label class="flex items-center gap-2"><input v-model="form.active" type="checkbox" class="rounded" /> {{ t('comp.active') }}</label>
                 </div>

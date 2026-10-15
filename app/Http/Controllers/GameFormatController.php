@@ -79,13 +79,16 @@ class GameFormatController extends Controller
             'players_on_field' => ['required', 'integer', 'min:1', 'max:30'],
             'max_bench' => ['required', 'integer', 'min:0', 'max:30'],
             'max_called_up' => ['required', 'integer', 'max:60', 'gte:players_on_field'],
+            'max_substitutions' => ['nullable', 'integer', 'min:1', 'max:30'],
             'periods_count' => ['required', 'integer', 'min:1', 'max:9'],
             'period_minutes' => ['required', 'integer', 'min:0', 'max:120'],
             'period_label' => ['required', Rule::enum(PeriodLabel::class)],
             'scoring' => ['required', Rule::enum(ScoringType::class)],
             'sets_to_win' => ['nullable', 'required_if:scoring,sets', 'integer', 'min:1', 'max:5'],
             'has_extra_time' => ['sometimes', 'boolean'],
+            'extra_time_minutes' => ['nullable', 'integer', 'min:0', 'max:60'],
             'has_shootout' => ['sometimes', 'boolean'],
+            'rolling_subs' => ['sometimes', 'boolean'],
             'active' => ['sometimes', 'boolean'],
             'sanction_types' => ['present', 'array', 'max:10'],
             'sanction_types.*.key' => ['required', 'string', 'max:32', 'regex:/^[a-z0-9_]+$/', 'distinct'],
@@ -93,9 +96,10 @@ class GameFormatController extends Controller
             'sanction_types.*.counts_as' => ['nullable', Rule::in(['yellow', 'red'])],
         ]);
 
-        foreach (['has_extra_time', 'has_shootout', 'active'] as $flag) {
+        foreach (['has_extra_time', 'has_shootout', 'rolling_subs', 'active'] as $flag) {
             $data[$flag] = $request->boolean($flag);
         }
+        $data['extra_time_minutes'] = $data['has_extra_time'] ? (int) ($data['extra_time_minutes'] ?? 0) : 0;
         $data['sanction_types'] = array_map(fn (array $s) => [
             'key' => $s['key'],
             'ends_play' => (bool) ($s['ends_play'] ?? false),

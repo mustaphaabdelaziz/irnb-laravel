@@ -14,6 +14,7 @@ use App\Models\TrainingSession;
 use App\Models\Venue;
 use App\Services\Attendance\SessionGenerator;
 use App\Services\Competitions\CallUpCandidates;
+use App\Services\Competitions\MatchPage;
 use App\Services\Competitions\PlayerFlags;
 use App\Services\Competitions\TeamAccess;
 use App\Services\Competitions\TrainingCanceller;
@@ -107,9 +108,10 @@ class GameController extends Controller
             ->with('success', $cancelled > 0 ? 'flash.game_created_training_cancelled' : 'flash.game_created');
     }
 
-    public function show(Request $request, Game $game, CallUpCandidates $candidates, PlayerFlags $flags): Response
+    public function show(Request $request, Game $game, CallUpCandidates $candidates, PlayerFlags $flags, MatchPage $page): Response
     {
         $game->load(['team.category', 'competition', 'opponent', 'venue', 'format', 'players']);
+        $injured = $flags->injured(); // shared by the call-up list and the line-up
 
         return Inertia::render('Games/Show', [
             'game' => [
@@ -122,12 +124,11 @@ class GameController extends Controller
                 'venue' => $game->venue ? ['name' => $game->venue->name, 'address' => $game->venue->address] : null,
                 'format' => [
                     'name' => $game->format->localized_name,
-                    'players_on_field' => $game->format->players_on_field,
-                    'max_called_up' => $game->format->max_called_up,
+                    'players_on_field' => (int) $game->rule('players_on_field'),
+                    'max_called_up' => (int) $game->rule('max_called_up'),
                 ],
             ],
-            'candidates' => (function () use ($game, $candidates, $flags) {
-                $injured = $flags->injured();
+            'candidates' => (function () use ($game, $candidates, $injured) {
                 $rows = $game->players->keyBy('player_id');
 
                 return $candidates->for($game)->map(fn (Player $p) => [
@@ -140,6 +141,8 @@ class GameController extends Controller
                     'injured' => isset($injured[$p->id]),
                 ])->values();
             })(),
+            'lineup' => $page->lineup($game, $injured),
+            'report' => $page->report($game),
             'opponents' => Opponent::query()->orderBy('name')->get(['id', 'name'])->map(fn (Opponent $o) => ['value' => $o->id, 'label' => $o->name]),
             'venues' => Venue::query()->orderByDesc('is_home')->orderBy('name')->get(['id', 'name']),
             'canManage' => TeamAccess::canManage($request->user(), $game->team, $game->season_start_year),

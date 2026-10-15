@@ -10,17 +10,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * A match ("Game": `match` is a reserved word in PHP 8). Its game format is
- * resolved (competition override, else team default) and frozen at creation,
- * so later edits to the format never rewrite history. A game without a
- * competition is a friendly and calls players up from the team roster.
+ * A match ("Game": `match` is a reserved word in PHP 8). Its game rules are copied from the format (competition override, else team
+ * default) into `rules` at creation, so later edits to the format never
+ * rewrite history. A game without a competition is a friendly and calls
+ * players up from the team roster.
  */
 class Game extends Model
 {
     use SerializesClubDates;
 
     protected $fillable = [
-        'team_id', 'competition_id', 'season_start_year', 'game_format_id', 'opponent_id', 'venue_id',
+        'team_id', 'competition_id', 'season_start_year', 'game_format_id', 'rules', 'opponent_id', 'venue_id',
         'side', 'round_label', 'date', 'kickoff_time', 'meeting_time', 'meeting_place', 'status',
         'our_score', 'their_score', 'period_scores', 'extra_time_played', 'shootout_us', 'shootout_them',
         'formation_id', 'notes',
@@ -29,6 +29,7 @@ class Game extends Model
     protected function casts(): array
     {
         return [
+            'rules' => 'array',
             'side' => GameSide::class,
             'status' => GameStatus::class,
             'period_scores' => 'array',
@@ -66,5 +67,52 @@ class Game extends Model
     public function players(): HasMany
     {
         return $this->hasMany(GamePlayer::class);
+    }
+
+    public function events(): HasMany
+    {
+        return $this->hasMany(GameEvent::class);
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (Game $game) {
+            if (empty($game->rules) && $game->game_format_id) {
+                $game->rules = GameFormat::findOrFail($game->game_format_id)->rulesSnapshot();
+            }
+        });
+    }
+
+    /** One rule of this match, from its own copy (never from the format template). */
+    public function rule(string $key, mixed $default = null): mixed
+    {
+        return ($this->rules ?? [])[$key] ?? $default;
+    }
+
+    /** Regulation time, plus extra time when it was (or, given true, would be) played. */
+    public function matchLength(?bool $withExtraTime = null): int
+    {
+        $withExtraTime ??= (bool) $this->extra_time_played;
+
+        return (int) $this->rule('periods_count', 0) * (int) $this->rule('period_minutes', 0)
+            + ($withExtraTime ? (int) $this->rule('extra_time_minutes', 0) : 0);
+    }
+
+    /** Sports with a goalkeeper role on the line-up. */
+    public function hasGoalkeeper(): bool
+    {
+        return in_array($this->rule('sport'), ['football', 'futsal', 'handball'], true);
+    }
+
+    /** Whether a sanction of this kind sends the player off (ends their minutes). */
+    public function endsPlay(?string $sanctionKey): bool
+    {
+        foreach ($this->rule('sanction_types', []) as $type) {
+            if (($type['key'] ?? null) === $sanctionKey) {
+                return (bool) ($type['ends_play'] ?? false);
+            }
+        }
+
+        return false;
     }
 }

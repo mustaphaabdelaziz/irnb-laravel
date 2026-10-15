@@ -6,33 +6,57 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
+import LineupBoard from '@/Components/Competitions/LineupBoard.vue';
+import MatchReport from '@/Components/Competitions/MatchReport.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useCan } from '@/Composables/useCan.js';
 
 const { t } = useI18n();
 const { can } = useCan();
 
-const props = defineProps({ game: Object, candidates: Array, opponents: Array, venues: Array, canManage: Boolean });
+const props = defineProps({ game: Object, candidates: Array, lineup: Object, report: Object, opponents: Array, venues: Array, canManage: Boolean });
 
-const callRows = ref(props.candidates.map((c) => ({ ...c, not_called_reason: c.not_called_reason ?? '' })));
+// Inertia v2 keeps component state across visits (preserveState: false is not an
+// option: it would remount the page and drop the open tab). So every save rebuilds
+// its local edit state from the server's answer in onSuccess (the page props
+// passed to it), the same way here, in LineupBoard and in MatchReport.
+const fromCandidates = (list) => list.map((c) => ({ ...c, not_called_reason: c.not_called_reason ?? '' }));
+const callRows = ref(fromCandidates(props.candidates));
 const calledCount = computed(() => callRows.value.filter((r) => r.called_up).length);
 const callForm = useForm({ players: [] });
 
 function saveCallUp() {
     callForm.players = callRows.value.map((r) => ({ player_id: r.player_id, called_up: r.called_up, not_called_reason: r.not_called_reason }));
-    callForm.put(route('games.call-up.update', props.game.id), { preserveScroll: true });
+    callForm.put(route('games.call-up.update', props.game.id), {
+        preserveScroll: true,
+        onSuccess: (page) => { callRows.value = fromCandidates(page.props.candidates); },
+    });
 }
 
 const tab = ref('info');
 const confirmDelete = ref(false);
 
-const form = useForm({
-    opponent_id: props.game.opponent_id, venue_id: props.game.venue_id ?? '', side: props.game.side,
-    round_label: props.game.round_label ?? '', date: props.game.date, kickoff_time: props.game.kickoff_time ?? '',
-    meeting_time: props.game.meeting_time ?? '', meeting_place: props.game.meeting_place ?? '', notes: props.game.notes ?? '',
-    status: props.game.status, our_score: props.game.our_score ?? '', their_score: props.game.their_score ?? '',
+const fromGame = (g) => ({
+    opponent_id: g.opponent_id, venue_id: g.venue_id ?? '', side: g.side,
+    round_label: g.round_label ?? '', date: g.date, kickoff_time: g.kickoff_time ?? '',
+    meeting_time: g.meeting_time ?? '', meeting_place: g.meeting_place ?? '', notes: g.notes ?? '',
+    status: g.status, our_score: g.our_score ?? '', their_score: g.their_score ?? '',
+});
+let saved = fromGame(props.game);
+const form = useForm({ ...saved });
+
+// Another tab's save (the report sets status, scores and notes) brings a fresh game:
+// every Info field the user has not touched follows it, so saving Info afterwards
+// never writes the old values back over a saved result. Fields being edited keep
+// what was typed (a failed save must not wipe them).
+watch(() => props.game, (game) => {
+    const next = fromGame(game);
+    const untouched = Object.keys(next).filter((key) => form[key] === saved[key]);
+    saved = next;
+    form.defaults(next);
+    if (untouched.length) form.reset(...untouched);
 });
 
 function save() {
@@ -40,7 +64,14 @@ function save() {
         ...d,
         venue_id: d.venue_id || null, kickoff_time: d.kickoff_time || null, meeting_time: d.meeting_time || null,
         our_score: d.our_score === '' ? null : d.our_score, their_score: d.their_score === '' ? null : d.their_score,
-    })).put(route('games.update', props.game.id), { preserveScroll: true });
+    })).put(route('games.update', props.game.id), {
+        preserveScroll: true,
+        onSuccess: (page) => {
+            saved = fromGame(page.props.game);
+            form.defaults(saved);
+            form.reset();
+        },
+    });
 }
 
 function destroy() {
@@ -70,7 +101,7 @@ function destroy() {
 
         <div class="mx-auto max-w-5xl space-y-4">
             <nav class="flex flex-wrap gap-1 border-b border-slate-200 dark:border-slate-800">
-                <button v-for="key in ['info', 'callup']" :key="key" type="button" @click="tab = key" class="-mb-px border-b-2 px-3 py-2 text-sm"
+                <button v-for="key in ['info', 'callup', 'lineup', 'report']" :key="key" type="button" @click="tab = key" class="-mb-px border-b-2 px-3 py-2 text-sm"
                     :class="tab === key ? 'border-primary-600 font-semibold text-primary-700 dark:text-primary-300' : 'border-transparent text-slate-500 dark:text-slate-400'">
                     {{ t(`comp.tab_${key}`) }}
                 </button>
@@ -158,6 +189,17 @@ function destroy() {
                 </table>
                 <InputError :message="callForm.errors.players ? t(callForm.errors.players) : ''" />
                 <PrimaryButton v-if="canManage" :disabled="callForm.processing" @click="saveCallUp">{{ t('save') }}</PrimaryButton>
+            </section>
+            <section v-if="tab === 'lineup'" class="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+                <p v-if="!lineup.players.length" class="text-sm text-slate-500">
+                    {{ t('comp.do_callup_first') }}
+                    <button type="button" class="text-primary-600 hover:underline" @click="tab = 'callup'">{{ t('comp.tab_callup') }}</button>
+                </p>
+                <LineupBoard v-else :game-id="game.id" :lineup="lineup" :can-manage="canManage" />
+            </section>
+            <section v-if="tab === 'report'" class="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+                <p v-if="!report.players.length" class="text-sm text-slate-500">{{ t('comp.do_callup_first') }}</p>
+                <MatchReport v-else :game-id="game.id" :report="report" :can-manage="canManage" />
             </section>
         </div>
 

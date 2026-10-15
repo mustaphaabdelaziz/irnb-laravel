@@ -92,6 +92,9 @@ return [
         'attendance.custom-statuses.destroy' => ['attendance', 'edit'],
         // "convocation" is not a view verb: printing the call-up sheet must not need edit rights.
         'games.convocation' => ['games', 'view'],
+        // Printable sheets only read: "lineup-sheet" / "report-sheet" are not view verbs.
+        'games.lineup-sheet' => ['games', 'view'],
+        'games.report-sheet' => ['games', 'view'],
         'transactions.receipt' => ['transactions', 'view'],
         'reports.financial' => ['reports', 'view'],
         'finance.index' => ['finance', 'view'],

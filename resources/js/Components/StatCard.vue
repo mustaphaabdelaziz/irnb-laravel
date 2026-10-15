@@ -1,8 +1,8 @@
 <script setup>
-import { useI18n } from 'vue-i18n';
+import { useCurrency } from '@/Composables/useCurrency';
 import Icon from '@/Components/Icon.vue';
 
-const { t } = useI18n();
+const { currencyLabel } = useCurrency();
 
 defineProps({
     label: String,
@@ -10,7 +10,7 @@ defineProps({
     icon: { type: String, default: null },
     color: { type: String, default: 'slate' },
     suffix: { type: String, default: '' },
-    // money value: the club currency (i18n currency_symbol) follows it
+    // money value: the club currency label (useCurrency) follows it
     currency: { type: Boolean, default: false },
 });
 
@@ -55,7 +55,7 @@ const accent = {
             ><Icon :name="icon" /></span>
         </div>
         <p class="figure mt-3 text-2xl font-extrabold [overflow-wrap:anywhere] sm:text-3xl" :class="valueColor[color] || valueColor.slate">
-            {{ value }}<span v-if="suffix || currency" class="ms-1 whitespace-nowrap text-base font-medium text-slate-400">{{ suffix || t('currency_symbol') }}</span>
+            {{ value }}<span v-if="suffix || currency" class="ms-1 whitespace-nowrap text-base font-medium text-slate-400">{{ suffix || currencyLabel }}</span>
         </p>
         <slot />
     </article>

@@ -14,6 +14,7 @@ import CategoryManager from '@/Components/CategoryManager.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useCurrency } from '@/Composables/useCurrency';
 import { asList, useListFilters } from '@/Composables/useListFilters';
 import { useBulkSelection } from '@/Composables/useBulkSelection';
 import { useCan } from '@/Composables/useCan';
@@ -37,6 +38,7 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
+const { currencyLabel } = useCurrency();
 const { can } = useCan();
 const { formatMoney } = useFormatMoney();
 const { formatDate } = useFormatDate();
@@ -270,8 +272,8 @@ function bulkDestroy() {
                     {{ t('statistics') }}
                 </button>
                 <div v-if="statsOpen" id="transaction-stats" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    <StatBars v-model="incomeCategoryFilter" :title="t('tx.by_income_category')" :stats="incomeChips" format="money" :unit="t('currency_symbol')" />
-                    <StatBars v-model="expenseCategoryFilter" :title="t('tx.by_expense_category')" :stats="expenseChips" format="money" :unit="t('currency_symbol')" />
+                    <StatBars v-model="incomeCategoryFilter" :title="t('tx.by_income_category')" :stats="incomeChips" format="money" :unit="currencyLabel" />
+                    <StatBars v-model="expenseCategoryFilter" :title="t('tx.by_expense_category')" :stats="expenseChips" format="money" :unit="currencyLabel" />
                     <StatBars v-model="accountFilter" :title="t('tx.by_caisse')" :stats="accountChips" :unit="t('tx.entries')" class="md:col-span-2 xl:col-span-1" />
                 </div>
             </section>

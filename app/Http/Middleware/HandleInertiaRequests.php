@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\User;
 use App\Models\WebsiteConfig;
+use App\Support\ClubCurrency;
 use App\Support\ClubIdentity;
 use App\Support\Impersonation;
 use Illuminate\Http\Request;
@@ -43,6 +44,9 @@ class HandleInertiaRequests extends Middleware
                 'canImpersonate' => $user !== null && Impersonation::allowedFor($user) && ! Impersonation::active(),
             ],
             'locale' => app()->getLocale(),
+            // The Settings currency; useCurrency.js turns it into the label
+            // shown after amounts. `symbol` is the custom one, or null.
+            'currency' => fn () => ['code' => ClubCurrency::code(), 'symbol' => ClubCurrency::symbol()],
             // Gates desktop-only UI (the Backup page) — there is no folder picker on the web.
             'isDesktop' => (bool) config('nativephp-internal.running'),
             'appName' => ClubIdentity::name($config),

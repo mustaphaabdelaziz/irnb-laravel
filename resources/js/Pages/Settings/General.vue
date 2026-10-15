@@ -6,7 +6,8 @@ import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
+import { currencyLabel } from '@/lib/currencyLabel';
 
 const { t, locale } = useI18n();
 
@@ -218,14 +219,22 @@ function saveCertificates() {
     })).put(route('settings.update'), { preserveScroll: true });
 }
 
+const savedCurrency = props.config?.settings?.currency || 'DZD';
+const savedSymbol = String(props.config?.settings?.currencySymbol ?? '').trim();
+
 const settingsForm = useForm({
-    currency: props.config?.settings?.currency || 'DZD',
+    currency: savedCurrency,
+    // Only a symbol that differs from the code is custom; older saves stored the code here.
+    currency_symbol: savedSymbol.toUpperCase() === savedCurrency.toUpperCase() ? '' : savedSymbol,
     timezone: props.config?.settings?.timezone || 'Africa/Algiers',
     default_language: props.config?.settings?.defaultLanguage || props.config?.settings?.default_language || 'ar',
     enable_donations: props.config?.settings?.enableDonations ?? props.config?.settings?.enable_donations ?? true,
     maintenance_mode: props.config?.settings?.maintenanceMode ?? props.config?.settings?.maintenance_mode ?? false,
     seasonStartMonth: props.config?.settings?.seasonStartMonth ?? 9,
 });
+
+// The standard sign of the chosen currency, shown when no custom symbol is typed.
+const standardCurrencySign = computed(() => currencyLabel({ code: settingsForm.currency, symbol: null }, t('currency_symbol')));
 
 // Month names come from the browser in the active language, so no catalog keys.
 function monthName(month) {
@@ -318,7 +327,8 @@ function saveSettings() {
     settingsForm.transform(data => ({
         settings: {
             currency: data.currency,
-            currencySymbol: data.currency,
+            // Empty = the standard sign (ClubCurrency / useCurrency).
+            currencySymbol: data.currency_symbol.trim() || null,
             timezone: data.timezone,
             defaultLanguage: data.default_language,
             enableDonations: data.enable_donations,
@@ -566,6 +576,13 @@ function saveSettings() {
                                         <option value="EUR">EUR - Euro</option>
                                         <option value="USD">USD - US Dollar</option>
                                     </select>
+                                    <InputError class="mt-1" :message="settingsForm.errors['settings.currency']" />
+                                </div>
+                                <div>
+                                    <InputLabel for="currency_symbol" :value="t('currency_custom_symbol')" />
+                                    <TextInput id="currency_symbol" v-model="settingsForm.currency_symbol" class="mt-1 w-full" maxlength="8" :placeholder="standardCurrencySign" />
+                                    <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">{{ t('currency_custom_symbol_hint') }}</span>
+                                    <InputError class="mt-1" :message="settingsForm.errors['settings.currencySymbol']" />
                                 </div>
                                 <div>
                                     <InputLabel :value="t('default_language')" />

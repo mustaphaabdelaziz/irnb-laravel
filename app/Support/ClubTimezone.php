@@ -2,7 +2,6 @@
 
 namespace App\Support;
 
-use App\Models\WebsiteConfig;
 use Throwable;
 
 /**
@@ -22,8 +21,8 @@ final class ClubTimezone
     {
         try {
             // A failed read (no table yet: fresh install, before migrate) is not
-            // memoized — once() keeps nothing when its callback throws.
-            return once(fn (): string => self::valid((WebsiteConfig::query()->first()?->settings ?? [])['timezone'] ?? null));
+            // memoized (ClubSettings), so the next read tries again.
+            return self::valid(ClubSettings::get('timezone'));
         } catch (Throwable) {
             return self::DEFAULT;
         }

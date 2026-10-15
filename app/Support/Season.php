@@ -2,7 +2,6 @@
 
 namespace App\Support;
 
-use App\Models\WebsiteConfig;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 
@@ -22,7 +21,7 @@ final class Season
     public static function startMonth(): int
     {
         return once(function (): int {
-            $month = (int) ((WebsiteConfig::query()->first()?->settings ?? [])['seasonStartMonth'] ?? self::DEFAULT_START_MONTH);
+            $month = (int) ClubSettings::get('seasonStartMonth', self::DEFAULT_START_MONTH);
 
             return ($month >= 1 && $month <= 12) ? $month : self::DEFAULT_START_MONTH;
         });

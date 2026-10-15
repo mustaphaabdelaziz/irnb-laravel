@@ -942,6 +942,8 @@
     "create": "Create",
     "created_successfully": "Created successfully",
     "currency": "Currency Code",
+    "currency_custom_symbol": "Custom symbol",
+    "currency_custom_symbol_hint": "Leave empty to use the standard sign",
     "currency_symbol": "DZD",
     "current_balance": "Current Balance",
     "current_password": "Current Password",

@@ -942,6 +942,8 @@
     "create": "Créer",
     "created_successfully": "Créé avec succès",
     "currency": "Code de devise",
+    "currency_custom_symbol": "Symbole personnalisé",
+    "currency_custom_symbol_hint": "Laissez vide pour utiliser le signe habituel",
     "currency_symbol": "DA",
     "current_balance": "Solde actuel",
     "current_password": "Mot de passe actuel",

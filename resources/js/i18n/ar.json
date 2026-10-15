@@ -942,6 +942,8 @@
     "create": "إنشاء",
     "created_successfully": "تم الإنشاء بنجاح",
     "currency": "رمز العملة",
+    "currency_custom_symbol": "رمز مخصّص للعملة",
+    "currency_custom_symbol_hint": "اتركه فارغًا لاستعمال الرمز المعتاد",
     "currency_symbol": "د.ج",
     "current_balance": "الرصيد الحالي",
     "current_password": "كلمة المرور الحالية",

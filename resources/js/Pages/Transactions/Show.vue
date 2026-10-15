@@ -6,6 +6,7 @@ import IconButton from '@/Components/IconButton.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useCurrency } from '@/Composables/useCurrency';
 import { useCan } from '@/Composables/useCan';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useFormatDate } from '@/Composables/useFormatDate';
@@ -14,6 +15,7 @@ import { useStatusLabel } from '@/Composables/useStatusLabel';
 import { paymentStatusColor } from '@/lib/statusLabels';
 
 const { t } = useI18n();
+const { currencyLabel } = useCurrency();
 const { statusLabel } = useStatusLabel();
 const { accountLabel } = useFinanceAccountLabel();
 const { formatMoney } = useFormatMoney();
@@ -57,7 +59,7 @@ const categoryName = computed(() => props.transaction.finance_category?.localize
                 <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     <div>
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('amount') }}</p>
-                        <p class="mt-1 text-2xl font-bold tabular-nums [overflow-wrap:anywhere]" :class="isIncome ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'"><span dir="ltr">{{ isIncome ? '+' : '−' }}{{ formatMoney(transaction.amount) }}</span> <span class="text-sm font-medium text-slate-400">{{ t('currency_symbol') }}</span></p>
+                        <p class="mt-1 text-2xl font-bold tabular-nums [overflow-wrap:anywhere]" :class="isIncome ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'"><span dir="ltr">{{ isIncome ? '+' : '−' }}{{ formatMoney(transaction.amount) }}</span> <span class="text-sm font-medium text-slate-400">{{ currencyLabel }}</span></p>
                     </div>
                     <div>
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('type') }}</p>

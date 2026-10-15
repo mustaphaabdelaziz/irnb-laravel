@@ -6,6 +6,7 @@ import Icon from '@/Components/Icon.vue';
 import DeltaBadge from '@/Components/Dashboard/DeltaBadge.vue';
 import Sparkline from '@/Components/Dashboard/Sparkline.vue';
 import { useI18n } from 'vue-i18n';
+import { useCurrency } from '@/Composables/useCurrency';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 
 /**
@@ -30,6 +31,7 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
+const { currencyLabel } = useCurrency();
 const { formatMoney } = useFormatMoney();
 
 const toneClasses = {
@@ -75,7 +77,7 @@ const isEmpty = computed(() => display.value === '—');
                             class="mt-2 text-2xl font-semibold leading-tight tracking-tight tabular-nums [overflow-wrap:anywhere] sm:text-[1.75rem] sm:leading-none"
                             :class="isEmpty ? 'text-muted-foreground/60' : 'text-foreground'"
                         >
-                            {{ display }}<span v-if="format === 'money' && !isEmpty" class="ms-1 whitespace-nowrap text-sm font-medium text-muted-foreground">{{ t('currency_symbol') }}</span>
+                            {{ display }}<span v-if="format === 'money' && !isEmpty" class="ms-1 whitespace-nowrap text-sm font-medium text-muted-foreground">{{ currencyLabel }}</span>
                         </p>
                         <DeltaBadge :delta="delta" :period-label="periodLabel" />
                         <p v-if="meta" class="mt-1.5 text-xs text-muted-foreground">{{ meta }}</p>

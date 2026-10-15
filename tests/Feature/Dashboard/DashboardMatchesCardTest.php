@@ -3,10 +3,11 @@
 namespace Tests\Feature\Dashboard;
 
 use App\Enums\GameStatus;
-use App\Services\Dashboard\MatchesCard;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\Dashboard\MatchesCard;
+use App\Support\Season;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\CompetitionFixtures;
@@ -27,7 +28,7 @@ class DashboardMatchesCardTest extends TestCase
         }
         $myNext = $this->game($mine, ['date' => now()->addDays(10)->toDateString()]);
         $coach = $this->coach();
-        $this->assignCoach($mine, $coach, \App\Support\Season::current()->startYear);
+        $this->assignCoach($mine, $coach, Season::current()->startYear);
 
         $admin = app(MatchesCard::class)->get($this->admin());
         $this->assertCount(3, $admin['upcoming']);

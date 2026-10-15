@@ -7,6 +7,7 @@ use App\Models\Game;
 use App\Models\User;
 use App\Services\Competitions\TeamAccess;
 use App\Support\Season;
+use Illuminate\Database\Eloquent\Builder;
 
 /** The Overview's matches card: next 3 and last 3 results — a coach's own teams first. */
 final class MatchesCard
@@ -28,7 +29,7 @@ final class MatchesCard
     }
 
     /** One joined query per list: team and opponent names without eager-load round trips. */
-    private function base(): \Illuminate\Database\Eloquent\Builder
+    private function base(): Builder
     {
         return Game::query()->join('teams', 'teams.id', '=', 'games.team_id')->join('opponents', 'opponents.id', '=', 'games.opponent_id')
             ->select('games.id', 'games.date', 'games.kickoff_time', 'games.side', 'games.status', 'games.our_score', 'games.their_score', 'games.team_id', 'teams.name as team_name', 'opponents.name as opponent_name');
@@ -38,7 +39,9 @@ final class MatchesCard
     private static function row(Game $g): array
     {
         $outcome = $g->status === GameStatus::Played && $g->our_score !== null && $g->their_score !== null
-            ? match ($g->our_score <=> $g->their_score) { 1 => 'W', 0 => 'D', -1 => 'L' } : null;
+            ? match ($g->our_score <=> $g->their_score) {
+                1 => 'W', 0 => 'D', -1 => 'L'
+            } : null;
 
         return [
             'id' => $g->id, 'date' => $g->date, 'kickoff_time' => $g->kickoff_time, 'team' => $g->team_name,

@@ -135,11 +135,11 @@ class SuspensionStatusTest extends TestCase
                 Suspension::create(['player_id' => $p->id, 'team_id' => $team->id, 'source' => 'manual', 'kind' => 'matches', 'matches_count' => 1, 'starts_on' => '2026-09-01']);
                 $ids[] = $p->id;
             }
-            \DB::flushQueryLog();
-            \DB::enableQueryLog();
+            DB::flushQueryLog();
+            DB::enableQueryLog();
             app(SuspensionStatus::class)->forPlayers($ids, $game);
-            $n = count(\DB::getQueryLog());
-            \DB::disableQueryLog();
+            $n = count(DB::getQueryLog());
+            DB::disableQueryLog();
 
             return $n;
         };

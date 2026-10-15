@@ -9,6 +9,7 @@ use App\Services\Dashboard\AttendanceCard;
 use App\Services\Dashboard\DashboardFilters;
 use App\Services\Dashboard\FinanceStats;
 use App\Services\Dashboard\HeroStats;
+use App\Services\Dashboard\MatchesCard;
 use App\Services\Dashboard\MemberStats;
 use App\Services\Dashboard\OperationsStats;
 use App\Services\Dashboard\OverviewStats;
@@ -40,6 +41,7 @@ class DashboardController extends Controller
         private readonly MemberStats $members,
         private readonly OperationsStats $operations,
         private readonly AttendanceCard $attendance,
+        private readonly MatchesCard $matches,
     ) {}
 
     public function __invoke(Request $request): Response
@@ -81,7 +83,11 @@ class DashboardController extends Controller
         // Phase 2 and 3 fill these in. The keys exist now so the client's tab
         // machinery has one shape to code against from the start.
         $resolvers = [
-            'overview' => fn (): array => $this->overview->get($filters, $this->money($user)),
+            'overview' => fn (): array => [
+                ...$this->overview->get($filters, $this->money($user)),
+                // The matches card needs games/view on top of the Overview.
+                'matches' => $user?->hasPermission('games', 'view') ? $this->matches->get($user) : null,
+            ],
             'finance' => fn (): ?array => $this->guard($user, 'finance')
                 ? $this->finance->get($filters)
                 : null,

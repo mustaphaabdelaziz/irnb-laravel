@@ -349,10 +349,10 @@ class DashboardPageTest extends TestCase
 
         // Six tiles, each needing a value, a previous-period value and a
         // twelve-month series, plus the open tab's four widgets and the
-        // shell's own lookups. Measured at 27; the headroom is small on
+        // shell's own lookups. Measured at 27, 29 with the matches card; the headroom is small on
         // purpose — one N+1 adds ten and trips this.
         $this->assertLessThanOrEqual(
-            29,
+            31,
             $queries,
             "First paint ran {$queries} queries — the hero row is leaking work.",
         );
@@ -371,9 +371,9 @@ class DashboardPageTest extends TestCase
 
         $this->actingAs($admin)->get(route('dashboard'), $this->partialHeaders('overview'))->assertOk();
 
-        // Measured at 11: four widgets plus the shared props every request pays.
+        // Measured at 11, plus the matches card's two queries: four widgets plus the shared props every request pays.
         $this->assertLessThanOrEqual(
-            13,
+            14,
             count($sql),
             'The overview tab ran '.count($sql)." queries — a widget is leaking work:\n".implode("\n", $sql),
         );

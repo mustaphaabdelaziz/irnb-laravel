@@ -1,4 +1,5 @@
 <script setup>
+import { Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { Bar } from 'vue-chartjs';
 import { useI18n } from 'vue-i18n';
@@ -23,6 +24,7 @@ const cashFlow = computed(() => props.data?.cashFlow ?? { labels: [], income: []
 const aging = computed(() => props.data?.debtAging ?? []);
 const alerts = computed(() => props.data?.alerts ?? []);
 const activity = computed(() => props.data?.activity ?? []);
+const matches = computed(() => props.data?.matches ?? null);
 
 // Month keys arrive as YYYY-MM; the axis only needs the month.
 const monthLabel = (key) => key?.slice(5) ?? '';
@@ -166,6 +168,25 @@ const activityIcon = { transaction: 'money', registration: 'user', rental: 'box'
                 </template>
             </ChartCard>
         </section>
+
+        <Card v-if="matches" class="overflow-hidden border-border/70 shadow-none">
+            <CardHeader class="px-5 py-4"><CardTitle class="text-base">{{ t('games') }}</CardTitle></CardHeader>
+            <Separator />
+            <div class="grid gap-4 p-4 sm:grid-cols-2">
+                <div v-for="part in ['upcoming', 'results']" :key="part">
+                    <h4 class="mb-2 text-xs font-semibold uppercase text-muted-foreground">{{ t(`comp.${part === 'upcoming' ? 'upcoming' : 'past'}`) }}</h4>
+                    <Link v-for="g in matches[part]" :key="g.id" :href="route('games.show', g.id)" class="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-muted">
+                        <span class="truncate">{{ g.team }} — {{ g.opponent }}</span>
+                        <span class="flex items-center gap-2">
+                            <bdi dir="ltr" class="font-mono text-xs">{{ part === 'upcoming' ? `${g.date} ${g.kickoff_time ?? ''}` : `${g.our_score}–${g.their_score}` }}</bdi>
+                            <span v-if="g.outcome" class="flex h-5 w-5 items-center justify-center rounded text-xs font-bold text-white"
+                                :class="{ W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' }[g.outcome]">{{ t(`comp.form_${g.outcome}`) }}</span>
+                        </span>
+                    </Link>
+                    <p v-if="!matches[part].length" class="px-2 text-sm text-muted-foreground">{{ t('no_results') }}</p>
+                </div>
+            </div>
+        </Card>
 
         <Card class="overflow-hidden border-border/70 shadow-none">
             <CardHeader class="px-5 py-4">

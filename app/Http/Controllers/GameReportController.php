@@ -53,7 +53,19 @@ class GameReportController extends Controller
             'mvp_player_id' => ['nullable', 'integer'],
             'notes' => ['nullable', 'string', 'max:5000'],
         ]);
-        $data['extra_time_played'] = $request->boolean('extra_time_played');
+        // Only what the format has is kept: extra time and a shootout where its rules
+        // allow them, period rows up to periods_count (+1 for extra time played), and
+        // an opponent's own goal never carries an assist.
+        $data['extra_time_played'] = (bool) $game->rule('has_extra_time') && $request->boolean('extra_time_played');
+        $data['period_scores'] = array_slice($data['period_scores'], 0, $periods + ($data['extra_time_played'] ? 1 : 0));
+        if (! $game->rule('has_shootout')) {
+            $data['shootout_us'] = $data['shootout_them'] = null;
+        }
+        foreach ($data['events'] as $i => $event) {
+            if (($event['subtype'] ?? null) === 'opponent_own_goal') {
+                $data['events'][$i]['related_player_id'] = null;
+            }
+        }
 
         $roles = $game->players()->where('called_up', true)->get(['player_id', 'role'])
             ->mapWithKeys(fn (GamePlayer $gp) => [$gp->player_id => $gp->role === 'starter' ? 'starter' : 'bench'])->all();
@@ -64,7 +76,7 @@ class GameReportController extends Controller
 
         $rows = array_map(fn ($row) => is_array($row) ? [$row[0] ?? null, $row[1] ?? null] : [null, null], $data['period_scores']);
         $score = ScoreCalculator::derive($rows, (string) $game->rule('scoring'));
-        if ($score === null && ($data['our_score'] === null || $data['their_score'] === null)) {
+        if ($score === null && (($data['our_score'] ?? null) === null || ($data['their_score'] ?? null) === null)) {
             throw ValidationException::withMessages(['our_score' => 'comp.error.score_required']);
         }
         [$us, $them] = $score ?? [(int) $data['our_score'], (int) $data['their_score']];

@@ -88,6 +88,45 @@ class MatchReportTest extends TestCase
     }
 
     #[Test]
+    public function the_server_drops_rows_and_fields_the_format_does_not_have(): void
+    {
+        [$game, [$a, $b]] = $this->match();
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->put(route('games.report.update', $game), $this->payload([
+            'period_scores' => [[1, 0], [1, 1], [3, 0]], 'extra_time_played' => true, 'shootout_us' => 4, 'shootout_them' => 3,
+            'events' => [['type' => 'goal', 'subtype' => 'opponent_own_goal', 'period' => 1, 'minute' => 10, 'player_id' => null, 'related_player_id' => $b->id]],
+        ]))->assertSessionHasNoErrors();
+
+        $game->refresh();
+        $this->assertSame([[1, 0], [1, 1]], $game->period_scores);
+        $this->assertFalse($game->extra_time_played);
+        $this->assertSame([2, 1], [$game->our_score, $game->their_score]);
+        $this->assertNull($game->shootout_us);
+        $this->assertNull($game->shootout_them);
+        $this->assertNull($game->events()->sole()->related_player_id);
+
+        // Score fields left out of the payload are read as empty, not a crash.
+        $payload = $this->payload(['period_scores' => []]);
+        unset($payload['our_score'], $payload['their_score']);
+        $this->actingAs($admin)->put(route('games.report.update', $game), $payload)->assertSessionHasErrors('our_score');
+    }
+
+    #[Test]
+    public function an_extra_time_row_and_shootout_stay_when_the_format_has_them(): void
+    {
+        [$game] = $this->match(['has_extra_time' => true, 'extra_time_minutes' => 30, 'has_shootout' => true]);
+
+        $this->actingAs($this->admin())->put(route('games.report.update', $game), $this->payload([
+            'period_scores' => [[1, 0], [0, 1], [0, 0]], 'extra_time_played' => true, 'shootout_us' => 4, 'shootout_them' => 3,
+        ]))->assertSessionHasNoErrors();
+
+        $game->refresh();
+        $this->assertSame([[1, 0], [0, 1], [0, 0]], $game->period_scores);
+        $this->assertSame([4, 3], [$game->shootout_us, $game->shootout_them]);
+    }
+
+    #[Test]
     public function rolling_formats_take_typed_minutes_and_volleyball_counts_sets(): void
     {
         [$game, [$a, $b]] = $this->match(['rolling_subs' => true, 'scoring' => 'sets', 'periods_count' => 5, 'period_minutes' => 0, 'sets_to_win' => 3]);

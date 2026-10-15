@@ -2,8 +2,10 @@
 
 namespace App\Services\Dashboard;
 
+use App\Models\Transaction;
 use App\Support\Season;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -15,8 +17,9 @@ use Illuminate\Support\Facades\DB;
  * so the two surfaces stay visually identical.
  *
  * Strips are unfiltered totals for the module, not the page's current filter —
- * a figure that moves as you search is a different tool, and the list's own
- * result count already answers that question.
+ * except Transactions: a ledger's first question is "how much in what I am
+ * looking at", so its strip sums the list's own query. Members' debts stay a
+ * club-wide figure there (and say so): a debt has no season, caisse or category.
  */
 class ModuleStats
 {
@@ -110,6 +113,32 @@ class ModuleStats
             $this->tile('equip_units', (int) ($row->units ?? 0)),
             $this->tile('equip_value', round((float) ($row->value ?? 0), 2), 'money'),
             $this->tile('equip_on_loan', (int) ($row->on_loan ?? 0)),
+        ];
+    }
+
+    /**
+     * @param  Builder<Transaction>  $filtered  the list query, filters applied
+     * @return list<array<string, mixed>>
+     */
+    public function transactions(Builder $filtered): array
+    {
+        $row = (clone $filtered)->toBase()
+            ->reorder()
+            ->selectRaw(
+                "COALESCE(SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE 0 END), 0) as income, "
+                ."COALESCE(SUM(CASE WHEN transaction_type = 'expense' THEN amount ELSE 0 END), 0) as expense"
+            )
+            ->first();
+
+        $income = round((float) ($row->income ?? 0), 2);
+        $expense = round((float) ($row->expense ?? 0), 2);
+        $debts = (float) DB::table('players')->where('archived', false)->sum('outstanding_debt');
+
+        return [
+            $this->tile('tx_income', $income, 'money'),
+            $this->tile('tx_expense', $expense, 'money'),
+            $this->tile('tx_net', round($income - $expense, 2), 'money'),
+            $this->tile('tx_debts', round($debts, 2), 'money'),
         ];
     }
 

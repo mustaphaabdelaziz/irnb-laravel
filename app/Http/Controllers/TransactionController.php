@@ -12,6 +12,7 @@ use App\Models\Transaction;
 use App\Models\WebsiteConfig;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
+use App\Services\Dashboard\ModuleStats;
 use App\Services\Finance\DefaultRegisterResolver;
 use App\Services\Finance\RecalculatePlayerDebtService;
 use App\Services\FinanceService;
@@ -19,12 +20,14 @@ use App\Services\Storage\FileStorageService;
 use App\Services\Storage\PrivateFileStorage;
 use App\Support\Export;
 use App\Support\FinanceAccountLabel;
+use App\Support\FiscalPeriod;
 use App\Support\ListFilter;
 use App\Support\TransactionTitle;
 use App\Support\UiLang;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -38,11 +41,16 @@ class TransactionController extends Controller
     /** Stored payment-method code => the i18n key the screens use (resources/js/lib/statusLabels.js). */
     private const PAYMENT_METHOD_KEYS = ['bank' => 'bank_transfer'];
 
-    /** Select filters (query parameter => column); each takes several values. */
+    /** Page sizes the list offers; anything else falls back to the first. */
+    private const PER_PAGE = [25, 50, 100, 200];
+
+    /**
+     * Select filters (query parameter => column); each takes several values.
+     * Every one has a control on the page (status: a removable chip). The old
+     * `category` slug filter is gone — it had no control and no caller.
+     */
     private const LIST_FILTER_COLUMNS = [
         'type' => 'transaction_type',
-        'category' => 'category',
-        'fiscal_year' => 'fiscal_year',
         'status' => 'status',
         'finance_category_id' => 'finance_category_id',
         'finance_account_id' => 'finance_account_id',
@@ -51,34 +59,44 @@ class TransactionController extends Controller
     /** Which values each select filter can apply (ListFilter specs). */
     private const LIST_FILTER_SPECS = [
         'type' => ['income', 'expense'],
-        'category' => ListFilter::TEXT,
-        'fiscal_year' => ListFilter::IDS,
-        'status' => ListFilter::TEXT,
+        'status' => ['Paid', 'Partial', 'Unpaid', 'Exempt'],
         'finance_category_id' => ListFilter::IDS,
         'finance_account_id' => ListFilter::IDS,
+        // Season keys or "all"; absent = the current season (see applyFilters).
+        'fiscal_year' => 'ids|all',
     ];
 
-    public function index(Request $request): Response
+    public function index(Request $request, ModuleStats $moduleStats): Response
     {
         $query = Transaction::query()->where('archived', false);
         $this->applyFilters($query, $request);
 
-        $income = (float) (clone $query)->where('transaction_type', 'income')->sum('amount');
-        $expense = (float) (clone $query)->where('transaction_type', 'expense')->sum('amount');
+        $perPage = in_array((int) $request->input('per_page'), self::PER_PAGE, true)
+            ? (int) $request->input('per_page')
+            : self::PER_PAGE[0];
 
-        $transactions = $query->with(['recordedBy', 'receivedBy', ...TransactionTitle::RELATIONS, ...Transaction::FINANCE_ACCOUNT_LABEL])
-            ->latest('transaction_date')
-            ->paginate(25)
+        $transactions = (clone $query)
+            ->with(['recordedBy', 'receivedBy', ...TransactionTitle::RELATIONS, ...Transaction::FINANCE_ACCOUNT_LABEL])
+            ->orderByDesc('transaction_date')
+            ->orderByDesc('id')
+            ->paginate($perPage)
             ->withQueryString()
             ->through(fn (Transaction $transaction) => TransactionTitle::decorate($transaction));
 
         return Inertia::render('Transactions/Index', [
             'transactions' => $transactions,
+            // Everything below until `filters` follows the filters, so the page reloads it with the list.
+            'strip' => $moduleStats->transactions($query),
+            'incomeByCategory' => $this->categoryStats($request, 'income'),
+            'expenseByCategory' => $this->categoryStats($request, 'expense'),
+            'byAccount' => $this->accountStats($request),
             // Select filters come back as lists, whatever shape was sent.
-            'filters' => ListFilter::echo($request, self::LIST_FILTER_SPECS, ['search', 'date_from', 'date_to']),
+            'filters' => ListFilter::echo($request, self::LIST_FILTER_SPECS, ['search', 'date_from', 'date_to', 'per_page']),
             // Lookups as closures so filter reloads (partial) skip these queries.
-            'financeCategories' => fn () => FinanceCategory::where('is_active', true)
-                ->orderBy('type')->orderBy('sort_order')->orderBy('name')->get(['id', 'type', 'name', 'name_ar', 'name_fr', 'name_en', 'color']),
+            // Every category, inactive too: old entries stay filterable, and the
+            // categories manager needs each one's usage.
+            'financeCategories' => fn () => FinanceCategory::withCount('transactions')
+                ->orderBy('type')->orderBy('sort_order')->orderBy('name')->get(),
             'financeAccounts' => fn () => FinanceAccount::query()
                 ->where('is_opening_fund', false)
                 ->with([
@@ -86,12 +104,8 @@ class TransactionController extends Controller
                     'category:id,name,name_ar,name_fr,name_en',
                 ])
                 ->orderBy('sort_order')->orderBy('name')->get(),
-            'stats' => [
-                'income' => $income,
-                'expense' => $expense,
-                'net' => $income - $expense,
-                'debts' => (float) Player::where('archived', false)->sum('outstanding_debt'),
-            ],
+            'seasons' => fn () => $this->seasonOptions(),
+            'currentSeason' => fn () => FiscalPeriod::currentKey(),
         ]);
     }
 
@@ -312,8 +326,8 @@ class TransactionController extends Controller
     }
 
     /**
-     * The list filters, shared by the index and its export so the file always
-     * matches what the page shows.
+     * The list filters, shared by the index, its statistics and its export so
+     * the file always matches what the page shows.
      *
      * @param  Builder<Transaction>  $query
      */
@@ -325,7 +339,14 @@ class TransactionController extends Controller
             $query->where(fn (Builder $q) => $q
                 ->where('title', 'like', $like)
                 ->orWhere('description', 'like', $like)
-                ->orWhere('category', 'like', $like)
+                // The category by its name in any language — never the stored
+                // slug, a transliteration for Arabic names.
+                ->orWhereIn('finance_category_id', FinanceCategory::query()
+                    ->where(fn (Builder $c) => $c->where('name', 'like', $like)
+                        ->orWhere('name_ar', 'like', $like)
+                        ->orWhere('name_fr', 'like', $like)
+                        ->orWhere('name_en', 'like', $like))
+                    ->select('id'))
                 // A player's payments, found by any part of the name or the membership ID.
                 ->orWhere(fn (Builder $p) => $p
                     ->where('related_entity_type', 'Player')
@@ -342,12 +363,111 @@ class TransactionController extends Controller
             }
         }
 
-        if ($request->filled('date_from')) {
-            $query->where('transaction_date', '>=', $request->input('date_from'));
+        $from = $this->dateParam($request, 'date_from');
+        $to = $this->dateParam($request, 'date_to');
+        if ($from) {
+            $query->whereDate('transaction_date', '>=', $from);
         }
-        if ($request->filled('date_to')) {
-            $query->where('transaction_date', '<=', $request->input('date_to'));
+        if ($to) {
+            $query->whereDate('transaction_date', '<=', $to);
         }
+
+        // Season: absent = the current one, unless a date range already says
+        // which days to show; "all" = every season.
+        $seasons = ListFilter::get($request, 'fiscal_year', self::LIST_FILTER_SPECS['fiscal_year']);
+        if ($seasons === []) {
+            if (! $from && ! $to) {
+                $query->where('fiscal_year', FiscalPeriod::currentKey());
+            }
+        } elseif (! in_array('all', $seasons, true)) {
+            $query->whereIn('fiscal_year', array_map('intval', $seasons));
+        }
+    }
+
+    /** A Y-m-d date from the query string, or null for anything else. */
+    private function dateParam(Request $request, string $key): ?string
+    {
+        $value = (string) $request->input($key, '');
+
+        return preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1 ? $value : null;
+    }
+
+    /**
+     * The list's population for one statistics card minus the filter that card
+     * drives, so clicking a bar never empties its own card (as on Players).
+     *
+     * @return Builder<Transaction>
+     */
+    private function statsQuery(Request $request, string $except): Builder
+    {
+        $query = Transaction::query()->where('archived', false);
+        $this->applyFilters($query, new Request(Arr::except($request->query(), [$except])));
+
+        return $query;
+    }
+
+    /**
+     * One side of the books by finance category, as amounts, largest first.
+     *
+     * @return list<array{key: int|null, label: string|null, count: float}>
+     */
+    private function categoryStats(Request $request, string $type): array
+    {
+        $rows = $this->statsQuery($request, 'finance_category_id')
+            ->where('transaction_type', $type)
+            ->toBase()
+            ->groupBy('finance_category_id')
+            ->selectRaw('finance_category_id, SUM(amount) as total')
+            ->orderByDesc('total')
+            ->get();
+        $names = FinanceCategory::whereIn('id', $rows->pluck('finance_category_id')->filter())->get()->keyBy('id');
+
+        return $rows->map(fn (object $row): array => [
+            'key' => $row->finance_category_id ? (int) $row->finance_category_id : null,
+            'label' => $names->get($row->finance_category_id)?->localized_name,
+            'count' => round((float) $row->total, 2),
+        ])->values()->all();
+    }
+
+    /**
+     * Entries per caisse, most used first, labelled like the Caisses page.
+     *
+     * @return list<array{key: int|null, label: string, count: int}>
+     */
+    private function accountStats(Request $request): array
+    {
+        $rows = $this->statsQuery($request, 'finance_account_id')
+            ->toBase()
+            ->groupBy('finance_account_id')
+            ->selectRaw('finance_account_id, COUNT(*) as total')
+            ->orderByDesc('total')
+            ->get();
+        $accounts = FinanceAccount::query()
+            ->with(['branch:id,name,name_ar,name_fr,name_en', 'category:id,name,name_ar,name_fr,name_en'])
+            ->whereIn('id', $rows->pluck('finance_account_id')->filter())
+            ->get()->keyBy('id');
+
+        return $rows->map(fn (object $row): array => [
+            'key' => $row->finance_account_id ? (int) $row->finance_account_id : null,
+            'label' => FinanceAccountLabel::for($accounts->get($row->finance_account_id)),
+            'count' => (int) $row->total,
+        ])->values()->all();
+    }
+
+    /**
+     * Seasons the filter offers: every fiscal-year row plus the current
+     * season, newest first, labelled "2026/2027".
+     *
+     * @return list<array{value: string, label: string}>
+     */
+    private function seasonOptions(): array
+    {
+        return FiscalYear::query()->pluck('year')
+            ->map(fn ($year) => (int) $year)
+            ->push(FiscalPeriod::currentKey())
+            ->unique()->sortDesc()->values()
+            ->map(fn (int $key) => ['value' => (string) $key, 'label' => FiscalPeriod::label($key)])
+            ->all();
     }
 
     /**

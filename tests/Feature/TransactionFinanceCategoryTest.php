@@ -80,9 +80,7 @@ class TransactionFinanceCategoryTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Transactions/Index')
-                ->where('stats.income', 900)
-                ->where('stats.expense', 400)
-                ->where('stats.net', 500)
-                ->has('stats.debts'));
+                ->where('strip', fn ($strip) => collect($strip)->pluck('value', 'key')->map(fn ($v) => (float) $v)->all()
+                    == ['tx_income' => 900.0, 'tx_expense' => 400.0, 'tx_net' => 500.0, 'tx_debts' => 0.0]));
     }
 }

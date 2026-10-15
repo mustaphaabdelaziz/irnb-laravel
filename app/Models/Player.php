@@ -81,6 +81,13 @@ class Player extends Model
                 $player->left_at = now()->toDateString();
             }
         });
+
+        // Board members keep a copy of their player's name for narrow lookups.
+        static::updated(function (Player $player) {
+            if ($player->wasChanged(self::NAME_COLUMNS)) {
+                BoardMember::where('player_id', $player->id)->update(['name' => $player->fullname]);
+            }
+        });
     }
 
     public static function leftStatusId(): ?int

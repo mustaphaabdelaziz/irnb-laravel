@@ -11,37 +11,23 @@ use Illuminate\Validation\Rule;
 
 class BoardMemberController extends Controller
 {
-    public function store(Request $request, FileStorageService $files): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
-        $data = $this->fillFromPlayer($this->validateData($request));
-        if ($request->hasFile('photo')) {
-            $stored = $files->storeFile($request->file('photo'), 'board');
-            $data['photo_url'] = $stored['url'];
-            $data['photo_filename'] = $stored['filename'];
-        }
-        unset($data['photo']);
-        BoardMember::create($data);
+        BoardMember::create($this->fillFromPlayer($this->validateData($request)));
 
         return back()->with('success', 'flash.board_member_added');
     }
 
-    public function update(Request $request, BoardMember $boardMember, FileStorageService $files): RedirectResponse
+    public function update(Request $request, BoardMember $boardMember): RedirectResponse
     {
-        $data = $this->fillFromPlayer($this->validateData($request));
-        if ($request->hasFile('photo')) {
-            $files->delete($boardMember->photo_filename);
-            $stored = $files->storeFile($request->file('photo'), 'board');
-            $data['photo_url'] = $stored['url'];
-            $data['photo_filename'] = $stored['filename'];
-        }
-        unset($data['photo']);
-        $boardMember->update($data);
+        $boardMember->update($this->fillFromPlayer($this->validateData($request)));
 
         return back()->with('success', 'flash.board_member_updated');
     }
 
     public function destroy(BoardMember $boardMember, FileStorageService $files): RedirectResponse
     {
+        // Photos uploaded before members came from players.
         $files->delete($boardMember->photo_filename);
         $boardMember->delete();
 
@@ -49,25 +35,15 @@ class BoardMemberController extends Controller
     }
 
     /**
-     * When a player is picked, default the member's display name (and photo when
-     * none was uploaded) from the player record. The name stays editable.
+     * A member is a player: name, contact and photo are read from the player
+     * (BoardMember::withPlayer()); only the name is copied, for narrow lookups.
      *
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function fillFromPlayer(array $data): array
     {
-        if (! empty($data['player_id'])) {
-            $player = Player::find($data['player_id']);
-            if ($player) {
-                if (empty($data['name'])) {
-                    $data['name'] = $player->fullname;
-                }
-                if (empty($data['photo_url']) && $player->picture_url) {
-                    $data['photo_url'] = $player->picture_url;
-                }
-            }
-        }
+        $data['name'] = Player::findOrFail($data['player_id'])->fullname;
 
         return $data;
     }
@@ -76,17 +52,10 @@ class BoardMemberController extends Controller
     private function validateData(Request $request): array
     {
         return $request->validate([
-            'name' => ['required_without:player_id', 'nullable', 'string', 'max:160'],
-            'player_id' => ['required_without:name', 'nullable', 'integer', 'exists:players,id'],
+            'player_id' => ['required', 'integer', 'exists:players,id'],
             'board_term_id' => ['nullable', 'integer', 'exists:board_terms,id'],
             'role' => ['required', 'string', 'max:100', 'exists:board_roles,name'],
-            'email' => ['nullable', 'email', 'max:160'],
-            'phone' => ['nullable', 'string', 'max:60'],
             'status' => ['required', Rule::in(['active', 'former'])],
-            'bio' => ['nullable', 'string', 'max:2000'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
-            'user_id' => ['nullable', 'integer', 'exists:users,id'],
-            'photo' => ['nullable', 'image', 'max:4096'],
         ]);
     }
 }

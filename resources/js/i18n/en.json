@@ -965,6 +965,7 @@
     "comp.warn.goals_mismatch": "The goals in the timeline don't add up to our score.",
     "comp.warn.shootout_not_draw": "A shootout is filled in but the match wasn't a draw.",
     "comp.warn.starter_without_position": "A starter has no position.",
+    "comp.warn.timeline_out_of_sync": "The timeline no longer matches the line-up (substitutions or send-offs). Check the report.",
     "comp.warn.too_many_subs": "More substitutions than the format allows.",
     "comp.weekday_1": "Mon",
     "comp.weekday_2": "Tue",

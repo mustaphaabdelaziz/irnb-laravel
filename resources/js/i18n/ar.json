@@ -965,6 +965,7 @@
     "comp.warn.goals_mismatch": "أهداف سجل الأحداث لا تطابق نتيجتنا.",
     "comp.warn.shootout_not_draw": "ركلات الترجيح مُدخلة والمباراة لم تنته بالتعادل.",
     "comp.warn.starter_without_position": "لاعب أساسي بلا مركز.",
+    "comp.warn.timeline_out_of_sync": "سجل الأحداث لم يعد يطابق التشكيلة (تغييرات أو طرد). راجع التقرير.",
     "comp.warn.too_many_subs": "عدد التغييرات أكثر مما يسمح به النظام.",
     "comp.weekday_1": "إث",
     "comp.weekday_2": "ثل",

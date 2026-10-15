@@ -124,6 +124,22 @@ class MatchReportTest extends TestCase
     }
 
     #[Test]
+    public function a_line_up_changed_after_the_report_warns_that_the_timeline_is_out_of_sync(): void
+    {
+        [$game, [$a, $b, $c]] = $this->match();
+        $game->update(['status' => GameStatus::Played, 'our_score' => 0, 'their_score' => 0]);
+        GameEvent::create(['game_id' => $game->id, 'type' => 'substitution', 'minute' => 60, 'player_id' => $c->id, 'related_player_id' => $a->id]);
+        $warnings = fn () => $this->actingAs($this->admin())->get(route('games.show', $game))->assertOk()
+            ->viewData('page')['props']['report']['warnings'];
+
+        $this->assertNotContains('comp.warn.timeline_out_of_sync', $warnings());
+
+        // The substitute is moved into the starting line-up: "comes on at 60'" no longer fits.
+        GamePlayer::where('game_id', $game->id)->where('player_id', $c->id)->update(['role' => 'starter']);
+        $this->assertContains('comp.warn.timeline_out_of_sync', $warnings());
+    }
+
+    #[Test]
     public function a_re_saved_report_replaces_its_events_and_coaches_are_scoped(): void
     {
         [$game, [$a]] = $this->match();

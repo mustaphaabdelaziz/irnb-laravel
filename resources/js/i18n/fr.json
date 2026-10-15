@@ -965,6 +965,7 @@
     "comp.warn.goals_mismatch": "Les buts du déroulé ne correspondent pas à notre score.",
     "comp.warn.shootout_not_draw": "Des tirs au but sont saisis alors que le match n'était pas nul.",
     "comp.warn.starter_without_position": "Un titulaire n'a pas de poste.",
+    "comp.warn.timeline_out_of_sync": "Le déroulé ne correspond plus à la composition (remplacements ou expulsions). Vérifiez le rapport.",
     "comp.warn.too_many_subs": "Plus de remplacements que le format n'en autorise.",
     "comp.weekday_1": "Lun",
     "comp.weekday_2": "Mar",

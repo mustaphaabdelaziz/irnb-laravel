@@ -83,7 +83,7 @@ final class TransactionTitle
         return $transaction->relatedPlayer;
     }
 
-    private static function categoryLabel(Transaction $transaction): string
+    public static function categoryLabel(Transaction $transaction): string
     {
         if ($transaction->relationLoaded('financeCategory') && $transaction->financeCategory) {
             return $transaction->financeCategory->localized_name;

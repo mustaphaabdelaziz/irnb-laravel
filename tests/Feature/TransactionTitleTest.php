@@ -101,6 +101,17 @@ class TransactionTitleTest extends TestCase
     }
 
     #[Test]
+    public function a_system_slug_without_its_category_gets_its_ui_label(): void
+    {
+        $tx = Transaction::create([
+            'amount' => 100, 'transaction_type' => 'income', 'category' => 'donation', 'status' => 'Paid',
+        ]);
+
+        app()->setLocale('fr');
+        $this->assertSame(UiLang::get('donation'), TransactionTitle::for($tx));
+    }
+
+    #[Test]
     public function without_its_category_an_entry_is_named_by_its_type_never_its_slug(): void
     {
         // Deliberately not eager-loading financeCategory: the fallback path.

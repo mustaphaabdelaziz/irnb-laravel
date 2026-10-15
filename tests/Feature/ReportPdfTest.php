@@ -62,6 +62,30 @@ class ReportPdfTest extends TestCase
     }
 
     #[Test]
+    public function the_receipt_names_an_unlinked_category_by_its_type_never_its_slug(): void
+    {
+        $seen = new \ArrayObject;
+        $this->mock(PdfService::class, function (MockInterface $mock) use ($seen) {
+            $mock->shouldReceive('stream')->once()->andReturnUsing(function (string $html) use ($seen) {
+                $seen['html'] = $html;
+
+                return response('%PDF-spy', 200, ['Content-Type' => 'application/pdf']);
+            });
+        });
+        $transaction = Transaction::create([
+            'amount' => 770, 'transaction_date' => now(), 'transaction_type' => 'expense',
+            'category' => 'msaryf_ashghal_almkr', 'status' => 'Paid', 'fiscal_year' => now()->year,
+        ]);
+        // The observer links every new row to a category; unlink it (deleted/legacy row).
+        Transaction::query()->whereKey($transaction->id)->update(['finance_category_id' => null]);
+
+        $this->actingAs($this->admin())->get(route('transactions.receipt', $transaction))->assertOk();
+
+        $this->assertStringNotContainsString('msaryf', $seen['html']);
+        $this->assertStringNotContainsString('Msaryf', $seen['html']);
+    }
+
+    #[Test]
     public function it_generates_a_member_card_pdf(): void
     {
         $category = Category::create(['name' => 'Senior']);

@@ -65,10 +65,11 @@ function addEvent(type) {
         period: '', minute: '', player_id: '', related_player_id: '',
     });
 }
-// Shown in minute order; events without a minute stay at the end in entry order.
+// Shown in minute order (set order when untimed); events without one stay at the end in entry order.
+const timing = (e) => (rules.untimed ? e.period : e.minute);
 const ordered = computed(() => events.value
     .map((e, index) => ({ e, index }))
-    .sort((a, b) => (a.e.minute === '' ? 1e9 : +a.e.minute) - (b.e.minute === '' ? 1e9 : +b.e.minute) || a.index - b.index));
+    .sort((a, b) => (timing(a.e) === '' ? 1e9 : +timing(a.e)) - (timing(b.e) === '' ? 1e9 : +timing(b.e)) || a.index - b.index));
 
 const form = useForm({});
 function save() {
@@ -150,7 +151,15 @@ const icon = { goal: '⚽', sanction: '🟨', substitution: '🔁' };
             </div>
             <div v-for="{ e, index } in ordered" :key="index" class="flex flex-wrap items-start gap-2 rounded-lg bg-slate-50 p-2 text-sm dark:bg-slate-800/60">
                 <span class="w-6 text-center">{{ icon[e.type] }}</span>
-                <div>
+                <!-- Untimed formats (sets, no clock): the period/set number is the timing. -->
+                <div v-if="rules.untimed">
+                    <select v-model="e.period" :disabled="!canManage" :aria-label="t(`comp.period_${rules.period_label}`)" class="rounded border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
+                        <option value="">{{ t(`comp.period_${rules.period_label}`) }}</option>
+                        <option v-for="n in rules.periods_count" :key="n" :value="n">{{ t(`comp.period_${rules.period_label}`) }} {{ n }}</option>
+                    </select>
+                    <InputError :message="err(`events.${index}.period`)" />
+                </div>
+                <div v-else>
                     <input v-model="e.minute" :disabled="!canManage" type="number" min="0" :placeholder="t('comp.minute')" class="w-20 rounded border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800" />
                     <InputError :message="err(`events.${index}.minute`)" />
                 </div>

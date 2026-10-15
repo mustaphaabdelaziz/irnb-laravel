@@ -61,6 +61,7 @@ final class MatchPage
                 'sanction_types' => $game->rule('sanction_types', []),
                 'sport' => $game->rule('sport'),
                 'length' => $game->matchLength(false),
+                'untimed' => (int) $game->rule('period_minutes') === 0,
             ],
             'period_scores' => $game->period_scores ?? [],
             'extra_time_played' => (bool) $game->extra_time_played,

@@ -73,6 +73,22 @@ class ReportValidatorTest extends TestCase
     }
 
     #[Test]
+    public function untimed_formats_take_send_offs_without_a_minute_and_skip_the_minute_range(): void
+    {
+        $game = (new Game)->forceFill(['extra_time_played' => false, 'rules' => [
+            'periods_count' => 5, 'period_minutes' => 0, 'rolling_subs' => true,
+            'sanction_types' => [['key' => 'yellow', 'ends_play' => false], ['key' => 'expulsion', 'ends_play' => true]],
+        ]]);
+
+        $errors = (new ReportValidator)->errors($game, self::ROLES, $this->data([
+            ['type' => 'sanction', 'subtype' => 'expulsion', 'period' => 3, 'minute' => null, 'player_id' => 1, 'related_player_id' => null],
+            ['type' => 'sanction', 'subtype' => 'yellow', 'period' => 1, 'minute' => 12, 'player_id' => 2, 'related_player_id' => null],
+        ]));
+
+        $this->assertSame([], $errors);
+    }
+
+    #[Test]
     public function rolling_formats_refuse_substitution_events_and_players_must_be_in_the_line_up(): void
     {
         $errors = (new ReportValidator)->errors($this->game(true), self::ROLES, $this->data(

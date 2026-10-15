@@ -117,6 +117,7 @@ class MatchReportTest extends TestCase
         $this->actingAs($this->admin())->get(route('games.show', $game))->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->where('report.rules.length', 90)
+                ->where('report.rules.untimed', false)
                 ->has('report.events', 1)
                 ->has('report.players', 4)
                 ->where('report.warnings', ['comp.warn.goals_mismatch']));

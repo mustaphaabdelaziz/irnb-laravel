@@ -350,4 +350,50 @@ class FinanceStatsTest extends TestCase
 
         $this->assertSame('مصاريف أشغال المقر', $this->summary()['largest_expense']['meta']['label']);
     }
+
+    #[Test]
+    public function accounts_are_labelled_like_the_caisses_page_and_an_empty_opening_fund_is_hidden(): void
+    {
+        app()->setLocale('fr');
+        $branch = Branch::create(['name' => 'Football']);
+        $fund = FinanceAccount::where('is_opening_fund', true)->first()
+            ?? $this->account(['name' => 'Opening Fund', 'is_opening_fund' => true]);
+        app(FinanceService::class)->recomputeAccountBalances();
+
+        $accounts = collect($this->finance()['accounts']);
+
+        $this->assertNull($accounts->firstWhere('id', $fund->id));
+        $this->assertSame('Coffre — Football', $accounts->firstWhere('id', $branch->treasury->id)['label']);
+        $this->assertSame('Caisse du club', $accounts->firstWhere('name', 'Cash')['label']);
+    }
+
+    #[Test]
+    public function an_opening_fund_still_holding_money_stays_listed(): void
+    {
+        app()->setLocale('fr');
+        $fund = FinanceAccount::where('is_opening_fund', true)->first()
+            ?? $this->account(['name' => 'Opening Fund', 'is_opening_fund' => true]);
+        $fund->update(['opening_balance' => 500]);
+        app(FinanceService::class)->recomputeAccountBalances();
+
+        $row = collect($this->finance()['accounts'])->firstWhere('id', $fund->id);
+
+        $this->assertNotNull($row);
+        $this->assertSame('Fonds Initial', $row['label']);
+    }
+
+    #[Test]
+    public function recent_transfers_name_both_accounts(): void
+    {
+        app()->setLocale('fr');
+        $branch = Branch::create(['name' => 'Football']);
+        $cash = FinanceAccount::whereNull('branch_id')->where('name', 'Cash')->firstOrFail();
+        FinanceTransfer::create(['from_account_id' => $cash->id, 'to_account_id' => $branch->treasury->id, 'amount' => 50, 'transfer_date' => '2026-05-03']);
+
+        $recent = $this->finance()['transfers']['recent'][0];
+
+        $this->assertSame('Caisse du club', $recent['from']);
+        $this->assertSame('Coffre — Football', $recent['to']);
+        $this->assertSame('2026-05-03', $recent['date']);
+    }
 }

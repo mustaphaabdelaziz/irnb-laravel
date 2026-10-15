@@ -6,9 +6,9 @@ import ChartCard from '@/Components/Dashboard/ChartCard.vue';
 import Meter from '@/Components/Dashboard/Meter.vue';
 import StatTile from '@/Components/Dashboard/StatTile.vue';
 import Icon from '@/Components/Icon.vue';
-import { Badge } from '@/Components/ui/badge';
 import { Card, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Separator } from '@/Components/ui/separator';
+import { useFormatDate } from '@/Composables/useFormatDate';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { baseOptions, sequential } from '@/lib/chartTheme';
 
@@ -20,6 +20,7 @@ const props = defineProps({
 
 const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
+const { formatDate } = useFormatDate();
 
 const summary = computed(() => props.data?.summary ?? []);
 const expenses = computed(() => props.data?.expenseByCategory ?? []);
@@ -43,7 +44,7 @@ const tiles = computed(() => summary.value.map((tile) => ({
 })));
 
 function tileMeta(tile) {
-    if (tile.key === 'largest_expense' && tile.meta) return `${tile.meta.label} · ${tile.meta.date}`;
+    if (tile.key === 'largest_expense' && tile.meta) return `${tile.meta.label} · ${formatDate(tile.meta.date)}`;
     if (tile.key === 'avg_transaction' && tile.meta) return `${tile.meta.entries} ${t('dashboard.fin_entries')}`;
     if (tile.key === 'runway' && tile.value !== null) return t('dashboard.fin_runway_hint');
 
@@ -192,15 +193,7 @@ const largestBalance = computed(
                 <ul v-else class="divide-y divide-border/70">
                     <li v-for="account in accounts" :key="account.id" class="px-5 py-3.5">
                         <div class="mb-2 flex items-baseline justify-between gap-3">
-                            <div class="flex min-w-0 items-center gap-2">
-                                <span class="truncate text-sm font-medium">{{ account.name }}</span>
-                                <Badge v-if="account.is_treasury" variant="outline" class="shrink-0 text-[10px]">
-                                    {{ t('dashboard.fin_treasury') }}
-                                </Badge>
-                                <span v-if="account.branch" class="shrink-0 text-xs text-muted-foreground">
-                                    {{ account.branch }}
-                                </span>
-                            </div>
+                            <span class="min-w-0 truncate text-sm font-medium">{{ account.label || account.name }}</span>
                             <span
                                 class="shrink-0 text-sm font-semibold tabular-nums"
                                 :class="account.current < 0 ? 'text-rose-700 dark:text-rose-400' : 'text-foreground'"
@@ -235,11 +228,11 @@ const largestBalance = computed(
                 <ul v-if="transfers.recent.length" class="divide-y divide-border/70">
                     <li v-for="transfer in transfers.recent" :key="transfer.id" class="flex items-center gap-3 px-5 py-3">
                         <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                            <Icon name="arrow" class="size-4" />
+                            <Icon name="arrow" class="size-4 rtl:rotate-180" />
                         </span>
                         <div class="min-w-0 flex-1">
-                            <p class="truncate text-sm">{{ transfer.from }} → {{ transfer.to }}</p>
-                            <p class="text-xs text-muted-foreground">{{ transfer.date }}</p>
+                            <p class="truncate text-sm">{{ transfer.from }} <Icon name="arrow" class="mx-1 inline size-3.5 align-[-2px] rtl:rotate-180" /> {{ transfer.to }}</p>
+                            <p class="text-xs text-muted-foreground">{{ formatDate(transfer.date) }}</p>
                         </div>
                         <span class="shrink-0 text-sm font-medium tabular-nums">{{ formatMoney(transfer.amount) }}</span>
                     </li>

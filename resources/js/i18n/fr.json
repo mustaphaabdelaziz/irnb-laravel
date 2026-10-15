@@ -1014,7 +1014,6 @@
     "dashboard.fin_transfer_count": "virements sur cette période",
     "dashboard.fin_transfers": "Virements",
     "dashboard.fin_transfers_note": "Les virements déplacent de l’argent entre comptes. Ils ne sont comptés ni en recettes ni en dépenses sur ce tableau de bord.",
-    "dashboard.fin_treasury": "Trésorerie",
     "dashboard.fin_uncategorised": "Sans catégorie",
     "dashboard.fin_where_it_came_from": "D’où vient l’argent",
     "dashboard.fin_where_it_went": "Où est parti l’argent",

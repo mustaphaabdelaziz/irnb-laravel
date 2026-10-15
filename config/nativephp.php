@@ -93,6 +93,13 @@ return [
         // Player documents, board minutes and receipts of THIS machine: never ship them to
         // another club's installer. A new install starts with an empty private disk.
         'storage/app/private',
+        // Backups, restore snapshots, test leftovers and import dumps hold this club's data.
+        'database/*.zip',
+        'database/*.bak*',
+        'storage/app/pre-restore-snapshots',
+        'storage/app/backup-*',
+        'storage/app/probe*',
+        'storage/app/import-*.json',
         'db-lagacy',
         'public/hot',
     ],

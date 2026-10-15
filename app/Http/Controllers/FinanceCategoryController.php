@@ -15,7 +15,7 @@ use Illuminate\Validation\ValidationException;
  * Names come per language. The stored base `name` — the unique key and the
  * fallback for any language left empty — is the one sent, else English, else
  * French, else Arabic, so a category typed in Arabic only stays Arabic
- * everywhere. Built-in categories (is_system) keep their base name and type:
+ * everywhere. Built-in categories (is_system) keep their base name, code and type:
  * the app finds them by code and name (LegacyFinanceCategory,
  * finance:backfill). They can be renamed per language, never deleted.
  */
@@ -42,7 +42,8 @@ class FinanceCategoryController extends Controller
         }
 
         if ($financeCategory->is_system) {
-            unset($data['name']);
+            // The app finds built-in categories by code and base name.
+            unset($data['name'], $data['code']);
         } else {
             $data['name'] = $this->baseName($data);
             $this->assertNameFree($data['type'], $data['name'], $financeCategory->id);

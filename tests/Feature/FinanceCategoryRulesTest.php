@@ -126,4 +126,16 @@ class FinanceCategoryRulesTest extends TestCase
             ->assertSessionHasNoErrors();
         $this->assertSame('expense', $rent->fresh()->type);
     }
+
+    #[Test]
+    public function a_built_in_category_keeps_its_code(): void
+    {
+        $equipment = FinanceCategory::where('code', 'EQP')->firstOrFail();
+
+        $this->actingAs($this->admin())->put(route('finance.categories.update', $equipment), [
+            'type' => 'expense', 'name_en' => 'Gear', 'code' => 'XYZ',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame('EQP', $equipment->fresh()->code);   // the app finds it by code (LegacyFinanceCategory)
+    }
 }

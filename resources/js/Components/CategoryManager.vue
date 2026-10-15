@@ -1,149 +1,188 @@
 <script setup>
-import Modal from '@/Components/Modal.vue';
-import IconButton from '@/Components/IconButton.vue';
-import { router } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
+import { router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
-import { ref } from 'vue';
+import Modal from '@/Components/Modal.vue';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
+import IconButton from '@/Components/IconButton.vue';
+import InputError from '@/Components/InputError.vue';
+import PrimaryButton from '@/Components/PrimaryButton.vue';
+import SecondaryButton from '@/Components/SecondaryButton.vue';
+import { useCan } from '@/Composables/useCan';
 
-const { t } = useI18n();
+/**
+ * The one place finance categories are managed — opened from the
+ * Transactions "more" menu and from Finance settings.
+ *
+ * One name field per language. Older categories hold their only name in
+ * `name`: Arabic text is shown in the Arabic field; Latin text in the English
+ * field for built-in categories (seeded in English) and in the French field
+ * for ones the club typed. The server keeps a base name (English, else French,
+ * else Arabic) that fills any language left empty
+ * (FinanceCategoryController). Edits go through a form, never into the
+ * `categories` prop.
+ */
 const props = defineProps({
-    show: Boolean,
+    show: { type: Boolean, default: false },
+    // Every category, active or not, with transactions_count.
     categories: { type: Array, default: () => [] },
 });
-defineEmits(['close']);
+const emit = defineEmits(['close']);
 
-const LOCALES = [
-    { key: 'name_ar', label: 'العربية', dir: 'rtl' },
-    { key: 'name_fr', label: 'Français', dir: 'ltr' },
-    { key: 'name_en', label: 'English', dir: 'ltr' },
-];
+const { t } = useI18n();
+const { can } = useCan();
+
+const ARABIC = /[؀-ۿ]/;
 const DEFAULT_COLOR = { income: '#10b981', expense: '#ef4444' };
-const inputClass = 'w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-sm';
 
-function blankDraft(type) {
-    return { name: '', name_ar: '', name_fr: '', name_en: '', color: DEFAULT_COLOR[type], showTranslations: false };
+const languages = computed(() => [
+    { key: 'name_ar', label: t('fincat.name_ar'), dir: 'rtl' },
+    { key: 'name_fr', label: t('fincat.name_fr'), dir: 'ltr' },
+    { key: 'name_en', label: t('fincat.name_en'), dir: 'ltr' },
+]);
+
+const groups = computed(() => ['income', 'expense'].map((type) => ({
+    type,
+    items: props.categories.filter((c) => c.type === type),
+})));
+
+const label = (c) => c.localized_name || c.name;
+const used = (c) => Number(c.transactions_count) || 0;
+const deletable = (c) => !c.is_system && used(c) === 0 && can('finance', 'delete');
+
+// --- Add / edit: one form; `editing` is the category, null for a new one ---
+const formOpen = ref(false);
+const editing = ref(null);
+const form = useForm({ type: 'income', name_ar: '', name_fr: '', name_en: '', color: DEFAULT_COLOR.income, is_active: true });
+
+function fill(values) {
+    Object.entries(values).forEach(([key, value]) => { form[key] = value; });
+    form.clearErrors();
 }
 
-const draft = ref({ income: blankDraft('income'), expense: blankDraft('expense') });
-const editingId = ref(null);
-const edit = ref({ name: '', name_ar: '', name_fr: '', name_en: '' });
-const error = ref('');
-
-function byType(type) {
-    return props.categories.filter((c) => c.type === type);
-}
-function label(cat) {
-    return cat.localized_name || cat.name;
-}
-function onError(errors) {
-    error.value = Object.values(errors)[0] || t('save_failed');
-}
-function payload(cat, overrides = {}) {
+function namesOf(c) {
+    const base = c.name || '';
+    const arabic = ARABIC.test(base);
     return {
-        type: cat.type,
-        name: cat.name,
-        name_ar: cat.name_ar,
-        name_fr: cat.name_fr,
-        name_en: cat.name_en,
-        color: cat.color,
-        ...overrides,
+        name_ar: c.name_ar || (arabic ? base : ''),
+        name_fr: c.name_fr || (!arabic && !c.is_system ? base : ''),
+        name_en: c.name_en || (!arabic && c.is_system ? base : ''),
     };
 }
 
-function add(type) {
-    const d = draft.value[type];
-    if (!d.name.trim()) return;
-    router.post(route('finance.categories.store'), payload({ ...d, type }), {
-        preserveScroll: true,
-        onSuccess: () => {
-            draft.value[type] = blankDraft(type);
-            error.value = '';
-        },
-        onError,
-    });
+function openAdd(type) {
+    editing.value = null;
+    fill({ type, name_ar: '', name_fr: '', name_en: '', color: DEFAULT_COLOR[type], is_active: true });
+    formOpen.value = true;
 }
-function toggleEdit(cat) {
-    if (editingId.value === cat.id) {
-        editingId.value = null;
-        return;
-    }
-    editingId.value = cat.id;
-    edit.value = { name: cat.name, name_ar: cat.name_ar || '', name_fr: cat.name_fr || '', name_en: cat.name_en || '' };
+
+function openEdit(c) {
+    editing.value = c;
+    fill({ type: c.type, ...namesOf(c), color: c.color || DEFAULT_COLOR[c.type], is_active: c.is_active !== false });
+    formOpen.value = true;
 }
-function saveEdit(cat) {
-    if (!edit.value.name.trim()) return;
-    router.put(route('finance.categories.update', cat.id), payload(cat, edit.value), {
-        preserveScroll: true,
-        onSuccess: () => {
-            editingId.value = null;
-            error.value = '';
-        },
-        onError,
-    });
+
+function save() {
+    // preserveState: the page keeps this dialog (and its filters) open across the reload.
+    const options = { preserveScroll: true, preserveState: true, onSuccess: () => { formOpen.value = false; } };
+    if (editing.value) form.put(route('finance.categories.update', editing.value.id), options);
+    else form.post(route('finance.categories.store'), options);
 }
-function saveColor(cat) {
-    router.put(route('finance.categories.update', cat.id), payload(cat), {
-        preserveScroll: true,
-        onSuccess: () => { error.value = ''; },
-        onError,
-    });
+
+// --- Delete ---
+const deleting = ref(null);
+function confirmDelete() {
+    const c = deleting.value;
+    deleting.value = null;
+    router.delete(route('finance.categories.destroy', c.id), { preserveScroll: true, preserveState: true });
 }
-function remove(cat) {
-    router.delete(route('finance.categories.destroy', cat.id), {
-        preserveScroll: true,
-        // The shared toast already renders flash.error, and it translates the
-        // key. Reading the raw prop here would print "flash.category_in_use".
-        onSuccess: () => { error.value = ''; },
-    });
+
+function close() {
+    formOpen.value = false;
+    emit('close');
 }
 </script>
 
 <template>
-    <Modal :show="show" max-width="2xl" @close="$emit('close')">
-        <div class="p-6">
-            <h2 class="mb-4 text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('manage_categories') }}</h2>
-            <p v-if="error" class="mb-3 rounded-lg bg-rose-50 dark:bg-rose-900/30 px-3 py-2 text-sm text-rose-700 dark:text-rose-300">{{ error }}</p>
-            <div class="grid gap-6 sm:grid-cols-2">
-                <div v-for="type in ['income', 'expense']" :key="type">
-                    <h3 class="mb-2 text-sm font-semibold uppercase text-slate-500">{{ t(type) }}</h3>
-                    <ul class="space-y-2">
-                        <li v-for="cat in byType(type)" :key="cat.id">
-                            <div class="flex items-center gap-2">
-                                <input type="color" v-model="cat.color" @change="saveColor(cat)" class="h-7 w-7 rounded border-0 bg-transparent p-0" />
-                                <span class="flex-1 truncate text-sm text-slate-800 dark:text-slate-200">{{ label(cat) }}</span>
-                                <IconButton icon="pencil" :label="t('edit')" plain size="sm" @click="toggleEdit(cat)" />
-                                <IconButton icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="remove(cat)" />
+    <!-- Not closeable under the delete confirm: Escape there must close only the confirm. -->
+    <Modal :show="show" max-width="2xl" :closeable="!deleting" @close="close">
+        <div class="p-5 sm:p-6">
+            <div class="mb-4 flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('fincat.title') }}</h2>
+                    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ t('fincat.subtitle') }}</p>
+                </div>
+                <IconButton icon="close" :label="t('close')" variant="ghost" @click="close" />
+            </div>
+
+            <!-- Add / edit -->
+            <form v-if="formOpen" class="space-y-4 rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200 dark:bg-slate-800/50 dark:ring-slate-700" @submit.prevent="save">
+                <p class="text-sm font-bold text-slate-700 dark:text-slate-200">
+                    {{ editing ? t('fincat.edit') : t('fincat.add') }} · {{ form.type === 'income' ? t('income') : t('expense') }}
+                </p>
+                <InputError :message="form.errors.name" />
+                <div class="grid gap-3 sm:grid-cols-3">
+                    <label v-for="l in languages" :key="l.key" class="block text-xs font-medium text-slate-500 dark:text-slate-400">
+                        {{ l.label }}
+                        <input v-model="form[l.key]" :dir="l.dir" maxlength="120"
+                            class="mt-1 w-full rounded-lg border-slate-300 bg-white py-1.5 text-sm text-slate-900 focus:border-primary-500 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
+                        <InputError :message="form.errors[l.key]" class="mt-1" />
+                    </label>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('fincat.names_hint') }}</p>
+                <div class="flex flex-wrap items-center gap-x-6 gap-y-3">
+                    <label class="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                        <input v-model="form.color" type="color" class="h-8 w-10 cursor-pointer rounded border-0 bg-transparent p-0" />
+                        {{ t('fincat.color') }}
+                    </label>
+                    <label v-if="editing" class="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                        <input v-model="form.is_active" type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800" />
+                        {{ t('fincat.active') }}
+                    </label>
+                </div>
+                <div class="flex flex-wrap justify-end gap-2">
+                    <SecondaryButton type="button" @click="formOpen = false">{{ t('cancel') }}</SecondaryButton>
+                    <PrimaryButton type="submit" :disabled="form.processing">{{ t('save') }}</PrimaryButton>
+                </div>
+            </form>
+
+            <!-- Lists -->
+            <div v-else class="grid gap-6 sm:grid-cols-2">
+                <section v-for="g in groups" :key="g.type" class="min-w-0">
+                    <div class="mb-2 flex items-center justify-between gap-2">
+                        <h3 class="text-xs font-bold uppercase tracking-wide"
+                            :class="g.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'">
+                            {{ g.type === 'income' ? t('income') : t('expense') }}
+                        </h3>
+                        <IconButton v-if="can('finance', 'add')" icon="plus" :label="t('fincat.add')" variant="primary" plain size="sm" @click="openAdd(g.type)" />
+                    </div>
+                    <p v-if="!g.items.length" class="py-4 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('fincat.empty') }}</p>
+                    <ul v-else class="max-h-80 space-y-1.5 overflow-y-auto">
+                        <li v-for="c in g.items" :key="c.id" class="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/50">
+                            <span class="h-3 w-3 shrink-0 rounded-full" :style="{ backgroundColor: c.color || '#94a3b8' }" aria-hidden="true"></span>
+                            <div class="min-w-0 flex-1">
+                                <p class="truncate text-sm font-medium text-slate-800 dark:text-slate-100" :class="{ 'opacity-60': c.is_active === false }">{{ label(c) }}</p>
+                                <p class="flex flex-wrap gap-x-2 text-[11px] text-slate-500 dark:text-slate-400">
+                                    <span v-if="used(c)">{{ t('fincat.used_by', { count: used(c) }) }}</span>
+                                    <span v-if="c.is_system">{{ t('fincat.built_in') }}</span>
+                                    <span v-if="c.is_active === false">{{ t('fincat.inactive') }}</span>
+                                </p>
                             </div>
-                            <div v-if="editingId === cat.id" class="mt-2 space-y-1.5 rounded-lg bg-slate-50 p-2 dark:bg-slate-800/50">
-                                <label class="block text-xs text-slate-500 dark:text-slate-400">
-                                    {{ t('default') }}
-                                    <input v-model="edit.name" @keyup.enter="saveEdit(cat)" :class="['mt-0.5', inputClass]" required />
-                                </label>
-                                <label v-for="l in LOCALES" :key="l.key" class="block text-xs text-slate-500 dark:text-slate-400">
-                                    {{ l.label }}
-                                    <input v-model="edit[l.key]" @keyup.enter="saveEdit(cat)" :dir="l.dir" :class="['mt-0.5', inputClass]" />
-                                </label>
-                                <div class="flex justify-end gap-2 pt-1">
-                                    <button type="button" @click="editingId = null" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">{{ t('cancel') }}</button>
-                                    <button type="button" @click="saveEdit(cat)" class="rounded-lg bg-primary-600 px-3 py-1 text-sm font-medium text-white hover:bg-primary-700">{{ t('save') }}</button>
-                                </div>
-                            </div>
+                            <IconButton v-if="can('finance', 'edit')" icon="pencil" :label="t('edit')" plain size="sm" @click="openEdit(c)" />
+                            <IconButton v-if="deletable(c)" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleting = c" />
                         </li>
                     </ul>
-                    <div class="mt-2 flex items-center gap-2">
-                        <input type="color" v-model="draft[type].color" class="h-7 w-7 rounded border-0 bg-transparent p-0" />
-                        <input v-model="draft[type].name" @keyup.enter="add(type)" :placeholder="t('new_category')" :class="['flex-1', inputClass]" />
-                        <IconButton icon="plus" :label="t('add')" variant="primary" size="sm" @click="add(type)" />
-                    </div>
-                    <button type="button" @click="draft[type].showTranslations = !draft[type].showTranslations" class="mt-1 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
-                        {{ draft[type].showTranslations ? '▾' : '▸' }} {{ t('translations') }}
-                    </button>
-                    <div v-if="draft[type].showTranslations" class="mt-1 space-y-1.5">
-                        <input v-for="l in LOCALES" :key="l.key" v-model="draft[type][l.key]" @keyup.enter="add(type)" :dir="l.dir" :placeholder="l.label" :class="inputClass" />
-                    </div>
-                </div>
+                </section>
             </div>
-            <p class="mt-4 text-xs text-slate-400">{{ t('category_in_use_hint') }}</p>
+            <p v-if="!formOpen" class="mt-4 text-xs text-slate-500 dark:text-slate-400">{{ t('fincat.delete_rule') }}</p>
         </div>
     </Modal>
+
+    <ConfirmModal
+        :show="!!deleting"
+        :title="t('fincat.delete_title')"
+        :message="deleting ? t('fincat.delete_message', { name: label(deleting) }) : ''"
+        @confirm="confirmDelete"
+        @cancel="deleting = null"
+    />
 </template>

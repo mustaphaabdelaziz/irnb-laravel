@@ -116,7 +116,9 @@ class CompetitionController extends Controller
                 'our_score' => $g->our_score, 'their_score' => $g->their_score,
             ]),
             'record' => CompetitionRecord::fromGames($games),
-            'stats' => ['leaders' => MatchStats::leaderboards($stats->players($season, null, $competition->id))],
+            // Match statistics need games/view; without it the Stats tab is not shown.
+            'stats' => $request->user()->hasPermission('games', 'view')
+                ? ['leaders' => MatchStats::leaderboards($stats->players($season, null, $competition->id))] : null,
             'formats' => GameFormat::query()->where('branch_id', $team->branch_id)->where('active', true)->orderBy('name')
                 ->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
             'types' => CompetitionType::values(),

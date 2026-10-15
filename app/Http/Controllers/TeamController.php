@@ -125,10 +125,11 @@ class TeamController extends Controller
                 ->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
             'categories' => Category::query()->orderBy('name')->get(),
             'canManage' => TeamAccess::canManage($request->user(), $team, $season),
-            'stats' => [
+            // Match statistics need games/view; without it the Stats tab is not shown.
+            'stats' => $request->user()->hasPermission('games', 'view') ? [
                 'record' => CompetitionRecord::fromGames($team->games()->where('season_start_year', $season)->get(['id', 'date', 'status', 'our_score', 'their_score'])),
                 'leaders' => MatchStats::leaderboards($stats->players($season, $team->id)),
-            ],
+            ] : null,
             'canEditTeam' => ! TeamAccess::isScoped($request->user()) && $request->user()->hasPermission('teams', 'edit'),
         ]);
     }

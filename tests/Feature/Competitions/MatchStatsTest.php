@@ -6,6 +6,8 @@ use App\Enums\GameStatus;
 use App\Models\Game;
 use App\Models\GameEvent;
 use App\Models\GamePlayer;
+use App\Models\Role;
+use App\Models\User;
 use App\Services\Competitions\MatchStats;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -95,5 +97,20 @@ class MatchStatsTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->where('stats.leaders.goals.0.player_id', $a->id)->where('stats.record.wins', 1));
         $this->actingAs($admin)->get(route('competitions.show', $competition))
             ->assertInertia(fn (Assert $page) => $page->where('stats.leaders.goals.0.goals', 1));
+    }
+
+    #[Test]
+    public function stats_need_games_view(): void
+    {
+        $team = $this->team();
+        $competition = $this->competition($team, 2026);
+        $viewer = User::factory()->create(['role_id' => Role::factory()->create([
+            'permissions' => ['teams' => ['view'], 'competitions' => ['view']],
+        ])->id]);
+
+        $this->actingAs($viewer)->get(route('teams.show', ['team' => $team, 'season' => 2026]))
+            ->assertOk()->assertInertia(fn (Assert $page) => $page->where('stats', null));
+        $this->actingAs($viewer)->get(route('competitions.show', $competition))
+            ->assertOk()->assertInertia(fn (Assert $page) => $page->where('stats', null));
     }
 }

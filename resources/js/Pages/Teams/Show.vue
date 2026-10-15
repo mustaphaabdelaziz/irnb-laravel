@@ -80,7 +80,8 @@ function destroyTeam() {
     router.delete(route('teams.destroy', props.team.id));
 }
 
-const tabs = ['roster', 'coaches', 'competitions', 'games', 'stats', 'settings'];
+// The Stats tab (and its export) needs games/view; the server sends no stats without it.
+const tabs = computed(() => ['roster', 'coaches', 'competitions', 'games', ...(can('games', 'view') && props.stats ? ['stats'] : []), 'settings']);
 </script>
 
 <template>
@@ -195,11 +196,11 @@ const tabs = ['roster', 'coaches', 'competitions', 'games', 'stats', 'settings']
                 <Link :href="route('games.index', { team_id: team.id })" class="inline-block text-sm text-primary-600 hover:underline">{{ t('games') }} →</Link>
             </section>
 
-            <section v-if="tab === 'stats'" class="space-y-4 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+            <section v-if="tab === 'stats' && stats" class="space-y-4 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div class="flex flex-wrap items-center gap-4 text-sm">
                     <span v-for="key in ['played', 'wins', 'draws', 'losses', 'goals_for', 'goals_against']" :key="key"><b>{{ stats.record[key] }}</b> {{ t(`comp.record_${key}`) }}</span>
                 </div>
-                <ExportMenu :href="route('games.stats.export', { season, team_id: team.id })" :label="t('export')" :formats="['xlsx', 'csv', 'pdf']" />
+                <ExportMenu v-if="can('games', 'view')" :href="route('games.stats.export', { season, team_id: team.id })" :label="t('export')" :formats="['xlsx', 'csv', 'pdf']" />
                 <StatsLeaders :leaders="stats.leaders" />
             </section>
             <!-- Settings -->

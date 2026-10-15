@@ -10,7 +10,7 @@ import IconButton from '@/Components/IconButton.vue';
 import StatsLeaders from '@/Components/Competitions/StatsLeaders.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useCan } from '@/Composables/useCan.js';
 
 const { t } = useI18n();
@@ -56,7 +56,8 @@ const banLabel = (s) => (s.kind === 'dates'
     ? t('comp.ban.dates', { from: s.starts_on, to: s.ends_on })
     : t('comp.ban.matches', { served: s.served ?? 0, total: s.matches_count }));
 
-const tabs = ['squad', 'games', 'record', 'stats', 'suspensions', 'rules'];
+// The Stats tab needs games/view; the server sends no stats without it.
+const tabs = computed(() => ['squad', 'games', 'record', ...(can('games', 'view') && props.stats ? ['stats'] : []), 'suspensions', 'rules']);
 const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
 </script>
 
@@ -122,7 +123,7 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
                 </div>
             </section>
 
-            <section v-if="tab === 'stats'" class="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+            <section v-if="tab === 'stats' && stats" class="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <StatsLeaders :leaders="stats.leaders" />
             </section>
             <section v-if="tab === 'suspensions'" class="space-y-4 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">

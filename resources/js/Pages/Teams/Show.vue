@@ -10,6 +10,7 @@ import ConfirmModal from '@/Components/ConfirmModal.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import SeasonSelect from '@/Components/Competitions/SeasonSelect.vue';
 import StatsLeaders from '@/Components/Competitions/StatsLeaders.vue';
+import ExportMenu from '@/Components/ExportMenu.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { computed, ref } from 'vue';
@@ -198,6 +199,7 @@ const tabs = ['roster', 'coaches', 'competitions', 'games', 'stats', 'settings']
                 <div class="flex flex-wrap items-center gap-4 text-sm">
                     <span v-for="key in ['played', 'wins', 'draws', 'losses', 'goals_for', 'goals_against']" :key="key"><b>{{ stats.record[key] }}</b> {{ t(`comp.record_${key}`) }}</span>
                 </div>
+                <ExportMenu :href="route('games.stats.export', { season, team_id: team.id })" :label="t('export')" :formats="['xlsx', 'csv', 'pdf']" />
                 <StatsLeaders :leaders="stats.leaders" />
             </section>
             <!-- Settings -->

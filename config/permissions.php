@@ -44,6 +44,9 @@ return [
         'competitions.suspensions.store' => ['competitions', 'edit'],
         'competitions.suspensions.destroy' => ['competitions', 'edit'],
 
+        // "stats" is not a view verb: reading the club statistics needs games/view only.
+        'games.stats' => ['games', 'view'],
+
         'players.transactions.store' => ['players', 'add'],
 
         // Permanent deletion. Without these the action name falls through

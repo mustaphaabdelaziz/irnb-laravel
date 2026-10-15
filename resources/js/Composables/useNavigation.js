@@ -27,7 +27,8 @@ export function useNavigation() {
                 { label: t('attendance'), href: '/attendance', icon: 'calendar', prefix: '/attendance', module: 'attendance' },
             ] },
             { key: 'competitions', label: t('nav.competitions'), icon: 'flag', items: [
-                { label: t('games'), href: '/games', icon: 'calendar', prefix: '/games', module: 'games' },
+                { label: t('games'), href: '/games', icon: 'calendar', prefix: '/games', match: /^\/games(?!\/stats)/, module: 'games' },
+                { label: t('comp.stats.title'), href: '/games/stats', icon: 'clipboard', prefix: '/games/stats', module: 'games' },
                 { label: t('teams'), href: '/teams', icon: 'players', prefix: '/teams', module: 'teams' },
                 { label: t('competitions'), href: '/competitions', icon: 'flag', prefix: '/competitions', module: 'competitions' },
             ] },

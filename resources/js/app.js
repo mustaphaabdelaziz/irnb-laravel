@@ -13,6 +13,8 @@ import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 import { setupI18n, setLocale } from './i18n';
 import { localizeNativeValidation } from './lib/nativeValidation';
 import { DEFAULT_CLUB_SHORT_NAME } from './Composables/useClubIdentity';
+import AppShell from './Layouts/AppShell.vue';
+import { usesAppShell } from './lib/layouts';
 
 // The tab title's suffix is the club's saved short name, kept current from
 // each page's shared props. It used to be VITE_APP_NAME, which is baked in at
@@ -39,11 +41,16 @@ router.on('finish', (event) => {
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${clubShortName}` : clubShortName),
-    resolve: (name) =>
-        resolvePageComponent(
+    resolve: async (name) => {
+        const page = await resolvePageComponent(
             `./Pages/${name}.vue`,
             import.meta.glob('./Pages/**/*.vue'),
-        ),
+        );
+        // The frame stays mounted while signed-in pages change (see AppShell).
+        page.default.layout ??= usesAppShell(name) ? AppShell : undefined;
+
+        return page;
+    },
     setup({ el, App, props, plugin }) {
         rememberClubName(props.initialPage.props);
 

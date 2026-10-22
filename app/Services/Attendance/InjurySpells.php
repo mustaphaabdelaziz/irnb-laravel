@@ -171,11 +171,38 @@ final class InjurySpells
      */
     public function club(string $from, string $to, ?int $categoryId = null): array
     {
-        $byPlayer = self::fromMarks($this->marks()->where(fn (Builder $q) => $q
-            ->whereIn('attendances.player_id', $this->injuryMarks()->whereBetween('s.date', [$from, $to]))
-            ->orWhereIn('attendances.player_id', $this->latestMarkIsInjury())
-            ->orWhereIn('attendances.player_id', $this->latestMarkIsInjury($from))
-        )->cursor(), $this->skipped());
+        // Each player's marks from their last non-injury mark before $from on:
+        // a spell that ends before it can neither be open nor overlap the
+        // period, and one after it starts after it, so the spells shown (and
+        // their starts, which key the details) are those of the whole history.
+        // Streaming every mark of every injured player made this page take
+        // seconds once a club had a few seasons.
+        // Led by those players: for each, the held sessions from that mark's
+        // date on (date index), probed for the player's mark (unique index).
+        $players = DB::table('players as p')
+            ->where(fn (Builder $q) => $q
+                ->whereIn('p.id', $this->injuryMarks()->whereBetween('s.date', [$from, $to]))
+                ->orWhereIn('p.id', $this->latestMarkIsInjury())
+                ->orWhereIn('p.id', $this->latestMarkIsInjury($from)))
+            ->select('p.id as player_id')
+            ->selectSub($this->lastNonInjuryMarkBefore($from), 'since')
+            // A LIMIT keeps sqlite from flattening this into the scan, where the
+            // cutoff was recomputed for every mark instead of once per player.
+            ->limit(PHP_INT_MAX);
+
+        $byPlayer = self::fromMarks(DB::query()->fromSub($players, 'c')
+            ->crossJoin('training_sessions')
+            ->crossJoin('attendances')
+            ->where('training_sessions.state', SessionState::Held->value)
+            ->whereRaw('training_sessions.date >= coalesce(c.since, ?)', [''])
+            ->whereColumn('attendances.training_session_id', 'training_sessions.id')
+            ->whereColumn('attendances.player_id', 'c.player_id')
+            ->orderBy('attendances.player_id')
+            ->orderBy('training_sessions.date')
+            ->orderBy('training_sessions.start_time')
+            ->orderBy('training_sessions.id')
+            ->select('attendances.player_id', 'attendances.status', 'attendances.reason', 'training_sessions.date')
+            ->cursor(), $this->skipped());
         if ($byPlayer === []) {
             return ['current' => [], 'spells' => []];
         }
@@ -230,6 +257,31 @@ final class InjurySpells
             ->select('attendances.player_id', 'attendances.status', 'attendances.reason', 'training_sessions.date');
     }
 
+    /**
+     * The date of player p's latest held mark before $from that is neither an
+     * injury mark nor skipped (null when there is none), as a scalar subquery.
+     * Walks the sessions back from $from (date index) and stops at the
+     * player's first such mark, like latestMarkIsInjury().
+     */
+    private function lastNonInjuryMarkBefore(string $from): Builder
+    {
+        return DB::table('training_sessions as s2')
+            ->crossJoin('attendances as a2')
+            ->whereColumn('a2.training_session_id', 's2.id')
+            ->whereColumn('a2.player_id', 'p.id')
+            ->where('s2.state', SessionState::Held->value)
+            ->where('s2.date', '<', $from)
+            ->whereNotIn('a2.status', $this->skipped())
+            // Not an injury mark (isInjury): an excused absence without a reason is not one.
+            ->where('a2.status', '!=', AttendanceStatus::NotTraining->value)
+            ->where(fn (Builder $q) => $q->where('a2.status', '!=', AttendanceStatus::AbsentExcused->value)
+                ->orWhereNull('a2.reason')
+                ->orWhere('a2.reason', '!=', AbsenceReason::Injury->value))
+            ->orderByDesc('s2.date')
+            ->limit(1)
+            ->select('s2.date');
+    }
+
     /** Player ids of the injury marks in held sessions (a subquery on attendances a, training_sessions s). */
     private function injuryMarks(): Builder
     {
@@ -247,18 +299,28 @@ final class InjurySpells
      * injury mark: an injury mark with no later held mark of theirs in spell
      * order (date, start time, session id). A correlated NOT EXISTS, no
      * window function, so it runs the same on sqlite, MySQL and pgsql.
+     *
+     * The test walks the sessions from the mark's date on (date index) and
+     * probes each for a mark of the player (session + player unique index), so
+     * it stops at the player's next session — a few rows. Led by the player's
+     * marks instead, it read all of them for every injury mark of the club's
+     * history: 13 s on 5 seasons × 1,890 players. CROSS JOIN keeps sqlite on
+     * that order (elsewhere it is a plain inner join); `s2.date >= s.date`
+     * restates the order condition so the date index can serve it.
      */
     private function latestMarkIsInjury(?string $before = null): Builder
     {
         return $this->injuryMarks()
             ->when($before !== null, fn (Builder $q) => $q->where('s.date', '<', $before))
             ->whereNotExists(fn (Builder $later) => $later->selectRaw('1')
-                ->from('attendances as a2')
-                ->join('training_sessions as s2', 's2.id', '=', 'a2.training_session_id')
+                ->from('training_sessions as s2')
+                ->crossJoin('attendances as a2')
+                ->whereColumn('a2.training_session_id', 's2.id')
                 ->whereColumn('a2.player_id', 'a.player_id')
                 ->where('s2.state', SessionState::Held->value)
                 ->whereNotIn('a2.status', $this->skipped())
                 ->when($before !== null, fn (Builder $q) => $q->where('s2.date', '<', $before))
+                ->whereColumn('s2.date', '>=', 's.date')
                 ->where(fn (Builder $q) => $q->whereColumn('s2.date', '>', 's.date')
                     ->orWhere(fn (Builder $q) => $q->whereColumn('s2.date', 's.date')
                         ->where(fn (Builder $q) => $q->whereColumn('s2.start_time', '>', 's.start_time')

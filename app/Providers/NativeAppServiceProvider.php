@@ -2,7 +2,6 @@
 
 namespace App\Providers;
 
-use App\Services\Backup\PreMigrationBackup;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Native\Desktop\Contracts\ProvidesPhpIni;
@@ -82,11 +81,9 @@ class NativeAppServiceProvider implements ProvidesPhpIni
             $lastSignature = is_file($migratedMarker) ? trim((string) @file_get_contents($migratedMarker)) : null;
 
             if ($lastSignature !== $signature) {
-                // Copy the database aside first when a migration is pending, so an
-                // update that rewrites data can be undone by hand. If the copy
-                // fails it throws, and the migration is skipped (retried next
-                // launch) rather than run with no way back.
-                app(PreMigrationBackup::class)->run();
+                // BackupBeforeMigrating copies the database aside as `migrate`
+                // starts (here or in the shell's own migrate run), so an update
+                // that rewrites data can be undone by hand.
                 Artisan::call('migrate', ['--force' => true]);
                 @file_put_contents($migratedMarker, $signature);
             }

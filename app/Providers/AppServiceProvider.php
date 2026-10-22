@@ -2,9 +2,12 @@
 
 namespace App\Providers;
 
+use App\Services\Backup\BackupBeforeMigrating;
 use App\Services\Backup\BackupService;
 use App\Services\Backup\BackupSettings;
 use App\Support\ClubTimezone;
+use Illuminate\Console\Events\CommandStarting;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
@@ -40,6 +43,8 @@ class AppServiceProvider extends ServiceProvider
         // desktop app boots the same way: its database is wired up by the
         // NativePHP package provider, which boots before this one.
         ClubTimezone::apply();
+
+        Event::listen(CommandStarting::class, BackupBeforeMigrating::class);
 
         // Inside the NativePHP desktop app the server runs on a dynamic
         // localhost port, so public-disk URLs must be relative to resolve

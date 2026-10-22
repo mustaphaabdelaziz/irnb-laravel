@@ -12,8 +12,6 @@ use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
 use App\Support\FiscalPeriod;
 use App\Support\Media;
-use App\Support\TransactionTitle;
-use App\Support\UiLang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
@@ -21,31 +19,6 @@ use Symfony\Component\HttpFoundation\Response;
 class ReportController extends Controller
 {
     public function __construct(private PdfService $pdf) {}
-
-    public function transactionReceipt(Transaction $transaction): Response
-    {
-        $transaction->load(['recordedBy', 'receivedBy', ...TransactionTitle::RELATIONS]);
-
-        $relatedName = null;
-        if ($transaction->related_entity_type === 'Player' && $transaction->related_entity_id) {
-            $relatedName = optional(Player::find($transaction->related_entity_id))->fullname;
-        }
-
-        $html = view('pdf.receipt', [
-            'club' => ClubHeader::data(),
-            'transaction' => $transaction,
-            'relatedName' => $relatedName,
-            'receiptNumber' => str_pad((string) $transaction->id, 6, '0', STR_PAD_LEFT),
-            'title' => TransactionTitle::for($transaction),
-            'categoryLabel' => TransactionTitle::categoryLabel($transaction),
-            'statusLabel' => UiLang::get(strtolower((string) $transaction->status), (string) $transaction->status),
-            'paymentLabel' => $transaction->payment_method
-                ? UiLang::get(strtolower((string) $transaction->payment_method), (string) $transaction->payment_method)
-                : null,
-        ])->render();
-
-        return $this->pdf->stream($html, "receipt-{$transaction->id}.pdf");
-    }
 
     public function playerCard(Player $player): Response
     {

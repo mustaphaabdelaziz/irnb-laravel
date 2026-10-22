@@ -8,6 +8,7 @@ use App\Models\FinanceCategory;
 use App\Models\FiscalYear;
 use App\Models\Player;
 use App\Models\PlayerSubscription;
+use App\Models\ReceiptPrint;
 use App\Models\Transaction;
 use App\Models\WebsiteConfig;
 use App\Services\Activity\ActivityAction;
@@ -160,6 +161,18 @@ class TransactionController extends Controller
 
         return Inertia::render('Transactions/Show', [
             'transaction' => $transaction,
+            'prints' => ReceiptPrint::with('printedBy:id,name')
+                ->where('transaction_number', $transaction->id)
+                ->orderBy('copy_number')
+                ->get()
+                ->map(fn (ReceiptPrint $print) => [
+                    'id' => $print->id,
+                    'copy_number' => $print->copy_number,
+                    'format' => $print->format,
+                    'code' => $print->displayCode(),
+                    'printed_at' => $print->created_at?->format('Y-m-d H:i'),
+                    'printed_by' => $print->printedBy?->name,
+                ]),
         ]);
     }
 

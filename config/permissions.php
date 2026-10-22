@@ -103,6 +103,9 @@ return [
         'games.lineup-sheet' => ['games', 'view'],
         'games.report-sheet' => ['games', 'view'],
         'transactions.receipt' => ['transactions', 'view'],
+        // Printing a ticket or checking a paper receipt only reads (the print log is a side record).
+        'transactions.ticket' => ['transactions', 'view'],
+        'receipts.verify' => ['transactions', 'view'],
         'reports.financial' => ['reports', 'view'],
         'finance.index' => ['finance', 'view'],
         'finance.settings' => ['finance', 'edit'],

@@ -84,9 +84,11 @@ function submit() {
 
                         <div v-if="isMultiple" class="mt-2 flex flex-wrap gap-2">
                             <label v-for="o in activeField.options" :key="o.value"
-                                class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary-500"
+                                class="relative inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm"
                                 :class="form.value?.includes(o.value) ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/20 text-primary-800 dark:text-primary-100' : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'">
-                                <input type="checkbox" :value="o.value" v-model="form.value" class="sr-only" />
+                                <input type="checkbox" :value="o.value" v-model="form.value" class="peer sr-only" />
+                                <!-- Keyboard focus ring; a :has() selector here slowed style work on every page. -->
+                                <span class="pointer-events-none absolute -inset-px rounded-lg ring-primary-500 peer-focus-visible:ring-2" aria-hidden="true" />
                                 {{ o.label }}
                             </label>
                         </div>

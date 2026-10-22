@@ -797,9 +797,11 @@ function submitImport() {
                             <InputLabel :value="t('branch')" />
                             <div class="mt-2 flex flex-wrap gap-2">
                                 <label v-for="b in branches" :key="b.id"
-                                    class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary-500"
+                                    class="relative inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm"
                                     :class="receiveForm.branch_ids.includes(b.id) ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/20 text-primary-800 dark:text-primary-100' : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'">
-                                    <input type="checkbox" :value="b.id" v-model="receiveForm.branch_ids" class="sr-only" />
+                                    <input type="checkbox" :value="b.id" v-model="receiveForm.branch_ids" class="peer sr-only" />
+                                    <!-- Keyboard focus ring; a :has() selector here slowed style work on every page. -->
+                                    <span class="pointer-events-none absolute -inset-px rounded-lg ring-primary-500 peer-focus-visible:ring-2" aria-hidden="true" />
                                     {{ b.name }}
                                 </label>
                             </div>

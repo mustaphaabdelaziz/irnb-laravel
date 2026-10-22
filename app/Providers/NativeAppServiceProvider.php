@@ -155,11 +155,33 @@ class NativeAppServiceProvider implements ProvidesPhpIni
             'max_file_uploads' => '20',
         ];
 
-        if ($fileCache = $this->opcacheFileCache()) {
+        if (($fileCache = $this->opcacheFileCache()) && ($blacklist = $this->opcacheBlacklist($fileCache))) {
             $settings['opcache.file_cache'] = $fileCache;
+            $settings['opcache.blacklist_filename'] = $blacklist;
         }
 
         return $settings;
+    }
+
+    /**
+     * The shell's `artisan optimize` rewrites the cached config before every
+     * launch (it holds that launch's secret and ports), and with
+     * validate_timestamps=0 the file cache would hand the next launch's server
+     * the previous launch's config: the shell rejects its calls and the window
+     * never opens. So OPcache never caches that one file (~3 ms a request to
+     * compile). The other cached files (routes, events, manifests) are the
+     * same on every launch of a build. No blacklist written → no file cache.
+     */
+    protected function opcacheBlacklist(string $fileCache): ?string
+    {
+        $path = $fileCache.DIRECTORY_SEPARATOR.'blacklist.txt';
+
+        // Laravel builds the path with mixed separators on Windows.
+        $config = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, app()->getCachedConfigPath());
+
+        $written = @file_put_contents($path, $config.PHP_EOL);
+
+        return $written === false ? null : $path;
     }
 
     /**

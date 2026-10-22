@@ -70,6 +70,21 @@ class NativeOpcacheFileCacheTest extends TestCase
     }
 
     #[Test]
+    public function the_cached_config_is_never_served_from_the_file_cache(): void
+    {
+        // optimize rewrites it each launch (new secret): a cached copy from the
+        // previous launch made the shell reject the app and the window never opened.
+        $ini = $this->ini('20261022-abcd1234');
+
+        $this->assertFileExists($ini['opcache.blacklist_filename']);
+        $this->assertSame(
+            [str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $this->app->getCachedConfigPath())],
+            file($ini['opcache.blacklist_filename'], FILE_IGNORE_NEW_LINES),
+        );
+        $this->assertArrayNotHasKey('opcache.blacklist_filename', $this->ini(null));
+    }
+
+    #[Test]
     public function a_new_build_drops_the_previous_builds_cache(): void
     {
         $this->ini('20261001-old00000');

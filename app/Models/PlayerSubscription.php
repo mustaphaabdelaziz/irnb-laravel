@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Models\Concerns\SerializesClubDates;
+use Brick\Math\BigDecimal;
+use Brick\Math\RoundingMode;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -76,57 +78,99 @@ class PlayerSubscription extends Model
         return (bool) $this->is_exempt;
     }
 
-    /**
-     * The discount expressed in money. Clamped to [0, amount_owed] so a stored
-     * percentage over 100, a negative value, or a fixed amount bigger than the
-     * price can never turn into negative debt.
-     */
     public function getDiscountAmountAttribute(): float
     {
-        $owed = (float) $this->amount_owed;
-        $value = (float) $this->discount_value;
-
-        $discount = match ($this->discount_type) {
-            'percent' => $owed * $value / 100,
-            'amount' => $value,
-            default => 0.0,
-        };
-
-        return round(max(0.0, min($discount, $owed)), 2);
+        return $this->money()['discount'];
     }
 
     /** What the player actually owes once the discount is applied. */
     public function getNetOwedAttribute(): float
     {
-        return round(max(0.0, (float) $this->amount_owed - $this->getDiscountAmountAttribute()), 2);
+        return $this->money()['net_owed'];
     }
 
     public function getRemainingAmountAttribute(): float
     {
-        if ($this->isExempt()) {
-            return 0.0;
-        }
-
-        return max(0.0, $this->getNetOwedAttribute() - (float) $this->amount_paid);
+        return $this->money()['remaining'];
     }
 
     public function getPaymentStatusAttribute(): string
     {
-        if ($this->isExempt()) {
-            return 'exempt';
+        return $this->money()['status'];
+    }
+
+    /**
+     * Every money figure of this obligation at once (see moneyFor), for code
+     * that needs several of them per row.
+     *
+     * @return array{owed: float, paid: float, discount: float, net_owed: float, remaining: float, status: string}
+     */
+    public function money(): array
+    {
+        return self::moneyFor(
+            $this->attributes['amount_owed'] ?? null,
+            $this->attributes['amount_paid'] ?? null,
+            $this->isExempt(),
+            $this->discount_type,
+            $this->attributes['discount_value'] ?? null,
+        );
+    }
+
+    /**
+     * Discount, net owed, remaining and payment status from the stored values,
+     * in one pass. Also used on plain query rows (per-branch totals), so every
+     * screen agrees with the model without hydrating thousands of models.
+     *
+     * The discount is clamped to [0, amount_owed] so a stored percentage over
+     * 100, a negative value, or a fixed amount bigger than the price can never
+     * turn into negative debt.
+     *
+     * @return array{owed: float, paid: float, discount: float, net_owed: float, remaining: float, status: string}
+     */
+    public static function moneyFor(mixed $amountOwed, mixed $amountPaid, bool $exempt, ?string $discountType, mixed $discountValue): array
+    {
+        $owed = self::decimal($amountOwed);
+        $paid = self::decimal($amountPaid);
+        $value = self::decimal($discountValue);
+
+        $discount = match ($discountType) {
+            'percent' => $owed * $value / 100,
+            'amount' => $value,
+            default => 0.0,
+        };
+        $discount = round(max(0.0, min($discount, $owed)), 2);
+        $net = round(max(0.0, $owed - $discount), 2);
+        $remaining = $exempt ? 0.0 : max(0.0, $net - $paid);
+
+        $status = match (true) {
+            $exempt => 'exempt',
+            // Nothing left to pay. A fully-discounted obligation settles with no
+            // payment at all, so a discount counts as settling it too.
+            $remaining <= 0 && ($paid > 0 || $discount > 0) => 'paid',
+            $paid > 0 => 'partial',
+            default => 'unpaid',
+        };
+
+        return ['owed' => $owed, 'paid' => $paid, 'discount' => $discount, 'net_owed' => $net, 'remaining' => $remaining, 'status' => $status];
+    }
+
+    /**
+     * A stored money value read exactly as the `decimal:2` cast reads it, as a
+     * float. Values with at most two decimals (all of them, in practice) skip
+     * the cast's arbitrary-precision parse, which cost most of the time of a
+     * list of obligations.
+     */
+    private static function decimal(mixed $raw): float
+    {
+        if ($raw === null) {
+            return 0.0;
         }
 
-        $paid = (float) $this->amount_paid;
-
-        // Nothing left to pay. A fully-discounted obligation settles with no
-        // payment at all, so a discount counts as settling it too.
-        if ($this->getRemainingAmountAttribute() <= 0 && ($paid > 0 || $this->getDiscountAmountAttribute() > 0)) {
-            return 'paid';
-        }
-        if ($paid > 0) {
-            return 'partial';
+        $value = (string) $raw;
+        if (preg_match('/^-?\d+(\.\d{1,2})?$/', $value)) {
+            return (float) $value;
         }
 
-        return 'unpaid';
+        return (float) (string) BigDecimal::of($value)->toScale(2, RoundingMode::HalfUp);
     }
 }

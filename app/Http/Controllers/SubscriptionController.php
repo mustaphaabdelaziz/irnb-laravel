@@ -16,6 +16,7 @@ use App\Services\Finance\RecalculatePlayerDebtService;
 use App\Support\Export;
 use App\Support\ListFilter;
 use App\Support\UiLang;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -82,14 +83,17 @@ class SubscriptionController extends Controller
             }
         };
 
-        PlayerSubscription::query()
+        // Plain rows, not models: this spans every season's obligations, and
+        // hydrating them all took most of the page's time.
+        DB::table('player_subscriptions')
             ->get(['id', 'player_id', 'subscription_id', 'amount_owed', 'amount_paid', 'is_exempt', 'discount_type', 'discount_value'])
             ->each(function ($ps) use (&$buckets, $subBranches, $ensure) {
-                $owed = (float) $ps->amount_owed;
-                $paid = (float) $ps->amount_paid;
-                // Via the accessor so discounts and exemptions are honoured; `owed`
-                // stays gross (the real price) while `outstanding` is what is due.
-                $outstanding = (float) $ps->remaining_amount;
+                // The model's own arithmetic, so discounts and exemptions are honoured;
+                // `owed` stays gross (the real price) while `outstanding` is what is due.
+                $money = PlayerSubscription::moneyFor($ps->amount_owed, $ps->amount_paid, (bool) $ps->is_exempt, $ps->discount_type, $ps->discount_value);
+                $owed = $money['owed'];
+                $paid = $money['paid'];
+                $outstanding = $money['remaining'];
 
                 $branchIds = $ps->subscription_id ? ($subBranches[$ps->subscription_id] ?? []) : [];
                 $targets = empty($branchIds) ? ['_none'] : $branchIds;
@@ -153,21 +157,21 @@ class SubscriptionController extends Controller
     {
         $subscription->load(['categories', 'branches']);
 
-        $playerSubscriptions = $this->assignedPlayers($subscription);
+        $rows = $this->showRows($this->assignedQuery($subscription)->get());
+        $statuses = array_count_values(array_column($rows, 'payment_status'));
 
         // Calculate stats
-        $total = $playerSubscriptions->count();
-        $paidCount = $playerSubscriptions->filter(fn ($ps) => $ps->payment_status === 'paid' || $ps->payment_status === 'exempt')->count();
-        $unpaidCount = $playerSubscriptions->filter(fn ($ps) => $ps->payment_status === 'unpaid')->count();
-        $partialCount = $playerSubscriptions->filter(fn ($ps) => $ps->payment_status === 'partial')->count();
-        $totalCollected = $playerSubscriptions->sum('amount_paid');
+        $total = count($rows);
+        $paidCount = ($statuses['paid'] ?? 0) + ($statuses['exempt'] ?? 0);
+        $unpaidCount = $statuses['unpaid'] ?? 0;
+        $partialCount = $statuses['partial'] ?? 0;
+        $totalCollected = array_sum(array_map(fn (array $row) => (float) $row['amount_paid'], $rows));
         $paidPercentage = $total > 0 ? round(($paidCount / $total) * 100, 1) : 0;
 
         // Players not yet assigned to this subscription
-        $assignedPlayerIds = $playerSubscriptions->pluck('player_id')->toArray();
         $availablePlayers = Player::query()->eligibleFor($subscription)
             ->where('archived', false)
-            ->whereNotIn('id', $assignedPlayerIds)
+            ->whereNotIn('id', PlayerSubscription::query()->select('player_id')->where('subscription_id', $subscription->id))
             ->with('category')
             ->orderBy('lastname')
             ->get(['id', ...Player::NAME_COLUMNS, 'is_student', 'category_id', 'membership_id'])
@@ -176,7 +180,7 @@ class SubscriptionController extends Controller
 
         return Inertia::render('Subscriptions/Show', [
             'subscription' => $subscription,
-            'playerSubscriptions' => $playerSubscriptions,
+            'playerSubscriptions' => $rows,
             'categories' => Category::orderBy('name')->get(),
             'availablePlayers' => $availablePlayers,
             'stats' => [
@@ -188,6 +192,56 @@ class SubscriptionController extends Controller
                 'paid_percentage' => $paidPercentage,
             ],
         ]);
+    }
+
+    /**
+     * The assignee table's rows, A→Z: only the fields the page reads, each
+     * read once. Serialising whole models (timestamps on the club clock, the
+     * same category once per row) took most of the time of a season's
+     * subscription with a full club.
+     *
+     * @param  Collection<int, PlayerSubscription>  $playerSubscriptions
+     * @return list<array<string, mixed>>
+     */
+    private function showRows(Collection $playerSubscriptions): array
+    {
+        $categories = [];
+        $category = function (?Category $category) use (&$categories): ?array {
+            if ($category === null) {
+                return null;
+            }
+
+            return $categories[$category->id] ??= [
+                'id' => $category->id,
+                'name' => $category->name,
+                'localized_name' => $category->localized_name,
+            ];
+        };
+
+        return $playerSubscriptions
+            ->map(function (PlayerSubscription $ps) use ($category) {
+                $money = $ps->money();
+                $player = $ps->player;
+
+                return [
+                    'id' => $ps->id,
+                    'player_id' => $ps->player_id,
+                    'amount_owed' => $ps->amount_owed,
+                    'amount_paid' => $ps->amount_paid,
+                    'remaining_amount' => $money['remaining'],
+                    'payment_status' => $money['status'],
+                    'player' => $player === null ? null : [
+                        'id' => $player->id,
+                        'membership_id' => $player->membership_id,
+                        'lastname' => $player->lastname,
+                        'fullname' => $player->fullname,
+                        'category' => $category($player->category),
+                    ],
+                ];
+            })
+            ->sortBy('player.fullname', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values()
+            ->all();
     }
 
     public function create(): Response
@@ -359,13 +413,24 @@ class SubscriptionController extends Controller
      */
     private function assignedPlayers(Subscription $subscription, ?string $search = null): Collection
     {
-        return PlayerSubscription::query()
-            ->where('subscription_id', $subscription->id)
-            ->when($search, fn ($query) => $query->whereHas('player', fn ($player) => $player->search($search)))
-            ->with(['player.category', 'transaction'])
+        return $this->assignedQuery($subscription, $search)
             ->get()
             ->sortBy(fn (PlayerSubscription $ps) => $ps->player?->fullname, SORT_NATURAL | SORT_FLAG_CASE)
             ->values();
+    }
+
+    /** @return Builder<PlayerSubscription> */
+    private function assignedQuery(Subscription $subscription, ?string $search = null): Builder
+    {
+        return PlayerSubscription::query()
+            ->where('subscription_id', $subscription->id)
+            ->when($search, fn ($query) => $query->whereHas('player', fn ($player) => $player->search($search)))
+            // Only what the page and the export show: the full player row (contact,
+            // health…) of every assignee made this page seconds slow and megabytes big.
+            ->with([
+                'player' => fn ($player) => $player->select(['id', 'membership_id', 'category_id', ...Player::NAME_COLUMNS]),
+                'player.category',
+            ]);
     }
 
     public function export(Request $request, Subscription $subscription): SymfonyResponse

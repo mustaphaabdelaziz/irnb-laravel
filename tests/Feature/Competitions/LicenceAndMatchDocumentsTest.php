@@ -6,6 +6,7 @@ use App\Models\DocumentType;
 use App\Models\Player;
 use App\Models\PlayerDocument;
 use App\Services\Player\DocumentChecklist;
+use App\Support\UiLang;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use PHPUnit\Framework\Attributes\Test;
@@ -93,5 +94,27 @@ class LicenceAndMatchDocumentsTest extends TestCase
         $this->assertDatabaseCount('players', 1);
         $player = Player::firstOrFail();
         $this->assertSame('LIC-77', $player->licence_number);
+    }
+
+    #[Test]
+    public function a_file_with_the_old_licence_header_still_imports(): void
+    {
+        $this->category();
+        $header = [UiLang::get('col.firstname', null, 'en'), UiLang::get('col.lastname', null, 'en'), 'Licence number'];
+
+        $fh = fopen('php://temp', 'r+');
+        fputcsv($fh, $header);
+        fputcsv($fh, ['Karim', 'Safir', 'LIC-88']);
+        rewind($fh);
+        $path = tempnam(sys_get_temp_dir(), 'imp').'.csv';
+        file_put_contents($path, stream_get_contents($fh));
+        fclose($fh);
+
+        $this->actingAs($this->admin())
+            ->post(route('players.import.store'), ['file' => new UploadedFile($path, 'players.csv', 'text/csv', null, true)])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertSame('LIC-88', Player::firstOrFail()->licence_number);
     }
 }

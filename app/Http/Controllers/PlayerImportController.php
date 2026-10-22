@@ -56,8 +56,9 @@ class PlayerImportController extends Controller
         // Appended last on purpose: older files simply have no cell here.
         ['key' => 'wilaya', 'label' => 'col.wilaya', 'hint' => 'col.hint.code_or_name', 'legacy' => ['الولاية (الرمز أو الاسم)'], 'example' => '47'],
         ['key' => 'other_positions', 'label' => 'col.other_positions', 'hint' => 'col.hint.comma_separated', 'legacy' => ['مراكز أخرى (مفصولة بفاصلة)'], 'example' => 'WG, LB'],
-        // Appended last: older files have no cell here.
-        ['key' => 'licence_number', 'label' => 'col.licence_number', 'legacy' => ['رقم الإجازة'], 'example' => ''],
+        // Appended last: older files have no cell here. Legacy keeps the headers
+        // from before the column was renamed "federation licence".
+        ['key' => 'licence_number', 'label' => 'col.licence_number', 'legacy' => ['رقم الإجازة', 'Licence number', 'Numéro de licence'], 'example' => ''],
     ];
 
     /** Stored gender code => UI label key. */

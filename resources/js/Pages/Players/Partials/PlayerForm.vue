@@ -391,6 +391,7 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                     />
                     <div v-if="form.branch_ids.length" class="mt-2 flex flex-wrap gap-2">
                         <span v-for="id in form.branch_ids" :key="id" class="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-3 py-1 text-sm text-primary-700 dark:bg-primary-900/30 dark:text-primary-200">
+                            <img v-if="branchesById[id]?.logo_url" :src="branchesById[id].logo_url" alt="" class="h-4 w-4 rounded-sm object-contain" />
                             {{ branchLabel(id) }}
                             <button type="button" @click="removeBranch(id)" class="text-primary-400 hover:text-rose-600">×</button>
                         </span>

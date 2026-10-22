@@ -22,26 +22,36 @@ const playersById = computed(() => Object.fromEntries(props.players.map((p) => [
 const editingId = ref(null);
 const deleteId = ref(null);
 
-const form = useForm({ name: '', name_ar: '', name_fr: '', name_en: '', description: '' });
-const editForm = useForm({ name: '', name_ar: '', name_fr: '', name_en: '', description: '' });
+const form = useForm({ name: '', name_ar: '', name_fr: '', name_en: '', description: '', logo: null });
+// Files only travel in multipart POSTs, so the update is a POST spoofing PUT.
+const editForm = useForm({ _method: 'put', name: '', name_ar: '', name_fr: '', name_en: '', description: '', logo: null, remove_logo: false });
+const addLogoInput = ref(null);
 
 function addBranch() {
     form.post(route('branches.store'), {
-        onSuccess: () => form.reset(),
+        forceFormData: true,
+        onSuccess: () => {
+            form.reset();
+            if (addLogoInput.value) addLogoInput.value.value = '';
+        },
     });
 }
 
 function startEdit(branch) {
     editingId.value = branch.id;
+    editForm.clearErrors();
     editForm.name = branch.name;
     editForm.name_ar = branch.name_ar || '';
     editForm.name_fr = branch.name_fr || '';
     editForm.name_en = branch.name_en || '';
     editForm.description = branch.description || '';
+    editForm.logo = null;
+    editForm.remove_logo = false;
 }
 
 function saveEdit(id) {
-    editForm.put(route('branches.update', id), {
+    editForm.post(route('branches.update', id), {
+        forceFormData: true,
         onSuccess: () => { editingId.value = null; },
     });
 }
@@ -130,6 +140,11 @@ function saveMembers() {
                         <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('name') }} (English)</label>
                         <TextInput v-model="form.name_en" class="mt-1 w-full" placeholder="Name" />
                     </div>
+                    <div>
+                        <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('logo') }}</label>
+                        <input ref="addLogoInput" type="file" accept="image/*" class="mt-1 block w-full text-xs" @change="form.logo = $event.target.files[0] || null" />
+                        <InputError :message="form.errors.logo" class="mt-1" />
+                    </div>
                 </div>
                 <div class="flex justify-end">
                     <PrimaryButton :disabled="form.processing">{{ t('add') }}</PrimaryButton>
@@ -155,8 +170,21 @@ function saveMembers() {
                                     <TextInput v-model="editForm.name_fr" class="w-full" placeholder="Français" />
                                     <TextInput v-model="editForm.name_en" class="w-full" placeholder="English" />
                                     <InputError :message="editForm.errors.name" class="mt-1" />
+                                    <div class="flex flex-wrap items-center gap-3 pt-1">
+                                        <img v-if="branch.logo_url && !editForm.remove_logo && !editForm.logo" :src="branch.logo_url" alt="" class="h-8 w-8 rounded object-contain" />
+                                        <input type="file" accept="image/*" class="block min-w-0 flex-1 text-xs" @change="editForm.logo = $event.target.files[0] || null; editForm.remove_logo = false" />
+                                        <label v-if="branch.logo_url && !editForm.logo" class="inline-flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
+                                            <input v-model="editForm.remove_logo" type="checkbox" class="rounded border-slate-300 text-rose-600 focus:ring-rose-500 dark:border-slate-700" />
+                                            {{ t('remove') }}
+                                        </label>
+                                    </div>
+                                    <InputError :message="editForm.errors.logo" class="mt-1" />
                                 </div>
-                                <span v-else class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ branch.localized_name || branch.name }}</span>
+                                <div v-else class="flex items-center gap-2">
+                                    <img v-if="branch.logo_url" :src="branch.logo_url" alt="" class="h-8 w-8 shrink-0 rounded object-contain" />
+                                    <span v-else class="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-slate-100 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ (branch.localized_name || branch.name || '?').charAt(0) }}</span>
+                                    <span class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ branch.localized_name || branch.name }}</span>
+                                </div>
                             </td>
                             <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ branch.players_count }}</td>
                             <td class="px-4 py-3 text-end">

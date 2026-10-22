@@ -5,7 +5,9 @@ namespace App\Models;
 use App\Models\Concerns\HasLocalizedName;
 use App\Models\Concerns\SerializesClubDates;
 use App\Observers\BranchObserver;
+use App\Support\Media;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -24,11 +26,21 @@ class Branch extends Model
         'name_fr',
         'name_en',
         'description',
+        'logo_url',
+        'logo_filename',
     ];
+
+    protected $hidden = ['logo_filename'];
 
     protected $appends = [
         'localized_name',
     ];
+
+    /** Host-relative /media URL, whatever was stored (see App\Support\Media). */
+    protected function logoUrl(): Attribute
+    {
+        return Attribute::get(fn (?string $value) => Media::path($value));
+    }
 
     public function players(): BelongsToMany
     {

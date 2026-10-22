@@ -6,6 +6,8 @@ use App\Models\Branch;
 use App\Models\Player;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -150,5 +152,151 @@ class BranchFeatureTest extends TestCase
         $content = $this->get(route('players.export', ['branch_id' => $swim->id, 'format' => 'csv']))->streamedContent();
         $this->assertStringContainsString('202400001', $content);
         $this->assertStringNotContainsString('202400002', $content);
+    }
+
+    #[Test]
+    public function a_branch_is_created_with_its_own_logo(): void
+    {
+        Storage::fake('public');
+
+        $this->actingAs($this->admin())
+            ->post(route('branches.store'), [
+                'name' => 'Swimming',
+                'logo' => UploadedFile::fake()->image('swim.png', 400, 400),
+            ])
+            ->assertRedirect();
+
+        $branch = Branch::where('name', 'Swimming')->firstOrFail();
+        $this->assertStringStartsWith('/media/branches/', $branch->logo_url);
+        Storage::disk('public')->assertExists($branch->logo_filename);
+        // The disk path is internal; pages only get the URL.
+        $this->assertArrayNotHasKey('logo_filename', $branch->toArray());
+    }
+
+    #[Test]
+    public function replacing_a_branch_logo_deletes_the_old_file(): void
+    {
+        Storage::fake('public');
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->post(route('branches.store'), [
+            'name' => 'Swimming',
+            'logo' => UploadedFile::fake()->image('old.png'),
+        ]);
+        $branch = Branch::where('name', 'Swimming')->firstOrFail();
+        $old = $branch->logo_filename;
+
+        $this->actingAs($admin)
+            ->post(route('branches.update', $branch), [
+                '_method' => 'put',
+                'name' => 'Swimming',
+                'logo' => UploadedFile::fake()->image('new.png'),
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $branch->refresh();
+        $this->assertNotSame($old, $branch->logo_filename);
+        Storage::disk('public')->assertMissing($old);
+        Storage::disk('public')->assertExists($branch->logo_filename);
+    }
+
+    #[Test]
+    public function a_failed_save_keeps_the_old_logo_and_drops_the_new_upload(): void
+    {
+        Storage::fake('public');
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->post(route('branches.store'), [
+            'name' => 'Swimming',
+            'logo' => UploadedFile::fake()->image('old.png'),
+        ]);
+        $branch = Branch::where('name', 'Swimming')->firstOrFail();
+        $old = $branch->logo_filename;
+
+        Branch::updating(fn () => throw new \RuntimeException('database down'));
+
+        $this->actingAs($admin)
+            ->post(route('branches.update', $branch), [
+                '_method' => 'put',
+                'name' => 'Swimming',
+                'logo' => UploadedFile::fake()->image('new.png'),
+            ])
+            ->assertServerError();
+
+        $this->assertSame($old, $branch->fresh()->logo_filename);
+        $this->assertSame([$old], Storage::disk('public')->files('branches'));
+    }
+
+    #[Test]
+    public function a_branch_logo_can_be_removed_and_is_kept_when_not_touched(): void
+    {
+        Storage::fake('public');
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->post(route('branches.store'), [
+            'name' => 'Swimming',
+            'logo' => UploadedFile::fake()->image('swim.png'),
+        ]);
+        $branch = Branch::where('name', 'Swimming')->firstOrFail();
+        $file = $branch->logo_filename;
+
+        // Renaming without a file keeps the logo.
+        $this->actingAs($admin)->put(route('branches.update', $branch), ['name' => 'Natation']);
+        $this->assertSame($file, $branch->fresh()->logo_filename);
+
+        $this->actingAs($admin)
+            ->put(route('branches.update', $branch), ['name' => 'Natation', 'remove_logo' => true])
+            ->assertSessionHasNoErrors();
+
+        $branch->refresh();
+        $this->assertNull($branch->logo_url);
+        $this->assertNull($branch->logo_filename);
+        Storage::disk('public')->assertMissing($file);
+    }
+
+    #[Test]
+    public function deleting_a_branch_deletes_its_logo(): void
+    {
+        Storage::fake('public');
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->post(route('branches.store'), [
+            'name' => 'Swimming',
+            'logo' => UploadedFile::fake()->image('swim.png'),
+        ]);
+        $branch = Branch::where('name', 'Swimming')->firstOrFail();
+        $file = $branch->logo_filename;
+
+        $this->actingAs($admin)->delete(route('branches.destroy', $branch))->assertRedirect();
+
+        Storage::disk('public')->assertMissing($file);
+    }
+
+    #[Test]
+    public function a_branch_logo_must_be_an_image(): void
+    {
+        $this->actingAs($this->admin())
+            ->post(route('branches.store'), [
+                'name' => 'Swimming',
+                'logo' => UploadedFile::fake()->create('notes.pdf', 10, 'application/pdf'),
+            ])
+            ->assertSessionHasErrors(['logo']);
+
+        $this->assertDatabaseMissing('branches', ['name' => 'Swimming']);
+    }
+
+    #[Test]
+    public function the_player_page_carries_each_branch_logo(): void
+    {
+        $branch = Branch::create(['name' => 'Swimming', 'logo_url' => '/media/branches/swim.png', 'logo_filename' => 'branches/swim.png']);
+        $player = $this->player('202400009');
+        $player->branches()->sync([$branch->id]);
+
+        $this->actingAs($this->admin())
+            ->get(route('players.show', $player))
+            ->assertInertia(fn ($page) => $page
+                ->where('player.branches.0.logo_url', '/media/branches/swim.png')
+                ->missing('player.branches.0.logo_filename'));
     }
 }

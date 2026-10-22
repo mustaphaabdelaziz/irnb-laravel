@@ -67,7 +67,7 @@ class PlayerImportTest extends TestCase
         $subscription->categories()->attach($category->id);
 
         // firstname, lastname, father, grandfather, nickname, birthdate, gender, phone,
-        // email, city, state, category, position, job, status, skill, blood, medical, join_year
+        // email, city, state, category, position, job, status, (retired skill slot), blood, medical, join_year
         $file = $this->makeCsv([
             ['Ali', 'Brahimi', '', '', '', '2008-05-20', 'Male', '0550000000', '', 'Algiers', 'Algiers', 'U17', 'GK', '', 'student', '6', 'O+', '', (string) now()->year],
             ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''], // blank row ignored
@@ -82,7 +82,6 @@ class PlayerImportTest extends TestCase
         $player = Player::firstOrFail();
         $this->assertSame('Ali', $player->firstname);
         $this->assertSame($category->id, $player->category_id);
-        $this->assertSame(6, $player->skill_level);
         $this->assertTrue($player->is_student);
         $this->assertSame('منخرط', $player->status->name);
         // Owner decision: registration (import included) attaches no subscription.

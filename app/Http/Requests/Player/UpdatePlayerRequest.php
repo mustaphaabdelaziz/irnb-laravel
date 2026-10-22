@@ -49,7 +49,6 @@ class UpdatePlayerRequest extends FormRequest
             'branch_ids' => [Rule::requiredIf(fn () => Branch::exists()), 'nullable', 'array'],
             'branch_ids.*' => ['integer', 'exists:branches,id'],
             'team' => ['nullable', 'string', 'max:255'],
-            'skill_level' => ['nullable', 'integer', 'min:1', 'max:10'],
             'health_medical_conditions' => ['nullable', 'string'],
             'health_blood_group_rhesus' => ['nullable', 'string', 'max:10'],
             'licence_number' => ['nullable', 'string', 'max:50'],

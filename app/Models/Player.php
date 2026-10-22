@@ -50,7 +50,6 @@ class Player extends Model
         'category_id',
         'position_id',
         'team',
-        'skill_level',
         'health_medical_conditions',
         'health_blood_group_rhesus',
         'licence_number',
@@ -196,7 +195,6 @@ class Player extends Model
             'is_student' => 'boolean',
             'join_year' => 'integer',
             'archived' => 'boolean',
-            'skill_level' => 'integer',
             'outstanding_debt' => 'decimal:2',
         ];
     }

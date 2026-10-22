@@ -43,7 +43,6 @@ final class ValidationAttributes
         'branch_id' => 'branch',
         'branch_ids' => 'branches',
         'branch_ids.*' => 'branches',
-        'skill_level' => 'skill_level',
         'status' => 'status',
         'status_id' => 'membership_status',
         'join_year' => 'join_year',

@@ -61,7 +61,6 @@ const form = useForm({
     member_job_id: p.member_job_id || '',
     branch_ids: (p.branches || []).map((b) => b.id),
     join_year: p.join_year || props.defaultJoinYear,
-    skill_level: p.skill_level || '',
     picture: null,
     health_medical_conditions: p.health_medical_conditions || '',
     emergency_contact_name: p.emergency_contacts?.[0]?.name || '',
@@ -243,7 +242,6 @@ function submit() {
         // reach the server as a present, clearable value.
         branch_ids: data.branch_ids.length ? data.branch_ids : '',
         join_year: data.join_year || null,
-        skill_level: data.skill_level || null,
         picture: data.picture,
         health_medical_conditions: data.health_medical_conditions || null,
         emergency_contacts: emergencyContacts.length ? emergencyContacts : '',
@@ -402,13 +400,6 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                         {{ t('no_branches_hint') }}
                         <Link :href="route('branches.index')" class="text-primary-600 hover:underline">{{ t('branches') }}</Link>
                     </p>
-                </div>
-                <div>
-                    <InputLabel :value="t('skill_level')" />
-                    <select v-model="form.skill_level" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                        <option value="">-</option>
-                        <option v-for="n in 10" :key="n" :value="n">{{ n }}</option>
-                    </select>
                 </div>
                 <div>
                     <InputLabel :value="t('membership_status')" />

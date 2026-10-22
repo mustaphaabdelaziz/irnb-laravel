@@ -468,7 +468,6 @@ class ImportMongoJsonData extends Command
                     'category_id' => $categoryId,
                     'position_id' => $positionId,
                     'team' => $this->nullableString($row['team'] ?? null),
-                    'skill_level' => max(1, min(10, (int) ($row['skillLevel'] ?? 5))),
                     'health_medical_conditions' => $this->nullableString($health['medicalConditions'] ?? null),
                     'health_blood_group_rhesus' => $this->nullableString($blood['groupRhesus'] ?? null),
                     'outstanding_debt' => (float) ($row['outstandingDebt'] ?? 0),

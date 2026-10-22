@@ -17,6 +17,7 @@ use App\Support\ListFilter;
 use App\Support\UiLang;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -151,10 +152,7 @@ class SubscriptionController extends Controller
     {
         $subscription->load(['categories', 'branches']);
 
-        $playerSubscriptions = PlayerSubscription::query()
-            ->where('subscription_id', $subscription->id)
-            ->with(['player.category', 'transaction'])
-            ->get();
+        $playerSubscriptions = $this->assignedPlayers($subscription);
 
         // Calculate stats
         $total = $playerSubscriptions->count();
@@ -349,12 +347,27 @@ class SubscriptionController extends Controller
         return back()->with('success', ['key' => 'flash.player_added_to_subscription', 'params' => ['name' => $player->fullname]]);
     }
 
+    /**
+     * The players on a subscription, A→Z by full name (lastname first), as the
+     * page lists them. A search narrows them to the matching players.
+     *
+     * @return Collection<int, PlayerSubscription>
+     */
+    private function assignedPlayers(Subscription $subscription, ?string $search = null): Collection
+    {
+        return PlayerSubscription::query()
+            ->where('subscription_id', $subscription->id)
+            ->when($search, fn ($query) => $query->whereHas('player', fn ($player) => $player->search($search)))
+            ->with(['player.category', 'transaction'])
+            ->get()
+            ->sortBy(fn (PlayerSubscription $ps) => $ps->player?->fullname, SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
+    }
+
     public function export(Request $request, Subscription $subscription): SymfonyResponse
     {
-        $playerSubscriptions = PlayerSubscription::query()
-            ->where('subscription_id', $subscription->id)
-            ->with(['player.category', 'transaction'])
-            ->get();
+        $search = trim((string) $request->query('search', ''));
+        $playerSubscriptions = $this->assignedPlayers($subscription, $search !== '' ? $search : null);
 
         // all | paid | unpaid | partial; anything else (an array, a path…) → all.
         $filter = $request->query('filter', 'all');

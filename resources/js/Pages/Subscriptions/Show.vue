@@ -38,15 +38,33 @@ const categoryPrices = computed(() => {
     }));
 });
 
+// ── Search (the server already sends the list A→Z) ───────────────────
+const search = ref('');
+
+// Like Player::scopeSearch: every word must match; بن / بنت are only connectors.
+const searchTokens = computed(() =>
+    search.value.trim().toLowerCase().split(/\s+/).filter(w => w && w !== 'بن' && w !== 'بنت')
+);
+
+const searchedList = computed(() => {
+    if (!searchTokens.value.length) return props.playerSubscriptions;
+    return props.playerSubscriptions.filter((ps) => {
+        const haystack = `${ps.player?.fullname ?? ''} ${ps.player?.membership_id ?? ''}`.toLowerCase();
+        return searchTokens.value.every(w => haystack.includes(w));
+    });
+});
+
 // ── Tabs ─────────────────────────────────────────────────────────────
 const activeTab = ref('all'); // all | paid | unpaid | partial
 
-const filteredList = computed(() => {
-    if (activeTab.value === 'paid')    return props.playerSubscriptions.filter(ps => ps.payment_status === 'paid' || ps.payment_status === 'exempt');
-    if (activeTab.value === 'unpaid')  return props.playerSubscriptions.filter(ps => ps.payment_status === 'unpaid');
-    if (activeTab.value === 'partial') return props.playerSubscriptions.filter(ps => ps.payment_status === 'partial');
-    return props.playerSubscriptions;
-});
+const inTab = (tab, ps) => {
+    if (tab === 'paid')    return ps.payment_status === 'paid' || ps.payment_status === 'exempt';
+    if (tab === 'unpaid')  return ps.payment_status === 'unpaid';
+    if (tab === 'partial') return ps.payment_status === 'partial';
+    return true;
+};
+
+const filteredList = computed(() => searchedList.value.filter(ps => inTab(activeTab.value, ps)));
 
 // ── Assign all (by category) ─────────────────────────────────────────
 const showAssignModal = ref(false);
@@ -87,8 +105,12 @@ function addSinglePlayer() {
 }
 
 // ── Export ────────────────────────────────────────────────────────────
-// The current tab's list; ExportMenu adds the format.
-const exportHref = computed(() => route('subscriptions.export', { subscription: props.subscription.id, filter: activeTab.value }));
+// The current tab's list (search included); ExportMenu adds the format.
+const exportHref = computed(() => route('subscriptions.export', {
+    subscription: props.subscription.id,
+    filter: activeTab.value,
+    ...(searchTokens.value.length ? { search: search.value.trim() } : {}),
+}));
 
 // ── Print ─────────────────────────────────────────────────────────────
 function printList() {
@@ -96,12 +118,8 @@ function printList() {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────
-const tabCount = (tab) => {
-    if (tab === 'paid')    return props.stats?.paid_count ?? 0;
-    if (tab === 'unpaid')  return props.stats?.unpaid_count ?? 0;
-    if (tab === 'partial') return props.stats?.partial_count ?? 0;
-    return props.stats?.total ?? 0;
-};
+// Counted from the searched list, so the badges follow the search.
+const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length;
 </script>
 
 <template>
@@ -208,7 +226,7 @@ const tabCount = (tab) => {
             <!-- No overflow-hidden here: it would clip the export menu when the list is short; the table wrapper rounds its own bottom corners. -->
             <div class="rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 print-area">
                 <!-- Tab bar -->
-                <div class="no-print flex border-b border-slate-100 dark:border-slate-800">
+                <div class="no-print flex flex-wrap border-b border-slate-100 dark:border-slate-800">
                     <button v-for="tab in ['all','paid','unpaid','partial']" :key="tab"
                         @click="activeTab = tab"
                         class="relative px-5 py-3 text-sm font-medium transition-colors"
@@ -221,8 +239,10 @@ const tabCount = (tab) => {
                             {{ tabCount(tab) }}
                         </span>
                     </button>
-                    <!-- Export current tab -->
+                    <!-- Search + export current tab -->
                     <div class="no-print ml-auto flex items-center pr-4 gap-2">
+                        <input v-model="search" type="search" :placeholder="t('search_name_or_id')" :aria-label="t('search')"
+                            class="w-44 sm:w-56 rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-900 px-3 py-1.5 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500" />
                         <ExportMenu :href="exportHref" :label="`${t('export')} ${t(activeTab)}`" />
                     </div>
                 </div>

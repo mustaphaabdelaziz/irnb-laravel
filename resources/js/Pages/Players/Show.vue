@@ -91,6 +91,10 @@ const payableOptions = computed(() => [
         subscription_id: s.subscription_id,
         default_finance_account_id: s.default_finance_account_id,
         is_exempt: !!s.is_exempt,
+        // An exempt one owes nothing until the Exempt box is cleared.
+        due: s.is_exempt
+            ? Math.max(0, parseFloat(s.amount_owed ?? 0) - parseFloat(s.amount_paid ?? 0))
+            : parseFloat(s.remaining_amount ?? 0),
         text: `${s.name} (${s.year_label || t('subscription_kind_exceptional')})${s.is_mandatory ? '' : ' — ' + t('optional')} — ${t('remaining')}: ${formatMoney(s.remaining_amount)}`,
     })),
     ...manualDebts.value
@@ -100,6 +104,7 @@ const payableOptions = computed(() => [
             kind: 'debt',
             player_subscription_id: d.id,
             is_exempt: !!d.is_exempt,
+            due: parseFloat(d.remaining_amount ?? 0),
             text: `${d.label || t('previous_debt')} (${d.year}) — ${t('remaining')}: ${formatMoney(d.remaining_amount)}`,
         })),
 ]);
@@ -109,8 +114,6 @@ const showPaymentModal = ref(false);
 
 const paymentForm = useForm({
     amount: '',
-    subscription_id: '',
-    player_subscription_id: '',
     payment_method: 'cash',
     finance_account_id: props.defaultFinanceAccountId || '',
     category: 'subscription',
@@ -118,45 +121,84 @@ const paymentForm = useForm({
     is_exempt: false,
 });
 
-const selectedPayableKey = ref('');
-const selectedPayable = computed(() => payableOptions.value.find(o => o.key === selectedPayableKey.value) || null);
+const round2 = (value) => Math.round(value * 100) / 100;
 
-// Hide the amount while Exempt is ticked — exemption records no payment. Exempt only
-// applies to catalog subscriptions here; manual-debt exemption is set on the debt itself.
-const showAmountField = computed(() =>
-    !(paymentForm.category === 'subscription' && selectedPayable.value?.kind === 'sub' && paymentForm.is_exempt)
+// Ticked obligations, in the order they were ticked: the amount pays them in that order.
+const selectedPayableKeys = ref([]);
+const selectedPayables = computed(() =>
+    selectedPayableKeys.value.map(key => payableOptions.value.find(o => o.key === key)).filter(Boolean)
 );
+const selectedTotal = computed(() => round2(selectedPayables.value.reduce((sum, o) => sum + o.due, 0)));
+const payOrder = (key) => selectedPayableKeys.value.indexOf(key) + 1;
+
+function togglePayable(key) {
+    const index = selectedPayableKeys.value.indexOf(key);
+    if (index === -1) selectedPayableKeys.value.push(key);
+    else selectedPayableKeys.value.splice(index, 1);
+}
+
+// Exempt only applies to catalog subscriptions here; manual-debt exemption is set
+// on the debt itself. Ticked, it waives every selected subscription.
+const canExempt = computed(() =>
+    paymentForm.category === 'subscription'
+    && selectedPayables.value.length > 0
+    && selectedPayables.value.every(o => o.kind === 'sub')
+);
+
+// Hide the amount while Exempt is ticked — exemption records no payment.
+const showAmountField = computed(() => !(canExempt.value && paymentForm.is_exempt));
+
+// What each ticked line gets from the amount typed: each in full before the next;
+// anything above the total becomes a donation (as the server records it).
+const allocation = computed(() => {
+    let left = parseFloat(paymentForm.amount) || 0;
+    const lines = {};
+    for (const o of selectedPayables.value) {
+        lines[o.key] = round2(Math.min(left, o.due));
+        left = round2(left - lines[o.key]);
+    }
+
+    return { lines, extra: selectedPayables.value.length ? left : 0 };
+});
 
 watch(() => paymentForm.category, (category) => {
     if (category !== 'subscription') {
-        selectedPayableKey.value = '';
-        paymentForm.subscription_id = '';
-        paymentForm.player_subscription_id = '';
+        selectedPayableKeys.value = [];
         paymentForm.is_exempt = false;
         paymentForm.finance_account_id = props.defaultFinanceAccountId || '';
     }
 });
 
-// When an obligation is picked, route its id and automatically select the register
-// assigned to the subscription's single branch/category pair.
-watch(selectedPayableKey, () => {
-    const opt = selectedPayable.value;
-    paymentForm.subscription_id = opt?.kind === 'sub' ? opt.subscription_id : '';
-    paymentForm.player_subscription_id = opt?.kind === 'debt' ? opt.player_subscription_id : '';
-    paymentForm.is_exempt = opt ? !!opt.is_exempt : false;
-    paymentForm.finance_account_id = opt?.kind === 'sub' && opt.default_finance_account_id
-        ? opt.default_finance_account_id
+// When the ticked set changes, propose its total and the register they all share
+// (the one assigned to the subscription's single branch/category pair), else the default.
+watch(selectedPayableKeys, () => {
+    const picked = selectedPayables.value;
+    const registers = [...new Set(picked.map(o => (o.kind === 'sub' ? o.default_finance_account_id : null) || ''))];
+
+    paymentForm.is_exempt = picked.length > 0 && picked.every(o => o.is_exempt);
+    paymentForm.amount = selectedTotal.value > 0 ? String(selectedTotal.value) : '';
+    paymentForm.finance_account_id = registers.length === 1 && registers[0]
+        ? registers[0]
         : (props.defaultFinanceAccountId || '');
-});
+}, { deep: true });
 
 function submitPayment() {
-    paymentForm.post(route('players.transactions.store', props.player.id), {
-        onSuccess: () => {
-            showPaymentModal.value = false;
-            paymentForm.reset();
-            selectedPayableKey.value = '';
-        },
-    });
+    paymentForm
+        .transform(data => ({
+            ...data,
+            payables: data.category === 'subscription'
+                ? selectedPayables.value.map(o => (o.kind === 'sub'
+                    ? { subscription_id: o.subscription_id }
+                    : { player_subscription_id: o.player_subscription_id }))
+                : [],
+        }))
+        .post(route('players.transactions.store', props.player.id), {
+            onSuccess: () => {
+                showPaymentModal.value = false;
+                paymentForm.reset();
+                selectedPayableKeys.value = [];
+            },
+        });
 }
 
 // --- Add a manual/previous debt (obligation with no subscription plan) ---
@@ -581,20 +623,39 @@ function formatDate(val) {
                         </select>
                     </div>
                     <div v-if="paymentForm.category === 'subscription'">
-                        <InputLabel :value="t('subscription')" />
-                        <select v-model="selectedPayableKey" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                            <option value="">{{ t('select_subscription') }}</option>
-                            <option v-for="opt in payableOptions" :key="opt.key" :value="opt.key">{{ opt.text }}</option>
-                        </select>
+                        <InputLabel :value="t('payment_subscriptions')" />
+                        <p v-if="payableOptions.length > 1" class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('payment_order_hint') }}</p>
+                        <ul class="mt-2 max-h-64 divide-y divide-slate-100 overflow-y-auto rounded-lg border border-slate-300 dark:divide-slate-800 dark:border-slate-700">
+                            <li v-for="opt in payableOptions" :key="opt.key">
+                                <label class="flex cursor-pointer items-start gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
+                                    <input type="checkbox" :checked="payOrder(opt.key) > 0" class="mt-0.5 rounded border-slate-300 text-primary-600 shadow-sm focus:ring-primary-500" @change="togglePayable(opt.key)" />
+                                    <span class="flex-1">
+                                        {{ opt.text }}
+                                        <span v-if="payOrder(opt.key) && showAmountField && selectedPayables.length > 1" class="block text-xs text-slate-500 dark:text-slate-400" dir="auto">
+                                            {{ t('payment_pays', { amount: formatMoney(allocation.lines[opt.key] ?? 0) }) }}
+                                        </span>
+                                    </span>
+                                    <span v-if="payOrder(opt.key)" class="shrink-0 rounded-full bg-primary-100 px-2 text-xs font-semibold text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">#{{ payOrder(opt.key) }}</span>
+                                </label>
+                            </li>
+                            <li v-if="!payableOptions.length" class="px-3 py-2 text-sm text-slate-500 dark:text-slate-400">{{ t('payment_nothing_due') }}</li>
+                        </ul>
+                        <div v-if="selectedPayables.length > 1" class="mt-2 flex justify-between text-sm font-semibold text-slate-900 dark:text-slate-100">
+                            <span>{{ t('total') }}</span>
+                            <span class="tabular-nums">{{ formatMoney(selectedTotal) }}</span>
+                        </div>
                         <InputError :message="paymentForm.errors.subscription_id" class="mt-1" />
                     </div>
-                    <label v-if="paymentForm.category === 'subscription' && selectedPayable?.kind === 'sub'" class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                    <label v-if="canExempt" class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
                         <input type="checkbox" v-model="paymentForm.is_exempt" class="rounded border-slate-300 text-primary-600 shadow-sm focus:ring-primary-500" />
                         {{ t('exempt') }} — {{ t('exempt_hint') }}
                     </label>
                     <div v-if="showAmountField">
                         <InputLabel :value="t('amount')" />
                         <TextInput v-model="paymentForm.amount" type="number" step="0.01" min="0" class="mt-1 w-full" :required="showAmountField" />
+                        <p v-if="paymentForm.category === 'subscription' && allocation.extra > 0" class="mt-1 text-xs text-amber-700 dark:text-amber-400">
+                            {{ t('payment_extra_donation', { amount: formatMoney(allocation.extra) }) }}
+                        </p>
                         <InputError :message="paymentForm.errors.amount" class="mt-1" />
                     </div>
                     <div>

@@ -11,6 +11,7 @@ use App\Services\Pdf\ClubHeader;
 use App\Support\FinanceAccountLabel;
 use App\Support\TransactionTitle;
 use App\Support\UiLang;
+use Illuminate\Support\Collection;
 
 /**
  * Everything a printed receipt shows (pdf.receipt and pdf.receipt-ticket),
@@ -23,10 +24,14 @@ class ReceiptData
         'recordedBy', 'receivedBy', ...TransactionTitle::RELATIONS, ...Transaction::FINANCE_ACCOUNT_LABEL,
     ];
 
-    /** @return array<string, mixed> */
-    public function build(Transaction $transaction, ReceiptPrint $print): array
+    /**
+     * @param  Collection<int, Transaction>|null  $lines  its payment group, when paid together
+     * @return array<string, mixed>
+     */
+    public function build(Transaction $transaction, ReceiptPrint $print, ?Collection $lines = null): array
     {
         $transaction->loadMissing(self::RELATIONS);
+        $grouped = $lines && $lines->count() > 1;
 
         $player = $transaction->related_entity_type === 'Player' && $transaction->related_entity_id
             ? Player::with(['category', 'branches'])->find($transaction->related_entity_id)
@@ -48,7 +53,28 @@ class ReceiptData
             'relatedName' => $player?->fullname,
             'branches' => $player?->branches->map(fn ($branch) => $branch->localized_name)->filter()->implode(' · ') ?: null,
             'subscription' => $this->subscription($transaction),
+            // One block per payment of the group, then their total as the amount paid.
+            'lines' => $grouped
+                ? $lines->map(fn (Transaction $line) => $this->line($line))->values()->all()
+                : null,
+            'total' => $grouped ? round((float) $lines->sum('amount'), 2) : (float) $transaction->amount,
         ];
+    }
+
+    /**
+     * One payment of a group: "Abonnement (2025/2026)" for a subscription, else
+     * its title (the donation of what was paid beyond them).
+     *
+     * @return array{label: string, amount: float, subscription: ?array}
+     */
+    private function line(Transaction $line): array
+    {
+        $subscription = $this->subscription($line);
+        $label = $subscription
+            ? ($subscription['label'] ?: TransactionTitle::categoryLabel($line)).($subscription['season'] ? " ({$subscription['season']})" : '')
+            : TransactionTitle::for($line);
+
+        return ['label' => $label, 'amount' => (float) $line->amount, 'subscription' => $subscription];
     }
 
     /**

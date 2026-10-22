@@ -54,10 +54,12 @@ class ReceiptController extends Controller
     /** @return array<string, mixed> */
     private function viewData(Request $request, Transaction $transaction, string $format): array
     {
-        $transaction->load(ReceiptData::RELATIONS);
-        $print = $this->printer->record($transaction, $format, $request->user());
+        // Several subscriptions paid together print as one receipt, filed under the first.
+        $lines = $transaction->receiptLines(ReceiptData::RELATIONS);
+        $first = $lines->first();
+        $print = $this->printer->record($first, $format, $request->user(), $lines);
 
-        return [...$this->data->build($transaction, $print), 'rtl' => $this->rtl()];
+        return [...$this->data->build($first, $print, $lines), 'rtl' => $this->rtl()];
     }
 
     /**

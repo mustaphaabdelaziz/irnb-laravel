@@ -37,7 +37,9 @@
 
     <table class="info">
         <tr><td class="label">{{ __('Receipt No.') }}</td><td>#{{ $receiptNumber }}</td></tr>
-        <tr><td class="label">{{ __('Title') }}</td><td>{{ $title }}</td></tr>
+        @unless ($lines)
+            <tr><td class="label">{{ __('Title') }}</td><td>{{ $title }}</td></tr>
+        @endunless
         <tr><td class="label">{{ __('Payment date') }}</td><td>{{ $transaction->transaction_date?->format('Y-m-d') }}</td></tr>
         @if ($relatedName)
             <tr><td class="label">{{ __('Member') }}</td><td>{{ $relatedName }}@if ($player?->membership_id) — {{ $player->membership_id }}@endif</td></tr>
@@ -48,7 +50,15 @@
         @if ($branches)
             <tr><td class="label">{{ __('Branch') }}</td><td>{{ $branches }}</td></tr>
         @endif
-        @if ($subscription)
+        @if ($lines)
+            @foreach ($lines as $line)
+                @php($sub = $line['subscription'])
+                <tr>
+                    <td class="label">{{ $line['label'] }}</td>
+                    <td>{{ $money($line['amount']) }}@if ($sub && ! $sub['exempt']) — {{ __('Remaining') }}: {{ $sub['remaining'] > 0 ? $money($sub['remaining']) : __('Fully paid') }}@endif</td>
+                </tr>
+            @endforeach
+        @elseif ($subscription)
             <tr><td class="label">{{ __('Subscription') }}</td><td>{{ $subscription['label'] ?: $categoryLabel }}@if ($subscription['season']) ({{ $subscription['season'] }})@endif</td></tr>
             @if ($subscription['exempt'])
                 <tr><td class="label">{{ __('Status') }}</td><td>{{ __('Exempt') }}</td></tr>
@@ -65,7 +75,9 @@
         @if ($accountLabel)
             <tr><td class="label">{{ __('Cash register') }}</td><td>{{ $accountLabel }}</td></tr>
         @endif
-        <tr><td class="label">{{ __('Status') }}</td><td><span class="badge">{{ $statusLabel }}</span></td></tr>
+        @unless ($lines)
+            <tr><td class="label">{{ __('Status') }}</td><td><span class="badge">{{ $statusLabel }}</span></td></tr>
+        @endunless
         @if ($transaction->description)
             <tr><td class="label">{{ __('Description') }}</td><td>{{ $transaction->description }}</td></tr>
         @endif
@@ -77,7 +89,7 @@
         @endif
         <tr>
             <td class="label">{{ __('Amount paid') }}</td>
-            <td><span class="amount">{{ $money($transaction->amount) }}</span></td>
+            <td><span class="amount">{{ $money($total) }}</span></td>
         </tr>
         <tr><td class="label">{{ __('Printed at') }}</td><td><bdo dir="ltr">{{ $print->created_at?->format('Y-m-d H:i') }}</bdo></td></tr>
         <tr><td class="label">{{ __('Printed by') }}</td><td>{{ $print->printedBy?->name ?? '—' }}</td></tr>

@@ -75,7 +75,15 @@
 
     <div class="rule"></div>
     <table class="rows">
-        @if ($subscription)
+        @if ($lines)
+            @foreach ($lines as $line)
+                @php($sub = $line['subscription'])
+                <tr><td style="font-weight:bold;">{{ $line['label'] }}</td><td class="value" align="{{ $end }}">{{ $money($line['amount']) }}</td></tr>
+                @if ($sub && ! $sub['exempt'])
+                    <tr><td>{{ __('Remaining') }}</td><td align="{{ $end }}">{{ $sub['remaining'] > 0 ? $money($sub['remaining']) : __('Fully paid') }}</td></tr>
+                @endif
+            @endforeach
+        @elseif ($subscription)
             <tr><td colspan="2" style="font-weight:bold;">{{ $subscription['label'] ?: $categoryLabel }}</td></tr>
             @if ($subscription['season'])
                 <tr><td>{{ __('Season') }}</td><td class="value" align="{{ $end }}">{{ $subscription['season'] }}</td></tr>
@@ -113,7 +121,7 @@
     <div class="rule-strong"></div>
     <div class="center">
         <div class="amount-label">{{ __('Amount paid') }}</div>
-        <div class="amount">{{ $money($transaction->amount) }}</div>
+        <div class="amount">{{ $money($total) }}</div>
     </div>
     <div class="rule-strong"></div>
 

@@ -8,6 +8,7 @@ use App\Support\Media;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -42,6 +43,7 @@ class Transaction extends Model
         'related_entity_type',
         'related_entity_id',
         'player_subscription_id',
+        'payment_group',
         'description',
         'recorded_by_user_id',
         'received_by_user_id',
@@ -133,5 +135,27 @@ class Transaction extends Model
     public function playerSubscriptions(): HasMany
     {
         return $this->hasMany(PlayerSubscription::class);
+    }
+
+    /**
+     * The payments one receipt prints: this one, or its whole payment group by id.
+     * A cancelled payment prints with the group's cancelled lines, a live one with
+     * the live lines, so an edited line (archived and recreated) is not listed twice.
+     *
+     * @param  list<string>  $with
+     * @return EloquentCollection<int, Transaction>
+     */
+    public function receiptLines(array $with = []): EloquentCollection
+    {
+        if (! $this->payment_group) {
+            return (new EloquentCollection([$this]))->loadMissing($with);
+        }
+
+        return static::query()
+            ->with($with)
+            ->where('payment_group', $this->payment_group)
+            ->where('archived', (bool) $this->archived)
+            ->orderBy('id')
+            ->get();
     }
 }

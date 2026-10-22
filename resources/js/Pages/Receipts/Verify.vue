@@ -51,7 +51,8 @@ function show(name, value) {
     if (name === 'type') return t(value);
     if (name === 'status') return statusLabel('payment', value);
     if (name === 'payment_method') return statusLabel('payment_method', value);
-    if (name === 'player_id' || name === 'player_subscription_id') return `#${value}`;
+    // A grouped receipt lists the subscriptions it settles as "12,15".
+    if (name === 'player_id' || name === 'player_subscription_id') return String(value).split(',').map((id) => `#${id}`).join(' + ');
     return String(value);
 }
 </script>

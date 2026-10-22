@@ -14,7 +14,10 @@ use App\Services\Finance\ResolvePaymentStatusService;
 use DateTimeInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -25,6 +28,10 @@ class PlayerTransactionController extends Controller
         $validated = $request->validate([
             'player_subscription_id' => ['nullable', 'integer', 'exists:player_subscriptions,id'],
             'subscription_id' => ['nullable', 'integer', 'exists:subscriptions,id'],
+            // Several obligations paid at once, in the order the money settles them.
+            'payables' => ['nullable', 'array', 'max:50'],
+            'payables.*.subscription_id' => ['nullable', 'integer', 'exists:subscriptions,id'],
+            'payables.*.player_subscription_id' => ['nullable', 'integer', 'exists:player_subscriptions,id'],
             'amount' => ['required_if:category,donation', 'required_if:category,debt_payment', 'nullable', 'numeric', 'min:0.01'],
             'payment_method' => ['nullable', 'string', 'max:255'],
             'category' => ['required', 'string', 'in:subscription,donation,debt_payment'],
@@ -47,20 +54,24 @@ class PlayerTransactionController extends Controller
         if ($validated['category'] === 'subscription') {
             // The selectable list is the whole catalog, so a chosen subscription may
             // not be assigned to this player yet — assign it on demand.
-            $sub = $this->resolvePlayerSubscription($player, $validated);
+            $subs = $this->resolvePayables($player, $validated);
 
             // The Exempt checkbox is the single control for the flag (set or clear).
             $exempt = (bool) ($validated['is_exempt'] ?? false);
-            $sub->update(['is_exempt' => $exempt]);
+            $subs->each->update(['is_exempt' => $exempt]);
 
-            // Exempt waives the subscription — no payment is recorded.
+            // Exempt waives the subscriptions — no payment is recorded.
             if (! $exempt && ! empty($validated['amount'])) {
-                $financeAccountId = $submittedFinanceAccountId ?? $this->defaultRegisterId($player, $sub);
+                $single = $subs->count() === 1 ? $subs->first() : null;
+                $financeAccountId = $submittedFinanceAccountId ?? $this->defaultRegisterId($player, $single);
+                $amount = (float) $validated['amount'];
 
                 DB::transaction(fn () => $this->recordPayment(
                     $request,
                     ActivityAction::PAYMENT_RECORDED,
-                    $this->createSubscriptionPayment($sub, $player, (float) $validated['amount'], $method, $description, $userId, $financeAccountId),
+                    $single
+                        ? $this->createSubscriptionPayment($single, $player, $amount, $method, $description, $userId, $financeAccountId)
+                        : $this->createGroupPayment($subs, $player, $amount, $method, $description, $userId, $financeAccountId),
                 ));
             }
 
@@ -127,6 +138,12 @@ class PlayerTransactionController extends Controller
                 }
             } else {
                 $created = [$this->createPlayerLevelPayment($player, $transaction->category, (float) $validated['amount'], $method, $description, $userId, $financeAccountId, $date)];
+            }
+
+            // Still part of the payment it was taken with: the grouped receipt keeps listing it.
+            if ($transaction->payment_group && $created !== []) {
+                Transaction::whereKey(array_map(fn (Transaction $t) => $t->id, $created))
+                    ->update(['payment_group' => $transaction->payment_group]);
             }
 
             // One event for the edit: the archive-and-recreate is not a
@@ -237,6 +254,69 @@ class PlayerTransactionController extends Controller
 
             return $created;
         });
+    }
+
+    /**
+     * Pay several subscriptions with one amount, in the order given: each is paid
+     * in full before the next, so only the last one reached can end up partial.
+     * What is left after all of them becomes a donation. The transactions share
+     * a payment group, printed as one receipt.
+     *
+     * @param  Collection<int, PlayerSubscription>  $subs
+     * @return list<Transaction>
+     */
+    private function createGroupPayment(
+        Collection $subs,
+        Player $player,
+        float $amount,
+        ?string $method,
+        ?string $description,
+        ?int $userId,
+        ?int $financeAccountId,
+    ): array {
+        $created = [];
+        $left = $amount;
+
+        foreach ($subs as $sub) {
+            $portion = round(min($left, max(0.0, (float) $sub->remaining_amount)), 2);
+            if ($portion <= 0) {
+                continue;
+            }
+
+            array_push($created, ...$this->createSubscriptionPayment($sub, $player, $portion, $method, $description, $userId, $financeAccountId));
+            $left = round($left - $portion, 2);
+        }
+
+        if ($left > 0) {
+            $created[] = $this->createPlayerLevelPayment($player, 'donation', $left, $method, $description, $userId, $financeAccountId);
+        }
+
+        if (count($created) > 1) {
+            Transaction::whereKey(array_map(fn (Transaction $t) => $t->id, $created))
+                ->update(['payment_group' => (string) Str::uuid()]);
+        }
+
+        return $created;
+    }
+
+    /**
+     * The obligations a subscription payment settles, in the order picked, each
+     * once: the payables list, or the single subscription_id / player_subscription_id.
+     * Nothing is assigned when one of them does not apply to the player.
+     *
+     * @return Collection<int, PlayerSubscription>
+     */
+    private function resolvePayables(Player $player, array $validated): Collection
+    {
+        $items = $validated['payables'] ?? [];
+        if ($items === []) {
+            $items = [Arr::only($validated, ['player_subscription_id', 'subscription_id'])];
+        }
+
+        return DB::transaction(fn () => collect($items)
+            ->map(fn (array $item) => $this->resolvePlayerSubscription($player, $item))
+            ->unique('id')
+            ->values());
     }
 
     /**

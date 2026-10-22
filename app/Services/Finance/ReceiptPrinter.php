@@ -6,6 +6,7 @@ use App\Models\ReceiptPrint;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Support\TransactionTitle;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -38,7 +39,8 @@ class ReceiptPrinter
         '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9',
     ];
 
-    public function record(Transaction $transaction, string $format, ?User $user): ReceiptPrint
+    /** @param  Collection<int, Transaction>|null  $lines  the payment group printed with it */
+    public function record(Transaction $transaction, string $format, ?User $user, ?Collection $lines = null): ReceiptPrint
     {
         $recent = ReceiptPrint::query()
             ->where('transaction_id', $transaction->id)
@@ -59,17 +61,47 @@ class ReceiptPrinter
             'copy_number' => ReceiptPrint::query()->where('transaction_number', $transaction->id)->count() + 1,
             'format' => $format,
             'printed_by_user_id' => $user?->id,
-            'snapshot' => $this->snapshot($transaction),
+            'snapshot' => $this->snapshot($transaction, $lines),
         ]));
     }
 
     /**
      * The transaction as the receipt prints it. Reads TransactionTitle::RELATIONS
-     * when loaded; never lazy-loads them.
+     * when loaded; never lazy-loads them. A payment group prints its total, every
+     * subscription it settles, and one entry per line.
      *
+     * @param  Collection<int, Transaction>|null  $lines
      * @return array<string, mixed>
      */
-    public function snapshot(Transaction $transaction): array
+    public function snapshot(Transaction $transaction, ?Collection $lines = null): array
+    {
+        $single = $this->single($transaction);
+        if (! $lines || $lines->count() < 2) {
+            return $single;
+        }
+
+        $lines = $lines->values();
+        $each = $lines->map(fn (Transaction $line) => $this->single($line));
+        $statuses = $each->pluck('status')->unique();
+
+        return [
+            ...$single,
+            'amount' => number_format((float) $lines->sum('amount'), 2, '.', ''),
+            'status' => $statuses->count() === 1 ? $statuses->first() : 'Partial',
+            'player_subscription_id' => $each->pluck('player_subscription_id')->filter()->implode(','),
+            'subscription' => $each->pluck('subscription')->filter()->implode(' + ') ?: null,
+            'title' => $each->pluck('title')->filter()->implode(' + '),
+            'lines' => $lines->map(fn (Transaction $line, int $i) => [
+                'transaction_id' => $line->id,
+                'amount' => $each[$i]['amount'],
+                'title' => $each[$i]['title'],
+                'status' => $each[$i]['status'],
+            ])->all(),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function single(Transaction $transaction): array
     {
         $player = $transaction->related_entity_type === 'Player' && $transaction->relationLoaded('relatedPlayer')
             ? $transaction->relatedPlayer
@@ -99,7 +131,8 @@ class ReceiptPrinter
      */
     public function differences(ReceiptPrint $print, Transaction $current): array
     {
-        $now = $this->snapshot($current);
+        // A grouped receipt is checked against the group as it stands now.
+        $now = $this->snapshot($current, isset($print->snapshot['lines']) ? $current->receiptLines(TransactionTitle::RELATIONS) : null);
         $printed = $print->snapshot;
         $changes = [];
 

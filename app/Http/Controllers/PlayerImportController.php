@@ -29,7 +29,7 @@ class PlayerImportController extends Controller
      * template's header), else by this position — so keep the order.
      * `example` is the template's example cell; an i18n key when `localized`.
      *
-     * @var list<array{key:string, label:string, hint?:string, legacy:list<string>, example:string, localized?:bool}>
+     * @var list<array{key:string, label:string, hint?:string, legacy:list<string>, example:string, localized?:bool, retired?:bool}>
      */
     private const COLUMNS = [
         ['key' => 'firstname', 'label' => 'col.firstname', 'legacy' => ['الاسم'], 'example' => 'محمد'],
@@ -47,7 +47,9 @@ class PlayerImportController extends Controller
         ['key' => 'position', 'label' => 'col.position', 'hint' => 'col.hint.abbr_or_name', 'legacy' => ['المركز (الاختصار أو الاسم)'], 'example' => 'GK'],
         ['key' => 'job', 'label' => 'col.job', 'legacy' => ['المهنة'], 'example' => 'Ingénieur'], // a seeded job (MemberJobSeeder), consistent with "worker"
         ['key' => 'status', 'label' => 'col.player_type', 'legacy' => ['الحالة (student/worker)'], 'example' => 'worker', 'localized' => true],
-        ['key' => 'skill_level', 'label' => 'col.skill_level', 'hint' => 'col.hint.one_to_ten', 'legacy' => ['المستوى (1-10)'], 'example' => '5'],
+        // Retired: no longer in the template or imported, but its slot stays so
+        // older files without a recognised header keep their column positions.
+        ['key' => 'skill_level', 'label' => 'col.skill_level', 'hint' => 'col.hint.one_to_ten', 'legacy' => ['المستوى (1-10)'], 'example' => '5', 'retired' => true],
         ['key' => 'blood_group', 'label' => 'col.blood_group', 'legacy' => ['فصيلة الدم'], 'example' => 'O+'],
         ['key' => 'medical_conditions', 'label' => 'col.medical_conditions', 'legacy' => ['الحالات الصحية'], 'example' => ''],
         ['key' => 'join_year', 'label' => 'col.join_year', 'legacy' => ['سنة الانضمام'], 'example' => ''],
@@ -66,13 +68,15 @@ class PlayerImportController extends Controller
 
     public function template(Request $request): SymfonyResponse
     {
+        $columns = array_values(array_filter(self::COLUMNS, fn (array $c) => ! ($c['retired'] ?? false)));
+
         $example = array_map(
             fn (array $c) => ($c['localized'] ?? false) ? UiLang::get($c['example']) : $c['example'],
-            self::COLUMNS,
+            $columns,
         );
 
         return Export::download(Export::format($request), 'players-import-template',
-            (new ImportColumns(self::COLUMNS))->headers(), [$example]);
+            (new ImportColumns($columns))->headers(), [$example]);
     }
 
     public function store(Request $request, RegisterPlayerService $service): RedirectResponse
@@ -149,7 +153,6 @@ class PlayerImportController extends Controller
                     'member_job_id' => $jobs[NameNormalizer::key($data['job'] ?? null)] ?? null,
                     // Default to worker: only an explicit "student" cell (any language) marks a student.
                     'is_student' => ImportColumns::value($data['status'], self::STATUSES) === 'student',
-                    'skill_level' => $this->clampSkill($data['skill_level']),
                     'health_blood_group_rhesus' => $data['blood_group'] ?: null,
                     'licence_number' => trim((string) ($data['licence_number'] ?? '')) ?: null,
                     'health_medical_conditions' => $data['medical_conditions'] ?: null,
@@ -216,13 +219,6 @@ class PlayerImportController extends Controller
     private function resolvePosition($positions, ?string $value): ?int
     {
         return PositionMatcher::match($positions, $value);
-    }
-
-    private function clampSkill(?string $value): int
-    {
-        $skill = is_numeric($value) ? (int) $value : 5;
-
-        return max(1, min(10, $skill));
     }
 
     private function parseDate(?string $value): ?string

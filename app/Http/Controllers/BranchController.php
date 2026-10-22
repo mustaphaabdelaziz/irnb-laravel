@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Branch;
 use App\Models\Player;
 use App\Models\Team;
+use App\Services\Storage\FileStorageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class BranchController extends Controller
 {
@@ -44,41 +46,83 @@ class BranchController extends Controller
         return back()->with('success', 'flash.branch_members_updated');
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, FileStorageService $files): RedirectResponse
     {
-        Branch::create($this->validated($request));
+        $data = $this->validated($request, $files);
+        $this->savingLogo($data, $files, fn () => Branch::create($data));
 
         return back()->with('success', 'flash.branch_created');
     }
 
-    public function update(Request $request, Branch $branch): RedirectResponse
+    public function update(Request $request, Branch $branch, FileStorageService $files): RedirectResponse
     {
-        $branch->update($this->validated($request, $branch->id));
+        $data = $this->validated($request, $files, $branch->id);
+        $oldLogo = $branch->logo_filename;
+
+        // "Remove" clears the logo without uploading a new one.
+        if (! isset($data['logo_filename']) && $request->boolean('remove_logo')) {
+            $data['logo_url'] = null;
+            $data['logo_filename'] = null;
+        }
+
+        $this->savingLogo($data, $files, fn () => $branch->update($data));
+
+        // Only once the row points elsewhere is the old file safe to drop.
+        if (array_key_exists('logo_filename', $data)) {
+            $files->delete($oldLogo);
+        }
 
         return back()->with('success', 'flash.branch_updated');
     }
 
-    public function destroy(Branch $branch): RedirectResponse
+    public function destroy(Branch $branch, FileStorageService $files): RedirectResponse
     {
         if (Team::where('branch_id', $branch->id)->exists()) {
             return back()->with('error', 'flash.branch_has_teams');
         }
+        $files->delete($branch->logo_filename);
         $branch->delete();
 
         return back()->with('success', 'flash.branch_deleted');
     }
 
     /**
-     * @return array<string, mixed>
+     * Run the save; if it fails, delete the logo just uploaded so it is not left orphaned on disk.
+     *
+     * @param  array<string, mixed>  $data
      */
-    private function validated(Request $request, ?int $ignoreId = null): array
+    private function savingLogo(array $data, FileStorageService $files, callable $save): void
     {
-        return $request->validate([
+        try {
+            $save();
+        } catch (Throwable $e) {
+            $files->delete($data['logo_filename'] ?? null);
+            throw $e;
+        }
+    }
+
+    /**
+     * @return array<string, mixed> the columns to save, with the stored logo when one was uploaded
+     */
+    private function validated(Request $request, FileStorageService $files, ?int $ignoreId = null): array
+    {
+        $data = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:branches,name'.($ignoreId ? ','.$ignoreId : '')],
             'name_ar' => ['nullable', 'string', 'max:255'],
             'name_fr' => ['nullable', 'string', 'max:255'],
             'name_en' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'logo' => ['nullable', 'image', 'max:2048'],
+            'remove_logo' => ['nullable', 'boolean'],
         ]);
+        unset($data['logo'], $data['remove_logo']);
+
+        if ($request->hasFile('logo')) {
+            $stored = $files->storeImage($request->file('logo'), 'branches', 256);
+            $data['logo_url'] = $stored['url'];
+            $data['logo_filename'] = $stored['filename'];
+        }
+
+        return $data;
     }
 }

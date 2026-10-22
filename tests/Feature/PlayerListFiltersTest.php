@@ -34,22 +34,6 @@ class PlayerListFiltersTest extends TestCase
     }
 
     #[Test]
-    public function a_player_can_be_saved_without_a_skill_level(): void
-    {
-        $this->actingAs($this->admin())
-            ->post(route('players.store'), ['firstname' => 'Ali', 'lastname' => 'Benali', 'skill_level' => null])
-            ->assertRedirect()
-            ->assertSessionHasNoErrors();
-
-        $player = Player::firstOrFail();
-        $this->assertNull($player->skill_level);
-
-        $this->put(route('players.update', $player), ['firstname' => 'Ali', 'lastname' => 'Benali', 'skill_level' => null])
-            ->assertRedirect()
-            ->assertSessionHasNoErrors();
-    }
-
-    #[Test]
     public function the_list_filters_by_an_exact_family_name(): void
     {
         $this->player(['firstname' => 'Ali', 'lastname' => 'Ali']);

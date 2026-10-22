@@ -87,7 +87,7 @@ class ImportTemplatesTest extends TestCase
 
         $this->assertContains('Date de naissance (AAAA-MM-JJ)', $rows[0]);
         $this->assertContains('Wilaya (code ou nom)', $rows[0]);
-        $this->assertContains('Niveau (1-10)', $rows[0]);
+        $this->assertNotContains('Niveau (1-10)', $rows[0]); // skill level retired
         $this->assertContains(UiLang::get('male', null, 'fr'), $rows[1]); // localized example value
         $this->assertContains('GK', $rows[1]); // codes stay codes
     }

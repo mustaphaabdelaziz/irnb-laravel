@@ -388,7 +388,10 @@ function formatDate(val) {
                         <PlayerFieldRow icon="calendar" :label="t('join_year')" :value="player.join_year" />
                         <PlayerFieldRow icon="home" :label="t('branches')">
                             <span v-if="player.branches?.length" class="flex flex-wrap gap-1">
-                                <span v-for="b in player.branches" :key="b.id" class="rounded bg-slate-100 px-1.5 py-0.5 text-xs dark:bg-slate-800">{{ b.localized_name || b.name }}</span>
+                                <span v-for="b in player.branches" :key="b.id" class="inline-flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5 text-xs dark:bg-slate-800">
+                                    <img v-if="b.logo_url" :src="b.logo_url" alt="" class="h-4 w-4 rounded-sm object-contain" />
+                                    {{ b.localized_name || b.name }}
+                                </span>
                             </span>
                             <span v-else>—</span>
                         </PlayerFieldRow>

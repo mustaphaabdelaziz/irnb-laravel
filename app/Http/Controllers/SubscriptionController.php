@@ -11,12 +11,14 @@ use App\Models\Subscription;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
 use App\Services\Dashboard\ModuleStats;
+use App\Services\Finance\PruneOutOfBranchObligations;
 use App\Services\Finance\RecalculatePlayerDebtService;
 use App\Support\Export;
 use App\Support\ListFilter;
 use App\Support\UiLang;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -151,10 +153,7 @@ class SubscriptionController extends Controller
     {
         $subscription->load(['categories', 'branches']);
 
-        $playerSubscriptions = PlayerSubscription::query()
-            ->where('subscription_id', $subscription->id)
-            ->with(['player.category', 'transaction'])
-            ->get();
+        $playerSubscriptions = $this->assignedPlayers($subscription);
 
         // Calculate stats
         $total = $playerSubscriptions->count();
@@ -248,6 +247,9 @@ class SubscriptionController extends Controller
             $subscription->update($attributes);
             $subscription->categories()->sync($request->categorySync());
             $subscription->branches()->sync($request->validated('branch_ids') ?? []);
+
+            // Players outside the (new) branches lose the obligation while it is untouched.
+            app(PruneOutOfBranchObligations::class)->forSubscription($subscription);
         });
 
         return redirect()->route('subscriptions.show', $subscription)
@@ -333,7 +335,7 @@ class SubscriptionController extends Controller
             return back()->with('error', 'flash.player_already_subscribed');
         }
 
-        if (! $subscription->appliesToCategory($player->category_id)) {
+        if (! $subscription->appliesTo($player)) {
             return back()->with('error', 'flash.player_not_eligible_for_subscription');
         }
 
@@ -349,12 +351,27 @@ class SubscriptionController extends Controller
         return back()->with('success', ['key' => 'flash.player_added_to_subscription', 'params' => ['name' => $player->fullname]]);
     }
 
+    /**
+     * The players on a subscription, A→Z by full name (lastname first), as the
+     * page lists them. A search narrows them to the matching players.
+     *
+     * @return Collection<int, PlayerSubscription>
+     */
+    private function assignedPlayers(Subscription $subscription, ?string $search = null): Collection
+    {
+        return PlayerSubscription::query()
+            ->where('subscription_id', $subscription->id)
+            ->when($search, fn ($query) => $query->whereHas('player', fn ($player) => $player->search($search)))
+            ->with(['player.category', 'transaction'])
+            ->get()
+            ->sortBy(fn (PlayerSubscription $ps) => $ps->player?->fullname, SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
+    }
+
     public function export(Request $request, Subscription $subscription): SymfonyResponse
     {
-        $playerSubscriptions = PlayerSubscription::query()
-            ->where('subscription_id', $subscription->id)
-            ->with(['player.category', 'transaction'])
-            ->get();
+        $search = trim((string) $request->query('search', ''));
+        $playerSubscriptions = $this->assignedPlayers($subscription, $search !== '' ? $search : null);
 
         // all | paid | unpaid | partial; anything else (an array, a path…) → all.
         $filter = $request->query('filter', 'all');

@@ -88,11 +88,44 @@ class Subscription extends Model
         });
     }
 
+    /**
+     * Subscriptions a player may be charged: open to their category (see
+     * forCategory) and to one of their branches — a subscription with no
+     * branch is open to every branch.
+     */
+    public function scopeOpenTo(Builder $query, Player $player): Builder
+    {
+        $branchIds = $player->branches()->pluck('branches.id');
+
+        return $query->forCategory($player->category_id)
+            ->where(function (Builder $query) use ($branchIds) {
+                $query->whereDoesntHave('branches');
+
+                if ($branchIds->isNotEmpty()) {
+                    $query->orWhereHas('branches', fn (Builder $sub) => $sub->whereIn('branches.id', $branchIds));
+                }
+            });
+    }
+
     public function appliesToCategory(?int $categoryId): bool
     {
         $categoryIds = $this->categories->pluck('id')->map(fn ($id) => (int) $id);
 
         return $categoryIds->isEmpty() || ($categoryId !== null && $categoryIds->contains($categoryId));
+    }
+
+    public function appliesToBranches(iterable $branchIds): bool
+    {
+        $own = $this->branches->pluck('id')->map(fn ($id) => (int) $id);
+
+        return $own->isEmpty() || $own->intersect(collect($branchIds)->map(fn ($id) => (int) $id))->isNotEmpty();
+    }
+
+    /** Whether the player may be put on this subscription: their category and one of their branches. */
+    public function appliesTo(Player $player): bool
+    {
+        return $this->appliesToCategory($player->category_id)
+            && $this->appliesToBranches($player->branches()->pluck('branches.id'));
     }
 
     /**

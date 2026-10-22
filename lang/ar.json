@@ -40,7 +40,7 @@
     "Status": "الحالة",
     "The main position is already listed.": "المركز الرئيسي مُدرَج بالفعل.",
     "This job already exists as \":name\".": "هذه المهنة موجودة بالفعل باسم «:name».",
-    "This subscription does not apply to this player's category.": "هذا الاشتراك لا يخص فئة هذا اللاعب.",
+    "This subscription does not apply to this player's category or branch.": "هذا الاشتراك لا يخص فئة هذا اللاعب أو فرعه.",
     "Title": "العنوان",
     "Total Expense": "إجمالي المصاريف",
     "Total Income": "إجمالي المداخيل",

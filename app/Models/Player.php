@@ -131,9 +131,9 @@ class Player extends Model
     }
 
     /**
-     * Players a subscription applies to: everyone when it has no category,
-     * otherwise the players of its categories. The query-side twin of
-     * Subscription::appliesToCategory().
+     * Players a subscription applies to: those of its categories (everyone when
+     * it has none) who also belong to one of its branches (any branch when it
+     * has none). The query-side twin of Subscription::appliesTo().
      */
     public function scopeEligibleFor(Builder $query, Subscription $subscription): void
     {
@@ -141,6 +141,12 @@ class Player extends Model
 
         if ($categoryIds->isNotEmpty()) {
             $query->whereIn('category_id', $categoryIds);
+        }
+
+        $branchIds = $subscription->branches->pluck('id');
+
+        if ($branchIds->isNotEmpty()) {
+            $query->whereHas('branches', fn (Builder $branch) => $branch->whereIn('branches.id', $branchIds));
         }
     }
 

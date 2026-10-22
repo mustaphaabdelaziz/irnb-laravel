@@ -1636,7 +1636,7 @@
     "flash.player_already_subscribed": "اللاعب مسجَّل بالفعل في هذا الاشتراك.",
     "flash.player_archived": "تمت أرشفة اللاعب بنجاح.",
     "flash.player_created": "تم إنشاء اللاعب بنجاح.",
-    "flash.player_not_eligible_for_subscription": "هذا الاشتراك لا يخص فئة هذا اللاعب.",
+    "flash.player_not_eligible_for_subscription": "هذا الاشتراك لا يخص فئة هذا اللاعب أو فرعه.",
     "flash.player_permanently_deleted": "تم حذف اللاعب نهائياً.",
     "flash.player_restored": "تمت استعادة اللاعب بنجاح.",
     "flash.player_status_created": "تم إنشاء الحالة بنجاح.",

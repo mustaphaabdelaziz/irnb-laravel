@@ -1636,7 +1636,7 @@
     "flash.player_already_subscribed": "Ce joueur est déjà inscrit à cet abonnement.",
     "flash.player_archived": "Joueur archivé avec succès.",
     "flash.player_created": "Joueur créé avec succès.",
-    "flash.player_not_eligible_for_subscription": "Cet abonnement ne s'applique pas à la catégorie de ce joueur.",
+    "flash.player_not_eligible_for_subscription": "Cet abonnement ne s'applique pas à la catégorie ou à la section de ce joueur.",
     "flash.player_permanently_deleted": "Joueur supprimé définitivement.",
     "flash.player_restored": "Joueur restauré avec succès.",
     "flash.player_status_created": "Statut créé avec succès.",

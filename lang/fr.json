@@ -40,7 +40,7 @@
     "Status": "Statut",
     "The main position is already listed.": "Le poste principal est déjà indiqué.",
     "This job already exists as \":name\".": "Ce métier existe déjà sous le nom « :name ».",
-    "This subscription does not apply to this player's category.": "Cet abonnement ne s'applique pas à la catégorie de ce joueur.",
+    "This subscription does not apply to this player's category or branch.": "Cet abonnement ne s'applique pas à la catégorie ou à la section de ce joueur.",
     "Title": "Intitulé",
     "Total Expense": "Dépenses totales",
     "Total Income": "Revenus totaux",

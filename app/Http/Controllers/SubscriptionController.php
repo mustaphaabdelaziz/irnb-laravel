@@ -11,6 +11,7 @@ use App\Models\Subscription;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
 use App\Services\Dashboard\ModuleStats;
+use App\Services\Finance\PruneOutOfBranchObligations;
 use App\Services\Finance\RecalculatePlayerDebtService;
 use App\Support\Export;
 use App\Support\ListFilter;
@@ -246,6 +247,9 @@ class SubscriptionController extends Controller
             $subscription->update($attributes);
             $subscription->categories()->sync($request->categorySync());
             $subscription->branches()->sync($request->validated('branch_ids') ?? []);
+
+            // Players outside the (new) branches lose the obligation while it is untouched.
+            app(PruneOutOfBranchObligations::class)->forSubscription($subscription);
         });
 
         return redirect()->route('subscriptions.show', $subscription)
@@ -331,7 +335,7 @@ class SubscriptionController extends Controller
             return back()->with('error', 'flash.player_already_subscribed');
         }
 
-        if (! $subscription->appliesToCategory($player->category_id)) {
+        if (! $subscription->appliesTo($player)) {
             return back()->with('error', 'flash.player_not_eligible_for_subscription');
         }
 

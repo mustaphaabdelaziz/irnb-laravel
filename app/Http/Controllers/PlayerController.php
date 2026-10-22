@@ -237,7 +237,7 @@ class PlayerController extends Controller
 
     /**
      * The subscription catalog this player may pay, with their status for each:
-     * every subscription open to the player's category (mandatory and optional),
+     * every subscription open to the player's category and branch (mandatory and optional),
      * plus any other subscription they are already assigned to, so existing
      * debts stay payable.
      *
@@ -249,7 +249,7 @@ class PlayerController extends Controller
 
         return Subscription::query()
             ->where(fn ($query) => $query
-                ->forCategory($player->category_id)
+                ->where(fn ($open) => $open->openTo($player))
                 ->orWhereIn('id', $assigned->keys()->filter()))
             ->with(['branches:id', 'categories:id'])
             ->orderByDesc('year')

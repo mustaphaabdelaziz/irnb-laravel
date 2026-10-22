@@ -265,9 +265,9 @@ class PlayerTransactionController extends Controller
                 return $existing;
             }
 
-            if (! $catalog->appliesToCategory($player->category_id)) {
+            if (! $catalog->appliesTo($player)) {
                 throw ValidationException::withMessages([
-                    'subscription_id' => __('This subscription does not apply to this player\'s category.'),
+                    'subscription_id' => __('This subscription does not apply to this player\'s category or branch.'),
                 ]);
             }
 

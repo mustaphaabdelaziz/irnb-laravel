@@ -90,6 +90,31 @@ class AttendanceInjurySpellsTest extends TestCase
     }
 
     #[Test]
+    public function the_club_list_is_the_same_whichever_side_leads_the_scan(): void
+    {
+        [$x] = $this->seedData();
+        $u17 = $this->category('U17');
+        $old = $this->player($u17);
+        foreach ([['2026-09-28', AttendanceStatus::Present], ['2026-10-05', AttendanceStatus::NotTraining], ['2026-10-08', AttendanceStatus::NotTraining], ['2026-10-14', AttendanceStatus::Present]] as [$date, $status]) {
+            $this->mark($this->training($u17, $date), $old, $status, ['reason' => 'injury']);
+        }
+        $leadsWithSessions = fn (InjurySpells $spells): bool => (fn () => $this->sessionLed('2026-10-01'))->call($spells);
+
+        $recent = $this->spells();
+        $this->assertTrue($leadsWithSessions($recent));
+        $bySessions = $recent->club('2026-10-01', '2026-10-31');
+
+        // A year on, the same period is an old one: the scan is led by the players' marks.
+        Carbon::setTestNow('2027-10-20 10:00:00');
+        $later = $this->spells();
+        $this->assertFalse($leadsWithSessions($later));
+
+        $this->assertSame($bySessions, $later->club('2026-10-01', '2026-10-31'));
+        $this->assertNotEmpty($bySessions['current']);
+        $this->assertCount(4, $bySessions['spells']);
+    }
+
+    #[Test]
     public function spells_join_consecutive_injury_marks_and_the_latest_one_is_open(): void
     {
         [$x, $y, $z] = $this->seedData();

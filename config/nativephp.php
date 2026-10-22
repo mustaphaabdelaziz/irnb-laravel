@@ -180,6 +180,8 @@ return [
      */
     'prebuild' => [
         'npm run build',
+        // Fresh build id: keys the desktop OPcache file cache (NativeAppServiceProvider::phpIni).
+        'php artisan app:stamp-build',
     ],
 
     'postbuild' => [

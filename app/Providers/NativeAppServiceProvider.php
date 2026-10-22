@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Native\Desktop\Contracts\ProvidesPhpIni;
 use Native\Desktop\Facades\Window;
 
@@ -142,7 +143,7 @@ class NativeAppServiceProvider implements ProvidesPhpIni
         // Laravel's own `max:10240` validation rule ever runs. NativePHP passes
         // this array straight through as `-d` flags to `php -S`, and all three
         // are PHP_INI_PERDIR, settable via -d.
-        return [
+        $settings = [
             'opcache.enable' => '1',
             'opcache.enable_cli' => '1',
             'opcache.memory_consumption' => '128',
@@ -153,5 +154,55 @@ class NativeAppServiceProvider implements ProvidesPhpIni
             'post_max_size' => '110M',
             'max_file_uploads' => '20',
         ];
+
+        if ($fileCache = $this->opcacheFileCache()) {
+            $settings['opcache.file_cache'] = $fileCache;
+        }
+
+        return $settings;
+    }
+
+    /**
+     * Every launch starts several short-lived PHP processes (optimize, the
+     * server, the queue worker, the scheduler each minute), and OPcache's
+     * memory dies with each one, so each re-parses the ~500 framework files it
+     * loads. A file cache in the user's data folder keeps the compiled scripts
+     * between processes and launches (PHP boot measured 1.5 s → 1.0 s).
+     *
+     * With validate_timestamps=0 a cached script is never re-checked against
+     * its source, so the folder is keyed on the build id: an update starts a
+     * fresh folder and the previous build's is deleted. No build id, or the
+     * debug mode `native:serve` runs in (code being edited) → no file cache.
+     */
+    protected function opcacheFileCache(): ?string
+    {
+        if (config('app.debug')) {
+            return null;
+        }
+
+        $buildId = $this->buildId();
+        if ($buildId === null || ! preg_match('/^[A-Za-z0-9-]+$/', $buildId)) {
+            return null;
+        }
+
+        $root = storage_path('framework'.DIRECTORY_SEPARATOR.'opcache');
+        $dir = $root.DIRECTORY_SEPARATOR.$buildId;
+
+        if (! is_dir($dir)) {
+            foreach (glob($root.DIRECTORY_SEPARATOR.'*', GLOB_ONLYDIR) ?: [] as $old) {
+                File::deleteDirectory($old);
+            }
+            @mkdir($dir, 0777, true);
+        }
+
+        return is_dir($dir) && is_writable($dir) ? $dir : null;
+    }
+
+    /** The id `app:stamp-build` wrote into the bundle before the build. */
+    protected function buildId(): ?string
+    {
+        $id = trim((string) @file_get_contents(base_path('build-id')));
+
+        return $id === '' ? null : $id;
     }
 }

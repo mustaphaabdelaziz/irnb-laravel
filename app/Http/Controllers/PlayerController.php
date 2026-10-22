@@ -61,7 +61,16 @@ class PlayerController extends Controller
             ->select('players.*')
             ->selectRaw('players.outstanding_debt as total_debt')
             ->selectRaw("{$missingSql} as missing_documents_count", $missingBindings)
-            ->with(['category', 'position', 'otherPositions', 'memberJob', 'status', 'wilaya']);
+            // The lookups without their timestamps and descriptions: serialising
+            // those (on the club clock) for every row was most of a long page's time.
+            ->with([
+                'category:id,name,name_ar,name_fr,name_en',
+                'position:id,name,abbreviation,branch_id',
+                'otherPositions:positions.id,positions.name,positions.abbreviation,positions.branch_id',
+                'memberJob:id,name,name_ar,name_fr,name_en',
+                'status:id,name,name_ar,name_fr,name_en,sort_order,is_active,code',
+                'wilaya:id,country_id,external_id,code,name,ar_name,name_ar,name_fr,longitude,latitude',
+            ]);
 
         $this->applyPlayerFilters($query, $request);
 

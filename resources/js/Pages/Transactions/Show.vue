@@ -20,7 +20,11 @@ const { statusLabel } = useStatusLabel();
 const { accountLabel } = useFinanceAccountLabel();
 const { formatMoney } = useFormatMoney();
 
-const props = defineProps({ transaction: { type: Object, required: true } });
+const props = defineProps({
+    transaction: { type: Object, required: true },
+    // Every receipt printed for this transaction (ORIGINAL first), for tracing paper copies.
+    prints: { type: Array, default: () => [] },
+});
 const { can } = useCan();
 const { formatDate } = useFormatDate();
 const isIncome = computed(() => props.transaction.transaction_type === 'income');
@@ -40,7 +44,8 @@ const categoryName = computed(() => props.transaction.finance_category?.localize
                     <h1 class="min-w-0 truncate text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('transaction') }} #{{ transaction.id }}</h1>
                 </div>
                 <div class="flex items-center gap-2">
-                    <IconButton :href="route('transactions.receipt', transaction.id)" external target="_blank" icon="print" :label="t('receipt')" />
+                    <IconButton :href="route('transactions.ticket', transaction.id)" external target="_blank" icon="print" :label="t('receipts.print_ticket')" variant="primary" />
+                    <IconButton :href="route('transactions.receipt', transaction.id)" external target="_blank" icon="document" :label="t('receipts.print_a4')" />
                     <IconButton v-if="can('transactions', 'edit')" :href="route('transactions.edit', transaction.id)" icon="pencil" :label="t('edit')" />
                 </div>
             </div>
@@ -107,6 +112,25 @@ const categoryName = computed(() => props.transaction.finance_category?.localize
                         <span class="text-sm text-slate-600 dark:text-slate-300">{{ formatMoney(ps.amount_paid) }}</span>
                     </div>
                 </div>
+            </div>
+
+            <!-- Printed receipts: who printed which copy, and when -->
+            <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+                <div class="mb-4 flex items-center justify-between gap-2">
+                    <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('receipts.history') }}</h3>
+                    <Link :href="route('receipts.verify')" class="text-sm text-primary-600 hover:underline">{{ t('receipts.verify_title') }}</Link>
+                </div>
+                <p v-if="!prints.length" class="text-sm text-slate-500 dark:text-slate-400">{{ t('receipts.never_printed') }}</p>
+                <ul v-else class="divide-y divide-slate-100 dark:divide-slate-800">
+                    <li v-for="p in prints" :key="p.id" class="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
+                        <span class="font-medium text-slate-900 dark:text-slate-100">
+                            {{ p.copy_number === 1 ? t('receipts.original') : t('receipts.duplicate', { n: p.copy_number }) }}
+                            <span class="ms-1 text-xs text-slate-500 dark:text-slate-400">{{ t(`receipts.format.${p.format}`) }}</span>
+                        </span>
+                        <span class="text-slate-600 dark:text-slate-300">{{ p.printed_at }} · {{ p.printed_by || '—' }}</span>
+                        <span class="font-mono text-xs text-slate-500 dark:text-slate-400" dir="ltr">{{ p.code }}</span>
+                    </li>
+                </ul>
             </div>
         </div>
     </AuthenticatedLayout>

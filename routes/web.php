@@ -61,6 +61,7 @@ use App\Http\Controllers\PlayerTransactionController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicController;
+use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\StorageLocationController;
@@ -217,7 +218,10 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
     // Before the resource so "bulk-destroy" is not read as a {transaction} id.
     Route::post('/transactions/bulk-destroy', [TransactionController::class, 'bulkDestroy'])->name('transactions.bulkDestroy');
     Route::resource('transactions', TransactionController::class);
-    Route::get('/transactions/{transaction}/receipt', [ReportController::class, 'transactionReceipt'])->name('transactions.receipt');
+    // Printed receipts: every print is logged (ORIGINAL, then DUPLICATA n°X) with the code its QR carries.
+    Route::get('/transactions/{transaction}/receipt', [ReceiptController::class, 'a4'])->name('transactions.receipt');
+    Route::get('/transactions/{transaction}/ticket', [ReceiptController::class, 'ticket'])->name('transactions.ticket');
+    Route::get('/receipts/verify', [ReceiptController::class, 'verify'])->name('receipts.verify');
     // The uploaded receipt file — private: this (auth + transactions/view) is the only way to read it.
     Route::get('/transactions/{transaction}/receipt-file', [TransactionController::class, 'receiptFile'])->name('transactions.receipt-file.show');
 

@@ -101,7 +101,8 @@ final class TransactionTitle
         return UiLang::get((string) ($transaction->transaction_type ?: 'transaction'), 'Transaction');
     }
 
-    private static function subscriptionLabel(Transaction $transaction): ?string
+    /** "Abonnement 2025": the subscription line a payment settles, or null. Reads RELATIONS when loaded. */
+    public static function subscriptionLabel(Transaction $transaction): ?string
     {
         if (! $transaction->relationLoaded('playerSubscription') || ! $transaction->playerSubscription) {
             return null;

@@ -166,6 +166,61 @@ class SubscriptionBranchEligibilityTest extends TestCase
     }
 
     #[Test]
+    public function a_player_in_two_branches_gets_the_subscriptions_of_both(): void
+    {
+        $swim = Branch::create(['name' => 'Swim']);
+        $football = Branch::create(['name' => 'Football']);
+        $swimSub = $this->catalogSub('Swim season', [$swim]);
+        $footballSub = $this->catalogSub('Football season', [$football]);
+        $this->catalogSub('Handball season', [Branch::create(['name' => 'Handball'])]);
+        $both = $this->makePlayer($swim);
+        $both->branches()->attach($football->id);
+
+        $this->actingAs($this->admin())
+            ->get(route('players.show', $both))
+            ->assertInertia(fn ($page) => $this->assertSame(
+                ['Football season', 'Swim season'],
+                collect($page->toArray()['props']['availableSubscriptions'])->pluck('name')->sort()->values()->all(),
+            ));
+
+        foreach ([$swimSub, $footballSub] as $sub) {
+            $this->get(route('subscriptions.show', $sub))
+                ->assertInertia(fn ($page) => $this->assertSame(
+                    [$both->id],
+                    collect($page->toArray()['props']['availablePlayers'])->pluck('id')->all(),
+                ));
+
+            $this->post(route('subscriptions.assignOne', $sub), ['player_id' => $both->id])
+                ->assertSessionHas('success');
+        }
+
+        $this->assertSame(2, PlayerSubscription::where('player_id', $both->id)->count());
+    }
+
+    #[Test]
+    public function a_player_still_in_one_of_the_branches_keeps_the_obligation(): void
+    {
+        $swim = Branch::create(['name' => 'Swim']);
+        $football = Branch::create(['name' => 'Football']);
+        $sub = $this->catalogSub('Season', [$swim, $football]);
+        $both = $this->makePlayer($swim);
+        $both->branches()->attach($football->id);
+        $obligation = $this->assign($both, $sub);
+
+        // Swim dropped from the subscription: the player still plays football.
+        $this->actingAs($this->admin())
+            ->put(route('subscriptions.update', $sub), [
+                'kind' => 'annual', 'name' => 'Season', 'year' => $sub->year,
+                'amount_student' => 1500, 'amount_worker' => 1500,
+                'is_mandatory' => false, 'is_active' => true,
+                'branch_ids' => [$football->id],
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertModelExists($obligation);
+    }
+
+    #[Test]
     public function changing_the_branches_removes_untouched_obligations_of_players_left_outside(): void
     {
         $swim = Branch::create(['name' => 'Swim']);

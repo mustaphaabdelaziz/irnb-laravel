@@ -296,22 +296,32 @@ class Player extends Model
      */
     public function getFullnameAttribute(): string
     {
+        return self::fullnameOf($this->lastname, $this->firstname, $this->nickname, $this->father, $this->grandfather, $this->gender);
+    }
+
+    /**
+     * Player::fullname from the NAME_COLUMNS values, for long lists read as
+     * plain rows (hydrating a model per row cost more than the rest of the
+     * page). Same rule as the accessor, which uses it.
+     */
+    public static function fullnameOf(?string $lastname, ?string $firstname, ?string $nickname, ?string $father, ?string $grandfather, ?string $gender): string
+    {
         $parts = [
-            $this->lastname,
-            $this->firstname,
+            $lastname,
+            $firstname,
         ];
 
-        if ($this->nickname) {
-            $parts[] = '('.$this->nickname.')';
+        if ($nickname) {
+            $parts[] = '('.$nickname.')';
         }
 
         $full = trim(implode(' ', array_filter($parts)));
 
-        if ($this->father) {
-            $full .= (strtolower(trim((string) $this->gender)) === 'female' ? ' بنت ' : ' بن ').$this->father;
+        if ($father) {
+            $full .= (strtolower(trim((string) $gender)) === 'female' ? ' بنت ' : ' بن ').$father;
 
-            if ($this->grandfather) {
-                $full .= ' بن '.$this->grandfather;
+            if ($grandfather) {
+                $full .= ' بن '.$grandfather;
             }
         }
 

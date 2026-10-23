@@ -4,6 +4,7 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import IconButton from '@/Components/IconButton.vue';
+import BranchSwitch from '@/Components/Attendance/BranchSwitch.vue';
 import { useCan } from '@/Composables/useCan';
 import { pct } from '@/lib/attendanceStats';
 
@@ -15,6 +16,8 @@ import { pct } from '@/lib/attendanceStats';
 const props = defineProps({
     categories: { type: Array, default: () => [] },
     categoryId: { type: Number, default: null },
+    branches: { type: Array, default: () => [] },
+    branchId: { type: Number, default: null },
     period: { type: Object, required: true }, // { type, month, season, from, to, label }
     seasons: { type: Array, default: () => [] }, // [{ start_year, label }]
     rows: { type: Array, default: () => [] },
@@ -26,12 +29,13 @@ const { can } = useCan();
 
 // The page's filters as they travel in a URL; `changes` overrides them.
 function query(changes = {}) {
-    const q = { category_id: props.categoryId, type: props.period.type, ...changes };
+    const q = { category_id: props.categoryId, ...(props.branchId ? { branch_id: props.branchId } : {}), type: props.period.type, ...changes };
     if (q.type === 'season') q.season = changes.season ?? props.period.season;
     else q.month = changes.month ?? props.period.month;
     return q;
 }
 const visit = (changes) => router.get(route('attendance.ranking'), query(changes), { preserveScroll: true, replace: true });
+const profileHref = (row) => route('players.show', { player: row.player_id, ...(props.branchId ? { attendance_branch: props.branchId } : {}) });
 
 // Certificates (PDF, new tab): the podium, or one listed player.
 const podiumHref = computed(() => route('attendance.certificates', query()));
@@ -64,6 +68,7 @@ const th = 'p-2 font-semibold';
 
         <div class="space-y-5">
             <div class="flex flex-wrap items-center gap-3 print:hidden">
+                <BranchSwitch :branches="branches" :branch-id="branchId" @switch="(id) => visit({ branch_id: id })" />
                 <select :value="categoryId ?? ''" :class="input" :aria-label="t('att.category')" @change="visit({ category_id: Number($event.target.value) })">
                     <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
                 </select>
@@ -100,7 +105,7 @@ const th = 'p-2 font-semibold';
                                 <span v-else class="tabular-nums text-slate-500">{{ row.rank }}</span>
                             </td>
                             <td class="whitespace-nowrap p-2 font-medium">
-                                <Link v-if="can('players', 'view')" :href="route('players.show', row.player_id)" class="text-primary-700 hover:underline dark:text-primary-300">{{ row.name }}</Link>
+                                <Link v-if="can('players', 'view')" :href="profileHref(row)" class="text-primary-700 hover:underline dark:text-primary-300">{{ row.name }}</Link>
                                 <template v-else>{{ row.name }}</template>
                             </td>
                             <td class="p-2 text-end tabular-nums">{{ row.expected }}</td>

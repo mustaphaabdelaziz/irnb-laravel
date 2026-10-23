@@ -12,6 +12,7 @@ import { useAttendanceCodes } from '@/Composables/useAttendanceCodes';
 const props = defineProps({
     category: { type: Object, required: true },
     month: { type: String, required: true },
+    branch: { type: Object, default: null }, // { id, name }; null when the club has no branch
     sessions: { type: Array, default: () => [] },
     rows: { type: Array, default: () => [] },
     cells: { type: Object, default: () => ({}) }, // { playerId: { sessionId: code } }
@@ -31,9 +32,10 @@ const inRoster = (pid, sid) => values[pid] !== undefined && sid in values[pid];
 const dayLabel = (s) => new Date(`${s.date}T00:00:00`).toLocaleDateString(lang.value, { weekday: 'short', day: 'numeric' });
 const monthLabel = computed(() => new Date(`${props.month}-01T00:00:00`).toLocaleDateString(lang.value, { month: 'long', year: 'numeric' }));
 
-// Paper sheets for this category and month: blank, or with the codes already recorded.
-const sheetHref = computed(() => route('attendance.sheets.month', { category_id: props.category.id, month: props.month }));
-const filledSheetHref = computed(() => route('attendance.sheets.month', { category_id: props.category.id, month: props.month, filled: 1 }));
+// Paper sheets for this branch, category and month: blank, or with the codes already recorded.
+const branchParam = computed(() => (props.branch ? { branch_id: props.branch.id } : {}));
+const sheetHref = computed(() => route('attendance.sheets.month', { category_id: props.category.id, month: props.month, ...branchParam.value }));
+const filledSheetHref = computed(() => route('attendance.sheets.month', { category_id: props.category.id, month: props.month, filled: 1, ...branchParam.value }));
 
 // The legend comes from the configured codes: late / left early show a sample with minutes.
 const legendCode = (s) => code(s) + (takesMinutes(s) ? '15' : '');
@@ -89,7 +91,7 @@ function save() {
         .filter((c) => Object.keys(c.codes).length);
     if (!columns.length) return;
     sent.value = columns.map((c) => c.session_id);
-    router.post(route('attendance.grid.save'), { columns }, { preserveScroll: true, preserveState: 'errors', onSuccess: () => dirty.clear() });
+    router.post(route('attendance.grid.save'), { columns, ...branchParam.value }, { preserveScroll: true, preserveState: 'errors', onSuccess: () => dirty.clear() });
 }
 </script>
 
@@ -99,8 +101,8 @@ function save() {
         <template #header>
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
-                    <Link :href="route('attendance.index', { category_id: category.id, month })" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 rtl:rotate-180"><Icon name="back" /></Link>
-                    <h1 class="text-lg font-bold capitalize text-slate-900 dark:text-slate-100">{{ t('att.grid') }} · {{ category.name }} · {{ monthLabel }}</h1>
+                    <Link :href="route('attendance.index', { category_id: category.id, month, ...branchParam })" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 rtl:rotate-180"><Icon name="back" /></Link>
+                    <h1 class="text-lg font-bold capitalize text-slate-900 dark:text-slate-100">{{ t('att.grid') }}<template v-if="branch"> · {{ branch.name }}</template> · {{ category.name }} · {{ monthLabel }}</h1>
                 </div>
                 <div class="flex flex-wrap items-center gap-2 print:hidden">
                     <IconButton :href="sheetHref" external target="_blank" :title="t('att.sheet.print_hint')" icon="print" :label="t('att.sheet.print')" />

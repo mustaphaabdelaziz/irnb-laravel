@@ -6,6 +6,7 @@ use App\Enums\AttendanceStatus;
 use App\Enums\SessionKind;
 use App\Enums\SessionState;
 use App\Models\Attendance;
+use App\Models\Branch;
 use App\Models\Category;
 use App\Models\Player;
 use App\Models\TrainingSchedule;
@@ -95,5 +96,24 @@ class AttendanceMonthSheetTest extends TestCase
 
         $this->assertSame([$joint->id], $sheet['sessions']->modelKeys());
         $this->assertSame([$a->id, $b->id], $sheet['players']->modelKeys());
+    }
+
+    #[Test]
+    public function a_branch_sheet_lists_only_that_branchs_sessions_and_members(): void
+    {
+        $u15 = $this->category();
+        $foot = Branch::create(['name' => 'Foot']);
+        $swim = Branch::create(['name' => 'Swim']);
+        [$footballer, $swimmer] = [$this->player($u15), $this->player($u15)];
+        $foot->players()->attach($footballer->id);
+        $swim->players()->attach($swimmer->id);
+        $footSession = $this->training($u15, '2026-10-05', ['branch_id' => $foot->id]);
+        $swimSession = $this->training($u15, '2026-10-05', ['branch_id' => $swim->id]);
+
+        $sheet = app(MonthSheet::class)->build($u15->id, 2026, 10, $swim->id);
+
+        $this->assertSame([$swimSession->id], $sheet['sessions']->modelKeys());
+        $this->assertSame([$swimmer->id], $sheet['players']->modelKeys());
+        $this->assertEqualsCanonicalizing([$footSession->id, $swimSession->id], app(MonthSheet::class)->build($u15->id, 2026, 10)['sessions']->modelKeys());
     }
 }

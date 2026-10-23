@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\PlayerStatus;
 use App\Models\TrainingSchedule;
 use App\Services\Attendance\AttendanceStatusCatalog;
+use App\Services\Attendance\BranchChoice;
 use App\Services\Attendance\CalendarFeed;
 use App\Services\Attendance\PreseasonProgress;
 use App\Services\Attendance\SessionGenerator;
@@ -25,7 +26,7 @@ use Inertia\Response;
  * its name) with a `view` query parameter. Month shows one category; the
  * other views show every category and first generate the shown range for
  * all of them (the generator is idempotent, and skips months already
- * generated from the current inputs). Every view shows one branch (see branchId()).
+ * generated from the current inputs). Every view shows one branch (see BranchChoice).
  */
 class AttendanceCalendarController extends Controller
 {
@@ -63,7 +64,7 @@ class AttendanceCalendarController extends Controller
             'kind' => ['nullable', Rule::enum(SessionKind::class)],
             'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
         ]);
-        $data['branch_id'] = $this->branchId($request, $data);
+        $data['branch_id'] = BranchChoice::resolve($request, $data['branch_id'] ?? null);
         $view = $data['view'] ?? 'month';
         // Lazy, so a partial reload while navigating a view skips them (see Index.vue).
         $list = null;
@@ -189,30 +190,6 @@ class AttendanceCalendarController extends Controller
             'events' => $this->feed->timeline($fromDate, $toDate, $categoryId, $kind, $data['branch_id']),
             'branchId' => $data['branch_id'],
         ];
-    }
-
-    /**
-     * The branch on screen: the one asked for (remembered in the session),
-     * else the remembered one if it still exists, else the first; null when
-     * the club has no branch (every session then shows).
-     */
-    private function branchId(Request $request, array $data): ?int
-    {
-        if (isset($data['branch_id'])) {
-            $request->session()->put('attendance.branch_id', (int) $data['branch_id']);
-
-            return (int) $data['branch_id'];
-        }
-        $remembered = $request->session()->get('attendance.branch_id');
-        if ($remembered !== null && Branch::whereKey($remembered)->exists()) {
-            return (int) $remembered;
-        }
-
-        $request->session()->forget('attendance.branch_id');
-
-        $first = Branch::orderBy('id')->value('id');
-
-        return $first === null ? null : (int) $first;
     }
 
     private function monthAnchor(array $data): CarbonImmutable

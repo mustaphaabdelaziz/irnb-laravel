@@ -6,6 +6,7 @@ use App\Enums\AbsenceReason;
 use App\Enums\AttendanceStatus;
 use App\Enums\SessionState;
 use App\Models\Attendance;
+use App\Models\Branch;
 use App\Models\TrainingSchedule;
 use App\Models\TrainingSession;
 use App\Support\AttendanceSettings;
@@ -152,5 +153,37 @@ class AttendanceGridTest extends TestCase
         $mark = $session->attendances()->sole();
         $this->assertSame(AttendanceStatus::Late->value, $mark->status);
         $this->assertSame(15, $mark->minutes);
+    }
+
+    #[Test]
+    public function the_grid_shows_one_branch_and_saves_only_its_columns(): void
+    {
+        $u15 = $this->category();
+        $foot = Branch::create(['name' => 'Foot']);
+        $swim = Branch::create(['name' => 'Swim']);
+        $a = $this->player($u15);
+        $foot->players()->attach($a->id);
+        $slot = ['category_id' => $u15->id, 'date' => '2026-10-05', 'start_time' => '18:00', 'end_time' => '19:30', 'kind' => 'regular', 'state' => 'planned'];
+        $footSession = TrainingSession::create(['branch_id' => $foot->id] + $slot);
+        $swimSession = TrainingSession::create(['branch_id' => $swim->id] + $slot);
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->get(route('attendance.grid', ['category_id' => $u15->id, 'month' => '2026-10', 'branch_id' => $swim->id]))
+            ->assertInertia(fn (Assert $page) => $page->has('sessions', 1)->where('sessions.0.id', $swimSession->id)->where('branch.name', 'Swim'));
+        // No branch asked: the one remembered from the calendar (here, the grid just visited).
+        $this->actingAs($admin)->get(route('attendance.grid', ['category_id' => $u15->id, 'month' => '2026-10']))
+            ->assertInertia(fn (Assert $page) => $page->has('sessions', 1)->where('sessions.0.id', $swimSession->id));
+        $this->actingAs($admin)->get(route('attendance.grid', ['category_id' => $u15->id, 'month' => '2026-10', 'branch_id' => $foot->id]))
+            ->assertInertia(fn (Assert $page) => $page->has('sessions', 1)->where('sessions.0.id', $footSession->id)->has('rows', 1));
+
+        $this->actingAs($admin)->post(route('attendance.grid.save'), [
+            'branch_id' => $foot->id, 'columns' => [['session_id' => $swimSession->id, 'codes' => [$a->id => 'P']]],
+        ])->assertSessionHasErrors('columns.0.session_id');
+        $this->actingAs($admin)->post(route('attendance.grid.save'), [
+            'branch_id' => $foot->id, 'columns' => [['session_id' => $footSession->id, 'codes' => [$a->id => 'P']]],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(1, Attendance::where('training_session_id', $footSession->id)->count());
+        $this->assertSame(0, Attendance::where('training_session_id', $swimSession->id)->count());
     }
 }

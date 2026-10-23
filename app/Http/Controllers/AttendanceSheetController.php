@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Enums\AbsenceReason;
 use App\Enums\SessionState;
+use App\Models\Branch;
 use App\Models\Category;
 use App\Models\Player;
 use App\Models\TrainingSession;
 use App\Services\Attendance\AttendanceStatusCatalog;
+use App\Services\Attendance\BranchChoice;
 use App\Services\Attendance\MonthSheet;
 use App\Services\Attendance\Roster;
 use App\Services\Pdf\ClubHeader;
@@ -37,18 +39,20 @@ class AttendanceSheetController extends Controller
 
     public function __construct(private readonly PdfService $pdf) {}
 
-    /** One category's month: players × sessions, A4 landscape (right-to-left in Arabic). */
+    /** One category's month in one branch (BranchChoice, as on the calendar): players × sessions, A4 landscape (right-to-left in Arabic). */
     public function month(Request $request, MonthSheet $sheet, AttendanceStatusCatalog $catalog): Response
     {
         $data = $request->validate([
             'category_id' => ['required', 'integer', 'exists:categories,id'],
             'month' => ['required', 'date_format:Y-m'],
             'filled' => ['nullable', 'boolean'],
+            'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
         ]);
         $category = Category::findOrFail($data['category_id']);
+        $branch = Branch::find(BranchChoice::resolve($request, $data['branch_id'] ?? null));
         $anchor = CarbonImmutable::createFromFormat('!Y-m', $data['month']);
         $locale = app()->getLocale();
-        ['sessions' => $sessions, 'cells' => $cells, 'players' => $players] = $sheet->build($category->id, $anchor->year, $anchor->month);
+        ['sessions' => $sessions, 'cells' => $cells, 'players' => $players] = $sheet->build($category->id, $anchor->year, $anchor->month, $branch?->id);
 
         $columns = $sessions->map(fn (TrainingSession $s) => [
             'id' => $s->id,
@@ -83,6 +87,7 @@ class AttendanceSheetController extends Controller
         $html = view('pdf.attendance-month-sheet', [
             'club' => ClubHeader::data(),
             'category' => ['id' => $category->id, 'name' => $category->localized_name],
+            'branch' => $branch?->localized_name,
             'monthLabel' => $anchor->locale($locale)->translatedFormat('F Y'),
             'season' => Season::forDate($anchor)->label(),
             'groups' => $groups,

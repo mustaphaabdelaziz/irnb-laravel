@@ -6,6 +6,7 @@ use App\Enums\AttendanceStatus;
 use App\Enums\SessionKind;
 use App\Enums\SessionState;
 use App\Models\Attendance;
+use App\Models\Branch;
 use App\Models\Category;
 use App\Models\Player;
 use App\Models\Role;
@@ -409,5 +410,21 @@ class AttendanceMonthSheetPdfTest extends TestCase
 
         $this->actingAs($this->userWith(['attendance' => ['view']]))->get($this->url($u15))->assertOk();
         $this->actingAs($this->userWith(['players' => ['view']]))->get($this->url($u15))->assertForbidden();
+    }
+
+    #[Test]
+    public function the_sheet_names_its_branch_and_lists_only_that_branchs_sessions(): void
+    {
+        $u15 = $this->category('U15');
+        $foot = Branch::create(['name' => 'Football']);
+        $swim = Branch::create(['name' => 'Swimming']);
+        $this->training($u15, '2026-10-05', ['branch_id' => $foot->id, 'title' => 'Passing drill']);
+        $this->training($u15, '2026-10-05', ['branch_id' => $swim->id, 'title' => 'Butterfly']);
+
+        $html = $this->sheetHtml($u15, 'fr', ['branch_id' => $swim->id]);
+
+        $this->assertStringContainsString('<b>Swimming</b>', $html);
+        $this->assertStringContainsString('Butterfly', $html);
+        $this->assertStringNotContainsString('Passing drill', $html);
     }
 }

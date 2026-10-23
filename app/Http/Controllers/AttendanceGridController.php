@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 use App\Enums\AbsenceReason;
 use App\Enums\AttendanceStatus;
 use App\Enums\SessionState;
+use App\Models\Branch;
 use App\Models\Category;
 use App\Models\Player;
 use App\Models\TrainingSession;
 use App\Services\Attendance\AttendanceCode;
 use App\Services\Attendance\AttendanceStatusCatalog;
+use App\Services\Attendance\BranchChoice;
 use App\Services\Attendance\MarkRecorder;
 use App\Services\Attendance\MonthSheet;
 use App\Services\Attendance\Roster;
@@ -17,6 +19,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -27,7 +30,8 @@ use Inertia\Response;
  * session's roster (frozen marks, or the expected roster before the first
  * save). A joint pre-season session shows in the grid of each of its
  * categories with its whole roster, since saving a column replaces the
- * session's full set of marks.
+ * session's full set of marks. Like the calendar, the grid shows one
+ * branch (BranchChoice).
  */
 class AttendanceGridController extends Controller
 {
@@ -36,14 +40,17 @@ class AttendanceGridController extends Controller
         $data = $request->validate([
             'category_id' => ['required', 'integer', 'exists:categories,id'],
             'month' => ['required', 'date_format:Y-m'],
+            'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
         ]);
         $category = Category::findOrFail($data['category_id']);
+        $branch = Branch::find(BranchChoice::resolve($request, $data['branch_id'] ?? null));
         $anchor = CarbonImmutable::createFromFormat('!Y-m', $data['month']);
-        ['sessions' => $sessions, 'cells' => $cells, 'players' => $players] = $sheet->build($category->id, $anchor->year, $anchor->month);
+        ['sessions' => $sessions, 'cells' => $cells, 'players' => $players] = $sheet->build($category->id, $anchor->year, $anchor->month, $branch?->id);
 
         return Inertia::render('Attendance/Grid', [
             'category' => ['id' => $category->id, 'name' => $category->localized_name],
             'month' => $anchor->format('Y-m'),
+            'branch' => $branch ? ['id' => $branch->id, 'name' => $branch->localized_name] : null,
             'sessions' => $sessions->map(fn (TrainingSession $s) => [
                 'id' => $s->id, 'date' => $s->date, 'start_time' => $s->start_time, 'kind' => $s->kind->value, 'state' => $s->state->value,
             ])->values(),
@@ -53,11 +60,18 @@ class AttendanceGridController extends Controller
         ]);
     }
 
+    /**
+     * With `branch_id` (the grid's branch), a column whose session is in
+     * another branch fails like an unknown session. Without it any session
+     * saves: each column's roster comes from its own session's branch.
+     */
     public function save(Request $request, MarkRecorder $recorder, Roster $roster, AttendanceStatusCatalog $catalog): RedirectResponse
     {
+        $request->validate(['branch_id' => ['nullable', 'integer', 'exists:branches,id']]);
+        $branchId = $request->filled('branch_id') ? (int) $request->input('branch_id') : null;
         $data = $request->validate([
             'columns' => ['required', 'array', 'min:1'],
-            'columns.*.session_id' => ['required', 'integer', 'distinct', 'exists:training_sessions,id'],
+            'columns.*.session_id' => ['required', 'integer', 'distinct', Rule::exists('training_sessions', 'id')->when($branchId !== null, fn ($rule) => $rule->where('branch_id', $branchId))],
             'columns.*.codes' => ['required', 'array', 'min:1'],
             'columns.*.codes.*' => ['nullable', 'string', 'max:12'],
         ]);

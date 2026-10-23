@@ -35,8 +35,8 @@ const { t } = useI18n();
 const { can } = useCan();
 const today = dateKey(new Date());
 
-// The blank month sheet for the category and month on screen (month view only).
-const sheetHref = computed(() => (props.categoryId ? route('attendance.sheets.month', { category_id: props.categoryId, month: props.month }) : null));
+// The blank month sheet for the category, month and branch on screen (month view only).
+const sheetHref = computed(() => (props.categoryId ? route('attendance.sheets.month', clean({ category_id: props.categoryId, month: props.month, branch_id: props.branchId })) : null));
 
 // Empty values are dropped so the URL only carries what is set. The category
 // travels along unless a view sets it (null = every category).
@@ -87,7 +87,7 @@ function openCreate(kind, date = today) {
                 <h1 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('attendance') }}</h1>
                 <div class="flex gap-2 print:hidden">
                     <IconButton :href="route('attendance.stats')" icon="dashboard" :label="t('att.statistics')" />
-                    <IconButton v-if="categoryId" :href="route('attendance.grid', { category_id: categoryId, month })" icon="menu" :label="t('att.grid')" />
+                    <IconButton v-if="categoryId" :href="route('attendance.grid', clean({ category_id: categoryId, month, branch_id: branchId }))" icon="menu" :label="t('att.grid')" />
                     <IconButton v-if="categoryId && view === 'month'" :href="sheetHref" external target="_blank" :title="t('att.sheet.print_hint')" icon="print" :label="t('att.sheet.print')" />
                     <IconButton v-if="can('attendance', 'edit')" :href="route('attendance.settings')" icon="settings" :label="t('att.settings')" />
                 </div>

@@ -9,7 +9,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
 /**
- * One category's month as players × sessions, shared by the month grid and
+ * One category's month (of one branch, when given) as players × sessions, shared by the month grid and
  * the printed month sheet so paper and screen always list the same people.
  * A cell exists only where the player is on that session's list: the frozen
  * marks once saved, else the expected roster on the session's date. A joint
@@ -28,16 +28,18 @@ final class MonthSheet
 
     /**
      * Generates the month first (idempotent), like opening it on the calendar.
+     * $branchId null = every branch's sessions (a club without branches).
      *
      * @return array{sessions: Collection<int, TrainingSession>, cells: array<int, array<int, string>>, players: Collection<int, Player>}
      */
-    public function build(int $categoryId, int $year, int $month): array
+    public function build(int $categoryId, int $year, int $month, ?int $branchId = null): array
     {
         $this->generator->forMonth($categoryId, $year, $month);
         $first = CarbonImmutable::create($year, $month, 1);
 
         $sessions = TrainingSession::includingCategory($categoryId)
             ->where('state', '!=', SessionState::Cancelled->value)
+            ->when($branchId !== null, fn ($q) => $q->where('branch_id', $branchId))
             ->whereBetween('date', [$first->toDateString(), $first->endOfMonth()->toDateString()])
             ->with(['attendances', 'categories'])
             ->orderBy('date')->orderBy('start_time')->orderBy('id')

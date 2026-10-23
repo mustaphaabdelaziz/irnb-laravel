@@ -115,16 +115,28 @@ replacing the Move dialog and the pre-season categories dialog. Endpoint
 
 ### Reports
 
-Branch filter (multi-select pattern used elsewhere; default = all branches) on:
+Owner decision 2026-10-23 (replaces the earlier "filter, default all branches"): **a player in
+two branches has separate attendance statistics per branch.** Every number about a player —
+score, counts, missed time, streaks, at-risk flags, ranking, injury spells, pre-season progress —
+is computed from the marks of one branch's sessions only. A mark belongs to a branch through its
+session's `branch_id`; null-branch (club-wide) sessions count for "no branch" only, which exists
+only in a club without branches.
 
-- stats page and its export, player attendance card stays all branches;
-- ranking + certificates: ranked within branch + category;
-- alerts / at-risk list and export, dashboard at-risk card stays all branches;
-- marking grid and monthly paper sheets (single branch, from the calendar switch) — done in
-  package 1;
-- session paper sheet shows the branch name.
-
-A mark counts for a branch through its session's `branch_id`.
+- **Report pages** (statistics + export, ranking + certificates, at-risk alerts + export,
+  injuries): the same branch switch as the calendar (one branch at a time, shared remembered
+  choice `attendance.branch_id` via `BranchChoice`; no "all branches" view). A two-sport player
+  appears in each branch's pages with that branch's marks only.
+- **Player profile attendance card**: one tab per branch the player has marks or membership in
+  (no tabs for a one-branch player); each tab has its own tiles, monthly chart, sessions list,
+  at-risk banner, injury list and pre-season progress (that branch's target).
+- **Injury spells per branch**: a football spell ends only with a later football mark; a swimming
+  mark never ends it. `injury_notes` gain `branch_id` (backfilled like the other tables; unique
+  key gains the branch with a short explicit name ≤ 64 chars).
+- **Player PDF report and parent letter**: one per branch, printed from the card's current tab.
+- **Dashboard at-risk card**: counts distinct players flagged in any branch (a player flagged in
+  two branches counts once); its list links to the branch where the player is flagged.
+- Marking grid and monthly paper sheets: done in package 1. Session paper sheet shows the branch
+  name.
 
 ## Delivery
 

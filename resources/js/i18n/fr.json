@@ -1876,6 +1876,8 @@
     "no": "Non",
     "no_active_rentals": "Aucune location active trouvée",
     "no_available_players": "Aucun joueur disponible.",
+    "subscription_show_outside_category": "Afficher aussi les joueurs de ses branches d'autres catégories",
+    "subscription_outside_category": "Autre catégorie",
     "no_backups": "Aucune sauvegarde pour le moment.",
     "no_branch": "Sans section",
     "no_branches_hint": "Aucune section pour l'instant. Créez-en dans",

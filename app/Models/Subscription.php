@@ -121,26 +121,33 @@ class Subscription extends Model
         return $own->isEmpty() || $own->intersect(collect($branchIds)->map(fn ($id) => (int) $id))->isNotEmpty();
     }
 
-    /** Whether the player may be put on this subscription: their category and one of their branches. */
-    public function appliesTo(Player $player): bool
+    /**
+     * Whether the player may be put on this subscription: their category and one
+     * of their branches. $anyCategory waives the category (a hand-picked player
+     * from another category); the branch must still match.
+     */
+    public function appliesTo(Player $player, bool $anyCategory = false): bool
     {
-        return $this->appliesToCategory($player->category_id)
+        return ($anyCategory || $this->appliesToCategory($player->category_id))
             && $this->appliesToBranches($player->branches()->pluck('branches.id'));
     }
 
     /**
      * What this subscription charges the player: the student or the worker rate,
-     * taken from their category's override when it sets one.
+     * taken from their category's override when it sets one. A player from
+     * outside its categories pays the price of its one category when it has
+     * just one, the default otherwise.
      */
     public function amountFor(Player $player): float
     {
         $column = $player->is_student ? 'amount_student' : 'amount_worker';
 
-        $override = $player->category_id
-            ? $this->categories->firstWhere('id', $player->category_id)?->pivot?->{$column}
+        $category = $player->category_id
+            ? $this->categories->firstWhere('id', $player->category_id)
             : null;
+        $category ??= $this->categories->count() === 1 ? $this->categories->first() : null;
 
-        return (float) ($override ?? $this->{$column});
+        return (float) ($category?->pivot?->{$column} ?? $this->{$column});
     }
 
     /** Put a player on this subscription, owing the rate for their status. */

@@ -4,7 +4,7 @@ import Badge from '@/Components/Badge.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import ExportMenu from '@/Components/ExportMenu.vue';
 import IconButton from '@/Components/IconButton.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { ref, computed } from 'vue';
@@ -20,6 +20,7 @@ const props = defineProps({
     playerSubscriptions: Array,
     categories: Array,
     availablePlayers: Array,
+    outsidePlayers: { type: Array, default: null },
     stats: Object,
 });
 
@@ -86,22 +87,43 @@ const showAddPlayerModal = ref(false);
 const playerSearch = ref('');
 const addPlayerForm = useForm({ player_id: '' });
 
+// Players of the subscription's branches but another category (a player has
+// one category for all their branches), fetched the first time it is ticked.
+const showOutside = ref(false);
+const loadingOutside = ref(false);
+
+function toggleOutside() {
+    if (!showOutside.value || props.outsidePlayers) return;
+    loadingOutside.value = true;
+    router.reload({ only: ['outsidePlayers'], onFinish: () => { loadingOutside.value = false; } });
+}
+
+const pickablePlayers = computed(() => [
+    ...(props.availablePlayers ?? []),
+    ...(showOutside.value ? (props.outsidePlayers ?? []).map(p => ({ ...p, outside: true })) : []),
+]);
+
 const filteredAvailable = computed(() => {
     const q = playerSearch.value.trim().toLowerCase();
-    if (!q) return props.availablePlayers ?? [];
-    return (props.availablePlayers ?? []).filter(p =>
+    if (!q) return pickablePlayers.value;
+    return pickablePlayers.value.filter(p =>
         `${p.fullname} ${p.membership_id}`.toLowerCase().includes(q)
     );
 });
 
+const pickedPlayer = computed(() => pickablePlayers.value.find(p => p.id === addPlayerForm.player_id));
+
+function closeAddPlayer() {
+    showAddPlayerModal.value = false;
+    showOutside.value = false;
+    playerSearch.value = '';
+    addPlayerForm.reset();
+}
+
 function addSinglePlayer() {
-    addPlayerForm.post(route('subscriptions.assignOne', props.subscription.id), {
-        onSuccess: () => {
-            showAddPlayerModal.value = false;
-            playerSearch.value = '';
-            addPlayerForm.reset();
-        },
-    });
+    addPlayerForm
+        .transform(data => ({ ...data, outside_category: !!pickedPlayer.value?.outside }))
+        .post(route('subscriptions.assignOne', props.subscription.id), { onSuccess: closeAddPlayer });
 }
 
 // ── Export ────────────────────────────────────────────────────────────
@@ -341,7 +363,7 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
 
         <!-- ── Add single player modal ─────────────────────────────────── -->
         <Teleport to="body">
-            <div v-if="showAddPlayerModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50" @click.self="showAddPlayerModal = false">
+            <div v-if="showAddPlayerModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50" @click.self="closeAddPlayer">
                 <div class="w-full max-w-lg rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
                     <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('add_player_to_subscription') }}</h3>
                     <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ subscription.name }} ({{ periodLabel }})</p>
@@ -351,6 +373,13 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
                         <input v-model="playerSearch" type="text" :placeholder="t('search_name_or_id')"
                             class="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500" />
                     </div>
+
+                    <!-- Players of its branches filed under another category -->
+                    <label v-if="subscription.categories?.length" class="mt-3 flex cursor-pointer items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                        <input v-model="showOutside" type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500" @change="toggleOutside" />
+                        {{ t('subscription_show_outside_category') }}
+                        <span v-if="loadingOutside" class="text-xs text-slate-400">…</span>
+                    </label>
 
                     <!-- Player list -->
                     <div class="mt-3 max-h-64 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-800">
@@ -362,7 +391,10 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
                             :class="addPlayerForm.player_id === player.id ? 'bg-primary-50' : ''">
                             <input type="radio" :value="player.id" v-model="addPlayerForm.player_id" class="text-primary-600" />
                             <div>
-                                <p class="text-sm font-medium text-slate-800 dark:text-slate-200">{{ player.fullname }}</p>
+                                <p class="text-sm font-medium text-slate-800 dark:text-slate-200">
+                                    {{ player.fullname }}
+                                    <Badge v-if="player.outside" :label="t('subscription_outside_category')" color="amber" class="ms-2" />
+                                </p>
                                 <p class="text-xs text-slate-400 dark:text-slate-500">
                                     {{ player.membership_id }}
                                     <span v-if="player.category" class="ml-2">· {{ player.category?.localized_name || player.category?.name }}</span>
@@ -374,12 +406,12 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
 
                     <div v-if="addPlayerForm.player_id" class="mt-3 rounded-lg bg-slate-50 dark:bg-slate-950 px-4 py-2 text-sm text-slate-600 dark:text-slate-300">
                         {{ t('amount_will_be') }}
-                        <strong>{{ formatMoney(availablePlayers?.find(p => p.id === addPlayerForm.player_id)?.price ?? 0) }}</strong>
-                        ({{ availablePlayers?.find(p => p.id === addPlayerForm.player_id)?.is_student ? t('student') : t('worker') }} {{ t('rate') }})
+                        <strong>{{ formatMoney(pickedPlayer?.price ?? 0) }}</strong>
+                        ({{ pickedPlayer?.is_student ? t('student') : t('worker') }} {{ t('rate') }})
                     </div>
 
                     <div class="mt-4 flex justify-end gap-3">
-                        <button type="button" @click="showAddPlayerModal = false; addPlayerForm.reset(); playerSearch = ''"
+                        <button type="button" @click="closeAddPlayer"
                             class="rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">
                             {{ t('cancel') }}
                         </button>

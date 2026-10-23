@@ -168,21 +168,16 @@ class SubscriptionController extends Controller
         $totalCollected = array_sum(array_map(fn (array $row) => (float) $row['amount_paid'], $rows));
         $paidPercentage = $total > 0 ? round(($paidCount / $total) * 100, 1) : 0;
 
-        // Players not yet assigned to this subscription
-        $availablePlayers = Player::query()->eligibleFor($subscription)
-            ->where('archived', false)
-            ->whereNotIn('id', PlayerSubscription::query()->select('player_id')->where('subscription_id', $subscription->id))
-            ->with('category')
-            ->orderBy('lastname')
-            ->get(['id', ...Player::NAME_COLUMNS, 'is_student', 'category_id', 'membership_id'])
-            // What each would owe, category price override included.
-            ->each(fn (Player $player) => $player->setAttribute('price', $subscription->amountFor($player)));
-
         return Inertia::render('Subscriptions/Show', [
             'subscription' => $subscription,
             'playerSubscriptions' => $rows,
             'categories' => Category::orderBy('name')->get(),
-            'availablePlayers' => $availablePlayers,
+            'availablePlayers' => $this->unassignedPlayers($subscription),
+            // Players of its branches but another category (a footballer of
+            // category A who also swims in B), loaded when the add dialog asks.
+            'outsidePlayers' => Inertia::optional(fn () => $subscription->categories->isEmpty() ? [] : $this->unassignedPlayers($subscription, outside: true)
+                ->whereNotIn('category_id', $subscription->categories->pluck('id'))
+                ->values()),
             'stats' => [
                 'total' => $total,
                 'paid_count' => $paidCount,
@@ -192,6 +187,23 @@ class SubscriptionController extends Controller
                 'paid_percentage' => $paidPercentage,
             ],
         ]);
+    }
+
+    /**
+     * Active players not yet on the subscription, each with what they would owe
+     * (category price override included). $outside drops the category rule.
+     *
+     * @return Collection<int, Player>
+     */
+    private function unassignedPlayers(Subscription $subscription, bool $outside = false): Collection
+    {
+        return Player::query()->eligibleFor($subscription, anyCategory: $outside)
+            ->where('archived', false)
+            ->whereNotIn('id', PlayerSubscription::query()->select('player_id')->where('subscription_id', $subscription->id))
+            ->with('category')
+            ->orderBy('lastname')
+            ->get(['id', ...Player::NAME_COLUMNS, 'is_student', 'category_id', 'membership_id'])
+            ->each(fn (Player $player) => $player->setAttribute('price', $subscription->amountFor($player)));
     }
 
     /**
@@ -376,6 +388,9 @@ class SubscriptionController extends Controller
     {
         $request->validate([
             'player_id' => ['required', 'integer', 'exists:players,id'],
+            // Sent by the subscription page when the player was picked from
+            // another category: only the branch rule is checked then.
+            'outside_category' => ['nullable', 'boolean'],
         ]);
 
         $player = Player::findOrFail($request->input('player_id'));
@@ -389,7 +404,7 @@ class SubscriptionController extends Controller
             return back()->with('error', 'flash.player_already_subscribed');
         }
 
-        if (! $subscription->appliesTo($player)) {
+        if (! $subscription->appliesTo($player, anyCategory: $request->boolean('outside_category'))) {
             return back()->with('error', 'flash.player_not_eligible_for_subscription');
         }
 

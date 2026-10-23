@@ -1876,6 +1876,8 @@
     "no": "No",
     "no_active_rentals": "No active rentals found",
     "no_available_players": "No available players found.",
+    "subscription_show_outside_category": "Also show players of its branches from other categories",
+    "subscription_outside_category": "Other category",
     "no_backups": "No backups yet.",
     "no_branch": "No branch",
     "no_branches_hint": "No branches yet. Create some in",

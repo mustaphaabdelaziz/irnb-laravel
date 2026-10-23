@@ -9,6 +9,7 @@ import InputError from '@/Components/InputError.vue';
 import { localToday } from '@/lib/localDate';
 
 const props = defineProps({
+    branches: { type: Array, default: () => [] },
     categories: { type: Array, default: () => [] },
     schedules: { type: Array, default: () => [] },
     closures: { type: Array, default: () => [] },
@@ -27,6 +28,7 @@ const today = localToday();
 
 // ISO weekday 1..7 -> localized name (2024-01-01 is a Monday).
 const weekdayName = (n) => new Date(Date.UTC(2024, 0, n)).toLocaleDateString(lang.value, { weekday: 'long', timeZone: 'UTC' });
+const branchName = (id) => props.branches.find((b) => b.id === id)?.name ?? '';
 const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? '';
 
 const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900';
@@ -36,10 +38,10 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
 
 // ---- Weekly schedule ----
 const editingId = ref(null);
-const scheduleForm = useForm({ category_id: props.categories[0]?.id ?? null, weekday: 1, start_time: '18:00', end_time: '19:30', valid_from: today, valid_to: '' });
+const scheduleForm = useForm({ branch_id: props.branches[0]?.id ?? null, category_id: props.categories[0]?.id ?? null, weekday: 1, start_time: '18:00', end_time: '19:30', valid_from: today, valid_to: '' });
 function editSchedule(s) {
     editingId.value = s.id;
-    Object.assign(scheduleForm, { category_id: s.category_id, weekday: s.weekday, start_time: s.start_time, end_time: s.end_time, valid_from: s.valid_from, valid_to: s.valid_to ?? '' });
+    Object.assign(scheduleForm, { branch_id: s.branch_id, category_id: s.category_id, weekday: s.weekday, start_time: s.start_time, end_time: s.end_time, valid_from: s.valid_from, valid_to: s.valid_to ?? '' });
 }
 function resetSchedule() {
     editingId.value = null;
@@ -60,9 +62,9 @@ const closureForm = useForm({ start_date: today, end_date: today, reason: '' });
 const submitClosure = () => closureForm.post(route('attendance.closures.store'), { preserveScroll: true, onSuccess: () => closureForm.reset() });
 
 // ---- Pre-season targets ----
-const targetForm = useForm({ category_id: props.categories[0]?.id ?? null, season_start_year: props.seasons[0]?.start_year, target_count: 0 });
-watch(() => [targetForm.category_id, targetForm.season_start_year], ([c, y]) => {
-    targetForm.target_count = props.targets.find((x) => x.category_id === c && x.season_start_year === y)?.target_count ?? 0;
+const targetForm = useForm({ branch_id: props.branches[0]?.id ?? null, category_id: props.categories[0]?.id ?? null, season_start_year: props.seasons[0]?.start_year, target_count: 0 });
+watch(() => [targetForm.branch_id, targetForm.category_id, targetForm.season_start_year], ([b, c, y]) => {
+    targetForm.target_count = props.targets.find((x) => (x.branch_id ?? null) === b && x.category_id === c && x.season_start_year === y)?.target_count ?? 0;
 }, { immediate: true });
 const submitTarget = () => targetForm.post(route('attendance.preseason-targets.store'), { preserveScroll: true });
 
@@ -143,6 +145,9 @@ function destroyCustom(s) {
             <section :class="[card, 'lg:col-span-2']">
                 <h2 class="mb-3 font-bold text-slate-900 dark:text-slate-100">{{ t('att.schedules') }}</h2>
                 <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="submitSchedule">
+                    <label v-if="branches.length" class="text-xs text-slate-500">{{ t('branch') }}
+                        <select v-model="scheduleForm.branch_id" :class="[input, 'block']"><option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option></select>
+                    </label>
                     <label class="text-xs text-slate-500">{{ t('att.category') }}
                         <select v-model="scheduleForm.category_id" :class="[input, 'block']"><option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option></select>
                     </label>
@@ -160,7 +165,7 @@ function destroyCustom(s) {
                 <table class="w-full text-sm">
                     <tbody>
                         <tr v-for="s in schedules" :key="s.id" class="border-t border-slate-100 dark:border-slate-800">
-                            <td class="py-2 font-medium">{{ categoryName(s.category_id) }}</td>
+                            <td class="py-2 font-medium">{{ [branchName(s.branch_id), categoryName(s.category_id)].filter(Boolean).join(' · ') }}</td>
                             <td>{{ weekdayName(s.weekday) }}</td>
                             <td dir="ltr" class="text-start">{{ s.start_time }}–{{ s.end_time }}</td>
                             <td class="text-slate-500">{{ s.valid_from }} → {{ s.valid_to ?? '…' }}</td>
@@ -195,6 +200,9 @@ function destroyCustom(s) {
             <section :class="card">
                 <h2 class="mb-3 font-bold text-slate-900 dark:text-slate-100">{{ t('att.targets') }}</h2>
                 <form class="flex flex-wrap items-end gap-2" @submit.prevent="submitTarget">
+                    <label v-if="branches.length" class="text-xs text-slate-500">{{ t('branch') }}
+                        <select v-model="targetForm.branch_id" :class="[input, 'block']"><option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option></select>
+                    </label>
                     <label class="text-xs text-slate-500">{{ t('att.category') }}
                         <select v-model="targetForm.category_id" :class="[input, 'block']"><option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option></select>
                     </label>

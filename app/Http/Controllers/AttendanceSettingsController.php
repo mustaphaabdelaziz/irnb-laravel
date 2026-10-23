@@ -6,6 +6,7 @@ use App\Enums\AttendanceStatus;
 use App\Enums\SessionKind;
 use App\Models\Attendance;
 use App\Models\AttendanceCustomStatus;
+use App\Models\Branch;
 use App\Models\Category;
 use App\Models\ClubClosure;
 use App\Models\PlayerStatus;
@@ -32,10 +33,11 @@ class AttendanceSettingsController extends Controller
         return Inertia::render('Attendance/Settings', [
             'categories' => Category::orderBy('id')->get()
                 ->map(fn (Category $c) => ['id' => $c->id, 'name' => $c->localized_name])->values(),
-            'schedules' => TrainingSchedule::orderBy('category_id')->orderBy('weekday')->orderBy('start_time')
-                ->get(['id', 'category_id', 'weekday', 'start_time', 'end_time', 'valid_from', 'valid_to']),
+            'branches' => Branch::orderBy('id')->get()->map(fn (Branch $b) => ['id' => $b->id, 'name' => $b->localized_name])->values(),
+            'schedules' => TrainingSchedule::orderBy('branch_id')->orderBy('category_id')->orderBy('weekday')->orderBy('start_time')
+                ->get(['id', 'branch_id', 'category_id', 'weekday', 'start_time', 'end_time', 'valid_from', 'valid_to']),
             'closures' => ClubClosure::orderByDesc('start_date')->get(['id', 'start_date', 'end_date', 'reason']),
-            'targets' => PreseasonTarget::get(['category_id', 'season_start_year', 'target_count']),
+            'targets' => PreseasonTarget::get(['branch_id', 'category_id', 'season_start_year', 'target_count']),
             'seasons' => collect([$current, Season::forStartYear($current->startYear + 1)])
                 ->map(fn (Season $s) => ['start_year' => $s->startYear, 'label' => $s->label()])->values(),
             // The roster set shows resolved: never set = the status coded `registered`.
@@ -173,13 +175,14 @@ class AttendanceSettingsController extends Controller
     public function storeTarget(Request $request): RedirectResponse
     {
         $data = $request->validate([
+            'branch_id' => [Rule::requiredIf(fn () => Branch::exists()), 'nullable', 'integer', 'exists:branches,id'],
             'category_id' => ['required', 'integer', 'exists:categories,id'],
             'season_start_year' => ['required', 'integer', 'between:2000,2100'],
             'target_count' => ['required', 'integer', 'between:0,200'],
         ]);
 
         PreseasonTarget::updateOrCreate(
-            ['category_id' => $data['category_id'], 'season_start_year' => $data['season_start_year']],
+            ['branch_id' => $data['branch_id'] ?? null, 'category_id' => $data['category_id'], 'season_start_year' => $data['season_start_year']],
             ['target_count' => $data['target_count']],
         );
 
@@ -237,6 +240,7 @@ class AttendanceSettingsController extends Controller
     private function validateSchedule(Request $request): array
     {
         return $request->validate([
+            'branch_id' => [Rule::requiredIf(fn () => Branch::exists()), 'nullable', 'integer', 'exists:branches,id'],
             'category_id' => ['required', 'integer', 'exists:categories,id'],
             'weekday' => ['required', 'integer', 'between:1,7'],
             'start_time' => ['required', 'date_format:H:i'],

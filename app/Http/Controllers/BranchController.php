@@ -92,6 +92,8 @@ class BranchController extends Controller
         DB::transaction(function () use ($branch) {
             PreseasonTarget::where('branch_id', $branch->id)->delete();
             DB::table('deleted_session_slots')->where('branch_id', $branch->id)->delete();
+            // Only stale details can remain: a branch with sessions is refused above.
+            DB::table('injury_notes')->where('branch_id', $branch->id)->delete();
             $branch->delete();
         });
 

@@ -33,7 +33,7 @@ class CallUpTest extends TestCase
         $game = $this->game($team, ['competition_id' => $competition->id]);
 
         $session = TrainingSession::create([
-            'category_id' => $team->category_id, 'date' => now()->subDays(2)->toDateString(), 'start_time' => '18:00', 'end_time' => '19:30',
+            'category_id' => $team->category_id, 'branch_id' => $team->branch_id, 'date' => now()->subDays(2)->toDateString(), 'start_time' => '18:00', 'end_time' => '19:30',
             'kind' => SessionKind::Extra, 'state' => SessionState::Held,
         ]);
         Attendance::create(['training_session_id' => $session->id, 'player_id' => $b->id, 'category_id' => $team->category_id, 'status' => AttendanceStatus::NotTraining->value]);

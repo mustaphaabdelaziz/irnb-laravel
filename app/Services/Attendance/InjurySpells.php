@@ -48,6 +48,13 @@ use Illuminate\Support\Facades\DB;
  * are the union of: (a) an injury mark dated in [from, to]; (b) the latest
  * held mark is an injury mark; (c) the latest held mark before $from is an
  * injury mark. A player with only an old closed spell is not read.
+ *
+ * Per branch: every public method takes a trailing ?int $branchId. Spells
+ * are built from the marks of that branch's sessions only (BranchScope), so
+ * a football spell ends only with a later football mark and a swimming mark
+ * never touches it; details are matched within the branch. Null = no branch
+ * condition (a club without branches). The branch adds conditions, never a
+ * query.
  */
 final class InjurySpells
 {
@@ -99,10 +106,10 @@ final class InjurySpells
         return $spells;
     }
 
-    /** @return list<array{start: string, end: string, sessions: int, open: bool}> the player's whole history, oldest first */
-    public function all(int $playerId): array
+    /** @return list<array{start: string, end: string, sessions: int, open: bool}> the player's whole history in the branch, oldest first */
+    public function all(int $playerId, ?int $branchId = null): array
     {
-        return self::fromMarks($this->marks()->where('attendances.player_id', $playerId)->cursor(), $this->skipped())[$playerId] ?? [];
+        return self::fromMarks($this->marks($branchId)->where('attendances.player_id', $playerId)->cursor(), $this->skipped())[$playerId] ?? [];
     }
 
     /**
@@ -130,16 +137,19 @@ final class InjurySpells
     }
 
     /**
-     * The profile's injuries: the spells overlapping [from, to], newest first,
+     * The profile's injuries in one branch: the spells overlapping [from, to], newest first,
      * each with its detail (or null), and every detail of the player that
      * opens no spell. Three queries (the custom codes, the marks, the details).
      *
      * @return array{spells: list<array<string, mixed>>, unmatched: list<array<string, mixed>>}
      */
-    public function forPlayer(int $playerId, string $from, string $to): array
+    public function forPlayer(int $playerId, string $from, string $to, ?int $branchId = null): array
     {
-        $spells = $this->all($playerId);
-        $notes = InjuryNote::where('player_id', $playerId)->orderBy('start_date')->get();
+        $spells = $this->all($playerId, $branchId);
+        $notes = InjuryNote::where('player_id', $playerId)
+            ->when($branchId !== null, fn ($q) => $q->where('branch_id', $branchId))
+            ->orderBy('start_date')
+            ->get();
         $byStart = $notes->keyBy('start_date');
         $starts = array_column($spells, 'start');
 
@@ -169,7 +179,7 @@ final class InjurySpells
      *
      * @return array{current: list<array<string, mixed>>, spells: list<array<string, mixed>>}
      */
-    public function club(string $from, string $to, ?int $categoryId = null): array
+    public function club(string $from, string $to, ?int $categoryId = null, ?int $branchId = null): array
     {
         // Each player's marks from their last non-injury mark before $from on:
         // a spell that ends before it can neither be open nor overlap the
@@ -179,16 +189,16 @@ final class InjurySpells
         // seconds once a club had a few seasons. See sessionLed() for the join order.
         $players = DB::table('players as p')
             ->where(fn (Builder $q) => $q
-                ->whereIn('p.id', $this->injuryMarksBetween($from, $to))
-                ->orWhereIn('p.id', $this->latestMarkIsInjury())
-                ->orWhereIn('p.id', $this->latestMarkIsInjury($from)))
+                ->whereIn('p.id', $this->injuryMarksBetween($from, $to, $branchId))
+                ->orWhereIn('p.id', $this->latestMarkIsInjury(null, $branchId))
+                ->orWhereIn('p.id', $this->latestMarkIsInjury($from, $branchId)))
             ->select('p.id as player_id')
-            ->selectSub($this->lastNonInjuryMarkBefore($from), 'since')
+            ->selectSub($this->lastNonInjuryMarkBefore($from, $branchId), 'since')
             // A LIMIT keeps sqlite from flattening this into the scan, where the
             // cutoff was recomputed for every mark instead of once per player.
             ->limit(PHP_INT_MAX);
 
-        $byPlayer = self::fromMarks($this->scanFrom($players, $this->sessionLed($from))
+        $byPlayer = self::fromMarks(BranchScope::apply($this->scanFrom($players, $this->sessionLed($from)), $branchId)
             ->where('training_sessions.state', SessionState::Held->value)
             ->whereRaw('training_sessions.date >= coalesce(c.since, ?)', [''])
             ->whereColumn('attendances.training_session_id', 'training_sessions.id')
@@ -202,7 +212,9 @@ final class InjurySpells
         if ($byPlayer === []) {
             return ['current' => [], 'spells' => []];
         }
-        $notes = InjuryNote::whereIn('player_id', array_keys($byPlayer))->get()
+        $notes = InjuryNote::whereIn('player_id', array_keys($byPlayer))
+            ->when($branchId !== null, fn ($q) => $q->where('branch_id', $branchId))
+            ->get()
             ->keyBy(fn (InjuryNote $note) => $note->player_id.'|'.$note->start_date);
 
         $rows = [];
@@ -240,17 +252,17 @@ final class InjurySpells
         return $this->skipped ??= $this->catalog->keysBehavingAs(AttendanceStatusCatalog::NOT_COUNTED);
     }
 
-    /** Held-session marks in spell order: player, date, start time, session id. */
-    private function marks(): Builder
+    /** Held-session marks in spell order: player, date, start time, session id; optionally one branch's. */
+    private function marks(?int $branchId = null): Builder
     {
-        return DB::table('attendances')
+        return BranchScope::apply(DB::table('attendances')
             ->join('training_sessions', 'training_sessions.id', '=', 'attendances.training_session_id')
             ->where('training_sessions.state', SessionState::Held->value)
             ->orderBy('attendances.player_id')
             ->orderBy('training_sessions.date')
             ->orderBy('training_sessions.start_time')
             ->orderBy('training_sessions.id')
-            ->select('attendances.player_id', 'attendances.status', 'attendances.reason', 'training_sessions.date');
+            ->select('attendances.player_id', 'attendances.status', 'attendances.reason', 'training_sessions.date'), $branchId);
     }
 
     /**
@@ -259,9 +271,9 @@ final class InjurySpells
      * Walks the sessions back from $from (date index) and stops at the
      * player's first such mark, like latestMarkIsInjury().
      */
-    private function lastNonInjuryMarkBefore(string $from): Builder
+    private function lastNonInjuryMarkBefore(string $from, ?int $branchId = null): Builder
     {
-        return DB::table('training_sessions as s2')
+        return BranchScope::apply(DB::table('training_sessions as s2')
             ->crossJoin('attendances as a2')
             ->whereColumn('a2.training_session_id', 's2.id')
             ->whereColumn('a2.player_id', 'p.id')
@@ -275,7 +287,7 @@ final class InjurySpells
                 ->orWhere('a2.reason', '!=', AbsenceReason::Injury->value))
             ->orderByDesc('s2.date')
             ->limit(1)
-            ->select('s2.date');
+            ->select('s2.date'), $branchId, 's2.branch_id');
     }
 
     /** The players' table (c) joined to their marks, in the join order the scan is led by. */
@@ -308,9 +320,9 @@ final class InjurySpells
      * history to keep the few in the period. CROSS JOIN keeps sqlite on that
      * order (elsewhere it is a plain inner join).
      */
-    private function injuryMarksBetween(string $from, string $to): Builder
+    private function injuryMarksBetween(string $from, string $to, ?int $branchId = null): Builder
     {
-        return DB::table('training_sessions as s')
+        return BranchScope::apply(DB::table('training_sessions as s')
             ->crossJoin('attendances as a')
             ->whereColumn('a.training_session_id', 's.id')
             ->where('s.state', SessionState::Held->value)
@@ -318,7 +330,7 @@ final class InjurySpells
             ->where(fn (Builder $q) => $q->where('a.status', AttendanceStatus::NotTraining->value)
                 ->orWhere(fn (Builder $q) => $q->where('a.status', AttendanceStatus::AbsentExcused->value)
                     ->where('a.reason', AbsenceReason::Injury->value)))
-            ->select('a.player_id');
+            ->select('a.player_id'), $branchId, 's.branch_id');
     }
 
     /**
@@ -334,14 +346,20 @@ final class InjurySpells
      * club's injury marks through the status index on every visit. Only
      * players with a mark at all are asked, so one with none never walks the
      * whole calendar. CROSS JOIN keeps sqlite on that order (elsewhere it is
-     * a plain inner join).
+     * a plain inner join). In one branch, only players with a mark in it are
+     * asked, and only its sessions are walked.
      */
-    private function latestMarkIsInjury(?string $before = null): Builder
+    private function latestMarkIsInjury(?string $before = null, ?int $branchId = null): Builder
     {
         return DB::table('players as p')
             ->whereExists(fn (Builder $any) => $any->selectRaw('1')
                 ->from('attendances as a0')
-                ->whereColumn('a0.player_id', 'p.id'))
+                ->whereColumn('a0.player_id', 'p.id')
+                ->when($branchId !== null, fn (Builder $q) => BranchScope::apply(
+                    $q->join('training_sessions as s0', 's0.id', '=', 'a0.training_session_id'),
+                    $branchId,
+                    's0.branch_id',
+                )))
             ->where(fn (Builder $latest) => $latest
                 ->selectRaw('case when a2.status = ? or (a2.status = ? and a2.reason = ?) then 1 else 0 end', [
                     AttendanceStatus::NotTraining->value, AttendanceStatus::AbsentExcused->value, AbsenceReason::Injury->value,
@@ -353,6 +371,7 @@ final class InjurySpells
                 ->where('s2.state', SessionState::Held->value)
                 ->whereNotIn('a2.status', $this->skipped())
                 ->when($before !== null, fn (Builder $q) => $q->where('s2.date', '<', $before))
+                ->tap(fn (Builder $q) => BranchScope::apply($q, $branchId, 's2.branch_id'))
                 ->orderByDesc('s2.date')
                 ->orderByDesc('s2.start_time')
                 ->orderByDesc('s2.id')

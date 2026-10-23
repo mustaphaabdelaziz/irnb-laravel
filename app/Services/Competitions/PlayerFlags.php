@@ -2,6 +2,7 @@
 
 namespace App\Services\Competitions;
 
+use App\Models\Branch;
 use App\Models\Competition;
 use App\Models\DocumentType;
 use App\Models\Game;
@@ -19,12 +20,26 @@ final class PlayerFlags
 {
     public function __construct(private readonly InjurySpells $spells, private readonly SuspensionStatus $suspensions) {}
 
-    /** @return array<int, true> ids of players injured today */
+    /**
+     * Ids of players injured today in any branch: a spell is one branch's
+     * (InjurySpells), and a player hurt in either sport gets the warning.
+     * A club without branches is one pass with no branch condition.
+     *
+     * @return array<int, true>
+     */
     public function injured(): array
     {
         $today = now()->toDateString();
+        $branchIds = Branch::orderBy('id')->pluck('id')->map(fn ($id) => (int) $id)->all() ?: [null];
 
-        return array_fill_keys(array_column($this->spells->club($today, $today)['current'], 'player_id'), true);
+        $injured = [];
+        foreach ($branchIds as $branchId) {
+            foreach ($this->spells->club($today, $today, null, $branchId)['current'] as $row) {
+                $injured[$row['player_id']] = true;
+            }
+        }
+
+        return $injured;
     }
 
     /**

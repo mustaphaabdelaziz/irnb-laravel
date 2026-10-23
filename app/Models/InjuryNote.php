@@ -7,14 +7,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Details of one injury spell (see InjurySpells), keyed by the player and
- * the spell's start date. Dates are 'Y-m-d' strings; no date casts.
+ * Details of one injury spell (see InjurySpells), keyed by the player, the
+ * branch whose marks build the spell (null = the whole club) and the
+ * spell's start date. Dates are 'Y-m-d' strings; no date casts.
  */
 class InjuryNote extends Model
 {
     use SerializesClubDates;
 
-    protected $fillable = ['player_id', 'start_date', 'body_part', 'description', 'returned_on', 'created_by'];
+    protected $fillable = ['player_id', 'branch_id', 'start_date', 'body_part', 'description', 'returned_on', 'created_by'];
 
     public function player(): BelongsTo
     {

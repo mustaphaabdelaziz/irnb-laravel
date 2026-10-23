@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Branch;
 use App\Models\Category;
 use App\Models\InjuryNote;
 use App\Models\Player;
@@ -10,6 +11,7 @@ use App\Services\Attendance\InjurySpells;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response as PageResponse;
@@ -51,19 +53,22 @@ class AttendanceInjuryController extends Controller
         ]);
     }
 
-    /** Adds the details of the spell starting on `start_date`, or replaces them if it has some. */
+    /** Adds the details of the branch's spell starting on `start_date`, or replaces them if it has some. */
     public function store(Request $request, Player $player): JsonResponse
     {
         $data = $request->validate([
             'start_date' => ['required', 'date_format:Y-m-d'],
+            // The card's branch tab: a spell is one branch's once the club has branches.
+            'branch_id' => [Rule::requiredIf(fn () => Branch::exists()), 'nullable', 'integer', 'exists:branches,id'],
             ...self::DETAIL_RULES,
             'returned_on' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:start_date'],
         ]);
-        if (! in_array($data['start_date'], array_column($this->spells->all($player->id), 'start'), true)) {
+        $branchId = isset($data['branch_id']) ? (int) $data['branch_id'] : null;
+        if (! in_array($data['start_date'], array_column($this->spells->all($player->id, $branchId), 'start'), true)) {
             throw ValidationException::withMessages(['start_date' => 'att.injury.error.no_spell']);
         }
 
-        $key = ['player_id' => $player->id, 'start_date' => $data['start_date']];
+        $key = ['player_id' => $player->id, 'branch_id' => $branchId, 'start_date' => $data['start_date']];
         try {
             $note = InjuryNote::firstOrNew($key);
             $note->fill(self::details($data));

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Enums\SessionKind;
-use App\Models\Branch;
 use App\Models\Category;
 use App\Models\PlayerStatus;
 use App\Models\TrainingSchedule;
@@ -94,8 +93,7 @@ class AttendanceCalendarController extends Controller
             'view' => $view,
             'categories' => $categories,
             // The branch switch; lazy like `categories`.
-            'branches' => fn () => Branch::orderBy('id')->get()
-                ->map(fn (Branch $b) => ['id' => $b->id, 'name' => $b->localized_name, 'logo_url' => $b->logo_url])->values(),
+            'branches' => fn () => BranchChoice::options(),
             'attendanceCodes' => fn () => app(AttendanceStatusCatalog::class)->codes(),
             // The add-session dialog's roster checkboxes, pre-checked with the settings' default
             // set: optional, fetched only when the dialog first opens (see Index.vue openCreate()).

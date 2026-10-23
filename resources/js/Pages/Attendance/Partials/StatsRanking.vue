@@ -8,9 +8,12 @@ import { pct } from '@/lib/attendanceStats';
 /** Top and bottom 5 by score % (AttendanceStats::ranking). */
 const props = defineProps({
     ranking: { type: Object, required: true }, // { min_expected, top: [], bottom: [] }
+    branchId: { type: Number, default: null },
 });
 const { t } = useI18n();
 const { can } = useCan();
+
+const profileHref = (row) => route('players.show', { player: row.player_id, ...(props.branchId ? { attendance_branch: props.branchId } : {}) });
 
 const lists = computed(() => [
     { key: 'top', rows: props.ranking.top, tone: 'text-emerald-600 dark:text-emerald-400' },
@@ -29,7 +32,7 @@ const lists = computed(() => [
                 <ol v-else class="mt-2 space-y-1">
                     <li v-for="(row, i) in list.rows" :key="row.player_id" class="flex items-center gap-2 text-sm">
                         <span class="w-5 text-end tabular-nums text-slate-400">{{ i + 1 }}</span>
-                        <Link v-if="can('players', 'view')" :href="route('players.show', row.player_id)" class="font-medium text-primary-700 hover:underline dark:text-primary-300">{{ row.name }}</Link>
+                        <Link v-if="can('players', 'view')" :href="profileHref(row)" class="font-medium text-primary-700 hover:underline dark:text-primary-300">{{ row.name }}</Link>
                         <span v-else class="font-medium">{{ row.name }}</span>
                         <span class="text-xs text-slate-400">{{ row.category ?? '' }}</span>
                         <bdi dir="ltr" class="ms-auto font-semibold tabular-nums" :class="list.tone">{{ pct(row.score_pct) }}</bdi>

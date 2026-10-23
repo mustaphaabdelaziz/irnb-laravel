@@ -25,7 +25,7 @@
     @include('pdf.partials.header')
 
     <div class="title">{{ $L('att.stats_title') }}</div>
-    <div class="sub">{{ $L('activity.period_label') }}: <bdi dir="ltr">{{ $period['label'] }}</bdi> &middot; {{ $categoryName }}</div>
+    <div class="sub">{{ $L('activity.period_label') }}: <bdi dir="ltr">{{ $period['label'] }}</bdi> &middot; @if (!empty($branchName)){{ $branchName }} &middot; @endif{{ $categoryName }}</div>
 
     <table class="rows">
         <tr>

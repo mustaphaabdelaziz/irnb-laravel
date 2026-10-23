@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Services\Activity\ActivityPeriod;
 use App\Services\Attendance\AttendanceStats;
 use App\Services\Attendance\AttendanceStatusCatalog;
+use App\Services\Attendance\BranchChoice;
 use App\Services\Attendance\PlayerNames;
 use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
@@ -18,8 +19,9 @@ use Symfony\Component\HttpFoundation\Response as FileResponse;
 
 /**
  * Club-wide attendance statistics (`attendance.stats`, view): a period (this
- * month by default, the season, or a custom range) and an optional category.
- * Every number comes from AttendanceStats.
+ * month by default, the season, or a custom range), an optional category, and
+ * one branch (BranchChoice, shared with the calendar). Every number comes from
+ * AttendanceStats.
  */
 class AttendanceStatsController extends Controller
 {
@@ -39,7 +41,7 @@ class AttendanceStatsController extends Controller
 
     /**
      * The player table as XLSX (default) or CSV, or the whole page as a PDF
-     * (`format=pdf`), for the same period and category as the page.
+     * (`format=pdf`), for the same period, branch and category as the page.
      */
     public function export(Request $request): FileResponse
     {
@@ -48,7 +50,10 @@ class AttendanceStatsController extends Controller
         $categoryName = $data['categoryId'] !== null
             ? collect($data['categories'])->firstWhere('id', $data['categoryId'])['name']
             : UiLang::get('att.all_categories');
-        $filename = 'attendance-stats-'.$from.'-'.$to.($data['categoryId'] !== null ? '-'.$data['categoryId'] : '');
+        $branchName = $data['branchId'] !== null ? collect($data['branches'])->firstWhere('id', $data['branchId'])['name'] : null;
+        $filename = 'attendance-stats-'.$from.'-'.$to
+            .($data['branchId'] !== null ? '-b'.$data['branchId'] : '')
+            .($data['categoryId'] !== null ? '-'.$data['categoryId'] : '');
         $catalog = app(AttendanceStatusCatalog::class);
         // A hidden custom code only gets a column while the data has marks for it.
         $labels = $catalog->labels(null, $catalog->withMarks($data['totals']['counts'], ...array_column($data['categoryRows'], 'counts')));
@@ -58,6 +63,7 @@ class AttendanceStatsController extends Controller
                 ...$data,
                 'club' => ClubHeader::data(),
                 'categoryName' => $categoryName,
+                'branchName' => $branchName,
                 'labels' => $labels,
                 'codes' => $catalog->codes(),
             ])->render();
@@ -81,7 +87,7 @@ class AttendanceStatsController extends Controller
         }, $data['players']);
 
         return Export::download(Export::format($request), $filename, $headers, $rows,
-            UiLang::get('att.stats_title').' — '.$data['period']['label'].' — '.$categoryName);
+            implode(' — ', array_filter([UiLang::get('att.stats_title'), $data['period']['label'], $branchName, $categoryName])));
     }
 
     /** @return array<string, mixed> */
@@ -89,12 +95,13 @@ class AttendanceStatsController extends Controller
     {
         $validated = $request->validate(['category_id' => ['nullable', 'integer', 'exists:categories,id']]);
         $categoryId = isset($validated['category_id']) ? (int) $validated['category_id'] : null;
+        $branchId = BranchChoice::fromRequest($request);
         $period = ActivityPeriod::fromRequest($request);
         ['from' => $from, 'to' => $to] = $period->toArray();
 
-        $rows = $this->stats->players($from, $to, $categoryId);
+        $rows = $this->stats->players($from, $to, $categoryId, null, $branchId);
         $players = $this->withNames($rows);
-        $sessions = $this->stats->sessionsByMonth($from, $to, $categoryId);
+        $sessions = $this->stats->sessionsByMonth($from, $to, $categoryId, $branchId);
 
         return [
             'period' => $period->toArray(),
@@ -102,14 +109,16 @@ class AttendanceStatsController extends Controller
             'categories' => Category::orderBy('id')->get()
                 ->map(fn (Category $category) => ['id' => $category->id, 'name' => $category->localized_name])
                 ->values()->all(),
+            'branches' => BranchChoice::options(),
+            'branchId' => $branchId,
             'totals' => [
                 ...$this->stats->summarize($rows),
                 'held' => array_sum($sessions['held']),
                 'cancelled' => array_sum($sessions['cancelled']),
             ],
-            'monthly' => $this->stats->monthly($from, $to, $categoryId),
+            'monthly' => $this->stats->monthly($from, $to, $categoryId, null, $branchId),
             'sessionsByMonth' => $sessions,
-            'categoryRows' => $this->stats->categories($from, $to),
+            'categoryRows' => $this->stats->categories($from, $to, $branchId),
             'players' => $players,
             // The table stays historical (departed/archived players included); the owner
             // decided they are not ranked, so only active players feed the top/bottom 5.

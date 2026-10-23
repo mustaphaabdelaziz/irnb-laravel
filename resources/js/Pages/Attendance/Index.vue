@@ -4,6 +4,7 @@ import { Head, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import IconButton from '@/Components/IconButton.vue';
+import BranchSwitch from '@/Components/Attendance/BranchSwitch.vue';
 import { useCan } from '@/Composables/useCan';
 import { dateKey } from '@/lib/attendanceCalendar';
 import AddSessionModal from './Partials/AddSessionModal.vue';
@@ -99,21 +100,7 @@ function openCreate(kind, date = today) {
         <div v-else class="space-y-4">
             <div class="flex flex-wrap items-center justify-between gap-3 print:hidden">
                 <div class="flex flex-wrap items-center gap-2">
-                    <div v-if="branches.length > 1" role="tablist" :aria-label="t('branch')" class="inline-flex rounded-lg bg-slate-100 p-0.5 dark:bg-slate-800">
-                        <button
-                            v-for="b in branches"
-                            :key="b.id"
-                            type="button"
-                            role="tab"
-                            :aria-selected="branchId === b.id"
-                            class="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-sm font-semibold"
-                            :class="branchId === b.id ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
-                            @click="switchBranch(b.id)"
-                        >
-                            <img v-if="b.logo_url" :src="b.logo_url" alt="" class="h-4 w-4 rounded object-contain" />
-                            {{ b.name }}
-                        </button>
-                    </div>
+                    <BranchSwitch :branches="branches" :branch-id="branchId" @switch="switchBranch" />
                     <ViewSwitcher :view="view" @switch="switchView" />
                 </div>
                 <div v-if="can('attendance', 'add')" class="flex gap-2">

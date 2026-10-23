@@ -11,6 +11,7 @@ import { hours, pct, periodQuery } from '@/lib/attendanceStats';
 const props = defineProps({
     rows: { type: Array, default: () => [] },
     period: { type: Object, required: true },
+    branchId: { type: Number, default: null }, // the page's branch: letters and profile links keep it
 });
 const { t, locale } = useI18n();
 const { can } = useCan();
@@ -50,7 +51,9 @@ const sorted = computed(() => {
 
 const ariaSort = (key) => (sortKey.value !== key ? 'none' : sortDir.value === 'asc' ? 'ascending' : 'descending');
 // The parent letter, for the page's period.
-const letterHref = (row) => route('attendance.players.letter', { player: row.player_id, ...periodQuery(props.period) });
+const letterHref = (row) => route('attendance.players.letter', { player: row.player_id, ...periodQuery(props.period), ...(props.branchId ? { branch_id: props.branchId } : {}) });
+// The profile opens its attendance card on the page's branch.
+const profileHref = (row) => route('players.show', { player: row.player_id, ...(props.branchId ? { attendance_branch: props.branchId } : {}) });
 
 const columns = computed(() => [
     { key: 'name', label: t('att.player'), start: true },
@@ -89,7 +92,7 @@ const columns = computed(() => [
             <tbody>
                 <tr v-for="row in sorted" :key="row.player_id" class="border-t border-slate-100 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/40">
                     <td class="whitespace-nowrap p-2 font-medium">
-                        <Link v-if="can('players', 'view')" :href="route('players.show', row.player_id)" class="text-primary-700 hover:underline dark:text-primary-300">{{ row.name }}</Link>
+                        <Link v-if="can('players', 'view')" :href="profileHref(row)" class="text-primary-700 hover:underline dark:text-primary-300">{{ row.name }}</Link>
                         <template v-else>{{ row.name }}</template>
                     </td>
                     <td class="whitespace-nowrap p-2 text-slate-500">{{ row.category ?? '—' }}</td>

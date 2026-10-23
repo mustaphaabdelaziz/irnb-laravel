@@ -7,6 +7,7 @@ import '@/lib/registerCharts';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PeriodFilter from '@/Components/Activity/PeriodFilter.vue';
 import ChartCard from '@/Components/Dashboard/ChartCard.vue';
+import BranchSwitch from '@/Components/Attendance/BranchSwitch.vue';
 import StatusBreakdown from '@/Components/Attendance/StatusBreakdown.vue';
 import ExportMenu from '@/Components/ExportMenu.vue';
 import IconButton from '@/Components/IconButton.vue';
@@ -26,6 +27,8 @@ const props = defineProps({
     period: { type: Object, required: true },
     categoryId: { type: Number, default: null },
     categories: { type: Array, default: () => [] },
+    branches: { type: Array, default: () => [] },
+    branchId: { type: Number, default: null },
     totals: { type: Object, required: true },
     monthly: { type: Object, required: true },
     sessionsByMonth: { type: Object, required: true },
@@ -40,10 +43,15 @@ const { withMarks, label, color } = useAttendanceCodes();
 const statuses = computed(() => withMarks([props.totals?.counts, ...(props.categoryRows ?? []).map((r) => r.counts)]));
 const rtl = computed(() => locale.value === 'ar');
 
-const keep = computed(() => (props.categoryId ? { category_id: props.categoryId } : {}));
+// The filters every link and visit keeps: category and branch.
+const branchQuery = computed(() => (props.branchId ? { branch_id: props.branchId } : {}));
+const keep = computed(() => ({ ...(props.categoryId ? { category_id: props.categoryId } : {}), ...branchQuery.value }));
 const exportHref = computed(() => route('attendance.stats.export', { ...periodQuery(props.period), ...keep.value }));
 function pickCategory(value) {
-    router.get(route('attendance.stats'), { ...periodQuery(props.period), ...(value ? { category_id: Number(value) } : {}) }, { preserveScroll: true, replace: true });
+    router.get(route('attendance.stats'), { ...periodQuery(props.period), ...branchQuery.value, ...(value ? { category_id: Number(value) } : {}) }, { preserveScroll: true, replace: true });
+}
+function switchBranch(id) {
+    router.get(route('attendance.stats'), { ...periodQuery(props.period), ...keep.value, branch_id: id }, { preserveScroll: true, replace: true });
 }
 
 const tiles = computed(() => [
@@ -94,6 +102,7 @@ const card = 'rounded-xl bg-white ring-1 ring-slate-200 dark:bg-slate-900 dark:r
 
         <div class="space-y-5">
             <div class="flex flex-wrap items-center gap-3 print:hidden">
+                <BranchSwitch :branches="branches" :branch-id="branchId" @switch="switchBranch" />
                 <PeriodFilter :period="period" :href="route('attendance.stats')" :keep="keep" />
                 <select :value="categoryId ?? ''" :class="input" :aria-label="t('att.category')" @change="pickCategory($event.target.value)">
                     <option value="">{{ t('att.all_categories') }}</option>
@@ -197,8 +206,8 @@ const card = 'rounded-xl bg-white ring-1 ring-slate-200 dark:bg-slate-900 dark:r
                 </table>
             </section>
 
-            <StatsRanking :ranking="ranking" />
-            <StatsPlayerTable :rows="players" :period="period" />
+            <StatsRanking :ranking="ranking" :branch-id="branchId" />
+            <StatsPlayerTable :rows="players" :period="period" :branch-id="branchId" />
         </div>
     </AuthenticatedLayout>
 </template>

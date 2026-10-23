@@ -41,7 +41,9 @@ dialog, and kind, roster statuses and branch cannot change after creation.
   schedules (`flash.branch_has_sessions`, same pattern as the teams guard); its pre-season
   targets and deleted-slot tombstones are deleted with it.
 - Migration backfills every existing row of those tables with the branch that has the most
-  players (ties: lowest id); no branch → stays null. Saved marks (`attendances`) are untouched:
+  players (ties: lowest id); no branch → stays null. A club that creates its first branch later
+  gets the same adoption at that moment (BranchObserver::created), so its older calendar stays
+  visible. Saved marks (`attendances`) are untouched:
   a mark's branch is its session's.
 - Unique keys gain the branch through a virtual column `branch_key = coalesce(branch_id, 0)`
   (NULLs never collide in a unique index, and the generator relies on `insertOrIgnore`):

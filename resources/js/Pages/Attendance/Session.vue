@@ -108,8 +108,11 @@ const submitDelete = () => {
 const handAdded = computed(() => props.session.kind !== 'regular');
 const showEdit = ref(false);
 const editForm = useForm({ title: '', date: '', start_time: '', end_time: '', coach: '', notes: '', branch_id: null, roster_status_ids: [], kind: 'extra', category_ids: [] });
+const sortedKey = (ids) => [...ids].sort((a, b) => a - b).join(',');
+let prefilledStatusKey = '';
 function openEdit() {
     const s = props.session;
+    prefilledStatusKey = sortedKey(s.roster_status_ids ?? []);
     Object.assign(editForm, {
         title: s.title ?? '', date: s.date, start_time: s.start_time, end_time: s.end_time, coach: s.coach ?? '', notes: s.notes ?? '',
         branch_id: s.branch_id, roster_status_ids: [...(s.roster_status_ids ?? [])], kind: s.kind, category_ids: s.categories.map((c) => c.id),
@@ -122,7 +125,8 @@ const submitEdit = () => editForm
     .transform((d) => {
         const out = { title: d.title || null, date: d.date, start_time: d.start_time, end_time: d.end_time, coach: d.coach || null, notes: d.notes || null };
         if (!props.saved) {
-            if (props.playerStatuses.length) out.roster_status_ids = d.roster_status_ids;
+            // Only a real change is sent: the pre-filled set is the effective default, and sending it back would pin it.
+            if (props.playerStatuses.length && sortedKey(d.roster_status_ids) !== prefilledStatusKey) out.roster_status_ids = d.roster_status_ids;
             if (handAdded.value) {
                 out.kind = d.kind;
                 if (props.branches.length) out.branch_id = d.branch_id;

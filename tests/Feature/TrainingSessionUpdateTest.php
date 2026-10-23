@@ -217,6 +217,45 @@ class TrainingSessionUpdateTest extends TestCase
     }
 
     #[Test]
+    public function sending_back_the_effective_default_set_never_pins_it_on_a_title_edit(): void
+    {
+        $u15 = $this->category();
+        $training = $this->makeTraining($u15);
+        $default = app(Roster::class)->statusIdsFor($training);
+
+        $this->edit($training, ['title' => 'Only title', 'roster_status_ids' => $default])->assertSessionHasNoErrors();
+
+        $this->assertNull($training->fresh()->roster_status_ids);
+        $this->assertSame(['title'], ActivityLog::where('action', ActivityAction::TRAINING_SESSION_UPDATED)->sole()->properties['fields']);
+    }
+
+    #[Test]
+    public function a_marked_session_accepts_the_effective_default_set_back(): void
+    {
+        $u15 = $this->category();
+        $training = $this->makeTraining($u15);
+        $this->mark($training, $this->player($u15));
+
+        $this->edit($training, ['title' => 'Marked', 'roster_status_ids' => app(Roster::class)->statusIdsFor($training)])->assertSessionHasNoErrors();
+
+        $this->assertNull($training->fresh()->roster_status_ids);
+    }
+
+    #[Test]
+    public function an_unsaved_session_stores_a_set_that_differs_from_the_default(): void
+    {
+        $u15 = $this->category();
+        $training = $this->makeTraining($u15);
+        $registered = (int) PlayerStatus::where('code', 'registered')->value('id');
+        $paused = (int) PlayerStatus::where('code', 'paused')->value('id');
+        $this->assertSame([$registered], app(Roster::class)->statusIdsFor($training));
+
+        $this->edit($training, ['roster_status_ids' => [max($registered, $paused), min($registered, $paused)]])->assertSessionHasNoErrors();
+
+        $this->assertSame([min($registered, $paused), max($registered, $paused)], $training->fresh()->roster_status_ids);
+    }
+
+    #[Test]
     public function an_edit_that_changes_nothing_records_no_activity(): void
     {
         $training = $this->makeTraining($this->category(), ['title' => 'Same']);

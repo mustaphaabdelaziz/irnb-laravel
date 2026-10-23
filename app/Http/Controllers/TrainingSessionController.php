@@ -8,6 +8,7 @@ use App\Models\Branch;
 use App\Models\TrainingSession;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
+use App\Services\Attendance\Roster;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -96,7 +97,12 @@ class TrainingSessionController extends Controller
         $handAdded = $session->kind !== SessionKind::Regular;
         $kind = isset($data['kind']) ? SessionKind::tryFrom($data['kind']) : $session->kind;
         $branchId = array_key_exists('branch_id', $data) ? ($data['branch_id'] === null ? null : (int) $data['branch_id']) : $session->branch_id;
-        $statusIds = array_key_exists('roster_status_ids', $data) ? $this->sortedIds($data['roster_status_ids']) : $this->sortedIds($session->roster_status_ids);
+        $storedIds = $this->sortedIds($session->roster_status_ids);
+        $statusIds = array_key_exists('roster_status_ids', $data) ? $this->sortedIds($data['roster_status_ids']) : $storedIds;
+        // The set the dialog pre-fills is the effective one; sending it back is no change, so a default is never pinned.
+        if ($statusIds !== $storedIds && $statusIds === $this->sortedIds(app(Roster::class)->statusIdsFor($session))) {
+            $statusIds = $storedIds;
+        }
         $currentIds = $session->categoryIds();
         $chosenIds = isset($data['category_ids']) ? $this->uniqueIds($data['category_ids']) : null;
         $categoryIds = match (true) {
@@ -122,7 +128,7 @@ class TrainingSessionController extends Controller
         if ($session->attendances()->exists()) {
             $changed = [
                 'branch_id' => $branchId !== $session->branch_id,
-                'roster_status_ids' => $statusIds !== $this->sortedIds($session->roster_status_ids),
+                'roster_status_ids' => $statusIds !== $storedIds,
                 'kind' => $kind !== $session->kind,
                 'category_ids' => $sortedCategoryIds !== $currentIds,
             ];
@@ -145,7 +151,7 @@ class TrainingSessionController extends Controller
             'category_id' => in_array($session->category_id, $categoryIds, true) ? $session->category_id : $categoryIds[0],
         ];
         // Written only when it changed: an older, unsorted stored set must not turn dirty on an unrelated edit.
-        if ($statusIds !== $this->sortedIds($session->roster_status_ids)) {
+        if ($statusIds !== $storedIds) {
             $attributes['roster_status_ids'] = $statusIds;
         }
         if ($date !== $session->date || $start !== $session->start_time) {

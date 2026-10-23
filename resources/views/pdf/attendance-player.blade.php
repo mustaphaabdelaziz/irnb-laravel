@@ -41,6 +41,9 @@
                 <div style="font-size:14px; font-weight:bold;">{{ $player->fullname }}</div>
                 <div style="font-family:monospace;">{{ $player->membership_id }}</div>
                 <div class="muted">{{ $player->category?->localized_name }}</div>
+                @if (!empty($branch))
+                    <div class="muted">{{ $L('branch') }}: {{ $branch }}</div>
+                @endif
                 <div class="muted">{{ $L('activity.period_label') }}: <bdi dir="ltr">{{ $period['label'] }}</bdi></div>
                 @if ($preseasonLine)
                     <div class="muted">{{ $preseasonLine }}</div>

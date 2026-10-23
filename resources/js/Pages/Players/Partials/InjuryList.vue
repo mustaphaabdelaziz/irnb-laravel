@@ -15,6 +15,7 @@ import { parseDay } from '@/lib/attendanceCalendar';
  */
 const props = defineProps({
     playerId: { type: Number, required: true },
+    branchId: { type: Number, default: null }, // the card's tab: a spell is one branch's
     injuries: { type: Object, required: true }, // { spells: [{ start, end, sessions, open, note }], unmatched: [note] }
 });
 const emit = defineEmits(['saved']);
@@ -51,7 +52,7 @@ async function save() {
     errors.value = {};
     try {
         if (e.id) await window.axios.put(route('attendance.injury-notes.update', e.id), details);
-        else await window.axios.post(route('attendance.injury-notes.store', props.playerId), { start_date: e.start_date, ...details });
+        else await window.axios.post(route('attendance.injury-notes.store', props.playerId), { start_date: e.start_date, ...(props.branchId ? { branch_id: props.branchId } : {}), ...details });
         close();
         emit('saved');
     } catch (error) {

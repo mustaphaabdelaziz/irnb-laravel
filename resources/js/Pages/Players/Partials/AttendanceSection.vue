@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import { Bar } from 'vue-chartjs';
 import { useI18n } from 'vue-i18n';
 import '@/lib/registerCharts';
@@ -9,16 +9,19 @@ import StatDoughnut from '@/Components/StatDoughnut.vue';
 import Icon from '@/Components/Icon.vue';
 import IconButton from '@/Components/IconButton.vue';
 import InjuryList from './InjuryList.vue';
+import BranchSwitch from '@/Components/Attendance/BranchSwitch.vue';
 import { useAttendanceCodes } from '@/Composables/useAttendanceCodes';
 import { baseOptions } from '@/lib/chartTheme';
 import { dayLabel } from '@/lib/attendanceCalendar';
 import { hours, pct, periodQuery, statusBars } from '@/lib/attendanceStats';
+import { branchFromUrl } from '@/lib/attendanceBranchTab';
 
 /**
  * The profile's attendance card. It fetches its own data
  * (attendance.players.show, gated on attendance/view) once the profile has
  * painted, so the profile never waits for it, and a period change reloads
  * only this card. Status names and colours come from the configured codes.
+ * A two-sport player has one tab per branch; every number, the report and the letter are the tab's.
  */
 const props = defineProps({
     player: { type: Object, required: true },
@@ -31,8 +34,15 @@ const rtl = computed(() => locale.value === 'ar');
 const data = ref(null);
 const loading = ref(true);
 const failed = ref(false);
-const lastQuery = ref({});
-let ticket = 0; // a slow answer for an older period never overwrites a newer one
+const lastQuery = ref({}); // the period, as PeriodFilter sends it
+let ticket = 0; // a slow answer for an older period or tab never overwrites a newer one
+
+// The branch tab. A link from a branch's report page or the dashboard
+// (?attendance_branch=) opens on that branch; otherwise the server picks
+// (the remembered branch when the player has it, else their first).
+const page = usePage();
+const branchId = ref(branchFromUrl(page.url));
+const branchQuery = () => (branchId.value ? { branch_id: branchId.value } : {});
 
 async function load(query = {}) {
     const mine = ++ticket;
@@ -40,8 +50,11 @@ async function load(query = {}) {
     loading.value = true;
     failed.value = false;
     try {
-        const response = await window.axios.get(route('attendance.players.show', { player: props.player.id, ...query }));
-        if (mine === ticket) data.value = response.data;
+        const response = await window.axios.get(route('attendance.players.show', { player: props.player.id, ...query, ...branchQuery() }));
+        if (mine === ticket) {
+            data.value = response.data;
+            branchId.value = response.data.branchId; // the tab the server settled on
+        }
     } catch {
         if (mine === ticket) failed.value = true;
     } finally {
@@ -50,6 +63,10 @@ async function load(query = {}) {
 }
 onMounted(() => load());
 const retry = () => load(lastQuery.value);
+function switchBranch(id) {
+    branchId.value = id;
+    load(lastQuery.value);
+}
 defineExpose({ load });
 
 const summary = computed(() => data.value?.summary ?? null);
@@ -70,10 +87,11 @@ const doughnutStats = computed(() => statuses.value.map((s) => ({ key: s, label:
 const doughnutPalette = computed(() => statuses.value.map((s) => color(s)));
 const monthlyChart = computed(() => statusBars(data.value?.monthly, statuses.value, label, color, locale.value));
 const monthlyOptions = computed(() => baseOptions({ rtl: rtl.value, stacked: true }));
-// Same period as the card.
-const reportHref = computed(() => (data.value ? route('attendance.players.report', { player: props.player.id, ...periodQuery(data.value.period) }) : null));
-// The parent letter, for the same period.
-const letterHref = computed(() => (data.value ? route('attendance.players.letter', { player: props.player.id, ...periodQuery(data.value.period) }) : null));
+// Same period and branch tab as the card.
+const printQuery = computed(() => (data.value ? { player: props.player.id, ...periodQuery(data.value.period), ...(data.value.branchId ? { branch_id: data.value.branchId } : {}) } : null));
+const reportHref = computed(() => (printQuery.value ? route('attendance.players.report', printQuery.value) : null));
+// The parent letter, for the same period and branch.
+const letterHref = computed(() => (printQuery.value ? route('attendance.players.letter', printQuery.value) : null));
 
 const preseasonText = computed(() => {
     const p = data.value?.preseason;
@@ -91,6 +109,7 @@ const th = 'p-2 text-start text-xs font-semibold text-slate-500 dark:text-slate-
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-4 dark:border-slate-800">
             <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('attendance') }}</h3>
             <div v-if="data" class="flex flex-wrap items-center gap-2">
+                <BranchSwitch :branches="data.branches" :branch-id="data.branchId" @switch="switchBranch" />
                 <PeriodFilter :period="data.period" @change="load" />
                 <IconButton :href="reportHref" external target="_blank" icon="print" :label="t('att.print_report')" size="sm" />
                 <IconButton :href="letterHref" external target="_blank" icon="mail" :label="t('att.letter.print')" size="sm" />
@@ -170,7 +189,7 @@ const th = 'p-2 text-start text-xs font-semibold text-slate-500 dark:text-slate-
                 </div>
             </template>
 
-            <InjuryList v-if="data.injuries" :player-id="player.id" :injuries="data.injuries" @saved="retry" />
+            <InjuryList v-if="data.injuries" :player-id="player.id" :branch-id="data.branchId" :injuries="data.injuries" @saved="retry" />
         </div>
     </div>
 </template>

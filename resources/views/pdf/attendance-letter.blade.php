@@ -30,6 +30,9 @@
     <table class="meta">
         <tr><td class="label">{{ $L('att.letter.date_label') }}</td><td><bdi dir="ltr">{{ $date }}</bdi></td></tr>
         <tr><td class="label">{{ $L('att.letter.to') }}</td><td>{{ $recipient }}</td></tr>
+        @if (!empty($branch))
+            <tr><td class="label">{{ $L('branch') }}</td><td>{{ $branch }}</td></tr>
+        @endif
         <tr><td class="label">{{ $L('att.letter.subject_label') }}</td><td class="subject">{{ $subject }}</td></tr>
     </table>
 

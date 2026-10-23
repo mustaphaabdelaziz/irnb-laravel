@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Branch;
 use App\Models\Player;
 use App\Services\Activity\ActivityPeriod;
 use App\Services\Attendance\AtRisk;
 use App\Services\Attendance\AttendanceStats;
 use App\Services\Attendance\AttendanceStatusCatalog;
+use App\Services\Attendance\BranchChoice;
 use App\Services\Attendance\InjurySpells;
 use App\Services\Attendance\PreseasonProgress;
 use App\Services\Pdf\ClubHeader;
@@ -16,6 +18,7 @@ use App\Support\Media;
 use App\Support\UiLang;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -24,6 +27,10 @@ use Symfony\Component\HttpFoundation\Response;
  * attendance module: the profile needs players/view, and its attendance
  * card needs attendance/view on top. The card fetches this after the
  * profile has painted, so the profile never waits for it.
+ *
+ * A player in two branches has separate numbers per branch: the card shows
+ * one branch at a time (branchTabs()), and the PDF report and the parent
+ * letter print the tab on screen.
  */
 class AttendancePlayerController extends Controller
 {
@@ -46,18 +53,19 @@ class AttendancePlayerController extends Controller
 
         return response()->json([
             ...$data,
-            // The card's warning banner, for the card's own period.
-            'risk' => $this->risk->forPlayer($player->id, $from, $to, $data['summary']),
-            // The card's Injuries section: spells overlapping the period, with details, and unmatched details.
-            'injuries' => $this->injuries->forPlayer($player->id, $from, $to),
+            // The card's warning banner, for the card's own period and branch.
+            'risk' => $this->risk->forPlayer($player->id, $from, $to, $data['summary'], $data['branchId']),
+            // The card's Injuries section: the branch's spells overlapping the period, with details, and unmatched details.
+            'injuries' => $this->injuries->forPlayer($player->id, $from, $to, $data['branchId']),
         ]);
     }
 
-    /** The card as a printable PDF, same period (A4 portrait, right-to-left in Arabic). */
+    /** The card as a printable PDF, same period and branch (A4 portrait, right-to-left in Arabic). */
     public function report(Request $request, Player $player): Response
     {
         $player->loadMissing('category');
         $data = $this->data($request, $player);
+        ['from' => $from, 'to' => $to] = $data['period'];
 
         $html = view('pdf.attendance-player', [
             ...$data,
@@ -71,27 +79,28 @@ class AttendancePlayerController extends Controller
 
         return $this->pdf->stream(
             $html,
-            "attendance-{$player->membership_id}-{$data['period']['from']}-{$data['period']['to']}.pdf",
+            "attendance-{$player->membership_id}-{$from}-{$to}".self::branchSuffix($data['branchId']).'.pdf',
             app()->getLocale() === 'ar',
         );
     }
 
     /**
      * A formal letter to the player's parents about the period (the card's,
-     * or the current season): club header, date, recipient (the first
-     * emergency contact, else "parent / guardian of"), the configured subject
-     * and text with their placeholders filled in, the absences, lates and
-     * early departures, totals, and signature lines. A4 portrait,
-     * right-to-left in Arabic.
+     * or the current season) in the card's branch: club header, date,
+     * recipient (the first emergency contact, else "parent / guardian of"),
+     * the configured subject and text with their placeholders filled in, the
+     * absences, lates and early departures, totals, and signature lines. A4
+     * portrait, right-to-left in Arabic.
      */
     public function letter(Request $request, Player $player): Response
     {
         $player->loadMissing('category');
-        [$period, $summary] = $this->periodAndSummary($request, $player);
+        [$tabs, $branchId] = $this->branchTabs($request, $player);
+        [$period, $summary] = $this->periodAndSummary($request, $player, $branchId);
         ['from' => $from, 'to' => $to] = $period;
         $listed = $this->catalog->keysBehavingAs(...self::LETTER_STATUSES);
         $rows = array_reverse(array_values(array_filter(
-            $this->stats->playerSessions($player->id, $from, $to),
+            $this->stats->playerSessions($player->id, $from, $to, $branchId),
             fn (array $row) => in_array($row['status'], $listed, true),
         )));
         $club = ClubHeader::data();
@@ -114,6 +123,7 @@ class AttendancePlayerController extends Controller
             'recipient' => $contact ?: strtr(UiLang::get('att.letter.guardian_of'), ['{player}' => $player->fullname]),
             'subject' => $letter['subject'],
             'body' => $letter['body'],
+            'branch' => self::branchName($tabs, $branchId),
             'periodText' => $periodText,
             'rows' => $rows,
             'summary' => $summary,
@@ -125,7 +135,11 @@ class AttendancePlayerController extends Controller
             'labels' => $this->catalog->labels(),
         ])->render();
 
-        return $this->pdf->stream($html, "attendance-letter-{$player->membership_id}-{$from}-{$to}.pdf", app()->getLocale() === 'ar');
+        return $this->pdf->stream(
+            $html,
+            "attendance-letter-{$player->membership_id}-{$from}-{$to}".self::branchSuffix($branchId).'.pdf',
+            app()->getLocale() === 'ar',
+        );
     }
 
     /** 'Y-m-d' → 'dd/mm/yyyy', as printed on letters. */
@@ -134,30 +148,92 @@ class AttendancePlayerController extends Controller
         return substr($date, 8, 2).'/'.substr($date, 5, 2).'/'.substr($date, 0, 4);
     }
 
+    /** '-b{id}' in a branch's file name; nothing for the whole club. */
+    private static function branchSuffix(?int $branchId): string
+    {
+        return $branchId === null ? '' : "-b{$branchId}";
+    }
+
+    /** @param  list<array{id: int, name: string}>  $tabs */
+    private static function branchName(array $tabs, ?int $branchId): ?string
+    {
+        foreach ($tabs as $tab) {
+            if ($tab['id'] === $branchId) {
+                return $tab['name'];
+            }
+        }
+
+        return null;
+    }
+
     /**
-     * The requested period (default: the current season) and the player's summary over it.
+     * The card's branch tabs: every branch the player is a member of now or
+     * has a mark in (any date, so the tabs do not change with the period),
+     * by id; and the tab shown: the asked `branch_id` when it is one of
+     * them, else the remembered attendance branch (BranchChoice) when it is,
+     * else the first. No tab (a club without branches, or a player in none):
+     * null, and the numbers cover every session. The card never changes the
+     * remembered choice. One query.
+     *
+     * @return array{0: list<array{id: int, name: string}>, 1: ?int}
+     */
+    private function branchTabs(Request $request, Player $player): array
+    {
+        $asked = $request->validate(['branch_id' => ['nullable', 'integer']])['branch_id'] ?? null;
+        $tabs = Branch::query()
+            ->whereIn('id', DB::table('branch_player')->select('branch_id')->where('player_id', $player->id))
+            ->orWhereIn('id', DB::table('attendances')
+                ->join('training_sessions', 'training_sessions.id', '=', 'attendances.training_session_id')
+                ->where('attendances.player_id', $player->id)
+                ->whereNotNull('training_sessions.branch_id')
+                ->select('training_sessions.branch_id'))
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Branch $branch) => ['id' => $branch->id, 'name' => $branch->localized_name])
+            ->values()
+            ->all();
+        $ids = array_column($tabs, 'id');
+
+        foreach ([$asked === null ? null : (int) $asked, BranchChoice::remembered($request)] as $candidate) {
+            if ($candidate !== null && in_array($candidate, $ids, true)) {
+                return [$tabs, $candidate];
+            }
+        }
+
+        return [$tabs, $ids[0] ?? null];
+    }
+
+    /**
+     * The requested period (default: the current season) and the player's summary over it in the branch.
      *
      * @return array{0: array<string, mixed>, 1: array<string, mixed>}
      */
-    private function periodAndSummary(Request $request, Player $player): array
+    private function periodAndSummary(Request $request, Player $player, ?int $branchId): array
     {
         $period = ActivityPeriod::fromRequestOrSeason($request)->toArray();
 
-        return [$period, $this->stats->players($period['from'], $period['to'], null, $player->id)[$player->id] ?? $this->stats->emptyRow($player->id)];
+        return [$period, $this->stats->players($period['from'], $period['to'], null, $player->id, $branchId)[$player->id] ?? $this->stats->emptyRow($player->id)];
     }
 
     /** @return array<string, mixed> */
     private function data(Request $request, Player $player): array
     {
-        [$period, $summary] = $this->periodAndSummary($request, $player);
+        [$tabs, $branchId] = $this->branchTabs($request, $player);
+        [$period, $summary] = $this->periodAndSummary($request, $player, $branchId);
         ['from' => $from, 'to' => $to] = $period;
 
         return [
             'period' => $period,
+            'branches' => $tabs,
+            'branchId' => $branchId,
+            'branch' => self::branchName($tabs, $branchId),
             'summary' => $summary,
-            'monthly' => $this->stats->monthly($from, $to, null, $player->id),
-            'preseason' => $player->category_id ? $this->preseason->forCategory((int) $player->category_id, $to) : null,
-            'sessions' => $this->stats->playerSessions($player->id, $from, $to),
+            'monthly' => $this->stats->monthly($from, $to, null, $player->id, $branchId),
+            // The tab's own target; a player in no branch of a club with branches has none to show.
+            'preseason' => $player->category_id && ($branchId !== null || ! Branch::exists())
+                ? $this->preseason->forCategory((int) $player->category_id, $to, $branchId)
+                : null,
+            'sessions' => $this->stats->playerSessions($player->id, $from, $to, $branchId),
         ];
     }
 }

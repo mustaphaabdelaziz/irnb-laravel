@@ -40,11 +40,13 @@ final class PreseasonProgress
 
     /**
      * Every category's progress for the season of $date in three queries
-     * (the statistics page lists all categories at once).
+     * (the statistics page lists all categories at once), in one branch:
+     * its held pre-season sessions and its target. Null = every branch's
+     * sessions and, per category, the highest target any branch set.
      *
      * @return array<int, array{season: string, done: int, target: ?int}> keyed by category id
      */
-    public function forCategories(DateTimeInterface|string $date): array
+    public function forCategories(DateTimeInterface|string $date, ?int $branchId = null): array
     {
         $season = Season::forDate($date);
 
@@ -53,14 +55,16 @@ final class PreseasonProgress
             ->where('training_sessions.kind', SessionKind::Preseason->value)
             ->where('training_sessions.state', SessionState::Held->value)
             ->whereBetween('training_sessions.date', [$season->start()->toDateString(), $season->end()->toDateString()])
+            ->tap(fn ($q) => BranchScope::apply($q, $branchId))
             ->select('training_session_category.category_id')
             ->selectRaw('count(*) as total')
             ->groupBy('training_session_category.category_id')
             ->get()
             ->mapWithKeys(fn ($row) => [(int) $row->category_id => (int) $row->total]);
 
-        // One target per category across branches (the highest), as milestones() reads it.
+        // One target per category: the branch's, or the highest across branches (as milestones() reads it).
         $targets = PreseasonTarget::where('season_start_year', $season->startYear)
+            ->when($branchId !== null, fn ($q) => $q->where('branch_id', $branchId))
             ->selectRaw('category_id, max(target_count) as target_count')
             ->groupBy('category_id')
             ->pluck('target_count', 'category_id')

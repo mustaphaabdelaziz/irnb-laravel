@@ -25,6 +25,12 @@ use Illuminate\Support\Facades\DB;
  * Every method runs a fixed number of grouped queries, whatever the roster
  * size, with the query builder only (same SQL on sqlite and MySQL).
  *
+ * Per branch: every method takes a trailing ?int $branchId. A mark belongs
+ * to its session's branch (BranchScope), whatever the player's membership,
+ * so a two-sport player has separate numbers per sport and a guest from
+ * another branch counts in the session's. Null = no branch condition (a
+ * club without branches). The branch adds a condition, never a query.
+ *
  * Category attribution: a single-category session keeps every mark in it,
  * guests included. A joint (multi-category) session attributes each mark to
  * `attendances.category_id` — the category the player was in when the mark
@@ -53,12 +59,12 @@ final class AttendanceStats
     ) {}
 
     /** @return array<int, array<string, mixed>> keyed and ordered by player id */
-    public function players(string $from, string $to, ?int $categoryId = null, ?int $playerId = null): array
+    public function players(string $from, string $to, ?int $categoryId = null, ?int $playerId = null, ?int $branchId = null): array
     {
         $settings = $this->settings();
         $longLate = max(0, (int) $settings['rules']['late_minutes_as_absent']);
 
-        $grouped = $this->marks($from, $to, $categoryId, $playerId)
+        $grouped = $this->marks($from, $to, $categoryId, $playerId, $branchId)
             ->select('attendances.player_id', 'attendances.status')
             ->selectRaw('count(*) as total')
             ->selectRaw('coalesce(sum(attendances.minutes), 0) as minutes')
@@ -79,7 +85,7 @@ final class AttendanceStats
         }
         ksort($counts);
 
-        $missed = $this->missedMinutes($this->marks($from, $to, $categoryId, $playerId), 'attendances.player_id');
+        $missed = $this->missedMinutes($this->marks($from, $to, $categoryId, $playerId, $branchId), 'attendances.player_id');
         $points = $settings['points'];
 
         $rows = [];
@@ -131,13 +137,13 @@ final class AttendanceStats
     }
 
     /** @return array{labels: list<string>, statuses: array<string, list<int>>} marks per month and status */
-    public function monthly(string $from, string $to, ?int $categoryId = null, ?int $playerId = null): array
+    public function monthly(string $from, string $to, ?int $categoryId = null, ?int $playerId = null, ?int $branchId = null): array
     {
         $labels = self::months($from, $to);
         $index = array_flip($labels);
         $statuses = array_fill_keys($this->catalog->keys(), array_fill(0, count($labels), 0));
 
-        $rows = $this->marks($from, $to, $categoryId, $playerId)
+        $rows = $this->marks($from, $to, $categoryId, $playerId, $branchId)
             ->selectRaw('substr(training_sessions.date, 1, 7) as ym')
             ->addSelect('attendances.status')
             ->selectRaw('count(*) as total')
@@ -154,7 +160,7 @@ final class AttendanceStats
     }
 
     /** @return array{labels: list<string>, held: list<int>, cancelled: list<int>} a joint session counts once */
-    public function sessionsByMonth(string $from, string $to, ?int $categoryId = null): array
+    public function sessionsByMonth(string $from, string $to, ?int $categoryId = null, ?int $branchId = null): array
     {
         $labels = self::months($from, $to);
         $index = array_flip($labels);
@@ -166,6 +172,7 @@ final class AttendanceStats
             ->whereBetween('training_sessions.date', [$from, $to])
             ->whereIn('training_sessions.state', [$held, $cancelled])
             ->when($categoryId !== null, fn (Builder $q) => $q->whereIn('training_sessions.id', $this->sessionsOf($categoryId)))
+            ->tap(fn (Builder $q) => BranchScope::apply($q, $branchId))
             ->selectRaw('substr(training_sessions.date, 1, 7) as ym')
             ->addSelect('training_sessions.state')
             ->selectRaw('count(*) as total')
@@ -182,16 +189,16 @@ final class AttendanceStats
     }
 
     /** @return list<array<string, mixed>> one row per category, by id */
-    public function categories(string $from, string $to): array
+    public function categories(string $from, string $to, ?int $branchId = null): array
     {
         // Each mark exactly once, under the category it is attributed to
         // (see the class comment and attributedTo()).
         $attributed = fn (): Builder => $this->attributedTo(
-            DB::table('attendances')
+            BranchScope::apply(DB::table('attendances')
                 ->join('training_sessions', 'training_sessions.id', '=', 'attendances.training_session_id')
                 ->join('training_session_category', 'training_session_category.training_session_id', '=', 'attendances.training_session_id')
                 ->where('training_sessions.state', SessionState::Held->value)
-                ->whereBetween('training_sessions.date', [$from, $to]),
+                ->whereBetween('training_sessions.date', [$from, $to]), $branchId),
             'training_session_category.category_id',
         );
 
@@ -216,6 +223,7 @@ final class AttendanceStats
             ->join('training_session_category', 'training_session_category.training_session_id', '=', 'training_sessions.id')
             ->whereBetween('training_sessions.date', [$from, $to])
             ->whereIn('training_sessions.state', [SessionState::Held->value, SessionState::Cancelled->value])
+            ->tap(fn (Builder $q) => BranchScope::apply($q, $branchId))
             ->select('training_session_category.category_id', 'training_sessions.state')
             ->selectRaw('count(*) as total')
             ->groupBy('training_session_category.category_id', 'training_sessions.state')
@@ -224,7 +232,7 @@ final class AttendanceStats
             $sessions[(int) $row->category_id][$row->state] = (int) $row->total;
         }
 
-        $preseason = $this->preseason->forCategories($to);
+        $preseason = $this->preseason->forCategories($to, $branchId);
 
         return Category::orderBy('id')->get()
             ->map(fn (Category $category) => [
@@ -240,9 +248,9 @@ final class AttendanceStats
     }
 
     /** @return list<array<string, mixed>> the player's marks in held sessions, newest first */
-    public function playerSessions(int $playerId, string $from, string $to): array
+    public function playerSessions(int $playerId, string $from, string $to, ?int $branchId = null): array
     {
-        $marks = $this->marks($from, $to, null, $playerId)
+        $marks = $this->marks($from, $to, null, $playerId, $branchId)
             ->orderByDesc('training_sessions.date')
             ->orderByDesc('training_sessions.start_time')
             ->orderByDesc('training_sessions.id')
@@ -294,9 +302,9 @@ final class AttendanceStats
      *
      * @return array<int, array{current: int, longest: int, last_date: string}> keyed by player id
      */
-    public function unexcusedStreaks(string $from, string $to, ?int $playerId = null): array
+    public function unexcusedStreaks(string $from, string $to, ?int $playerId = null, ?int $branchId = null): array
     {
-        $marks = $this->marks($from, $to, null, $playerId)
+        $marks = $this->marks($from, $to, null, $playerId, $branchId)
             ->orderBy('attendances.player_id')
             ->orderBy('training_sessions.date')
             ->orderBy('training_sessions.start_time')
@@ -430,10 +438,10 @@ final class AttendanceStats
         ];
     }
 
-    /** Marks in held sessions of the period, optionally one player's and/or one category's. */
-    private function marks(string $from, string $to, ?int $categoryId, ?int $playerId): Builder
+    /** Marks in held sessions of the period, optionally one player's, one category's and/or one branch's. */
+    private function marks(string $from, string $to, ?int $categoryId, ?int $playerId, ?int $branchId = null): Builder
     {
-        return DB::table('attendances')
+        return BranchScope::apply(DB::table('attendances')
             ->join('training_sessions', 'training_sessions.id', '=', 'attendances.training_session_id')
             ->where('training_sessions.state', SessionState::Held->value)
             ->whereBetween('training_sessions.date', [$from, $to])
@@ -441,7 +449,7 @@ final class AttendanceStats
             ->when($categoryId !== null, fn (Builder $q) => $this->attributedTo(
                 $q->whereIn('attendances.training_session_id', $this->sessionsOf($categoryId)),
                 $categoryId,
-            ));
+            )), $branchId);
     }
 
     /** Ids of the sessions a category takes part in (the pivot, so joint sessions too). */

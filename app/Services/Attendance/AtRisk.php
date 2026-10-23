@@ -56,20 +56,21 @@ final class AtRisk
     /**
      * Every active player (not archived, not left) at risk over the period,
      * worst first: lowest score % (none last), then longest streak, then
-     * name. $categoryId keeps the players now in that category; their numbers
+     * name. Numbers come from one branch's sessions ($branchId; null = no
+     * condition). $categoryId keeps the players now in that category; their numbers
      * still cover all their marks, since the risk is the person's. Six
      * queries whatever the roster (the custom codes: 1, players(): 2, the
      * streak scan: 1, names: 2), four when nobody is at risk.
      *
      * @return list<array<string, mixed>>
      */
-    public function list(string $from, string $to, ?int $categoryId = null): array
+    public function list(string $from, string $to, ?int $categoryId = null, ?int $branchId = null): array
     {
         $thresholds = $this->thresholds();
-        $streaks = $this->stats->unexcusedStreaks($from, $to);
+        $streaks = $this->stats->unexcusedStreaks($from, $to, null, $branchId);
 
         $flagged = [];
-        foreach ($this->stats->players($from, $to) as $playerId => $row) {
+        foreach ($this->stats->players($from, $to, null, null, $branchId) as $playerId => $row) {
             $streak = $streaks[$playerId] ?? self::NO_STREAK;
             $flags = self::evaluate($row, $streak, $thresholds);
             if (! $flags['at_risk']) {
@@ -100,13 +101,13 @@ final class AtRisk
 
     /**
      * One player's flags for the profile card, over the card's period.
-     * $row is the card's own players() row (or emptyRow()).
+     * $row is the card's own players() row (or emptyRow()), for the same branch.
      *
      * @return array{at_risk: bool, low_score: bool, streak: bool, score_pct: ?float, current_streak: int, longest_streak: int, min_score_pct: int, unexcused_streak: int, min_expected: int}
      */
-    public function forPlayer(int $playerId, string $from, string $to, array $row): array
+    public function forPlayer(int $playerId, string $from, string $to, array $row, ?int $branchId = null): array
     {
-        $streak = $this->stats->unexcusedStreaks($from, $to, $playerId)[$playerId] ?? self::NO_STREAK;
+        $streak = $this->stats->unexcusedStreaks($from, $to, $playerId, $branchId)[$playerId] ?? self::NO_STREAK;
         $thresholds = $this->thresholds();
 
         return [

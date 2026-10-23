@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\SessionKind;
 use App\Enums\SessionState;
+use App\Models\Branch;
 use App\Models\TrainingSession;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
@@ -18,13 +19,15 @@ use Illuminate\Validation\ValidationException;
 class TrainingSessionController extends Controller
 {
     /**
-     * An extra or pre-season session added by hand (regular ones come from the
-     * schedule). Only a pre-season session can be shared by several
+     * An extra or pre-season session added by hand for one branch (regular ones
+     * come from the schedule). Only a pre-season session can be shared by several
      * categories; `category_id` is its primary one.
      */
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
+            // Required once the club has branches; null = the whole club.
+            'branch_id' => [Rule::requiredIf(fn () => Branch::exists()), 'nullable', 'integer', 'exists:branches,id'],
             'category_id' => ['required', 'integer', 'exists:categories,id'],
             'category_ids' => ['exclude_unless:kind,preseason', 'nullable', 'array'],
             'category_ids.*' => ['exclude_unless:kind,preseason', 'integer', 'distinct', 'exists:categories,id'],
@@ -41,7 +44,8 @@ class TrainingSessionController extends Controller
         $categoryIds = $data['kind'] === SessionKind::Preseason->value
             ? $this->uniqueIds([(int) $data['category_id'], ...($data['category_ids'] ?? [])])
             : [(int) $data['category_id']];
-        $this->assertSlotFree($categoryIds, $data['date'], $data['start_time']);
+        $branchId = isset($data['branch_id']) ? (int) $data['branch_id'] : null;
+        $this->assertSlotFree($branchId, $categoryIds, $data['date'], $data['start_time']);
 
         try {
             $session = DB::transaction(function () use ($data, $categoryIds, $request) {
@@ -82,7 +86,7 @@ class TrainingSessionController extends Controller
         }
 
         $ids = $this->uniqueIds($data['category_ids']);
-        $this->assertSlotFree($ids, $session->date, $session->start_time, $session->id, 'category_ids');
+        $this->assertSlotFree($session->branch_id, $ids, $session->date, $session->start_time, $session->id, 'category_ids');
         $primary = in_array($session->category_id, $ids, true) ? $session->category_id : $ids[0];
 
         try {
@@ -122,7 +126,7 @@ class TrainingSessionController extends Controller
      */
     public function destroy(Request $request, TrainingSession $session): RedirectResponse
     {
-        $back = ['category_id' => $session->category_id, 'month' => substr($session->date, 0, 7)];
+        $back = ['category_id' => $session->category_id, 'month' => substr($session->date, 0, 7), 'branch_id' => $session->branch_id];
 
         DB::transaction(function () use ($session, $request) {
             if ($session->kind === SessionKind::Regular) {
@@ -131,7 +135,7 @@ class TrainingSessionController extends Controller
                     $slots[] = [$session->moved_from, $session->schedule?->start_time ?? $session->start_time];
                 }
                 DB::table('deleted_session_slots')->insertOrIgnore(array_map(fn (array $slot) => [
-                    'category_id' => $session->category_id, 'date' => $slot[0], 'start_time' => $slot[1], 'created_at' => now(),
+                    'branch_id' => $session->branch_id, 'category_id' => $session->category_id, 'date' => $slot[0], 'start_time' => $slot[1], 'created_at' => now(),
                 ], $slots));
             }
 
@@ -163,7 +167,7 @@ class TrainingSessionController extends Controller
             throw ValidationException::withMessages(['date' => 'att.error.cancelled']);
         }
         $data = $request->validate($this->slotRules());
-        $this->assertSlotFree($session->categoryIds(), $data['date'], $data['start_time'], $session->id);
+        $this->assertSlotFree($session->branch_id, $session->categoryIds(), $data['date'], $data['start_time'], $session->id);
 
         try {
             DB::transaction(function () use ($session, $data, $request) {
@@ -194,15 +198,17 @@ class TrainingSessionController extends Controller
     }
 
     /**
-     * No other session that any of these categories takes part in may start
-     * at the same date and time. The pivot holds every category, primary or
-     * not, so this also covers the P1 unique (category, date, start) key.
+     * No other session of the same branch that any of these categories takes
+     * part in may start at the same date and time (other branches may). The
+     * pivot holds every category, primary or not, so this also covers the
+     * unique (branch, category, date, start) key.
      *
      * @param  array<int, int>  $categoryIds
      */
-    private function assertSlotFree(array $categoryIds, string $date, string $startTime, ?int $ignoreId = null, string $errorKey = 'start_time'): void
+    private function assertSlotFree(?int $branchId, array $categoryIds, string $date, string $startTime, ?int $ignoreId = null, string $errorKey = 'start_time'): void
     {
-        $taken = TrainingSession::where('date', $date)->where('start_time', $startTime)
+        $taken = TrainingSession::where('branch_id', $branchId) // null → whereNull
+            ->where('date', $date)->where('start_time', $startTime)
             ->whereIn('id', DB::table('training_session_category')->select('training_session_id')->whereIn('category_id', $categoryIds))
             ->when($ignoreId, fn ($q) => $q->whereKeyNot($ignoreId))
             ->exists();

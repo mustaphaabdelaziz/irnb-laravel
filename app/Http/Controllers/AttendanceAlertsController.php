@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Services\Activity\ActivityPeriod;
 use App\Services\Attendance\AtRisk;
+use App\Services\Attendance\BranchChoice;
 use App\Support\Export;
 use App\Support\UiLang;
 use Illuminate\Http\Request;
@@ -14,8 +15,9 @@ use Symfony\Component\HttpFoundation\Response as FileResponse;
 
 /**
  * Players at risk (`attendance.alerts`, view): a period, the current season
- * by default, and an optional category (the players' current one). The
- * rules and every number come from AtRisk / AttendanceStats.
+ * by default, one branch (BranchChoice, shared with the calendar) and an
+ * optional category (the players' current one). The rules and every number
+ * come from AtRisk / AttendanceStats, over that branch's sessions.
  */
 class AttendanceAlertsController extends Controller
 {
@@ -26,7 +28,7 @@ class AttendanceAlertsController extends Controller
         return Inertia::render('Attendance/Alerts', $this->data($request));
     }
 
-    /** The list as XLSX (default) or CSV, for the same period and category as the page. */
+    /** The list as XLSX (default) or CSV, for the same period, branch and category as the page. */
     public function export(Request $request): FileResponse
     {
         $data = $this->data($request);
@@ -34,6 +36,7 @@ class AttendanceAlertsController extends Controller
         $categoryName = $data['categoryId'] !== null
             ? collect($data['categories'])->firstWhere('id', $data['categoryId'])['name']
             : UiLang::get('att.all_categories');
+        $branchName = $data['branchId'] !== null ? collect($data['branches'])->firstWhere('id', $data['branchId'])['name'] : null;
 
         $headers = [
             UiLang::get('col.member'), UiLang::get('col.membership_id'), UiLang::get('att.category'),
@@ -52,10 +55,12 @@ class AttendanceAlertsController extends Controller
 
         return Export::download(
             Export::format($request),
-            'attendance-at-risk-'.$from.'-'.$to.($data['categoryId'] !== null ? '-'.$data['categoryId'] : ''),
+            'attendance-at-risk-'.$from.'-'.$to
+                .($data['branchId'] !== null ? '-b'.$data['branchId'] : '')
+                .($data['categoryId'] !== null ? '-'.$data['categoryId'] : ''),
             $headers,
             $rows,
-            UiLang::get('att.risk.title').' — '.$data['period']['label'].' — '.$categoryName,
+            implode(' — ', array_filter([UiLang::get('att.risk.title'), $data['period']['label'], $branchName, $categoryName])),
         );
     }
 
@@ -64,6 +69,7 @@ class AttendanceAlertsController extends Controller
     {
         $validated = $request->validate(['category_id' => ['nullable', 'integer', 'exists:categories,id']]);
         $categoryId = isset($validated['category_id']) ? (int) $validated['category_id'] : null;
+        $branchId = BranchChoice::fromRequest($request);
         $period = ActivityPeriod::fromRequestOrSeason($request);
         ['from' => $from, 'to' => $to] = $period->toArray();
 
@@ -73,8 +79,10 @@ class AttendanceAlertsController extends Controller
             'categories' => Category::orderBy('id')->get()
                 ->map(fn (Category $category) => ['id' => $category->id, 'name' => $category->localized_name])
                 ->values()->all(),
+            'branches' => BranchChoice::options(),
+            'branchId' => $branchId,
             'thresholds' => $this->risk->thresholds(),
-            'rows' => $this->risk->list($from, $to, $categoryId),
+            'rows' => $this->risk->list($from, $to, $categoryId, $branchId),
         ];
     }
 }

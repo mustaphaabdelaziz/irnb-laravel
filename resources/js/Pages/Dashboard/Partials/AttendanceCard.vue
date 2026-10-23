@@ -70,7 +70,8 @@ const stateClass = {
                 <p v-if="!data.risk.count" class="text-sm text-muted-foreground">{{ t('att.risk.none') }}</p>
                 <ul v-else class="mt-1 divide-y divide-border/70">
                     <li v-for="row in data.risk.worst" :key="row.player_id" class="flex items-center gap-2 py-1.5 text-sm">
-                        <Link :href="route('players.show', row.player_id)" class="min-w-0 flex-1 truncate font-medium hover:underline">{{ row.name }}</Link>
+                        <Link :href="route('players.show', { player: row.player_id, ...(row.branch_id ? { attendance_branch: row.branch_id } : {}) })" class="min-w-0 flex-1 truncate font-medium hover:underline">{{ row.name }}</Link>
+                        <span v-if="row.branch" class="shrink-0 text-xs text-muted-foreground">{{ row.branch }}</span>
                         <span v-if="row.streak" class="shrink-0 text-xs text-rose-600 dark:text-rose-400" :title="t('att.risk.col.longest_streak')">{{ t('att.risk.flag.streak') }} · {{ row.longest_streak }}</span>
                         <bdi dir="ltr" class="shrink-0 text-xs font-semibold tabular-nums">{{ pct(row.score_pct) }}</bdi>
                     </li>

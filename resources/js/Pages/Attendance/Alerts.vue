@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import BranchSwitch from '@/Components/Attendance/BranchSwitch.vue';
 import PeriodFilter from '@/Components/Activity/PeriodFilter.vue';
 import ExportMenu from '@/Components/ExportMenu.vue';
 import Icon from '@/Components/Icon.vue';
@@ -20,16 +21,24 @@ const props = defineProps({
     categoryId: { type: Number, default: null },
     categories: { type: Array, default: () => [] },
     thresholds: { type: Object, required: true }, // { min_score_pct, unexcused_streak, min_expected }
+    branches: { type: Array, default: () => [] },
+    branchId: { type: Number, default: null },
     rows: { type: Array, default: () => [] },
 });
 const { t } = useI18n();
 const { can } = useCan();
 
-const keep = computed(() => (props.categoryId ? { category_id: props.categoryId } : {}));
+const branchQuery = computed(() => (props.branchId ? { branch_id: props.branchId } : {}));
+const keep = computed(() => ({ ...(props.categoryId ? { category_id: props.categoryId } : {}), ...branchQuery.value }));
 const exportHref = computed(() => route('attendance.alerts.export', { ...periodQuery(props.period), ...keep.value }));
-const letterHref = (row) => route('attendance.players.letter', { player: row.player_id, ...periodQuery(props.period) });
+// The letter and the profile for the page's branch.
+const letterHref = (row) => route('attendance.players.letter', { player: row.player_id, ...periodQuery(props.period), ...branchQuery.value });
+const profileHref = (row) => route('players.show', { player: row.player_id, ...(props.branchId ? { attendance_branch: props.branchId } : {}) });
 function pickCategory(value) {
-    router.get(route('attendance.alerts'), { ...periodQuery(props.period), ...(value ? { category_id: Number(value) } : {}) }, { preserveScroll: true, replace: true });
+    router.get(route('attendance.alerts'), { ...periodQuery(props.period), ...branchQuery.value, ...(value ? { category_id: Number(value) } : {}) }, { preserveScroll: true, replace: true });
+}
+function switchBranch(id) {
+    router.get(route('attendance.alerts'), { ...periodQuery(props.period), ...keep.value, branch_id: id }, { preserveScroll: true, replace: true });
 }
 
 // The two rules as configured; a rule set to 0 reads "off".
@@ -62,6 +71,7 @@ const th = 'p-2 font-semibold';
 
         <div class="space-y-5">
             <div class="flex flex-wrap items-center gap-3 print:hidden">
+                <BranchSwitch :branches="branches" :branch-id="branchId" @switch="switchBranch" />
                 <PeriodFilter :period="period" :href="route('attendance.alerts')" :keep="keep" />
                 <select :value="categoryId ?? ''" :class="input" :aria-label="t('att.category')" @change="pickCategory($event.target.value)">
                     <option value="">{{ t('att.all_categories') }}</option>
@@ -93,7 +103,7 @@ const th = 'p-2 font-semibold';
                     <tbody>
                         <tr v-for="row in rows" :key="row.player_id" class="border-t border-slate-100 dark:border-slate-800">
                             <td class="whitespace-nowrap p-2 font-medium">
-                                <Link v-if="can('players', 'view')" :href="route('players.show', row.player_id)" class="text-primary-700 hover:underline dark:text-primary-300">{{ row.name }}</Link>
+                                <Link v-if="can('players', 'view')" :href="profileHref(row)" class="text-primary-700 hover:underline dark:text-primary-300">{{ row.name }}</Link>
                                 <template v-else>{{ row.name }}</template>
                             </td>
                             <td class="whitespace-nowrap p-2 text-slate-500">{{ row.category ?? '—' }}</td>
@@ -112,7 +122,7 @@ const th = 'p-2 font-semibold';
                             <td class="whitespace-nowrap p-2 text-end">
                                 <span class="inline-flex gap-1">
                                     <IconButton :href="letterHref(row)" external target="_blank" icon="mail" :label="t('att.letter.print')" plain size="sm" />
-                                    <IconButton v-if="can('players', 'view')" :href="route('players.show', row.player_id)" icon="user" :label="t('att.risk.open_profile')" variant="primary" plain size="sm" />
+                                    <IconButton v-if="can('players', 'view')" :href="profileHref(row)" icon="user" :label="t('att.risk.open_profile')" variant="primary" plain size="sm" />
                                 </span>
                             </td>
                         </tr>

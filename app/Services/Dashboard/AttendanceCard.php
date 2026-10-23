@@ -16,9 +16,10 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * The members tab's attendance card: today's sessions, the last 30 days by
- * status, and the players at risk this season (count and the 5 worst).
- * Fixed windows, and every branch's sessions, so the dashboard's range and
- * branch filters do not apply (each session names its branch instead).
+ * status, and the players at risk this season in any branch (each counted
+ * once, listed with the branch where they fare worst; count and the 5
+ * worst). Fixed windows, and every branch's sessions, so the dashboard's
+ * range and branch filters do not apply (each session names its branch instead).
  */
 final class AttendanceCard
 {
@@ -46,7 +47,7 @@ final class AttendanceCard
         $totals = $stats->summarize($stats->players($from, $date));
 
         $season = ActivityPeriod::season()->toArray();
-        $atRisk = $this->risk->list($season['from'], $season['to']);
+        $atRisk = $this->risk->anyBranch($season['from'], $season['to']);
 
         return [
             'date' => $date,
@@ -62,7 +63,7 @@ final class AttendanceCard
                 'period' => $season,
                 'count' => count($atRisk),
                 'worst' => array_map(
-                    fn (array $row) => Arr::only($row, ['player_id', 'name', 'category', 'score_pct', 'longest_streak', 'low_score', 'streak']),
+                    fn (array $row) => Arr::only($row, ['player_id', 'name', 'category', 'score_pct', 'longest_streak', 'low_score', 'streak', 'branch_id', 'branch']),
                     array_slice($atRisk, 0, self::RISK_SHOWN),
                 ),
             ],

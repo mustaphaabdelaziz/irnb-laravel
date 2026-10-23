@@ -8,7 +8,7 @@
     $legendCode = fn (string $status) => $code($status).((AttendanceStatus::tryFrom($status)?->takesMinutes() ?? false) ? '15' : '');
     $marks = ['preseason' => $L('att.sheet.kind_mark.preseason'), 'extra' => $L('att.sheet.kind_mark.extra')];
     $branch ??= null; // the sport, when the club has branches
-    $footer = $category['name'].($branch ? ' · '.$branch : '').' · '.$monthLabel.' — '.strtr($L('att.sheet.page'), ['{page}' => '{PAGENO}', '{pages}' => '{nbpg}']);
+    $footer = ($branch ? $branch.' · ' : '').$category['name'].' · '.$monthLabel.' — '.strtr($L('att.sheet.page'), ['{page}' => '{PAGENO}', '{pages}' => '{nbpg}']);
 @endphp
 <!DOCTYPE html>
 <html>

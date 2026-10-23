@@ -103,7 +103,7 @@ final class PreseasonProgress
             $heldByCategory = DB::table('training_session_category')
                 ->join('training_sessions', 'training_sessions.id', '=', 'training_session_category.training_session_id')
                 ->when($categoryId !== null, fn ($q) => $q->where('training_session_category.category_id', $categoryId))
-                ->when($branchId !== null, fn ($q) => $q->where('training_sessions.branch_id', $branchId))
+                ->when($branchId !== null, fn ($q) => $q->whereRaw('+training_sessions.branch_id = ?', [$branchId]))
                 ->where('training_sessions.kind', SessionKind::Preseason->value)
                 ->where('training_sessions.state', SessionState::Held->value)
                 ->whereBetween('training_sessions.date', [$season->start()->toDateString(), $season->end()->toDateString()])
@@ -149,7 +149,7 @@ final class PreseasonProgress
     {
         return TrainingSession::query()
             ->includingCategory($categoryId)
-            ->when($branchId !== null, fn ($q) => $q->where('branch_id', $branchId))
+            ->when($branchId !== null, fn ($q) => $q->whereRaw('+training_sessions.branch_id = ?', [$branchId]))
             ->where('kind', SessionKind::Preseason->value)
             ->where('state', SessionState::Held->value)
             ->whereBetween('date', [$season->start()->toDateString(), $season->end()->toDateString()]);

@@ -100,7 +100,8 @@ replacing the Move dialog and the pre-season categories dialog. Endpoint
   `moved_from` (first original date) exactly as Move does today.
 - Editable until marks are first saved (the roster is frozen from then on; fields shown read-only
   with a hint afterwards):
-  - branch;
+  - branch, hand-added sessions only (a regular session belongs to its weekly schedule's branch;
+    moving it would leave the schedule slot free to regenerate);
   - roster statuses (`roster_status_ids`);
   - categories, pre-season only (current updateCategories rules: primary dropped → first chosen
     becomes primary);

@@ -74,10 +74,17 @@ dialog, and kind, roster statuses and branch cannot change after creation.
 
 ### Calendar and settings
 
-- Calendar: branch switch beside the category selector, shown when at least one branch exists.
+- Calendar: branch switch beside the category selector, shown when the club has two or more
+  branches (with one branch there is nothing to switch; that branch is still the one shown).
   Value lives in the `branch_id` query parameter and is remembered in the user's server session
   (no reload flicker). Default: first branch by id. Month, week, agenda and timeline show
-  only that branch's sessions; generation still runs per category for all branches.
+  only that branch's sessions; generation still runs per category for all branches. The
+  resolution (asked → remembered → first → none) lives in `App\Services\Attendance\BranchChoice`,
+  shared with the marking grid and the monthly paper sheet.
+- Marking grid and monthly paper sheet (pulled forward into package 1): one branch, from the
+  calendar switch (`branch_id` on their links, else the remembered/first branch). The grid keeps
+  the branch in its links and save; a save with a branch rejects a column from another branch
+  (`columns.N.session_id` exists error). The month sheet names the branch in its header and footer.
 - Add-session dialog: branch select, pre-selected from the switch.
 - Settings: weekly schedules and pre-season targets get a branch column/select; schedule list
   grouped or filterable by branch.
@@ -112,7 +119,8 @@ Branch filter (multi-select pattern used elsewhere; default = all branches) on:
 - stats page and its export, player attendance card stays all branches;
 - ranking + certificates: ranked within branch + category;
 - alerts / at-risk list and export, dashboard at-risk card stays all branches;
-- marking grid and monthly paper sheets (single branch, from the calendar switch);
+- marking grid and monthly paper sheets (single branch, from the calendar switch) — done in
+  package 1;
 - session paper sheet shows the branch name.
 
 A mark counts for a branch through its session's `branch_id`.
@@ -123,9 +131,10 @@ Three packages, one plan and branch each, in the `D:/irnb-branches` worktree:
 
 1. **Data + generator + roster + calendar/settings** — migration and backfill, slot keys,
    generator, roster, calendar switch, add dialog, settings schedules/targets, pre-season
-   progress, hand-add ordering.
+   progress, hand-add ordering; branch-scoped marking grid and monthly paper sheet.
 2. **Edit dialog** — update endpoint, dialog, removal of move/categories routes.
-3. **Report filters** — stats, ranking/certificates, alerts, grid, sheets.
+3. **Report filters** — stats, ranking/certificates, alerts, session sheet (grid and month
+   sheet already done in package 1).
 
 ## Testing
 

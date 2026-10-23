@@ -6,11 +6,13 @@ use App\Enums\AttendanceStatus;
 use App\Enums\SessionKind;
 use App\Enums\SessionState;
 use App\Models\Attendance;
+use App\Models\Branch;
 use App\Models\Category;
 use App\Models\Player;
 use App\Models\PreseasonTarget;
 use App\Models\TrainingSession;
 use App\Services\Attendance\AttendanceStats;
+use App\Services\Attendance\PreseasonProgress;
 use App\Support\AttendanceSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -330,5 +332,18 @@ class AttendanceStatsTest extends TestCase
         // PreseasonProgress::forCategories' 3 queries, the final category
         // list) = 11, fixed regardless of roster size.
         $this->assertLessThanOrEqual(11, $few);
+    }
+
+    #[Test]
+    public function the_season_target_of_a_category_is_its_highest_branch_target(): void
+    {
+        $u15 = $this->category();
+        $foot = Branch::create(['name' => 'Foot']);
+        $swim = Branch::create(['name' => 'Swim']);
+        // Highest first, so a last-row-wins read would report the lower one.
+        PreseasonTarget::create(['branch_id' => $foot->id, 'category_id' => $u15->id, 'season_start_year' => 2026, 'target_count' => 12]);
+        PreseasonTarget::create(['branch_id' => $swim->id, 'category_id' => $u15->id, 'season_start_year' => 2026, 'target_count' => 8]);
+
+        $this->assertSame(12, app(PreseasonProgress::class)->forCategories('2026-10-05')[$u15->id]['target']);
     }
 }

@@ -59,9 +59,12 @@ final class PreseasonProgress
             ->get()
             ->mapWithKeys(fn ($row) => [(int) $row->category_id => (int) $row->total]);
 
+        // One target per category across branches (the highest), as milestones() reads it.
         $targets = PreseasonTarget::where('season_start_year', $season->startYear)
-            ->get(['category_id', 'target_count'])
-            ->mapWithKeys(fn (PreseasonTarget $target) => [(int) $target->category_id => (int) $target->target_count]);
+            ->selectRaw('category_id, max(target_count) as target_count')
+            ->groupBy('category_id')
+            ->pluck('target_count', 'category_id')
+            ->mapWithKeys(fn ($count, $categoryId) => [(int) $categoryId => (int) $count]);
 
         return Category::orderBy('id')->pluck('id')
             ->mapWithKeys(fn ($id) => [(int) $id => [

@@ -134,12 +134,15 @@ class Player extends Model
      * Players a subscription applies to: those of its categories (everyone when
      * it has none) who also belong to one of its branches (any branch when it
      * has none). The query-side twin of Subscription::appliesTo().
+     *
+     * With $anyCategory only the branch rule holds: a player whose one category
+     * belongs to another of their branches can still be put on it by hand.
      */
-    public function scopeEligibleFor(Builder $query, Subscription $subscription): void
+    public function scopeEligibleFor(Builder $query, Subscription $subscription, bool $anyCategory = false): void
     {
         $categoryIds = $subscription->categories->pluck('id');
 
-        if ($categoryIds->isNotEmpty()) {
+        if ($categoryIds->isNotEmpty() && ! $anyCategory) {
             $query->whereIn('category_id', $categoryIds);
         }
 

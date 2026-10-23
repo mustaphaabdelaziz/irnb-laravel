@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import BranchSwitch from '@/Components/Attendance/BranchSwitch.vue';
 import IconButton from '@/Components/IconButton.vue';
 import PeriodFilter from '@/Components/Activity/PeriodFilter.vue';
 import { useCan } from '@/Composables/useCan';
@@ -19,16 +20,24 @@ const props = defineProps({
     period: { type: Object, required: true },
     categoryId: { type: Number, default: null },
     categories: { type: Array, default: () => [] },
+    branches: { type: Array, default: () => [] },
+    branchId: { type: Number, default: null },
     current: { type: Array, default: () => [] },
     spells: { type: Array, default: () => [] },
 });
 const { t, locale } = useI18n();
 const { can } = useCan();
 
-const keep = computed(() => (props.categoryId ? { category_id: props.categoryId } : {}));
+const branchQuery = computed(() => (props.branchId ? { branch_id: props.branchId } : {}));
+const keep = computed(() => ({ ...(props.categoryId ? { category_id: props.categoryId } : {}), ...branchQuery.value }));
 function pickCategory(value) {
-    router.get(route('attendance.injuries'), { ...periodQuery(props.period), ...(value ? { category_id: Number(value) } : {}) }, { preserveScroll: true, replace: true });
+    router.get(route('attendance.injuries'), { ...periodQuery(props.period), ...branchQuery.value, ...(value ? { category_id: Number(value) } : {}) }, { preserveScroll: true, replace: true });
 }
+function switchBranch(id) {
+    router.get(route('attendance.injuries'), { ...periodQuery(props.period), ...keep.value, branch_id: id }, { preserveScroll: true, replace: true });
+}
+// The profile opens its attendance card on the page's branch, where details are added.
+const profileHref = (row) => route('players.show', { player: row.player_id, ...(props.branchId ? { attendance_branch: props.branchId } : {}) });
 const day = (key) => parseDay(key).toLocaleDateString(locale.value, { day: 'numeric', month: 'short', year: 'numeric' });
 const details = (row) => [row.note?.body_part, row.note?.description].filter(Boolean).join(' — ');
 
@@ -54,6 +63,7 @@ const th = 'p-2 font-semibold';
 
         <div class="space-y-5">
             <div class="flex flex-wrap items-center gap-3 print:hidden">
+                <BranchSwitch :branches="branches" :branch-id="branchId" @switch="switchBranch" />
                 <PeriodFilter :period="period" :href="route('attendance.injuries')" :keep="keep" />
                 <select :value="categoryId ?? ''" :class="input" :aria-label="t('att.category')" @change="pickCategory($event.target.value)">
                     <option value="">{{ t('att.all_categories') }}</option>
@@ -80,7 +90,7 @@ const th = 'p-2 font-semibold';
                     <tbody>
                         <tr v-for="row in section.rows" :key="`${row.player_id}-${row.start}`" class="border-t border-slate-100 dark:border-slate-800">
                             <td class="whitespace-nowrap p-2 font-medium">
-                                <Link v-if="can('players', 'view')" :href="route('players.show', row.player_id)" class="text-primary-700 hover:underline dark:text-primary-300">{{ row.name }}</Link>
+                                <Link v-if="can('players', 'view')" :href="profileHref(row)" class="text-primary-700 hover:underline dark:text-primary-300">{{ row.name }}</Link>
                                 <template v-else>{{ row.name }}</template>
                             </td>
                             <td class="whitespace-nowrap p-2 text-slate-500">{{ row.category ?? '—' }}</td>

@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\InjuryNote;
 use App\Models\Player;
 use App\Services\Activity\ActivityPeriod;
+use App\Services\Attendance\BranchChoice;
 use App\Services\Attendance\InjurySpells;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
@@ -19,7 +20,8 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Injury details (injury_notes) for the spells InjurySpells builds from the
- * marks, and (Task 12) the club's injuries list. The detail writes answer
+ * marks, and (Task 12) the club's injuries list, one branch at a time
+ * (BranchChoice, shared with the calendar). The detail writes answer
  * JSON: the profile's attendance card calls them and reloads itself.
  */
 class AttendanceInjuryController extends Controller
@@ -32,14 +34,15 @@ class AttendanceInjuryController extends Controller
     public function __construct(private readonly InjurySpells $spells) {}
 
     /**
-     * The club's injuries (`attendance.injuries`, view): who is injured now,
-     * and every spell in the period (default: the current season), for
-     * active players, optionally those now in one category.
+     * The club's injuries (`attendance.injuries`, view) in one branch: who is
+     * injured now, and every spell in the period (default: the current
+     * season), for active players, optionally those now in one category.
      */
     public function index(Request $request): PageResponse
     {
         $validated = $request->validate(['category_id' => ['nullable', 'integer', 'exists:categories,id']]);
         $categoryId = isset($validated['category_id']) ? (int) $validated['category_id'] : null;
+        $branchId = BranchChoice::fromRequest($request);
         $period = ActivityPeriod::fromRequestOrSeason($request);
         ['from' => $from, 'to' => $to] = $period->toArray();
 
@@ -49,7 +52,9 @@ class AttendanceInjuryController extends Controller
             'categories' => Category::orderBy('id')->get()
                 ->map(fn (Category $category) => ['id' => $category->id, 'name' => $category->localized_name])
                 ->values()->all(),
-            ...$this->spells->club($from, $to, $categoryId),
+            'branches' => BranchChoice::options(),
+            'branchId' => $branchId,
+            ...$this->spells->club($from, $to, $categoryId, $branchId),
         ]);
     }
 

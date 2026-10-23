@@ -116,7 +116,7 @@ class AttendanceSheetController extends Controller
         $request->validate(['filled' => ['nullable', 'boolean']]);
         $filled = $request->boolean('filled');
         $locale = app()->getLocale();
-        $session->loadMissing('categories');
+        $session->loadMissing('categories', 'branch');
         $players = $roster->forSession($session);
         // Primary category first, then the others of a joint pre-season session.
         $categories = $session->orderedCategories()->mapWithKeys(fn (Category $c) => [$c->id => $c->localized_name]);
@@ -132,6 +132,8 @@ class AttendanceSheetController extends Controller
                 'dateLabel' => CarbonImmutable::createFromFormat('!Y-m-d', $session->date)->locale($locale)->translatedFormat('l j F Y'),
                 'time' => "{$session->start_time}–{$session->end_time}",
                 'kind' => $session->kind->value,
+                // The sport, when the club has branches (null = a club-wide session).
+                'branch' => $session->branch?->localized_name,
                 'categories' => $categories->values()->all(),
                 'coach' => $session->coach,
                 'title' => $session->title,

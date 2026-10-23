@@ -61,15 +61,14 @@ class PlayerController extends Controller
             ->select('players.*')
             ->selectRaw('players.outstanding_debt as total_debt')
             ->selectRaw("{$missingSql} as missing_documents_count", $missingBindings)
-            // The lookups without their timestamps and descriptions: serialising
-            // those (on the club clock) for every row was most of a long page's time.
+            // Only the lookups the rows show, without their timestamps and
+            // descriptions: serialising those (on the club clock) for every row
+            // was most of a long page's time.
             ->with([
                 'category:id,name,name_ar,name_fr,name_en',
                 'position:id,name,abbreviation,branch_id',
                 'otherPositions:positions.id,positions.name,positions.abbreviation,positions.branch_id',
-                'memberJob:id,name,name_ar,name_fr,name_en',
                 'status:id,name,name_ar,name_fr,name_en,sort_order,is_active,code',
-                'wilaya:id,country_id,external_id,code,name,ar_name,name_ar,name_fr,longitude,latitude',
             ]);
 
         $this->applyPlayerFilters($query, $request);
@@ -82,6 +81,10 @@ class PlayerController extends Controller
         $players = $query->orderBy('lastname')->orderBy('firstname')
             ->paginate($perPage)
             ->withQueryString();
+
+        // The rows never show the age, and working it out (a date difference
+        // on the club clock) was ~0.2 ms a row.
+        $players->getCollection()->each->setAppends(['fullname']);
 
         // Prefer the current-locale name, falling back to the base name.
         $locale = in_array(app()->getLocale(), ['ar', 'fr', 'en'], true) ? app()->getLocale() : 'en';

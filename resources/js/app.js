@@ -15,6 +15,7 @@ import { localizeNativeValidation } from './lib/nativeValidation';
 import { DEFAULT_CLUB_SHORT_NAME } from './Composables/useClubIdentity';
 import AppShell from './Layouts/AppShell.vue';
 import { usesAppShell } from './lib/layouts';
+import { rememberedFilterOptions } from './lib/playerListFilters';
 
 // The tab title's suffix is the club's saved short name, kept current from
 // each page's shared props. It used to be VITE_APP_NAME, which is baked in at
@@ -40,6 +41,10 @@ router.on('finish', (event) => {
 });
 
 createInertiaApp({
+    defaults: {
+        // A bare visit to the player list brings its remembered filters along.
+        visitOptions: (href, options) => rememberedFilterOptions(href, options, route('players.index')),
+    },
     title: (title) => (title ? `${title} - ${clubShortName}` : clubShortName),
     resolve: async (name) => {
         const page = await resolvePageComponent(

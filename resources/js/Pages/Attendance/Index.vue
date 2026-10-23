@@ -59,7 +59,7 @@ function navigate(params, options = {}) {
     const only = view === props.view ? [...VIEW_PROPS[view], ...SHARED_PROPS] : undefined;
     router.get(route('attendance.index'), clean({ view: props.view, category_id: props.categoryId, branch_id: props.branchId, ...params }), { preserveScroll: true, ...(only ? { only } : {}), ...options });
 }
-const switchBranch = (id) => id !== props.branchId && navigate({ branch_id: id, month: props.month, date: props.week?.start });
+const switchBranch = (id) => id !== props.branchId && navigate({ branch_id: id, month: props.month, date: props.week?.start, kind: props.kind, from: props.from, to: props.to });
 const switchView = (view) => navigate({ view, month: props.month }, { preserveScroll: false });
 
 // ---- Add an extra / pre-season session ----

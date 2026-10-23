@@ -119,4 +119,29 @@ class AttendanceBranchMigrationTest extends TestCase
         $this->assertSame(0, PreseasonTarget::count());
         $this->assertSame(0, DB::table('deleted_session_slots')->count());
     }
+
+    #[Test]
+    public function the_first_branch_adopts_club_wide_rows_but_a_second_does_not(): void
+    {
+        $u15 = $this->category();
+        $session = $this->makeSession($u15->id, null);
+        $schedule = TrainingSchedule::create(['category_id' => $u15->id, 'weekday' => 1, 'start_time' => '18:00', 'end_time' => '19:30', 'valid_from' => '2026-01-01']);
+        $target = PreseasonTarget::create(['category_id' => $u15->id, 'season_start_year' => 2026, 'target_count' => 10]);
+        DB::table('deleted_session_slots')->insert(['category_id' => $u15->id, 'date' => '2026-10-12', 'start_time' => '18:00', 'created_at' => now()]);
+
+        $foot = Branch::create(['name' => 'Foot']);
+
+        $this->assertSame($foot->id, $session->fresh()->branch_id);
+        $this->assertSame($foot->id, $schedule->fresh()->branch_id);
+        $this->assertSame($foot->id, $target->fresh()->branch_id);
+        $this->assertSame($foot->id, (int) DB::table('deleted_session_slots')->value('branch_id'));
+
+        DB::table('training_sessions')->insert([
+            'category_id' => $u15->id, 'date' => '2026-10-06', 'start_time' => '18:00', 'end_time' => '19:30',
+            'kind' => SessionKind::Regular->value, 'state' => SessionState::Planned->value, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        Branch::create(['name' => 'Swim']);
+
+        $this->assertSame(1, DB::table('training_sessions')->whereNull('branch_id')->count());
+    }
 }

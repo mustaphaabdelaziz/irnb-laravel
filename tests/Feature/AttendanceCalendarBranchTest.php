@@ -8,6 +8,7 @@ use App\Models\Branch;
 use App\Models\PreseasonTarget;
 use App\Models\TrainingSession;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\AttendanceFixtures;
@@ -59,6 +60,23 @@ class AttendanceCalendarBranchTest extends TestCase
         $this->actingAs($admin)->get(route('attendance.index', ['category_id' => $u15->id, 'branch_id' => $swim->id]));
         $this->actingAs($admin)->get(route('attendance.index', ['category_id' => $u15->id]))
             ->assertInertia(fn (Assert $page) => $page->where('branchId', $swim->id));
+    }
+
+    #[Test]
+    public function a_remembered_branch_that_was_deleted_is_forgotten(): void
+    {
+        $u15 = $this->category();
+        $foot = Branch::create(['name' => 'Foot']);
+        $swim = Branch::create(['name' => 'Swim']);
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->get(route('attendance.index', ['category_id' => $u15->id, 'branch_id' => $swim->id]));
+        $this->assertSame($swim->id, session('attendance.branch_id'));
+        DB::table('branches')->where('id', $swim->id)->delete();
+
+        $this->actingAs($admin)->get(route('attendance.index', ['category_id' => $u15->id]))
+            ->assertInertia(fn (Assert $page) => $page->where('branchId', $foot->id));
+        $this->assertNull(session('attendance.branch_id'));
     }
 
     #[Test]

@@ -121,7 +121,7 @@ class AttendanceCalendarController extends Controller
             ...$props,
             'sessions' => $this->feed->sessions($anchor->toDateString(), $anchor->endOfMonth()->toDateString(), $categoryId, null, $data['branch_id']),
             'preseason' => $this->preseason->forCategory($categoryId, $anchor, $data['branch_id']),
-            'hasSchedule' => TrainingSchedule::where('category_id', $categoryId)->where('branch_id', $data['branch_id'])->exists(),
+            'hasSchedule' => TrainingSchedule::where('category_id', $categoryId)->when($data['branch_id'] !== null, fn ($q) => $q->where('branch_id', $data['branch_id']))->exists(),
         ];
     }
 
@@ -207,6 +207,8 @@ class AttendanceCalendarController extends Controller
         if ($remembered !== null && Branch::whereKey($remembered)->exists()) {
             return (int) $remembered;
         }
+
+        $request->session()->forget('attendance.branch_id');
 
         $first = Branch::orderBy('id')->value('id');
 

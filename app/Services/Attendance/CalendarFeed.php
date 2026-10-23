@@ -29,11 +29,12 @@ final class CalendarFeed
     }
 
     /** @return Collection<int, array<string, mixed>> */
-    public function sessions(string $from, string $to, ?int $categoryId = null, ?string $kind = null): Collection
+    public function sessions(string $from, string $to, ?int $categoryId = null, ?string $kind = null, ?int $branchId = null): Collection
     {
         $sessions = TrainingSession::query()
             ->when($categoryId !== null, fn ($q) => $q->includingCategory($categoryId))
             ->when($kind !== null, fn ($q) => $q->where('kind', $kind))
+            ->when($branchId !== null, fn ($q) => $q->where('branch_id', $branchId))
             ->whereBetween('date', [$from, $to])
             ->with('categories')
             ->withCount('attendances')
@@ -68,9 +69,9 @@ final class CalendarFeed
      *
      * @return array<int, array<string, mixed>>
      */
-    public function timeline(string $from, string $to, ?int $categoryId = null, ?string $kind = null): array
+    public function timeline(string $from, string $to, ?int $categoryId = null, ?string $kind = null, ?int $branchId = null): array
     {
-        $events = $this->sessions($from, $to, $categoryId, $kind)
+        $events = $this->sessions($from, $to, $categoryId, $kind, $branchId)
             ->map(fn (array $s) => $s + ['type' => 'session', 'key' => "s{$s['id']}", 'order' => 1, 'time' => $s['start_time']])
             ->all();
 
@@ -84,7 +85,7 @@ final class CalendarFeed
         }
 
         if ($kind === null || $kind === SessionKind::Preseason->value) {
-            foreach ($this->preseason->milestones($from, $to, $categoryId) as $m) {
+            foreach ($this->preseason->milestones($from, $to, $categoryId, $branchId) as $m) {
                 $events[] = $m + ['type' => 'milestone', 'key' => "m{$m['milestone']}-{$m['category_id']}-{$m['session_id']}", 'order' => 2];
             }
         }

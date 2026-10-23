@@ -17,6 +17,8 @@ const props = defineProps({
     view: { type: String, default: 'month' },
     categories: { type: Array, default: () => [] },
     categoryId: { type: Number, default: null },
+    branches: { type: Array, default: () => [] },
+    branchId: { type: Number, default: null },
     month: { type: String, required: true }, // YYYY-MM, the anchor kept when switching views
     sessions: { type: Array, default: () => [] },
     preseason: { type: Object, default: null },
@@ -47,16 +49,17 @@ const clean = (params) => Object.fromEntries(Object.entries(params).filter(([, v
 // Switching views is a full visit, since each view returns different props.
 const SHARED_PROPS = ['flash', 'auth', 'pendingApprovals'];
 const VIEW_PROPS = {
-    month: ['view', 'categoryId', 'month', 'sessions', 'preseason', 'hasSchedule'],
-    week: ['view', 'categoryId', 'month', 'week', 'sessions'],
-    agenda: ['view', 'categoryId', 'month', 'sessions'],
-    timeline: ['view', 'categoryId', 'kind', 'month', 'from', 'to', 'events'],
+    month: ['view', 'categoryId', 'month', 'sessions', 'preseason', 'hasSchedule', 'branchId'],
+    week: ['view', 'categoryId', 'month', 'week', 'sessions', 'branchId'],
+    agenda: ['view', 'categoryId', 'month', 'sessions', 'branchId'],
+    timeline: ['view', 'categoryId', 'kind', 'month', 'from', 'to', 'events', 'branchId'],
 };
 function navigate(params, options = {}) {
     const view = params.view ?? props.view;
     const only = view === props.view ? [...VIEW_PROPS[view], ...SHARED_PROPS] : undefined;
-    router.get(route('attendance.index'), clean({ view: props.view, category_id: props.categoryId, ...params }), { preserveScroll: true, ...(only ? { only } : {}), ...options });
+    router.get(route('attendance.index'), clean({ view: props.view, category_id: props.categoryId, branch_id: props.branchId, ...params }), { preserveScroll: true, ...(only ? { only } : {}), ...options });
 }
+const switchBranch = (id) => id !== props.branchId && navigate({ branch_id: id, month: props.month, date: props.week?.start });
 const switchView = (view) => navigate({ view, month: props.month }, { preserveScroll: false });
 
 // ---- Add an extra / pre-season session ----
@@ -95,7 +98,24 @@ function openCreate(kind, date = today) {
 
         <div v-else class="space-y-4">
             <div class="flex flex-wrap items-center justify-between gap-3 print:hidden">
-                <ViewSwitcher :view="view" @switch="switchView" />
+                <div class="flex flex-wrap items-center gap-2">
+                    <div v-if="branches.length > 1" role="tablist" :aria-label="t('branch')" class="inline-flex rounded-lg bg-slate-100 p-0.5 dark:bg-slate-800">
+                        <button
+                            v-for="b in branches"
+                            :key="b.id"
+                            type="button"
+                            role="tab"
+                            :aria-selected="branchId === b.id"
+                            class="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-sm font-semibold"
+                            :class="branchId === b.id ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
+                            @click="switchBranch(b.id)"
+                        >
+                            <img v-if="b.logo_url" :src="b.logo_url" alt="" class="h-4 w-4 rounded object-contain" />
+                            {{ b.name }}
+                        </button>
+                    </div>
+                    <ViewSwitcher :view="view" @switch="switchView" />
+                </div>
                 <div v-if="can('attendance', 'add')" class="flex gap-2">
                     <IconButton icon="plus" :label="t('att.add_extra')" variant="primary" @click="openCreate('extra')" />
                     <IconButton icon="flag" :label="t('att.add_preseason')" @click="openCreate('preseason')" />
@@ -108,6 +128,6 @@ function openCreate(kind, date = today) {
             <TimelineView v-else-if="view === 'timeline'" :categories="categories" :category-id="categoryId" :kind="kind" :from="from" :to="to" :events="events" @navigate="navigate" />
         </div>
 
-        <AddSessionModal :show="showCreate" :kind="createKind" :categories="categories" :category-id="categoryId" :date="createDate" :player-statuses="playerStatuses ?? []" :roster-status-ids="rosterStatusIds ?? []" @close="showCreate = false" />
+        <AddSessionModal :show="showCreate" :kind="createKind" :categories="categories" :category-id="categoryId" :branches="branches" :branch-id="branchId" :date="createDate" :player-statuses="playerStatuses ?? []" :roster-status-ids="rosterStatusIds ?? []" @close="showCreate = false" />
     </AuthenticatedLayout>
 </template>

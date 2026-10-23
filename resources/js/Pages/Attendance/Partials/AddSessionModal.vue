@@ -10,6 +10,8 @@ const props = defineProps({
     kind: { type: String, default: 'extra' }, // extra | preseason
     categories: { type: Array, default: () => [] },
     categoryId: { type: Number, default: null }, // pre-selected primary category
+    branches: { type: Array, default: () => [] },
+    branchId: { type: Number, default: null }, // pre-selected (the calendar's switch)
     date: { type: String, required: true }, // 'Y-m-d'
     playerStatuses: { type: Array, default: () => [] }, // [{ id, name }]
     rosterStatusIds: { type: Array, default: () => [] }, // the settings' default roster set
@@ -17,12 +19,13 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 const { t } = useI18n();
 
-const form = useForm({ category_id: null, category_ids: [], kind: 'extra', date: '', start_time: '18:00', end_time: '19:30', title: '', roster_status_ids: [] });
+const form = useForm({ branch_id: null, category_id: null, category_ids: [], kind: 'extra', date: '', start_time: '18:00', end_time: '19:30', title: '', roster_status_ids: [] });
 watch(() => props.show, (open) => {
     if (!open) return;
     form.reset();
     form.clearErrors();
     Object.assign(form, {
+        branch_id: props.branchId ?? props.branches[0]?.id ?? null,
         category_id: props.categoryId ?? props.categories[0]?.id ?? null,
         category_ids: [],
         kind: props.kind,
@@ -56,6 +59,11 @@ const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg
             <div class="inline-flex rounded-lg p-0.5 ring-1 ring-slate-200 dark:ring-slate-700" role="radiogroup">
                 <button v-for="k in ['extra', 'preseason']" :key="k" type="button" role="radio" :aria-checked="form.kind === k" class="rounded-md px-3 py-1 text-sm font-semibold" :class="form.kind === k ? (k === 'preseason' ? 'bg-amber-500 text-white' : 'bg-primary-600 text-white') : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'" @click="form.kind = k">{{ t(`att.kind.${k}`) }}</button>
             </div>
+            <label v-if="branches.length" class="block text-sm">{{ t('branch') }}
+                <select v-model="form.branch_id" :class="[input, 'mt-1 block w-full']">
+                    <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
+                </select>
+            </label>
             <label class="block text-sm">{{ t('att.category') }}
                 <select v-model="form.category_id" :class="[input, 'mt-1 block w-full']">
                     <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>

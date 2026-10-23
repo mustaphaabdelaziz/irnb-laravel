@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\SessionKind;
+use App\Models\Branch;
 use App\Models\Category;
 use App\Models\PlayerStatus;
 use App\Models\TrainingSchedule;
@@ -24,7 +25,7 @@ use Inertia\Response;
  * its name) with a `view` query parameter. Month shows one category; the
  * other views show every category and first generate the shown range for
  * all of them (the generator is idempotent, and skips months already
- * generated from the current inputs).
+ * generated from the current inputs). Every view shows one branch (see branchId()).
  */
 class AttendanceCalendarController extends Controller
 {
@@ -38,10 +39,10 @@ class AttendanceCalendarController extends Controller
      * VIEW_PROPS lists the same keys).
      */
     private const VIEW_PROPS = [
-        'month' => ['categoryId', 'month', 'sessions', 'preseason', 'hasSchedule'],
-        'week' => ['categoryId', 'month', 'week', 'sessions'],
-        'agenda' => ['categoryId', 'month', 'sessions'],
-        'timeline' => ['categoryId', 'kind', 'month', 'from', 'to', 'events'],
+        'month' => ['categoryId', 'month', 'sessions', 'preseason', 'hasSchedule', 'branchId'],
+        'week' => ['categoryId', 'month', 'week', 'sessions', 'branchId'],
+        'agenda' => ['categoryId', 'month', 'sessions', 'branchId'],
+        'timeline' => ['categoryId', 'kind', 'month', 'from', 'to', 'events', 'branchId'],
     ];
 
     public function __construct(
@@ -60,7 +61,9 @@ class AttendanceCalendarController extends Controller
             'from' => ['nullable', 'date_format:Y-m'],
             'to' => ['nullable', 'date_format:Y-m'],
             'kind' => ['nullable', Rule::enum(SessionKind::class)],
+            'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
         ]);
+        $data['branch_id'] = $this->branchId($request, $data);
         $view = $data['view'] ?? 'month';
         // Lazy, so a partial reload while navigating a view skips them (see Index.vue).
         $list = null;
@@ -89,6 +92,9 @@ class AttendanceCalendarController extends Controller
         return Inertia::render('Attendance/Index', [
             'view' => $view,
             'categories' => $categories,
+            // The branch switch; lazy like `categories`.
+            'branches' => fn () => Branch::orderBy('id')->get()
+                ->map(fn (Branch $b) => ['id' => $b->id, 'name' => $b->localized_name, 'logo_url' => $b->logo_url])->values(),
             'attendanceCodes' => fn () => app(AttendanceStatusCatalog::class)->codes(),
             // The add-session dialog's roster checkboxes, pre-checked with the settings' default
             // set: optional, fetched only when the dialog first opens (see Index.vue openCreate()).
@@ -103,7 +109,7 @@ class AttendanceCalendarController extends Controller
     {
         $categoryId = isset($data['category_id']) ? (int) $data['category_id'] : data_get($categories()->first(), 'id');
         $anchor = $this->monthAnchor($data);
-        $props = ['categoryId' => $categoryId, 'month' => $anchor->format('Y-m'), 'sessions' => [], 'preseason' => null, 'hasSchedule' => false];
+        $props = ['categoryId' => $categoryId, 'month' => $anchor->format('Y-m'), 'sessions' => [], 'preseason' => null, 'hasSchedule' => false, 'branchId' => $data['branch_id']];
 
         if ($categoryId === null) {
             return $props;
@@ -113,9 +119,9 @@ class AttendanceCalendarController extends Controller
 
         return [
             ...$props,
-            'sessions' => $this->feed->sessions($anchor->toDateString(), $anchor->endOfMonth()->toDateString(), $categoryId),
-            'preseason' => $this->preseason->forCategory($categoryId, $anchor),
-            'hasSchedule' => TrainingSchedule::where('category_id', $categoryId)->exists(),
+            'sessions' => $this->feed->sessions($anchor->toDateString(), $anchor->endOfMonth()->toDateString(), $categoryId, null, $data['branch_id']),
+            'preseason' => $this->preseason->forCategory($categoryId, $anchor, $data['branch_id']),
+            'hasSchedule' => TrainingSchedule::where('category_id', $categoryId)->where('branch_id', $data['branch_id'])->exists(),
         ];
     }
 
@@ -131,7 +137,8 @@ class AttendanceCalendarController extends Controller
             'categoryId' => $this->categoryFilter($data),
             'month' => $start->format('Y-m'),
             'week' => ['start' => $start->toDateString(), 'end' => $end->toDateString()],
-            'sessions' => $this->feed->sessions($start->toDateString(), $end->toDateString()),
+            'sessions' => $this->feed->sessions($start->toDateString(), $end->toDateString(), branchId: $data['branch_id']),
+            'branchId' => $data['branch_id'],
         ];
     }
 
@@ -147,7 +154,8 @@ class AttendanceCalendarController extends Controller
         return [
             'categoryId' => $categoryId,
             'month' => $anchor->format('Y-m'),
-            'sessions' => $this->feed->sessions($from, $to, $categoryId),
+            'sessions' => $this->feed->sessions($from, $to, $categoryId, branchId: $data['branch_id']),
+            'branchId' => $data['branch_id'],
         ];
     }
 
@@ -178,8 +186,31 @@ class AttendanceCalendarController extends Controller
             'month' => $to->format('Y-m'),
             'from' => $from->format('Y-m'),
             'to' => $to->format('Y-m'),
-            'events' => $this->feed->timeline($fromDate, $toDate, $categoryId, $kind),
+            'events' => $this->feed->timeline($fromDate, $toDate, $categoryId, $kind, $data['branch_id']),
+            'branchId' => $data['branch_id'],
         ];
+    }
+
+    /**
+     * The branch on screen: the one asked for (remembered in the session),
+     * else the remembered one if it still exists, else the first; null when
+     * the club has no branch (every session then shows).
+     */
+    private function branchId(Request $request, array $data): ?int
+    {
+        if (isset($data['branch_id'])) {
+            $request->session()->put('attendance.branch_id', (int) $data['branch_id']);
+
+            return (int) $data['branch_id'];
+        }
+        $remembered = $request->session()->get('attendance.branch_id');
+        if ($remembered !== null && Branch::whereKey($remembered)->exists()) {
+            return (int) $remembered;
+        }
+
+        $first = Branch::orderBy('id')->value('id');
+
+        return $first === null ? null : (int) $first;
     }
 
     private function monthAnchor(array $data): CarbonImmutable

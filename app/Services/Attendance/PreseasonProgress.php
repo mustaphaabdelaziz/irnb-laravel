@@ -13,22 +13,28 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Pre-season progress per category and season. A joint pre-season session
+ * Pre-season progress per branch, category and season. A joint pre-season session
  * counts once for every category in it (owner decision), so this reads the
  * session-category pivot, never `training_sessions.category_id` alone.
  */
 final class PreseasonProgress
 {
-    /** @return array{season: string, done: int, target: ?int} */
-    public function forCategory(int $categoryId, DateTimeInterface|string $date): array
+    /**
+     * @param  int|null  $branchId  null = sessions of every branch, and the highest target any branch set
+     * @return array{season: string, done: int, target: ?int}
+     */
+    public function forCategory(int $categoryId, DateTimeInterface|string $date, ?int $branchId = null): array
     {
         $season = Season::forDate($date);
+        $target = PreseasonTarget::where('category_id', $categoryId)
+            ->where('season_start_year', $season->startYear)
+            ->when($branchId !== null, fn ($q) => $q->where('branch_id', $branchId))
+            ->max('target_count');
 
         return [
             'season' => $season->label(),
-            'done' => $this->held($categoryId, $season)->count(),
-            'target' => PreseasonTarget::where('category_id', $categoryId)
-                ->where('season_start_year', $season->startYear)->value('target_count'),
+            'done' => $this->held($categoryId, $season, $branchId)->count(),
+            'target' => $target === null ? null : (int) $target,
         ];
     }
 
@@ -73,7 +79,7 @@ final class PreseasonProgress
      *
      * @return array<int, array{milestone: string, date: string, time: string, session_id: int, category_id: int, category: string, done: ?int, target: ?int}>
      */
-    public function milestones(string $from, string $to, ?int $categoryId = null): array
+    public function milestones(string $from, string $to, ?int $categoryId = null, ?int $branchId = null): array
     {
         $categories = Category::query()->when($categoryId !== null, fn ($q) => $q->whereKey($categoryId))->orderBy('id')->get();
         // The window is at most 12 months, so it spans one or two seasons.
@@ -81,11 +87,16 @@ final class PreseasonProgress
         $events = [];
 
         foreach ($seasons as $season) {
-            $targets = PreseasonTarget::where('season_start_year', $season->startYear)->pluck('target_count', 'category_id');
+            $targets = PreseasonTarget::where('season_start_year', $season->startYear)
+                ->when($branchId !== null, fn ($q) => $q->where('branch_id', $branchId))
+                ->selectRaw('category_id, max(target_count) as target_count')
+                ->groupBy('category_id')
+                ->pluck('target_count', 'category_id');
             // Every category's held sessions of the season in one query, in date order.
             $heldByCategory = DB::table('training_session_category')
                 ->join('training_sessions', 'training_sessions.id', '=', 'training_session_category.training_session_id')
                 ->when($categoryId !== null, fn ($q) => $q->where('training_session_category.category_id', $categoryId))
+                ->when($branchId !== null, fn ($q) => $q->where('training_sessions.branch_id', $branchId))
                 ->where('training_sessions.kind', SessionKind::Preseason->value)
                 ->where('training_sessions.state', SessionState::Held->value)
                 ->whereBetween('training_sessions.date', [$season->start()->toDateString(), $season->end()->toDateString()])
@@ -127,10 +138,11 @@ final class PreseasonProgress
     }
 
     /** Held pre-season sessions of the season that include the category. */
-    private function held(int $categoryId, Season $season): Builder
+    private function held(int $categoryId, Season $season, ?int $branchId = null): Builder
     {
         return TrainingSession::query()
             ->includingCategory($categoryId)
+            ->when($branchId !== null, fn ($q) => $q->where('branch_id', $branchId))
             ->where('kind', SessionKind::Preseason->value)
             ->where('state', SessionState::Held->value)
             ->whereBetween('date', [$season->start()->toDateString(), $season->end()->toDateString()]);

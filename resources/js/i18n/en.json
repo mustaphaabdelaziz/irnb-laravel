@@ -335,6 +335,8 @@
     "att.earlier": "Show the previous month",
     "att.edit": "Edit",
     "att.edit_categories": "Edit categories",
+    "att.edit_locked_hint": "Branch, player statuses, categories and type are fixed once attendance is saved.",
+    "att.edit_session": "Edit session",
     "att.end": "End",
     "att.end_date": "End date",
     "att.error.already_marked": "Attendance has already been saved for this session.",

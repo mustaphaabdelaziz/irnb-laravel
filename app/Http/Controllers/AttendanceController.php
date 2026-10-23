@@ -4,10 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Enums\AbsenceReason;
 use App\Enums\AttendanceStatus;
-use App\Enums\SessionKind;
 use App\Http\Requests\SaveAttendanceMarksRequest;
+use App\Models\Branch;
 use App\Models\Category;
 use App\Models\Player;
+use App\Models\PlayerStatus;
 use App\Models\TrainingSession;
 use App\Services\Attendance\AttendanceStatusCatalog;
 use App\Services\Attendance\MarkRecorder;
@@ -40,6 +41,7 @@ class AttendanceController extends Controller
                 'category' => $categories->implode(' · '),
                 'category_id' => $session->category_id,
                 'branch_id' => $session->branch_id,
+                'roster_status_ids' => $roster->statusIdsFor($session),
                 'branch' => $session->branch ? ['id' => $session->branch->id, 'name' => $session->branch->localized_name, 'logo_url' => $session->branch->logo_url] : null,
                 'categories' => $categories->map(fn (string $name, int $id) => ['id' => $id, 'name' => $name])->values(),
             ],
@@ -95,9 +97,10 @@ class AttendanceController extends Controller
             'statuses' => $catalog->shown($marks->pluck('status')),
             'reasons' => AbsenceReason::values(),
             'attendanceCodes' => $catalog->codes(),
-            'allCategories' => $session->kind === SessionKind::Preseason
-                ? Category::orderBy('id')->get()->map(fn (Category $c) => ['id' => $c->id, 'name' => $c->localized_name])->values()
-                : [],
+            // Every category: the Edit dialog can turn an extra session into a pre-season one.
+            'allCategories' => Category::orderBy('id')->get()->map(fn (Category $c) => ['id' => $c->id, 'name' => $c->localized_name])->values(),
+            'branches' => Branch::orderBy('id')->get()->map(fn (Branch $b) => ['id' => $b->id, 'name' => $b->localized_name])->values(),
+            'playerStatuses' => PlayerStatus::options(),
         ]);
     }
 

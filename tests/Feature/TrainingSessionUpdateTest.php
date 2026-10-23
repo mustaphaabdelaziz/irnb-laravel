@@ -18,6 +18,7 @@ use App\Services\Activity\ActivityAction;
 use App\Services\Attendance\Roster;
 use App\Support\PermissionMap;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\AttendanceFixtures;
 use Tests\TestCase;
@@ -198,5 +199,46 @@ class TrainingSessionUpdateTest extends TestCase
         $training = $this->makeTraining($this->category());
         $viewer = User::factory()->create(['privileges' => ['user'], 'role_id' => Role::factory()->create(['permissions' => ['attendance' => ['view']]])->id]);
         $this->actingAs($viewer)->put(route('attendance.sessions.update', $training), ['title' => 'x'])->assertForbidden();
+    }
+
+    #[Test]
+    public function a_title_edit_leaves_an_unsorted_stored_roster_untouched(): void
+    {
+        $u15 = $this->category();
+        $registered = (int) PlayerStatus::where('code', 'registered')->value('id');
+        $paused = (int) PlayerStatus::where('code', 'paused')->value('id');
+        $training = $this->makeTraining($u15, ['roster_status_ids' => [max($registered, $paused), min($registered, $paused)]]);
+        $stored = $training->fresh()->roster_status_ids;
+
+        $this->edit($training, ['title' => 'Only title'])->assertSessionHasNoErrors();
+
+        $this->assertSame(['title'], ActivityLog::where('action', ActivityAction::TRAINING_SESSION_UPDATED)->sole()->properties['fields']);
+        $this->assertSame($stored, $training->fresh()->roster_status_ids);
+    }
+
+    #[Test]
+    public function an_edit_that_changes_nothing_records_no_activity(): void
+    {
+        $training = $this->makeTraining($this->category(), ['title' => 'Same']);
+
+        $this->edit($training, ['title' => 'Same'])->assertSessionHasNoErrors()->assertSessionHas('success', 'flash.training_session_updated');
+
+        $this->assertSame(0, ActivityLog::where('action', ActivityAction::TRAINING_SESSION_UPDATED)->count());
+    }
+
+    #[Test]
+    public function the_session_page_carries_what_the_edit_dialog_needs(): void
+    {
+        $u15 = $this->category();
+        $this->category('U17');
+        $foot = Branch::create(['name' => 'Foot']);
+        $training = $this->makeTraining($u15, ['branch_id' => $foot->id]);
+
+        $this->actingAs($this->admin())->get(route('attendance.sessions.show', $training))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('allCategories', 2)
+                ->where('branches.0.id', $foot->id)
+                ->has('playerStatuses')
+                ->has('session.roster_status_ids'));
     }
 }

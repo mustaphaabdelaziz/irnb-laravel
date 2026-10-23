@@ -20,6 +20,8 @@ const props = defineProps({
     statuses: { type: Array, default: () => [] },
     reasons: { type: Array, default: () => [] },
     allCategories: { type: Array, default: () => [] },
+    branches: { type: Array, default: () => [] },
+    playerStatuses: { type: Array, default: () => [] },
 });
 const { t, locale } = useI18n();
 const { can } = useCan();
@@ -79,7 +81,7 @@ function save() {
 }
 const rowError = (i) => ['minutes', 'reason', 'note', 'status'].map((f) => errors.value[`marks.${i}.${f}`]).map(tr).find(Boolean);
 
-// ---- Cancel / move ----
+// ---- Cancel ----
 const showCancel = ref(false);
 const cancelForm = useForm({ reason: '' });
 const submitCancel = () => cancelForm.post(route('attendance.sessions.cancel', props.session.id), { onSuccess: () => (showCancel.value = false) });
@@ -102,25 +104,35 @@ const submitDelete = () => {
         router.delete(route('attendance.sessions.destroy', props.session.id), options);
     }
 };
-const showMove = ref(false);
-const moveForm = useForm({ date: props.session.date, start_time: props.session.start_time, end_time: props.session.end_time });
-const submitMove = () => moveForm.post(route('attendance.sessions.move', props.session.id), { onSuccess: () => (showMove.value = false) });
-
-// ---- Categories of a pre-season session: editable until its marks are first saved ----
-const canEditCategories = computed(() => editable.value && props.session.kind === 'preseason' && !props.saved);
-const showCategories = ref(false);
-const categoriesForm = useForm({ category_ids: [] });
-function openCategories() {
-    categoriesForm.category_ids = props.session.categories.map((c) => c.id);
-    categoriesForm.clearErrors();
-    showCategories.value = true;
+// ---- Edit: details any time; branch, roster, categories and kind until marks are first saved ----
+const handAdded = computed(() => props.session.kind !== 'regular');
+const showEdit = ref(false);
+const editForm = useForm({ title: '', date: '', start_time: '', end_time: '', coach: '', notes: '', branch_id: null, roster_status_ids: [], kind: 'extra', category_ids: [] });
+function openEdit() {
+    const s = props.session;
+    Object.assign(editForm, {
+        title: s.title ?? '', date: s.date, start_time: s.start_time, end_time: s.end_time, coach: s.coach ?? '', notes: s.notes ?? '',
+        branch_id: s.branch_id, roster_status_ids: [...(s.roster_status_ids ?? [])], kind: s.kind, category_ids: s.categories.map((c) => c.id),
+    });
+    editForm.clearErrors();
+    showEdit.value = true;
 }
-// 'errors' keeps the modal open on a validation error; a success remounts the page with the new roster.
-const submitCategories = () => categoriesForm.put(route('attendance.sessions.categories', props.session.id), {
-    preserveScroll: true,
-    preserveState: 'errors',
-    onSuccess: () => (showCategories.value = false),
-});
+// Locked fields are left out, so the server keeps them as they are.
+const submitEdit = () => editForm
+    .transform((d) => {
+        const out = { title: d.title || null, date: d.date, start_time: d.start_time, end_time: d.end_time, coach: d.coach || null, notes: d.notes || null };
+        if (!props.saved) {
+            if (props.playerStatuses.length) out.roster_status_ids = d.roster_status_ids;
+            if (handAdded.value) {
+                out.kind = d.kind;
+                if (props.branches.length) out.branch_id = d.branch_id;
+            }
+            if (d.kind === 'preseason') out.category_ids = d.category_ids;
+        }
+        return out;
+    })
+    // 'errors' keeps the modal open on a validation error; a success remounts the page (new roster, side panel values).
+    .put(route('attendance.sessions.update', props.session.id), { preserveScroll: true, preserveState: 'errors', onSuccess: () => (showEdit.value = false) });
 
 const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900';
 const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
@@ -146,8 +158,7 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                     <IconButton v-if="!cancelled" :href="sheetHref" external target="_blank" :title="t('att.sheet.print_hint')" icon="print" :label="t('att.sheet.print_session')" />
                     <IconButton v-if="!cancelled && saved" :href="filledSheetHref" external target="_blank" icon="clipboard" :label="t('att.sheet.print_filled')" />
                     <template v-if="editable">
-                        <IconButton v-if="canEditCategories" icon="categories" :label="t('att.edit_categories')" @click="openCategories" />
-                        <IconButton icon="calendar" :label="t('att.move')" @click="showMove = true" />
+                        <IconButton icon="pencil" :label="t('att.edit')" @click="openEdit" />
                         <IconButton icon="xcircle" :label="t('att.cancel')" variant="danger" @click="showCancel = true" />
                     </template>
                     <IconButton v-if="can('attendance', 'edit')" icon="trash" :label="t('att.delete_session')" variant="danger" @click="openDelete" />
@@ -255,36 +266,53 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
             </form>
         </Modal>
 
-        <Modal :show="showMove" max-width="md" @close="showMove = false">
-            <form class="space-y-3 p-5" @submit.prevent="submitMove">
-                <h2 class="font-bold text-slate-900 dark:text-slate-100">{{ t('att.move') }}</h2>
-                <label class="block text-sm">{{ t('att.date') }}<input v-model="moveForm.date" type="date" :class="[input, 'mt-1 block w-full']" /></label>
+        <Modal :show="showEdit" max-width="lg" @close="showEdit = false">
+            <form class="space-y-3 p-5" @submit.prevent="submitEdit">
+                <h2 class="font-bold text-slate-900 dark:text-slate-100">{{ t('att.edit_session') }}</h2>
+                <label class="block text-sm">{{ t('att.title_goal') }}<input v-model="editForm.title" type="text" maxlength="150" :placeholder="t('att.title_placeholder')" :class="[input, 'mt-1 block w-full']" /></label>
+                <label class="block text-sm">{{ t('att.date') }}<input v-model="editForm.date" type="date" :class="[input, 'mt-1 block w-full']" /></label>
                 <div class="flex gap-2">
-                    <label class="flex-1 text-sm">{{ t('att.start') }}<input v-model="moveForm.start_time" type="time" :class="[input, 'mt-1 block w-full']" /></label>
-                    <label class="flex-1 text-sm">{{ t('att.end') }}<input v-model="moveForm.end_time" type="time" :class="[input, 'mt-1 block w-full']" /></label>
+                    <label class="flex-1 text-sm">{{ t('att.start') }}<input v-model="editForm.start_time" type="time" :class="[input, 'mt-1 block w-full']" /></label>
+                    <label class="flex-1 text-sm">{{ t('att.end') }}<input v-model="editForm.end_time" type="time" :class="[input, 'mt-1 block w-full']" /></label>
                 </div>
-                <InputError v-for="(e, k) in moveForm.errors" :key="k" :message="tr(e)" />
-                <div class="flex justify-end gap-2">
-                    <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700" @click="showMove = false">{{ t('att.close') }}</button>
-                    <button type="submit" :disabled="moveForm.processing" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">{{ t('att.save') }}</button>
-                </div>
-            </form>
-        </Modal>
+                <label class="block text-sm">{{ t('att.coach') }}<input v-model="editForm.coach" type="text" maxlength="100" :class="[input, 'mt-1 block w-full']" /></label>
+                <label class="block text-sm">{{ t('att.notes') }}<textarea v-model="editForm.notes" rows="3" maxlength="2000" :class="[input, 'mt-1 block w-full']"></textarea></label>
 
-        <Modal :show="showCategories" max-width="md" @close="showCategories = false">
-            <form class="space-y-3 p-5" @submit.prevent="submitCategories">
-                <h2 class="font-bold text-slate-900 dark:text-slate-100">{{ t('att.categories') }}</h2>
-                <p class="text-xs text-slate-500">{{ t('att.categories_help') }}</p>
-                <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                    <label v-for="c in allCategories" :key="c.id" class="inline-flex items-center gap-1.5">
-                        <input v-model="categoriesForm.category_ids" type="checkbox" :value="c.id" class="rounded border-slate-300 text-primary-600 dark:border-slate-700 dark:bg-slate-900" />
-                        {{ c.name }}
+                <div v-if="!saved && (handAdded || playerStatuses.length)" class="space-y-3 border-t border-slate-100 pt-3 dark:border-slate-800">
+                    <div v-if="handAdded" class="inline-flex rounded-lg p-0.5 ring-1 ring-slate-200 dark:ring-slate-700" role="radiogroup">
+                        <button v-for="k in ['extra', 'preseason']" :key="k" type="button" role="radio" :aria-checked="editForm.kind === k" class="rounded-md px-3 py-1 text-sm font-semibold" :class="editForm.kind === k ? (k === 'preseason' ? 'bg-amber-500 text-white' : 'bg-primary-600 text-white') : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'" @click="editForm.kind = k">{{ t(`att.kind.${k}`) }}</button>
+                    </div>
+                    <label v-if="handAdded && branches.length" class="block text-sm">{{ t('branch') }}
+                        <select v-model="editForm.branch_id" :class="[input, 'mt-1 block w-full']">
+                            <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
+                        </select>
                     </label>
+                    <fieldset v-if="editForm.kind === 'preseason'" class="text-sm">
+                        <legend class="mb-1">{{ t('att.categories') }}</legend>
+                        <div class="flex flex-wrap gap-x-4 gap-y-1">
+                            <label v-for="c in allCategories" :key="c.id" class="inline-flex items-center gap-1.5">
+                                <input v-model="editForm.category_ids" type="checkbox" :value="c.id" class="rounded border-slate-300 text-primary-600 dark:border-slate-700 dark:bg-slate-900" />
+                                {{ c.name }}
+                            </label>
+                        </div>
+                        <p class="mt-1 text-xs text-slate-500">{{ t('att.categories_help') }}</p>
+                    </fieldset>
+                    <fieldset v-if="playerStatuses.length" class="text-sm">
+                        <legend class="mb-1">{{ t('att.roster_statuses') }}</legend>
+                        <div class="flex flex-wrap gap-x-4 gap-y-1">
+                            <label v-for="s in playerStatuses" :key="s.id" class="inline-flex items-center gap-1.5">
+                                <input v-model="editForm.roster_status_ids" type="checkbox" :value="s.id" class="rounded border-slate-300 text-primary-600 dark:border-slate-700 dark:bg-slate-900" />
+                                {{ s.name }}
+                            </label>
+                        </div>
+                    </fieldset>
                 </div>
-                <InputError v-for="(e, k) in categoriesForm.errors" :key="k" :message="tr(e)" />
+                <p v-else-if="saved" class="rounded-lg bg-slate-50 p-2 text-xs text-slate-500 dark:bg-slate-800">{{ t('att.edit_locked_hint') }}</p>
+
+                <InputError v-for="(e, k) in editForm.errors" :key="k" :message="tr(e)" />
                 <div class="flex justify-end gap-2">
-                    <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700" @click="showCategories = false">{{ t('att.close') }}</button>
-                    <button type="submit" :disabled="categoriesForm.processing || !categoriesForm.category_ids.length" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('att.save') }}</button>
+                    <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700" @click="showEdit = false">{{ t('att.close') }}</button>
+                    <button type="submit" :disabled="editForm.processing || (editForm.kind === 'preseason' && !saved && !editForm.category_ids.length) || (!saved && playerStatuses.length > 0 && !editForm.roster_status_ids.length)" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('att.save') }}</button>
                 </div>
             </form>
         </Modal>

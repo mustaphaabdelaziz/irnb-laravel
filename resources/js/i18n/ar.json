@@ -335,6 +335,8 @@
     "att.earlier": "عرض الشهر السابق",
     "att.edit": "تعديل",
     "att.edit_categories": "تعديل الفئات",
+    "att.edit_locked_hint": "الفرع وحالات اللاعبين والفئات والنوع ثابتة بعد حفظ الحضور.",
+    "att.edit_session": "تعديل الحصة",
     "att.end": "النهاية",
     "att.end_date": "تاريخ النهاية",
     "att.error.already_marked": "تم تسجيل الحضور لهذه الحصة من قبل.",

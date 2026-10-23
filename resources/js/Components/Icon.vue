@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue';
+import { svgShapes } from '@/lib/svgShapes';
 
 /**
  * Single cohesive icon set — hand-drawn on a 24px grid with one stroke weight,
@@ -83,7 +84,15 @@ const icons = {
     trash: '<path d="M4 7h16"/><path d="M9.5 7V5.2c0-.7.5-1.2 1.2-1.2h2.6c.7 0 1.2.5 1.2 1.2V7"/><path d="M6 7l.9 11.3c.1.9.8 1.7 1.8 1.7h6.6c1 0 1.7-.8 1.8-1.7L18 7"/><path d="M10 11v5M14 11v5"/>',
 };
 
-const body = computed(() => icons[props.name] ?? icons.dot);
+// The shapes are built as elements from markup parsed once per icon: setting
+// the markup with v-html re-parsed it for every icon, and a long list draws
+// several hundred of them.
+const parsed = new Map();
+const shapes = computed(() => {
+    const name = icons[props.name] ? props.name : 'dot';
+    if (!parsed.has(name)) parsed.set(name, svgShapes(icons[name]));
+    return parsed.get(name);
+});
 const isSolid = computed(() => SOLID.has(props.name));
 </script>
 
@@ -100,6 +109,7 @@ const isSolid = computed(() => SOLID.has(props.name));
         stroke-linejoin="round"
         class="inline-block shrink-0"
         aria-hidden="true"
-        v-html="body"
-    />
+    >
+        <component :is="tag" v-for="([tag, attributes], i) in shapes" :key="i" v-bind="attributes" />
+    </svg>
 </template>

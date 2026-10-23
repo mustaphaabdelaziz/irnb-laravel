@@ -13,8 +13,10 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Turns a category's weekly schedule into planned sessions, one month at a
- * time. Called whenever a month is opened (the desktop app has no reliable
- * scheduler), so it must be idempotent: the unique (category, date, start)
+ * time. Each session takes its schedule's branch; moved, joint and deleted
+ * slots only block the same branch. Called whenever a month is opened (the
+ * desktop app has no reliable scheduler), so it must be idempotent: the
+ * unique (branch, category, date, start)
  * key ignores slots that already exist, including cancelled ones, and dates
  * whose sessions were moved away from are never regenerated. A slot the
  * category already attends through another category's joint pre-season
@@ -134,22 +136,22 @@ final class SessionGenerator
         $moved = TrainingSession::where('category_id', $categoryId)
             ->whereNotNull('moved_from')
             ->whereBetween('moved_from', [$from, $to])
-            ->pluck('moved_from')
-            ->flip();
+            ->get(['branch_id', 'moved_from'])
+            ->mapWithKeys(fn (TrainingSession $s) => [self::slotKey($s->branch_id, $s->moved_from) => true]);
 
         $joint = DB::table('training_sessions')
             ->join('training_session_category', 'training_session_category.training_session_id', '=', 'training_sessions.id')
             ->where('training_session_category.category_id', $categoryId)
             ->where('training_sessions.category_id', '!=', $categoryId)
             ->whereBetween('training_sessions.date', [$from, $to])
-            ->get(['training_sessions.date', 'training_sessions.start_time'])
-            ->mapWithKeys(fn ($s) => ["{$s->date} {$s->start_time}" => true]);
+            ->get(['training_sessions.branch_id', 'training_sessions.date', 'training_sessions.start_time'])
+            ->mapWithKeys(fn ($s) => [self::slotKey($s->branch_id, "{$s->date} {$s->start_time}") => true]);
 
         $deleted = DB::table('deleted_session_slots')
             ->where('category_id', $categoryId)
             ->whereBetween('date', [$from, $to])
-            ->get(['date', 'start_time'])
-            ->mapWithKeys(fn ($s) => ["{$s->date} {$s->start_time}" => true]);
+            ->get(['branch_id', 'date', 'start_time'])
+            ->mapWithKeys(fn ($s) => [self::slotKey($s->branch_id, "{$s->date} {$s->start_time}") => true]);
 
         $now = now();
         $rows = [];
@@ -162,16 +164,18 @@ final class SessionGenerator
             }
 
             foreach ($schedules as $schedule) {
+                $slot = "{$date} {$schedule->start_time}";
                 if ($schedule->weekday !== $day->dayOfWeekIso
                     || $schedule->valid_from > $date
                     || ($schedule->valid_to !== null && $schedule->valid_to < $date)
-                    || isset($moved[$date])
-                    || isset($joint["{$date} {$schedule->start_time}"])
-                    || isset($deleted["{$date} {$schedule->start_time}"])) {
+                    || isset($moved[self::slotKey($schedule->branch_id, $date)])
+                    || isset($joint[self::slotKey($schedule->branch_id, $slot)])
+                    || isset($deleted[self::slotKey($schedule->branch_id, $slot)])) {
                     continue;
                 }
 
                 $rows[] = [
+                    'branch_id' => $schedule->branch_id,
                     'category_id' => $categoryId,
                     'schedule_id' => $schedule->id,
                     'date' => $date,
@@ -210,5 +214,11 @@ final class SessionGenerator
 
             return $inserted;
         }, self::DEADLOCK_ATTEMPTS); // outermost when called from forMonth(); nested (attempts unused) from forRange()
+    }
+
+    /** A slot of one branch (0 = the whole club), the way the unique key's branch_key sees it. */
+    private static function slotKey(int|string|null $branchId, string $slot): string
+    {
+        return ((int) $branchId).'|'.$slot;
     }
 }

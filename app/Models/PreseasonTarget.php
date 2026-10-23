@@ -11,7 +11,7 @@ class PreseasonTarget extends Model
 {
     use SerializesClubDates;
 
-    protected $fillable = ['category_id', 'season_start_year', 'target_count'];
+    protected $fillable = ['branch_id', 'category_id', 'season_start_year', 'target_count'];
 
     protected function casts(): array
     {

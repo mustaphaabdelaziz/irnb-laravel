@@ -15,7 +15,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * One training on one date. `date`/`moved_from` are 'Y-m-d' strings and times
+ * One training of one branch on one date. `date`/`moved_from` are 'Y-m-d' strings and times
  * 'H:i' strings (see the create_attendance_tables migration). `category_id` is
  * the primary category; `categories()` holds every category taking part (only
  * pre-season sessions have more than one).
@@ -25,7 +25,7 @@ class TrainingSession extends Model
     use SerializesClubDates;
 
     protected $fillable = [
-        'category_id', 'schedule_id', 'date', 'start_time', 'end_time', 'kind', 'state',
+        'branch_id', 'category_id', 'schedule_id', 'date', 'start_time', 'end_time', 'kind', 'state',
         'cancel_reason', 'moved_from', 'coach', 'title', 'notes', 'roster_status_ids',
     ];
 
@@ -70,6 +70,12 @@ class TrainingSession extends Model
             ],
             [$this->date, $this->getOriginal('date'), $this->moved_from, $this->getOriginal('moved_from')],
         );
+    }
+
+    /** The branch (sport) whose members make the roster; null = the whole club. */
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function category(): BelongsTo

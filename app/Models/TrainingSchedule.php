@@ -7,12 +7,12 @@ use App\Services\Attendance\GenerationMarks;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/** One weekly training slot of a category, valid over a date range. */
+/** One weekly training slot of a branch and category, valid over a date range. */
 class TrainingSchedule extends Model
 {
     use SerializesClubDates;
 
-    protected $fillable = ['category_id', 'weekday', 'start_time', 'end_time', 'valid_from', 'valid_to'];
+    protected $fillable = ['branch_id', 'category_id', 'weekday', 'start_time', 'end_time', 'valid_from', 'valid_to'];
 
     protected function casts(): array
     {
@@ -28,6 +28,12 @@ class TrainingSchedule extends Model
             (int) ($schedule->getOriginal('category_id') ?? $schedule->category_id),
         ));
         static::deleted(fn (TrainingSchedule $schedule) => GenerationMarks::forgetCategories((int) $schedule->category_id));
+    }
+
+    /** The branch whose sessions this slot generates; null = the whole club. */
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function category(): BelongsTo

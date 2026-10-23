@@ -4,10 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Branch;
 use App\Models\Player;
+use App\Models\PreseasonTarget;
 use App\Models\Team;
+use App\Models\TrainingSchedule;
+use App\Models\TrainingSession;
 use App\Services\Storage\FileStorageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Throwable;
@@ -80,8 +84,16 @@ class BranchController extends Controller
         if (Team::where('branch_id', $branch->id)->exists()) {
             return back()->with('error', 'flash.branch_has_teams');
         }
+        // Attendance rows have no foreign key on branch_id (see the add_branch_to_attendance_tables migration).
+        if (TrainingSession::where('branch_id', $branch->id)->exists() || TrainingSchedule::where('branch_id', $branch->id)->exists()) {
+            return back()->with('error', 'flash.branch_has_sessions');
+        }
         $files->delete($branch->logo_filename);
-        $branch->delete();
+        DB::transaction(function () use ($branch) {
+            PreseasonTarget::where('branch_id', $branch->id)->delete();
+            DB::table('deleted_session_slots')->where('branch_id', $branch->id)->delete();
+            $branch->delete();
+        });
 
         return back()->with('success', 'flash.branch_deleted');
     }

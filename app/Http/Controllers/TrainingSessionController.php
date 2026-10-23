@@ -39,7 +39,7 @@ class TrainingSessionController extends Controller
             ...$this->slotRules(),
         ], ['roster_status_ids.min' => 'att.error.roster_statuses_required']);
         if (isset($data['roster_status_ids'])) {
-            $data['roster_status_ids'] = array_values(array_map('intval', $data['roster_status_ids']));
+            $data['roster_status_ids'] = $this->sortedIds($data['roster_status_ids']);
         }
         $categoryIds = $data['kind'] === SessionKind::Preseason->value
             ? $this->uniqueIds([(int) $data['category_id'], ...($data['category_ids'] ?? [])])
@@ -143,8 +143,11 @@ class TrainingSessionController extends Controller
             'kind' => $kind,
             // If the primary category is dropped, the first chosen one becomes primary.
             'category_id' => in_array($session->category_id, $categoryIds, true) ? $session->category_id : $categoryIds[0],
-            'roster_status_ids' => $statusIds,
         ];
+        // Written only when it changed: an older, unsorted stored set must not turn dirty on an unrelated edit.
+        if ($statusIds !== $this->sortedIds($session->roster_status_ids)) {
+            $attributes['roster_status_ids'] = $statusIds;
+        }
         if ($date !== $session->date || $start !== $session->start_time) {
             $attributes['moved_from'] = $session->moved_from ?? $session->date;
         }
@@ -160,7 +163,9 @@ class TrainingSessionController extends Controller
                 }
                 $session->save();
                 $session->categories()->sync($categoryIds);
-                ActivityRecorder::record($request->user(), ActivityAction::TRAINING_SESSION_UPDATED, $session, ['fields' => array_values(array_unique($fields))]);
+                if ($fields !== []) {
+                    ActivityRecorder::record($request->user(), ActivityAction::TRAINING_SESSION_UPDATED, $session, ['fields' => array_values(array_unique($fields))]);
+                }
             });
         } catch (UniqueConstraintViolationException) {
             // Two submits raced past assertSlotFree(); the unique (branch, category, date, start) key caught it.

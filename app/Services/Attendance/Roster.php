@@ -10,8 +10,9 @@ use Illuminate\Support\Collection;
 
 /**
  * Who is expected at a session. Before the first save it is the members of
- * every category in the session on that date whose player status is in the
- * session's roster set; after, it is exactly the saved marks. Freezing it
+ * the session's branch (any branch for a club-wide session) in every category
+ * of the session on that date whose player status is in the session's roster
+ * set; after, it is exactly the saved marks. Freezing it
  * keeps history fair: later category or status changes, departures and
  * newcomers never rewrite a past session.
  *
@@ -39,13 +40,15 @@ final class Roster
      *
      * @param  int|array<int, int>  $categoryIds
      * @param  list<int>|null  $statusIds  the roster set; null = the settings' default
+     * @param  int|null  $branchId  only members of this branch; null = the whole club
      * @return Collection<int, Player>
      */
-    public function expected(int|array $categoryIds, string $date, ?array $statusIds = null): Collection
+    public function expected(int|array $categoryIds, string $date, ?array $statusIds = null, ?int $branchId = null): Collection
     {
         $statusIds ??= $this->defaultStatusIds();
 
         return Player::whereIn('category_id', (array) $categoryIds)
+            ->when($branchId !== null, fn ($q) => $q->whereHas('branches', fn ($b) => $b->where('branches.id', $branchId)))
             ->where('archived', false)
             ->where(fn ($q) => $q->whereNull('left_at')->orWhereDate('left_at', '>', $date))
             ->when($statusIds !== [], fn ($q) => $q->where(function ($q) use ($statusIds) {
@@ -67,7 +70,7 @@ final class Roster
     public function forSession(TrainingSession $session): Collection
     {
         if (! $session->attendances()->exists()) {
-            return $this->expected($session->categoryIds(), $session->date, $this->statusIdsFor($session));
+            return $this->expected($session->categoryIds(), $session->date, $this->statusIdsFor($session), $session->branch_id);
         }
 
         return Player::whereIn('id', $session->attendances()->select('player_id'))

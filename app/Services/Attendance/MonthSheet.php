@@ -56,8 +56,8 @@ final class MonthSheet
             }
             $categoryIds = $session->categoryIds();
             $statusIds = $this->roster->statusIdsFor($session);
-            $key = $session->date.'|'.implode(',', $categoryIds).'|'.implode(',', $statusIds);
-            $expected[$key] ??= $this->roster->expected($categoryIds, $session->date, $statusIds)->modelKeys();
+            $key = $session->branch_id.'|'.$session->date.'|'.implode(',', $categoryIds).'|'.implode(',', $statusIds);
+            $expected[$key] ??= $this->roster->expected($categoryIds, $session->date, $statusIds, $session->branch_id)->modelKeys();
             foreach ($expected[$key] as $playerId) {
                 $cells[$playerId][$session->id] = '';
             }

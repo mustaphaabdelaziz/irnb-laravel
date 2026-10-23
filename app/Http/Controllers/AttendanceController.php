@@ -39,6 +39,8 @@ class AttendanceController extends Controller
                 'moved_from' => $session->moved_from, 'coach' => $session->coach, 'title' => $session->title, 'notes' => $session->notes,
                 'category' => $categories->implode(' · '),
                 'category_id' => $session->category_id,
+                'branch_id' => $session->branch_id,
+                'branch' => $session->branch ? ['id' => $session->branch->id, 'name' => $session->branch->localized_name, 'logo_url' => $session->branch->logo_url] : null,
                 'categories' => $categories->map(fn (string $name, int $id) => ['id' => $id, 'name' => $name])->values(),
             ],
             'saved' => $marks->isNotEmpty(),
@@ -60,9 +62,10 @@ class AttendanceController extends Controller
                     'note' => $mark?->note,
                 ];
             })->values(),
-            // Anyone to add by hand, whatever their status or category: not archived,
-            // not gone before the session date, not already listed; searched by full name.
-            'candidates' => Player::with(['status', 'category'])
+            // Anyone to add by hand, whatever their status, category or branch: not archived,
+            // not gone before the session date, not already listed; searched by full name;
+            // the session's branch members first.
+            'candidates' => Player::with(['status', 'category', 'branches'])
                 ->where('archived', false)
                 ->where(fn ($q) => $q->whereNull('left_at')->orWhereDate('left_at', '>', $session->date))
                 ->whereNotIn('id', $players->modelKeys())
@@ -72,14 +75,20 @@ class AttendanceController extends Controller
                     ->orWhereNotNull('left_at')))
                 ->orderBy('lastname')->orderBy('firstname')
                 ->get([...Roster::COLUMNS, 'status_id'])
+                // The session's branch members first (a stable sort keeps the name order); others are guests.
+                ->sortBy(fn (Player $p) => $session->branch_id !== null && ! $p->branches->contains('id', $session->branch_id))
                 ->map(fn (Player $p) => [
                     'id' => $p->id,
                     'name' => $p->fullname,
                     'picture' => $p->picture_url,
                     'status' => $p->status?->localized_name,
                     'category' => $p->category?->localized_name,
-                ]),
+                    'branches' => $p->branches->map(fn ($b) => $b->localized_name)->implode(', '),
+                    'in_branch' => $session->branch_id === null || $p->branches->contains('id', $session->branch_id),
+                ])
+                ->values(),
             'lastCoach' => TrainingSession::where('category_id', $session->category_id)
+                ->where('branch_id', $session->branch_id)
                 ->whereKeyNot($session->id)->whereNotNull('coach')
                 ->orderByDesc('date')->value('coach'),
             // The buttons: every active status, plus a hidden custom one still used in this session.

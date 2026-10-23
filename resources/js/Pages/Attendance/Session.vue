@@ -132,9 +132,12 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
         <template #header>
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
-                    <Link :href="route('attendance.index', { category_id: session.category_id, month: session.date.slice(0, 7) })" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 rtl:rotate-180"><Icon name="back" /></Link>
+                    <Link :href="route('attendance.index', { category_id: session.category_id, month: session.date.slice(0, 7), branch_id: session.branch_id ?? undefined })" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 rtl:rotate-180"><Icon name="back" /></Link>
                     <div>
-                        <h1 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ session.category }} · {{ t(`att.kind.${session.kind}`) }}</h1>
+                        <h1 class="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-slate-100">
+                            <img v-if="session.branch?.logo_url" :src="session.branch.logo_url" alt="" class="h-6 w-6 rounded object-contain" />
+                            <span>{{ [session.branch?.name, session.category].filter(Boolean).join(' · ') }} · {{ t(`att.kind.${session.kind}`) }}</span>
+                        </h1>
                         <p class="text-sm capitalize text-slate-500">{{ dateLabel }} · <span dir="ltr">{{ session.start_time }}–{{ session.end_time }}</span> · {{ t(`att.state.${session.state}`) }}</p>
                         <p v-if="session.moved_from" class="text-xs text-slate-400">{{ t('att.moved_from', { date: session.moved_from }) }}</p>
                     </div>
@@ -197,7 +200,7 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                         <li v-for="c in matches" :key="c.id">
                             <button type="button" class="flex w-full flex-wrap items-center justify-between gap-x-3 px-3 py-1.5 text-start text-sm hover:bg-slate-50 dark:hover:bg-slate-800" @click="addPlayer(c)">
                                 <span class="font-medium text-slate-900 dark:text-slate-100">{{ c.name }}</span>
-                                <span class="text-xs text-slate-500">{{ [c.category, c.status].filter(Boolean).join(' · ') }}</span>
+                                <span class="text-xs text-slate-500">{{ [c.in_branch ? null : c.branches, c.category, c.status].filter(Boolean).join(' · ') }}</span>
                             </button>
                         </li>
                     </ul>

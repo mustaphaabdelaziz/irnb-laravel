@@ -32,18 +32,22 @@ dialog, and kind, roster statuses and branch cannot change after creation.
 
 ### Data
 
-- `branch_id` nullable FK (`nullOnDelete`) on `training_sessions`, `training_schedules`,
+- `branch_id` nullable, indexed, on `training_sessions`, `training_schedules`,
   `deleted_session_slots` and `preseason_targets`. **Null = the whole club**: a club with no
   branches (generic template, fresh install) keeps working unchanged. Forms require a branch
-  whenever at least one branch exists. Deleting a branch turns its sessions club-wide.
+  whenever at least one branch exists.
+- No DB foreign-key constraint: adding one rebuilds the sqlite table, and `training_sessions`
+  has cascading children. Instead, deleting a branch is refused while it has sessions or
+  schedules (`flash.branch_has_sessions`, same pattern as the teams guard); its pre-season
+  targets and deleted-slot tombstones are deleted with it.
 - Migration backfills every existing row of those tables with the branch that has the most
   players (ties: lowest id); no branch → stays null. Saved marks (`attendances`) are untouched:
   a mark's branch is its session's.
-- Unique keys gain `branch_id`: `training_sessions (branch_id, category_id, date, start_time)`,
-  `deleted_session_slots (branch_id, category_id, date, start_time)`,
-  `preseason_targets (branch_id, category_id, season_start_year)`. NULLs are distinct in a unique
-  index, so the null-branch case relies on the app-level check (`assertSlotFree`), as the
-  pre-season pivot already does.
+- Unique keys gain the branch through a virtual column `branch_key = coalesce(branch_id, 0)`
+  (NULLs never collide in a unique index, and the generator relies on `insertOrIgnore`):
+  `training_sessions (branch_key, category_id, date, start_time)`,
+  `deleted_session_slots (branch_key, category_id, date, start_time)`,
+  `preseason_targets (branch_key, category_id, season_start_year)`.
 - `assertSlotFree` checks branch + categories + date + start: football U13 and swimming U13 can
   both train at 18:00; the same branch and category cannot.
 - Migrations only add columns and swap indexes: never rebuild an sqlite table that has
@@ -69,8 +73,8 @@ dialog, and kind, roster statuses and branch cannot change after creation.
 ### Calendar and settings
 
 - Calendar: branch switch beside the category selector, shown when at least one branch exists.
-  Value lives in the `branch_id` query parameter and is remembered in localStorage (per-viewer
-  convenience, try/catch). Default: first branch by id. Month, week, agenda and timeline show
+  Value lives in the `branch_id` query parameter and is remembered in the user's server session
+  (no reload flicker). Default: first branch by id. Month, week, agenda and timeline show
   only that branch's sessions; generation still runs per category for all branches.
 - Add-session dialog: branch select, pre-selected from the switch.
 - Settings: weekly schedules and pre-season targets get a branch column/select; schedule list

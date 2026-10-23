@@ -335,6 +335,7 @@
     "att.earlier": "Show the previous month",
     "att.edit": "Edit",
     "att.edit_categories": "Edit categories",
+    "att.edit_discard_confirm": "Unsaved marks on this page will be lost because the list of players changes. Continue?",
     "att.edit_locked_hint": "Branch, player statuses, categories and type are fixed once attendance is saved.",
     "att.edit_session": "Edit session",
     "att.end": "End",

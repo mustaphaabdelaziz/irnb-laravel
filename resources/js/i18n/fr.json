@@ -335,6 +335,7 @@
     "att.earlier": "Afficher le mois précédent",
     "att.edit": "Modifier",
     "att.edit_categories": "Modifier les catégories",
+    "att.edit_discard_confirm": "Les présences non enregistrées sur cette page seront perdues car la liste des joueurs change. Continuer ?",
     "att.edit_locked_hint": "La section, les statuts des joueurs, les catégories et le type sont figés une fois les présences enregistrées.",
     "att.edit_session": "Modifier la séance",
     "att.end": "Fin",

@@ -43,6 +43,12 @@ const dateLabel = computed(() => new Date(`${props.session.date}T00:00:00`).toLo
 const rows = ref(props.rows.map((r) => ({ ...r, note: r.note ?? '' })));
 const log = reactive({ coach: props.session.coach ?? props.lastCoach ?? '', title: props.session.title ?? '', notes: props.session.notes ?? '' });
 
+// Work not yet saved: marks that differ from the stored ones, or side-panel text typed since the last save.
+const marksKey = (list) => JSON.stringify(list.map((r) => [r.player_id, r.status, r.minutes || null, r.reason || null, r.note || '']));
+const logKey = () => JSON.stringify([log.coach, log.title, log.notes]);
+const savedLogKey = ref(logKey());
+const unsaved = computed(() => marksKey(rows.value) !== marksKey(props.rows) || logKey() !== savedLogKey.value);
+
 const takesReason = (s) => s === 'absent_excused' || s === 'not_training';
 function setStatus(row, status) {
     row.status = status;
@@ -114,29 +120,44 @@ function openEdit() {
     const s = props.session;
     prefilledStatusKey = sortedKey(s.roster_status_ids ?? []);
     Object.assign(editForm, {
-        title: s.title ?? '', date: s.date, start_time: s.start_time, end_time: s.end_time, coach: s.coach ?? '', notes: s.notes ?? '',
+        // Title, coach and notes come from the side panel, so text typed there is not lost.
+        title: log.title, date: s.date, start_time: s.start_time, end_time: s.end_time, coach: log.coach, notes: log.notes,
         branch_id: s.branch_id, roster_status_ids: [...(s.roster_status_ids ?? [])], kind: s.kind, category_ids: s.categories.map((c) => c.id),
     });
     editForm.clearErrors();
     showEdit.value = true;
 }
-// Locked fields are left out, so the server keeps them as they are.
-const submitEdit = () => editForm
-    .transform((d) => {
-        const out = { title: d.title || null, date: d.date, start_time: d.start_time, end_time: d.end_time, coach: d.coach || null, notes: d.notes || null };
-        if (!props.saved) {
-            // Only a real change is sent: the pre-filled set is the effective default, and sending it back would pin it.
-            if (props.playerStatuses.length && sortedKey(d.roster_status_ids) !== prefilledStatusKey) out.roster_status_ids = d.roster_status_ids;
-            if (handAdded.value) {
-                out.kind = d.kind;
-                if (props.branches.length) out.branch_id = d.branch_id;
+// Locked or unchanged roster fields are left out, so the server keeps them as they are.
+function editPayload(d) {
+    const s = props.session;
+    const out = { title: d.title || null, date: d.date, start_time: d.start_time, end_time: d.end_time, coach: d.coach || null, notes: d.notes || null };
+    if (!props.saved) {
+        // Only a real change is sent: the pre-filled set is the effective default, and sending it back would pin it.
+        if (props.playerStatuses.length && sortedKey(d.roster_status_ids) !== prefilledStatusKey) out.roster_status_ids = d.roster_status_ids;
+        if (handAdded.value && d.kind !== s.kind) out.kind = d.kind;
+        if (handAdded.value && props.branches.length && d.branch_id !== s.branch_id) out.branch_id = d.branch_id;
+        if (d.kind === 'preseason' && sortedKey(d.category_ids) !== sortedKey(s.categories.map((c) => c.id))) out.category_ids = d.category_ids;
+    }
+    return out;
+}
+function submitEdit() {
+    const payload = editPayload(editForm.data());
+    // Same roster: the page stays as it is (unsaved marks included) and the side panel shows the saved text.
+    // A new roster remounts the page, losing unsaved work ('errors' keeps the modal open on a validation error).
+    const reshapesRoster = ['branch_id', 'kind', 'category_ids', 'roster_status_ids'].some((f) => f in payload);
+    if (reshapesRoster && unsaved.value && !window.confirm(t('att.edit_discard_confirm'))) return;
+    editForm.transform(() => payload).put(route('attendance.sessions.update', props.session.id), {
+        preserveScroll: true,
+        preserveState: reshapesRoster ? 'errors' : true,
+        onSuccess: () => {
+            if (!reshapesRoster) {
+                Object.assign(log, { title: editForm.title, coach: editForm.coach, notes: editForm.notes });
+                savedLogKey.value = logKey();
             }
-            if (d.kind === 'preseason') out.category_ids = d.category_ids;
-        }
-        return out;
-    })
-    // 'errors' keeps the modal open on a validation error; a success remounts the page (new roster, side panel values).
-    .put(route('attendance.sessions.update', props.session.id), { preserveScroll: true, preserveState: 'errors', onSuccess: () => (showEdit.value = false) });
+            showEdit.value = false;
+        },
+    });
+}
 
 const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900';
 const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
@@ -283,11 +304,12 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                 <label class="block text-sm">{{ t('att.notes') }}<textarea v-model="editForm.notes" rows="3" maxlength="2000" :class="[input, 'mt-1 block w-full']"></textarea></label>
 
                 <div v-if="!saved && (handAdded || playerStatuses.length)" class="space-y-3 border-t border-slate-100 pt-3 dark:border-slate-800">
-                    <div v-if="handAdded" class="inline-flex rounded-lg p-0.5 ring-1 ring-slate-200 dark:ring-slate-700" role="radiogroup">
+                    <div v-if="handAdded" class="inline-flex rounded-lg p-0.5 ring-1 ring-slate-200 dark:ring-slate-700" role="radiogroup" :aria-label="t('att.col.kind')">
                         <button v-for="k in ['extra', 'preseason']" :key="k" type="button" role="radio" :aria-checked="editForm.kind === k" class="rounded-md px-3 py-1 text-sm font-semibold" :class="editForm.kind === k ? (k === 'preseason' ? 'bg-amber-500 text-white' : 'bg-primary-600 text-white') : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'" @click="editForm.kind = k">{{ t(`att.kind.${k}`) }}</button>
                     </div>
                     <label v-if="handAdded && branches.length" class="block text-sm">{{ t('branch') }}
                         <select v-model="editForm.branch_id" :class="[input, 'mt-1 block w-full']">
+                            <option :value="null" disabled>{{ t('select') }}</option>
                             <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
                         </select>
                     </label>

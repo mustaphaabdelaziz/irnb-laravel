@@ -16,6 +16,8 @@ const { t } = useI18n();
 
 // Any mark at all, even only not_counted ones (then nothing is expected, but the marks still show).
 const hasMarks = computed(() => Object.values(props.data.last30.counts ?? {}).some((n) => n > 0));
+// The sport only when today mixes branches, so two sessions at the same time tell apart.
+const showBranch = computed(() => new Set(props.data.today.map((s) => s.branch)).size > 1);
 const stateClass = {
     planned: 'text-muted-foreground',
     held: 'text-emerald-600 dark:text-emerald-400',
@@ -43,6 +45,7 @@ const stateClass = {
                             <span dir="ltr" class="w-24 shrink-0 tabular-nums text-muted-foreground">{{ s.start_time }}–{{ s.end_time }}</span>
                             <span class="h-2 w-2 shrink-0 rounded-full" :class="KIND_DOT[s.kind]" :title="t(`att.kind.${s.kind}`)"></span>
                             <span class="min-w-0 flex-1 truncate">
+                                <span v-if="showBranch && s.branch" class="text-muted-foreground">{{ s.branch }} · </span>
                                 <span class="font-medium">{{ s.categories.map((c) => c.name).join(' · ') }}</span>
                                 <span v-if="s.title" class="text-muted-foreground"> — {{ s.title }}</span>
                             </span>

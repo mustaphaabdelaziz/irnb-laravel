@@ -36,7 +36,7 @@ final class CalendarFeed
             ->when($kind !== null, fn ($q) => $q->where('kind', $kind))
             ->when($branchId !== null, fn ($q) => $q->where('branch_id', $branchId))
             ->whereBetween('date', [$from, $to])
-            ->with('categories')
+            ->with(['categories', 'branch'])
             ->withCount('attendances')
             ->orderBy('date')->orderBy('start_time')->orderBy('id')
             ->get();
@@ -53,6 +53,7 @@ final class CalendarFeed
             'kind' => $s->kind->value,
             'state' => $s->state->value,
             'title' => $s->title,
+            'branch' => $s->branch?->localized_name,
             'cancel_reason' => $s->cancel_reason,
             'categories' => $s->orderedCategories()
                 ->map(fn (Category $c) => ['id' => $c->id, 'name' => $c->localized_name])

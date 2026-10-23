@@ -7,6 +7,7 @@ use App\Enums\SessionKind;
 use App\Enums\SessionState;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\Attendance;
+use App\Models\Branch;
 use App\Models\Category;
 use App\Models\ClubClosure;
 use App\Models\Player;
@@ -159,6 +160,25 @@ class DashboardAttendanceCardTest extends TestCase
 
         $this->assertSame([], $card['today']);
         $this->assertFalse(TrainingSession::where('category_id', $u15->id)->where('date', '2026-10-20')->exists());
+    }
+
+    #[Test]
+    public function another_branchs_session_does_not_stand_for_todays_slot(): void
+    {
+        $u15 = $this->category('U15');
+        $foot = Branch::create(['name' => 'Foot']);
+        $swim = Branch::create(['name' => 'Swim']);
+        TrainingSchedule::create(['branch_id' => $swim->id, 'category_id' => $u15->id, 'weekday' => 2, 'start_time' => '18:00', 'end_time' => '19:30', 'valid_from' => '2026-09-01']);
+        // Football holds the same slot today, and moved another of its sessions away from today.
+        $slot = ['branch_id' => $foot->id, 'category_id' => $u15->id, 'start_time' => '18:00', 'end_time' => '19:30', 'state' => SessionState::Planned];
+        TrainingSession::create(['date' => '2026-10-20', 'kind' => SessionKind::Extra] + $slot);
+        TrainingSession::create(['date' => '2026-10-21', 'moved_from' => '2026-10-20', 'kind' => SessionKind::Regular] + $slot);
+
+        $card = $this->membersTab($this->admin())['attendance'];
+
+        $this->assertCount(2, $card['today']);
+        $this->assertEqualsCanonicalizing(['Foot', 'Swim'], array_column($card['today'], 'branch'));
+        $this->assertTrue(TrainingSession::where('branch_id', $swim->id)->where('date', '2026-10-20')->where('kind', SessionKind::Regular->value)->exists());
     }
 
     #[Test]

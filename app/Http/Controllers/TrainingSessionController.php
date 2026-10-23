@@ -56,7 +56,7 @@ class TrainingSessionController extends Controller
                 return $session;
             });
         } catch (UniqueConstraintViolationException) {
-            // Two submits raced past assertSlotFree(); the unique (category, date, start) key caught it.
+            // Two submits raced past assertSlotFree(); the unique (branch, category, date, start) key caught it.
             throw ValidationException::withMessages(['start_time' => 'att.error.duplicate']);
         }
 
@@ -175,7 +175,7 @@ class TrainingSessionController extends Controller
                 ActivityRecorder::record($request->user(), ActivityAction::TRAINING_SESSION_MOVED, $session);
             });
         } catch (UniqueConstraintViolationException) {
-            // Two submits raced past assertSlotFree(); the unique (category, date, start) key caught it.
+            // Two submits raced past assertSlotFree(); the unique (branch, category, date, start) key caught it.
             throw ValidationException::withMessages(['start_time' => 'att.error.duplicate']);
         }
 

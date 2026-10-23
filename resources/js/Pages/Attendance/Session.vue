@@ -43,11 +43,9 @@ const dateLabel = computed(() => new Date(`${props.session.date}T00:00:00`).toLo
 const rows = ref(props.rows.map((r) => ({ ...r, note: r.note ?? '' })));
 const log = reactive({ coach: props.session.coach ?? props.lastCoach ?? '', title: props.session.title ?? '', notes: props.session.notes ?? '' });
 
-// Work not yet saved: marks that differ from the stored ones, or side-panel text typed since the last save.
+// Marks not yet saved: the table differs from the stored marks.
 const marksKey = (list) => JSON.stringify(list.map((r) => [r.player_id, r.status, r.minutes || null, r.reason || null, r.note || '']));
-const logKey = () => JSON.stringify([log.coach, log.title, log.notes]);
-const savedLogKey = ref(logKey());
-const unsaved = computed(() => marksKey(rows.value) !== marksKey(props.rows) || logKey() !== savedLogKey.value);
+const marksUnsaved = computed(() => marksKey(rows.value) !== marksKey(props.rows));
 
 const takesReason = (s) => s === 'absent_excused' || s === 'not_training';
 function setStatus(row, status) {
@@ -143,17 +141,17 @@ function editPayload(d) {
 function submitEdit() {
     const payload = editPayload(editForm.data());
     // Same roster: the page stays as it is (unsaved marks included) and the side panel shows the saved text.
-    // A new roster remounts the page, losing unsaved work ('errors' keeps the modal open on a validation error).
-    const reshapesRoster = ['branch_id', 'kind', 'category_ids', 'roster_status_ids'].some((f) => f in payload);
-    if (reshapesRoster && unsaved.value && !window.confirm(t('att.edit_discard_confirm'))) return;
+    // A new roster remounts the page, losing unsaved marks ('errors' keeps the modal open on a validation error).
+    // Before the first save the roster also depends on the date (players who left by then drop out).
+    // The side-panel text is not lost either way: the dialog was filled from it and saves it.
+    const reshapesRoster = (!props.saved && payload.date !== props.session.date)
+        || ['branch_id', 'kind', 'category_ids', 'roster_status_ids'].some((f) => f in payload);
+    if (reshapesRoster && marksUnsaved.value && !window.confirm(t('att.edit_discard_confirm'))) return;
     editForm.transform(() => payload).put(route('attendance.sessions.update', props.session.id), {
         preserveScroll: true,
         preserveState: reshapesRoster ? 'errors' : true,
         onSuccess: () => {
-            if (!reshapesRoster) {
-                Object.assign(log, { title: editForm.title, coach: editForm.coach, notes: editForm.notes });
-                savedLogKey.value = logKey();
-            }
+            if (!reshapesRoster) Object.assign(log, { title: editForm.title, coach: editForm.coach, notes: editForm.notes });
             showEdit.value = false;
         },
     });

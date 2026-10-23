@@ -9,8 +9,10 @@ use App\Models\PreseasonTarget;
 use App\Models\TrainingSchedule;
 use App\Models\TrainingSession;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\AttendanceFixtures;
 use Tests\TestCase;
@@ -30,6 +32,45 @@ class AttendanceBranchMigrationTest extends TestCase
             'branch_id' => $branchId, 'category_id' => $categoryId, 'date' => '2026-10-05', 'start_time' => $start,
             'end_time' => '19:30', 'kind' => SessionKind::Regular, 'state' => SessionState::Planned,
         ]);
+    }
+
+    #[Test]
+    public function every_index_name_on_the_branch_tables_fits_mysql_64_characters(): void
+    {
+        foreach (['training_sessions', 'training_schedules', 'deleted_session_slots', 'preseason_targets'] as $table) {
+            foreach (Schema::getIndexes($table) as $index) {
+                $this->assertLessThanOrEqual(64, strlen($index['name']), "{$table}: {$index['name']}");
+            }
+        }
+        $this->assertTrue(Schema::hasIndex('deleted_session_slots', 'deleted_session_slots_branch_slot_unique', 'unique'));
+        $this->assertTrue(Schema::hasIndex('preseason_targets', 'preseason_targets_branch_slot_unique', 'unique'));
+        $this->assertFalse(Schema::hasIndex('training_sessions', 'training_sessions_category_id_date_start_time_unique'));
+    }
+
+    #[Test]
+    public function running_the_migration_again_changes_nothing(): void
+    {
+        $tables = ['training_sessions', 'training_schedules', 'deleted_session_slots', 'preseason_targets'];
+        $before = array_map(fn (string $t) => Schema::getIndexListing($t), $tables);
+
+        $this->migration()->up();
+
+        $this->assertSame($before, array_map(fn (string $t) => Schema::getIndexListing($t), $tables));
+    }
+
+    #[Test]
+    public function a_half_finished_run_completes_the_index_swap(): void
+    {
+        // As if MySQL stopped after adding branch_key: the new unique is missing and the old one still stands.
+        Schema::table('preseason_targets', function (Blueprint $t) {
+            $t->unique(['category_id', 'season_start_year']);
+            $t->dropUnique('preseason_targets_branch_slot_unique');
+        });
+
+        $this->migration()->up();
+
+        $this->assertTrue(Schema::hasIndex('preseason_targets', 'preseason_targets_branch_slot_unique', 'unique'));
+        $this->assertFalse(Schema::hasIndex('preseason_targets', 'preseason_targets_category_id_season_start_year_unique'));
     }
 
     #[Test]

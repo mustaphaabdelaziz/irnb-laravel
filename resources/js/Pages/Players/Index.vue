@@ -20,6 +20,7 @@ import Icon from '@/Components/Icon.vue';
 import IconButton from '@/Components/IconButton.vue';
 import AcademicResultsPrint from '@/Pages/Players/Partials/AcademicResultsPrint.vue';
 import { positionLabeller } from '@/lib/positionLabels';
+import { PLAYER_FILTERS_KEY, savedPlayerFilters } from '@/lib/playerListFilters';
 
 const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
@@ -102,9 +103,10 @@ watch(() => props.players, () => {
 // The filters stick until the user clears them, even after leaving the page or
 // restarting the app. A visit with its own query string (a dashboard drill-down,
 // a bookmark) wins; a bare visit (the sidebar link) restores the last filters.
-// Setting the refs here, before the first render, lets useListFilters' watcher
-// reload the list with them.
-const FILTERS_KEY = 'players.filters';
+// An Inertia visit already asks for them (rememberedFilterOptions, app.js);
+// for a full page load, setting the refs here, before the first render, lets
+// useListFilters' watcher reload the list with them.
+const FILTERS_KEY = PLAYER_FILTERS_KEY;
 const listFilterRefs = {
     lastname: lastnameFilter, category_id: categoryFilter, status: statusFilter, position_id: positionFilter,
     branch_id: branchFilter, age: ageFilter, blood_group: bloodGroupFilter, academic: academicFilter,
@@ -112,9 +114,8 @@ const listFilterRefs = {
 };
 
 if (!window.location.search) {
-    let saved = null;
-    try { saved = JSON.parse(localStorage.getItem(FILTERS_KEY) || 'null'); } catch { saved = null; }
-    if (saved && typeof saved === 'object') {
+    const saved = savedPlayerFilters();
+    if (saved) {
         if (typeof saved.search === 'string') search.value = saved.search;
         // Lists, or a single value saved before filters took several.
         for (const [key, r] of Object.entries(listFilterRefs)) {

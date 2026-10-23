@@ -239,6 +239,17 @@ class ActivityAction
 
     const BACKUP_DELETED = 'backup_deleted';
 
+    /**
+     * No longer recorded (the session Edit dialog records TRAINING_SESSION_UPDATED
+     * instead), but kept so older log rows keep their label and area.
+     *
+     * @var list<string>
+     */
+    const RETIRED = [
+        self::TRAINING_SESSION_MOVED,
+        self::TRAINING_SESSION_CATEGORIES_CHANGED,
+    ];
+
     /** @var list<string> */
     const ALL = [
         self::PLAYER_REGISTERED,

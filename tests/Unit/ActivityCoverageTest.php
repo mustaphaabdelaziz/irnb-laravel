@@ -42,8 +42,8 @@ class ActivityCoverageTest extends TestCase
 
         $constants = (new ReflectionClass(ActivityAction::class))->getConstants();
         foreach ($constants as $name => $value) {
-            if (! is_string($value)) {
-                continue; // ALL / AREAS / QUALITY
+            if (! is_string($value) || in_array($value, ActivityAction::RETIRED, true)) {
+                continue; // ALL / AREAS / QUALITY / RETIRED, and codes kept only for older log rows
             }
             $this->assertMatchesRegularExpression('/ActivityAction::'.$name.'\b/', $code, "{$value} is never recorded");
         }

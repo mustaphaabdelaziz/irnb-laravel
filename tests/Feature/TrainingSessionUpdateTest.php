@@ -12,10 +12,13 @@ use App\Models\Category;
 use App\Models\Player;
 use App\Models\PlayerStatus;
 use App\Models\Role;
+use App\Models\TrainingSchedule;
 use App\Models\TrainingSession;
 use App\Models\User;
 use App\Services\Activity\ActivityAction;
+use App\Services\Attendance\GenerationMarks;
 use App\Services\Attendance\Roster;
+use App\Services\Attendance\SessionGenerator;
 use App\Support\PermissionMap;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -263,6 +266,72 @@ class TrainingSessionUpdateTest extends TestCase
         $this->edit($training, ['title' => 'Same'])->assertSessionHasNoErrors()->assertSessionHas('success', 'flash.training_session_updated');
 
         $this->assertSame(0, ActivityLog::where('action', ActivityAction::TRAINING_SESSION_UPDATED)->count());
+    }
+
+    #[Test]
+    public function a_hand_added_session_cannot_become_regular(): void
+    {
+        $training = $this->makeTraining($this->category());
+
+        $this->edit($training, ['kind' => 'regular'])->assertSessionHasErrors(['kind' => 'att.error.not_hand_added']);
+        $this->assertSame(SessionKind::Extra, $training->fresh()->kind);
+    }
+
+    #[Test]
+    public function moving_an_extra_session_away_leaves_the_regular_slot_of_that_day(): void
+    {
+        $u15 = $this->category();
+        $this->mondaySchedule($u15);
+        // Monday 9 November, at another hour than the weekly slot.
+        $extra = $this->makeTraining($u15, ['date' => '2026-11-09', 'start_time' => '20:00', 'end_time' => '21:00']);
+
+        $this->edit($extra, ['date' => '2026-11-10', 'start_time' => '20:00', 'end_time' => '21:00'])->assertSessionHasNoErrors();
+        $this->assertSame('2026-11-09', $extra->fresh()->moved_from);
+
+        app(SessionGenerator::class)->forMonth($u15->id, 2026, 11);
+
+        $this->assertSame(1, TrainingSession::where('kind', SessionKind::Regular->value)->where('date', '2026-11-09')->count());
+    }
+
+    #[Test]
+    public function a_category_dropped_by_switching_pre_season_to_extra_gets_its_regular_slot_back(): void
+    {
+        $u15 = $this->category();
+        $u17 = $this->category('U17');
+        $this->mondaySchedule($u17);
+        // Monday 5 October 18:00, the U17 weekly slot, joined by U17.
+        $training = $this->makeTraining($u15, ['kind' => SessionKind::Preseason]);
+        $training->categories()->syncWithoutDetaching([$u17->id]);
+        $generator = app(SessionGenerator::class);
+        $generator->forMonth($u17->id, 2026, 10);
+        $this->assertSame(0, TrainingSession::where('category_id', $u17->id)->where('date', '2026-10-05')->count());
+
+        $this->edit($training, ['kind' => 'extra'])->assertSessionHasNoErrors();
+        $generator->forMonth($u17->id, 2026, 10);
+
+        $this->assertSame(1, TrainingSession::where('category_id', $u17->id)->where('kind', SessionKind::Regular->value)
+            ->where('date', '2026-10-05')->where('start_time', '18:00')->count());
+    }
+
+    #[Test]
+    public function only_a_slot_change_bumps_the_generation_version(): void
+    {
+        $training = $this->makeTraining($this->category());
+
+        $version = GenerationMarks::version();
+        $this->edit($training, ['title' => 'Only a title', 'notes' => 'Bring water'])->assertSessionHasNoErrors();
+        $this->assertSame($version, GenerationMarks::version());
+
+        $this->edit($training, ['date' => '2026-10-06', 'start_time' => '18:00', 'end_time' => '19:30'])->assertSessionHasNoErrors();
+        $this->assertGreaterThan($version, GenerationMarks::version());
+    }
+
+    private function mondaySchedule(Category $category): TrainingSchedule
+    {
+        return TrainingSchedule::create([
+            'category_id' => $category->id, 'weekday' => 1,
+            'start_time' => '18:00', 'end_time' => '19:30', 'valid_from' => '2026-01-01',
+        ]);
     }
 
     #[Test]

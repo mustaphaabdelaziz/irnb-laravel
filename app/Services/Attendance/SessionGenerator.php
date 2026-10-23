@@ -133,7 +133,9 @@ final class SessionGenerator
         $from = $first->toDateString();
         $to = $first->endOfMonth()->toDateString();
 
+        // Only a moved regular session stands for its old slot; a hand-added one never held it.
         $moved = TrainingSession::where('category_id', $categoryId)
+            ->where('kind', SessionKind::Regular->value)
             ->whereNotNull('moved_from')
             ->whereBetween('moved_from', [$from, $to])
             ->get(['branch_id', 'moved_from'])

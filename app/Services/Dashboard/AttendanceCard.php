@@ -2,6 +2,7 @@
 
 namespace App\Services\Dashboard;
 
+use App\Enums\SessionKind;
 use App\Models\ClubClosure;
 use App\Models\TrainingSchedule;
 use App\Services\Activity\ActivityPeriod;
@@ -97,16 +98,19 @@ final class AttendanceCard
         // together with any session moved away from today for these
         // categories (a moved session guards its branch's whole category for
         // the day, like the generator itself), in one query joined through the pivot.
+        // Only a regular session moved away guards; a hand-added one never held the slot.
+        $regular = SessionKind::Regular->value;
         $sessionRows = DB::table('training_session_category')
             ->join('training_sessions', 'training_sessions.id', '=', 'training_session_category.training_session_id')
             ->whereIn('training_session_category.category_id', $categoryIds)
-            ->where(fn ($q) => $q->where('training_sessions.date', $date)->orWhere('training_sessions.moved_from', $date))
-            ->get(['training_session_category.category_id', 'training_sessions.branch_id', 'training_sessions.start_time', 'training_sessions.date', 'training_sessions.moved_from']);
+            ->where(fn ($q) => $q->where('training_sessions.date', $date)
+                ->orWhere(fn ($q) => $q->where('training_sessions.moved_from', $date)->where('training_sessions.kind', $regular)))
+            ->get(['training_session_category.category_id', 'training_sessions.branch_id', 'training_sessions.start_time', 'training_sessions.date', 'training_sessions.moved_from', 'training_sessions.kind']);
 
         $heldSlots = $sessionRows->where('date', $date)
             ->map(fn ($row) => self::slotKey($row->branch_id, $row->category_id).'|'.$row->start_time)
             ->flip();
-        $movedAwayCategories = $sessionRows->where('moved_from', $date)
+        $movedAwayCategories = $sessionRows->where('moved_from', $date)->where('kind', $regular)
             ->map(fn ($row) => self::slotKey($row->branch_id, $row->category_id))
             ->flip();
 

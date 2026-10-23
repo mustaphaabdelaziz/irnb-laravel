@@ -157,11 +157,16 @@ class TrainingSessionController extends Controller
         if ($date !== $session->date || $start !== $session->start_time) {
             $attributes['moved_from'] = $session->moved_from ?? $session->date;
         }
+        // Only a change to the slot touches the generator's inputs; a title or notes edit leaves its marks alone.
+        $slotChanged = $branchId !== $session->branch_id || $date !== $session->date || $start !== $session->start_time
+            || $kind !== $session->kind || $attributes['category_id'] !== $session->category_id || $sortedCategoryIds !== $currentIds;
 
         try {
-            DB::transaction(function () use ($session, $attributes, $categoryIds, $sortedCategoryIds, $currentIds, $request) {
+            DB::transaction(function () use ($session, $attributes, $categoryIds, $sortedCategoryIds, $currentIds, $slotChanged, $request) {
                 // Before the sync: a dropped category gets its slot back (pivot syncs fire no model events).
-                $session->forgetGenerationMarks();
+                if ($slotChanged) {
+                    $session->forgetGenerationMarks();
+                }
                 $session->fill($attributes);
                 $fields = array_keys($session->getDirty());
                 if ($sortedCategoryIds !== $currentIds) {
@@ -272,7 +277,7 @@ class TrainingSessionController extends Controller
      *
      * @param  array<int, int>  $categoryIds
      */
-    private function assertSlotFree(?int $branchId, array $categoryIds, string $date, string $startTime, ?int $ignoreId = null, string $errorKey = 'start_time'): void
+    private function assertSlotFree(?int $branchId, array $categoryIds, string $date, string $startTime, ?int $ignoreId = null): void
     {
         $taken = TrainingSession::where('branch_id', $branchId) // null → whereNull
             ->where('date', $date)->where('start_time', $startTime)
@@ -281,7 +286,7 @@ class TrainingSessionController extends Controller
             ->exists();
 
         if ($taken) {
-            throw ValidationException::withMessages([$errorKey => 'att.error.duplicate']);
+            throw ValidationException::withMessages(['start_time' => 'att.error.duplicate']);
         }
     }
 }

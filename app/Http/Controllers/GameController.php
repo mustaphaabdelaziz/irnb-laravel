@@ -233,7 +233,7 @@ class GameController extends Controller
         ];
     }
 
-    /** The filtered team's training sessions in $month, so the calendar shows matches next to training. */
+    /** The filtered team's training sessions (its branch and category) in $month, so the calendar shows matches next to training. */
     private function sessions(?int $teamId, string $month, SessionGenerator $generator): array
     {
         $team = $teamId ? Team::find($teamId) : null;
@@ -244,6 +244,7 @@ class GameController extends Controller
         $generator->forMonth($team->category_id, $year, $monthNumber);
 
         return TrainingSession::query()->where('category_id', $team->category_id)->where('date', 'like', $month.'-%')
+            ->when($team->branch_id !== null, fn ($q) => $q->where('branch_id', $team->branch_id))
             ->orderBy('date')->orderBy('start_time')->get(['id', 'date', 'start_time', 'end_time', 'state'])
             ->map(fn (TrainingSession $s) => [
                 'id' => $s->id, 'date' => $s->date, 'time' => $s->start_time.'–'.$s->end_time,

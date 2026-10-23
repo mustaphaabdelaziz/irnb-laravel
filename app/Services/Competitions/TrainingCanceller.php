@@ -13,8 +13,8 @@ use App\Support\UiLang;
 
 /**
  * On a match day the team usually does not train. Cancels the planned
- * sessions of the team's category on the match date, giving the match as
- * the reason, exactly as a coach would cancel them on the attendance page.
+ * sessions of the team's branch and category on the match date (a football
+ * match leaves swimming alone), giving the match as the reason, exactly as a coach would cancel them on the attendance page.
  */
 final class TrainingCanceller
 {
@@ -32,6 +32,7 @@ final class TrainingCanceller
         $reason = mb_substr(strtr(UiLang::get('comp.training_cancelled_reason'), ['{opponent}' => $game->opponent->name]), 0, 255);
         $sessions = TrainingSession::query()
             ->where('category_id', $categoryId)->where('date', $game->date)->where('state', SessionState::Planned->value)
+            ->when($game->team->branch_id !== null, fn ($q) => $q->where('branch_id', $game->team->branch_id))
             ->get();
 
         foreach ($sessions as $session) {

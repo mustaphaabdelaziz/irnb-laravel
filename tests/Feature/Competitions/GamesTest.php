@@ -59,7 +59,7 @@ class GamesTest extends TestCase
     {
         $team = $this->team();
         $session = TrainingSession::create([
-            'category_id' => $team->category_id, 'date' => '2027-02-06', 'start_time' => '10:00', 'end_time' => '11:30',
+            'branch_id' => $team->branch_id, 'category_id' => $team->category_id, 'date' => '2027-02-06', 'start_time' => '10:00', 'end_time' => '11:30',
             'kind' => SessionKind::Extra, 'state' => SessionState::Planned,
         ]);
 
@@ -68,6 +68,22 @@ class GamesTest extends TestCase
 
         $this->assertSame(SessionState::Cancelled, $session->fresh()->state);
         $this->assertStringContainsString('Rivals FC', $session->fresh()->cancel_reason);
+    }
+
+    #[Test]
+    public function a_football_match_leaves_the_same_categorys_swimming_training_alone(): void
+    {
+        $team = $this->team();
+        $swimming = $this->sportBranch('Swimming');
+        $slot = ['category_id' => $team->category_id, 'date' => '2027-02-06', 'start_time' => '10:00', 'end_time' => '11:30', 'kind' => SessionKind::Extra, 'state' => SessionState::Planned];
+        $football = TrainingSession::create(['branch_id' => $team->branch_id] + $slot);
+        $swim = TrainingSession::create(['branch_id' => $swimming->id] + $slot);
+
+        $this->actingAs($this->admin())->post(route('games.store'), $this->payload(['team_id' => $team->id, 'cancel_training' => true]))
+            ->assertSessionHas('success', 'flash.game_created_training_cancelled');
+
+        $this->assertSame(SessionState::Cancelled, $football->fresh()->state);
+        $this->assertSame(SessionState::Planned, $swim->fresh()->state);
     }
 
     #[Test]
@@ -133,10 +149,9 @@ class GamesTest extends TestCase
         $team = $this->team();
         $this->game($team, ['date' => now()->addDays(3)->toDateString()]);
         $this->game($team, ['date' => now()->subDays(3)->toDateString(), 'status' => GameStatus::Played, 'our_score' => 1, 'their_score' => 0]);
-        TrainingSession::create([
-            'category_id' => $team->category_id, 'date' => now()->addDay()->toDateString(), 'start_time' => '18:00', 'end_time' => '19:30',
-            'kind' => SessionKind::Extra, 'state' => SessionState::Planned,
-        ]);
+        $slot = ['category_id' => $team->category_id, 'date' => now()->addDay()->toDateString(), 'start_time' => '18:00', 'end_time' => '19:30', 'kind' => SessionKind::Extra, 'state' => SessionState::Planned];
+        TrainingSession::create(['branch_id' => $team->branch_id] + $slot);
+        TrainingSession::create(['branch_id' => $this->sportBranch('Swimming')->id] + $slot); // another sport: not the team's training
         $admin = $this->admin();
 
         $this->actingAs($admin)->get(route('games.index'))->assertOk()

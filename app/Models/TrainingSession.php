@@ -48,11 +48,11 @@ class TrainingSession extends Model
             GenerationMarks::forgetSlots([$session->category_id], [$session->date]);
         });
 
-        // A session that leaves a slot (moved, re-assigned, deleted) may free
+        // A session that leaves a slot (moved, re-assigned to another branch or category, deleted) may free
         // it for the generator, in its old and new month, for every category
         // taking part: those months are generated again on the next view.
         static::updated(function (TrainingSession $session) {
-            if ($session->wasChanged(['date', 'start_time', 'category_id', 'moved_from'])) {
+            if ($session->wasChanged(['branch_id', 'date', 'start_time', 'category_id', 'moved_from'])) {
                 $session->forgetGenerationMarks();
             }
         });

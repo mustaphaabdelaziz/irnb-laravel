@@ -64,44 +64,122 @@ class TrainingSessionController extends Controller
     }
 
     /**
-     * The categories of a pre-season session, editable until its marks are
-     * first saved (the roster is frozen from then on). If the primary
-     * category is dropped, the first chosen one becomes primary.
+     * The session page's Edit dialog. Title, coach, notes, date and times can
+     * always change (a new date or start keeps the first original date in
+     * `moved_from`, so the generator never recreates the old slot). Branch,
+     * roster statuses, categories and kind shape the roster, which is frozen
+     * once marks are saved, so they change only before that; branch and kind
+     * only on a session added by hand (a regular one follows its weekly
+     * schedule). Fields left out of the request stay as they are.
      */
-    public function updateCategories(Request $request, TrainingSession $session): RedirectResponse
+    public function update(Request $request, TrainingSession $session): RedirectResponse
     {
+        if ($session->state === SessionState::Cancelled) {
+            throw ValidationException::withMessages(['date' => 'att.error.cancelled']);
+        }
         $data = $request->validate([
-            'category_ids' => ['required', 'array', 'min:1'],
+            'title' => ['sometimes', 'nullable', 'string', 'max:150'],
+            'coach' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'notes' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'date' => ['sometimes', 'required', 'date_format:Y-m-d'],
+            // Start and end travel together (end is checked against start).
+            'start_time' => ['required_with:end_time', 'date_format:H:i'],
+            'end_time' => ['required_with:start_time', 'date_format:H:i', 'after:start_time'],
+            'branch_id' => ['sometimes', Rule::requiredIf(fn () => Branch::exists()), 'nullable', 'integer', 'exists:branches,id'],
+            'roster_status_ids' => ['sometimes', 'nullable', 'array', 'min:1'],
+            'roster_status_ids.*' => ['integer', 'distinct', 'exists:player_statuses,id'],
+            'kind' => ['sometimes', 'string'],
+            'category_ids' => ['sometimes', 'array', 'min:1'],
             'category_ids.*' => ['integer', 'distinct', 'exists:categories,id'],
-        ]);
+        ], ['roster_status_ids.min' => 'att.error.roster_statuses_required']);
 
-        $error = match (true) {
-            $session->kind !== SessionKind::Preseason => 'att.error.not_preseason',
-            $session->state === SessionState::Cancelled => 'att.error.cancelled',
-            $session->state === SessionState::Held, $session->attendances()->exists() => 'att.error.already_marked',
-            default => null,
+        $handAdded = $session->kind !== SessionKind::Regular;
+        $kind = isset($data['kind']) ? SessionKind::tryFrom($data['kind']) : $session->kind;
+        $branchId = array_key_exists('branch_id', $data) ? ($data['branch_id'] === null ? null : (int) $data['branch_id']) : $session->branch_id;
+        $statusIds = array_key_exists('roster_status_ids', $data) ? $this->sortedIds($data['roster_status_ids']) : $this->sortedIds($session->roster_status_ids);
+        $currentIds = $session->categoryIds();
+        $chosenIds = isset($data['category_ids']) ? $this->uniqueIds($data['category_ids']) : null;
+        $categoryIds = match (true) {
+            $kind !== SessionKind::Preseason => [$session->category_id],
+            $chosenIds !== null => $chosenIds,
+            default => $currentIds,
         };
-        if ($error !== null) {
-            throw ValidationException::withMessages(['category_ids' => $error]);
+        $sortedCategoryIds = $categoryIds;
+        sort($sortedCategoryIds);
+
+        $errors = [];
+        if ($kind === null || ($kind === SessionKind::Regular && $session->kind !== SessionKind::Regular)) {
+            $errors['kind'] = 'att.error.not_hand_added';
+        } elseif (! $handAdded && $kind !== $session->kind) {
+            $errors['kind'] = 'att.error.not_hand_added';
+        }
+        if (! $handAdded && $branchId !== $session->branch_id) {
+            $errors['branch_id'] = 'att.error.not_hand_added';
+        }
+        if ($chosenIds !== null && $kind !== SessionKind::Preseason && $chosenIds !== [$session->category_id]) {
+            $errors['category_ids'] = 'att.error.not_preseason';
+        }
+        if ($session->attendances()->exists()) {
+            $changed = [
+                'branch_id' => $branchId !== $session->branch_id,
+                'roster_status_ids' => $statusIds !== $this->sortedIds($session->roster_status_ids),
+                'kind' => $kind !== $session->kind,
+                'category_ids' => $sortedCategoryIds !== $currentIds,
+            ];
+            foreach (array_keys(array_filter($changed)) as $field) {
+                $errors[$field] ??= 'att.error.already_marked';
+            }
+        }
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
         }
 
-        $ids = $this->uniqueIds($data['category_ids']);
-        $this->assertSlotFree($session->branch_id, $ids, $session->date, $session->start_time, $session->id, 'category_ids');
-        $primary = in_array($session->category_id, $ids, true) ? $session->category_id : $ids[0];
+        $date = $data['date'] ?? $session->date;
+        $start = $data['start_time'] ?? $session->start_time;
+        $this->assertSlotFree($branchId, $categoryIds, $date, $start, $session->id);
+
+        $attributes = Arr::only($data, ['title', 'coach', 'notes', 'date', 'start_time', 'end_time']) + [
+            'branch_id' => $branchId,
+            'kind' => $kind,
+            // If the primary category is dropped, the first chosen one becomes primary.
+            'category_id' => in_array($session->category_id, $categoryIds, true) ? $session->category_id : $categoryIds[0],
+            'roster_status_ids' => $statusIds,
+        ];
+        if ($date !== $session->date || $start !== $session->start_time) {
+            $attributes['moved_from'] = $session->moved_from ?? $session->date;
+        }
 
         try {
-            DB::transaction(function () use ($session, $ids, $primary, $request) {
+            DB::transaction(function () use ($session, $attributes, $categoryIds, $sortedCategoryIds, $currentIds, $request) {
                 // Before the sync: a dropped category gets its slot back (pivot syncs fire no model events).
                 $session->forgetGenerationMarks();
-                $session->update(['category_id' => $primary]);
-                $session->categories()->sync($ids);
-                ActivityRecorder::record($request->user(), ActivityAction::TRAINING_SESSION_CATEGORIES_CHANGED, $session, ['count' => count($ids)]);
+                $session->fill($attributes);
+                $fields = array_keys($session->getDirty());
+                if ($sortedCategoryIds !== $currentIds) {
+                    $fields[] = 'category_ids';
+                }
+                $session->save();
+                $session->categories()->sync($categoryIds);
+                ActivityRecorder::record($request->user(), ActivityAction::TRAINING_SESSION_UPDATED, $session, ['fields' => array_values(array_unique($fields))]);
             });
         } catch (UniqueConstraintViolationException) {
-            throw ValidationException::withMessages(['category_ids' => 'att.error.duplicate']);
+            // Two submits raced past assertSlotFree(); the unique (branch, category, date, start) key caught it.
+            throw ValidationException::withMessages(['start_time' => 'att.error.duplicate']);
         }
 
-        return back()->with('success', 'flash.training_session_categories_saved');
+        return back()->with('success', 'flash.training_session_updated');
+    }
+
+    /** @return list<int>|null sorted ids; null or empty = none (the roster then takes the settings' default) */
+    private function sortedIds(?array $ids): ?array
+    {
+        if ($ids === null || $ids === []) {
+            return null;
+        }
+        $ids = $this->uniqueIds($ids);
+        sort($ids);
+
+        return $ids;
     }
 
     public function cancel(Request $request, TrainingSession $session): RedirectResponse
@@ -158,28 +236,6 @@ class TrainingSessionController extends Controller
         });
 
         return back()->with('success', 'flash.training_session_reset');
-    }
-
-    /** `moved_from` keeps the first original date so the generator never recreates that slot. */
-    public function move(Request $request, TrainingSession $session): RedirectResponse
-    {
-        if ($session->state === SessionState::Cancelled) {
-            throw ValidationException::withMessages(['date' => 'att.error.cancelled']);
-        }
-        $data = $request->validate($this->slotRules());
-        $this->assertSlotFree($session->branch_id, $session->categoryIds(), $data['date'], $data['start_time'], $session->id);
-
-        try {
-            DB::transaction(function () use ($session, $data, $request) {
-                $session->update($data + ['moved_from' => $session->moved_from ?? $session->date]);
-                ActivityRecorder::record($request->user(), ActivityAction::TRAINING_SESSION_MOVED, $session);
-            });
-        } catch (UniqueConstraintViolationException) {
-            // Two submits raced past assertSlotFree(); the unique (branch, category, date, start) key caught it.
-            throw ValidationException::withMessages(['start_time' => 'att.error.duplicate']);
-        }
-
-        return back()->with('success', 'flash.training_session_moved');
     }
 
     private function slotRules(): array

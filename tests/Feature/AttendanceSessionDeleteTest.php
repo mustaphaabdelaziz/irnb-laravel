@@ -77,7 +77,7 @@ class AttendanceSessionDeleteTest extends TestCase
         $u15 = $this->category();
         $this->generateMondays($u15);
         $session = TrainingSession::where('date', '2026-10-12')->first();
-        $this->actingAs($this->admin())->post(route('attendance.sessions.move', $session), [
+        $this->actingAs($this->admin())->put(route('attendance.sessions.update', $session), [
             'date' => '2026-10-14', 'start_time' => '17:00', 'end_time' => '18:30',
         ])->assertSessionHasNoErrors();
 

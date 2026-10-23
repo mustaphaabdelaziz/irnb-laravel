@@ -83,7 +83,7 @@ class AttendanceSettingsPageTest extends TestCase
         $original = TrainingSession::where('schedule_id', $schedule->id)->orderBy('date')->first();
         $originalDate = $original->date;
 
-        $this->actingAs($admin)->post(route('attendance.sessions.move', $original), [
+        $this->actingAs($admin)->put(route('attendance.sessions.update', $original), [
             'date' => '2026-11-20', 'start_time' => '17:00', 'end_time' => '18:30',
         ])->assertSessionHasNoErrors();
 
@@ -115,7 +115,7 @@ class AttendanceSettingsPageTest extends TestCase
         $original = TrainingSession::where('schedule_id', $schedule->id)->orderBy('date')->first();
         $originalDate = $original->date;
 
-        $this->actingAs($admin)->post(route('attendance.sessions.move', $original), [
+        $this->actingAs($admin)->put(route('attendance.sessions.update', $original), [
             'date' => '2026-11-20', 'start_time' => '17:00', 'end_time' => '18:30',
         ])->assertSessionHasNoErrors();
 

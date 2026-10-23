@@ -90,7 +90,7 @@ class PreseasonMultiCategoryTest extends TestCase
         $joint->categories()->syncWithoutDetaching([$u17->id]);
         $this->makeTraining($u17, ['date' => '2026-09-06', 'kind' => SessionKind::Regular]);
 
-        $this->actingAs($this->admin())->post(route('attendance.sessions.move', $joint), $this->slot(['date' => '2026-09-06']))
+        $this->actingAs($this->admin())->put(route('attendance.sessions.update', $joint), $this->slot(['date' => '2026-09-06']))
             ->assertSessionHasErrors(['start_time' => 'att.error.duplicate']);
 
         $this->assertSame('2026-09-05', $joint->fresh()->date);
@@ -103,8 +103,8 @@ class PreseasonMultiCategoryTest extends TestCase
         $joint = $this->makeTraining($u15);
         $joint->categories()->syncWithoutDetaching([$u17->id]);
 
-        $this->actingAs($this->admin())->post(route('attendance.sessions.move', $joint), $this->slot(['date' => '2026-09-06', 'start_time' => '11:00', 'end_time' => '12:30']))
-            ->assertSessionHasNoErrors()->assertSessionHas('success', 'flash.training_session_moved');
+        $this->actingAs($this->admin())->put(route('attendance.sessions.update', $joint), $this->slot(['date' => '2026-09-06', 'start_time' => '11:00', 'end_time' => '12:30']))
+            ->assertSessionHasNoErrors()->assertSessionHas('success', 'flash.training_session_updated');
 
         $joint->refresh();
         $this->assertSame('2026-09-06', $joint->date);
@@ -130,8 +130,8 @@ class PreseasonMultiCategoryTest extends TestCase
         [$u15, $u17, $u19] = [$this->category(), $this->category('U17'), $this->category('U19')];
         $training = $this->makeTraining($u15);
 
-        $this->actingAs($this->admin())->put(route('attendance.sessions.categories', $training), ['category_ids' => [$u17->id, $u19->id]])
-            ->assertSessionHasNoErrors()->assertSessionHas('success', 'flash.training_session_categories_saved');
+        $this->actingAs($this->admin())->put(route('attendance.sessions.update', $training), ['category_ids' => [$u17->id, $u19->id]])
+            ->assertSessionHasNoErrors()->assertSessionHas('success', 'flash.training_session_updated');
 
         $training->refresh();
         // The primary category was removed, so the first chosen one takes over.
@@ -145,12 +145,12 @@ class PreseasonMultiCategoryTest extends TestCase
         [$u15, $u17, $u19] = [$this->category(), $this->category('U17'), $this->category('U19')];
         $training = $this->makeTraining($u15);
 
-        $this->actingAs($this->admin())->put(route('attendance.sessions.categories', $training), ['category_ids' => [$u17->id, $u19->id]])
+        $this->actingAs($this->admin())->put(route('attendance.sessions.update', $training), ['category_ids' => [$u17->id, $u19->id]])
             ->assertSessionHasNoErrors();
 
-        $log = ActivityLog::where('action', ActivityAction::TRAINING_SESSION_CATEGORIES_CHANGED)->sole();
+        $log = ActivityLog::where('action', ActivityAction::TRAINING_SESSION_UPDATED)->sole();
         $this->assertSame($training->id, $log->subject_id);
-        $this->assertSame(['count' => 2], $log->properties);
+        $this->assertSame(['fields' => ['category_id', 'category_ids']], $log->properties);
     }
 
     #[Test]
@@ -160,18 +160,18 @@ class PreseasonMultiCategoryTest extends TestCase
         $admin = $this->admin();
 
         $regular = $this->makeTraining($u15, ['kind' => SessionKind::Regular, 'date' => '2026-09-01']);
-        $this->actingAs($admin)->put(route('attendance.sessions.categories', $regular), ['category_ids' => [$u15->id, $u17->id]])
+        $this->actingAs($admin)->put(route('attendance.sessions.update', $regular), ['category_ids' => [$u15->id, $u17->id]])
             ->assertSessionHasErrors(['category_ids' => 'att.error.not_preseason']);
 
         $marked = $this->makeTraining($u15, ['date' => '2026-09-02', 'state' => SessionState::Held]);
         Attendance::create(['training_session_id' => $marked->id, 'player_id' => $this->player($u15)->id, 'status' => AttendanceStatus::Present]);
-        $this->actingAs($admin)->put(route('attendance.sessions.categories', $marked), ['category_ids' => [$u15->id, $u17->id]])
+        $this->actingAs($admin)->put(route('attendance.sessions.update', $marked), ['category_ids' => [$u15->id, $u17->id]])
             ->assertSessionHasErrors(['category_ids' => 'att.error.already_marked']);
 
         $this->makeTraining($u17, ['date' => '2026-09-03', 'kind' => SessionKind::Regular]);
         $clash = $this->makeTraining($u15, ['date' => '2026-09-03']);
-        $this->actingAs($admin)->put(route('attendance.sessions.categories', $clash), ['category_ids' => [$u15->id, $u17->id]])
-            ->assertSessionHasErrors(['category_ids' => 'att.error.duplicate']);
+        $this->actingAs($admin)->put(route('attendance.sessions.update', $clash), ['category_ids' => [$u15->id, $u17->id]])
+            ->assertSessionHasErrors(['start_time' => 'att.error.duplicate']);
 
         $this->assertSame([$u15->id], $clash->fresh()->categoryIds());
     }
@@ -184,7 +184,7 @@ class PreseasonMultiCategoryTest extends TestCase
         $role = Role::factory()->create(['permissions' => ['attendance' => ['view', 'add']]]);
         $user = User::factory()->create(['privileges' => ['user'], 'role_id' => $role->id]);
 
-        $this->actingAs($user)->put(route('attendance.sessions.categories', $training), ['category_ids' => [$u15->id]])
+        $this->actingAs($user)->put(route('attendance.sessions.update', $training), ['category_ids' => [$u15->id]])
             ->assertForbidden();
     }
 

@@ -212,7 +212,7 @@ class SessionGenerationMarksTest extends TestCase
         $this->viewMonth($this->u15, '2027-04');
         $session = TrainingSession::where('category_id', $this->u15->id)->where('date', '2027-03-29')->first();
 
-        $this->actingAs($this->user)->post(route('attendance.sessions.move', $session), [
+        $this->actingAs($this->user)->put(route('attendance.sessions.update', $session), [
             'date' => '2027-04-03', 'start_time' => '10:00', 'end_time' => '11:30',
         ])->assertSessionHasNoErrors();
 
@@ -236,7 +236,7 @@ class SessionGenerationMarksTest extends TestCase
         $this->viewMonth($u17);
         $this->assertNotContains('2027-03-01', $this->dates($u17));
 
-        $this->actingAs($this->user)->put(route('attendance.sessions.categories', $joint), ['category_ids' => [$this->u15->id]])
+        $this->actingAs($this->user)->put(route('attendance.sessions.update', $joint), ['category_ids' => [$this->u15->id]])
             ->assertSessionHasNoErrors();
         $this->viewMonth($u17);
 

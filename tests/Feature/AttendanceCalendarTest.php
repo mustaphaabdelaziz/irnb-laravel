@@ -67,9 +67,9 @@ class AttendanceCalendarTest extends TestCase
         $session = TrainingSession::create(['category_id' => $u15->id, 'date' => '2026-10-05', 'start_time' => '18:00', 'end_time' => '19:30',
             'kind' => SessionKind::Regular, 'state' => SessionState::Planned]);
 
-        $this->actingAs($admin)->post(route('attendance.sessions.move', $session), ['date' => '2026-10-06', 'start_time' => '17:00', 'end_time' => '18:30'])
-            ->assertSessionHas('success', 'flash.training_session_moved');
-        $this->actingAs($admin)->post(route('attendance.sessions.move', $session), ['date' => '2026-10-07', 'start_time' => '17:00', 'end_time' => '18:30']);
+        $this->actingAs($admin)->put(route('attendance.sessions.update', $session), ['date' => '2026-10-06', 'start_time' => '17:00', 'end_time' => '18:30'])
+            ->assertSessionHas('success', 'flash.training_session_updated');
+        $this->actingAs($admin)->put(route('attendance.sessions.update', $session), ['date' => '2026-10-07', 'start_time' => '17:00', 'end_time' => '18:30']);
         $session->refresh();
         $this->assertSame('2026-10-07', $session->date);
         $this->assertSame('2026-10-05', $session->moved_from);
@@ -80,7 +80,7 @@ class AttendanceCalendarTest extends TestCase
         $this->assertSame(SessionState::Cancelled, $session->fresh()->state);
         $this->assertSame('Rain', $session->fresh()->cancel_reason);
 
-        $this->actingAs($admin)->post(route('attendance.sessions.move', $session), ['date' => '2026-10-08', 'start_time' => '17:00', 'end_time' => '18:30'])
+        $this->actingAs($admin)->put(route('attendance.sessions.update', $session), ['date' => '2026-10-08', 'start_time' => '17:00', 'end_time' => '18:30'])
             ->assertSessionHasErrors('date');
     }
 
@@ -141,7 +141,7 @@ class AttendanceCalendarTest extends TestCase
         ]));
 
         try {
-            $this->actingAs($admin)->post(route('attendance.sessions.move', $session), $target)
+            $this->actingAs($admin)->put(route('attendance.sessions.update', $session), $target)
                 ->assertSessionHasErrors('start_time');
         } finally {
             TrainingSession::flushEventListeners();

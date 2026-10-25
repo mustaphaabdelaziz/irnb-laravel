@@ -162,6 +162,7 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
     Route::get('/players/import/template', [PlayerImportController::class, 'template'])->name('players.import.template');
     Route::post('/players/import', [PlayerImportController::class, 'store'])->name('players.import.store');
     Route::get('/players/export', [PlayerController::class, 'export'])->name('players.export');
+    Route::get('/players/print-list', [PlayerController::class, 'printList'])->name('players.print-list');
     Route::post('/players/bulk-archive', [PlayerController::class, 'bulkArchive'])->name('players.bulkArchive');
     Route::post('/players/bulk-restore', [PlayerController::class, 'bulkRestore'])->name('players.bulkRestore');
     Route::post('/players/bulk-force-delete', [PlayerController::class, 'bulkForceDelete'])->name('players.bulkForceDelete');

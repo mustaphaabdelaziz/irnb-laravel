@@ -20,21 +20,26 @@ use App\Models\PlayerStatus;
 use App\Models\Position;
 use App\Models\Subscription;
 use App\Models\Transaction;
+use App\Models\WebsiteConfig;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
 use App\Services\Attendance\AttendanceStatusCatalog;
 use App\Services\Dashboard\ModuleStats;
 use App\Services\Finance\DefaultRegisterResolver;
 use App\Services\FinanceService;
+use App\Services\Pdf\ClubHeader;
+use App\Services\Pdf\PdfService;
 use App\Services\Player\DocumentChecklist;
 use App\Services\Player\MembershipNumber;
 use App\Services\Player\PlayerDocumentService;
 use App\Services\Player\RegisterPlayerService;
 use App\Services\Storage\FileStorageService;
 use App\Support\CertificateThresholds;
+use App\Support\ClubIdentity;
 use App\Support\Export;
 use App\Support\FiscalPeriod;
 use App\Support\ListFilter;
+use App\Support\Media;
 use App\Support\Season;
 use App\Support\TransactionTitle;
 use App\Support\UiLang;
@@ -643,6 +648,43 @@ class PlayerController extends Controller
         ]);
 
         return Export::download(Export::format($request), 'players-'.now()->format('Y-m-d'), $headers, $rows->all(), UiLang::get('players', 'Players'));
+    }
+
+    /**
+     * The filtered list as an A4 sheet: membership ID, name, birth date and
+     * blood group. The header carries the branch logo when exactly one branch
+     * is picked, the club logo otherwise.
+     */
+    public function printList(Request $request, PdfService $pdf): SymfonyResponse
+    {
+        $query = Player::query();
+        $this->applyPlayerFilters($query, $request);
+        $players = $query->orderBy('lastname')->orderBy('firstname')->get();
+
+        $spec = $this->filterSpecs();
+        $branchIds = array_filter(ListFilter::get($request, 'branch_id', $spec['branch_id']), 'ctype_digit');
+        $branch = count($branchIds) === 1 ? Branch::find((int) reset($branchIds)) : null;
+
+        $categoryIds = array_filter(ListFilter::get($request, 'category_id', $spec['category_id']), 'ctype_digit');
+        $categories = $categoryIds === [] ? [] : Category::whereIn('id', $categoryIds)->get()
+            ->map(fn (Category $c) => $c->localized_name ?: $c->name)->all();
+
+        $club = ClubHeader::data();
+        $config = WebsiteConfig::singleton();
+        // The header always reads the Arabic club name, whatever the app language.
+        $names = ClubIdentity::name($config);
+
+        $html = view('pdf.players-list', [
+            'clubName' => $names['ar'] ?? reset($names),
+            'shortName' => trim((string) $config->club_short_name),
+            'logo' => Media::localFile($branch?->logo_url) ?? $club['logo'],
+            'branch' => $branch?->localized_name,
+            'categories' => $categories,
+            'players' => $players,
+            'printedOn' => now()->format('d/m/Y'),
+        ])->render();
+
+        return $pdf->stream($html, 'players-'.now()->format('Y-m-d').'.pdf', app()->getLocale() === 'ar');
     }
 
     /**

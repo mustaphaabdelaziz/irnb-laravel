@@ -168,6 +168,8 @@ const documentOptions = computed(() => [
 ]);
 
 const exportHref = computed(() => route('players.export', filterParams.value));
+// The same filters as the export, printed as an A4 list (PDF).
+const printListHref = computed(() => route('players.print-list', filterParams.value));
 
 // Secondary header actions: shown inline on wide screens, folded into a
 // "more" menu below xl so the fixed-height header never overflows. Template
@@ -315,6 +317,7 @@ function runBulk() {
                     <!-- Template and export: format menus, always in the toolbar -->
                     <ExportMenu :href="route('players.import.template')" :label="t('template')" icon="document" />
                     <ExportMenu :href="exportHref" :label="t('export')" />
+                    <IconButton :href="printListHref" external target="_blank" icon="print" :label="t('print_players_list')" />
 
                     <ExportMenu v-if="singleCategory" :href="route('players.board-table', { category_id: singleCategory })"
                         :label="t('print_board_table')" :formats="['pdf', 'xlsx', 'csv']" icon="print" />

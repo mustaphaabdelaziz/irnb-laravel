@@ -28,18 +28,18 @@
     <htmlpagefooter name="list"><div style="font-size:7px; color:#94a3b8; text-align:center;">{{ $footer }}</div></htmlpagefooter>
     <sethtmlpagefooter name="list" value="on" />
 
-    {{-- Full page width: logo | Arabic club name + short name | logo. Always right-to-left, whatever the PDF's language. --}}
+    {{-- Full page width: logo | Arabic club name + short name | logo. The equal side cells keep the name centred between the logos; always right-to-left, whatever the PDF's language. --}}
     <table class="head" dir="rtl">
         <tr>
-            <td style="width:24mm; text-align:center;">
+            <td style="width:15%; text-align:center;">
                 @if (!empty($logo))
                     <img src="{{ $logo }}" style="width:22mm; height:22mm;">
                 @endif
             </td>
-            <td>
+            <td style="width:70%; text-align:center;">
                 <div class="club" dir="rtl">{{ $title }}</div>
             </td>
-            <td style="width:24mm; text-align:center;">
+            <td style="width:15%; text-align:center;">
                 @if (!empty($logo))
                     <img src="{{ $logo }}" style="width:22mm; height:22mm;">
                 @endif
@@ -56,11 +56,12 @@
         <table class="rows">
             <thead>
                 <tr>
-                    <th style="width:7%;">#</th>
-                    <th style="width:17%;">{{ $L('col.membership_id') }}</th>
+                    <th style="width:6%;">#</th>
+                    <th style="width:13%;">{{ $L('col.membership_id') }}</th>
                     <th>{{ $L('col.full_name') }}</th>
-                    <th style="width:16%;">{{ $L('col.birthdate') }}</th>
-                    <th style="width:13%;">{{ $L('col.blood_group') }}</th>
+                    <th style="width:13%;">{{ $L('col.birthdate') }}</th>
+                    <th style="width:10%;">{{ $L('col.blood_group') }}</th>
+                    <th style="width:19%;">{{ $L('col.phone_number') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -71,6 +72,7 @@
                         <td>{{ $player->fullname }}</td>
                         <td class="c"><bdi dir="ltr">{{ $player->birthdate?->format('d/m/Y') }}</bdi></td>
                         <td class="c"><bdi dir="ltr">{{ $player->health_blood_group_rhesus }}</bdi></td>
+                        <td class="c"><bdi dir="ltr">{{ collect($player->phones ?? [])->filter()->implode(' / ') }}</bdi></td>
                     </tr>
                 @endforeach
             </tbody>

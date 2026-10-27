@@ -740,6 +740,7 @@
     "col.other_positions": "Other positions",
     "col.payment_method": "Payment method",
     "col.phone": "Phone",
+    "col.phone_number": "Phone number",
     "col.phones": "Phones",
     "col.player_name": "Player name",
     "col.player_type": "Student or worker",

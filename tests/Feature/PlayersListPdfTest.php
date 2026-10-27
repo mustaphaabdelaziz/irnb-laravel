@@ -42,7 +42,7 @@ class PlayersListPdfTest extends TestCase
     #[Test]
     public function the_list_renders_as_a_pdf(): void
     {
-        $this->player('Amine', 'Benali', null, ['birthdate' => '2010-03-04', 'health_blood_group_rhesus' => 'O+']);
+        $this->player('Amine', 'Benali', null, ['birthdate' => '2010-03-04', 'health_blood_group_rhesus' => 'O+', 'phones' => ['0555 12 34 56', '0661 00 11 22']]);
 
         $response = $this->actingAs($this->admin())->get(route('players.print-list'))->assertOk();
 
@@ -50,13 +50,13 @@ class PlayersListPdfTest extends TestCase
     }
 
     #[Test]
-    public function it_prints_the_filtered_players_with_their_four_columns(): void
+    public function it_prints_the_filtered_players_with_their_columns(): void
     {
         $football = Branch::create(['name' => 'Football']);
         $swim = Branch::create(['name' => 'Swimming']);
 
         $ziani = $this->player('Yanis', 'Ziani', null, ['birthdate' => '2011-07-20', 'health_blood_group_rhesus' => 'A-']);
-        $benali = $this->player('Amine', 'Benali', null, ['birthdate' => '2010-03-04', 'health_blood_group_rhesus' => 'O+']);
+        $benali = $this->player('Amine', 'Benali', null, ['birthdate' => '2010-03-04', 'health_blood_group_rhesus' => 'O+', 'phones' => ['0555 12 34 56', '0661 00 11 22']]);
         $kaci = $this->player('Sami', 'Kaci');
         $football->players()->attach([$ziani->id, $benali->id]);
         $swim->players()->attach($kaci->id);
@@ -77,6 +77,7 @@ class PlayersListPdfTest extends TestCase
         $this->assertStringContainsString('04/03/2010', $html);
         $this->assertStringContainsString('O+', $html);
         $this->assertStringContainsString('A-', $html);
+        $this->assertStringContainsString('0555 12 34 56 / 0661 00 11 22', $html);
     }
 
     #[Test]

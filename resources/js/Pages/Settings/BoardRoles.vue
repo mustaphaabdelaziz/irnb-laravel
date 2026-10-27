@@ -16,8 +16,10 @@ defineProps({ roles: Array });
 const editingId = ref(null);
 const deleteId = ref(null);
 
-const form = useForm({ name: '', label: '', sort_order: 0 });
-const editForm = useForm({ name: '', label: '', sort_order: 0 });
+const form = useForm({ name: '', label: '', level: 'member', sort_order: 0 });
+const editForm = useForm({ name: '', label: '', level: 'member', sort_order: 0 });
+// Organigram row: top (president), bureau (secretary-general, treasurer…), member.
+const LEVELS = ['top', 'bureau', 'member'];
 
 // Known base roles have translations; custom ones fall back to their raw name.
 function display(r) {
@@ -28,7 +30,7 @@ function addRole() {
 }
 function startEdit(r) {
     editingId.value = r.id;
-    editForm.name = r.name; editForm.label = r.label || ''; editForm.sort_order = r.sort_order || 0;
+    editForm.name = r.name; editForm.label = r.label || ''; editForm.level = r.level || 'member'; editForm.sort_order = r.sort_order || 0;
 }
 function saveEdit(id) {
     editForm.put(route('board-roles.update', id), { onSuccess: () => { editingId.value = null; } });
@@ -53,6 +55,12 @@ function destroy() {
                     <TextInput v-model="form.name" class="mt-1 w-full" :placeholder="t('name')" required />
                     <InputError :message="form.errors.name" class="mt-1" />
                 </div>
+                <div class="w-32">
+                    <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('board.level_label') }}</label>
+                    <select v-model="form.level" class="mt-1 w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                        <option v-for="l in LEVELS" :key="l" :value="l">{{ t(`board.level.${l}`) }}</option>
+                    </select>
+                </div>
                 <div class="w-20">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('order') }}</label>
                     <TextInput v-model="form.sort_order" type="number" min="0" class="mt-1 w-full" />
@@ -65,6 +73,7 @@ function destroy() {
                     <thead class="bg-slate-50 dark:bg-slate-950">
                         <tr>
                             <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('role') }}</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('board.level_label') }}</th>
                             <th class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('order') }}</th>
                             <th class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('board_members') }}</th>
                             <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('actions') }}</th>
@@ -77,6 +86,12 @@ function destroy() {
                                     <TextInput v-model="editForm.name" class="w-full" :placeholder="t('name')" />
                                 </div>
                                 <span v-else class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ display(r) }}</span>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <select v-if="editingId === r.id" v-model="editForm.level" class="rounded-md border-gray-300 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                                    <option v-for="l in LEVELS" :key="l" :value="l">{{ t(`board.level.${l}`) }}</option>
+                                </select>
+                                <span v-else class="text-sm text-slate-500">{{ t(`board.level.${r.level || 'member'}`) }}</span>
                             </td>
                             <td class="px-4 py-3 text-center">
                                 <TextInput v-if="editingId === r.id" v-model="editForm.sort_order" type="number" class="w-16" />
@@ -97,7 +112,7 @@ function destroy() {
                             </td>
                         </tr>
                         <tr v-if="!roles?.length">
-                            <td colspan="4" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
+                            <td colspan="5" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td>
                         </tr>
                     </tbody>
                 </table>

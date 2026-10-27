@@ -148,6 +148,20 @@ class BoardMeetingController extends Controller
         return back()->with('success', 'flash.meeting_cancelled');
     }
 
+    /**
+     * Delete = erase the meeting, whatever its status: attendance goes with it
+     * (cascade) and so does the minutes file; tasks stay, unlinked.
+     */
+    public function destroy(Request $request, BoardMeeting $meeting, PrivateFileStorage $storage, FileStorageService $legacy): RedirectResponse
+    {
+        $this->forgetStoredAttachment($meeting, $storage, $legacy);
+        $meeting->delete();
+
+        // Back to the list, keeping its status filter when deleted from there.
+        return redirect()->route('board.meetings', array_filter(['status' => $request->query('status')]))
+            ->with('success', 'flash.meeting_deleted');
+    }
+
     /** @return array<string, mixed> */
     private function validateCore(Request $request): array
     {
@@ -160,7 +174,6 @@ class BoardMeetingController extends Controller
             'agenda.*' => ['nullable', 'string', 'max:500'],
             // 'cancelled' is reached only through cancel(), which records who and why.
             'status' => ['required', Rule::in(['scheduled', 'held'])],
-            'quorum_required' => ['nullable', 'integer', 'min:0'],
         ]);
     }
 }

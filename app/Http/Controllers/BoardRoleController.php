@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BoardRole;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -25,6 +26,7 @@ class BoardRoleController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:100', 'unique:board_roles,name'],
             'label' => ['nullable', 'string', 'max:100'],
+            'level' => ['sometimes', Rule::in(BoardRole::LEVELS)],
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ]);
 
@@ -38,6 +40,7 @@ class BoardRoleController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:100', 'unique:board_roles,name,'.$boardRole->id],
             'label' => ['nullable', 'string', 'max:100'],
+            'level' => ['sometimes', Rule::in(BoardRole::LEVELS)],
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ]);
 

@@ -28,7 +28,7 @@ class Role extends Model
         'board' => ['board'],
         'config' => [
             'categories', 'branches', 'positions', 'player_statuses', 'document_types', 'jobs',
-            'board_roles', 'equipment_categories', 'storage_locations',
+            'board_roles', 'board_committees', 'equipment_categories', 'storage_locations',
             'game_formats', 'opponents', 'venues',
         ],
         'system' => ['users', 'settings'],
@@ -42,7 +42,7 @@ class Role extends Model
         'equipment', 'inventory',
         'board',
         'categories', 'branches', 'positions', 'player_statuses', 'document_types', 'jobs',
-        'board_roles', 'equipment_categories', 'storage_locations',
+        'board_roles', 'board_committees', 'equipment_categories', 'storage_locations',
         'game_formats', 'opponents', 'venues',
         'users', 'settings',
     ];

@@ -22,6 +22,7 @@ return [
         'inventory' => 'inventory',
         'board' => 'board',
         'board-roles' => 'board_roles',
+        'board-committees' => 'board_committees',
         'users' => 'users',
         'categories' => 'categories',
         // Each App Configuration list is its own module (own row in the role editor).

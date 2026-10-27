@@ -69,7 +69,7 @@ const meetingChip = {
 
 // ---- Create meeting from a clicked date ----
 const showForm = ref(false);
-const form = useForm({ title: '', type: 'ordinary', meeting_date: '', location: '', status: 'scheduled', quorum_required: null, agenda: [''] });
+const form = useForm({ title: '', type: 'ordinary', meeting_date: '', location: '', status: 'scheduled', agenda: [''] });
 
 function openCreate(cell) {
     form.reset();
@@ -161,8 +161,6 @@ function submit() {
                         <input v-model="form.meeting_date" type="datetime-local" required class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
                     <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('location') }}</span>
                         <input v-model="form.location" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
-                    <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('quorum') }}</span>
-                        <input v-model="form.quorum_required" type="number" min="0" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
                 </div>
                 <div class="flex justify-end gap-2">
                     <button type="button" @click="showForm = false" class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">{{ t('cancel') }}</button>

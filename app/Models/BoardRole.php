@@ -10,7 +10,10 @@ class BoardRole extends Model
 {
     use SerializesClubDates;
 
-    protected $fillable = ['name', 'label', 'sort_order'];
+    /** Organigram rows: top (president), bureau (secretary-general, treasurer…), member. */
+    public const LEVELS = ['top', 'bureau', 'member'];
+
+    protected $fillable = ['name', 'label', 'level', 'sort_order'];
 
     protected function casts(): array
     {

@@ -58,6 +58,7 @@ export function useNavigation() {
                 { label: t('document_types'), href: '/document-types', icon: 'document', prefix: '/document-types', module: 'document_types' },
                 { label: t('jobs'), href: '/jobs', icon: 'jobs', prefix: '/jobs', module: 'jobs' },
                 { label: t('board_roles'), href: '/board-roles', icon: 'board', prefix: '/board-roles', module: 'board_roles' },
+                { label: t('board_committees'), href: '/board-committees', icon: 'board', prefix: '/board-committees', module: 'board_committees' },
                 { label: t('equipment_categories'), href: '/equipment-categories', icon: 'equipment', prefix: '/equipment-categories', module: 'equipment_categories' },
                 { label: t('storage_locations'), href: '/storage-locations', icon: 'location', prefix: '/storage-locations', module: 'storage_locations' },
                 { label: t('game_formats'), href: '/game-formats', icon: 'positions', prefix: '/game-formats', module: 'game_formats' },

@@ -58,6 +58,8 @@ class ActivityAction
 
     const MEETING_CANCELLED = 'meeting_cancelled';
 
+    const MEETING_DELETED = 'meeting_deleted';
+
     const TASK_CREATED = 'task_created';
 
     const TASK_COMPLETED = 'task_completed';
@@ -308,6 +310,7 @@ class ActivityAction
         self::EQUIPMENT_MARKED_FOUND,
         self::STOCKTAKE_DELETED,
         self::MEETING_UPDATED,
+        self::MEETING_DELETED,
         self::TASK_UPDATED,
         self::TASK_DELETED,
         self::BOARD_MEMBER_ADDED,
@@ -416,6 +419,7 @@ class ActivityAction
             self::TASK_CREATED,
             self::TASK_COMPLETED,
             self::MEETING_UPDATED,
+            self::MEETING_DELETED,
             self::TASK_UPDATED,
             self::TASK_DELETED,
             self::BOARD_MEMBER_ADDED,

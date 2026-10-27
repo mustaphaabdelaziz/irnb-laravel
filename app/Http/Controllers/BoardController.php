@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BoardCommittee;
 use App\Models\BoardMeeting;
 use App\Models\BoardMember;
 use App\Models\BoardRole;
@@ -132,7 +133,7 @@ class BoardController extends Controller
 
         $members = BoardMember::withCount('tasks')
             ->withPlayer()
-            ->with('roleModel:id,name,sort_order')
+            ->with(['roleModel:id,name,level,sort_order', 'committees:id'])
             ->when($selectedTermId, fn ($q) => $q->where('board_term_id', $selectedTermId))
             ->orderBy('status')
             ->get()
@@ -142,7 +143,8 @@ class BoardController extends Controller
         return Inertia::render('Board/Members', [
             'members' => $members,
             'terms' => $terms,
-            'roles' => BoardRole::orderBy('sort_order')->orderBy('name')->get(['id', 'name']),
+            'roles' => BoardRole::orderBy('sort_order')->orderBy('name')->get(['id', 'name', 'label', 'level']),
+            'committees' => BoardCommittee::orderBy('sort_order')->orderBy('name')->get(['id', 'name']),
             'selectedTermId' => $selectedTermId,
             'players' => Player::where('archived', false)
                 ->orderBy('lastname')->orderBy('firstname')
@@ -270,13 +272,17 @@ class BoardController extends Controller
         // Role mirrors roleLabel() in Board/Members.vue: the role's own label
         // when it has one (custom roles), else t(name). Status renders as t(code).
         $roleLabels = BoardRole::pluck('label', 'name');
-        $rows = BoardMember::withPlayer()->orderBy('sort_order')->get()->map(fn (BoardMember $m) => [
-            $m->name, ($roleLabels[$m->role] ?? null) ?: self::codeLabel($m->role), $m->email, $m->phone !== null ? (string) $m->phone : null,
+        // Committees: "Finance (Head), Media (Member)".
+        $committees = fn (BoardMember $m) => $m->committees
+            ->map(fn (BoardCommittee $c) => $c->name.' ('.UiLang::get('board.position.'.$c->pivot->position).')')
+            ->implode(', ') ?: null;
+        $rows = BoardMember::withPlayer()->with('committees:id,name')->orderBy('sort_order')->get()->map(fn (BoardMember $m) => [
+            $m->name, ($roleLabels[$m->role] ?? null) ?: self::codeLabel($m->role), $committees($m), $m->email, $m->phone !== null ? (string) $m->phone : null,
             $m->term_start, $m->term_end, self::codeLabel($m->status),
         ])->all();
 
         $headers = array_map(fn (string $key) => UiLang::get($key), [
-            'col.name', 'col.role', 'col.email', 'col.phone', 'col.term_start', 'col.term_end', 'col.status',
+            'col.name', 'col.role', 'col.committees', 'col.email', 'col.phone', 'col.term_start', 'col.term_end', 'col.status',
         ]);
 
         return Export::download(Export::format($request), 'board-members', $headers, $rows, UiLang::get('board_members', 'Board Members'));

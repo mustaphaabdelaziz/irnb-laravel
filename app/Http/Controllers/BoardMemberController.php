@@ -13,7 +13,13 @@ class BoardMemberController extends Controller
 {
     public function store(Request $request): RedirectResponse
     {
-        BoardMember::create($this->fillFromPlayer($this->validateData($request)));
+        $data = $this->fillFromPlayer($this->validateData($request));
+
+        // One member per player and term: picking someone already on the board
+        // (e.g. seated on a committee) for a role slot changes their role.
+        $member = empty($data['board_term_id']) ? null : BoardMember::where('player_id', $data['player_id'])
+            ->where('board_term_id', $data['board_term_id'])->first();
+        $member ? $member->update($data) : BoardMember::create($data);
 
         return back()->with('success', 'flash.board_member_added');
     }

@@ -5,15 +5,29 @@ import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Icon from '@/Components/Icon.vue';
 import IconButton from '@/Components/IconButton.vue';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
+import { useCan } from '@/Composables/useCan';
 
 const props = defineProps({
     meetings: { type: Array, default: () => [] },
     filters: { type: Object, default: () => ({}) },
 });
 const { t, locale } = useI18n();
+const { can } = useCan();
+
+// Delete = erase the meeting (any status); tasks stay, unlinked.
+const deleteTarget = ref(null);
+const deleting = ref(false);
+function confirmDelete() {
+    router.delete(route('board.meetings.destroy', { meeting: deleteTarget.value.id, status: statusFilter.value || undefined }), {
+        preserveScroll: true,
+        onStart: () => { deleting.value = true; },
+        onFinish: () => { deleting.value = false; deleteTarget.value = null; },
+    });
+}
 
 const showForm = ref(false);
-const form = useForm({ title: '', type: 'ordinary', meeting_date: '', location: '', status: 'scheduled', quorum_required: null, agenda: [''] });
+const form = useForm({ title: '', type: 'ordinary', meeting_date: '', location: '', status: 'scheduled', agenda: [''] });
 
 function addAgenda() { form.agenda.push(''); }
 function removeAgenda(i) { form.agenda.splice(i, 1); }
@@ -75,8 +89,6 @@ const filterOptions = ['', 'scheduled', 'held', 'cancelled'];
                         <input v-model="form.meeting_date" type="datetime-local" required class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
                     <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('location') }}</span>
                         <input v-model="form.location" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
-                    <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('quorum') }}</span>
-                        <input v-model="form.quorum_required" type="number" min="0" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
                 </div>
                 <div>
                     <span class="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">{{ t('agenda') }}</span>
@@ -109,10 +121,14 @@ const filterOptions = ['', 'scheduled', 'held', 'cancelled'];
                         <span v-if="mt.present_count" class="hidden items-center gap-1 text-slate-400 sm:inline-flex"><Icon name="board" /> {{ mt.present_count }}</span>
                         <span v-if="mt.tasks_count" class="hidden items-center gap-1 text-slate-400 sm:inline-flex"><Icon name="task" /> {{ mt.tasks_count }}</span>
                         <span class="inline-flex rounded-full px-2.5 py-0.5 font-bold" :class="statusChip[mt.status]">{{ t(mt.status) }}</span>
+                        <IconButton v-if="can('board', 'delete')" icon="trash" :label="t('delete_meeting')" variant="danger" plain size="sm" icon-only @click.prevent.stop="deleteTarget = mt" />
                     </div>
                 </Link>
                 <p v-if="!meetings.length" class="py-10 text-center text-sm text-slate-400">{{ t('no_meetings') }}</p>
             </div>
         </div>
+
+        <ConfirmModal :show="!!deleteTarget" :title="t('delete_meeting')" :message="deleteTarget ? `${deleteTarget.title} — ${t('delete_meeting_confirm')}` : ''"
+            :confirm-label="t('delete_meeting')" :busy="deleting" @confirm="confirmDelete" @cancel="deleteTarget = null" />
     </AuthenticatedLayout>
 </template>

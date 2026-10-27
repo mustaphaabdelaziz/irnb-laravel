@@ -20,6 +20,16 @@ const { can } = useCan();
 const isCancelled = computed(() => props.meeting.status === 'cancelled');
 const canCancel = computed(() => props.meeting.status === 'scheduled' && can('board', 'edit'));
 
+// Delete = erase the meeting (any status); tasks stay, unlinked.
+const showDelete = ref(false);
+const deleting = ref(false);
+function confirmDelete() {
+    router.delete(route('board.meetings.destroy', props.meeting.id), {
+        onStart: () => { deleting.value = true; },
+        onFinish: () => { deleting.value = false; showDelete.value = false; },
+    });
+}
+
 function toLocalInput(iso) {
     if (!iso) return '';
     const d = new Date(iso);
@@ -40,7 +50,6 @@ const form = useForm({
     location: props.meeting.location || '',
     // 'cancelled' is not offered: cancelling goes through the Cancel action.
     status: props.meeting.status === 'cancelled' ? 'scheduled' : props.meeting.status,
-    quorum_required: props.meeting.quorum_required,
     agenda: props.meeting.agenda?.length ? [...props.meeting.agenda] : [''],
     minutes: props.meeting.minutes || '',
     decisions: props.meeting.decisions?.length ? [...props.meeting.decisions] : [''],
@@ -117,6 +126,7 @@ const attStyle = {
                 <h1 class="truncate text-lg font-bold text-slate-900 dark:text-slate-100" :class="isCancelled ? 'line-through decoration-slate-400' : ''">{{ meeting.title }}</h1>
                 <div class="ms-auto flex items-center gap-2">
                     <IconButton v-if="canCancel" icon="xcircle" :label="t('cancel_meeting')" variant="danger" @click="openCancel" />
+                    <IconButton v-if="can('board', 'delete')" icon="trash" :label="t('delete_meeting')" variant="danger" @click="showDelete = true" />
                     <IconButton :href="route('board.meetings.minutes', meeting.id)" external target="_blank" icon="print" :label="t('minutes')" />
                 </div>
             </div>
@@ -235,7 +245,7 @@ const attStyle = {
                 <section class="card p-5">
                     <div class="mb-3 flex items-center justify-between">
                         <p class="text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('attendance') }}</p>
-                        <span class="text-xs font-semibold text-slate-400">{{ presentCount }}<span v-if="meeting.quorum_required">/{{ meeting.quorum_required }}</span></span>
+                        <span class="text-xs font-semibold text-slate-400">{{ presentCount }}</span>
                     </div>
                     <ul class="space-y-2">
                         <li v-for="m in members" :key="m.id" class="flex items-center justify-between gap-2">
@@ -263,6 +273,8 @@ const attStyle = {
             <p v-if="cancelForm.errors.reason" class="mt-1 text-xs text-rose-500">{{ cancelForm.errors.reason }}</p>
         </ConfirmModal>
 
+        <ConfirmModal :show="showDelete" :title="t('delete_meeting')" :message="t('delete_meeting_confirm')"
+            :confirm-label="t('delete_meeting')" :busy="deleting" @confirm="confirmDelete" @cancel="showDelete = false" />
         <ConfirmModal :show="confirmRemoveAttachment" :message="t('confirm_delete')" @confirm="removeAttachment" @cancel="confirmRemoveAttachment = false" />
         <ConfirmModal :show="!!deleteTaskId" :message="t('confirm_delete')" @confirm="deleteTask" @cancel="deleteTaskId = null" />
     </AuthenticatedLayout>

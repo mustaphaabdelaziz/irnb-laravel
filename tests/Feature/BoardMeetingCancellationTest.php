@@ -4,11 +4,13 @@ namespace Tests\Feature;
 
 use App\Models\BoardMeeting;
 use App\Models\BoardMember;
+use App\Models\BoardTask;
 use App\Models\BoardTerm;
 use App\Models\MeetingAttendance;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -128,16 +130,53 @@ class BoardMeetingCancellationTest extends TestCase
     }
 
     #[Test]
-    public function meetings_can_no_longer_be_deleted(): void
+    public function any_meeting_can_be_deleted_and_its_tasks_are_kept_unlinked(): void
+    {
+        Storage::fake('local');
+        $admin = $this->admin();
+        $meetings = collect(['scheduled', 'held', 'cancelled'])->map(fn ($status) => $this->meeting(['status' => $status]));
+        $held = $meetings[1];
+        $member = BoardMember::create(['name' => 'A', 'role' => 'member', 'status' => 'active']);
+        MeetingAttendance::create(['board_meeting_id' => $held->id, 'board_member_id' => $member->id, 'status' => 'present']);
+        $task = BoardTask::create(['title' => 'Follow up', 'board_meeting_id' => $held->id]);
+        Storage::disk('local')->put('minutes/held.pdf', 'pdf');
+        $held->update(['attachment_filename' => 'minutes/held.pdf']);
+
+        foreach ($meetings as $meeting) {
+            $this->actingAs($admin)
+                ->delete(route('board.meetings.destroy', $meeting))
+                ->assertRedirect(route('board.meetings'))
+                ->assertSessionHas('success', 'flash.meeting_deleted');
+            $this->assertModelMissing($meeting);
+        }
+
+        $this->assertDatabaseCount('meeting_attendances', 0);
+        $this->assertNull($task->fresh()->board_meeting_id);
+        Storage::disk('local')->assertMissing('minutes/held.pdf');
+    }
+
+    #[Test]
+    public function deleting_a_meeting_needs_the_board_delete_right(): void
     {
         $meeting = $this->meeting();
+        $user = User::factory()->create(['role_id' => Role::factory()->create(['permissions' => ['board' => ['view', 'add', 'edit']]])->id]);
 
-        $this->assertFalse(Route::has('board.meetings.destroy'));
-        $this->actingAs($this->admin())
-            ->delete('/board/meetings/'.$meeting->id)
-            ->assertStatus(405);
+        $this->actingAs($user)->delete(route('board.meetings.destroy', $meeting))->assertForbidden();
 
-        $this->assertNotNull($meeting->fresh());
+        $this->assertModelExists($meeting);
+    }
+
+    #[Test]
+    public function quorum_is_no_longer_written(): void
+    {
+        $meeting = $this->meeting(['quorum_required' => 5]);
+
+        $this->actingAs($this->admin())->put(route('board.meetings.update', $meeting), [
+            'title' => 'Monthly board', 'type' => 'ordinary', 'meeting_date' => now()->addWeek()->toDateTimeString(),
+            'status' => 'scheduled', 'quorum_required' => 9,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(5, $meeting->fresh()->quorum_required);
     }
 
     #[Test]

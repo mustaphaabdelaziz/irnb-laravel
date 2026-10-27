@@ -12,6 +12,8 @@ use App\Http\Controllers\AttendanceSettingsController;
 use App\Http\Controllers\AttendanceSheetController;
 use App\Http\Controllers\AttendanceStatsController;
 use App\Http\Controllers\BackupController;
+use App\Http\Controllers\BoardCommitteeController;
+use App\Http\Controllers\BoardCommitteeMemberController;
 use App\Http\Controllers\BoardController;
 use App\Http\Controllers\BoardMeetingController;
 use App\Http\Controllers\BoardMemberController;
@@ -341,6 +343,12 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
         // Board roles (managed lookup)
         Route::resource('board-roles', BoardRoleController::class)->except(['show', 'create', 'edit']);
 
+        // Board committees (managed lookup) and their seats, set from the organigram
+        Route::resource('board-committees', BoardCommitteeController::class)->except(['show', 'create', 'edit']);
+        Route::post('/board/committees/{committee}/members', [BoardCommitteeMemberController::class, 'store'])->name('board.committees.members.store');
+        Route::put('/board/committees/{committee}/members/{boardMember}', [BoardCommitteeMemberController::class, 'update'])->name('board.committees.members.update');
+        Route::delete('/board/committees/{committee}/members/{boardMember}', [BoardCommitteeMemberController::class, 'destroy'])->name('board.committees.members.destroy');
+
         Route::get('/board/meetings', [BoardController::class, 'meetings'])->name('board.meetings');
         Route::get('/board/meetings/{meeting}', [BoardController::class, 'meeting'])->name('board.meetings.show');
         Route::get('/board/meetings/{meeting}/minutes', [ReportController::class, 'boardMinutes'])->name('board.meetings.minutes');
@@ -351,8 +359,9 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
         // Minutes are private: this (auth + board/view) is the only way to read them.
         Route::get('/board/meetings/{meeting}/attachment', [BoardMeetingController::class, 'showAttachment'])->name('board.meetings.attachment.show');
         Route::delete('/board/meetings/{meeting}/attachment', [BoardMeetingController::class, 'deleteAttachment'])->name('board.meetings.attachment.delete');
-        // Meetings are never deleted: cancelling keeps the record (who/when/why).
+        // Cancel keeps the record (who/when/why); delete erases it.
         Route::post('/board/meetings/{meeting}/cancel', [BoardMeetingController::class, 'cancel'])->name('board.meetings.cancel');
+        Route::delete('/board/meetings/{meeting}', [BoardMeetingController::class, 'destroy'])->name('board.meetings.destroy');
 
         Route::get('/board/tasks', [BoardController::class, 'tasks'])->name('board.tasks');
         Route::get('/board/tasks/export', [BoardController::class, 'exportTasks'])->name('board.tasks.export');

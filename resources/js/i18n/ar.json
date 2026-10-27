@@ -1446,6 +1446,7 @@
     "equipment.returned_on": "أُرجِع في",
     "equipment.track_each_unit": "تتبع كل وحدة على حدة",
     "equipment.track_each_unit_hint": "إعطاء كل وحدة رقماً تسلسلياً وسجلاً خاصاً بها. اتركه دون تحديد للمعدات التي تُعدّ، مثل الصدريات أو الكرات.",
+    "equipment.similar_name_exists": "توجد معدات باسم مشابه: {name}",
     "equipment.track_locked": "لا يمكن تغيير نمط التتبع بعد أن يحتوي الكتالوج على مخزون.",
     "equipment.unit_price": "سعر الوحدة",
     "equipment.units": "وحدة",

@@ -1446,6 +1446,7 @@
     "equipment.returned_on": "Rendu le",
     "equipment.track_each_unit": "Suivre chaque unité individuellement",
     "equipment.track_each_unit_hint": "Chaque unité reçoit son propre numéro de série et son historique. Laissez décoché pour le matériel que vous comptez, comme les dossards ou les ballons.",
+    "equipment.similar_name_exists": "Un équipement au nom proche existe déjà : {name}",
     "equipment.track_locked": "Le mode de suivi ne peut plus être modifié une fois que le catalogue contient du stock.",
     "equipment.unit_price": "Prix unitaire",
     "equipment.units": "unités",

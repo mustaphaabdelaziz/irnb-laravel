@@ -6,12 +6,17 @@ import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { Head, useForm, Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { similarName } from '@/lib/nameKey.js';
 
 const { t } = useI18n();
 
-// Managed in Settings > Equipment Categories.
-defineProps({ equipmentCategories: { type: Array, default: () => [] } });
+// equipmentCategories is managed in Settings > Equipment Categories.
+const props = defineProps({
+    equipmentCategories: { type: Array, default: () => [] },
+    catalogNames: { type: Array, default: () => [] },
+});
 
 const form = useForm({
     name: '',
@@ -24,6 +29,9 @@ const form = useForm({
     purchase_price: '',
     picture: null,
 });
+
+// A similar name only warns; saving it stays allowed (owner decision).
+const similar = computed(() => similarName(props.catalogNames, form.name));
 
 function submit() {
     form.post(route('equipment.catalogs.store'), { forceFormData: true });
@@ -50,6 +58,7 @@ function submit() {
                         <div>
                             <InputLabel :value="t('name')" />
                             <TextInput v-model="form.name" class="mt-1 w-full" required />
+                            <p v-if="similar" class="mt-1 text-xs text-amber-600 dark:text-amber-400">{{ t('equipment.similar_name_exists', { name: similar }) }}</p>
                             <InputError :message="form.errors.name" class="mt-1" />
                         </div>
                         <div>

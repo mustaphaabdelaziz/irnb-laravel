@@ -15,6 +15,7 @@ use App\Services\Storage\FileStorageService;
 use App\Support\Export;
 use App\Support\Import\ImportColumns;
 use App\Support\ListFilter;
+use App\Support\NameNormalizer;
 use App\Support\Spreadsheet;
 use App\Support\UiLang;
 use Illuminate\Http\RedirectResponse;
@@ -101,6 +102,7 @@ class EquipmentCatalogController extends Controller
     {
         return Inertia::render('Equipment/Catalog/Create', [
             'equipmentCategories' => EquipmentCategory::orderBy('name')->pluck('name'),
+            'catalogNames' => EquipmentCatalog::orderBy('name')->pluck('name'),
         ]);
     }
 
@@ -127,6 +129,8 @@ class EquipmentCatalogController extends Controller
             // items_count drives the tracking-mode lock in the form.
             'catalog' => $catalog->loadCount('items'),
             'equipmentCategories' => EquipmentCategory::orderBy('name')->pluck('name'),
+            // The form only warns about a similar name (owner decision); its own name never counts.
+            'catalogNames' => EquipmentCatalog::whereKeyNot($catalog->id)->orderBy('name')->pluck('name'),
         ]);
     }
 
@@ -247,6 +251,13 @@ class EquipmentCatalogController extends Controller
         $categories = EquipmentCategory::pluck('name')
             ->mapWithKeys(fn ($name) => [mb_strtolower(trim($name)) => $name]);
 
+        // Spelling-insensitive key => a catalog name, so "ball" or "كره" next to
+        // an existing "Ball" or "كرة" is flagged. Owner decision: an exact name
+        // is still skipped, a merely similar one is imported with a warning.
+        $known = EquipmentCatalog::pluck('name')
+            ->mapWithKeys(fn ($name) => [NameNormalizer::key($name) => $name])
+            ->all();
+
         $imported = 0;
         $errors = [];
 
@@ -270,6 +281,14 @@ class EquipmentCatalogController extends Controller
 
                 continue;
             }
+
+            $key = NameNormalizer::key($data['name']);
+            if (isset($known[$key])) {
+                $errors[] = __('Row :line: ":name" looks like the existing ":existing" — imported anyway.', [
+                    'line' => $line, 'name' => $data['name'], 'existing' => $known[$key],
+                ]);
+            }
+            $known[$key] ??= $data['name'];
 
             EquipmentCatalog::create([
                 'name' => $data['name'],

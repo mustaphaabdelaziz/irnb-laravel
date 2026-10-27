@@ -1446,6 +1446,7 @@
     "equipment.returned_on": "Returned on",
     "equipment.track_each_unit": "Track each unit individually",
     "equipment.track_each_unit_hint": "Give every unit its own serial number and history. Leave this off for equipment you count, such as bibs or balls.",
+    "equipment.similar_name_exists": "Equipment with a similar name already exists: {name}",
     "equipment.track_locked": "Tracking mode cannot be changed once the catalog holds stock.",
     "equipment.unit_price": "Unit price",
     "equipment.units": "units",

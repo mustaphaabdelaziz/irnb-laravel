@@ -1,6 +1,6 @@
 @php
     $L = fn (string $key) => \App\Support\UiLang::get($key);
-    // The Arabic club name, then the short name at its end: "الإتحاد ... IRNB".
+    // The Arabic club name, then the short name at its end.
     $title = trim($clubName.' '.$shortName);
     $scope = array_filter([$branch, implode(' · ', $categories)]);
     $footer = $title.' — '.strtr($L('att.sheet.page'), ['{page}' => '{PAGENO}', '{pages}' => '{nbpg}']);

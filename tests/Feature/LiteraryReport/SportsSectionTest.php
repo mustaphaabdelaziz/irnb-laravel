@@ -71,6 +71,33 @@ class SportsSectionTest extends TestCase
     }
 
     #[Test]
+    public function boundary_days_of_the_period_are_included(): void
+    {
+        $u15 = Category::create(['name' => 'U15']);
+        $team = $this->team($u15);
+        $p = $this->player($u15);
+        $this->game($team, ['date' => '2026-08-31', 'status' => GameStatus::Played, 'our_score' => 1, 'their_score' => 0]);
+        PlayerAchievement::create(['player_id' => $p->id, 'title' => 'Last day', 'date' => '2026-08-31']);
+        PlayerAchievement::create(['player_id' => $p->id, 'title' => 'First day', 'date' => '2025-09-01']);
+        PlayerAchievement::create(['player_id' => $p->id, 'title' => 'After', 'date' => '2026-09-01']);
+
+        $data = $this->build();
+
+        $this->assertSame(1, $data['played']);
+        $this->assertSame(['First day', 'Last day'], array_column($data['achievements'], 'title'));
+    }
+
+    #[Test]
+    public function a_played_game_without_scores_is_not_counted(): void
+    {
+        $team = $this->team(Category::create(['name' => 'U15']));
+        $this->game($team, ['date' => '2026-03-01', 'status' => GameStatus::Played, 'our_score' => null, 'their_score' => null]);
+        $this->game($team, ['date' => '2026-03-02', 'status' => GameStatus::Played, 'our_score' => 2, 'their_score' => 0]);
+
+        $this->assertSame(1, $this->build()['played']);
+    }
+
+    #[Test]
     public function no_games_gives_an_empty_record(): void
     {
         $data = $this->build();

@@ -27,6 +27,20 @@ class AttendanceSectionTest extends TestCase
     }
 
     #[Test]
+    public function a_session_held_on_the_last_day_is_included(): void
+    {
+        $u15 = $this->category('U15');
+        foreach (['2026-08-31', '2025-09-01', '2026-09-01'] as $date) {
+            TrainingSession::create([
+                'category_id' => $u15->id, 'date' => $date, 'start_time' => '18:00', 'end_time' => '19:30',
+                'kind' => SessionKind::Regular, 'state' => SessionState::Held,
+            ]);
+        }
+
+        $this->assertSame(2, $this->build()['held']);
+    }
+
+    #[Test]
     public function it_counts_held_sessions_by_branch_and_the_attendance_rate_by_category(): void
     {
         $u15 = $this->category('U15');

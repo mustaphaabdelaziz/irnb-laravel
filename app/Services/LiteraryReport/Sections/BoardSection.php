@@ -26,8 +26,9 @@ final class BoardSection implements Section
                 $m->sort_order,
             ])->values();
 
-        $committees = BoardCommittee::query()
-            ->with(['members' => fn ($q) => $q->where('status', 'active')->withPlayer()])
+        // Seat limits are per term and old-term members stay active, so only the current term's seats count.
+        $committees = $term === null ? [] : BoardCommittee::query()
+            ->with(['members' => fn ($q) => $q->where('status', 'active')->where('board_members.board_term_id', $term->id)->withPlayer()])
             ->orderBy('sort_order')->orderBy('name')
             ->get()
             ->map(fn (BoardCommittee $c) => [

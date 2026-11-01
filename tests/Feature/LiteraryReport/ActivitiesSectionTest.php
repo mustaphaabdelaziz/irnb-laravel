@@ -44,6 +44,16 @@ class ActivitiesSectionTest extends TestCase
     }
 
     #[Test]
+    public function an_activity_starting_on_the_last_day_is_included(): void
+    {
+        $this->activity('مخيم صيفي', '2026-08-31', ['title' => 'Last day']);
+        $this->activity('مخيم صيفي', '2025-09-01', ['title' => 'First day']);
+        $this->activity('مخيم صيفي', '2026-09-01', ['title' => 'After']);
+
+        $this->assertEqualsCanonicalizing(['Last day', 'First day'], array_column($this->build()['activities'], 'title'));
+    }
+
+    #[Test]
     public function it_summarises_activities_of_the_period_by_type(): void
     {
         $camp = $this->activity('مخيم صيفي', '2026-07-05', ['beneficiaries_count' => 40, 'external_volunteers_count' => 3]);

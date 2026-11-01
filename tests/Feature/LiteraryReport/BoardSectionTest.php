@@ -57,6 +57,37 @@ class BoardSectionTest extends TestCase
     }
 
     #[Test]
+    public function committee_seats_are_scoped_to_the_current_term(): void
+    {
+        BoardTerm::query()->delete();
+        $old = BoardTerm::create(['name' => 'Old', 'is_current' => false]);
+        $term = BoardTerm::create(['name' => 'Now', 'is_current' => true]);
+        $oldHead = BoardMember::create(['name' => 'OldHead', 'role' => 'member', 'board_term_id' => $old->id, 'status' => 'active']);
+        $newHead = BoardMember::create(['name' => 'NewHead', 'role' => 'member', 'board_term_id' => $term->id, 'status' => 'active']);
+        $deputy = BoardMember::create(['name' => 'NewDeputy', 'role' => 'member', 'board_term_id' => $term->id, 'status' => 'active']);
+        $committee = BoardCommittee::create(['name' => 'Youth']);
+        $committee->members()->attach($oldHead->id, ['position' => 'head']);
+        $committee->members()->attach($newHead->id, ['position' => 'head']);
+        $committee->members()->attach($deputy->id, ['position' => 'deputy']);
+
+        $this->assertSame(
+            [['name' => 'Youth', 'head' => 'NewHead', 'deputies' => ['NewDeputy'], 'members_count' => 2]],
+            $this->build()['committees'],
+        );
+    }
+
+    #[Test]
+    public function no_term_means_no_committees(): void
+    {
+        BoardTerm::query()->delete();
+        $committee = BoardCommittee::create(['name' => 'Youth']);
+        $m = BoardMember::create(['name' => 'X', 'role' => 'member', 'board_term_id' => null, 'status' => 'active']);
+        $committee->members()->attach($m->id, ['position' => 'head']);
+
+        $this->assertSame([], $this->build()['committees']);
+    }
+
+    #[Test]
     public function no_term_gives_empty_lists(): void
     {
         BoardTerm::query()->delete(); // the migration seeds a current term

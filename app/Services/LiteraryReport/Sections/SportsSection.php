@@ -33,7 +33,7 @@ final class SportsSection implements Section
         $competitions = $games->groupBy(fn (Game $g) => $g->competition_id ?? 0)
             ->map(fn ($group) => [
                 'name' => $group->first()->competition?->name,
-                'team' => $group->map(fn (Game $g) => $g->team?->name)->filter()->unique()->sort()->implode('، '),
+                'team' => $group->map(fn (Game $g) => $g->team?->name)->filter()->unique()->sort()->implode(app()->getLocale() === 'ar' ? '، ' : ', '),
             ] + Arr::only(CompetitionRecord::fromGames($group), self::RECORD_KEYS))
             ->sortBy(fn (array $row) => [$row['name'] === null, (string) $row['name']])
             ->values()->all();
@@ -51,14 +51,17 @@ final class SportsSection implements Section
             ->pluck('goals', 'player_id');
         $players = Player::query()->whereIn('id', $goals->keys())->get(['id', ...Player::NAME_COLUMNS])->keyBy('id');
 
+        $record = Arr::only(CompetitionRecord::fromGames($games), self::RECORD_KEYS);
+
         return [
-            'played' => $games->count(),
-            'record' => Arr::only(CompetitionRecord::fromGames($games), self::RECORD_KEYS),
+            // The record skips played games without scores, so the headline count comes from it.
+            'played' => $record['played'],
+            'record' => $record,
             'competitions' => $competitions,
             'scorers' => $goals->map(fn ($n, $playerId) => ['name' => $players->get($playerId)?->fullname, 'goals' => (int) $n])->values()->all(),
             'achievements' => PlayerAchievement::query()
                 ->with(['player' => fn ($q) => $q->select(['id', ...Player::NAME_COLUMNS])])
-                ->whereBetween('date', [$start, $end])
+                ->whereDate('date', '>=', $start)->whereDate('date', '<=', $end)
                 ->orderBy('date')
                 ->get()
                 ->map(fn (PlayerAchievement $a) => ['date' => $a->date->toDateString(), 'title' => $a->title, 'player' => $a->player?->fullname])

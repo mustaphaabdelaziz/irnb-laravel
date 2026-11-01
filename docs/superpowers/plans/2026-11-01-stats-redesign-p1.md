@@ -137,7 +137,8 @@ const columns = [
 test('toCsv: BOM, CRLF, comma, currency in the money header, raw numbers', () => {
     const csv = toCsv(columns, [{ name: 'Oran', amount: 1200.5, share: 12.5 }], { currency: 'DA' });
     assert.ok(csv.startsWith(BOM));
-    assert.equal(csv, `${BOM}Ville,Montant (DA),Part\r\nOran,1200.5,12.5\r\n`);
+    // "Montant (DA)" holds a space, so fputcsv-style quoting wraps it.
+    assert.equal(csv, `${BOM}Ville,"Montant (DA)",Part\r\nOran,1200.5,12.5\r\n`);
 });
 
 test('toCsv quotes commas, quotes, line breaks and spaces like fputcsv', () => {

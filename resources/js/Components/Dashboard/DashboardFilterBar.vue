@@ -38,8 +38,9 @@ const activeCount = computed(() =>
 function apply(changes) {
     // Inertia has no per-visit exception hook: a visit that finishes without
     // succeeding (network or server error) is a failure. A cancel means a newer
-    // visit superseded this one, which is not an error.
+    // visit superseded this one, which is not an error (and skips onFinish).
     let ok = false;
+    const tab = props.activeTab;
     router.get(
         route('dashboard'),
         {
@@ -56,10 +57,11 @@ function apply(changes) {
             showProgress: false,
             onStart: () => emit('loading', true),
             onSuccess: () => { ok = true; },
-            onCancel: () => { ok = true; },
+            // Inertia 2.3 skips onFinish on a cancel, so the busy state is reset here.
+            onCancel: () => emit('loading', false),
             onFinish: () => {
                 emit('loading', false);
-                if (!ok) emit('failed');
+                if (!ok) emit('failed', tab);
             },
         },
     );

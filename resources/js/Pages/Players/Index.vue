@@ -19,6 +19,8 @@ import ExportMenu from '@/Components/ExportMenu.vue';
 import Icon from '@/Components/Icon.vue';
 import IconButton from '@/Components/IconButton.vue';
 import AcademicResultsPrint from '@/Pages/Players/Partials/AcademicResultsPrint.vue';
+import CompletionBar from '@/Components/Stats/CompletionBar.vue';
+import { completionBarProps } from '@/lib/completion';
 import { positionLabeller } from '@/lib/positionLabels';
 import { PLAYER_FILTERS_KEY, savedPlayerFilters } from '@/lib/playerListFilters';
 
@@ -39,6 +41,7 @@ const props = defineProps({
     familyStats: { type: Array, default: () => [] },
     familyNames: { type: Array, default: () => [] },
     documentTypes: { type: Array, default: () => [] },
+    documentStats: { type: Object, default: null },
     filters: Object,
     currentSchoolYear: { type: Number, default: null },
 });
@@ -81,7 +84,7 @@ const { params: filterParams, loading: filtering } = useListFilters('players.ind
     documents: documentsFilter.value,
     archived: archivedView.value ? 1 : undefined,
     per_page: perPage.value,
-}), { only: ['players', 'filters', 'categoryStats', 'statusStats', 'positionStats', 'ageStats', 'familyStats'] });
+}), { only: ['players', 'filters', 'categoryStats', 'statusStats', 'positionStats', 'ageStats', 'familyStats', 'documentStats'] });
 
 // A filter reload changes the height of the charts above the filter bar, which
 // would slide the bar (and the box being typed in) up or down the screen.
@@ -170,6 +173,13 @@ const documentOptions = computed(() => [
 const exportHref = computed(() => route('players.export', filterParams.value));
 // The same filters as the export, printed as an A4 list (PDF).
 const printListHref = computed(() => route('players.print-list', filterParams.value));
+
+// The strip's "missing" link: the current list, narrowed to players missing a
+// document. It replaces the documents filter (its values OR together, so
+// adding "missing" to "expiring" would widen the list instead).
+const documentMissingHref = computed(() => (props.documentStats?.missing
+    ? route('players.index', { ...filterParams.value, documents: ['missing'] })
+    : null));
 
 // Secondary header actions: shown inline on wide screens, folded into a
 // "more" menu below xl so the fixed-height header never overflows. Template
@@ -414,6 +424,12 @@ function runBulk() {
             <!-- Results. While a filter is on they keep at least a screen of height: a
                  short result must not shorten the page and drag the scroll position up. -->
             <div class="space-y-4" :class="{ 'min-h-screen': hasActiveFilters }">
+                <CompletionBar
+                    v-if="documentStats"
+                    v-bind="completionBarProps(documentStats)"
+                    :links="{ missing: documentMissingHref }"
+                    size="sm"
+                />
                 <!-- Bulk action bar (list view) -->
                 <div v-if="view === 'list' && selected.length" class="flex flex-wrap items-center gap-3 rounded-xl bg-primary-50 dark:bg-primary-900/20 px-4 py-2.5 ring-1 ring-primary-200 dark:ring-primary-800">
                     <span class="text-sm font-medium text-primary-800 dark:text-primary-200">{{ t('selected_count', { count: selected.length }) }}</span>

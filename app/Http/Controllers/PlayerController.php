@@ -30,6 +30,7 @@ use App\Services\FinanceService;
 use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
 use App\Services\Player\DocumentChecklist;
+use App\Services\Player\DocumentStats;
 use App\Services\Player\MembershipNumber;
 use App\Services\Player\PlayerDocumentService;
 use App\Services\Player\RegisterPlayerService;
@@ -180,6 +181,12 @@ class PlayerController extends Controller
             'positionStats' => $positionStats,
             'ageStats' => $ageStats,
             'familyStats' => $familyStats,
+            // Document completion of every player the list matches (all
+            // pages, the rows' own filters). Needs documents/view, like the
+            // player checklist; a closure so other partial reloads skip it.
+            'documentStats' => fn (): ?array => $request->user()?->hasPermission('documents', 'view')
+                ? app(DocumentStats::class)->summary($this->statsQuery($request))
+                : null,
             // Multi-select filters come back as lists, whatever shape was sent.
             'filters' => ListFilter::echo($request, $this->filterSpecs(), ['search', 'archived', 'per_page']),
             // Default school year of the academic results printout.

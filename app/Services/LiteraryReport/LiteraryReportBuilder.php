@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\LiteraryReport\Sections\ActivitiesSection;
 use App\Services\LiteraryReport\Sections\AttendanceSection;
 use App\Services\LiteraryReport\Sections\BoardSection;
+use App\Services\LiteraryReport\Sections\FinanceSection;
 use App\Services\LiteraryReport\Sections\MembersSection;
 use App\Services\LiteraryReport\Sections\SportsSection;
 use Carbon\CarbonImmutable;
@@ -23,13 +24,14 @@ final class LiteraryReportBuilder
         'finance' => 'finance',
     ];
 
-    /** Computed sections by key; Tasks 4–6 register theirs here. */
+    /** Computed sections by key. */
     public const DATA_SECTIONS = [
         'members' => MembersSection::class,
         'board' => BoardSection::class,
         'attendance' => AttendanceSection::class,
         'sports' => SportsSection::class,
         'activities' => ActivitiesSection::class,
+        'finance' => FinanceSection::class,
     ];
 
     public static function allows(string $key, User $user): bool

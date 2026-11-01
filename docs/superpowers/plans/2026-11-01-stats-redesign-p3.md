@@ -1642,9 +1642,9 @@ const docCategoryChart = computed(() => completionChart(docCategoryRows.value));
 const docCategoryOptions = computed(() => completionOptions(docCategoryRows.value));
 ```
 
-- [ ] **Step 3: Template, at the top of the tab**
+- [ ] **Step 3: Template, right below the tiles**
 
-Insert as the FIRST child of `<div class="space-y-5">` (before the tiles `<section>`):
+Owner decision (2026-11-01): the bar goes directly BELOW the member tiles. Insert immediately after the tiles `</section>` (the first `<section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6" …>` block, closing at ~line 251) and before `<AttendanceCard v-if="data?.attendance" …/>`:
 
 ```vue
         <section v-if="documents" class="space-y-4" :aria-label="t('stats.doc_title')">
@@ -2154,4 +2154,5 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - **Colour tokens.** `chartTheme.js` has no positive / warning / negative exports. Categorical slots 2/3/7 are used through `completionColors()`, with separators and printed counts.
 - **Empty text.** `summary()` is null when no type is set up (nothing renders), so the bar's `required = 0` text reads "No documents are required for these players".
 - **Uncategorised row.** It has no link, because the list has no "no category" filter.
+- **Owner decisions after planning (2026-11-01).** Members tab: the bar goes right below the member tiles (not at the top). Teams/Show: count the season roster as saved (archived / left players still on the roster count), same as the roster table.
 - **Players list "missing" link.** It replaces the documents filter value instead of adding to it, because the filter's values OR together.

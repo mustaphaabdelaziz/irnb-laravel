@@ -24,6 +24,7 @@ return [
         'board-roles' => 'board_roles',
         'board-committees' => 'board_committees',
         'activities' => 'activities',
+        'literary-reports' => 'literary_reports',
         'users' => 'users',
         'categories' => 'categories',
         // Each App Configuration list is its own module (own row in the role editor).
@@ -128,6 +129,8 @@ return [
         'activities.photos.destroy' => ['activities', 'edit'],
         'activities.files.store' => ['activities', 'edit'],
         'activities.files.destroy' => ['activities', 'edit'],
+        // Exporting the literary report is reading it.
+        'literary-reports.pdf' => ['literary_reports', 'view'],
     ],
 
     // Route names that need no permission once authenticated.

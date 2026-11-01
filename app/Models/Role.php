@@ -26,7 +26,7 @@ class Role extends Model
         'finance' => ['transactions', 'finance', 'reports'],
         'equipment' => ['equipment', 'inventory'],
         'board' => ['board'],
-        'social' => ['activities'],
+        'social' => ['activities', 'literary_reports'],
         'config' => [
             'categories', 'branches', 'positions', 'player_statuses', 'document_types', 'jobs',
             'board_roles', 'board_committees', 'equipment_categories', 'storage_locations',
@@ -42,7 +42,7 @@ class Role extends Model
         'transactions', 'finance', 'reports',
         'equipment', 'inventory',
         'board',
-        'activities',
+        'activities', 'literary_reports',
         'categories', 'branches', 'positions', 'player_statuses', 'document_types', 'jobs',
         'board_roles', 'board_committees', 'equipment_categories', 'storage_locations',
         'game_formats', 'opponents', 'venues', 'activity_types',

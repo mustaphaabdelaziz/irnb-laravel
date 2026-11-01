@@ -71,6 +71,12 @@ class ActivityAction
 
     const ACTIVITY_DELETED = 'activity_deleted';
 
+    const LITERARY_REPORT_CREATED = 'literary_report_created';
+
+    const LITERARY_REPORT_UPDATED = 'literary_report_updated';
+
+    const LITERARY_REPORT_DELETED = 'literary_report_deleted';
+
     // documents
     const DOCUMENT_RECEIVED = 'document_received';
 
@@ -374,6 +380,9 @@ class ActivityAction
         self::ACTIVITY_CREATED,
         self::ACTIVITY_UPDATED,
         self::ACTIVITY_DELETED,
+        self::LITERARY_REPORT_CREATED,
+        self::LITERARY_REPORT_UPDATED,
+        self::LITERARY_REPORT_DELETED,
     ];
 
     /** @var array<string, list<string>> */
@@ -440,6 +449,9 @@ class ActivityAction
             self::ACTIVITY_CREATED,
             self::ACTIVITY_UPDATED,
             self::ACTIVITY_DELETED,
+            self::LITERARY_REPORT_CREATED,
+            self::LITERARY_REPORT_UPDATED,
+            self::LITERARY_REPORT_DELETED,
         ],
         'documents' => [
             self::DOCUMENT_RECEIVED,

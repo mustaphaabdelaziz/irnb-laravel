@@ -13,6 +13,7 @@ use App\Models\EquipmentRental;
 use App\Models\FinanceTransfer;
 use App\Models\Game;
 use App\Models\InventorySession;
+use App\Models\LiteraryReport;
 use App\Models\MemberJob;
 use App\Models\Player;
 use App\Models\PlayerAcademicRecord;
@@ -67,6 +68,7 @@ final class ActivitySubjectLink
         BoardMeeting::class => ['board'],
         BoardTask::class => ['board'],
         Activity::class => ['activities'],
+        LiteraryReport::class => ['literary_reports'],
         TrainingSession::class => ['attendance'],
         User::class => ['users'],
         Role::class => ['users'],

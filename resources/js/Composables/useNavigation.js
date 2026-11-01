@@ -53,6 +53,7 @@ export function useNavigation() {
             ] },
             { key: 'social', label: t('nav.social'), icon: 'heart', items: [
                 { label: t('activities'), href: '/activities', icon: 'heart', prefix: '/activities', module: 'activities' },
+                { label: t('literary_reports'), href: '/literary-reports', icon: 'document', prefix: '/literary-reports', module: 'literary_reports' },
             ] },
             // Each category shows when any module behind its reports is viewable;
             // the overview when any category does.

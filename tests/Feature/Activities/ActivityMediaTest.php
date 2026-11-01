@@ -3,7 +3,6 @@
 namespace Tests\Feature\Activities;
 
 use App\Models\Activity;
-use App\Models\ActivityPhoto;
 use App\Models\ActivityType;
 use App\Models\Role;
 use App\Models\User;

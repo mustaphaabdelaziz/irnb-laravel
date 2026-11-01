@@ -56,6 +56,21 @@ class SportsSectionTest extends TestCase
     }
 
     #[Test]
+    public function the_friendlies_row_lists_every_team_that_played_one(): void
+    {
+        $u15 = Category::create(['name' => 'U15']);
+        $teamA = $this->team($u15, ['name' => 'Team Alpha']);
+        $teamB = $this->team($u15, ['name' => 'Team Beta']);
+        $this->game($teamA, ['date' => '2026-05-01', 'status' => GameStatus::Played, 'our_score' => 1, 'their_score' => 0]);
+        $this->game($teamB, ['date' => '2026-05-02', 'status' => GameStatus::Played, 'our_score' => 1, 'their_score' => 0]);
+
+        $friendlies = collect($this->build()['competitions'])->firstWhere('name', null);
+
+        $this->assertStringContainsString('Team Alpha', $friendlies['team']);
+        $this->assertStringContainsString('Team Beta', $friendlies['team']);
+    }
+
+    #[Test]
     public function no_games_gives_an_empty_record(): void
     {
         $data = $this->build();

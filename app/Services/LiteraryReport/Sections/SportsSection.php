@@ -33,7 +33,7 @@ final class SportsSection implements Section
         $competitions = $games->groupBy(fn (Game $g) => $g->competition_id ?? 0)
             ->map(fn ($group) => [
                 'name' => $group->first()->competition?->name,
-                'team' => $group->first()->team?->name,
+                'team' => $group->map(fn (Game $g) => $g->team?->name)->filter()->unique()->sort()->implode('، '),
             ] + Arr::only(CompetitionRecord::fromGames($group), self::RECORD_KEYS))
             ->sortBy(fn (array $row) => [$row['name'] === null, (string) $row['name']])
             ->values()->all();
@@ -46,6 +46,7 @@ final class SportsSection implements Section
             ->selectRaw('player_id, COUNT(*) as goals')
             ->groupBy('player_id')
             ->orderByDesc('goals')
+            ->orderBy('player_id')
             ->limit(10)
             ->pluck('goals', 'player_id');
         $players = Player::query()->whereIn('id', $goals->keys())->get(['id', ...Player::NAME_COLUMNS])->keyBy('id');

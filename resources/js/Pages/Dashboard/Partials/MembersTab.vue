@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { Bar } from 'vue-chartjs';
-import { Link } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import ChartCard from '@/Components/Dashboard/ChartCard.vue';
 import Meter from '@/Components/Dashboard/Meter.vue';
@@ -11,7 +11,10 @@ import { Card, CardHeader, CardTitle } from '@/Components/ui/card';
 import StatTable from '@/Components/Stats/StatTable.vue';
 import { Separator } from '@/Components/ui/separator';
 import { useChartTheme } from '@/Composables/useChartTheme';
-import { baseOptions, ordinal, rankedBarDataset, seriesColor, spanLabel } from '@/lib/chartTheme';
+import { barDataset, baseOptions, ordinal, rankedBarDataset, seriesColor, spanLabel } from '@/lib/chartTheme';
+import CompletionBar from '@/Components/Stats/CompletionBar.vue';
+import { useFormatNumber } from '@/Composables/useFormatNumber';
+import { completionBarProps, completionColors } from '@/lib/completion';
 import { columnTotals } from '@/lib/statTable';
 
 const props = defineProps({
@@ -23,6 +26,7 @@ const props = defineProps({
 
 const { t } = useI18n();
 const { themeVersion } = useChartTheme();
+const { formatNumber, formatPercent } = useFormatNumber();
 
 const summary = computed(() => props.data?.summary ?? []);
 const growth = computed(() => props.data?.growth ?? { labels: [], joined: [], left: [], cumulative: [] });
@@ -233,6 +237,124 @@ const statusTotal = computed(() => byStatus.value.reduce((sum, row) => sum + row
 const cityTotal = computed(() => topCities.value.reduce((sum, row) => sum + row.count, 0) || 1);
 const splitTotal = computed(() => (split.value.students + split.value.workers) || 1);
 const genderTotal = computed(() => (split.value.male + split.value.female) || 1);
+
+// --- Document completion (documents/view; null hides the whole section) ---
+const documents = computed(() => props.data?.documents ?? null);
+
+// Drill-downs land on the players list with the dashboard's branch, like
+// academicLink. The list's default population (not archived, not left) is the
+// same as this section's, so the numbers match what the reader clicks.
+function playersLink(params) {
+    const query = { ...params };
+    if (props.branchId) query.branch_id = props.branchId;
+    return route('players.index', query);
+}
+
+const docMissingHref = computed(() => (documents.value?.summary.missing ? playersLink({ documents: 'missing' }) : null));
+
+const docCountColumns = () => [
+    { key: 'required', label: t('stats.doc_required'), format: 'number', sortable: true, total: 'sum' },
+    { key: 'received', label: t('stats.doc_received'), format: 'number', sortable: true, total: 'sum' },
+    { key: 'expiring', label: t('stats.doc_expiring'), format: 'number', sortable: true, total: 'sum' },
+    { key: 'missing', label: t('stats.doc_missing'), format: 'number', sortable: true, total: 'sum' },
+    // A percent never sums.
+    { key: 'pct', label: t('stats.doc_pct'), format: 'percent', sortable: true },
+];
+
+const docTypeColumns = computed(() => [
+    { key: 'label', label: t('stats.doc_document'), format: 'text', sortable: true },
+    ...docCountColumns(),
+]);
+
+const docCategoryColumns = computed(() => [
+    { key: 'label', label: t('dashboard.category'), format: 'text', sortable: true },
+    ...docCountColumns(),
+    // Each player has one category (or none, its own row): categories
+    // partition the players, so these two counts add up.
+    { key: 'players_complete', label: t('stats.doc_complete_files'), format: 'number', sortable: true, total: 'sum' },
+    { key: 'players_total', label: t('stats.doc_players'), format: 'number', sortable: true, total: 'sum' },
+]);
+
+const docTypeRows = computed(() => (documents.value?.summary.by_type ?? []).map((row) => ({
+    ...row,
+    label: row.name,
+    href: row.missing > 0 ? playersLink({ documents: `missing-${row.id}` }) : null,
+})));
+
+const docCategoryRows = computed(() => (documents.value?.by_category ?? []).map((row) => ({
+    ...row,
+    label: row.name ?? t('dashboard.fin_uncategorised'),
+    // The list has no "no category" filter, so that row has no link.
+    href: row.missing > 0 && row.category_id ? playersLink({ category_id: row.category_id, documents: 'missing' }) : null,
+})));
+
+const docTypeTotals = computed(() => columnTotals(docTypeColumns.value, docTypeRows.value));
+const docCategoryTotals = computed(() => columnTotals(docCategoryColumns.value, docCategoryRows.value));
+const docEmpty = computed(() => !documents.value?.summary.players_total);
+
+// Each row as shares of its own required documents (100 % stacked), so a
+// small category and a large one compare on one scale; counts in the tooltip.
+const DOC_PARTS = [
+    { key: 'received', label: 'stats.doc_valid', count: (row) => row.received - row.expiring },
+    { key: 'expiring', label: 'stats.doc_expiring', count: (row) => row.expiring },
+    { key: 'missing', label: 'stats.doc_missing', count: (row) => row.missing },
+];
+
+function completionChart(rows) {
+    themeVersion.value; // recolour on theme toggle
+    const colors = completionColors();
+
+    return {
+        labels: rows.map((row) => row.label),
+        datasets: DOC_PARTS.map((part) => ({
+            ...barDataset(
+                t(part.label),
+                rows.map((row) => (row.required > 0 ? (part.count(row) / row.required) * 100 : 0)),
+                0,
+                { stack: 'documents', color: colors[part.key] },
+            ),
+            // barDataset's surface-coloured border, switched on at the end edge:
+            // the gap between neighbouring parts, so two colours never touch.
+            borderWidth: { top: 0, right: 2, bottom: 0, left: 0 },
+        })),
+    };
+}
+
+function completionOptions(rows) {
+    themeVersion.value;
+    const base = baseOptions({ rtl: props.rtl, stacked: true, horizontal: true });
+
+    return {
+        ...base,
+        scales: {
+            ...base.scales,
+            x: { ...base.scales.x, max: 100, ticks: { ...base.scales.x.ticks, callback: (value) => formatPercent(value, { trim: true }) } },
+        },
+        plugins: {
+            ...base.plugins,
+            tooltip: {
+                ...base.plugins.tooltip,
+                callbacks: {
+                    label: (ctx) => ` ${ctx.dataset.label}: ${formatNumber(DOC_PARTS[ctx.datasetIndex].count(rows[ctx.dataIndex]))} (${formatPercent(ctx.parsed.x)})`,
+                },
+            },
+        },
+        // A bar opens the players behind it, like its table row.
+        onClick: (_event, elements) => {
+            const href = rows[elements[0]?.index]?.href;
+            if (href) router.visit(href);
+        },
+        onHover: (event, elements) => {
+            const target = event.native?.target;
+            if (target) target.style.cursor = elements.length && rows[elements[0].index]?.href ? 'pointer' : 'default';
+        },
+    };
+}
+
+const docTypeChart = computed(() => completionChart(docTypeRows.value));
+const docTypeOptions = computed(() => completionOptions(docTypeRows.value));
+const docCategoryChart = computed(() => completionChart(docCategoryRows.value));
+const docCategoryOptions = computed(() => completionOptions(docCategoryRows.value));
 </script>
 
 <template>
@@ -248,6 +370,59 @@ const genderTotal = computed(() => (split.value.male + split.value.female) || 1)
                 :icon="tile.icon"
                 :tone="tile.tone"
             />
+        </section>
+
+        <section v-if="documents" class="space-y-4" :aria-label="t('stats.doc_title')">
+            <div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <h3 class="text-sm font-semibold text-muted-foreground">{{ t('stats.doc_title') }}</h3>
+                <p class="text-xs text-muted-foreground">{{ t('stats.doc_as_of_today') }}</p>
+            </div>
+
+            <CompletionBar v-bind="completionBarProps(documents.summary)" :links="{ missing: docMissingHref }" size="lg" />
+
+            <div class="grid gap-5 lg:grid-cols-2">
+                <ChartCard
+                    :title="t('stats.doc_by_category')"
+                    :loading="loading"
+                    :empty="docEmpty"
+                    :empty-hint="t('dashboard.mem_no_members')"
+                    has-table
+                    :csv="{ filename: 'dashboard-documents-by-category', columns: docCategoryColumns, rows: docCategoryRows, totals: docCategoryTotals }"
+                    height="h-72"
+                >
+                    <Bar :data="docCategoryChart" :options="docCategoryOptions" />
+
+                    <template #table>
+                        <StatTable :columns="docCategoryColumns" :rows="docCategoryRows" :row-key="(r) => r.category_id ?? 'none'" :totals="docCategoryTotals" dense>
+                            <template #cell-label="{ row, formatted }">
+                                <Link v-if="row.href" :href="row.href" class="font-medium text-primary-600 hover:underline dark:text-primary-400">{{ formatted }}</Link>
+                                <template v-else>{{ formatted }}</template>
+                            </template>
+                        </StatTable>
+                    </template>
+                </ChartCard>
+
+                <ChartCard
+                    :title="t('stats.doc_by_type')"
+                    :loading="loading"
+                    :empty="docEmpty"
+                    :empty-hint="t('dashboard.mem_no_members')"
+                    has-table
+                    :csv="{ filename: 'dashboard-documents-by-type', columns: docTypeColumns, rows: docTypeRows, totals: docTypeTotals }"
+                    height="h-72"
+                >
+                    <Bar :data="docTypeChart" :options="docTypeOptions" />
+
+                    <template #table>
+                        <StatTable :columns="docTypeColumns" :rows="docTypeRows" row-key="id" :totals="docTypeTotals" dense>
+                            <template #cell-label="{ row, formatted }">
+                                <Link v-if="row.href" :href="row.href" class="font-medium text-primary-600 hover:underline dark:text-primary-400">{{ formatted }}</Link>
+                                <template v-else>{{ formatted }}</template>
+                            </template>
+                        </StatTable>
+                    </template>
+                </ChartCard>
+            </div>
         </section>
 
         <AttendanceCard v-if="data?.attendance" :data="data.attendance" />

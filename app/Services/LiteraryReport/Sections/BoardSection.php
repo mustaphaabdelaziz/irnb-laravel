@@ -7,6 +7,7 @@ use App\Models\BoardMeeting;
 use App\Models\BoardMember;
 use App\Models\BoardRole;
 use App\Models\BoardTerm;
+use App\Support\UiLang;
 use Carbon\CarbonImmutable;
 
 /** The current board, its committees, and the meetings held in the period with their decisions. */
@@ -52,7 +53,8 @@ final class BoardSection implements Section
             'term' => $term?->name,
             'members' => $members->map(fn (BoardMember $m) => [
                 'name' => $m->name,
-                'role' => $roles->get($m->role)?->label ?: $m->role,
+                // Built-in roles have no label: their name is a UI key, as on the board pages.
+                'role' => $roles->get($m->role)?->label ?: UiLang::get($m->role),
             ])->all(),
             'committees' => $committees,
             'meetings' => $meetings,

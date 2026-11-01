@@ -8,6 +8,7 @@ use App\Models\BoardMember;
 use App\Models\BoardRole;
 use App\Models\BoardTerm;
 use App\Services\LiteraryReport\Sections\BoardSection;
+use App\Support\UiLang;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -28,7 +29,7 @@ class BoardSectionTest extends TestCase
         BoardRole::query()->delete();
         BoardTerm::query()->delete(); // the migration seeds a current term
         BoardRole::create(['name' => 'president', 'label' => 'الرئيس', 'level' => 'top', 'sort_order' => 1]);
-        BoardRole::create(['name' => 'member', 'label' => 'عضو', 'level' => 'member', 'sort_order' => 9]);
+        BoardRole::create(['name' => 'member', 'label' => '', 'level' => 'member', 'sort_order' => 9]); // built-in: translated by name
         BoardTerm::create(['name' => '2017–2021', 'is_current' => false]);
         $term = BoardTerm::create(['name' => '2021–2025', 'is_current' => true]);
         $member = BoardMember::create(['name' => 'Ali', 'role' => 'member', 'board_term_id' => $term->id, 'status' => 'active', 'sort_order' => 1]);
@@ -47,7 +48,8 @@ class BoardSectionTest extends TestCase
         $data = $this->build();
 
         $this->assertSame('2021–2025', $data['term']);
-        $this->assertSame([['name' => 'Omar', 'role' => 'الرئيس'], ['name' => 'Ali', 'role' => 'عضو']], $data['members']);
+        $this->assertSame([['name' => 'Omar', 'role' => 'الرئيس'], ['name' => 'Ali', 'role' => UiLang::get('member')]], $data['members']);
+        $this->assertNotSame('member', UiLang::get('member'));
         $this->assertSame([['name' => 'Finance', 'head' => 'Omar', 'deputies' => ['Ali'], 'members_count' => 2]], $data['committees']);
         $this->assertSame(['AG', 'Last day'], array_column($data['meetings'], 'title'));
         $this->assertSame(['Budget adopted'], $data['meetings'][0]['decisions']);

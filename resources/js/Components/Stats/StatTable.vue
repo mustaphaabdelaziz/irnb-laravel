@@ -19,6 +19,9 @@ import { sortRows, sumColumn } from '@/lib/statTable';
  *
  * Totals are opt-in per column (total: 'sum') — a summed percentage or average
  * is a wrong number, so the table never guesses.
+ *
+ * A controlled `sort` prop means the parent must echo the emitted `sort` back.
+ * The totals label goes in the first column, so don't make that column summable.
  */
 const props = defineProps({
     columns: { type: Array, required: true },

@@ -27,7 +27,7 @@ const props = defineProps({
     loading: { type: Boolean, default: false },
     height: { type: String, default: 'h-64' },
     hasTable: { type: Boolean, default: false },
-    error: { type: [String, Boolean], default: null },
+    error: { type: [Boolean, String], default: null },
     onRetry: { type: Function, default: null },
     csv: { type: Object, default: null },
 });
@@ -66,7 +66,7 @@ function download() {
 </script>
 
 <template>
-    <Card class="border-border/70 shadow-none">
+    <Card class="min-w-0 border-border/70 shadow-none">
         <CardHeader class="flex-row flex-wrap items-start justify-between gap-3 space-y-0 px-5 pb-2 pt-4">
             <div class="min-w-0">
                 <CardTitle class="text-base">{{ title }}</CardTitle>
@@ -141,7 +141,7 @@ function download() {
                 <slot name="table" />
             </div>
 
-            <div v-else :class="height">
+            <div v-else :class="height" class="relative min-w-0">
                 <slot />
             </div>
         </CardContent>

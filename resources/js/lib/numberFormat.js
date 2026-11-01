@@ -30,6 +30,7 @@ function fallback(value) {
     return '—';
 }
 
+// Blank (null/'') is the caller's job: it comes back as "0", not a dash.
 export function formatNumber(value, appLocale) {
     const odd = fallback(value);
     if (odd !== null) return odd;

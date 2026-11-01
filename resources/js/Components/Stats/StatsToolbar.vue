@@ -18,7 +18,7 @@ const { t } = useI18n();
 
 <template>
     <div
-        role="toolbar"
+        role="group"
         :aria-label="t('stats.filters')"
         :aria-busy="loading"
         class="flex flex-wrap items-center gap-2 rounded-xl border border-border/70 bg-card px-3 py-2"

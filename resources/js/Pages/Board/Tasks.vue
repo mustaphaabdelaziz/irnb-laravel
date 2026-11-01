@@ -6,7 +6,15 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Icon from '@/Components/Icon.vue';
 import ExportMenu from '@/Components/ExportMenu.vue';
 import IconButton from '@/Components/IconButton.vue';
+import { useCan } from '@/Composables/useCan';
+import { useChartTheme } from '@/Composables/useChartTheme';
+import { useFormatNumber } from '@/Composables/useFormatNumber';
 import StatDoughnut from '@/Components/StatDoughnut.vue';
+import ChartCard from '@/Components/Dashboard/ChartCard.vue';
+import StatTile from '@/Components/Dashboard/StatTile.vue';
+import StatTable from '@/Components/Stats/StatTable.vue';
+import { barDataset, baseOptions, mutedInk, seriesColor } from '@/lib/chartTheme';
+import { columnTotals } from '@/lib/statTable';
 import '@/lib/registerCharts';
 import { Bar } from 'vue-chartjs';
 
@@ -17,6 +25,11 @@ const props = defineProps({
     stats: { type: Object, default: () => ({}) },
 });
 const { t, locale } = useI18n();
+const { can } = useCan();
+const canEdit = computed(() => can('board', 'edit'));
+const { themeVersion } = useChartTheme();
+const { formatPercent } = useFormatNumber();
+const rtl = computed(() => locale.value === 'ar');
 
 const order = ['not_started', 'in_progress', 'completed', 'cancelled'];
 
@@ -92,28 +105,50 @@ const priorityChip = {
 };
 
 // ---- Stats view ----
-const statusChips = computed(() => order
-    .map((s) => ({ key: s, label: t(s), count: props.stats[{ not_started: 'notStarted', in_progress: 'inProgress', completed: 'completed', cancelled: 'cancelled' }[s]] || 0 }))
-    .filter((r) => r.count > 0));
-const priorityChips = computed(() => (props.stats.byPriority || []).map((p) => ({ key: p.priority, label: t(p.priority), count: p.count })));
-const statusPalette = ['#94a3b8', '#0284c7', '#02a85c', '#cbd5e1'];
-const priorityPalette = ['#e11d48', '#d97706', '#94a3b8'];
+// Meaning-bearing colours are pinned per chip, so a status keeps its colour when
+// another one is empty and drops out of the list.
+const statusChips = computed(() => {
+    themeVersion.value; // recolour on theme toggle
+    const colors = { not_started: mutedInk(), in_progress: seriesColor(0), completed: seriesColor(2), cancelled: seriesColor(8) };
+    return order
+        .map((s) => ({ key: s, label: t(s), color: colors[s], count: props.stats[{ not_started: 'notStarted', in_progress: 'inProgress', completed: 'completed', cancelled: 'cancelled' }[s]] || 0 }))
+        .filter((r) => r.count > 0);
+});
+const priorityChips = computed(() => {
+    themeVersion.value; // recolour on theme toggle
+    const colors = { high: seriesColor(7), medium: seriesColor(3), low: seriesColor(0) };
+    return (props.stats.byPriority || []).map((p) => ({ key: p.priority, label: t(p.priority), color: colors[p.priority], count: p.count }));
+});
 
 const monthLabels = computed(() => Array.from({ length: 12 }, (_, i) =>
     new Date(2020, i, 1).toLocaleDateString(locale.value === 'ar' ? 'ar' : locale.value, { month: 'short' })));
-const monthlyChart = computed(() => ({
-    labels: monthLabels.value,
-    datasets: [{ label: t('completed'), data: props.stats.monthly || [], backgroundColor: '#02a85c', borderRadius: 4 }],
-}));
-const yearlyChart = computed(() => ({
-    labels: (props.stats.yearly || []).map((y) => y.year),
-    datasets: [{ label: t('completed'), data: (props.stats.yearly || []).map((y) => y.count), backgroundColor: '#0284c7', borderRadius: 4 }],
-}));
-const barOptions = {
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
-    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
-};
+const monthlyData = computed(() => props.stats.monthly || []);
+const yearlyData = computed(() => props.stats.yearly || []);
+const monthlyChart = computed(() => {
+    themeVersion.value;
+    return { labels: monthLabels.value, datasets: [barDataset(t('completed'), monthlyData.value, 2)] };
+});
+const yearlyChart = computed(() => {
+    themeVersion.value;
+    return { labels: yearlyData.value.map((y) => y.year), datasets: [barDataset(t('completed'), yearlyData.value.map((y) => y.count), 0)] };
+});
+const barOptions = computed(() => {
+    themeVersion.value;
+    return baseOptions({ rtl: rtl.value, legend: false });
+});
+
+const monthlyColumns = computed(() => [
+    { key: 'month', label: t('dashboard.month'), format: 'text' },
+    { key: 'count', label: t('completed'), format: 'number', total: 'sum' },
+]);
+const monthlyRows = computed(() => monthLabels.value.map((month, i) => ({ month, count: monthlyData.value[i] ?? 0 })));
+const monthlyTotals = computed(() => columnTotals(monthlyColumns.value, monthlyRows.value));
+const yearlyColumns = computed(() => [
+    { key: 'year', label: t('year'), format: 'text' },
+    { key: 'count', label: t('completed'), format: 'number', total: 'sum' },
+]);
+const yearlyRows = computed(() => yearlyData.value.map((y) => ({ year: String(y.year), count: y.count })));
+const yearlyTotals = computed(() => columnTotals(yearlyColumns.value, yearlyRows.value));
 
 const showModal = ref(false);
 const editingId = ref(null);
@@ -125,6 +160,7 @@ function openCreate() {
     showModal.value = true;
 }
 function openEdit(tk) {
+    if (!canEdit.value) return;
     editingId.value = tk.id;
     form.title = tk.title; form.description = tk.description || ''; form.board_member_id = tk.board_member_id;
     form.board_meeting_id = tk.board_meeting_id; form.due_date = tk.due_date ? String(tk.due_date).slice(0, 10) : ''; form.status = tk.status;
@@ -163,6 +199,7 @@ function onDragEnd() {
     dragOverCol.value = null;
 }
 function onDrop(col) {
+    if (!canEdit.value) return;
     const id = draggingId.value;
     dragOverCol.value = null;
     draggingId.value = null;
@@ -215,7 +252,7 @@ function onDrop(col) {
                 <button @click="view = 'stats'" class="rounded-lg px-3 py-1.5 text-xs font-bold transition-colors" :class="view === 'stats' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">{{ t('statistics') }}</button>
             </div>
             <ExportMenu :href="route('board.tasks.export')" :label="t('export')" />
-            <IconButton icon="plus" :label="t('add_task')" variant="primary" @click="openCreate" />
+            <IconButton v-if="canEdit" icon="plus" :label="t('add_task')" variant="primary" @click="openCreate" />
         </div>
 
         <div v-if="view === 'board'" class="grid gap-4 lg:grid-cols-4">
@@ -231,12 +268,12 @@ function onDrop(col) {
                 </p>
                 <div class="min-h-[3rem] space-y-2.5">
                     <div v-for="tk in filteredColumns[col]" :key="tk.id"
-                        draggable="true"
+                        :draggable="canEdit ? 'true' : 'false'"
                         @dragstart="onDragStart(tk, $event)"
                         @dragend="onDragEnd"
                         @click="openEdit(tk)"
-                        class="block w-full cursor-grab rounded-xl bg-white p-3 text-start shadow-sm ring-1 ring-slate-200/70 transition-all hover:shadow-md active:cursor-grabbing dark:bg-slate-800 dark:ring-slate-700"
-                        :class="draggingId === tk.id ? 'opacity-40' : ''">
+                        class="block w-full rounded-xl bg-white p-3 text-start shadow-sm ring-1 ring-slate-200/70 transition-all hover:shadow-md dark:bg-slate-800 dark:ring-slate-700"
+                        :class="[canEdit ? 'cursor-grab active:cursor-grabbing' : '', draggingId === tk.id ? 'opacity-40' : '']">
                         <div class="mb-1.5 flex items-start justify-between gap-2">
                             <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ tk.title }}</p>
                             <span class="shrink-0 rounded-full px-2 py-0.5 text-[0.65rem] font-bold" :class="priorityChip[tk.priority]">{{ t(tk.priority) }}</span>
@@ -259,33 +296,16 @@ function onDrop(col) {
         <div v-if="view === 'stats'" class="space-y-4">
             <!-- KPI cards -->
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div class="card p-4">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ t('total') }} {{ t('tasks') }}</p>
-                    <p class="mt-1 text-3xl font-extrabold text-slate-900 dark:text-slate-100">{{ stats.total }}</p>
-                </div>
-                <div class="card p-4">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ t('completion_rate') }}</p>
-                    <div class="mt-1 flex items-end gap-2">
-                        <p class="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">{{ stats.completionRate }}%</p>
-                        <p class="pb-1 text-xs text-slate-400">{{ stats.completed }}/{{ stats.total }}</p>
-                    </div>
-                    <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"><div class="h-full rounded-full bg-emerald-500" :style="{ width: stats.completionRate + '%' }"></div></div>
-                </div>
-                <div class="card p-4">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ t('in_progress') }}</p>
-                    <p class="mt-1 text-3xl font-extrabold text-primary-600 dark:text-primary-400">{{ stats.inProgress }}</p>
-                    <p class="mt-1 text-xs text-slate-400">{{ t('avg') }} {{ stats.avgProgress }}%</p>
-                </div>
-                <div class="card p-4">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ t('overdue') }}</p>
-                    <p class="mt-1 text-3xl font-extrabold" :class="stats.overdue > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-slate-100'">{{ stats.overdue }}</p>
-                </div>
+                <StatTile :label="`${t('total')} ${t('tasks')}`" :value="stats.total" format="number" icon="task" tone="primary" />
+                <StatTile :label="t('completion_rate')" :value="stats.completionRate" format="percent" :meta="`${stats.completed}/${stats.total}`" icon="check" tone="positive" />
+                <StatTile :label="t('in_progress')" :value="stats.inProgress" format="number" :meta="`${t('avg')} ${formatPercent(stats.avgProgress, { trim: true })}`" icon="task" tone="primary" />
+                <StatTile :label="t('overdue')" :value="stats.overdue" format="number" icon="alert" :tone="stats.overdue > 0 ? 'negative' : 'neutral'" />
             </div>
 
             <!-- Distributions -->
             <div class="grid gap-4 lg:grid-cols-2">
-                <StatDoughnut v-if="statusChips.length" :title="t('by_status')" :stats="statusChips" :palette="statusPalette" />
-                <StatDoughnut v-if="priorityChips.length" :title="t('by_priority')" :stats="priorityChips" :palette="priorityPalette" />
+                <StatDoughnut v-if="statusChips.length" :title="t('by_status')" :stats="statusChips" />
+                <StatDoughnut v-if="priorityChips.length" :title="t('by_priority')" :stats="priorityChips" />
             </div>
 
             <!-- Top members evaluation -->
@@ -312,15 +332,30 @@ function onDrop(col) {
 
             <!-- Monthly + yearly evaluation -->
             <div class="grid gap-4 lg:grid-cols-2">
-                <div class="card p-5">
-                    <p class="mb-3 text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('completed_monthly') }} · {{ stats.currentYear }}</p>
-                    <div class="h-52"><Bar :data="monthlyChart" :options="barOptions" /></div>
-                </div>
-                <div class="card p-5">
-                    <p class="mb-3 text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('completed_yearly') }}</p>
-                    <div v-if="stats.yearly?.length" class="h-52"><Bar :data="yearlyChart" :options="barOptions" /></div>
-                    <p v-else class="py-10 text-center text-sm text-slate-400">{{ t('no_data') }}</p>
-                </div>
+                <ChartCard
+                    :title="`${t('completed_monthly')} · ${stats.currentYear}`"
+                    height="h-52"
+                    has-table
+                    :empty="!monthlyData.some((n) => n > 0)"
+                    :csv="{ filename: 'board-tasks-completed-monthly', columns: monthlyColumns, rows: monthlyRows, totals: monthlyTotals }"
+                >
+                    <Bar :data="monthlyChart" :options="barOptions" />
+                    <template #table>
+                        <StatTable :columns="monthlyColumns" :rows="monthlyRows" row-key="month" :totals="monthlyTotals" dense />
+                    </template>
+                </ChartCard>
+                <ChartCard
+                    :title="t('completed_yearly')"
+                    height="h-52"
+                    has-table
+                    :empty="!yearlyData.length"
+                    :csv="{ filename: 'board-tasks-completed-yearly', columns: yearlyColumns, rows: yearlyRows, totals: yearlyTotals }"
+                >
+                    <Bar :data="yearlyChart" :options="barOptions" />
+                    <template #table>
+                        <StatTable :columns="yearlyColumns" :rows="yearlyRows" row-key="year" :totals="yearlyTotals" dense />
+                    </template>
+                </ChartCard>
             </div>
         </div>
 
@@ -339,7 +374,7 @@ function onDrop(col) {
                         <li v-for="tk in group.items" :key="tk.id" class="relative ms-6 pb-4 last:pb-0">
                             <!-- Node -->
                             <span class="absolute -start-[1.95rem] top-1.5 h-3.5 w-3.5 rounded-full ring-4" :class="dotColor[tk.status]"></span>
-                            <button @click="openEdit(tk)"
+                            <component :is="canEdit ? 'button' : 'div'" @click="openEdit(tk)"
                                 class="block w-full rounded-xl bg-slate-50 p-3 text-start ring-1 ring-slate-100 transition-shadow hover:shadow-md dark:bg-slate-800/50 dark:ring-slate-700/50">
                                 <div class="flex items-start justify-between gap-2">
                                     <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ tk.title }}</p>
@@ -356,7 +391,7 @@ function onDrop(col) {
                                     <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"><div class="h-full rounded-full" :class="barColor[tk.status]" :style="{ width: (tk.progress || 0) + '%' }"></div></div>
                                     <span class="text-[0.65rem] font-bold text-slate-400">{{ tk.progress || 0 }}%</span>
                                 </div>
-                            </button>
+                            </component>
                         </li>
                     </ol>
                 </template>

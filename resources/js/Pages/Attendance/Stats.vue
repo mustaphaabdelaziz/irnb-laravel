@@ -7,12 +7,17 @@ import '@/lib/registerCharts';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PeriodFilter from '@/Components/Activity/PeriodFilter.vue';
 import ChartCard from '@/Components/Dashboard/ChartCard.vue';
+import StatTile from '@/Components/Dashboard/StatTile.vue';
+import StatTable from '@/Components/Stats/StatTable.vue';
+import StatsToolbar from '@/Components/Stats/StatsToolbar.vue';
 import BranchSwitch from '@/Components/Attendance/BranchSwitch.vue';
 import StatusBreakdown from '@/Components/Attendance/StatusBreakdown.vue';
 import ExportMenu from '@/Components/ExportMenu.vue';
 import IconButton from '@/Components/IconButton.vue';
 import { useAttendanceCodes } from '@/Composables/useAttendanceCodes';
+import { useChartTheme } from '@/Composables/useChartTheme';
 import { barDataset, baseOptions } from '@/lib/chartTheme';
+import { columnTotals } from '@/lib/statTable';
 import { hasMarks, hours, monthTick, pct, periodQuery, statusBars } from '@/lib/attendanceStats';
 import StatsPlayerTable from './Partials/StatsPlayerTable.vue';
 import StatsRanking from './Partials/StatsRanking.vue';
@@ -30,6 +35,7 @@ const props = defineProps({
     branches: { type: Array, default: () => [] },
     branchId: { type: Number, default: null },
     totals: { type: Object, required: true },
+    deltas: { type: Object, default: () => ({}) },
     monthly: { type: Object, required: true },
     sessionsByMonth: { type: Object, required: true },
     categoryRows: { type: Array, default: () => [] },
@@ -39,6 +45,7 @@ const props = defineProps({
 });
 const { t, locale } = useI18n();
 const { withMarks, label, color } = useAttendanceCodes();
+const { themeVersion } = useChartTheme();
 // Hidden custom codes only show while the data on screen has marks for them.
 const statuses = computed(() => withMarks([props.totals?.counts, ...(props.categoryRows ?? []).map((r) => r.counts)]));
 const rtl = computed(() => locale.value === 'ar');
@@ -54,29 +61,61 @@ function switchBranch(id) {
     router.get(route('attendance.stats'), { ...periodQuery(props.period), ...keep.value, branch_id: id }, { preserveScroll: true, replace: true });
 }
 
-const tiles = computed(() => [
-    { key: 'held', label: t('att.stats.held_sessions'), value: props.totals.held },
-    { key: 'cancelled', label: t('att.stats.cancelled_sessions'), value: props.totals.cancelled },
-    { key: 'marks', label: t('att.stats.marks'), value: props.totals.expected },
-    { key: 'late', label: t('att.col.late_minutes'), value: props.totals.late_minutes },
-    { key: 'missed', label: t('att.col.missed_hours'), value: hours(props.totals.missed_hours) },
-    { key: 'score', label: t('att.col.score_pct'), value: pct(props.totals.score_pct) },
-]);
+// The branch is a choice (always set, never cleared), not a filter, so it is not counted and Reset keeps it.
+const activeCount = computed(() => (props.period.period !== 'month' ? 1 : 0) + (props.categoryId ? 1 : 0));
+function resetFilters() {
+    router.get(route('attendance.stats'), { ...branchQuery.value }, { preserveScroll: true, replace: true });
+}
+const vsPrevious = computed(() => {
+    if (props.period.period === 'month') return t('stats.vs_previous_month');
+    if (props.period.period === 'season') return t('stats.vs_previous_season');
+    return t('stats.vs_previous_period');
+});
 
 // Any mark in the period, even only not_counted ones (then nothing is expected).
 const hasAnyMark = computed(() => Object.values(props.totals?.counts ?? {}).some((n) => n > 0));
-const statusChart = computed(() => statusBars(props.monthly, statuses.value, label, color, locale.value));
-const stackedOptions = computed(() => baseOptions({ rtl: rtl.value, stacked: true }));
+const statusChart = computed(() => {
+    themeVersion.value; // recolour on theme toggle
+    return statusBars(props.monthly, statuses.value, label, color, locale.value);
+});
+const stackedOptions = computed(() => {
+    themeVersion.value;
+    return baseOptions({ rtl: rtl.value, stacked: true });
+});
 
-const sessionsChart = computed(() => ({
-    labels: props.sessionsByMonth.labels.map((ym) => monthTick(ym, locale.value)),
-    datasets: [
-        barDataset(t('att.state.held'), props.sessionsByMonth.held, 0),
-        barDataset(t('att.state.cancelled'), props.sessionsByMonth.cancelled, 1),
-    ],
-}));
+const sessionsChart = computed(() => {
+    themeVersion.value;
+    return {
+        labels: props.sessionsByMonth.labels.map((ym) => monthTick(ym, locale.value)),
+        datasets: [
+            barDataset(t('att.state.held'), props.sessionsByMonth.held, 0),
+            barDataset(t('att.state.cancelled'), props.sessionsByMonth.cancelled, 1),
+        ],
+    };
+});
 const hasSessions = computed(() => [...props.sessionsByMonth.held, ...props.sessionsByMonth.cancelled].some((n) => n > 0));
-const sessionsOptions = computed(() => baseOptions({ rtl: rtl.value }));
+const sessionsOptions = computed(() => {
+    themeVersion.value;
+    return baseOptions({ rtl: rtl.value });
+});
+
+const monthlyColumns = computed(() => [
+    { key: 'ym', label: t('att.date'), format: 'text' },
+    ...statuses.value.map((s) => ({ key: s, label: label(s), format: 'number', total: 'sum' })),
+]);
+const monthlyRows = computed(() =>
+    props.monthly.labels.map((ym, i) => ({ ym, ...Object.fromEntries(statuses.value.map((s) => [s, props.monthly.statuses[s][i]])) })),
+);
+const monthlyTotals = computed(() => columnTotals(monthlyColumns.value, monthlyRows.value));
+const sessionColumns = computed(() => [
+    { key: 'ym', label: t('att.date'), format: 'text' },
+    { key: 'held', label: t('att.state.held'), format: 'number', total: 'sum' },
+    { key: 'cancelled', label: t('att.state.cancelled'), format: 'number', total: 'sum' },
+]);
+const sessionRows = computed(() =>
+    props.sessionsByMonth.labels.map((ym, i) => ({ ym, held: props.sessionsByMonth.held[i], cancelled: props.sessionsByMonth.cancelled[i] })),
+);
+const sessionTotals = computed(() => columnTotals(sessionColumns.value, sessionRows.value));
 
 const preseasonText = (p) => (!p ? '—' : p.target ? `${p.done}/${p.target}` : String(p.done));
 
@@ -101,20 +140,22 @@ const card = 'rounded-xl bg-white ring-1 ring-slate-200 dark:bg-slate-900 dark:r
         </template>
 
         <div class="space-y-5">
-            <div class="flex flex-wrap items-center gap-3 print:hidden">
+            <StatsToolbar :active-count="activeCount" class="print:hidden" @reset="resetFilters">
                 <BranchSwitch :branches="branches" :branch-id="branchId" @switch="switchBranch" />
                 <PeriodFilter :period="period" :href="route('attendance.stats')" :keep="keep" />
                 <select :value="categoryId ?? ''" :class="input" :aria-label="t('att.category')" @change="pickCategory($event.target.value)">
                     <option value="">{{ t('att.all_categories') }}</option>
                     <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
                 </select>
-            </div>
+            </StatsToolbar>
 
             <section class="grid gap-3 sm:grid-cols-3 xl:grid-cols-6">
-                <div v-for="tile in tiles" :key="tile.key" :class="[card, 'p-4']">
-                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ tile.label }}</p>
-                    <p class="mt-1 text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100"><bdi dir="ltr">{{ tile.value }}</bdi></p>
-                </div>
+                <StatTile :label="t('att.stats.held_sessions')" :value="totals.held" format="number" icon="calendar" tone="primary" :delta="deltas?.held" :period-label="vsPrevious" />
+                <StatTile :label="t('att.stats.cancelled_sessions')" :value="totals.cancelled" format="number" icon="close" tone="neutral" />
+                <StatTile :label="t('att.stats.marks')" :value="totals.expected" format="number" icon="check" tone="neutral" />
+                <StatTile :label="t('att.col.late_minutes')" :value="totals.late_minutes" format="number" icon="task" tone="warning" :delta="deltas?.late_minutes" :period-label="vsPrevious" />
+                <StatTile :label="t('att.col.missed_hours')" :value="totals.missed_hours" format="number" icon="alert" tone="negative" :delta="deltas?.missed_hours" :period-label="vsPrevious" />
+                <StatTile :label="t('att.col.score_pct')" :value="totals.score_pct" format="percent" icon="flag" tone="positive" :delta="deltas?.score_pct" :period-label="vsPrevious" />
             </section>
 
             <div :class="[card, 'p-4']">
@@ -124,45 +165,29 @@ const card = 'rounded-xl bg-white ring-1 ring-slate-200 dark:bg-slate-900 dark:r
             </div>
 
             <section class="grid gap-5 lg:grid-cols-2">
-                <ChartCard :title="t('att.stats.by_month')" :empty="!hasMarks(monthly)" has-table height="h-72">
+                <ChartCard
+                    :title="t('att.stats.by_month')"
+                    :empty="!hasMarks(monthly)"
+                    has-table
+                    height="h-72"
+                    :csv="{ filename: 'attendance-by-month', columns: monthlyColumns, rows: monthlyRows, totals: monthlyTotals }"
+                >
                     <Bar :data="statusChart" :options="stackedOptions" />
                     <template #table>
-                        <table class="w-full text-sm">
-                            <thead class="sticky top-0 bg-muted/60 text-xs text-muted-foreground">
-                                <tr>
-                                    <th class="px-3 py-2 text-start font-medium">{{ t('att.date') }}</th>
-                                    <th v-for="s in statuses" :key="s" class="px-3 py-2 text-end font-medium">{{ label(s) }}</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-border/70">
-                                <tr v-for="(ym, i) in monthly.labels" :key="ym">
-                                    <td class="px-3 py-2"><bdi dir="ltr">{{ ym }}</bdi></td>
-                                    <td v-for="s in statuses" :key="s" class="px-3 py-2 text-end tabular-nums">{{ monthly.statuses[s][i] }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <StatTable :columns="monthlyColumns" :rows="monthlyRows" row-key="ym" :totals="monthlyTotals" dense />
                     </template>
                 </ChartCard>
 
-                <ChartCard :title="t('att.stats.sessions_by_month')" :empty="!hasSessions" has-table height="h-72">
+                <ChartCard
+                    :title="t('att.stats.sessions_by_month')"
+                    :empty="!hasSessions"
+                    has-table
+                    height="h-72"
+                    :csv="{ filename: 'attendance-sessions-by-month', columns: sessionColumns, rows: sessionRows, totals: sessionTotals }"
+                >
                     <Bar :data="sessionsChart" :options="sessionsOptions" />
                     <template #table>
-                        <table class="w-full text-sm">
-                            <thead class="sticky top-0 bg-muted/60 text-xs text-muted-foreground">
-                                <tr>
-                                    <th class="px-3 py-2 text-start font-medium">{{ t('att.date') }}</th>
-                                    <th class="px-3 py-2 text-end font-medium">{{ t('att.state.held') }}</th>
-                                    <th class="px-3 py-2 text-end font-medium">{{ t('att.state.cancelled') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-border/70">
-                                <tr v-for="(ym, i) in sessionsByMonth.labels" :key="ym">
-                                    <td class="px-3 py-2"><bdi dir="ltr">{{ ym }}</bdi></td>
-                                    <td class="px-3 py-2 text-end tabular-nums">{{ sessionsByMonth.held[i] }}</td>
-                                    <td class="px-3 py-2 text-end tabular-nums">{{ sessionsByMonth.cancelled[i] }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <StatTable :columns="sessionColumns" :rows="sessionRows" row-key="ym" :totals="sessionTotals" dense />
                     </template>
                 </ChartCard>
             </section>

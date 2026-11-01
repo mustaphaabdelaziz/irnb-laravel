@@ -11,6 +11,7 @@ import MembersTab from '@/Pages/Dashboard/Partials/MembersTab.vue';
 import OperationsTab from '@/Pages/Dashboard/Partials/OperationsTab.vue';
 import OverviewTab from '@/Pages/Dashboard/Partials/OverviewTab.vue';
 import '@/lib/registerCharts';
+import { visitOutcome } from '@/lib/visitOutcome';
 
 /**
  * The dashboard shell.
@@ -39,6 +40,8 @@ const rtl = computed(() => locale.value === 'ar');
 
 const activeTab = ref(props.filters.tab ?? 'overview');
 const loadingTab = ref(false);
+// The tab whose last fetch (or a filter reload while it was open) failed.
+const tabError = ref(null);
 
 // Tabs already fetched this session. The server is the source of truth for the
 // data; this only avoids asking twice for something that has not changed.
@@ -53,6 +56,9 @@ function selectTab(tab) {
     activeTab.value = tab;
 
     if (loaded[tab]) {
+        // Nothing to load; this also supersedes any fetch still in flight.
+        loadingTab.value = false;
+        if (tabError.value === tab) tabError.value = null;
         // Keep the URL honest even when nothing needs fetching.
         router.get(route('dashboard'), { ...queryFromFilters(), tab }, {
             only: ['filters'],
@@ -65,16 +71,39 @@ function selectTab(tab) {
         return;
     }
 
+    fetchTab(tab, ['filters', tab]);
+}
+
+function fetchTab(tab, only) {
+    // Inertia has no per-visit exception hook, so "finished without success"
+    // is the failure signal. onFinish also runs after a cancel/interrupt: that
+    // visit was superseded, so it is not a failure and the newer one owns the busy state.
+    let ok = false;
     loadingTab.value = true;
     router.get(route('dashboard'), { ...queryFromFilters(), tab }, {
-        only: ['filters', tab],
+        only,
         preserveState: true,
         preserveScroll: true,
         replace: true,
         showProgress: false,
-        onSuccess: () => { loaded[tab] = true; },
-        onFinish: () => { loadingTab.value = false; },
+        onSuccess: () => {
+            ok = true;
+            loaded[tab] = true;
+            if (tabError.value === tab) tabError.value = null;
+        },
+        onFinish: (visit) => {
+            const outcome = visitOutcome(visit, ok);
+            if (outcome === 'superseded') return;
+            loadingTab.value = false;
+            if (outcome === 'failed') tabError.value = tab;
+        },
     });
+}
+
+function retry() {
+    const tab = activeTab.value;
+    loaded[tab] = false;
+    fetchTab(tab, ['filters', 'hero', tab]);
 }
 
 function queryFromFilters() {
@@ -89,6 +118,7 @@ function queryFromFilters() {
 watch(
     () => [props.filters.range, props.filters.branch, props.filters.compare],
     () => {
+        tabError.value = null;
         Object.keys(loaded).forEach((tab) => {
             loaded[tab] = tab === activeTab.value;
         });
@@ -133,6 +163,8 @@ const heroTiles = computed(() => props.hero.map((tile) => ({
                         :branches="branches"
                         :active-tab="activeTab"
                         :loading="loadingTab"
+                        @loading="(v) => (loadingTab = v)"
+                        @failed="(tab) => (tabError = tab)"
                     />
                     <IconButton :href="route('reports.financial')" external target="_blank" rel="noopener noreferrer" icon="document" :label="t('export.format.pdf')" />
                 </div>
@@ -178,10 +210,18 @@ const heroTiles = computed(() => props.hero.map((tile) => ({
                 </nav>
             </div>
 
-            <OverviewTab v-if="activeTab === 'overview'" :data="overview" :loading="loadingTab" :rtl="rtl" />
-            <FinanceTab v-else-if="activeTab === 'finance'" :data="finance" :loading="loadingTab" :rtl="rtl" />
-            <MembersTab v-else-if="activeTab === 'members'" :data="members" :loading="loadingTab" :rtl="rtl" :branch-id="filters.branch" />
-            <OperationsTab v-else :data="operations" :loading="loadingTab" :rtl="rtl" />
+            <div v-if="tabError === activeTab" role="alert" class="flex flex-col items-center gap-3 rounded-xl border border-border/70 px-5 py-8 text-sm text-muted-foreground">
+                <p>{{ t('stats.load_failed') }}</p>
+                <IconButton icon="refresh" :label="t('stats.retry')" size="sm" @click="retry" />
+            </div>
+
+            <!-- A failed, never-loaded tab shows only the alert, not a tab stuck loading. -->
+            <template v-if="!(tabError === activeTab && !loaded[activeTab])">
+                <OverviewTab v-if="activeTab === 'overview'" :data="overview" :loading="loadingTab" :rtl="rtl" />
+                <FinanceTab v-else-if="activeTab === 'finance'" :data="finance" :loading="loadingTab" :rtl="rtl" :period-label="periodLabel" />
+                <MembersTab v-else-if="activeTab === 'members'" :data="members" :loading="loadingTab" :rtl="rtl" :branch-id="filters.branch" />
+                <OperationsTab v-else :data="operations" :loading="loadingTab" :rtl="rtl" />
+            </template>
         </div>
     </AuthenticatedLayout>
 </template>

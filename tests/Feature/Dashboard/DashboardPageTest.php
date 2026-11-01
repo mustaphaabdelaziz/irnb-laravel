@@ -351,11 +351,12 @@ class DashboardPageTest extends TestCase
 
         // Six tiles, each needing a value, a previous-period value and a
         // twelve-month series, plus the open tab's four widgets and the
-        // shell's own lookups. Measured at 31: 29 without the matches card,
-        // plus its two queries (upcoming, results). No headroom on purpose —
+        // shell's own lookups. Measured at 32: 29 without the matches card,
+        // plus its two queries (upcoming, results), plus one for the treasury
+        // window ends. No headroom on purpose —
         // one N+1 adds ten and trips this.
         $this->assertLessThanOrEqual(
-            31,
+            32,
             $queries,
             "First paint ran {$queries} queries — the hero row is leaking work.",
         );

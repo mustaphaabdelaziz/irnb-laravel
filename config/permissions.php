@@ -119,6 +119,8 @@ return [
         // "out" is not a view verb, so without this the list would need edit rights.
         'equipment.out' => ['equipment', 'view'],
         'board.meetings.minutes' => ['board', 'view'],
+        // The tasks board and its stats are reading; changing a task keeps its own add/edit/delete guard.
+        'board.tasks' => ['board', 'view'],
         // "download" is not a view verb: without this, fetching a file the user
         // may already open inline would need edit rights.
         'players.documents.files.download' => ['documents', 'view'],

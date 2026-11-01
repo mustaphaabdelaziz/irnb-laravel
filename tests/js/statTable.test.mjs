@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BOM, sortRows, sumColumn, escapeFormula, toCsv, safeFilename } from '../../resources/js/lib/statTable.js';
+import { BOM, columnTotals, sortRows, sumColumn, escapeFormula, toCsv, safeFilename } from '../../resources/js/lib/statTable.js';
 
 const rows = [
     { name: 'Béja', amount: 300 },
@@ -107,4 +107,36 @@ test('safeFilename strips characters Windows refuses and keeps Arabic', () => {
     assert.equal(safeFilename('a/b:c*?"<>|d'), 'a-b-c-d');
     assert.equal(safeFilename('المداخيل 2026/2027'), 'المداخيل 2026-2027');
     assert.equal(safeFilename('   '), 'export');
+});
+
+const totalCols = [
+    { key: 'name', label: 'Ville', format: 'text' },
+    { key: 'amount', label: 'Montant', format: 'money', total: 'sum' },
+    { key: 'count', label: 'N', format: 'number', total: 'sum' },
+    { key: 'share', label: 'Part', format: 'percent' },
+];
+const totalRows = [
+    { name: 'A', amount: 10.5, count: 1, share: 40 },
+    { name: 'B', amount: null, count: '', share: 60 },
+    { name: 'C', amount: 4.5, count: 2, share: 0 },
+];
+
+test('columnTotals sums only the columns marked total: sum', () => {
+    assert.deepEqual(columnTotals(totalCols, totalRows), { amount: 15, count: 3 });
+});
+
+test('columnTotals leaves percent and no-total columns out', () => {
+    const totals = columnTotals(totalCols, totalRows);
+    assert.equal('share' in totals, false);
+    assert.equal('name' in totals, false);
+});
+
+test('columnTotals counts blanks as 0 and gives zeros for no rows', () => {
+    assert.deepEqual(columnTotals(totalCols, [{ name: 'X' }]), { amount: 0, count: 0 });
+    assert.deepEqual(columnTotals(totalCols, []), { amount: 0, count: 0 });
+});
+
+test('toCsv writes the columnTotals row', () => {
+    const csv = toCsv(totalCols, totalRows, { totals: columnTotals(totalCols, totalRows), totalLabel: 'Total' });
+    assert.ok(csv.endsWith('Total,15,3,\r\n'));
 });

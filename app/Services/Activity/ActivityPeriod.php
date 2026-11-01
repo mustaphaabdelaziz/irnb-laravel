@@ -74,6 +74,32 @@ final class ActivityPeriod
         );
     }
 
+    /** The window just before this one: the previous month, the previous season, or the same number of days ending the day before. */
+    public function previous(): self
+    {
+        return match ($this->key) {
+            self::MONTH => new self(
+                self::MONTH,
+                $start = $this->start->subMonthNoOverflow()->startOfMonth(),
+                $start->endOfMonth(),
+                $start->format('Y-m'),
+            ),
+            self::SEASON => new self(
+                self::SEASON,
+                $start = $this->start->subYear(),
+                $this->start->subDay()->endOfDay(),
+                $start->year.'-'.$this->start->year,
+            ),
+            default => (function (): self {
+                $days = (int) $this->start->startOfDay()->diffInDays($this->end->startOfDay()) + 1;
+                $end = $this->start->subDay()->endOfDay();
+                $start = $end->subDays($days - 1)->startOfDay();
+
+                return new self(self::CUSTOM, $start, $end, $start->toDateString().' – '.$end->toDateString());
+            })(),
+        };
+    }
+
     /** @return array{period: string, from: string, to: string, label: string} */
     public function toArray(): array
     {

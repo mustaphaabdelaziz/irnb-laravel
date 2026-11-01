@@ -5,7 +5,7 @@ import { useCurrency } from '@/Composables/useCurrency';
 import { useFormatDate } from '@/Composables/useFormatDate';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useFormatNumber } from '@/Composables/useFormatNumber';
-import { sortRows, sumColumn } from '@/lib/statTable';
+import { columnTotals, sortRows } from '@/lib/statTable';
 
 /**
  * The one table for statistics: a chart panel's table view, stats pages and
@@ -91,9 +91,7 @@ const totalsRow = computed(() => {
     if (!props.totals) return null;
     if (typeof props.totals === 'object') return props.totals;
 
-    return Object.fromEntries(
-        props.columns.filter((column) => column.total === 'sum').map((column) => [column.key, sumColumn(props.rows, column.key)]),
-    );
+    return columnTotals(props.columns, props.rows);
 });
 
 function format(column, value) {
@@ -150,7 +148,7 @@ const cellPad = computed(() => (props.dense ? 'px-3 py-1.5' : 'px-3 py-2.5'));
                         :key="column.key"
                         scope="col"
                         :aria-sort="ariaSort(column)"
-                        class="sticky top-0 z-10 whitespace-nowrap border-b border-border bg-card text-xs font-semibold text-muted-foreground"
+                        class="sticky top-0 z-10 whitespace-nowrap bg-card text-xs shadow-[inset_0_-1px_0_hsl(var(--border))] font-semibold text-muted-foreground"
                         :class="[cellPad, alignClass(column)]"
                     >
                         <button

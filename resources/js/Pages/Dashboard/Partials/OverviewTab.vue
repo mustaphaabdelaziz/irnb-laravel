@@ -7,9 +7,12 @@ import AlertChip from '@/Components/Dashboard/AlertChip.vue';
 import ChartCard from '@/Components/Dashboard/ChartCard.vue';
 import Icon from '@/Components/Icon.vue';
 import { Card, CardHeader, CardTitle } from '@/Components/ui/card';
+import StatTable from '@/Components/Stats/StatTable.vue';
 import { Separator } from '@/Components/ui/separator';
+import { useChartTheme } from '@/Composables/useChartTheme';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { baseOptions, barDataset, ordinal, seriesColor, spanLabel } from '@/lib/chartTheme';
+import { columnTotals } from '@/lib/statTable';
 
 const props = defineProps({
     data: { type: Object, default: null },
@@ -19,6 +22,7 @@ const props = defineProps({
 
 const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
+const { themeVersion } = useChartTheme();
 
 const cashFlow = computed(() => props.data?.cashFlow ?? { labels: [], income: [], expense: [], net: [] });
 const aging = computed(() => props.data?.debtAging ?? []);
@@ -41,48 +45,90 @@ const hasAging = computed(() => aging.value.some((bucket) => bucket.amount > 0))
  * let the net line be placed anywhere relative to the columns, which is the
  * most common way a chart like this ends up lying.
  */
-const cashFlowChart = computed(() => ({
-    labels: cashFlow.value.labels.map(monthLabel),
-    datasets: [
-        { type: 'bar', ...barDataset(t('dashboard.income'), cashFlow.value.income, 0) },
-        { type: 'bar', ...barDataset(t('dashboard.expense'), cashFlow.value.expense, 1) },
-        {
-            type: 'line',
-            label: t('dashboard.net'),
-            data: cashFlow.value.net,
-            borderColor: seriesColor(6),
-            backgroundColor: 'transparent',
-            borderWidth: 2,
-            tension: 0.35,
-            pointRadius: 0,
-            pointHoverRadius: 5,
-            fill: false,
-        },
-    ],
-}));
+const cashFlowChart = computed(() => {
+    themeVersion.value; // recolour on theme toggle
 
-const cashFlowOptions = computed(() => baseOptions({ rtl: props.rtl, money: formatMoney }));
+    return {
+        labels: cashFlow.value.labels.map(monthLabel),
+        datasets: [
+            { type: 'bar', ...barDataset(t('dashboard.income'), cashFlow.value.income, 0) },
+            { type: 'bar', ...barDataset(t('dashboard.expense'), cashFlow.value.expense, 1) },
+            {
+                type: 'line',
+                label: t('dashboard.net'),
+                data: cashFlow.value.net,
+                borderColor: seriesColor(6),
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                tension: 0.35,
+                pointRadius: 0,
+                pointHoverRadius: 5,
+                fill: false,
+            },
+        ],
+    };
+});
 
-const agingChart = computed(() => ({
-    // One unnamed category: the card title already says what this bar is, and
-    // repeating it on the axis spends width the bar needs.
-    labels: [''],
-    datasets: aging.value.map((bucket, index) => ({
-        label: t(`dashboard.aging_${bucket.bucket.replace('+', '_plus').replace('-', '_')}`),
-        data: [bucket.amount],
-        backgroundColor: ordinal(4)[index],
-        borderRadius: 4,
-        maxBarThickness: 28,
-        stack: 'debt',
-    })),
-}));
+const cashFlowOptions = computed(() => {
+    themeVersion.value;
 
-const agingOptions = computed(() => baseOptions({
-    rtl: props.rtl,
-    stacked: true,
-    horizontal: true,
-    money: formatMoney,
-}));
+    return baseOptions({ rtl: props.rtl, money: formatMoney });
+});
+
+const agingLabel = (bucket) => t(`dashboard.aging_${bucket.bucket.replace('+', '_plus').replace('-', '_')}`);
+
+const agingChart = computed(() => {
+    themeVersion.value;
+
+    return {
+        // One unnamed category: the card title already says what this bar is, and
+        // repeating it on the axis spends width the bar needs.
+        labels: [''],
+        datasets: aging.value.map((bucket, index) => ({
+            label: agingLabel(bucket),
+            data: [bucket.amount],
+            backgroundColor: ordinal(4)[index],
+            borderRadius: 4,
+            maxBarThickness: 28,
+            stack: 'debt',
+        })),
+    };
+});
+
+const agingOptions = computed(() => {
+    themeVersion.value;
+
+    return baseOptions({
+        rtl: props.rtl,
+        stacked: true,
+        horizontal: true,
+        money: formatMoney,
+    });
+});
+
+
+// Rows carry their labels as data, so the table, the sort and the CSV agree.
+const cashFlowColumns = computed(() => [
+    { key: 'month', label: t('dashboard.month'), format: 'text' },
+    { key: 'income', label: t('dashboard.income'), format: 'money', total: 'sum' },
+    { key: 'expense', label: t('dashboard.expense'), format: 'money', total: 'sum' },
+    { key: 'net', label: t('dashboard.net'), format: 'money', total: 'sum' },
+]);
+const cashFlowRows = computed(() => cashFlow.value.labels.map((month, index) => ({
+    month,
+    income: cashFlow.value.income[index],
+    expense: cashFlow.value.expense[index],
+    net: cashFlow.value.net[index],
+})));
+const cashFlowTotals = computed(() => columnTotals(cashFlowColumns.value, cashFlowRows.value));
+
+const agingColumns = computed(() => [
+    { key: 'label', label: t('dashboard.bucket'), format: 'text' },
+    { key: 'amount', label: t('dashboard.amount'), format: 'money', total: 'sum' },
+    { key: 'players', label: t('dashboard.members'), format: 'number' },
+]);
+const agingRows = computed(() => aging.value.map((bucket) => ({ ...bucket, label: agingLabel(bucket) })));
+const agingTotals = computed(() => columnTotals(agingColumns.value, agingRows.value));
 
 const activityIcon = { transaction: 'money', registration: 'user', rental: 'box', assignment: 'wrench' };
 </script>
@@ -110,29 +156,13 @@ const activityIcon = { transaction: 'money', registration: 'user', rental: 'box'
                 :empty="!hasCashFlow"
                 :empty-hint="t('dashboard.cash_flow_empty')"
                 has-table
+                :csv="{ filename: 'dashboard-cash-flow', columns: cashFlowColumns, rows: cashFlowRows, totals: cashFlowTotals }"
                 height="h-72"
             >
                 <Bar :data="cashFlowChart" :options="cashFlowOptions" />
 
                 <template #table>
-                    <table class="w-full text-sm">
-                        <thead class="sticky top-0 bg-muted/60 text-xs text-muted-foreground">
-                            <tr>
-                                <th class="px-3 py-2 text-start font-medium">{{ t('dashboard.month') }}</th>
-                                <th class="px-3 py-2 text-end font-medium">{{ t('dashboard.income') }}</th>
-                                <th class="px-3 py-2 text-end font-medium">{{ t('dashboard.expense') }}</th>
-                                <th class="px-3 py-2 text-end font-medium">{{ t('dashboard.net') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-border/70">
-                            <tr v-for="(label, index) in cashFlow.labels" :key="label">
-                                <td class="px-3 py-2">{{ label }}</td>
-                                <td class="px-3 py-2 text-end tabular-nums">{{ formatMoney(cashFlow.income[index]) }}</td>
-                                <td class="px-3 py-2 text-end tabular-nums">{{ formatMoney(cashFlow.expense[index]) }}</td>
-                                <td class="px-3 py-2 text-end font-medium tabular-nums">{{ formatMoney(cashFlow.net[index]) }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <StatTable :columns="cashFlowColumns" :rows="cashFlowRows" row-key="month" :totals="cashFlowTotals" dense />
                 </template>
             </ChartCard>
 
@@ -144,27 +174,13 @@ const activityIcon = { transaction: 'money', registration: 'user', rental: 'box'
                 :empty="!hasAging"
                 :empty-hint="t('dashboard.debt_aging_empty')"
                 has-table
+                :csv="{ filename: 'dashboard-debt-aging', columns: agingColumns, rows: agingRows, totals: agingTotals }"
                 height="h-72"
             >
                 <Bar :data="agingChart" :options="agingOptions" />
 
                 <template #table>
-                    <table class="w-full text-sm">
-                        <thead class="sticky top-0 bg-muted/60 text-xs text-muted-foreground">
-                            <tr>
-                                <th class="px-3 py-2 text-start font-medium">{{ t('dashboard.bucket') }}</th>
-                                <th class="px-3 py-2 text-end font-medium">{{ t('dashboard.amount') }}</th>
-                                <th class="px-3 py-2 text-end font-medium">{{ t('dashboard.members') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-border/70">
-                            <tr v-for="bucket in aging" :key="bucket.bucket">
-                                <td class="px-3 py-2">{{ bucket.bucket }}</td>
-                                <td class="px-3 py-2 text-end tabular-nums">{{ formatMoney(bucket.amount) }}</td>
-                                <td class="px-3 py-2 text-end tabular-nums">{{ bucket.players }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <StatTable :columns="agingColumns" :rows="agingRows" row-key="bucket" :totals="agingTotals" dense />
                 </template>
             </ChartCard>
         </section>

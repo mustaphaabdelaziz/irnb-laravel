@@ -15,12 +15,15 @@ class DeltaCalculator
 
     public const DOWN_GOOD = 'down_good';
 
+    /** Change without a verdict: a larger average ticket is neither good nor bad. */
+    public const NEUTRAL = 'neutral';
+
     /**
      * Returns null when there is nothing to compare against: a missing previous
      * period is not a 100% rise, and dividing by zero is not an infinity worth
      * printing on a tile.
      *
-     * @param  string  $direction  self::UP_GOOD or self::DOWN_GOOD
+     * @param  string  $direction  self::UP_GOOD, self::DOWN_GOOD or self::NEUTRAL
      * @return array{percent: float, raw: float, tone: string}|null
      */
     public static function compute(float $current, ?float $previous, string $direction = self::UP_GOOD): ?array
@@ -41,7 +44,7 @@ class DeltaCalculator
 
     private static function tone(float $percent, string $direction): string
     {
-        if (abs($percent) < 0.05) {
+        if ($direction === self::NEUTRAL || abs($percent) < 0.05) {
             return 'neutral';
         }
 

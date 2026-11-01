@@ -5,15 +5,20 @@ import { Bar } from 'vue-chartjs';
 import { useI18n } from 'vue-i18n';
 import '@/lib/registerCharts';
 import PeriodFilter from '@/Components/Activity/PeriodFilter.vue';
+import ChartCard from '@/Components/Dashboard/ChartCard.vue';
+import StatTile from '@/Components/Dashboard/StatTile.vue';
+import StatTable from '@/Components/Stats/StatTable.vue';
 import StatDoughnut from '@/Components/StatDoughnut.vue';
 import Icon from '@/Components/Icon.vue';
 import IconButton from '@/Components/IconButton.vue';
 import InjuryList from './InjuryList.vue';
 import BranchSwitch from '@/Components/Attendance/BranchSwitch.vue';
 import { useAttendanceCodes } from '@/Composables/useAttendanceCodes';
+import { useChartTheme } from '@/Composables/useChartTheme';
 import { baseOptions } from '@/lib/chartTheme';
+import { columnTotals } from '@/lib/statTable';
 import { dayLabel } from '@/lib/attendanceCalendar';
-import { hours, pct, periodQuery, statusBars } from '@/lib/attendanceStats';
+import { hasMarks, pct, periodQuery, statusBars } from '@/lib/attendanceStats';
 import { branchFromUrl } from '@/lib/attendanceBranchTab';
 
 /**
@@ -30,6 +35,7 @@ const props = defineProps({
 const { t, locale } = useI18n();
 const { withMarks, label, color, chipStyle } = useAttendanceCodes();
 const rtl = computed(() => locale.value === 'ar');
+const { themeVersion } = useChartTheme();
 
 const data = ref(null);
 const loading = ref(true);
@@ -74,10 +80,10 @@ const summary = computed(() => data.value?.summary ?? null);
 const risk = computed(() => data.value?.risk ?? null);
 const tiles = computed(() => (summary.value
     ? [
-        { key: 'expected', label: t('att.col.expected'), value: summary.value.expected },
-        { key: 'score', label: t('att.col.score_pct'), value: pct(summary.value.score_pct) },
-        { key: 'late', label: t('att.col.late_minutes'), value: summary.value.late_minutes },
-        { key: 'missed', label: t('att.col.missed_hours'), value: hours(summary.value.missed_hours) },
+        { key: 'expected', label: t('att.col.expected'), value: summary.value.expected, format: 'number' },
+        { key: 'score', label: t('att.col.score_pct'), value: summary.value.score_pct, format: 'percent' },
+        { key: 'late', label: t('att.col.late_minutes'), value: summary.value.late_minutes, format: 'number' },
+        { key: 'missed', label: t('att.col.missed_hours'), value: summary.value.missed_hours, format: 'number' },
     ]
     : []));
 
@@ -85,8 +91,23 @@ const tiles = computed(() => (summary.value
 const statuses = computed(() => withMarks([summary.value?.counts]));
 const doughnutStats = computed(() => statuses.value.map((s) => ({ key: s, label: label(s), count: summary.value?.counts?.[s] ?? 0, static: true })));
 const doughnutPalette = computed(() => statuses.value.map((s) => color(s)));
-const monthlyChart = computed(() => statusBars(data.value?.monthly, statuses.value, label, color, locale.value));
-const monthlyOptions = computed(() => baseOptions({ rtl: rtl.value, stacked: true }));
+const monthlyChart = computed(() => {
+    themeVersion.value; // recolour on theme toggle
+    return statusBars(data.value?.monthly, statuses.value, label, color, locale.value);
+});
+const monthlyOptions = computed(() => {
+    themeVersion.value;
+    return baseOptions({ rtl: rtl.value, stacked: true });
+});
+const monthlyColumns = computed(() => [
+    { key: 'ym', label: t('att.date'), format: 'text' },
+    ...statuses.value.map((s) => ({ key: s, label: label(s), format: 'number', total: 'sum' })),
+]);
+const monthlyRows = computed(() => {
+    const m = data.value?.monthly;
+    return (m?.labels ?? []).map((ym, i) => ({ ym, ...Object.fromEntries(statuses.value.map((s) => [s, m.statuses?.[s]?.[i] ?? 0])) }));
+});
+const monthlyTotals = computed(() => columnTotals(monthlyColumns.value, monthlyRows.value));
 // Same period and branch tab as the card.
 const printQuery = computed(() => (data.value ? { player: props.player.id, ...periodQuery(data.value.period), ...(data.value.branchId ? { branch_id: data.value.branchId } : {}) } : null));
 const reportHref = computed(() => (printQuery.value ? route('attendance.players.report', printQuery.value) : null));
@@ -128,10 +149,7 @@ const th = 'p-2 text-start text-xs font-semibold text-slate-500 dark:text-slate-
 
         <div v-else-if="data" class="space-y-5 px-5 py-4 transition-opacity" :class="{ 'opacity-60': loading }">
             <div class="grid gap-3 sm:grid-cols-4">
-                <div v-for="tile in tiles" :key="tile.key" class="rounded-xl bg-slate-50 p-4 dark:bg-slate-800/60">
-                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ tile.label }}</p>
-                    <p class="mt-1 text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100"><bdi dir="ltr">{{ tile.value }}</bdi></p>
-                </div>
+                <StatTile v-for="tile in tiles" :key="tile.key" :label="tile.label" :value="tile.value" :format="tile.format" tone="neutral" />
             </div>
             <div v-if="risk?.at_risk" role="alert" class="flex gap-3 rounded-xl bg-rose-50 p-3 text-sm text-rose-800 ring-1 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-200 dark:ring-rose-900">
                 <Icon name="alert" class="mt-0.5 size-4 shrink-0" />
@@ -147,10 +165,18 @@ const th = 'p-2 text-start text-xs font-semibold text-slate-500 dark:text-slate-
             <template v-else>
                 <div class="grid gap-4 lg:grid-cols-2">
                     <StatDoughnut :title="t('att.profile.by_status')" :stats="doughnutStats" :palette="doughnutPalette" :unit="t('att.sessions_unit')" />
-                    <div class="rounded-2xl p-4 ring-1 ring-slate-200 dark:ring-slate-800">
-                        <p class="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">{{ t('att.stats.by_month') }}</p>
-                        <div class="h-52"><Bar :data="monthlyChart" :options="monthlyOptions" /></div>
-                    </div>
+                    <ChartCard
+                        :title="t('att.stats.by_month')"
+                        :empty="!hasMarks(data.monthly)"
+                        has-table
+                        height="h-52"
+                        :csv="{ filename: `attendance-player-${player.id}-by-month`, columns: monthlyColumns, rows: monthlyRows, totals: monthlyTotals }"
+                    >
+                        <Bar :data="monthlyChart" :options="monthlyOptions" />
+                        <template #table>
+                            <StatTable :columns="monthlyColumns" :rows="monthlyRows" row-key="ym" :totals="monthlyTotals" dense />
+                        </template>
+                    </ChartCard>
                 </div>
 
                 <div>

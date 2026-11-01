@@ -11,11 +11,12 @@ import StatsToolbar from '@/Components/Stats/StatsToolbar.vue';
 import Icon from '@/Components/Icon.vue';
 import IconButton from '@/Components/IconButton.vue';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
+import { useFormatNumber } from '@/Composables/useFormatNumber';
 import { useCan } from '@/Composables/useCan';
 import { useChartTheme } from '@/Composables/useChartTheme';
 import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 import { baseOptions, lineDataset, MONEY_IN, MONEY_OUT, rankedBarDataset } from '@/lib/chartTheme';
-import { sumColumn } from '@/lib/statTable';
+import { columnTotals } from '@/lib/statTable';
 import '@/lib/registerCharts';
 
 const props = defineProps({
@@ -29,6 +30,7 @@ const props = defineProps({
 const { t, locale } = useI18n();
 const { accountLabel } = useFinanceAccountLabel();
 const { formatMoney } = useFormatMoney();
+const { formatPercent } = useFormatNumber();
 const { can } = useCan();
 const { themeVersion } = useChartTheme();
 
@@ -118,6 +120,7 @@ const barHeight = (rows) => (rows.length > 8 ? 'h-96' : 'h-64');
 // Budget ---------------------------------------------------------------------
 const budgetRows = computed(() => (props.detail?.budget ?? []).filter((b) => b.planned > 0).map((b) => ({
     ...b,
+    typeLabel: b.type === 'expense' ? t('expense') : t('income'),
     used: Math.round((b.actual / b.planned) * 1000) / 10,
 })));
 
@@ -129,7 +132,7 @@ function pct(actual, planned) {
 
 const budgetColumns = computed(() => [
     { key: 'name', label: t('category'), format: 'text', sortable: true },
-    { key: 'type', label: t('stats.type'), format: 'text', sortable: true, csv: (r) => (r.type === 'expense' ? t('expense') : t('income')) },
+    { key: 'typeLabel', label: t('stats.type'), format: 'text', sortable: true },
     { key: 'planned', label: t('planned'), format: 'money', sortable: true },
     { key: 'actual', label: t('actual'), format: 'money', sortable: true },
     { key: 'used', label: '%', format: 'percent', sortable: true },
@@ -148,11 +151,10 @@ const yearColumns = computed(() => [
 
 // One totals object per table, handed to both the table and its CSV, so the
 // screen and the downloaded file can never disagree.
-const totalsOf = (rows, keys) => Object.fromEntries(keys.map((key) => [key, sumColumn(rows, key)]));
-const monthlyTotals = computed(() => totalsOf(monthlyRows.value, ['income', 'expense', 'net']));
-const incomeTotals = computed(() => totalsOf(incomeRows.value, ['count', 'total']));
-const expenseTotals = computed(() => totalsOf(expenseRows.value, ['count', 'total']));
-const yearTotals = computed(() => totalsOf(props.years, ['total_income', 'total_expense', 'net']));
+const monthlyTotals = computed(() => columnTotals(monthlyColumns.value, monthlyRows.value));
+const incomeTotals = computed(() => columnTotals(categoryColumns.value, incomeRows.value));
+const expenseTotals = computed(() => columnTotals(categoryColumns.value, expenseRows.value));
+const yearTotals = computed(() => columnTotals(yearColumns.value, props.years));
 
 const csvName = (title) => `${title} ${season.value}`;
 </script>
@@ -291,14 +293,14 @@ const csvName = (title) => `${title} ${season.value}`;
                                 <span class="font-medium text-foreground">{{ b.name }}</span>
                                 <span class="whitespace-nowrap tabular-nums text-muted-foreground"><bdi>{{ formatMoney(b.actual) }}</bdi> / <bdi>{{ formatMoney(b.planned) }}</bdi></span>
                             </div>
-                            <div class="h-2 overflow-hidden rounded-full bg-muted" role="progressbar" :aria-valuenow="pct(b.actual, b.planned)" aria-valuemin="0" aria-valuemax="100" :aria-label="b.name" :aria-valuetext="`${formatMoney(b.actual)} / ${formatMoney(b.planned)} (${b.used}%)`">
+                            <div class="h-2 overflow-hidden rounded-full bg-muted" role="progressbar" :aria-valuenow="pct(b.actual, b.planned)" aria-valuemin="0" aria-valuemax="100" :aria-label="b.name" :aria-valuetext="`${formatMoney(b.actual)} / ${formatMoney(b.planned)} (${formatPercent(b.used)})`">
                                 <div class="h-full rounded-full" :class="b.type === 'expense' && b.actual > b.planned ? 'bg-rose-500' : 'bg-primary-500'" :style="{ width: pct(b.actual, b.planned) + '%' }"></div>
                             </div>
                         </div>
                     </div>
                     <template #table>
                         <StatTable :columns="budgetColumns" :rows="budgetRows" row-key="category_id" dense>
-                            <template #cell-type="{ row }">{{ row.type === 'expense' ? t('expense') : t('income') }}</template>
+                            <template #cell-typeLabel="{ row }">{{ row.typeLabel }}</template>
                         </StatTable>
                     </template>
                 </ChartCard>

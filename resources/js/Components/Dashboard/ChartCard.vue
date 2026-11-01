@@ -1,5 +1,5 @@
 <script setup>
-import { computed, provide, ref } from 'vue';
+import { computed, provide, ref, useId } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Icon from '@/Components/Icon.vue';
 import IconButton from '@/Components/IconButton.vue';
@@ -38,6 +38,8 @@ const { currencyLabel } = useCurrency();
 // StatTable inside the table box must not open a second scroll box.
 provide('statTableInScroller', true);
 
+// One id per instance ties each tab to the panel it controls.
+const uid = `cc-${useId()}`;
 const view = ref('chart');
 const showTable = computed(() => view.value === 'table');
 
@@ -93,6 +95,8 @@ function download() {
                         :key="option.key"
                         type="button"
                         role="tab"
+                        :id="`${uid}-tab-${option.key}`"
+                        :aria-controls="`${uid}-panel`"
                         :aria-selected="view === option.key"
                         :tabindex="view === option.key ? 0 : -1"
                         class="inline-flex items-center gap-1 rounded-md px-2.5 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -137,11 +141,24 @@ function download() {
                 <p v-if="emptyHint" class="max-w-xs text-xs text-muted-foreground/80">{{ emptyHint }}</p>
             </div>
 
-            <div v-else-if="showTable" class="max-h-72 overflow-auto rounded-lg border border-border/70">
+            <div
+                v-else-if="showTable"
+                :id="hasTable ? `${uid}-panel` : undefined"
+                :role="hasTable ? 'tabpanel' : undefined"
+                :aria-labelledby="hasTable ? `${uid}-tab-table` : undefined"
+                class="max-h-72 overflow-auto rounded-lg border border-border/70"
+            >
                 <slot name="table" />
             </div>
 
-            <div v-else :class="height" class="relative min-w-0">
+            <div
+                v-else
+                :id="hasTable ? `${uid}-panel` : undefined"
+                :role="hasTable ? 'tabpanel' : undefined"
+                :aria-labelledby="hasTable ? `${uid}-tab-chart` : undefined"
+                :class="height"
+                class="relative min-w-0"
+            >
                 <slot />
             </div>
         </CardContent>

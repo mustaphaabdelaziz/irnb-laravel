@@ -4,9 +4,11 @@ import { router } from '@inertiajs/vue3';
 import { Line } from 'vue-chartjs';
 import { useI18n } from 'vue-i18n';
 import '@/lib/registerCharts';
+import { useChartTheme } from '@/Composables/useChartTheme';
 import { baseOptions, lineDataset, mutedInk } from '@/lib/chartTheme';
 import { PERIODS, yearLabel } from '@/lib/academic';
 import { useCan } from '@/Composables/useCan';
+import StatTile from '@/Components/Dashboard/StatTile.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import IconButton from '@/Components/IconButton.vue';
 import AcademicGradeModal from '@/Pages/Players/Partials/AcademicGradeModal.vue';
@@ -21,6 +23,7 @@ const props = defineProps({
 const { t, locale } = useI18n();
 const { can } = useCan();
 const rtl = computed(() => locale.value === 'ar');
+const { themeVersion } = useChartTheme();
 
 // Server sends years oldest first, each with its trimesters T1 → T3.
 const years = computed(() => props.player.academic_years ?? []);
@@ -64,7 +67,29 @@ const yearChange = computed(() => {
 // "2024/2025 → 2025/2026": the two years the change compares.
 const changeYears = computed(() => averaged.value.slice(-2).map((y) => yearLabel(y.academic_year)).join(' → '));
 
-const chartData = computed(() => ({
+// Tile values are pre-formatted text; U+2066..U+2069 isolate the digits and
+// slash so they don't re-order under the Arabic UI (same trick as MembersTab).
+const isolate = (text) => `⁦${text}⁩`;
+const latestDisplay = computed(() => (latest.value ? isolate(`${fmt(latest.value.record.gpa)} / ${latest.value.scale}`) : null));
+// Pass/fail and up/down keep their colour (and an icon, so it is not colour-only).
+const latestPasses = computed(() => (latest.value ? passes(latest.value.record.gpa, latest.value.scale) : null));
+const latestTone = computed(() => (latestPasses.value === null ? 'neutral' : latestPasses.value ? 'positive' : 'negative'));
+const changeTone = computed(() => (!yearChange.value ? 'neutral' : yearChange.value > 0 ? 'positive' : 'negative'));
+const changeIcon = computed(() => (!yearChange.value ? 'dot' : yearChange.value > 0 ? 'upload' : 'download'));
+const averageDisplay = computed(() => (currentAverage.value ? isolate(`${fmt(currentAverage.value.average)} / ${currentAverage.value.scale}`) : null));
+const averageMeta = computed(() => (currentAverage.value
+    ? [yearLabel(currentAverage.value.academic_year), currentAverage.value.is_provisional ? t('provisional') : null].filter(Boolean).join(' · ')
+    : null));
+const changeDisplay = computed(() => {
+    if (yearChange.value === null) return null;
+    const v = yearChange.value;
+    const body = v > 0 ? `▲ +${v.toFixed(2)}` : v < 0 ? `▼ ${Math.abs(v).toFixed(2)}` : '0.00';
+    return isolate(`${body} / 20`);
+});
+
+const chartData = computed(() => {
+    themeVersion.value; // recolour on theme toggle
+    return {
     labels: averaged.value.map((y) => yearLabel(y.academic_year)),
     datasets: [
         { ...lineDataset(t('year_average'), averaged.value.map((y) => Number(percent(y).toFixed(1))), 0), pointRadius: 3 },
@@ -79,9 +104,11 @@ const chartData = computed(() => ({
             fill: false,
         },
     ],
-}));
+    };
+});
 
 const chartOptions = computed(() => {
+    themeVersion.value;
     const options = baseOptions({ rtl: rtl.value });
     options.scales.y = {
         ...options.scales.y,
@@ -153,32 +180,9 @@ const gradeClass = (grade, scale) => (passes(grade, scale) ? 'text-emerald-700 d
             </p>
 
             <div v-if="hasRecords" class="grid gap-3 sm:grid-cols-3">
-                <div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-800/60">
-                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('latest_gpa') }}</p>
-                    <p class="mt-1 text-2xl font-bold tabular-nums" :class="passes(latest.record.gpa, latest.scale) ? 'text-emerald-600' : 'text-rose-600'">
-                        <bdi dir="ltr">{{ fmt(latest.record.gpa) }}<span class="text-sm font-normal text-slate-400"> / {{ latest.scale }}</span></bdi>
-                    </p>
-                </div>
-                <div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-800/60">
-                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('year_average') }}</p>
-                    <p class="mt-1 flex flex-wrap items-baseline gap-2 text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100">
-                        <template v-if="currentAverage">
-                            <bdi dir="ltr">{{ fmt(currentAverage.average) }}<span class="text-sm font-normal text-slate-400"> / {{ currentAverage.scale }}</span></bdi>
-                            <span v-if="currentAverage.is_provisional" class="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">{{ t('provisional') }}</span>
-                        </template>
-                        <template v-else>—</template>
-                    </p>
-                    <p v-if="currentAverage" class="mt-1 text-xs tabular-nums text-slate-500 dark:text-slate-400"><bdi dir="ltr">{{ yearLabel(currentAverage.academic_year) }}</bdi></p>
-                </div>
-                <div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-800/60">
-                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('year_change') }}</p>
-                    <p class="mt-1 text-2xl font-bold tabular-nums"
-                       :class="!yearChange ? 'text-slate-400' : yearChange > 0 ? 'text-emerald-600' : 'text-rose-600'">
-                        <template v-if="yearChange === null">—</template>
-                        <bdi v-else dir="ltr">{{ yearChange > 0 ? `▲ +${yearChange.toFixed(2)}` : yearChange < 0 ? `▼ ${Math.abs(yearChange).toFixed(2)}` : '0.00' }}<span class="text-sm font-normal text-slate-400"> / 20</span></bdi>
-                    </p>
-                    <p v-if="yearChange !== null" class="mt-1 text-xs tabular-nums text-slate-500 dark:text-slate-400"><bdi dir="ltr">{{ changeYears }}</bdi></p>
-                </div>
+                <StatTile :label="t('latest_gpa')" :value="latestDisplay" format="text" :tone="latestTone" :icon="latestPasses === false ? 'alert' : 'check'" />
+                <StatTile :label="t('year_average')" :value="averageDisplay" format="text" tone="neutral" :meta="averageMeta" />
+                <StatTile :label="t('year_change')" :value="changeDisplay" format="text" :tone="changeTone" :icon="changeIcon" :meta="changeYears || null" />
             </div>
 
             <div v-if="averaged.length >= 2" class="h-64">

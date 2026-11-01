@@ -100,6 +100,41 @@ class AttendanceStatsPageTest extends TestCase
     }
 
     #[Test]
+    public function the_figures_compare_with_the_previous_period(): void
+    {
+        $u15 = $this->category('U15');
+        $a = $this->player($u15);
+        // October: 2 sessions held, 10 late minutes.
+        $this->mark($this->heldSession($u15, '2026-10-05'), $a, AttendanceStatus::Late, 10);
+        $this->mark($this->heldSession($u15, '2026-10-12'), $a, AttendanceStatus::Present);
+        // September: 1 session held, 20 late minutes.
+        $this->mark($this->heldSession($u15, '2026-09-14'), $a, AttendanceStatus::Late, 20);
+
+        $this->actingAs($this->admin())->get(route('attendance.stats'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('deltas.held.percent', 100)
+                ->where('deltas.held.tone', 'positive')
+                ->where('deltas.late_minutes.percent', -50)
+                ->where('deltas.late_minutes.tone', 'positive')
+                ->has('deltas.score_pct')
+                ->has('deltas.missed_hours'));
+    }
+
+    #[Test]
+    public function nothing_last_period_means_no_comparison(): void
+    {
+        $u15 = $this->category('U15');
+        $this->mark($this->heldSession($u15, '2026-10-05'), $this->player($u15), AttendanceStatus::Present);
+
+        $this->actingAs($this->admin())->get(route('attendance.stats'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('deltas.held', null)
+                ->where('deltas.late_minutes', null)
+                ->where('deltas.score_pct', null));
+    }
+
+    #[Test]
     public function a_category_and_a_custom_period_narrow_the_figures(): void
     {
         $u15 = $this->category('U15');

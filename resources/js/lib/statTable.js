@@ -118,3 +118,8 @@ export function downloadCsv(filename, csv) {
     link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 0);
 }
+
+/** Totals for the columns marked `total: 'sum'`, keyed by column key (what StatTable and toCsv read). */
+export function columnTotals(columns, rows) {
+    return Object.fromEntries(columns.filter((c) => c.total === 'sum').map((c) => [c.key, sumColumn(rows, c.key)]));
+}

@@ -330,6 +330,75 @@ class FinanceStatsTest extends TestCase
     }
 
     #[Test]
+    public function the_summary_compares_with_the_previous_month(): void
+    {
+        // May (current): 2 entries, avg 750, largest expense 500, burn 500.
+        $this->transaction('income', 1000, '2026-05-02');
+        $this->transaction('expense', 500, '2026-05-03');
+        // April (previous): 2 entries, avg 500, largest expense 400, burn 400.
+        $this->transaction('income', 600, '2026-04-02');
+        $this->transaction('expense', 400, '2026-04-03');
+
+        $summary = $this->summary();
+
+        $this->assertSame(50.0, $summary['avg_transaction']['delta']['percent']);
+        $this->assertSame('neutral', $summary['avg_transaction']['delta']['tone']);
+        $this->assertSame(25.0, $summary['largest_expense']['delta']['percent']);
+        $this->assertSame('negative', $summary['largest_expense']['delta']['tone']);
+        $this->assertSame(25.0, $summary['burn_rate']['delta']['percent']);
+        $this->assertSame('negative', $summary['burn_rate']['delta']['tone']);
+        $this->assertNull($summary['runway']['delta']);
+    }
+
+    #[Test]
+    public function burn_rate_compares_per_month_across_a_quarter(): void
+    {
+        // Q2 (Apr-Jun) spends 3 000 -> 1 000/month; Q1 (Jan-Mar) spends 6 000 -> 2 000/month.
+        $this->transaction('expense', 3000, '2026-04-10');
+        $this->transaction('expense', 6000, '2026-02-10');
+
+        $delta = $this->summary(['range' => 'quarter'])['burn_rate']['delta'];
+
+        $this->assertSame(-50.0, $delta['percent']);
+        $this->assertSame('positive', $delta['tone']);
+    }
+
+    #[Test]
+    public function no_previous_activity_or_compare_off_means_no_delta(): void
+    {
+        $this->transaction('expense', 500, '2026-05-03');
+
+        $this->assertNull($this->summary()['largest_expense']['delta']);
+        $this->assertNull($this->summary()['burn_rate']['delta']);
+
+        $this->transaction('expense', 400, '2026-04-03');
+        $this->assertNull($this->summary(['compare' => '0'])['burn_rate']['delta']);
+        $this->assertNull($this->summary(['range' => 'all'])['burn_rate']['delta']);
+    }
+
+    #[Test]
+    public function the_previous_window_respects_the_branch_and_archive_rules(): void
+    {
+        $branch = Branch::create(['name' => 'Annexe']);
+        $annexe = $this->account(['name' => 'Annexe cash', 'branch_id' => $branch->id]);
+
+        // Club-wide: April 400 vs May 500, plus an archived 9 000 that must not count.
+        $this->transaction('expense', 500, '2026-05-03');
+        $this->transaction('expense', 400, '2026-04-03');
+        $this->transaction('expense', 9000, '2026-04-04', ['archived' => true]);
+        // The annexe (a branch finance account) spent in May only.
+        $this->transaction('expense', 100, '2026-05-05', ['finance_account_id' => $annexe->id]);
+
+        $this->assertSame(25.0, $this->summary()['largest_expense']['delta']['percent']);
+        // The annexe has no April spend of its own, so nothing to compare.
+        $this->assertNull($this->summary(['branch' => (string) $branch->id])['largest_expense']['delta']);
+
+        // Once it has one, only the annexe's own figures are compared.
+        $this->transaction('expense', 50, '2026-04-06', ['finance_account_id' => $annexe->id]);
+        $this->assertSame(100.0, $this->summary(['branch' => (string) $branch->id])['largest_expense']['delta']['percent']);
+    }
+
+    #[Test]
     public function an_empty_database_returns_empty_structures(): void
     {
         $finance = $this->finance();

@@ -40,7 +40,7 @@ use Throwable;
 class TransactionController extends Controller
 {
     /** Stored payment-method code => the i18n key the screens use (resources/js/lib/statusLabels.js). */
-    private const PAYMENT_METHOD_KEYS = ['bank' => 'bank_transfer'];
+    public const PAYMENT_METHOD_KEYS = ['bank' => 'bank_transfer'];
 
     /** Page sizes the list offers; anything else falls back to the first. */
     private const PER_PAGE = [25, 50, 100, 200];

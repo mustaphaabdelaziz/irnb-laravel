@@ -125,5 +125,7 @@ return [
     'unguarded' => [
         'dashboard', 'profile.edit', 'profile.update', 'profile.destroy', 'profile.activity',
         'lang.switch', 'account.pending',
+        // Reports center: each report checks its own module (ReportsCenterController).
+        'reports.hub', 'reports.category', 'reports.view', 'reports.download',
     ],
 ];

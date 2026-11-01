@@ -2421,6 +2421,8 @@
     "stats.view": "طريقة العرض",
     "stats.view_chart": "مخطط",
     "stats.view_table": "جدول",
+    "stats.vs_previous_month": "مقارنة بالشهر السابق",
+    "stats.vs_previous_period": "مقارنة بالفترة السابقة",
     "stats.vs_previous_season": "مقارنة بالموسم السابق",
     "status": "الحالة",
     "status_enrolled": "منخرط",

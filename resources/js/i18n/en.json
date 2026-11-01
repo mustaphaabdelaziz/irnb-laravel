@@ -2421,6 +2421,8 @@
     "stats.view": "View",
     "stats.view_chart": "Chart",
     "stats.view_table": "Table",
+    "stats.vs_previous_month": "vs previous month",
+    "stats.vs_previous_period": "vs previous period",
     "stats.vs_previous_season": "vs previous season",
     "status": "Status",
     "status_enrolled": "Enrolled",

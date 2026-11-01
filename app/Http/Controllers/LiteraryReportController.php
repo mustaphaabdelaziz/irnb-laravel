@@ -75,12 +75,14 @@ class LiteraryReportController extends Controller
 
     public function pdf(Request $request, LiteraryReport $literaryReport, LiteraryReportBuilder $builder, PdfService $pdf): HttpResponse
     {
+        $rtl = app()->getLocale() === 'ar';
         $html = view('pdf.literary-report', [
             'club' => ClubHeader::data(),
             'report' => $literaryReport,
             'sections' => $builder->build($literaryReport, $request->user()),
+            'rtl' => $rtl,
         ])->render();
 
-        return $pdf->stream($html, 'literary-report-'.$literaryReport->period_to->format('Y-m-d').'.pdf', app()->getLocale() === 'ar');
+        return $pdf->stream($html, 'literary-report-'.$literaryReport->period_to->format('Y-m-d').'.pdf', $rtl);
     }
 }

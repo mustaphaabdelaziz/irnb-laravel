@@ -6,6 +6,7 @@ use App\Models\LiteraryReport;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\LiteraryReport\LiteraryReportBuilder;
+use App\Services\Pdf\ClubHeader;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -57,5 +58,23 @@ class LiteraryReportPdfTest extends TestCase
 
         $noTexts = $this->report(['president_word' => '  ', 'conclusion' => null]);
         $this->assertSame(['cover', 'activities'], array_column(app(LiteraryReportBuilder::class)->build($noTexts, $user), 'key'));
+    }
+
+    #[Test]
+    public function the_document_direction_follows_the_language_and_texts_keep_escaped_line_breaks(): void
+    {
+        $report = $this->report(['president_word' => "<b>سطر</b>\nثان"]);
+        $render = fn (bool $rtl) => view('pdf.literary-report', [
+            'club' => ClubHeader::data(),
+            'report' => $report,
+            'sections' => app(LiteraryReportBuilder::class)->build($report, User::factory()->admin()->create()),
+            'rtl' => $rtl,
+        ])->render();
+
+        $arabic = $render(true);
+        $this->assertStringContainsString('<html dir="rtl">', $arabic);
+        $this->assertStringContainsString('<body dir="rtl">', $arabic);
+        $this->assertStringContainsString('&lt;b&gt;سطر&lt;/b&gt;<br>', $arabic);
+        $this->assertStringContainsString('<html dir="ltr">', $render(false));
     }
 }

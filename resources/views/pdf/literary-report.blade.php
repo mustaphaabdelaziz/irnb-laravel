@@ -1,8 +1,12 @@
 @php
     $l = fn (string $key) => \App\Support\UiLang::get($key);
+    // Editorial text keeps its line breaks (mPDF ignores white-space: pre-wrap).
+    $text = fn (?string $value) => nl2br(e((string) $value), false);
+    // mPDF's directionality setting alone leaves tables and alignment LTR; the dir attribute flips them.
+    $dir = ($rtl ?? true) ? 'rtl' : 'ltr';
 @endphp
 <!DOCTYPE html>
-<html>
+<html dir="{{ $dir }}">
 <head>
 <meta charset="utf-8">
 <style>
@@ -18,12 +22,12 @@
     .kpis td { border: 1px solid #cbd5e1; padding: 6px; text-align: center; }
     .kpis .value { font-size: 15px; font-weight: bold; color: #0f172a; }
     .kpis .label { font-size: 9.5px; color: #64748b; }
-    .text { white-space: pre-wrap; text-align: justify; }
+    .text { text-align: justify; }
     .muted { color: #64748b; font-size: 10px; }
     .none { color: #64748b; font-style: italic; }
 </style>
 </head>
-<body>
+<body dir="{{ $dir }}">
 <htmlpagefooter name="footer"><div style="text-align: center; font-size: 8px; color: #94a3b8;">{{ $report->title }} — {{ $l('literary.pdf.page') }} {PAGENO}/{nbpg}</div></htmlpagefooter>
 <sethtmlpagefooter name="footer" value="on" />
 

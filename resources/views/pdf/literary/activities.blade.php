@@ -24,7 +24,7 @@
             @endif
             <div class="muted">{{ $l('literary.pdf.beneficiaries') }}: {{ $activity['beneficiaries'] }} · {{ $l('literary.pdf.participants') }}: {{ $activity['participants'] }}</div>
             @if ($activity['report'])
-                <div class="text" style="margin-top: 4px;">{{ $activity['report'] }}</div>
+                <div class="text" style="margin-top: 4px;">{!! $text($activity['report']) !!}</div>
             @endif
             @if ($activity['photos'])
                 <table style="width: 100%; margin-top: 6px;">

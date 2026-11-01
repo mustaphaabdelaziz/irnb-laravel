@@ -18,8 +18,8 @@ class LiteraryReportRequest extends FormRequest
     {
         return [
             'title' => ['required', 'string', 'max:150'],
-            'period_from' => ['required', 'date'],
-            'period_to' => ['required', 'date', 'after_or_equal:period_from'],
+            'period_from' => ['required', 'date_format:Y-m-d'],
+            'period_to' => ['required', 'date_format:Y-m-d', 'after_or_equal:period_from'],
             'sections' => ['sometimes', 'array'],
             'sections.*' => ['string', Rule::in(LiteraryReport::SECTIONS)],
             'president_word' => ['nullable', 'string', 'max:20000'],

@@ -61,7 +61,17 @@ class LiteraryReportController extends Controller
 
     public function update(LiteraryReportRequest $request, LiteraryReport $literaryReport): RedirectResponse
     {
-        $literaryReport->update($request->validated());
+        $data = $request->validated();
+        if (array_key_exists('sections', $data)) {
+            // Keep what this user cannot see untouched: they can neither remove nor add those sections.
+            $user = $request->user();
+            $allowed = array_filter(LiteraryReport::SECTIONS, fn (string $key) => LiteraryReportBuilder::allows($key, $user));
+            $kept = array_diff((array) $literaryReport->sections, $allowed);
+            $new = array_merge(array_intersect($data['sections'], $allowed), $kept);
+            $data['sections'] = array_values(array_intersect(LiteraryReport::SECTIONS, $new));
+        }
+
+        $literaryReport->update($data);
 
         return back()->with('success', 'flash.literary_report_updated');
     }

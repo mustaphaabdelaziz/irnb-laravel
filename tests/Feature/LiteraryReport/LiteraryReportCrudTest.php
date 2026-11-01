@@ -134,6 +134,50 @@ class LiteraryReportCrudTest extends TestCase
                 ]));
     }
 
+    private function limitedEditor(): User
+    {
+        return User::factory()->create(['role_id' => Role::factory()->create(['permissions' => [
+            'literary_reports' => ['view', 'edit'], 'players' => ['view'],
+        ]])->id]);
+    }
+
+    private function payload(array $extra = []): array
+    {
+        return $extra + ['title' => 'X', 'period_from' => '2025-09-01', 'period_to' => '2026-08-31'];
+    }
+
+    #[Test]
+    public function an_editor_without_a_sections_right_neither_removes_nor_adds_it(): void
+    {
+        $report = $this->report(['sections' => ['cover', 'members', 'finance', 'conclusion']]);
+
+        $this->actingAs($this->limitedEditor())->put("/literary-reports/{$report->id}", $this->payload(['sections' => ['cover', 'members', 'board']]))
+            ->assertRedirect();
+
+        // finance (not allowed) kept, conclusion (allowed) removed, board (not allowed) not added; print order kept
+        $this->assertSame(['cover', 'members', 'finance'], $report->fresh()->sections);
+    }
+
+    #[Test]
+    public function a_view_only_user_cannot_open_the_editor_or_update(): void
+    {
+        $report = $this->report();
+        $viewer = User::factory()->create(['role_id' => Role::factory()->create(['permissions' => ['literary_reports' => ['view']]])->id]);
+
+        $this->actingAs($viewer)->get("/literary-reports/{$report->id}/edit")->assertForbidden();
+        $this->actingAs($viewer)->put("/literary-reports/{$report->id}", $this->payload(['title' => 'Hacked']))->assertForbidden();
+        $this->assertNotSame('Hacked', $report->fresh()->title);
+    }
+
+    #[Test]
+    public function a_one_day_period_is_accepted(): void
+    {
+        $this->actingAs($this->admin())->post('/literary-reports', $this->payload(['period_from' => '2026-01-01', 'period_to' => '2026-01-01']))
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseCount('literary_reports', 1);
+    }
+
     #[Test]
     public function deleting_removes_the_report(): void
     {

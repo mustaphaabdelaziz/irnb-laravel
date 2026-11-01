@@ -389,4 +389,108 @@ class DocumentChecklistTest extends TestCase
 
         $this->assertSame($fromPhp, $fromSql, 'expiring soon');
     }
+
+    #[Test]
+    public function the_per_type_required_and_expiring_sql_agree_with_the_checklist(): void
+    {
+        $players = $this->fixtures() + $this->typeFixtures();
+
+        $this->assertTypeAgreement($players);
+
+        // Rules change under existing records: a type is switched off, another
+        // loses its age limit, an optional type becomes required.
+        $this->type('medical_certificate')->update(['is_active' => false]);
+        $this->type('parental_authorization')->update(['max_age' => null]);
+        $this->type('school_certificate')->update(['is_required' => true]);
+
+        $this->assertTypeAgreement($players);
+    }
+
+    #[Test]
+    public function inactive_and_optional_types_are_never_required_nor_expiring(): void
+    {
+        $optional = $this->type('school_certificate');
+        $this->assertSame(['0', []], DocumentChecklist::requiredTypeSql($optional));
+        $this->assertSame(['0', []], DocumentChecklist::expiringTypeSql($optional));
+
+        $this->type('medical_certificate')->update(['is_active' => false]);
+        $inactive = $this->type('medical_certificate');
+        $this->assertSame(['0', []], DocumentChecklist::requiredTypeSql($inactive));
+        $this->assertSame(['0', []], DocumentChecklist::expiringTypeSql($inactive));
+    }
+
+    /** @return array<string, Player> situations only the per-type twins care about */
+    private function typeFixtures(): array
+    {
+        $players = [
+            'exempt photo and picture' => $this->player(['picture_url' => '/media/players/e.jpg']),
+            'expiring photo and picture' => $this->player(['picture_url' => '/media/players/f.jpg']),
+            'expiring paper photo' => $this->player(),
+            'adult, expiring parental' => $this->player(),
+            'expiring optional' => $this->player(),
+            'minor, exempt parental' => $this->player(['birthdate' => '2012-03-01']),
+        ];
+
+        $this->exempt($players['exempt photo and picture'], 'photo');
+        $this->received($players['expiring photo and picture'], 'photo', '2026-10-20');
+        $this->received($players['expiring paper photo'], 'photo', '2026-10-20');
+        $this->received($players['adult, expiring parental'], 'parental_authorization', '2026-10-20');
+        $this->received($players['expiring optional'], 'school_certificate', '2026-10-20');
+        $this->exempt($players['minor, exempt parental'], 'parental_authorization');
+
+        return $players;
+    }
+
+    /**
+     * Every type (active or not, required or not) × every player: the SQL
+     * twins say 1 exactly where the checklist says required / expiring.
+     *
+     * @param  array<string, Player>  $players
+     */
+    private function assertTypeAgreement(array $players): void
+    {
+        $seen = ['required' => 0, 'not required' => 0, 'expiring' => 0];
+
+        foreach (DocumentType::query()->orderBy('id')->get() as $type) {
+            [$requiredSql, $requiredBindings] = DocumentChecklist::requiredTypeSql($type);
+            [$expiringSql, $expiringBindings] = DocumentChecklist::expiringTypeSql($type);
+
+            $fromSql = Player::query()
+                ->select('players.id')
+                ->selectRaw("{$requiredSql} as is_required", $requiredBindings)
+                ->selectRaw("{$expiringSql} as is_expiring", $expiringBindings)
+                ->get()
+                ->keyBy('id');
+
+            foreach ($players as $label => $player) {
+                $player = $player->fresh();
+                $document = PlayerDocument::query()
+                    ->where('player_id', $player->id)
+                    ->where('document_type_id', $type->id)
+                    ->first();
+                $result = DocumentChecklist::evaluate($type, $document, $player);
+
+                $required = $type->is_active && $type->is_required && $type->appliesTo($player)
+                    && $result['state'] !== DocumentChecklist::NOT_REQUIRED;
+                $expiring = $required && $result['state'] === DocumentChecklist::EXPIRES_SOON;
+
+                $this->assertSame($required ? 1 : 0, (int) $fromSql[$player->id]->is_required, "required {$type->code}: {$label}");
+                $this->assertSame($expiring ? 1 : 0, (int) $fromSql[$player->id]->is_expiring, "expiring {$type->code}: {$label}");
+
+                // DocumentStats computes received = required − missing, so a
+                // missing document must always be a required one.
+                if ($result['counts_missing']) {
+                    $this->assertTrue($required, "missing implies required {$type->code}: {$label}");
+                }
+
+                $seen[$required ? 'required' : 'not required']++;
+                $seen['expiring'] += $expiring ? 1 : 0;
+            }
+        }
+
+        // The fixtures must exercise both sides, or agreement proves nothing.
+        $this->assertGreaterThan(0, $seen['required']);
+        $this->assertGreaterThan(0, $seen['not required']);
+        $this->assertGreaterThan(0, $seen['expiring']);
+    }
 }

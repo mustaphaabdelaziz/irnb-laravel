@@ -17,6 +17,8 @@ use Carbon\CarbonInterface;
  *  - missingCountSql() / expiringSoonSql(): the same rules as SQL, so the
  *    players list can count and filter over every player without loading
  *    their documents into PHP.
+ *  - requiredTypeSql() / expiringTypeSql() / missingTypeSql(): per-type 1/0
+ *    terms, summed by DocumentStats into completion figures.
  *
  * DocumentChecklistTest runs both over the same fixtures and asserts they
  * agree. Change one, change the other, and keep that test green.
@@ -193,6 +195,70 @@ final class DocumentChecklist
         ];
     }
 
+    /**
+     * One type's "required for this player" test as an SQL expression over
+     * `players` (1/0) — the twin of evaluate(): active, required, applies to
+     * the player's age, and not exempted. A profile picture settles the Photo
+     * whatever its record says, so a picture beats an exempt record (the age
+     * limit still applies). Inactive and optional types are never required.
+     *
+     * @return array{0: string, 1: array<int, mixed>}
+     */
+    public static function requiredTypeSql(DocumentType $type, ?CarbonInterface $today = null): array
+    {
+        if (! $type->is_active || ! $type->is_required) {
+            return ['0', []];
+        }
+
+        [$conditions, $bindings] = self::ageConditions($type, self::today($today));
+
+        $notExempt = 'NOT EXISTS (SELECT 1 FROM player_documents pd'
+            .' WHERE pd.player_id = players.id AND pd.document_type_id = ?'
+            ." AND pd.state = 'exempt')";
+
+        $conditions[] = $type->isPhoto()
+            ? "((players.picture_url IS NOT NULL AND players.picture_url <> '') OR {$notExempt})"
+            : $notExempt;
+        $bindings[] = $type->id;
+
+        return ['(CASE WHEN '.implode(' AND ', $conditions).' THEN 1 ELSE 0 END)', $bindings];
+    }
+
+    /**
+     * One type's "required and expires within 30 days" test as an SQL
+     * expression over `players` (1/0) — the twin of evaluate() returning
+     * EXPIRES_SOON for a required document. A received record valid today is
+     * never missing, and one record per player and type means it is not
+     * exempt either. A Photo settled by a picture never expires.
+     *
+     * @return array{0: string, 1: array<int, mixed>}
+     */
+    public static function expiringTypeSql(DocumentType $type, ?CarbonInterface $today = null): array
+    {
+        if (! $type->is_active || ! $type->is_required) {
+            return ['0', []];
+        }
+
+        $today = self::today($today);
+        [$conditions, $bindings] = self::ageConditions($type, $today);
+
+        if ($type->isPhoto()) {
+            $conditions[] = "(players.picture_url IS NULL OR players.picture_url = '')";
+        }
+
+        $conditions[] = 'EXISTS (SELECT 1 FROM player_documents pd'
+            .' WHERE pd.player_id = players.id AND pd.document_type_id = ?'
+            ." AND pd.state = 'received' AND pd.valid_until >= ? AND pd.valid_until < ?)";
+        array_push(
+            $bindings,
+            $type->id,
+            $today->toDateString(),
+            $today->addDays(self::EXPIRES_SOON_DAYS + 1)->toDateString(),
+        );
+
+        return ['(CASE WHEN '.implode(' AND ', $conditions).' THEN 1 ELSE 0 END)', $bindings];
+    }
+
     /** @return array{0: string, 1: array<int, mixed>} */
     private static function missingTermSql(DocumentType $type, CarbonImmutable $today): array
     {
@@ -217,6 +283,24 @@ final class DocumentChecklist
         $bindings[] = $today->toDateString();
 
         return ['(CASE WHEN '.implode(' AND ', $conditions).' THEN 1 ELSE 0 END)', $bindings];
+    }
+
+    /**
+     * The age test of the per-type twins: the same boundary missingTermSql()
+     * uses (DocumentType::earliestApplicableBirthdate), no birth date = not
+     * limited. Kept apart so missingTermSql() itself stays untouched.
+     *
+     * @return array{0: list<string>, 1: list<mixed>}
+     */
+    private static function ageConditions(DocumentType $type, CarbonImmutable $today): array
+    {
+        $earliest = $type->earliestApplicableBirthdate($today);
+
+        if ($earliest === null) {
+            return [[], []];
+        }
+
+        return [['(players.birthdate IS NULL OR players.birthdate >= ?)'], [$earliest->toDateString()]];
     }
 
     /** @return array<string, mixed> */

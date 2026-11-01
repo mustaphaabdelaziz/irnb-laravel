@@ -23,6 +23,7 @@ return [
         'board' => 'board',
         'board-roles' => 'board_roles',
         'board-committees' => 'board_committees',
+        'activities' => 'activities',
         'users' => 'users',
         'categories' => 'categories',
         // Each App Configuration list is its own module (own row in the role editor).
@@ -36,6 +37,7 @@ return [
         'game-formats' => 'game_formats',
         'opponents' => 'opponents',
         'venues' => 'venues',
+        'activity-types' => 'activity_types',
         'settings' => 'settings',
     ],
 
@@ -119,6 +121,13 @@ return [
         // "download" is not a view verb: without this, fetching a file the user
         // may already open inline would need edit rights.
         'players.documents.files.download' => ['documents', 'view'],
+        // Photos and files are part of editing an activity: "store" / "destroy"
+        // would otherwise be gated as add / delete (deleting a photo is not
+        // deleting the activity).
+        'activities.photos.store' => ['activities', 'edit'],
+        'activities.photos.destroy' => ['activities', 'edit'],
+        'activities.files.store' => ['activities', 'edit'],
+        'activities.files.destroy' => ['activities', 'edit'],
     ],
 
     // Route names that need no permission once authenticated.

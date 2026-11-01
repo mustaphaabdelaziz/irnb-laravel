@@ -182,4 +182,14 @@ class DashboardFiltersTest extends TestCase
     {
         $this->assertSame('neutral', DeltaCalculator::compute(100, 100, 'up_good')['tone']);
     }
+
+    #[Test]
+    public function the_neutral_direction_never_takes_a_side(): void
+    {
+        $delta = DeltaCalculator::compute(150, 100, DeltaCalculator::NEUTRAL);
+        $this->assertSame(50.0, $delta['percent']);
+        $this->assertSame('neutral', $delta['tone']);
+        $this->assertSame('neutral', DeltaCalculator::compute(50, 100, DeltaCalculator::NEUTRAL)['tone']);
+        $this->assertNull(DeltaCalculator::compute(150, 0, DeltaCalculator::NEUTRAL));
+    }
 }

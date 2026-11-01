@@ -6,6 +6,7 @@ use App\Models\FinanceAccount;
 use App\Models\FinanceTransfer;
 use App\Models\Transaction;
 use App\Services\Dashboard\Support\BranchScope;
+use App\Services\Dashboard\Support\DeltaCalculator;
 use App\Support\FinanceAccountLabel;
 use App\Support\UiLang;
 use Carbon\CarbonImmutable;
@@ -60,6 +61,7 @@ class FinanceStats
 
         $burnRate = $this->burnRate($filters, (float) ($row->expense_total ?? 0));
         $treasury = $this->treasuryBalance($filters);
+        $previous = $filters->hasComparison() ? $this->previousWindow($filters) : null;
 
         return [
             [
@@ -67,6 +69,7 @@ class FinanceStats
                 'value' => $average,
                 'format' => 'money',
                 'meta' => $entries > 0 ? ['entries' => $entries] : null,
+                'delta' => $this->delta($average, $previous['average'] ?? null, DeltaCalculator::NEUTRAL),
             ],
             [
                 'key' => 'largest_expense',
@@ -77,12 +80,14 @@ class FinanceStats
                     'label' => $largest->title ?: ($largest->description ?: ($largest->financeCategory?->localized_name ?: UiLang::get('expense'))),
                     'date' => $largest->transaction_date?->toDateString(),
                 ] : null,
+                'delta' => $this->delta($largest ? round((float) $largest->amount, 2) : null, $previous['largest'] ?? null, DeltaCalculator::DOWN_GOOD),
             ],
             [
                 'key' => 'burn_rate',
                 'value' => $burnRate,
                 'format' => 'money',
                 'meta' => null,
+                'delta' => $this->delta($burnRate, $previous['burn_rate'] ?? null, DeltaCalculator::DOWN_GOOD),
             ],
             [
                 // Null, not infinity: a club that spent nothing this period has
@@ -93,8 +98,49 @@ class FinanceStats
                     : null,
                 'format' => 'months',
                 'meta' => null,
+                'delta' => null,
             ],
         ];
+    }
+
+    /**
+     * The previous window's average, largest expense and burn rate, in one pass.
+     *
+     * Same rules as the current window (non-archived, branch-scoped); only the
+     * dates move. Burn rate divides by the previous window's own month count.
+     *
+     * @return array{average: ?float, largest: ?float, burn_rate: ?float}
+     */
+    private function previousWindow(DashboardFilters $filters): array
+    {
+        $row = BranchScope::transactions(
+            Transaction::query()->where('transactions.archived', false),
+            $filters->branchId,
+        )
+            ->whereBetween('transactions.transaction_date', [$filters->prevFrom, $filters->prevTo])
+            ->selectRaw(
+                'COUNT(*) as entries, '
+                .'SUM(transactions.amount) as amount_total, '
+                ."SUM(CASE WHEN transactions.transaction_type = 'expense' THEN transactions.amount ELSE 0 END) as expense_total, "
+                ."MAX(CASE WHEN transactions.transaction_type = 'expense' THEN transactions.amount END) as largest"
+            )
+            ->first();
+
+        $entries = (int) ($row->entries ?? 0);
+        $expense = (float) ($row->expense_total ?? 0);
+        $months = max(1, $filters->prevFrom->startOfMonth()->diffInMonths($filters->prevTo->startOfMonth()) + 1);
+
+        return [
+            'average' => $entries > 0 ? round((float) $row->amount_total / $entries, 2) : null,
+            'largest' => $row->largest !== null ? round((float) $row->largest, 2) : null,
+            'burn_rate' => $expense > 0 ? round($expense / $months, 2) : null,
+        ];
+    }
+
+    /** @return array{percent: float, raw: float, tone: string}|null */
+    private function delta(?float $current, ?float $previous, string $direction): ?array
+    {
+        return $current === null ? null : DeltaCalculator::compute($current, $previous, $direction);
     }
 
     /**

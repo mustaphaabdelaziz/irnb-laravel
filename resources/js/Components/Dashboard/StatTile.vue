@@ -8,6 +8,7 @@ import Sparkline from '@/Components/Dashboard/Sparkline.vue';
 import { useI18n } from 'vue-i18n';
 import { useCurrency } from '@/Composables/useCurrency';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
+import { useFormatNumber } from '@/Composables/useFormatNumber';
 
 /**
  * One tile anatomy, used by the hero row and every module strip.
@@ -33,6 +34,7 @@ const props = defineProps({
 const { t } = useI18n();
 const { currencyLabel } = useCurrency();
 const { formatMoney } = useFormatMoney();
+const { formatNumber, formatPercent } = useFormatNumber();
 
 const toneClasses = {
     primary: 'bg-primary/10 text-primary',
@@ -47,10 +49,10 @@ const toneClasses = {
 const display = computed(() => {
     if (props.value === null || props.value === undefined || props.value === '') return '—';
     if (props.format === 'money') return formatMoney(props.value);
-    if (props.format === 'percent') return `${Number(props.value).toFixed(1).replace(/\.0$/, '')}%`;
+    if (props.format === 'percent') return formatPercent(props.value, { trim: true });
     if (props.format === 'text') return String(props.value);
 
-    return new Intl.NumberFormat().format(props.value);
+    return formatNumber(props.value);
 });
 
 const isEmpty = computed(() => display.value === '—');

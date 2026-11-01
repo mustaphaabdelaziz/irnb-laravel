@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useCurrency } from '@/Composables/useCurrency';
 import { useFormatDate } from '@/Composables/useFormatDate';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
+import { useFormatNumber } from '@/Composables/useFormatNumber';
 import { sortRows, sumColumn } from '@/lib/statTable';
 
 /**
@@ -39,6 +40,7 @@ const emit = defineEmits(['sort', 'row-click']);
 const { t, locale } = useI18n();
 const { currencyLabel } = useCurrency();
 const { formatMoney } = useFormatMoney();
+const { formatNumber, formatPercent } = useFormatNumber();
 const { formatDate } = useFormatDate();
 
 // Inside a ChartCard the card's table box scrolls; a second scroll box here
@@ -73,6 +75,15 @@ const displayRows = computed(() => {
     return sortRows(props.rows, sort.key, sort.dir, locale.value);
 });
 
+// Each cell is formatted once here, not once per template reference.
+const bodyRows = computed(() =>
+    displayRows.value.map((row, index) => ({
+        row,
+        key: keyOf(row, index),
+        cells: props.columns.map((column) => ({ column, value: row[column.key], text: format(column, row[column.key]) })),
+    })),
+);
+
 const totalsRow = computed(() => {
     if (!props.totals) return null;
     if (typeof props.totals === 'object') return props.totals;
@@ -82,13 +93,11 @@ const totalsRow = computed(() => {
     );
 });
 
-const numberFormat = new Intl.NumberFormat();
-
 function format(column, value) {
     if (value === null || value === undefined || value === '') return '—';
     if (column.format === 'money') return formatMoney(value);
-    if (column.format === 'percent') return `${Number(value).toFixed(1)}%`;
-    if (column.format === 'number') return numberFormat.format(Number(value));
+    if (column.format === 'percent') return formatPercent(value);
+    if (column.format === 'number') return formatNumber(value);
     if (column.format === 'date') return formatDate(value);
 
     return String(value);
@@ -114,11 +123,22 @@ function keyOf(row, index) {
     return index;
 }
 
+function onRowActivate(event, row) {
+    if (!props.clickable) return;
+
+    // A link or button inside a cell does its own job; it must not also open the row.
+    const inner = event.target.closest?.('a, button, input, select, textarea, label');
+    if (inner && inner !== event.currentTarget && event.currentTarget.contains(inner)) return;
+
+    emit('row-click', row);
+}
+
 const cellPad = computed(() => (props.dense ? 'px-3 py-1.5' : 'px-3 py-2.5'));
 </script>
 
 <template>
-    <div :class="inScroller ? '' : ['overflow-auto', maxHeight]">
+    <div>
+        <div :class="inScroller ? '' : ['overflow-auto', maxHeight]">
         <table class="w-full border-collapse text-sm">
             <thead>
                 <tr>
@@ -155,22 +175,22 @@ const cellPad = computed(() => (props.dense ? 'px-3 py-1.5' : 'px-3 py-2.5'));
                     </td>
                 </tr>
                 <tr
-                    v-for="(row, index) in displayRows"
-                    :key="keyOf(row, index)"
+                    v-for="{ row, key, cells } in bodyRows"
+                    :key="key"
                     class="border-b border-border/60 transition-colors last:border-0 hover:bg-muted/40"
                     :class="[clickable ? 'cursor-pointer focus-visible:bg-muted/60 focus-visible:outline-none' : '', rowClass?.(row)]"
                     :tabindex="clickable ? 0 : undefined"
-                    @click="clickable && emit('row-click', row)"
-                    @keydown.enter="clickable && emit('row-click', row)"
+                    @click="onRowActivate($event, row)"
+                    @keydown.enter="onRowActivate($event, row)"
                 >
                     <td
-                        v-for="column in columns"
+                        v-for="{ column, value, text } in cells"
                         :key="column.key"
                         :class="[cellPad, alignClass(column), isNumeric(column) ? 'whitespace-nowrap tabular-nums' : '']"
                     >
-                        <slot :name="`cell-${column.key}`" :row="row" :value="row[column.key]" :formatted="format(column, row[column.key])">
-                            <template v-if="isNumeric(column)"><bdi>{{ format(column, row[column.key]) }}</bdi><span v-if="column.format === 'money' && format(column, row[column.key]) !== '—'" class="ms-1 text-xs text-muted-foreground">{{ currencyLabel }}</span></template>
-                            <template v-else>{{ format(column, row[column.key]) }}</template>
+                        <slot :name="`cell-${column.key}`" :row="row" :value="value" :formatted="text">
+                            <template v-if="isNumeric(column)"><bdi>{{ text }}</bdi><span v-if="column.format === 'money' && text !== '—'" class="ms-1 text-xs text-muted-foreground">{{ currencyLabel }}</span></template>
+                            <template v-else>{{ text }}</template>
                         </slot>
                     </td>
                 </tr>
@@ -184,13 +204,14 @@ const cellPad = computed(() => (props.dense ? 'px-3 py-1.5' : 'px-3 py-2.5'));
                         :class="[cellPad, alignClass(column), isNumeric(column) ? 'whitespace-nowrap tabular-nums' : '']"
                     >
                         <template v-if="column.total === 'sum' && totalsRow[column.key] !== undefined">
-                            <bdi>{{ format(column, totalsRow[column.key]) }}</bdi><span v-if="column.format === 'money'" class="ms-1 text-xs font-normal text-muted-foreground">{{ currencyLabel }}</span>
+                            <bdi>{{ format(column, totalsRow[column.key]) }}</bdi><span v-if="column.format === 'money' && format(column, totalsRow[column.key]) !== '—'" class="ms-1 text-xs font-normal text-muted-foreground">{{ currencyLabel }}</span>
                         </template>
                         <template v-else-if="index === 0">{{ totalLabel ?? t('stats.total') }}</template>
                     </td>
                 </tr>
             </tfoot>
         </table>
+        </div>
         <slot name="footer" />
     </div>
 </template>

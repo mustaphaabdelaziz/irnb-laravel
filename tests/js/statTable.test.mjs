@@ -60,6 +60,11 @@ const columns = [
     { key: 'share', label: 'Part', format: 'percent' },
 ];
 
+test('BOM is the single U+FEFF character', () => {
+    assert.equal(BOM.charCodeAt(0), 0xfeff);
+    assert.equal(BOM.length, 1);
+});
+
 test('toCsv: BOM, CRLF, comma, currency in the money header, raw numbers', () => {
     const csv = toCsv(columns, [{ name: 'Oran', amount: 1200.5, share: 12.5 }], { currency: 'DA' });
     assert.ok(csv.startsWith(BOM));

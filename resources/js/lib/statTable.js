@@ -6,7 +6,7 @@
  * read Arabic correctly), CRLF, comma, fputcsv-style quoting, and the same
  * formula escaping. Change one, change the other.
  */
-export const BOM = '﻿';
+export const BOM = '\uFEFF';
 
 const isBlank = (value) => value === null || value === undefined || value === '';
 

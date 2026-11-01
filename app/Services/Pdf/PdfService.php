@@ -12,16 +12,19 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class PdfService
 {
-    /** @param  array<string, mixed>  $config  mPDF options over the A4 defaults. */
-    private function make(bool $rtl, bool $landscape = false, array $config = []): Mpdf
+    /**
+     * @param  ?bool  $rtl  null = follow the UI language (Arabic is right-to-left)
+     * @param  array<string, mixed>  $config  mPDF options over the A4 defaults.
+     */
+    private function make(?bool $rtl, bool $landscape = false, array $config = []): Mpdf
     {
         $tempDir = storage_path('app/mpdf');
         File::ensureDirectoryExists($tempDir);
+        $rtl ??= app()->getLocale() === 'ar';
 
         $mpdf = new Mpdf([
             'mode' => 'utf-8',
             'format' => $landscape ? 'A4-L' : 'A4',
-            'directionality' => $rtl ? 'rtl' : 'ltr',
             'autoScriptToLang' => true,
             'autoLangToFont' => true,
             'tempDir' => $tempDir,
@@ -29,6 +32,10 @@ class PdfService
             'margin_bottom' => 12,
             ...$config,
         ]);
+        // The 'directionality' config option only sets the flag: text and
+        // tables kept their left default alignment, so every Arabic PDF came
+        // out left-to-right. SetDirectionality() also flips the defaults.
+        $mpdf->SetDirectionality($rtl ? 'rtl' : 'ltr');
 
         return $mpdf;
     }
@@ -52,7 +59,7 @@ class PdfService
         }
     }
 
-    public function render(string $html, bool $rtl = true, bool $landscape = false): string
+    public function render(string $html, ?bool $rtl = null, bool $landscape = false): string
     {
         $mpdf = $this->make($rtl, $landscape);
 
@@ -69,7 +76,7 @@ class PdfService
         return $mpdf->Output('', 'S');
     }
 
-    public function stream(string $html, string $filename, bool $rtl = true, bool $landscape = false): Response
+    public function stream(string $html, string $filename, ?bool $rtl = null, bool $landscape = false): Response
     {
         return response($this->render($html, $rtl, $landscape), 200, [
             'Content-Type' => 'application/pdf',
@@ -83,7 +90,7 @@ class PdfService
      * size a page to its content, so the HTML is laid out once on a tall page
      * to measure it, then again on a page cut to that height.
      */
-    public function renderRoll(string $html, bool $rtl = true, float $widthMm = 80): string
+    public function renderRoll(string $html, ?bool $rtl = null, float $widthMm = 80): string
     {
         $margins = ['margin_top' => 3, 'margin_bottom' => 3, 'margin_left' => 4, 'margin_right' => 4, 'margin_header' => 0, 'margin_footer' => 0];
 
@@ -99,7 +106,7 @@ class PdfService
         return $mpdf->Output('', 'S');
     }
 
-    public function streamRoll(string $html, string $filename, bool $rtl = true, float $widthMm = 80): Response
+    public function streamRoll(string $html, string $filename, ?bool $rtl = null, float $widthMm = 80): Response
     {
         return response($this->renderRoll($html, $rtl, $widthMm), 200, [
             'Content-Type' => 'application/pdf',

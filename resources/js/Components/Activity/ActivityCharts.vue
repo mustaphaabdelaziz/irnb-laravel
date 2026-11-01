@@ -4,7 +4,11 @@ import { useI18n } from 'vue-i18n';
 import '@/lib/registerCharts';
 import { Bar, Doughnut } from 'vue-chartjs';
 import ChartCard from '@/Components/Dashboard/ChartCard.vue';
+import StatTile from '@/Components/Dashboard/StatTile.vue';
+import StatTable from '@/Components/Stats/StatTable.vue';
+import { useChartTheme } from '@/Composables/useChartTheme';
 import { baseOptions, seriesColor, surface } from '@/lib/chartTheme';
+import { sumColumn } from '@/lib/statTable';
 
 /**
  * Activity statistics for a period: events over time per area, the share of
@@ -19,6 +23,7 @@ const props = defineProps({
 });
 
 const { t, locale } = useI18n();
+const { themeVersion } = useChartTheme();
 const rtl = computed(() => locale.value === 'ar');
 
 // One fixed colour slot per area (9 areas, 9 palette slots — never cycled).
@@ -43,137 +48,161 @@ function bucketLabel(iso) {
     return d.toLocaleDateString(locale.value, { day: 'numeric', month: 'short' });
 }
 
-const timelineData = computed(() => ({
-    labels: props.charts.buckets.map(bucketLabel),
-    datasets: areaKeys.value
-        .filter((area) => props.charts.areas[area] > 0)
-        .map((area) => ({
-            label: areaLabel(area),
-            data: props.charts.timeline[area],
-            backgroundColor: seriesColor(slotOf(area)),
-            borderColor: surface(),
-            borderWidth: { top: 2 },
-            stack: 'areas',
-        })),
-}));
-const timelineOptions = computed(() => baseOptions({ rtl: rtl.value, stacked: true }));
+const timelineData = computed(() => {
+    themeVersion.value; // recolour on theme toggle
+
+    return {
+        labels: props.charts.buckets.map(bucketLabel),
+        datasets: areaKeys.value
+            .filter((area) => props.charts.areas[area] > 0)
+            .map((area) => ({
+                label: areaLabel(area),
+                data: props.charts.timeline[area],
+                backgroundColor: seriesColor(slotOf(area)),
+                borderColor: surface(),
+                borderWidth: { top: 2 },
+                stack: 'areas',
+            })),
+    };
+});
+const timelineOptions = computed(() => {
+    themeVersion.value;
+
+    return baseOptions({ rtl: rtl.value, stacked: true });
+});
 
 const shareAreas = computed(() => areaKeys.value.filter((a) => props.charts.areas[a] > 0));
-const shareData = computed(() => ({
-    labels: shareAreas.value.map(areaLabel),
-    datasets: [{
-        data: shareAreas.value.map((a) => props.charts.areas[a]),
-        backgroundColor: shareAreas.value.map((a) => seriesColor(slotOf(a))),
-        borderColor: surface(),
-        borderWidth: 2,
-    }],
-}));
+const shareData = computed(() => {
+    themeVersion.value;
+
+    return {
+        labels: shareAreas.value.map(areaLabel),
+        datasets: [{
+            data: shareAreas.value.map((a) => props.charts.areas[a]),
+            backgroundColor: shareAreas.value.map((a) => seriesColor(slotOf(a))),
+            borderColor: surface(),
+            borderWidth: 2,
+        }],
+    };
+});
 const shareOptions = computed(() => {
+    themeVersion.value;
+
     const base = baseOptions({ rtl: rtl.value });
     return { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { ...base.plugins.legend, position: 'right' }, tooltip: base.plugins.tooltip } };
 });
 
-const actionsData = computed(() => ({
-    labels: props.charts.actions.map((a) => actionLabel(a.action)),
-    datasets: [{
-        label: t('activity.events'),
-        data: props.charts.actions.map((a) => a.count),
-        backgroundColor: props.charts.actions.map((a) => seriesColor(slotOf(a.area))),
-    }],
-}));
-const barOptions = computed(() => baseOptions({ rtl: rtl.value, horizontal: true, legend: false }));
+const actionsData = computed(() => {
+    themeVersion.value;
+
+    return {
+        labels: props.charts.actions.map((a) => actionLabel(a.action)),
+        datasets: [{
+            label: t('activity.events'),
+            data: props.charts.actions.map((a) => a.count),
+            backgroundColor: props.charts.actions.map((a) => seriesColor(slotOf(a.area))),
+        }],
+    };
+});
+const barOptions = computed(() => {
+    themeVersion.value;
+
+    return baseOptions({ rtl: rtl.value, horizontal: true, legend: false });
+});
 
 const topUsers = computed(() => (props.users ?? []).filter((u) => u.total > 0).slice(0, 10));
-const usersData = computed(() => ({
-    labels: topUsers.value.map((u) => u.name),
-    datasets: [{ label: t('activity.events'), data: topUsers.value.map((u) => u.total), backgroundColor: seriesColor(0) }],
-}));
+const usersData = computed(() => {
+    themeVersion.value;
 
-const th = 'px-3 py-2 font-medium';
+    return {
+        labels: topUsers.value.map((u) => u.name),
+        datasets: [{ label: t('activity.events'), data: topUsers.value.map((u) => u.total), backgroundColor: seriesColor(0) }],
+    };
+});
+
+const totalsOf = (rows, keys) => Object.fromEntries(keys.map((key) => [key, sumColumn(rows, key)]));
+
+// Timeline table: one number column per shown area, plus the row total.
+const timelineColumns = computed(() => [
+    { key: 'label', label: t('date'), format: 'text' },
+    ...shareAreas.value.map((area) => ({ key: area, label: areaLabel(area), format: 'number', total: 'sum' })),
+    { key: 'total', label: t('activity.total'), format: 'number' },
+]);
+const timelineRows = computed(() => props.charts.buckets.map((bucket, i) => {
+    const row = { bucket, label: bucketLabel(bucket), total: 0 };
+    shareAreas.value.forEach((area) => {
+        row[area] = props.charts.timeline[area][i];
+        row.total += row[area];
+    });
+
+    return row;
+}));
+const timelineTotals = computed(() => totalsOf(timelineRows.value, shareAreas.value));
+
+const areaColumns = computed(() => [
+    { key: 'label', label: t('activity.chart_areas'), format: 'text', sortable: true },
+    { key: 'count', label: t('activity.events'), format: 'number', sortable: true, total: 'sum' },
+    { key: 'share', label: '%', format: 'percent', sortable: true },
+]);
+const areaRows = computed(() => shareAreas.value.map((area) => ({
+    area,
+    label: areaLabel(area),
+    count: props.charts.areas[area],
+    share: total.value ? (props.charts.areas[area] / total.value) * 100 : 0,
+})));
+const areaTotals = computed(() => totalsOf(areaRows.value, ['count']));
+
+const actionColumns = computed(() => [
+    { key: 'label', label: t('activity.chart_actions'), format: 'text', sortable: true },
+    { key: 'areaName', label: t('activity.chart_areas'), format: 'text', sortable: true },
+    { key: 'count', label: t('activity.events'), format: 'number', sortable: true, total: 'sum' },
+]);
+const actionRows = computed(() => props.charts.actions.map((a) => ({ ...a, label: actionLabel(a.action), areaName: areaLabel(a.area) })));
+const actionTotals = computed(() => totalsOf(actionRows.value, ['count']));
+
+const userColumns = computed(() => [
+    { key: 'name', label: t('activity.chart_users'), format: 'text', sortable: true },
+    { key: 'total', label: t('activity.events'), format: 'number', sortable: true, total: 'sum' },
+]);
+const userTotals = computed(() => totalsOf(topUsers.value, ['total']));
 </script>
 
 <template>
     <div class="space-y-4">
         <!-- Key figures -->
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
-                <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('activity.total') }}</p>
-                <p class="mt-1 text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100">{{ total }}</p>
-            </div>
-            <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
-                <p class="text-xs text-slate-500 dark:text-slate-400">{{ charts.unit === 'week' ? t('activity.active_weeks') : t('activity.active_days') }}</p>
-                <p class="mt-1 text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100">{{ activeDays }} <span class="text-sm font-normal text-slate-400">/ {{ charts.buckets.length }}</span></p>
-            </div>
-            <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
-                <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('activity.average_per_active') }}</p>
-                <p class="mt-1 text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100">{{ activeDays ? (total / activeDays).toFixed(1) : 0 }}</p>
-            </div>
-            <div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
-                <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('activity.busiest') }}</p>
-                <p class="mt-1 text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100">{{ busiest ? busiest.count : 0 }}</p>
-                <p v-if="busiest" class="text-xs text-slate-500 dark:text-slate-400">{{ bucketLabel(busiest.bucket) }}</p>
-            </div>
+            <StatTile :label="t('activity.total')" :value="total" format="number" icon="chart" tone="primary" />
+            <StatTile :label="charts.unit === 'week' ? t('activity.active_weeks') : t('activity.active_days')" :value="activeDays" format="number" :meta="`/ ${charts.buckets.length}`" icon="calendar" tone="neutral" />
+            <StatTile :label="t('activity.average_per_active')" :value="activeDays ? total / activeDays : 0" format="number" icon="task" tone="neutral" />
+            <StatTile :label="t('activity.busiest')" :value="busiest?.count ?? 0" format="number" :meta="busiest ? bucketLabel(busiest.bucket) : null" icon="flag" tone="warning" />
         </div>
 
-        <ChartCard :title="t('activity.chart_timeline')" :subtitle="charts.unit === 'week' ? t('activity.per_week') : t('activity.per_day')" :empty="!total" has-table height="h-72">
+        <ChartCard :title="t('activity.chart_timeline')" :subtitle="charts.unit === 'week' ? t('activity.per_week') : t('activity.per_day')" :empty="!total" has-table height="h-72" :csv="{ filename: 'activity-timeline', columns: timelineColumns, rows: timelineRows, totals: timelineTotals }">
             <Bar :data="timelineData" :options="timelineOptions" />
             <template #table>
-                <table class="w-full text-sm">
-                    <thead class="sticky top-0 bg-muted/60 text-xs text-muted-foreground">
-                        <tr><th :class="th" class="text-start">{{ t('date') }}</th><th v-for="ds in timelineData.datasets" :key="ds.label" :class="th" class="text-end">{{ ds.label }}</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="(label, i) in timelineData.labels" :key="i" class="border-t border-border/60">
-                            <td class="px-3 py-1.5">{{ label }}</td>
-                            <td v-for="ds in timelineData.datasets" :key="ds.label" class="px-3 py-1.5 text-end tabular-nums">{{ ds.data[i] }}</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <StatTable :columns="timelineColumns" :rows="timelineRows" row-key="bucket" :totals="timelineTotals" dense />
             </template>
         </ChartCard>
 
         <div class="grid gap-4 lg:grid-cols-2">
-            <ChartCard :title="t('activity.chart_areas')" :empty="!total" has-table>
+            <ChartCard :title="t('activity.chart_areas')" :empty="!total" has-table :csv="{ filename: 'activity-by-area', columns: areaColumns, rows: areaRows, totals: areaTotals }">
                 <Doughnut :data="shareData" :options="shareOptions" />
                 <template #table>
-                    <table class="w-full text-sm">
-                        <tbody>
-                            <tr v-for="area in shareAreas" :key="area" class="border-t border-border/60 first:border-0">
-                                <td class="px-3 py-1.5">{{ areaLabel(area) }}</td>
-                                <td class="px-3 py-1.5 text-end tabular-nums">{{ charts.areas[area] }}</td>
-                                <td class="px-3 py-1.5 text-end tabular-nums text-muted-foreground">{{ Math.round((charts.areas[area] / total) * 100) }}%</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <StatTable :columns="areaColumns" :rows="areaRows" row-key="area" :totals="areaTotals" dense />
                 </template>
             </ChartCard>
 
-            <ChartCard :title="t('activity.chart_actions')" :empty="!charts.actions.length" has-table>
+            <ChartCard :title="t('activity.chart_actions')" :empty="!charts.actions.length" has-table :csv="{ filename: 'activity-by-action', columns: actionColumns, rows: actionRows, totals: actionTotals }">
                 <Bar :data="actionsData" :options="barOptions" />
                 <template #table>
-                    <table class="w-full text-sm">
-                        <tbody>
-                            <tr v-for="a in charts.actions" :key="a.action" class="border-t border-border/60 first:border-0">
-                                <td class="px-3 py-1.5">{{ actionLabel(a.action) }}</td>
-                                <td class="px-3 py-1.5 text-muted-foreground">{{ areaLabel(a.area) }}</td>
-                                <td class="px-3 py-1.5 text-end tabular-nums">{{ a.count }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <StatTable :columns="actionColumns" :rows="actionRows" row-key="action" :totals="actionTotals" dense />
                 </template>
             </ChartCard>
 
-            <ChartCard v-if="users" :title="t('activity.chart_users')" :empty="!topUsers.length" has-table class="lg:col-span-2">
+            <ChartCard v-if="users" :title="t('activity.chart_users')" :empty="!topUsers.length" has-table class="lg:col-span-2" :csv="{ filename: 'activity-top-users', columns: userColumns, rows: topUsers, totals: userTotals }">
                 <Bar :data="usersData" :options="barOptions" />
                 <template #table>
-                    <table class="w-full text-sm">
-                        <tbody>
-                            <tr v-for="u in topUsers" :key="u.name" class="border-t border-border/60 first:border-0">
-                                <td class="px-3 py-1.5">{{ u.name }}</td>
-                                <td class="px-3 py-1.5 text-end tabular-nums">{{ u.total }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <StatTable :columns="userColumns" :rows="topUsers" row-key="name" :totals="userTotals" dense />
                 </template>
             </ChartCard>
         </div>

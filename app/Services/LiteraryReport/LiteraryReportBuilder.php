@@ -5,8 +5,10 @@ namespace App\Services\LiteraryReport;
 use App\Models\LiteraryReport;
 use App\Models\User;
 use App\Services\LiteraryReport\Sections\ActivitiesSection;
+use App\Services\LiteraryReport\Sections\AttendanceSection;
 use App\Services\LiteraryReport\Sections\BoardSection;
 use App\Services\LiteraryReport\Sections\MembersSection;
+use App\Services\LiteraryReport\Sections\SportsSection;
 use Carbon\CarbonImmutable;
 
 final class LiteraryReportBuilder
@@ -25,6 +27,8 @@ final class LiteraryReportBuilder
     public const DATA_SECTIONS = [
         'members' => MembersSection::class,
         'board' => BoardSection::class,
+        'attendance' => AttendanceSection::class,
+        'sports' => SportsSection::class,
         'activities' => ActivitiesSection::class,
     ];
 

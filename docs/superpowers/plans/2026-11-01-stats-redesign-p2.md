@@ -32,6 +32,7 @@ Spec: `docs/superpowers/specs/2026-11-01-stats-redesign-design.md` (§2 decision
 - Numbers and percents format through `useFormatNumber` (`formatNumber`, `formatPercent`), money through `useFormatMoney`. Never `toFixed` + `'%'` in a template.
 - Every chart `computed` that builds data or options reads `themeVersion.value` from `useChartTheme()` so charts recolour on a live dark toggle (pattern: `Finance/Index.vue`).
 - Per-panel CSV: ChartCard `:csv="{ filename, columns, rows, totals? }"`, built from the exact same `columns`/`rows` (and totals object) the StatTable gets.
+- **Totals are always an OBJECT keyed by column key**, never `true`: `toCsv` reads `totals[column.key]`, so `totals: true` leaves the CSV total row blank. Use the Finance/Index helper `const totalsOf = (rows, keys) => Object.fromEntries(keys.map((key) => [key, sumColumn(rows, key)]));` (`sumColumn` from `@/lib/statTable`) and pass the SAME computed object to `<StatTable :totals="…">` and to `csv.totals`. Wherever a task below says "totals" or "totals: true", it means this object over that table's `total: 'sum'` columns.
 - Never write files outside `D:\irnb-stats` except in the scratchpad above. Commit with explicit paths only (`git add <file> …`, never `-A`/`.`). Commit trailer: `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
 - Build before PHP feature tests (the Vite manifest is needed): `npm run build`. Run PHP tests serially (`php artisan test --filter=…`; no `--parallel`).
 - Known unrelated failure: `ManualSuspensionsTest` "a manual ban is added in matches or dates and listed" (date time-bomb, fails from 2026-11-01). Do not fix, do not count it.
@@ -55,16 +56,18 @@ const expenseColumns = computed(() => [
 ]);
 // Rows carry the display label as data, so the table, the sort and the CSV agree.
 const expenseRows = computed(() => expenses.value.map((r) => ({ ...r, label: rowLabel(r) })));
+const totalsOf = (rows, keys) => Object.fromEntries(keys.map((key) => [key, sumColumn(rows, key)])); // import { sumColumn } from '@/lib/statTable'
+const expenseTotals = computed(() => totalsOf(expenseRows.value, ['amount']));
 const expenseChart = computed(() => {
     themeVersion.value; // recolour on theme toggle
     return { labels: expenseRows.value.map((r) => r.label), datasets: [rankedBarDataset(t('dashboard.amount'), expenseRows.value.map((r) => r.amount))] };
 });
 </script>
 
-<ChartCard :title="…" has-table :csv="{ filename: 'dashboard-expense-by-category', columns: expenseColumns, rows: expenseRows, totals: true }">
+<ChartCard :title="…" has-table :csv="{ filename: 'dashboard-expense-by-category', columns: expenseColumns, rows: expenseRows, totals: expenseTotals }">
     <Bar :data="expenseChart" :options="chartOptions" />
     <template #table>
-        <StatTable :columns="expenseColumns" :rows="expenseRows" :row-key="(r) => r.labelKey || r.name" totals dense />
+        <StatTable :columns="expenseColumns" :rows="expenseRows" :row-key="(r) => r.labelKey || r.name" :totals="expenseTotals" dense />
     </template>
 </ChartCard>
 ```

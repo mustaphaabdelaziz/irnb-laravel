@@ -3,9 +3,11 @@
 namespace Tests\Feature\Activities;
 
 use App\Models\Activity;
+use App\Models\ActivityLog;
 use App\Models\ActivityType;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\Activity\ActivityAction;
 use App\Services\Storage\PrivateFileStorage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -158,6 +160,47 @@ class ActivityMediaTest extends TestCase
         Storage::disk('public')->assertMissing($photo->path);
         Storage::disk('public')->assertMissing($photo->thumb_path);
         Storage::disk(PrivateFileStorage::DISK)->assertMissing($file->path);
+    }
+
+    /** activity_updated log rows, as [subject_type, subject_id] pairs. */
+    private function updateLogs(): array
+    {
+        return ActivityLog::where('action', ActivityAction::ACTIVITY_UPDATED)->orderBy('id')->get()
+            ->map(fn (ActivityLog $log) => [$log->subject_type, (int) $log->subject_id])->all();
+    }
+
+    #[Test]
+    public function photo_and_file_changes_are_logged_against_the_activity(): void
+    {
+        $this->actingAs($this->admin());
+        $subject = [$this->activity->getMorphClass(), $this->activity->id];
+
+        $this->uploadPhotos()->assertSessionHas('success');
+        $photo = $this->activity->photos()->first();
+        $this->put(route('activities.photos.update', [$this->activity, $photo]), ['caption' => 'Opening'])->assertSessionHas('success');
+        $this->delete(route('activities.photos.destroy', [$this->activity, $photo]))->assertSessionHas('success');
+        $this->post(route('activities.files.store', $this->activity), ['file' => UploadedFile::fake()->create('a.pdf', 10, 'application/pdf')])->assertSessionHas('success');
+        $file = $this->activity->files()->sole();
+        $this->delete(route('activities.files.destroy', [$this->activity, $file]))->assertSessionHas('success');
+
+        $this->assertSame(array_fill(0, 5, $subject), $this->updateLogs());
+    }
+
+    #[Test]
+    public function a_photo_refused_by_the_report_cap_is_not_logged(): void
+    {
+        $this->actingAs($this->admin());
+        $this->uploadPhotos(5);
+        $photos = $this->activity->photos()->get();
+        foreach ($photos->take(4) as $photo) {
+            $this->put(route('activities.photos.update', [$this->activity, $photo]), ['in_report' => true]);
+        }
+        $before = count($this->updateLogs());
+
+        $this->put(route('activities.photos.update', [$this->activity, $photos[4]]), ['in_report' => true])
+            ->assertSessionHas('error', 'flash.activity_report_photos_limit');
+
+        $this->assertCount($before, $this->updateLogs());
     }
 
     #[Test]

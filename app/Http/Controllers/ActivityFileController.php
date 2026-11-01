@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Activity;
 use App\Models\ActivityFile;
+use App\Services\Activity\ActivityAction;
+use App\Services\Activity\ActivityRecorder;
 use App\Services\Storage\PrivateFileStorage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,6 +22,8 @@ class ActivityFileController extends Controller
 
         $activity->files()->create($storage->store($request->file('file'), $activity->fileDirectory()));
 
+        ActivityRecorder::record($request->user(), ActivityAction::ACTIVITY_UPDATED, $activity);
+
         return back()->with('success', 'flash.activity_file_uploaded');
     }
 
@@ -28,10 +32,12 @@ class ActivityFileController extends Controller
         return $storage->serve($file->path, $file->original_name);
     }
 
-    public function destroy(Activity $activity, ActivityFile $file, PrivateFileStorage $storage): RedirectResponse
+    public function destroy(Request $request, Activity $activity, ActivityFile $file, PrivateFileStorage $storage): RedirectResponse
     {
         $storage->delete($file->path);
         $file->delete();
+
+        ActivityRecorder::record($request->user(), ActivityAction::ACTIVITY_UPDATED, $activity);
 
         return back()->with('success', 'flash.activity_file_deleted');
     }

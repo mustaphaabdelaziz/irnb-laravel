@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Activity;
 use App\Models\ActivityPhoto;
+use App\Services\Activity\ActivityAction;
+use App\Services\Activity\ActivityRecorder;
 use App\Services\Storage\FileStorageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -31,6 +33,8 @@ class ActivityPhotoController extends Controller
             ]);
         }
 
+        ActivityRecorder::record($request->user(), ActivityAction::ACTIVITY_UPDATED, $activity);
+
         return back()->with('success', 'flash.activity_photos_added');
     }
 
@@ -52,14 +56,18 @@ class ActivityPhotoController extends Controller
             'in_report' => $inReport,
         ]);
 
+        ActivityRecorder::record($request->user(), ActivityAction::ACTIVITY_UPDATED, $activity);
+
         return back()->with('success', 'flash.activity_photo_updated');
     }
 
-    public function destroy(Activity $activity, ActivityPhoto $photo, FileStorageService $storage): RedirectResponse
+    public function destroy(Request $request, Activity $activity, ActivityPhoto $photo, FileStorageService $storage): RedirectResponse
     {
         $storage->delete($photo->path);
         $storage->delete($photo->thumb_path);
         $photo->delete();
+
+        ActivityRecorder::record($request->user(), ActivityAction::ACTIVITY_UPDATED, $activity);
 
         return back()->with('success', 'flash.activity_photo_deleted');
     }

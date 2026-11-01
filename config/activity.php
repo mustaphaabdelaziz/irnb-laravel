@@ -98,14 +98,10 @@ $routes = [
     'board.members.update' => ActivityAction::BOARD_MEMBER_UPDATED,
     'board.members.destroy' => ActivityAction::BOARD_MEMBER_REMOVED,
 
-    // social activities (creation is recorded in ActivityController::store)
+    // social activities (creation is recorded in ActivityController::store; photo and
+    // file changes in their controllers, against the activity rather than the photo/file)
     'activities.update' => ActivityAction::ACTIVITY_UPDATED,
     'activities.destroy' => ActivityAction::ACTIVITY_DELETED,
-    'activities.photos.store' => ActivityAction::ACTIVITY_UPDATED,
-    'activities.photos.update' => ActivityAction::ACTIVITY_UPDATED,
-    'activities.photos.destroy' => ActivityAction::ACTIVITY_UPDATED,
-    'activities.files.store' => ActivityAction::ACTIVITY_UPDATED,
-    'activities.files.destroy' => ActivityAction::ACTIVITY_UPDATED,
 
     // documents
     'players.documents.update' => ActivityAction::DOCUMENT_UPDATED,

@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n';
 import Icon from '@/Components/Icon.vue';
 import IconButton from '@/Components/IconButton.vue';
 import StatsToolbar from '@/Components/Stats/StatsToolbar.vue';
+import { visitOutcome } from '@/lib/visitOutcome';
 
 /**
  * The dashboard's controls, and the only thing that writes its URL.
@@ -37,8 +38,8 @@ const activeCount = computed(() =>
 
 function apply(changes) {
     // Inertia has no per-visit exception hook: a visit that finishes without
-    // succeeding (network or server error) is a failure. A cancel means a newer
-    // visit superseded this one, which is not an error (and skips onFinish).
+    // succeeding (network or server error) is a failure. onFinish also runs after
+    // a cancel/interrupt: that visit was superseded, so the newer one owns the state.
     let ok = false;
     const tab = props.activeTab;
     router.get(
@@ -57,11 +58,11 @@ function apply(changes) {
             showProgress: false,
             onStart: () => emit('loading', true),
             onSuccess: () => { ok = true; },
-            // Inertia 2.3 skips onFinish on a cancel, so the busy state is reset here.
-            onCancel: () => emit('loading', false),
-            onFinish: () => {
+            onFinish: (visit) => {
+                const outcome = visitOutcome(visit, ok);
+                if (outcome === 'superseded') return;
                 emit('loading', false);
-                if (!ok) emit('failed', tab);
+                if (outcome === 'failed') emit('failed', tab);
             },
         },
     );

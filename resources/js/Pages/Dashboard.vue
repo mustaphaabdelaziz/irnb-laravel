@@ -11,6 +11,7 @@ import MembersTab from '@/Pages/Dashboard/Partials/MembersTab.vue';
 import OperationsTab from '@/Pages/Dashboard/Partials/OperationsTab.vue';
 import OverviewTab from '@/Pages/Dashboard/Partials/OverviewTab.vue';
 import '@/lib/registerCharts';
+import { visitOutcome } from '@/lib/visitOutcome';
 
 /**
  * The dashboard shell.
@@ -75,7 +76,8 @@ function selectTab(tab) {
 
 function fetchTab(tab, only) {
     // Inertia has no per-visit exception hook, so "finished without success"
-    // is the failure signal; a cancel fires onCancel alone and is not a failure.
+    // is the failure signal. onFinish also runs after a cancel/interrupt: that
+    // visit was superseded, so it is not a failure and the newer one owns the busy state.
     let ok = false;
     loadingTab.value = true;
     router.get(route('dashboard'), { ...queryFromFilters(), tab }, {
@@ -89,11 +91,11 @@ function fetchTab(tab, only) {
             loaded[tab] = true;
             if (tabError.value === tab) tabError.value = null;
         },
-        // Inertia 2.3 skips onFinish on a cancel (a newer visit took over).
-        onCancel: () => { loadingTab.value = false; },
-        onFinish: () => {
+        onFinish: (visit) => {
+            const outcome = visitOutcome(visit, ok);
+            if (outcome === 'superseded') return;
             loadingTab.value = false;
-            if (!ok) tabError.value = tab;
+            if (outcome === 'failed') tabError.value = tab;
         },
     });
 }

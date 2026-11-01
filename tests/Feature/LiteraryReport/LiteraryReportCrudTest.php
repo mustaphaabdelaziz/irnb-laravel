@@ -160,4 +160,14 @@ class LiteraryReportCrudTest extends TestCase
                 ->where('subject_id', $report->id)->count(), $action);
         }
     }
+
+    #[Test]
+    public function creation_always_enables_every_section(): void
+    {
+        $this->actingAs($this->admin())->post('/literary-reports', [
+            'title' => 'T', 'period_from' => '2025-09-01', 'period_to' => '2026-08-31', 'sections' => ['cover'],
+        ])->assertRedirect();
+
+        $this->assertSame(LiteraryReport::SECTIONS, LiteraryReport::first()->sections);
+    }
 }

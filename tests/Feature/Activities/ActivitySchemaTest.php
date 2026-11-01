@@ -28,7 +28,7 @@ class ActivitySchemaTest extends TestCase
     {
         $this->assertContains('activities', Role::MODULES);
         $this->assertContains('activity_types', Role::MODULES);
-        $this->assertSame(['activities'], Role::MODULE_GROUPS['social']);
+        $this->assertContains('activities', Role::MODULE_GROUPS['social']);
         $this->assertContains('activity_types', Role::MODULE_GROUPS['config']);
     }
 

@@ -7,12 +7,15 @@ use App\Models\LiteraryReport;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
 use App\Services\LiteraryReport\LiteraryReportBuilder;
+use App\Services\Pdf\ClubHeader;
+use App\Services\Pdf\PdfService;
 use App\Support\Season;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class LiteraryReportController extends Controller
 {
@@ -33,10 +36,10 @@ class LiteraryReportController extends Controller
 
     public function store(LiteraryReportRequest $request): RedirectResponse
     {
-        $report = LiteraryReport::create($request->validated() + [
+        $report = LiteraryReport::create(array_merge($request->validated(), [
             'sections' => LiteraryReport::SECTIONS,
             'created_by_user_id' => $request->user()->id,
-        ]);
+        ]));
 
         ActivityRecorder::record($request->user(), ActivityAction::LITERARY_REPORT_CREATED, $report);
 
@@ -70,8 +73,14 @@ class LiteraryReportController extends Controller
         return redirect()->route('literary-reports.index')->with('success', 'flash.literary_report_deleted');
     }
 
-    public function pdf(LiteraryReport $literaryReport): never
+    public function pdf(Request $request, LiteraryReport $literaryReport, LiteraryReportBuilder $builder, PdfService $pdf): HttpResponse
     {
-        abort(501); // Task 3
+        $html = view('pdf.literary-report', [
+            'club' => ClubHeader::data(),
+            'report' => $literaryReport,
+            'sections' => $builder->build($literaryReport, $request->user()),
+        ])->render();
+
+        return $pdf->stream($html, 'literary-report-'.$literaryReport->period_to->format('Y-m-d').'.pdf', app()->getLocale() === 'ar');
     }
 }

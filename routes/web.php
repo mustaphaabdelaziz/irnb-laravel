@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\ActivityTypeController;
 use App\Http\Controllers\AttendanceAlertsController;
 use App\Http\Controllers\AttendanceCalendarController;
@@ -364,6 +365,9 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
         // Cancel keeps the record (who/when/why); delete erases it.
         Route::post('/board/meetings/{meeting}/cancel', [BoardMeetingController::class, 'cancel'])->name('board.meetings.cancel');
         Route::delete('/board/meetings/{meeting}', [BoardMeetingController::class, 'destroy'])->name('board.meetings.destroy');
+
+        // Social activities (P1 of the literary report work).
+        Route::resource('activities', ActivityController::class);
 
         Route::get('/board/tasks', [BoardController::class, 'tasks'])->name('board.tasks');
         Route::get('/board/tasks/export', [BoardController::class, 'exportTasks'])->name('board.tasks.export');

@@ -64,6 +64,13 @@ class ActivityAction
 
     const TASK_COMPLETED = 'task_completed';
 
+    // social activities
+    const ACTIVITY_CREATED = 'activity_created';
+
+    const ACTIVITY_UPDATED = 'activity_updated';
+
+    const ACTIVITY_DELETED = 'activity_deleted';
+
     // documents
     const DOCUMENT_RECEIVED = 'document_received';
 
@@ -364,6 +371,9 @@ class ActivityAction
         self::BACKUP_CREATED,
         self::BACKUP_RESTORED,
         self::BACKUP_DELETED,
+        self::ACTIVITY_CREATED,
+        self::ACTIVITY_UPDATED,
+        self::ACTIVITY_DELETED,
     ];
 
     /** @var array<string, list<string>> */
@@ -425,6 +435,11 @@ class ActivityAction
             self::BOARD_MEMBER_ADDED,
             self::BOARD_MEMBER_UPDATED,
             self::BOARD_MEMBER_REMOVED,
+        ],
+        'social' => [
+            self::ACTIVITY_CREATED,
+            self::ACTIVITY_UPDATED,
+            self::ACTIVITY_DELETED,
         ],
         'documents' => [
             self::DOCUMENT_RECEIVED,

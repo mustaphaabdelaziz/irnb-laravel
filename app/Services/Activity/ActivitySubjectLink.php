@@ -2,6 +2,7 @@
 
 namespace App\Services\Activity;
 
+use App\Models\Activity;
 use App\Models\ActivityLog;
 use App\Models\BoardMeeting;
 use App\Models\BoardTask;
@@ -65,6 +66,7 @@ final class ActivitySubjectLink
         InventorySession::class => ['inventory'],
         BoardMeeting::class => ['board'],
         BoardTask::class => ['board'],
+        Activity::class => ['activities'],
         TrainingSession::class => ['attendance'],
         User::class => ['users'],
         Role::class => ['users'],
@@ -199,6 +201,7 @@ final class ActivitySubjectLink
             ],
             $subject instanceof BoardMeeting => [(string) $subject->title, route('board.meetings.show', $subject)],
             $subject instanceof BoardTask => [(string) $subject->title, route('board.tasks')],
+            $subject instanceof Activity => [(string) $subject->title, route('activities.show', $subject)],
             $subject instanceof TrainingSession => [
                 ((string) $subject->category?->localized_name).' · '.$subject->date,
                 route('attendance.sessions.show', $subject),

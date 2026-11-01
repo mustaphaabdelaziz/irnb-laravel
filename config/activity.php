@@ -98,6 +98,10 @@ $routes = [
     'board.members.update' => ActivityAction::BOARD_MEMBER_UPDATED,
     'board.members.destroy' => ActivityAction::BOARD_MEMBER_REMOVED,
 
+    // social activities (creation is recorded in ActivityController::store)
+    'activities.update' => ActivityAction::ACTIVITY_UPDATED,
+    'activities.destroy' => ActivityAction::ACTIVITY_DELETED,
+
     // documents
     'players.documents.update' => ActivityAction::DOCUMENT_UPDATED,
     'players.documents.unexempt' => ActivityAction::DOCUMENT_UNEXEMPTED,

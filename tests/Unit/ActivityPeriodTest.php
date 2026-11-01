@@ -113,4 +113,34 @@ class ActivityPeriodTest extends TestCase
         $this->assertSame('month', $this->period(['period' => 'decade'])->key);
         $this->assertSame('month', $this->period(['period' => ['season']])->key);
     }
+
+    #[Test]
+    public function the_previous_month_is_the_calendar_month_before(): void
+    {
+        $previous = $this->period()->previous();
+
+        $this->assertSame('month', $previous->key);
+        $this->assertSame(['period' => 'month', 'from' => '2026-09-01', 'to' => '2026-09-30', 'label' => '2026-09'], $previous->toArray());
+    }
+
+    #[Test]
+    public function the_previous_season_is_the_year_before(): void
+    {
+        $config = WebsiteConfig::singleton();
+        $config->update(['settings' => [...$config->settings, 'seasonStartMonth' => 7]]);
+
+        $previous = $this->period(['period' => 'season'])->previous()->toArray();
+
+        $this->assertSame('2025-07-01', $previous['from']);
+        $this->assertSame('2026-06-30', $previous['to']);
+    }
+
+    #[Test]
+    public function the_previous_custom_range_has_the_same_length_and_ends_the_day_before(): void
+    {
+        $previous = $this->period(['period' => 'custom', 'from' => '2026-10-10', 'to' => '2026-10-19'])->previous()->toArray();
+
+        $this->assertSame('2026-09-30', $previous['from']);
+        $this->assertSame('2026-10-09', $previous['to']);
+    }
 }

@@ -8,6 +8,7 @@ use App\Services\Attendance\AttendanceStats;
 use App\Services\Attendance\AttendanceStatusCatalog;
 use App\Services\Attendance\BranchChoice;
 use App\Services\Attendance\PlayerNames;
+use App\Services\Dashboard\Support\DeltaCalculator;
 use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
 use App\Support\Export;
@@ -33,8 +34,11 @@ class AttendanceStatsController extends Controller
 
     public function index(Request $request): Response
     {
+        $data = $this->data($request);
+
         return Inertia::render('Attendance/Stats', [
-            ...$this->data($request),
+            ...$data,
+            'deltas' => $this->deltas($request, $data),
             'attendanceCodes' => app(AttendanceStatusCatalog::class)->codes(),
         ]);
     }
@@ -88,6 +92,30 @@ class AttendanceStatsController extends Controller
 
         return Export::download(Export::format($request), $filename, $headers, $rows,
             implode(' — ', array_filter([UiLang::get('att.stats_title'), $data['period']['label'], $branchName, $categoryName])));
+    }
+
+    /**
+     * Held sessions, late minutes, missed hours and the score against the
+     * window before (same length, same category and branch). Counts only, no
+     * names: summarize() over the previous rows plus the held sessions.
+     *
+     * @return array{held: ?array, late_minutes: ?array, missed_hours: ?array, score_pct: ?array}
+     */
+    private function deltas(Request $request, array $data): array
+    {
+        ['from' => $from, 'to' => $to] = ActivityPeriod::fromRequest($request)->previous()->toArray();
+        $totals = $this->stats->summarize($this->stats->players($from, $to, $data['categoryId'], null, $data['branchId']));
+        $held = array_sum($this->stats->sessionsByMonth($from, $to, $data['categoryId'], $data['branchId'])['held']);
+        $now = $data['totals'];
+
+        return [
+            'held' => DeltaCalculator::compute((float) $now['held'], (float) $held),
+            'late_minutes' => DeltaCalculator::compute((float) $now['late_minutes'], (float) $totals['late_minutes'], DeltaCalculator::DOWN_GOOD),
+            'missed_hours' => DeltaCalculator::compute((float) $now['missed_hours'], (float) $totals['missed_hours'], DeltaCalculator::DOWN_GOOD),
+            'score_pct' => $now['score_pct'] === null || $totals['score_pct'] === null
+                ? null
+                : DeltaCalculator::compute((float) $now['score_pct'], (float) $totals['score_pct']),
+        ];
     }
 
     /** @return array<string, mixed> */

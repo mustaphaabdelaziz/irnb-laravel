@@ -3,6 +3,7 @@
 namespace Tests\Feature\Competitions;
 
 use App\Models\DocumentType;
+use App\Models\Player;
 use App\Models\PlayerDocument;
 use App\Models\Role;
 use App\Models\User;
@@ -44,6 +45,24 @@ class TeamDocumentStatsTest extends TestCase
                 ->where('documentStats.missing', 7)
                 ->where('documentStats.players_complete', 0)
                 ->has('documentStats.by_type', 4));
+    }
+
+    #[Test]
+    public function archived_and_left_roster_players_still_count(): void
+    {
+        $team = $this->team();
+        $season = Season::current()->startYear;
+        $active = $this->player($team->category);
+        $archived = $this->player($team->category, ['archived' => true]);
+        $left = $this->player($team->category, ['status_id' => Player::leftStatusId()]);
+        $this->onRoster($team, $season, [$active, $archived, $left]);
+
+        // The roster is what the team played the season with, whatever the
+        // player's status is today: all three count, 4 required types each.
+        $this->actingAs($this->admin())->get(route('teams.show', $team))->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('documentStats.players_total', 3)
+                ->where('documentStats.required', 12));
     }
 
     #[Test]

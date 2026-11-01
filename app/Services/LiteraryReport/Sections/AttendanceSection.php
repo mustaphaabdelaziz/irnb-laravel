@@ -8,9 +8,14 @@ use App\Models\TrainingSession;
 use App\Services\Attendance\AttendanceStats;
 use Carbon\CarbonImmutable;
 
-/** Training held in the period: sessions and attendance rate per branch and per category. */
+/**
+ * Training held in the period: sessions and attendance rate per branch and per category.
+ * A late arrival still attended (owner decision 2026-11-01): rate = (present + late) ÷ expected.
+ */
 final class AttendanceSection implements Section
 {
+    private const ATTENDED = ['present', 'late'];
+
     public function __construct(private readonly AttendanceStats $stats) {}
 
     public function build(CarbonImmutable $from, CarbonImmutable $to): array
@@ -38,18 +43,23 @@ final class AttendanceSection implements Section
                 'name' => $row['name'],
                 'held' => (int) $row['held'],
                 'expected' => (int) $row['expected'],
-                'rate' => $row['pct']['present'] ?? null,
+                'rate' => self::rate([$row]),
             ])->values()->all();
 
         return ['held' => (clone $held)->count(), 'branches' => $branches, 'categories' => $categories];
     }
 
-    /** Present marks over expected marks across the given category rows, in %. */
+    /** Attended marks (present + late) over expected marks across the given category rows, in %. */
     private static function rate(array $rows): ?float
     {
         $expected = array_sum(array_column($rows, 'expected'));
-        $present = array_sum(array_map(fn (array $row) => $row['counts']['present'] ?? 0, $rows));
+        $attended = 0;
+        foreach ($rows as $row) {
+            foreach (self::ATTENDED as $status) {
+                $attended += $row['counts'][$status] ?? 0;
+            }
+        }
 
-        return $expected > 0 ? round($present / $expected * 100, 1) : null;
+        return $expected > 0 ? round($attended / $expected * 100, 1) : null;
     }
 }

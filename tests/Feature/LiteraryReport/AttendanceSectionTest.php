@@ -47,6 +47,7 @@ class AttendanceSectionTest extends TestCase
         $football = Branch::create(['name' => 'Football']);
         $a = $this->player($u15);
         $b = $this->player($u15);
+        $c = $this->player($u15);
         $session = fn (array $x) => TrainingSession::create($x + [
             'category_id' => $u15->id, 'date' => '2026-03-10', 'start_time' => '18:00', 'end_time' => '19:30',
             'kind' => SessionKind::Regular, 'state' => SessionState::Held, 'branch_id' => $football->id,
@@ -54,15 +55,16 @@ class AttendanceSectionTest extends TestCase
         $held = $session([]);
         $session(['state' => SessionState::Cancelled, 'start_time' => '10:00', 'end_time' => '11:00']);
         $session(['date' => '2025-08-01']); // before the period
-        foreach ([[$a, 'present'], [$b, 'absent_unexcused']] as [$player, $status]) {
+        // A late arrival attended (owner decision): 2 of 3 expected marks count.
+        foreach ([[$a, 'present'], [$b, 'absent_unexcused'], [$c, 'late']] as [$player, $status]) {
             Attendance::create(['training_session_id' => $held->id, 'player_id' => $player->id, 'status' => $status, 'category_id' => $u15->id]);
         }
 
         $data = $this->build();
 
         $this->assertSame(1, $data['held']);
-        $this->assertSame([['name' => 'Football', 'held' => 1, 'rate' => 50.0]], $data['branches']);
-        $this->assertSame([['name' => 'U15', 'held' => 1, 'expected' => 2, 'rate' => 50.0]], $data['categories']);
+        $this->assertSame([['name' => 'Football', 'held' => 1, 'rate' => 66.7]], $data['branches']);
+        $this->assertSame([['name' => 'U15', 'held' => 1, 'expected' => 3, 'rate' => 66.7]], $data['categories']);
     }
 
     #[Test]

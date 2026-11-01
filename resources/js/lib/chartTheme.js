@@ -120,7 +120,8 @@ export function baseOptions({ rtl = false, stacked = false, horizontal = false, 
     return {
         responsive: true,
         maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
+        // A horizontal chart's rows are stacked on y, so the pointer picks by y there.
+        interaction: { mode: 'index', axis: horizontal ? 'y' : 'x', intersect: false },
         layout: { padding: { top: 4, right: 4, bottom: 0, left: 4 } },
         indexAxis: horizontal ? 'y' : 'x',
         plugins: {

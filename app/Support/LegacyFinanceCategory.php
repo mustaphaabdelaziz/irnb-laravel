@@ -92,7 +92,8 @@ final class LegacyFinanceCategory
         return Str::title(str_replace('_', ' ', $slug));
     }
 
-    private static function byCode(string $type, string $code): ?FinanceCategory
+    /** The category seeded with this code ("DON" → the club's donations category, whatever its name now). */
+    public static function byCode(string $type, string $code): ?FinanceCategory
     {
         return FinanceCategory::where('type', $type)->where('code', $code)->orderBy('id')->first();
     }

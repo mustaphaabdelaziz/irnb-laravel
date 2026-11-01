@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\Pdf\PdfService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Mockery\MockInterface;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -135,6 +136,25 @@ class ReportPdfTest extends TestCase
         $this->assertStringContainsString('مصاريف اشغال المقر', $html);
         $this->assertStringNotContainsString('msaryf_ashghal_almkr', $html);
         $this->assertStringNotContainsString('987.65', $html);
+    }
+
+    #[Test]
+    public function the_financial_summary_counts_donations_by_category_whatever_its_name(): void
+    {
+        Carbon::setTestNow('2026-10-14');
+        $donations = FinanceCategory::where('type', 'income')->where('code', 'DON')->firstOrFail();
+        $donations->update(['name' => 'تبرعات']);
+
+        // From a player page (legacy slug), from the Transactions page (slug of the renamed category), and a non-donation.
+        Transaction::create(['amount' => 200, 'transaction_date' => '2026-10-01', 'transaction_type' => 'income', 'category' => 'donation', 'payment_method' => 'cash', 'status' => 'Paid']);
+        Transaction::create(['amount' => 1300, 'transaction_date' => '2026-10-02', 'transaction_type' => 'income', 'category' => Str::slug($donations->name, '_'), 'finance_category_id' => $donations->id, 'payment_method' => 'cash', 'status' => 'Paid']);
+        Transaction::create(['amount' => 4000, 'transaction_date' => '2026-10-03', 'transaction_type' => 'income', 'category' => 'subscription', 'payment_method' => 'cash', 'status' => 'Paid']);
+
+        $html = $this->renderFinancialSummary(['year' => 2027]);
+
+        // The donations tile is the one value without a pos/neg colour.
+        $this->assertSame(1, preg_match('/<div class="v">([0-9,.]+)<\/div>/', $html, $m));
+        $this->assertSame('1,500.00', $m[1]);
     }
 
     #[Test]

@@ -5,6 +5,9 @@ namespace App\Services\Storage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Intervention\Image\Encoders\JpegEncoder;
+use Intervention\Image\Encoders\PngEncoder;
+use Intervention\Image\Encoders\WebpEncoder;
 use Intervention\Image\ImageManager;
 use Throwable;
 
@@ -112,7 +115,15 @@ class FileStorageService
                 $image->scaleDown(width: $maxWidth);
             }
 
-            return (string) $image->encodeByExtension($extension, quality: 80);
+            // intervention/image is pinned to 3.0.0, which has no encodeByExtension().
+            $encoder = match ($extension) {
+                'jpg' => new JpegEncoder(quality: 80),
+                'png' => new PngEncoder,
+                'webp' => new WebpEncoder(quality: 80),
+                default => null,
+            };
+
+            return $encoder === null ? null : (string) $image->encode($encoder);
         } catch (Throwable) {
             return null;
         }

@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\ActivityFileController;
+use App\Http\Controllers\ActivityPhotoController;
 use App\Http\Controllers\ActivityTypeController;
 use App\Http\Controllers\AttendanceAlertsController;
 use App\Http\Controllers\AttendanceCalendarController;
@@ -368,6 +370,14 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
 
         // Social activities (P1 of the literary report work).
         Route::resource('activities', ActivityController::class);
+        Route::scopeBindings()->group(function () {
+            Route::post('/activities/{activity}/photos', [ActivityPhotoController::class, 'store'])->name('activities.photos.store');
+            Route::put('/activities/{activity}/photos/{photo}', [ActivityPhotoController::class, 'update'])->name('activities.photos.update');
+            Route::delete('/activities/{activity}/photos/{photo}', [ActivityPhotoController::class, 'destroy'])->name('activities.photos.destroy');
+            Route::post('/activities/{activity}/files', [ActivityFileController::class, 'store'])->name('activities.files.store');
+            Route::get('/activities/{activity}/files/{file}', [ActivityFileController::class, 'show'])->name('activities.files.show');
+            Route::delete('/activities/{activity}/files/{file}', [ActivityFileController::class, 'destroy'])->name('activities.files.destroy');
+        });
 
         Route::get('/board/tasks', [BoardController::class, 'tasks'])->name('board.tasks');
         Route::get('/board/tasks/export', [BoardController::class, 'exportTasks'])->name('board.tasks.export');

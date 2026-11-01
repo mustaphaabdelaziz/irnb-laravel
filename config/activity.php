@@ -101,6 +101,11 @@ $routes = [
     // social activities (creation is recorded in ActivityController::store)
     'activities.update' => ActivityAction::ACTIVITY_UPDATED,
     'activities.destroy' => ActivityAction::ACTIVITY_DELETED,
+    'activities.photos.store' => ActivityAction::ACTIVITY_UPDATED,
+    'activities.photos.update' => ActivityAction::ACTIVITY_UPDATED,
+    'activities.photos.destroy' => ActivityAction::ACTIVITY_UPDATED,
+    'activities.files.store' => ActivityAction::ACTIVITY_UPDATED,
+    'activities.files.destroy' => ActivityAction::ACTIVITY_UPDATED,
 
     // documents
     'players.documents.update' => ActivityAction::DOCUMENT_UPDATED,

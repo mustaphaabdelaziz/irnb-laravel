@@ -935,19 +935,21 @@ Append inside `FinanceSeasonPageTest` (add `use App\Models\FiscalYear;` to the i
     public function the_season_kpis_compare_with_the_season_before(): void
     {
         Carbon::setTestNow('2026-10-14');
+        // The finance migration seeds a fiscal year for the current year; start from a clean slate.
+        FiscalYear::query()->delete();
         FiscalYear::create(['year' => 2026, 'status' => 'closed', 'opening_balance' => 0, 'total_income' => 1000, 'total_expense' => 400]);
         FiscalYear::create(['year' => 2027, 'status' => 'open', 'opening_balance' => 600, 'total_income' => 1500, 'total_expense' => 300]);
 
         $this->actingAs(User::factory()->admin()->create())
             ->get(route('finance.index', ['year' => 2027]))
             ->assertInertia(fn ($page) => $page
-                // Floats: the fluent `where` is assertSame and DeltaCalculator rounds to a float.
-                ->where('detail.deltas.income.percent', 50.0)
+                // Whole percents come back as ints: Inertia props round-trip through JSON.
+                ->where('detail.deltas.income.percent', 50)
                 ->where('detail.deltas.income.tone', 'positive')
                 // Spending less is the good direction.
-                ->where('detail.deltas.expense.percent', -25.0)
+                ->where('detail.deltas.expense.percent', -25)
                 ->where('detail.deltas.expense.tone', 'positive')
-                ->where('detail.deltas.net.percent', 100.0)
+                ->where('detail.deltas.net.percent', 100)
                 ->where('detail.deltas.net.tone', 'positive'));
     }
 
@@ -955,6 +957,8 @@ Append inside `FinanceSeasonPageTest` (add `use App\Models\FiscalYear;` to the i
     public function the_first_season_has_nothing_to_compare_with(): void
     {
         Carbon::setTestNow('2026-10-14');
+        // The finance migration seeds a fiscal year for the current year; start from a clean slate.
+        FiscalYear::query()->delete();
         FiscalYear::create(['year' => 2027, 'status' => 'open', 'opening_balance' => 0, 'total_income' => 1500, 'total_expense' => 300]);
 
         $this->actingAs(User::factory()->admin()->create())
@@ -966,7 +970,7 @@ Append inside `FinanceSeasonPageTest` (add `use App\Models\FiscalYear;` to the i
     }
 ```
 
-(`start_date`, `end_date`, `label` are nullable in the `fiscal_years` migration, so these rows are valid as written. No transactions are created, so `TransactionObserver` never recomputes these stored totals.)
+(The finance migration seeds a `fiscal_years` row for the current year, hence the delete; `start_date`, `end_date`, `label` are nullable. No transactions are created, so `TransactionObserver` never recomputes these stored totals.)
 
 - [ ] **Step 2: Run to verify they fail**
 

@@ -7,20 +7,25 @@ import Meter from '@/Components/Dashboard/Meter.vue';
 import StatTile from '@/Components/Dashboard/StatTile.vue';
 import Icon from '@/Components/Icon.vue';
 import { Card, CardHeader, CardTitle } from '@/Components/ui/card';
+import StatTable from '@/Components/Stats/StatTable.vue';
 import { Separator } from '@/Components/ui/separator';
+import { useChartTheme } from '@/Composables/useChartTheme';
 import { useFormatDate } from '@/Composables/useFormatDate';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
-import { baseOptions, sequential } from '@/lib/chartTheme';
+import { baseOptions, rankedBarDataset } from '@/lib/chartTheme';
+import { sumColumn } from '@/lib/statTable';
 
 const props = defineProps({
     data: { type: Object, default: null },
     loading: { type: Boolean, default: false },
     rtl: { type: Boolean, default: false },
+    periodLabel: { type: String, default: '' },
 });
 
 const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
 const { formatDate } = useFormatDate();
+const { themeVersion } = useChartTheme();
 
 const summary = computed(() => props.data?.summary ?? []);
 const expenses = computed(() => props.data?.expenseByCategory ?? []);
@@ -62,36 +67,43 @@ const tileFormat = (tile) => (tile.format === 'months' ? 'number' : tile.format)
 // ("uncategorised", "other") and a database name for the rest.
 const rowLabel = (row) => (row.labelKey ? t(`dashboard.fin_${row.labelKey}`) : row.name);
 
-/**
- * A magnitude chart, so one hue darkening with the value — not eight
- * categorical colours. The categories here are not identities competing for
- * attention; the question is only "which is biggest".
- */
+const categoryColumns = computed(() => [
+    { key: 'label', label: t('dashboard.category'), format: 'text', sortable: true },
+    { key: 'amount', label: t('dashboard.amount'), format: 'money', sortable: true, total: 'sum' },
+    { key: 'share', label: t('dashboard.fin_share'), format: 'percent', sortable: true },
+]);
+
+// Rows carry the display label as data, so the table, the sort and the CSV agree.
+const withLabel = (rows) => rows.map((r) => ({ ...r, label: rowLabel(r) }));
+const expenseRows = computed(() => withLabel(expenses.value));
+const incomeRows = computed(() => withLabel(income.value));
+const expenseTotals = computed(() => ({ amount: sumColumn(expenseRows.value, 'amount') }));
+const incomeTotals = computed(() => ({ amount: sumColumn(incomeRows.value, 'amount') }));
+const rowKey = (r) => r.labelKey || r.name;
+
+/** A magnitude chart: one hue darkening with the value (shared ranked-bar helper). */
 function categoryChart(rows) {
-    const ramp = sequential(6);
+    themeVersion.value; // recolour on theme toggle
 
     return {
-        labels: rows.map(rowLabel),
-        datasets: [{
-            label: t('dashboard.amount'),
-            data: rows.map((row) => row.amount),
-            // Darkest for the largest bar, stepping down the ramp.
-            backgroundColor: rows.map((_, index) => ramp[Math.max(0, ramp.length - 1 - index)] ?? ramp[0]),
-            borderRadius: 4,
-            maxBarThickness: 24,
-        }],
+        labels: rows.map((r) => r.label),
+        datasets: [rankedBarDataset(t('dashboard.amount'), rows.map((r) => r.amount))],
     };
 }
 
-const chartOptions = computed(() => baseOptions({
-    rtl: props.rtl,
-    horizontal: true,
-    legend: false,
-    money: formatMoney,
-}));
+const chartOptions = computed(() => {
+    themeVersion.value;
 
-const expenseChart = computed(() => categoryChart(expenses.value));
-const incomeChart = computed(() => categoryChart(income.value));
+    return baseOptions({
+        rtl: props.rtl,
+        horizontal: true,
+        legend: false,
+        money: formatMoney,
+    });
+});
+
+const expenseChart = computed(() => categoryChart(expenseRows.value));
+const incomeChart = computed(() => categoryChart(incomeRows.value));
 
 // Meters compare each account against the largest one, which is the only
 // reference the data actually provides — there is no budget or ceiling stored.
@@ -112,6 +124,8 @@ const largestBalance = computed(
                 :icon="tile.icon"
                 :tone="tile.tone"
                 :meta="tile.meta"
+                :delta="tile.delta"
+                :period-label="periodLabel"
             />
         </section>
 
@@ -123,27 +137,13 @@ const largestBalance = computed(
                 :empty="!expenses.length"
                 :empty-hint="t('dashboard.fin_expense_empty')"
                 has-table
+                :csv="{ filename: 'dashboard-expense-by-category', columns: categoryColumns, rows: expenseRows, totals: expenseTotals }"
                 height="h-80"
             >
                 <Bar :data="expenseChart" :options="chartOptions" />
 
                 <template #table>
-                    <table class="w-full text-sm">
-                        <thead class="sticky top-0 bg-muted/60 text-xs text-muted-foreground">
-                            <tr>
-                                <th class="px-3 py-2 text-start font-medium">{{ t('dashboard.category') }}</th>
-                                <th class="px-3 py-2 text-end font-medium">{{ t('dashboard.amount') }}</th>
-                                <th class="px-3 py-2 text-end font-medium">{{ t('dashboard.fin_share') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-border/70">
-                            <tr v-for="row in expenses" :key="row.labelKey || row.name">
-                                <td class="px-3 py-2">{{ rowLabel(row) }}</td>
-                                <td class="px-3 py-2 text-end tabular-nums">{{ formatMoney(row.amount) }}</td>
-                                <td class="px-3 py-2 text-end tabular-nums">{{ row.share }}%</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <StatTable :columns="categoryColumns" :rows="expenseRows" :row-key="rowKey" :totals="expenseTotals" dense />
                 </template>
             </ChartCard>
 
@@ -154,27 +154,13 @@ const largestBalance = computed(
                 :empty="!income.length"
                 :empty-hint="t('dashboard.fin_income_empty')"
                 has-table
+                :csv="{ filename: 'dashboard-income-by-category', columns: categoryColumns, rows: incomeRows, totals: incomeTotals }"
                 height="h-80"
             >
                 <Bar :data="incomeChart" :options="chartOptions" />
 
                 <template #table>
-                    <table class="w-full text-sm">
-                        <thead class="sticky top-0 bg-muted/60 text-xs text-muted-foreground">
-                            <tr>
-                                <th class="px-3 py-2 text-start font-medium">{{ t('dashboard.category') }}</th>
-                                <th class="px-3 py-2 text-end font-medium">{{ t('dashboard.amount') }}</th>
-                                <th class="px-3 py-2 text-end font-medium">{{ t('dashboard.fin_share') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-border/70">
-                            <tr v-for="row in income" :key="row.labelKey || row.name">
-                                <td class="px-3 py-2">{{ rowLabel(row) }}</td>
-                                <td class="px-3 py-2 text-end tabular-nums">{{ formatMoney(row.amount) }}</td>
-                                <td class="px-3 py-2 text-end tabular-nums">{{ row.share }}%</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <StatTable :columns="categoryColumns" :rows="incomeRows" :row-key="rowKey" :totals="incomeTotals" dense />
                 </template>
             </ChartCard>
         </section>

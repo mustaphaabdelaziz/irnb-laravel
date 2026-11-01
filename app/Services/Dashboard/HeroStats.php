@@ -420,7 +420,7 @@ class HeroStats
                 ->selectRaw(
                     "SUM(CASE WHEN transaction_date <= ? THEN (CASE WHEN transaction_type = 'income' THEN amount ELSE -amount END) ELSE 0 END) as current_end, "
                     ."SUM(CASE WHEN transaction_date <= ? THEN (CASE WHEN transaction_type = 'income' THEN amount ELSE -amount END) ELSE 0 END) as previous_end",
-                    [$filters->to->toDateString(), $filters->prevTo->toDateString()],
+                    [$filters->to->endOfDay()->toDateTimeString(), $filters->prevTo->endOfDay()->toDateTimeString()],
                 )
                 ->first();
 

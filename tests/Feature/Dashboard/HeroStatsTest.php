@@ -338,4 +338,18 @@ class HeroStatsTest extends TestCase
         $this->assertNull($this->tiles(['compare' => '0'])['treasury']['delta']);
         $this->assertNull($this->tiles(['range' => 'all'])['treasury']['delta']);
     }
+
+    #[Test]
+    public function a_transaction_late_on_the_last_day_of_the_previous_window_counts_in_its_balance(): void
+    {
+        $this->account(['opening_balance' => 1000]);
+        $this->transaction('income', 1000, '2026-03-31 15:00:00'); // last day of Q1, afternoon
+        $this->transaction('income', 500, '2026-05-10');
+
+        $delta = $this->tiles(['range' => 'quarter'])['treasury']['delta'];
+
+        // 2 500 now vs 2 000 at the end of Q1. A midnight cut-off would drop the
+        // 15:00 income from Q1 (1 000) and read 150%.
+        $this->assertSame(25.0, $delta['percent']);
+    }
 }

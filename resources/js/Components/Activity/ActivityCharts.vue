@@ -123,7 +123,7 @@ const usersData = computed(() => {
 
 // Timeline table: one number column per shown area, plus the row total.
 const timelineColumns = computed(() => [
-    { key: 'label', label: t('date'), format: 'text' },
+    { key: 'label', label: t('date'), format: 'text', csv: (r) => r.bucket },
     ...shareAreas.value.map((area) => ({ key: area, label: areaLabel(area), format: 'number', total: 'sum' })),
     { key: 'total', label: t('activity.total'), format: 'number' },
 ]);
@@ -171,7 +171,7 @@ const userTotals = computed(() => columnTotals(userColumns.value, topUsers.value
         <!-- Key figures -->
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <StatTile :label="t('activity.total')" :value="total" format="number" icon="chart" tone="primary" />
-            <StatTile :label="charts.unit === 'week' ? t('activity.active_weeks') : t('activity.active_days')" :value="activeDays" format="number" :meta="`/ ${charts.buckets.length}`" icon="calendar" tone="neutral" />
+            <StatTile :label="charts.unit === 'week' ? t('activity.active_weeks') : t('activity.active_days')" :value="activeDays" format="number" :meta="`⁦/ ${charts.buckets.length}⁩`" icon="calendar" tone="neutral" />
             <StatTile :label="t('activity.average_per_active')" :value="activeDays ? total / activeDays : 0" format="number" icon="task" tone="neutral" />
             <StatTile :label="t('activity.busiest')" :value="busiest?.count ?? 0" format="number" :meta="busiest ? bucketLabel(busiest.bucket) : null" icon="flag" tone="warning" />
         </div>

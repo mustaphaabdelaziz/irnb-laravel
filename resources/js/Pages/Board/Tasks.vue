@@ -298,8 +298,8 @@ function onDrop(col) {
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <StatTile :label="`${t('total')} ${t('tasks')}`" :value="stats.total" format="number" icon="task" tone="primary" />
                 <StatTile :label="t('completion_rate')" :value="stats.completionRate" format="percent" :meta="`${stats.completed}/${stats.total}`" icon="check" tone="positive" />
-                <StatTile :label="t('in_progress')" :value="stats.inProgress" format="number" :meta="`${t('avg')} ${formatPercent(stats.avgProgress)}`" icon="task" tone="primary" />
-                <StatTile :label="t('overdue')" :value="stats.overdue" format="number" icon="alert" tone="negative" />
+                <StatTile :label="t('in_progress')" :value="stats.inProgress" format="number" :meta="`${t('avg')} ${formatPercent(stats.avgProgress, { trim: true })}`" icon="task" tone="primary" />
+                <StatTile :label="t('overdue')" :value="stats.overdue" format="number" icon="alert" :tone="stats.overdue > 0 ? 'negative' : 'neutral'" />
             </div>
 
             <!-- Distributions -->

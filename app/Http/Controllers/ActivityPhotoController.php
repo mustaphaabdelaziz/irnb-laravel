@@ -19,12 +19,14 @@ class ActivityPhotoController extends Controller
 
         $order = (int) $activity->photos()->max('sort_order');
         foreach ($request->file('photos') as $upload) {
-            $large = $storage->storeImage($upload, $activity->photoDirectory(), 1600);
-            $thumb = $storage->storeImage($upload, $activity->photoDirectory().'/thumbs', 400);
+            $sizes = $storage->storeImageVariants($upload, [
+                1600 => $activity->photoDirectory(),
+                400 => $activity->photoDirectory().'/thumbs',
+            ]);
 
             $activity->photos()->create([
-                'path' => $large['path'],
-                'thumb_path' => $thumb['path'],
+                'path' => $sizes[1600]['path'],
+                'thumb_path' => $sizes[400]['path'],
                 'sort_order' => ++$order,
             ]);
         }

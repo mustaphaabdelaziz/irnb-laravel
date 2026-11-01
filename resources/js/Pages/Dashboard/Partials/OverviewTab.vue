@@ -12,7 +12,7 @@ import { Separator } from '@/Components/ui/separator';
 import { useChartTheme } from '@/Composables/useChartTheme';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { baseOptions, barDataset, ordinal, seriesColor, spanLabel } from '@/lib/chartTheme';
-import { sumColumn } from '@/lib/statTable';
+import { columnTotals } from '@/lib/statTable';
 
 const props = defineProps({
     data: { type: Object, default: null },
@@ -106,7 +106,6 @@ const agingOptions = computed(() => {
     });
 });
 
-const totalsOf = (rows, keys) => Object.fromEntries(keys.map((key) => [key, sumColumn(rows, key)]));
 
 // Rows carry their labels as data, so the table, the sort and the CSV agree.
 const cashFlowColumns = computed(() => [
@@ -121,15 +120,15 @@ const cashFlowRows = computed(() => cashFlow.value.labels.map((month, index) => 
     expense: cashFlow.value.expense[index],
     net: cashFlow.value.net[index],
 })));
-const cashFlowTotals = computed(() => totalsOf(cashFlowRows.value, ['income', 'expense', 'net']));
+const cashFlowTotals = computed(() => columnTotals(cashFlowColumns.value, cashFlowRows.value));
 
 const agingColumns = computed(() => [
     { key: 'label', label: t('dashboard.bucket'), format: 'text' },
     { key: 'amount', label: t('dashboard.amount'), format: 'money', total: 'sum' },
-    { key: 'players', label: t('dashboard.members'), format: 'number', total: 'sum' },
+    { key: 'players', label: t('dashboard.members'), format: 'number' },
 ]);
 const agingRows = computed(() => aging.value.map((bucket) => ({ ...bucket, label: agingLabel(bucket) })));
-const agingTotals = computed(() => totalsOf(agingRows.value, ['amount', 'players']));
+const agingTotals = computed(() => columnTotals(agingColumns.value, agingRows.value));
 
 const activityIcon = { transaction: 'money', registration: 'user', rental: 'box', assignment: 'wrench' };
 </script>

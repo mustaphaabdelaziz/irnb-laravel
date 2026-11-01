@@ -14,7 +14,7 @@ import ChartCard from '@/Components/Dashboard/ChartCard.vue';
 import StatTile from '@/Components/Dashboard/StatTile.vue';
 import StatTable from '@/Components/Stats/StatTable.vue';
 import { barDataset, baseOptions, mutedInk, seriesColor } from '@/lib/chartTheme';
-import { sumColumn } from '@/lib/statTable';
+import { columnTotals } from '@/lib/statTable';
 import '@/lib/registerCharts';
 import { Bar } from 'vue-chartjs';
 
@@ -137,19 +137,18 @@ const barOptions = computed(() => {
     return baseOptions({ rtl: rtl.value, legend: false });
 });
 
-const totalsOf = (rows, keys) => Object.fromEntries(keys.map((key) => [key, sumColumn(rows, key)]));
 const monthlyColumns = computed(() => [
     { key: 'month', label: t('dashboard.month'), format: 'text' },
     { key: 'count', label: t('completed'), format: 'number', total: 'sum' },
 ]);
 const monthlyRows = computed(() => monthLabels.value.map((month, i) => ({ month, count: monthlyData.value[i] ?? 0 })));
-const monthlyTotals = computed(() => totalsOf(monthlyRows.value, ['count']));
+const monthlyTotals = computed(() => columnTotals(monthlyColumns.value, monthlyRows.value));
 const yearlyColumns = computed(() => [
     { key: 'year', label: t('year'), format: 'text' },
     { key: 'count', label: t('completed'), format: 'number', total: 'sum' },
 ]);
 const yearlyRows = computed(() => yearlyData.value.map((y) => ({ year: String(y.year), count: y.count })));
-const yearlyTotals = computed(() => totalsOf(yearlyRows.value, ['count']));
+const yearlyTotals = computed(() => columnTotals(yearlyColumns.value, yearlyRows.value));
 
 const showModal = ref(false);
 const editingId = ref(null);

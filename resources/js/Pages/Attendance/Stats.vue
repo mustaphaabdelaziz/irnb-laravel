@@ -17,7 +17,7 @@ import IconButton from '@/Components/IconButton.vue';
 import { useAttendanceCodes } from '@/Composables/useAttendanceCodes';
 import { useChartTheme } from '@/Composables/useChartTheme';
 import { barDataset, baseOptions } from '@/lib/chartTheme';
-import { sumColumn } from '@/lib/statTable';
+import { columnTotals } from '@/lib/statTable';
 import { hasMarks, hours, monthTick, pct, periodQuery, statusBars } from '@/lib/attendanceStats';
 import StatsPlayerTable from './Partials/StatsPlayerTable.vue';
 import StatsRanking from './Partials/StatsRanking.vue';
@@ -99,7 +99,6 @@ const sessionsOptions = computed(() => {
     return baseOptions({ rtl: rtl.value });
 });
 
-const totalsOf = (rows, keys) => Object.fromEntries(keys.map((key) => [key, sumColumn(rows, key)]));
 const monthlyColumns = computed(() => [
     { key: 'ym', label: t('att.date'), format: 'text' },
     ...statuses.value.map((s) => ({ key: s, label: label(s), format: 'number', total: 'sum' })),
@@ -107,7 +106,7 @@ const monthlyColumns = computed(() => [
 const monthlyRows = computed(() =>
     props.monthly.labels.map((ym, i) => ({ ym, ...Object.fromEntries(statuses.value.map((s) => [s, props.monthly.statuses[s][i]])) })),
 );
-const monthlyTotals = computed(() => totalsOf(monthlyRows.value, statuses.value));
+const monthlyTotals = computed(() => columnTotals(monthlyColumns.value, monthlyRows.value));
 const sessionColumns = computed(() => [
     { key: 'ym', label: t('att.date'), format: 'text' },
     { key: 'held', label: t('att.state.held'), format: 'number', total: 'sum' },
@@ -116,7 +115,7 @@ const sessionColumns = computed(() => [
 const sessionRows = computed(() =>
     props.sessionsByMonth.labels.map((ym, i) => ({ ym, held: props.sessionsByMonth.held[i], cancelled: props.sessionsByMonth.cancelled[i] })),
 );
-const sessionTotals = computed(() => totalsOf(sessionRows.value, ['held', 'cancelled']));
+const sessionTotals = computed(() => columnTotals(sessionColumns.value, sessionRows.value));
 
 const preseasonText = (p) => (!p ? '—' : p.target ? `${p.done}/${p.target}` : String(p.done));
 

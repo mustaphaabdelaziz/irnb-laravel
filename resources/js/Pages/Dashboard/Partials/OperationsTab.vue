@@ -12,7 +12,7 @@ import { Separator } from '@/Components/ui/separator';
 import { useChartTheme } from '@/Composables/useChartTheme';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { baseOptions, seriesColor, spanLabel } from '@/lib/chartTheme';
-import { sumColumn } from '@/lib/statTable';
+import { columnTotals } from '@/lib/statTable';
 import { useStatusLabel } from '@/Composables/useStatusLabel';
 
 const props = defineProps({
@@ -111,7 +111,6 @@ const rentalsOptions = computed(() => {
     return baseOptions({ rtl: props.rtl, legend: false });
 });
 
-const totalsOf = (rows, keys) => Object.fromEntries(keys.map((key) => [key, sumColumn(rows, key)]));
 
 const funnelColumns = computed(() => [
     { key: 'label', label: t('dashboard.subscriptions'), format: 'text', sortable: true },
@@ -124,14 +123,14 @@ const funnelColumns = computed(() => [
 ]);
 // Rows carry the display label as data, so the table, the sort and the CSV agree.
 const funnelRows = computed(() => funnel.value.map((row) => ({ ...row, label: `${row.name} ${row.year}` })));
-const funnelTotals = computed(() => totalsOf(funnelRows.value, ['enrolled', 'paid', 'partial', 'unpaid', 'exempt']));
+const funnelTotals = computed(() => columnTotals(funnelColumns.value, funnelRows.value));
 
 const rentalsColumns = computed(() => [
     { key: 'month', label: t('dashboard.month'), format: 'text' },
     { key: 'count', label: t('dashboard.ops_rentals'), format: 'number', total: 'sum' },
 ]);
 const rentalsRows = computed(() => rentals.value.labels.map((month, index) => ({ month, count: rentals.value.counts[index] })));
-const rentalsTotals = computed(() => totalsOf(rentalsRows.value, ['count']));
+const rentalsTotals = computed(() => columnTotals(rentalsColumns.value, rentalsRows.value));
 
 const statusTone = {
     Available: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300',

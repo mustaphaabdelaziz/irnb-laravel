@@ -8,7 +8,7 @@ import StatTile from '@/Components/Dashboard/StatTile.vue';
 import StatTable from '@/Components/Stats/StatTable.vue';
 import { useChartTheme } from '@/Composables/useChartTheme';
 import { baseOptions, seriesColor, surface } from '@/lib/chartTheme';
-import { sumColumn } from '@/lib/statTable';
+import { columnTotals } from '@/lib/statTable';
 
 /**
  * Activity statistics for a period: events over time per area, the share of
@@ -120,7 +120,6 @@ const usersData = computed(() => {
     };
 });
 
-const totalsOf = (rows, keys) => Object.fromEntries(keys.map((key) => [key, sumColumn(rows, key)]));
 
 // Timeline table: one number column per shown area, plus the row total.
 const timelineColumns = computed(() => [
@@ -137,7 +136,7 @@ const timelineRows = computed(() => props.charts.buckets.map((bucket, i) => {
 
     return row;
 }));
-const timelineTotals = computed(() => totalsOf(timelineRows.value, shareAreas.value));
+const timelineTotals = computed(() => columnTotals(timelineColumns.value, timelineRows.value));
 
 const areaColumns = computed(() => [
     { key: 'label', label: t('stats.area'), format: 'text', sortable: true },
@@ -150,7 +149,7 @@ const areaRows = computed(() => shareAreas.value.map((area) => ({
     count: props.charts.areas[area],
     share: total.value ? (props.charts.areas[area] / total.value) * 100 : 0,
 })));
-const areaTotals = computed(() => totalsOf(areaRows.value, ['count']));
+const areaTotals = computed(() => columnTotals(areaColumns.value, areaRows.value));
 
 const actionColumns = computed(() => [
     { key: 'label', label: t('action'), format: 'text', sortable: true },
@@ -158,13 +157,13 @@ const actionColumns = computed(() => [
     { key: 'count', label: t('activity.events'), format: 'number', sortable: true, total: 'sum' },
 ]);
 const actionRows = computed(() => props.charts.actions.map((a) => ({ ...a, label: actionLabel(a.action), areaName: areaLabel(a.area) })));
-const actionTotals = computed(() => totalsOf(actionRows.value, ['count']));
+const actionTotals = computed(() => columnTotals(actionColumns.value, actionRows.value));
 
 const userColumns = computed(() => [
     { key: 'name', label: t('user'), format: 'text', sortable: true },
-    { key: 'total', label: t('activity.events'), format: 'number', sortable: true, total: 'sum' },
+    { key: 'total', label: t('activity.events'), format: 'number', sortable: true },
 ]);
-const userTotals = computed(() => totalsOf(topUsers.value, ['total']));
+const userTotals = computed(() => columnTotals(userColumns.value, topUsers.value));
 </script>
 
 <template>

@@ -16,7 +16,7 @@ import BranchSwitch from '@/Components/Attendance/BranchSwitch.vue';
 import { useAttendanceCodes } from '@/Composables/useAttendanceCodes';
 import { useChartTheme } from '@/Composables/useChartTheme';
 import { baseOptions } from '@/lib/chartTheme';
-import { sumColumn } from '@/lib/statTable';
+import { columnTotals } from '@/lib/statTable';
 import { dayLabel } from '@/lib/attendanceCalendar';
 import { hasMarks, pct, periodQuery, statusBars } from '@/lib/attendanceStats';
 import { branchFromUrl } from '@/lib/attendanceBranchTab';
@@ -99,7 +99,6 @@ const monthlyOptions = computed(() => {
     themeVersion.value;
     return baseOptions({ rtl: rtl.value, stacked: true });
 });
-const totalsOf = (rows, keys) => Object.fromEntries(keys.map((key) => [key, sumColumn(rows, key)]));
 const monthlyColumns = computed(() => [
     { key: 'ym', label: t('att.date'), format: 'text' },
     ...statuses.value.map((s) => ({ key: s, label: label(s), format: 'number', total: 'sum' })),
@@ -108,7 +107,7 @@ const monthlyRows = computed(() => {
     const m = data.value?.monthly;
     return (m?.labels ?? []).map((ym, i) => ({ ym, ...Object.fromEntries(statuses.value.map((s) => [s, m.statuses?.[s]?.[i] ?? 0])) }));
 });
-const monthlyTotals = computed(() => totalsOf(monthlyRows.value, statuses.value));
+const monthlyTotals = computed(() => columnTotals(monthlyColumns.value, monthlyRows.value));
 // Same period and branch tab as the card.
 const printQuery = computed(() => (data.value ? { player: props.player.id, ...periodQuery(data.value.period), ...(data.value.branchId ? { branch_id: data.value.branchId } : {}) } : null));
 const reportHref = computed(() => (printQuery.value ? route('attendance.players.report', printQuery.value) : null));

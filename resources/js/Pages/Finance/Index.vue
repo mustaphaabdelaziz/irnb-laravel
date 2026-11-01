@@ -16,7 +16,7 @@ import { useCan } from '@/Composables/useCan';
 import { useChartTheme } from '@/Composables/useChartTheme';
 import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 import { baseOptions, lineDataset, MONEY_IN, MONEY_OUT, rankedBarDataset } from '@/lib/chartTheme';
-import { sumColumn } from '@/lib/statTable';
+import { columnTotals } from '@/lib/statTable';
 import '@/lib/registerCharts';
 
 const props = defineProps({
@@ -151,11 +151,10 @@ const yearColumns = computed(() => [
 
 // One totals object per table, handed to both the table and its CSV, so the
 // screen and the downloaded file can never disagree.
-const totalsOf = (rows, keys) => Object.fromEntries(keys.map((key) => [key, sumColumn(rows, key)]));
-const monthlyTotals = computed(() => totalsOf(monthlyRows.value, ['income', 'expense', 'net']));
-const incomeTotals = computed(() => totalsOf(incomeRows.value, ['count', 'total']));
-const expenseTotals = computed(() => totalsOf(expenseRows.value, ['count', 'total']));
-const yearTotals = computed(() => totalsOf(props.years, ['total_income', 'total_expense', 'net']));
+const monthlyTotals = computed(() => columnTotals(monthlyColumns.value, monthlyRows.value));
+const incomeTotals = computed(() => columnTotals(categoryColumns.value, incomeRows.value));
+const expenseTotals = computed(() => columnTotals(categoryColumns.value, expenseRows.value));
+const yearTotals = computed(() => columnTotals(yearColumns.value, props.years));
 
 const csvName = (title) => `${title} ${season.value}`;
 </script>

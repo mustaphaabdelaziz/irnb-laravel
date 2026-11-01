@@ -12,7 +12,7 @@ import StatTable from '@/Components/Stats/StatTable.vue';
 import { Separator } from '@/Components/ui/separator';
 import { useChartTheme } from '@/Composables/useChartTheme';
 import { baseOptions, ordinal, rankedBarDataset, seriesColor, spanLabel } from '@/lib/chartTheme';
-import { sumColumn } from '@/lib/statTable';
+import { columnTotals } from '@/lib/statTable';
 
 const props = defineProps({
     data: { type: Object, default: null },
@@ -156,7 +156,6 @@ const barOptions = computed(() => {
     return baseOptions({ rtl: props.rtl, horizontal: true, legend: false });
 });
 
-const totalsOf = (rows, keys) => Object.fromEntries(keys.map((key) => [key, sumColumn(rows, key)]));
 
 const growthColumns = computed(() => [
     { key: 'month', label: t('dashboard.month'), format: 'text' },
@@ -170,7 +169,7 @@ const growthRows = computed(() => growth.value.labels.map((month, i) => ({
     left: growthLeft.value[i] ?? 0,
     cumulative: growth.value.cumulative[i] ?? 0,
 })));
-const growthTotals = computed(() => totalsOf(growthRows.value, ['joined', 'left']));
+const growthTotals = computed(() => columnTotals(growthColumns.value, growthRows.value));
 
 const countColumns = computed(() => [
     { key: 'label', label: t('dashboard.category'), format: 'text', sortable: true },
@@ -180,8 +179,8 @@ const countColumns = computed(() => [
 const withLabel = (rows) => rows.map((r) => ({ ...r, label: rowLabel(r) }));
 const categoryRows = computed(() => withLabel(byCategory.value));
 const leftCategoryRows = computed(() => withLabel(leftByCategory.value));
-const categoryTotals = computed(() => totalsOf(categoryRows.value, ['count']));
-const leftCategoryTotals = computed(() => totalsOf(leftCategoryRows.value, ['count']));
+const categoryTotals = computed(() => columnTotals(countColumns.value, categoryRows.value));
+const leftCategoryTotals = computed(() => columnTotals(countColumns.value, leftCategoryRows.value));
 const rowKey = (r) => r.labelKey || r.name;
 
 const ageColumns = computed(() => [
@@ -189,7 +188,7 @@ const ageColumns = computed(() => [
     { key: 'count', label: t('dashboard.members'), format: 'number', total: 'sum' },
 ]);
 const ageRows = computed(() => byAge.value.map((r) => ({ ...r, label: t(`dashboard.age_${r.band}`) })));
-const ageTotals = computed(() => totalsOf(ageRows.value, ['count']));
+const ageTotals = computed(() => columnTotals(ageColumns.value, ageRows.value));
 
 /** Magnitude: one hue, darkest for the largest bar (shared ranked-bar helper). */
 function magnitudeChart(rows) {

@@ -13,7 +13,7 @@ import { useChartTheme } from '@/Composables/useChartTheme';
 import { useFormatDate } from '@/Composables/useFormatDate';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { baseOptions, rankedBarDataset } from '@/lib/chartTheme';
-import { sumColumn } from '@/lib/statTable';
+import { columnTotals } from '@/lib/statTable';
 
 const props = defineProps({
     data: { type: Object, default: null },
@@ -77,8 +77,8 @@ const categoryColumns = computed(() => [
 const withLabel = (rows) => rows.map((r) => ({ ...r, label: rowLabel(r) }));
 const expenseRows = computed(() => withLabel(expenses.value));
 const incomeRows = computed(() => withLabel(income.value));
-const expenseTotals = computed(() => ({ amount: sumColumn(expenseRows.value, 'amount') }));
-const incomeTotals = computed(() => ({ amount: sumColumn(incomeRows.value, 'amount') }));
+const expenseTotals = computed(() => columnTotals(categoryColumns.value, expenseRows.value));
+const incomeTotals = computed(() => columnTotals(categoryColumns.value, incomeRows.value));
 const rowKey = (r) => r.labelKey || r.name;
 
 /** A magnitude chart: one hue darkening with the value (shared ranked-bar helper). */

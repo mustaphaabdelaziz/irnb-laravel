@@ -2409,6 +2409,7 @@
     "statistics": "Statistiques",
     "stats.active_filters": "{count} actif(s)",
     "stats.age_band": "Tranche d'âge",
+    "stats.area": "Domaine",
     "stats.download_csv": "Télécharger le tableau (CSV)",
     "stats.empty": "Aucune donnée à afficher",
     "stats.filters": "Filtres",

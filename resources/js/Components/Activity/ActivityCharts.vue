@@ -140,9 +140,9 @@ const timelineRows = computed(() => props.charts.buckets.map((bucket, i) => {
 const timelineTotals = computed(() => totalsOf(timelineRows.value, shareAreas.value));
 
 const areaColumns = computed(() => [
-    { key: 'label', label: t('activity.chart_areas'), format: 'text', sortable: true },
+    { key: 'label', label: t('stats.area'), format: 'text', sortable: true },
     { key: 'count', label: t('activity.events'), format: 'number', sortable: true, total: 'sum' },
-    { key: 'share', label: '%', format: 'percent', sortable: true },
+    { key: 'share', label: t('dashboard.fin_share'), format: 'percent', sortable: true },
 ]);
 const areaRows = computed(() => shareAreas.value.map((area) => ({
     area,
@@ -153,15 +153,15 @@ const areaRows = computed(() => shareAreas.value.map((area) => ({
 const areaTotals = computed(() => totalsOf(areaRows.value, ['count']));
 
 const actionColumns = computed(() => [
-    { key: 'label', label: t('activity.chart_actions'), format: 'text', sortable: true },
-    { key: 'areaName', label: t('activity.chart_areas'), format: 'text', sortable: true },
+    { key: 'label', label: t('action'), format: 'text', sortable: true },
+    { key: 'areaName', label: t('stats.area'), format: 'text', sortable: true },
     { key: 'count', label: t('activity.events'), format: 'number', sortable: true, total: 'sum' },
 ]);
 const actionRows = computed(() => props.charts.actions.map((a) => ({ ...a, label: actionLabel(a.action), areaName: areaLabel(a.area) })));
 const actionTotals = computed(() => totalsOf(actionRows.value, ['count']));
 
 const userColumns = computed(() => [
-    { key: 'name', label: t('activity.chart_users'), format: 'text', sortable: true },
+    { key: 'name', label: t('user'), format: 'text', sortable: true },
     { key: 'total', label: t('activity.events'), format: 'number', sortable: true, total: 'sum' },
 ]);
 const userTotals = computed(() => totalsOf(topUsers.value, ['total']));

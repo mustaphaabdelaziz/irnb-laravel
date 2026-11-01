@@ -2409,6 +2409,7 @@
     "statistics": "Statistics",
     "stats.active_filters": "{count} active",
     "stats.age_band": "Age band",
+    "stats.area": "Area",
     "stats.download_csv": "Download table (CSV)",
     "stats.empty": "No data to show",
     "stats.filters": "Filters",

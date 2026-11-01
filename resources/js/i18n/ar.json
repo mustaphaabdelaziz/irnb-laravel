@@ -2409,6 +2409,7 @@
     "statistics": "إحصائيات",
     "stats.active_filters": "{count} مفعّل",
     "stats.age_band": "الفئة العمرية",
+    "stats.area": "المجال",
     "stats.download_csv": "تنزيل الجدول (CSV)",
     "stats.empty": "لا توجد بيانات لعرضها",
     "stats.filters": "عوامل التصفية",

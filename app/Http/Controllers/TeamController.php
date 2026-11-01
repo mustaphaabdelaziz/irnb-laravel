@@ -13,6 +13,7 @@ use App\Services\Competitions\CompetitionRecord;
 use App\Services\Competitions\MatchStats;
 use App\Services\Competitions\PlayerFlags;
 use App\Services\Competitions\TeamAccess;
+use App\Services\Player\DocumentStats;
 use App\Support\Season;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -131,6 +132,10 @@ class TeamController extends Controller
                 'leaders' => MatchStats::leaderboards($stats->players($season, $team->id)),
             ] : null,
             'canEditTeam' => ! TeamAccess::isScoped($request->user()) && $request->user()->hasPermission('teams', 'edit'),
+            // Document completion of this season's roster; needs documents/view.
+            'documentStats' => fn (): ?array => $request->user()->hasPermission('documents', 'view')
+                ? app(DocumentStats::class)->summary(Player::query()->whereIn('players.id', $roster->pluck('player_id')->all()))
+                : null,
         ]);
     }
 

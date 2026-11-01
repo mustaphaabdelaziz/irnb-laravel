@@ -2575,6 +2575,8 @@
     "stats.doc_document": "الوثيقة",
     "stats.doc_expiring": "تنتهي خلال 30 يومًا",
     "stats.doc_missing": "ناقصة",
+    "stats.doc_missing_by_type": "الوثائق الناقصة حسب النوع",
+    "stats.doc_missing_for": "ناقصة لدى {n} لاعب",
     "stats.doc_no_players": "لا يوجد لاعبون هنا",
     "stats.doc_none_required": "لا توجد وثائق مطلوبة لهؤلاء اللاعبين",
     "stats.doc_pct": "نسبة الاستلام",

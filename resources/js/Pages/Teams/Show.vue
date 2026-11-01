@@ -11,6 +11,9 @@ import SearchableSelect from '@/Components/SearchableSelect.vue';
 import SeasonSelect from '@/Components/Competitions/SeasonSelect.vue';
 import StatsLeaders from '@/Components/Competitions/StatsLeaders.vue';
 import ExportMenu from '@/Components/ExportMenu.vue';
+import CompletionBar from '@/Components/Stats/CompletionBar.vue';
+import { useFormatNumber } from '@/Composables/useFormatNumber';
+import { completionBarProps } from '@/lib/completion';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { computed, ref } from 'vue';
@@ -22,7 +25,13 @@ const { can } = useCan();
 const props = defineProps({
     team: Object, season: Number, seasons: Array, roster: Array, candidates: Array, previousRosterCount: Number,
     coaches: Array, users: Array, competitions: Array, games: Array, stats: Object, formats: Array, categories: Array, canManage: Boolean, canEditTeam: Boolean,
+    documentStats: Object,
 });
+const { formatNumber } = useFormatNumber();
+
+// Types still missing for someone on the roster, in the server's worst-first
+// order. No links: the players list has no roster filter.
+const missingTypes = computed(() => (props.documentStats?.by_type ?? []).filter((row) => row.missing > 0));
 
 const tab = ref('roster');
 const confirmDelete = ref(false);
@@ -115,6 +124,19 @@ const tabs = computed(() => ['roster', 'coaches', 'competitions', 'games', ...(c
                     <span>{{ t('comp.copy_roster_hint', { n: previousRosterCount }) }}</span>
                     <SecondaryButton @click="copyRoster">{{ t('comp.copy_roster') }}</SecondaryButton>
                 </div>
+
+                <template v-if="documentStats && roster.length">
+                    <CompletionBar v-bind="completionBarProps(documentStats)" size="sm" />
+                    <details v-if="missingTypes.length" class="rounded-lg border border-border/70 px-4 py-2 text-sm">
+                        <summary class="cursor-pointer font-medium text-slate-700 dark:text-slate-200">{{ t('stats.doc_missing_by_type') }}</summary>
+                        <ul class="mt-2 space-y-1">
+                            <li v-for="row in missingTypes" :key="row.id" class="flex flex-wrap justify-between gap-x-3">
+                                <span class="min-w-0">{{ row.name }}</span>
+                                <span class="text-slate-500 dark:text-slate-400">— {{ t('stats.doc_missing_for', { n: formatNumber(row.missing) }) }}</span>
+                            </li>
+                        </ul>
+                    </details>
+                </template>
 
                 <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-sm">
                     <thead>

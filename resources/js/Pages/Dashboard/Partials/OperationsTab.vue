@@ -7,9 +7,12 @@ import StatTile from '@/Components/Dashboard/StatTile.vue';
 import Icon from '@/Components/Icon.vue';
 import { Badge } from '@/Components/ui/badge';
 import { Card, CardHeader, CardTitle } from '@/Components/ui/card';
+import StatTable from '@/Components/Stats/StatTable.vue';
 import { Separator } from '@/Components/ui/separator';
+import { useChartTheme } from '@/Composables/useChartTheme';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { baseOptions, seriesColor, spanLabel } from '@/lib/chartTheme';
+import { sumColumn } from '@/lib/statTable';
 import { useStatusLabel } from '@/Composables/useStatusLabel';
 
 const props = defineProps({
@@ -21,6 +24,7 @@ const props = defineProps({
 const { t } = useI18n();
 const { statusLabel } = useStatusLabel();
 const { formatMoney } = useFormatMoney();
+const { themeVersion } = useChartTheme();
 
 const summary = computed(() => props.data?.summary ?? []);
 const funnel = computed(() => props.data?.subscriptionFunnel ?? []);
@@ -64,32 +68,70 @@ const STAGES = [
     { key: 'unpaid', slot: 7 },    // red
 ];
 
-const funnelChart = computed(() => ({
-    labels: funnel.value.map((row) => `${row.name} ${row.year}`),
-    datasets: STAGES.map((stage) => ({
-        label: t(`dashboard.ops_${stage.key}`),
-        data: funnel.value.map((row) => row[stage.key]),
-        backgroundColor: seriesColor(stage.slot),
-        borderRadius: 4,
-        maxBarThickness: 28,
-        stack: 'funnel',
-    })),
-}));
+const funnelChart = computed(() => {
+    themeVersion.value; // recolour on theme toggle
 
-const funnelOptions = computed(() => baseOptions({ rtl: props.rtl, stacked: true, horizontal: true }));
+    return {
+        labels: funnel.value.map((row) => `${row.name} ${row.year}`),
+        datasets: STAGES.map((stage) => ({
+            label: t(`dashboard.ops_${stage.key}`),
+            data: funnel.value.map((row) => row[stage.key]),
+            backgroundColor: seriesColor(stage.slot),
+            borderRadius: 4,
+            maxBarThickness: 28,
+            stack: 'funnel',
+        })),
+    };
+});
 
-const rentalsChart = computed(() => ({
-    labels: rentals.value.labels.map(monthLabel),
-    datasets: [{
-        label: t('dashboard.ops_rentals'),
-        data: rentals.value.counts,
-        backgroundColor: seriesColor(0),
-        borderRadius: 4,
-        maxBarThickness: 24,
-    }],
-}));
+const funnelOptions = computed(() => {
+    themeVersion.value;
 
-const rentalsOptions = computed(() => baseOptions({ rtl: props.rtl, legend: false }));
+    return baseOptions({ rtl: props.rtl, stacked: true, horizontal: true });
+});
+
+const rentalsChart = computed(() => {
+    themeVersion.value;
+
+    return {
+        labels: rentals.value.labels.map(monthLabel),
+        datasets: [{
+            label: t('dashboard.ops_rentals'),
+            data: rentals.value.counts,
+            backgroundColor: seriesColor(0),
+            borderRadius: 4,
+            maxBarThickness: 24,
+        }],
+    };
+});
+
+const rentalsOptions = computed(() => {
+    themeVersion.value;
+
+    return baseOptions({ rtl: props.rtl, legend: false });
+});
+
+const totalsOf = (rows, keys) => Object.fromEntries(keys.map((key) => [key, sumColumn(rows, key)]));
+
+const funnelColumns = computed(() => [
+    { key: 'label', label: t('dashboard.subscriptions'), format: 'text', sortable: true },
+    { key: 'enrolled', label: t('dashboard.ops_enrolled'), format: 'number', sortable: true, total: 'sum' },
+    { key: 'paid', label: t('dashboard.ops_paid'), format: 'number', sortable: true, total: 'sum' },
+    { key: 'partial', label: t('dashboard.ops_partial'), format: 'number', sortable: true, total: 'sum' },
+    { key: 'unpaid', label: t('dashboard.ops_unpaid'), format: 'number', sortable: true, total: 'sum' },
+    { key: 'exempt', label: t('dashboard.ops_exempt'), format: 'number', sortable: true, total: 'sum' },
+    { key: 'rate', label: t('dashboard.ops_rate'), format: 'percent', sortable: true },
+]);
+// Rows carry the display label as data, so the table, the sort and the CSV agree.
+const funnelRows = computed(() => funnel.value.map((row) => ({ ...row, label: `${row.name} ${row.year}` })));
+const funnelTotals = computed(() => totalsOf(funnelRows.value, ['enrolled', 'paid', 'partial', 'unpaid', 'exempt']));
+
+const rentalsColumns = computed(() => [
+    { key: 'month', label: t('dashboard.month'), format: 'text' },
+    { key: 'count', label: t('dashboard.ops_rentals'), format: 'number', total: 'sum' },
+]);
+const rentalsRows = computed(() => rentals.value.labels.map((month, index) => ({ month, count: rentals.value.counts[index] })));
+const rentalsTotals = computed(() => totalsOf(rentalsRows.value, ['count']));
 
 const statusTone = {
     Available: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300',
@@ -121,37 +163,13 @@ const statusTone = {
             :empty="!funnel.length"
             :empty-hint="t('dashboard.ops_funnel_empty')"
             has-table
+            :csv="{ filename: 'dashboard-subscription-funnel', columns: funnelColumns, rows: funnelRows, totals: funnelTotals }"
             height="h-72"
         >
             <Bar :data="funnelChart" :options="funnelOptions" />
 
             <template #table>
-                <table class="w-full text-sm">
-                    <thead class="sticky top-0 bg-muted/60 text-xs text-muted-foreground">
-                        <tr>
-                            <th class="px-3 py-2 text-start font-medium">{{ t('dashboard.subscriptions') }}</th>
-                            <th class="px-3 py-2 text-end font-medium">{{ t('dashboard.ops_enrolled') }}</th>
-                            <th class="px-3 py-2 text-end font-medium">{{ t('dashboard.ops_paid') }}</th>
-                            <th class="px-3 py-2 text-end font-medium">{{ t('dashboard.ops_partial') }}</th>
-                            <th class="px-3 py-2 text-end font-medium">{{ t('dashboard.ops_unpaid') }}</th>
-                            <th class="px-3 py-2 text-end font-medium">{{ t('dashboard.ops_exempt') }}</th>
-                            <th class="px-3 py-2 text-end font-medium">{{ t('dashboard.ops_rate') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-border/70">
-                        <tr v-for="row in funnel" :key="`${row.name}-${row.year}`">
-                            <td class="px-3 py-2">{{ row.name }} {{ row.year }}</td>
-                            <td class="px-3 py-2 text-end tabular-nums">{{ row.enrolled }}</td>
-                            <td class="px-3 py-2 text-end tabular-nums">{{ row.paid }}</td>
-                            <td class="px-3 py-2 text-end tabular-nums">{{ row.partial }}</td>
-                            <td class="px-3 py-2 text-end tabular-nums">{{ row.unpaid }}</td>
-                            <td class="px-3 py-2 text-end tabular-nums">{{ row.exempt }}</td>
-                            <td class="px-3 py-2 text-end font-medium tabular-nums">
-                                {{ row.rate === null ? '—' : `${row.rate}%` }}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                <StatTable :columns="funnelColumns" :rows="funnelRows" row-key="label" :totals="funnelTotals" dense />
             </template>
         </ChartCard>
 
@@ -163,9 +181,15 @@ const statusTone = {
                 :loading="loading"
                 :empty="!hasRentals"
                 :empty-hint="t('dashboard.ops_rentals_empty')"
+                has-table
+                :csv="{ filename: 'dashboard-rentals-per-month', columns: rentalsColumns, rows: rentalsRows, totals: rentalsTotals }"
                 height="h-64"
             >
                 <Bar :data="rentalsChart" :options="rentalsOptions" />
+
+                <template #table>
+                    <StatTable :columns="rentalsColumns" :rows="rentalsRows" row-key="month" :totals="rentalsTotals" dense />
+                </template>
             </ChartCard>
 
             <Card class="border-border/70 shadow-none">

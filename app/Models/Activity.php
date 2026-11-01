@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Str;
 
 /**
  * A social activity, recorded after it took place. `ends_on` null means a
@@ -66,11 +68,18 @@ class Activity extends Model
         return 'activities/'.$this->id;
     }
 
+    /** withCount() attributes first, then loaded relations, and only then a query. */
     protected function participantsCount(): Attribute
     {
-        return Attribute::make(get: fn () => (int) ($this->attributes['players_count'] ?? $this->players()->count())
-            + (int) ($this->attributes['board_members_count'] ?? $this->boardMembers()->count())
+        return Attribute::make(get: fn () => $this->linkedCount('players')
+            + $this->linkedCount('boardMembers')
             + (int) ($this->attributes['external_volunteers_count'] ?? 0));
+    }
+
+    private function linkedCount(string $relation): int
+    {
+        return (int) ($this->attributes[Str::snake($relation).'_count']
+            ?? ($this->relationLoaded($relation) ? $this->{$relation}->count() : $this->{$relation}()->count()));
     }
 
     public function type(): BelongsTo
@@ -106,6 +115,12 @@ class Activity extends Model
     public function photos(): HasMany
     {
         return $this->hasMany(ActivityPhoto::class)->orderBy('sort_order')->orderBy('id');
+    }
+
+    /** The gallery's first photo (lowest sort_order, then lowest id), for list cards. */
+    public function cover(): HasOne
+    {
+        return $this->hasOne(ActivityPhoto::class)->ofMany(['sort_order' => 'min', 'id' => 'min']);
     }
 
     public function files(): HasMany

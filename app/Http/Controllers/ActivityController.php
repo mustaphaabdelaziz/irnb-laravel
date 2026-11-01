@@ -23,12 +23,19 @@ class ActivityController extends Controller
 {
     public function index(Request $request): Response
     {
+        // Query strings can carry arrays (?branch[]=1): anything non-scalar counts as absent.
+        $scalar = fn (string $key): ?string => is_scalar($value = $request->query($key)) ? (string) $value : null;
+        $branch = $scalar('branch');
+
         $filters = [
-            'types' => array_values(array_filter(array_map('strval', (array) $request->query('types', [])), 'ctype_digit')),
-            'branch' => ctype_digit((string) $request->query('branch')) ? (string) $request->query('branch') : null,
-            'from' => $this->date($request->query('from')),
-            'to' => $this->date($request->query('to')),
-            'search' => trim((string) $request->query('search', '')),
+            'types' => array_values(array_filter(
+                array_map('strval', array_filter((array) $request->query('types', []), 'is_scalar')),
+                'ctype_digit',
+            )),
+            'branch' => $branch !== null && ctype_digit($branch) ? $branch : null,
+            'from' => $this->date($scalar('from')),
+            'to' => $this->date($scalar('to')),
+            'search' => trim($scalar('search') ?? ''),
         ];
 
         $query = Activity::query()
@@ -44,16 +51,28 @@ class ActivityController extends Controller
                     ->orWhere('partners', 'like', $like));
             });
 
-        $ids = (clone $query)->pluck('id');
+        // Totals over the whole filtered set, not just the page.
+        $filteredIds = fn () => (clone $query)->select('activities.id');
+        $stats = [
+            'count' => (clone $query)->count(),
+            'beneficiaries' => (int) (clone $query)->sum('beneficiaries_count'),
+            'participants' => (int) (clone $query)->sum('external_volunteers_count')
+                + DB::table('activity_player')->whereIn('activity_id', $filteredIds())->count()
+                + DB::table('activity_board_member')->whereIn('activity_id', $filteredIds())->count(),
+        ];
 
         $activities = $query
-            ->with(['type:id,name', 'branch', 'photos' => fn ($q) => $q->select(['id', 'activity_id', 'thumb_path', 'path', 'sort_order'])])
+            ->with([
+                'type:id,name',
+                'branch',
+                'cover' => fn ($q) => $q->select(['activity_photos.id', 'activity_photos.activity_id', 'activity_photos.thumb_path']),
+            ])
             ->withCount(['players', 'boardMembers'])
             ->orderByDesc('starts_on')->orderByDesc('id')
             ->paginate(20)->withQueryString()
             ->through(function (Activity $activity) {
-                $cover = $activity->photos->first();
-                $activity->setRelation('photos', collect());
+                $cover = $activity->cover;
+                $activity->unsetRelation('cover');
                 $activity->setAttribute('cover', $cover ? ['thumb_url' => $cover->thumb_url] : null);
 
                 return $activity;
@@ -61,13 +80,7 @@ class ActivityController extends Controller
 
         return Inertia::render('Activities/Index', [
             'activities' => $activities,
-            'stats' => [
-                'count' => $ids->count(),
-                'beneficiaries' => (int) Activity::whereIn('id', $ids)->sum('beneficiaries_count'),
-                'participants' => (int) Activity::whereIn('id', $ids)->sum('external_volunteers_count')
-                    + DB::table('activity_player')->whereIn('activity_id', $ids)->count()
-                    + DB::table('activity_board_member')->whereIn('activity_id', $ids)->count(),
-            ],
+            'stats' => $stats,
             'filters' => $filters,
             'types' => ActivityType::orderBy('sort_order')->orderBy('name')->get(['id', 'name']),
             'branches' => Branch::orderBy('name')->get(),
@@ -153,14 +166,18 @@ class ActivityController extends Controller
     }
 
     /**
-     * Pickers for the form. Players already linked stay pickable on edit even
-     * once archived, so saving the form never drops them silently.
+     * Pickers for the form. Players and board members already linked stay
+     * pickable on edit even once archived / former, so saving the form never
+     * drops them silently.
      *
      * @return array<string, mixed>
      */
     private function formOptions(?Activity $activity = null): array
     {
         $linked = $activity?->players()->pluck('players.id')->all() ?? [];
+        $linkedMembers = $activity
+            ? [...$activity->boardMembers()->pluck('board_members.id')->all(), ...array_filter([$activity->responsible_board_member_id])]
+            : [];
 
         return [
             'types' => ActivityType::orderBy('sort_order')->orderBy('name')->get(['id', 'name']),
@@ -172,7 +189,9 @@ class ActivityController extends Controller
                 ->get(['id', ...Player::NAME_COLUMNS, 'membership_id'])
                 ->map(fn (Player $p) => ['value' => $p->id, 'label' => $p->fullname, 'description' => $p->membership_id])
                 ->values(),
-            'boardMembers' => BoardMember::withPlayer()->where('status', 'active')->orderBy('sort_order')->get()
+            'boardMembers' => BoardMember::withPlayer()
+                ->where(fn (Builder $q) => $q->where('status', 'active')->orWhereIn('id', $linkedMembers))
+                ->orderBy('sort_order')->get()
                 ->map(fn (BoardMember $m) => ['value' => $m->id, 'label' => $m->name])
                 ->values(),
         ];

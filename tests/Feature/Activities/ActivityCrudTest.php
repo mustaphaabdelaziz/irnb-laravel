@@ -14,6 +14,8 @@ use App\Models\Role;
 use App\Models\User;
 use App\Services\Activity\ActivityAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -188,6 +190,73 @@ class ActivityCrudTest extends TestCase
 
         $this->get(route('activities.edit', $activity))
             ->assertInertia(fn (Assert $page) => $page->component('Activities/Form')->where('activity.id', $activity->id)->where('activity.player_ids', []));
+    }
+
+    #[Test]
+    public function the_edit_form_still_offers_former_board_members_linked_to_the_activity(): void
+    {
+        $active = $this->member();
+        $participant = $this->member();
+        $responsible = $this->member();
+        $unrelated = $this->member();
+        BoardMember::whereKey([$participant->id, $responsible->id, $unrelated->id])->update(['status' => 'former']);
+        $activity = $this->activity(['responsible_board_member_id' => $responsible->id]);
+        $activity->boardMembers()->attach($participant);
+
+        $offers = fn (array $ids) => fn (Collection $options) => $options->pluck('value')->sort()->values()->all() === $ids;
+
+        $this->actingAs($this->admin())->get(route('activities.edit', $activity))
+            ->assertInertia(fn (Assert $page) => $page->where('boardMembers', $offers([$active->id, $participant->id, $responsible->id])));
+
+        $this->get(route('activities.create'))
+            ->assertInertia(fn (Assert $page) => $page->where('boardMembers', $offers([$active->id])));
+    }
+
+    #[Test]
+    public function the_index_shows_the_first_photo_as_cover_without_the_gallery(): void
+    {
+        $activity = $this->activity();
+        $activity->photos()->create(['path' => 'activities/x/b.jpg', 'thumb_path' => 'activities/x/thumbs/b.jpg', 'sort_order' => 2]);
+        $activity->photos()->create(['path' => 'activities/x/a.jpg', 'thumb_path' => 'activities/x/thumbs/a.jpg', 'sort_order' => 1]);
+        $activity->photos()->create(['path' => 'activities/x/c.jpg', 'thumb_path' => 'activities/x/thumbs/c.jpg', 'sort_order' => 1]);
+        $bare = $this->activity(['title' => 'No photos', 'starts_on' => '2026-01-01']);
+
+        $this->actingAs($this->admin())->get(route('activities.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('activities.data.0.id', $activity->id)
+                ->where('activities.data.0.cover', ['thumb_url' => '/media/activities/x/thumbs/a.jpg'])
+                ->missing('activities.data.0.photos')
+                ->where('activities.data.1.id', $bare->id)
+                ->where('activities.data.1.cover', null));
+    }
+
+    #[Test]
+    public function array_valued_index_filters_are_ignored_not_fatal(): void
+    {
+        $this->activity();
+        $this->actingAs($this->admin());
+
+        foreach (['types[0][]=1', 'branch[]=1', 'search[]=x', 'from[]=2026-01-01', 'to[]=2026-12-31'] as $query) {
+            $this->get(route('activities.index').'?'.$query)
+                ->assertOk()
+                ->assertInertia(fn (Assert $page) => $page->has('activities.data', 1)->where('stats.count', 1));
+        }
+    }
+
+    #[Test]
+    public function the_participant_count_uses_loaded_relations_without_querying(): void
+    {
+        $activity = $this->activity(['external_volunteers_count' => 2]);
+        $activity->players()->attach($this->player());
+        $activity->boardMembers()->attach($this->member());
+        $activity = Activity::with(['players', 'boardMembers'])->find($activity->id);
+
+        DB::enableQueryLog();
+        $count = $activity->participants_count;
+
+        $this->assertSame(4, $count);
+        $this->assertSame([], DB::getQueryLog());
     }
 
     #[Test]

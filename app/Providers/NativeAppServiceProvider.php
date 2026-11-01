@@ -137,12 +137,15 @@ class NativeAppServiceProvider implements ProvidesPhpIni
         // The bundled static php.exe ships with no php.ini, so PHP falls back
         // to its compiled-in defaults: upload_max_filesize=2M, post_max_size=8M,
         // max_file_uploads=20 (verified by running the packaged php.exe
-        // directly). P3 promises 10 MB per file and up to 10 files for player
-        // documents, board minutes and transaction receipts — well past the 2M
-        // default — so without these overrides PHP rejects the upload before
-        // Laravel's own `max:10240` validation rule ever runs. NativePHP passes
-        // this array straight through as `-d` flags to `php -S`, and all three
-        // are PHP_INI_PERDIR, settable via -d.
+        // directly). P3 promises 10 MB per file for player documents, board
+        // minutes and transaction receipts; social activities accept attached
+        // files up to 20 MB and up to 20 photos of 8 MB per request — all well
+        // past the 2M default — so without these overrides PHP rejects the
+        // upload before Laravel's own `max:` validation rules ever run.
+        // memory_limit leaves room to decode large photos with GD. NativePHP
+        // passes this array straight through as `-d` flags to `php -S`; the
+        // upload settings are PHP_INI_PERDIR and memory_limit PHP_INI_ALL, all
+        // settable via -d.
         $settings = [
             'opcache.enable' => '1',
             'opcache.enable_cli' => '1',
@@ -150,9 +153,10 @@ class NativeAppServiceProvider implements ProvidesPhpIni
             'opcache.interned_strings_buffer' => '16',
             'opcache.max_accelerated_files' => '20000',
             'opcache.validate_timestamps' => '0',
-            'upload_max_filesize' => '10M',
-            'post_max_size' => '110M',
+            'upload_max_filesize' => '20M',
+            'post_max_size' => '200M',
             'max_file_uploads' => '20',
+            'memory_limit' => '512M',
         ];
 
         if (($fileCache = $this->opcacheFileCache()) && ($blacklist = $this->opcacheBlacklist($fileCache))) {

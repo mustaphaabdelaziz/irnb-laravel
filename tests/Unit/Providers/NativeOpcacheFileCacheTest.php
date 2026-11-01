@@ -66,7 +66,7 @@ class NativeOpcacheFileCacheTest extends TestCase
         $this->assertSame($expected, $ini['opcache.file_cache']);
         $this->assertDirectoryExists($expected);
         $this->assertSame('0', $ini['opcache.validate_timestamps']);
-        $this->assertSame('10M', $ini['upload_max_filesize']);
+        $this->assertSame('20M', $ini['upload_max_filesize']);
     }
 
     #[Test]

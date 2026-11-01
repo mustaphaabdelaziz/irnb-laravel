@@ -5,6 +5,8 @@ import '@/lib/registerCharts';
 import { Doughnut } from 'vue-chartjs';
 import { Card } from '@/Components/ui/card';
 import { useStatSelection } from '@/Composables/useStatSelection';
+import { useChartTheme } from '@/Composables/useChartTheme';
+import { seriesColor } from '@/lib/chartTheme';
 
 const { t } = useI18n();
 
@@ -18,10 +20,8 @@ const props = defineProps({
     // Currently selected key ('' = no filter), or a list of selected keys for
     // a multi-select filter: a click then toggles that key in the list. v-model.
     modelValue: { type: [String, Number, Array], default: '' },
-    palette: {
-        type: Array,
-        default: () => ['#02a85c', '#0284c7', '#d97706', '#e11d48', '#7c3aed', '#0891b2', '#65a30d', '#db2777'],
-    },
+    // Without one, slices take the chart palette slot by position, in the active theme.
+    palette: { type: Array, default: null },
     // What the total counts ("sessions" on the attendance card); players by default.
     unit: { type: String, default: null },
 });
@@ -29,40 +29,51 @@ const emit = defineEmits(['update:modelValue']);
 
 const { total, pct, clickable, isActive, toggle, hasSelection, selectedTotal, shownTotal, filtered, clear } = useStatSelection(props, emit);
 
-const colorOf = (stat, i) => stat.color || props.palette[i % props.palette.length];
+const { themeVersion } = useChartTheme();
+
+const colorOf = (stat, i) => {
+    themeVersion.value; // the legend dots recolour with the chart
+    return stat.color || (props.palette ? props.palette[i % props.palette.length] : seriesColor(i));
+};
 
 // The canvas says nothing to a screen reader: this is its text.
 const summary = computed(() => `${props.title}: ${props.stats.map((s) => `${s.label} ${s.count}`).join(', ')}`);
 
-const chartData = computed(() => ({
-    labels: props.stats.map((s) => s.label),
-    datasets: [{
-        data: props.stats.map((s) => s.count),
-        // With a selection, unselected slices fade so the chosen ones stand out.
-        backgroundColor: props.stats.map((s, i) => {
-            const color = colorOf(s, i);
-            return hasSelection.value && !isActive(s) && /^#[0-9a-f]{6}$/i.test(color) ? `${color}55` : color;
-        }),
-        borderWidth: 0,
-    }],
-}));
+const chartData = computed(() => {
+    themeVersion.value; // recolour on a live theme toggle
+    return {
+        labels: props.stats.map((s) => s.label),
+        datasets: [{
+            data: props.stats.map((s) => s.count),
+            // With a selection, unselected slices fade so the chosen ones stand out.
+            backgroundColor: props.stats.map((s, i) => {
+                const color = colorOf(s, i);
+                return hasSelection.value && !isActive(s) && /^#[0-9a-f]{6}$/i.test(color) ? `${color}55` : color;
+            }),
+            borderWidth: 0,
+        }],
+    };
+});
 
-const chartOptions = computed(() => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    cutout: '62%',
-    plugins: {
-        legend: { display: false }, // the chips beside the chart are the legend (clickable filter)
-        tooltip: {
-            callbacks: {
-                label: (ctx) => ` ${ctx.label}: ${ctx.parsed} (${total.value ? Math.round((ctx.parsed / total.value) * 100) : 0}%)`,
+const chartOptions = computed(() => {
+    themeVersion.value; // recolour on a live theme toggle
+    return {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '62%',
+        plugins: {
+            legend: { display: false }, // the chips beside the chart are the legend (clickable filter)
+            tooltip: {
+                callbacks: {
+                    label: (ctx) => ` ${ctx.label}: ${ctx.parsed} (${total.value ? Math.round((ctx.parsed / total.value) * 100) : 0}%)`,
+                },
             },
         },
-    },
-    onClick: (_, elements) => {
-        if (elements.length) toggle(props.stats[elements[0].index]);
-    },
-}));
+        onClick: (_, elements) => {
+            if (elements.length) toggle(props.stats[elements[0].index]);
+        },
+    };
+});
 </script>
 
 <template>

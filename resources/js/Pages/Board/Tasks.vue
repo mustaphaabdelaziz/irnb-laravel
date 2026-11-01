@@ -6,6 +6,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Icon from '@/Components/Icon.vue';
 import ExportMenu from '@/Components/ExportMenu.vue';
 import IconButton from '@/Components/IconButton.vue';
+import { useCan } from '@/Composables/useCan';
 import StatDoughnut from '@/Components/StatDoughnut.vue';
 import '@/lib/registerCharts';
 import { Bar } from 'vue-chartjs';
@@ -17,6 +18,8 @@ const props = defineProps({
     stats: { type: Object, default: () => ({}) },
 });
 const { t, locale } = useI18n();
+const { can } = useCan();
+const canEdit = computed(() => can('board', 'edit'));
 
 const order = ['not_started', 'in_progress', 'completed', 'cancelled'];
 
@@ -125,6 +128,7 @@ function openCreate() {
     showModal.value = true;
 }
 function openEdit(tk) {
+    if (!canEdit.value) return;
     editingId.value = tk.id;
     form.title = tk.title; form.description = tk.description || ''; form.board_member_id = tk.board_member_id;
     form.board_meeting_id = tk.board_meeting_id; form.due_date = tk.due_date ? String(tk.due_date).slice(0, 10) : ''; form.status = tk.status;
@@ -163,6 +167,7 @@ function onDragEnd() {
     dragOverCol.value = null;
 }
 function onDrop(col) {
+    if (!canEdit.value) return;
     const id = draggingId.value;
     dragOverCol.value = null;
     draggingId.value = null;
@@ -215,7 +220,7 @@ function onDrop(col) {
                 <button @click="view = 'stats'" class="rounded-lg px-3 py-1.5 text-xs font-bold transition-colors" :class="view === 'stats' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">{{ t('statistics') }}</button>
             </div>
             <ExportMenu :href="route('board.tasks.export')" :label="t('export')" />
-            <IconButton icon="plus" :label="t('add_task')" variant="primary" @click="openCreate" />
+            <IconButton v-if="canEdit" icon="plus" :label="t('add_task')" variant="primary" @click="openCreate" />
         </div>
 
         <div v-if="view === 'board'" class="grid gap-4 lg:grid-cols-4">
@@ -231,7 +236,7 @@ function onDrop(col) {
                 </p>
                 <div class="min-h-[3rem] space-y-2.5">
                     <div v-for="tk in filteredColumns[col]" :key="tk.id"
-                        draggable="true"
+                        :draggable="canEdit ? 'true' : 'false'"
                         @dragstart="onDragStart(tk, $event)"
                         @dragend="onDragEnd"
                         @click="openEdit(tk)"

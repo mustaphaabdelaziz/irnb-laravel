@@ -29,7 +29,11 @@ class ActivityTypeController extends Controller
 
     public function update(Request $request, ActivityType $activityType): RedirectResponse
     {
-        $activityType->update($this->validated($request, $activityType));
+        $data = $this->validated($request, $activityType);
+        if (($data['sort_order'] ?? null) === null) {
+            unset($data['sort_order']);
+        }
+        $activityType->update($data);
 
         return back()->with('success', 'flash.activity_type_updated');
     }

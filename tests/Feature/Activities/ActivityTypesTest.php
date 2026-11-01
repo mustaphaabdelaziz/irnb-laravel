@@ -52,6 +52,17 @@ class ActivityTypesTest extends TestCase
     }
 
     #[Test]
+    public function clearing_the_order_keeps_the_stored_one(): void
+    {
+        $type = ActivityType::first();
+
+        $this->actingAs($this->admin())
+            ->put(route('activity-types.update', $type), ['name' => $type->name, 'sort_order' => null])
+            ->assertSessionHas('success', 'flash.activity_type_updated');
+        $this->assertSame(1, $type->fresh()->sort_order);
+    }
+
+    #[Test]
     public function names_are_unique(): void
     {
         $this->actingAs($this->admin())

@@ -15,8 +15,11 @@ use Symfony\Component\HttpFoundation\Response;
  */
 final class ReportExporter
 {
-    /** Past this many rows the PDF stops and says so; the spreadsheet has no cap. */
-    public const PDF_MAX_ROWS = 2000;
+    /**
+     * Past this many rows the PDF stops and says so; the spreadsheet has no
+     * cap. mPDF takes ~10 ms a line here (835 lines ≈ 10 s on real data).
+     */
+    public const PDF_MAX_ROWS = 1000;
 
     public function __construct(
         private readonly ReportRunner $runner,

@@ -29,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
                 'player-documents' => storage_path('app/private/player-documents'),
                 'minutes' => storage_path('app/private/minutes'),
                 'receipts' => storage_path('app/private/receipts'),
+                'activities' => storage_path('app/private/activities'),
             ],
         ));
     }

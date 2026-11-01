@@ -51,6 +51,9 @@ export function useNavigation() {
                 { label: t('meetings'), href: '/board/meetings', icon: 'clipboard', prefix: '/board/meetings', module: 'board' },
                 { label: t('tasks'), href: '/board/tasks', icon: 'task', prefix: '/board/tasks', module: 'board' },
             ] },
+            { key: 'social', label: t('nav.social'), icon: 'heart', items: [
+                { label: t('activities'), href: '/activities', icon: 'heart', prefix: '/activities', module: 'activities' },
+            ] },
             // Each category shows when any module behind its reports is viewable;
             // the overview when any category does.
             { key: 'reports', label: t('reports.title'), icon: 'chart', items: [
@@ -75,6 +78,7 @@ export function useNavigation() {
                 { label: t('game_formats'), href: '/game-formats', icon: 'positions', prefix: '/game-formats', module: 'game_formats' },
                 { label: t('opponents'), href: '/opponents', icon: 'flag', prefix: '/opponents', module: 'opponents' },
                 { label: t('venues'), href: '/venues', icon: 'location', prefix: '/venues', module: 'venues' },
+                { label: t('activity_types'), href: '/activity-types', icon: 'heart', prefix: '/activity-types', module: 'activity_types' },
             ] },
             { key: 'system', label: t('nav.system'), icon: 'settings', items: [
                 { label: t('users'), href: '/users', icon: 'members', prefix: '/users', match: /^\/users(?!\/(\d+\/)?activity)/, badge: pendingApprovals, module: 'users' },

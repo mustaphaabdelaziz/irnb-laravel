@@ -1,5 +1,9 @@
 <?php
 
+use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\ActivityFileController;
+use App\Http\Controllers\ActivityPhotoController;
+use App\Http\Controllers\ActivityTypeController;
 use App\Http\Controllers\AttendanceAlertsController;
 use App\Http\Controllers\AttendanceCalendarController;
 use App\Http\Controllers\AttendanceController;
@@ -322,6 +326,7 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
         // Competitions & matches — configuration lists
         Route::resource('opponents', OpponentController::class)->except(['show', 'create', 'edit']);
         Route::resource('venues', VenueController::class)->except(['show', 'create', 'edit']);
+        Route::resource('activity-types', ActivityTypeController::class)->except(['show', 'create', 'edit']);
         Route::resource('game-formats', GameFormatController::class)->except(['show', 'create', 'edit']);
 
         // Finance management — fiscal years (close/reopen), budgets, chart of accounts, accounts
@@ -375,6 +380,17 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
         // Cancel keeps the record (who/when/why); delete erases it.
         Route::post('/board/meetings/{meeting}/cancel', [BoardMeetingController::class, 'cancel'])->name('board.meetings.cancel');
         Route::delete('/board/meetings/{meeting}', [BoardMeetingController::class, 'destroy'])->name('board.meetings.destroy');
+
+        // Social activities (P1 of the literary report work).
+        Route::resource('activities', ActivityController::class);
+        Route::scopeBindings()->group(function () {
+            Route::post('/activities/{activity}/photos', [ActivityPhotoController::class, 'store'])->name('activities.photos.store');
+            Route::put('/activities/{activity}/photos/{photo}', [ActivityPhotoController::class, 'update'])->name('activities.photos.update');
+            Route::delete('/activities/{activity}/photos/{photo}', [ActivityPhotoController::class, 'destroy'])->name('activities.photos.destroy');
+            Route::post('/activities/{activity}/files', [ActivityFileController::class, 'store'])->name('activities.files.store');
+            Route::get('/activities/{activity}/files/{file}', [ActivityFileController::class, 'show'])->name('activities.files.show');
+            Route::delete('/activities/{activity}/files/{file}', [ActivityFileController::class, 'destroy'])->name('activities.files.destroy');
+        });
 
         Route::get('/board/tasks', [BoardController::class, 'tasks'])->name('board.tasks');
         Route::get('/board/tasks/export', [BoardController::class, 'exportTasks'])->name('board.tasks.export');

@@ -5,6 +5,9 @@ namespace Tests\Unit\Services;
 use App\Services\Backup\BackupService;
 use App\Services\Backup\BackupSettings;
 use App\Services\Backup\RestoreFailedAfterSwapException;
+use App\Services\Storage\PrivateFileStorage;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 use Native\Desktop\Facades\Settings;
 use PHPUnit\Framework\Attributes\Test;
@@ -189,6 +192,29 @@ class BackupPrivateRootsTest extends TestCase
         $manifest = $this->manifestOf($backup);
         $this->assertSame(['player-documents' => 1, 'minutes' => 1, 'receipts' => 1], $manifest['private_roots']);
         $this->assertSame(1, $manifest['media_files'], 'private files are not counted as media');
+    }
+
+    #[Test]
+    public function the_app_backup_carries_activity_files_stored_on_the_private_disk(): void
+    {
+        // The roots the app actually registers (AppServiceProvider), not this test's own.
+        $roots = (fn () => $this->privateRoots)->call(app(BackupService::class));
+        $this->assertArrayHasKey('activities', $roots);
+
+        // An activity file lands where PrivateFileStorage puts it (activities/{id}/...).
+        $directory = 'activities/'.random_int(900000, 999999);
+        $stored = app(PrivateFileStorage::class)->store(UploadedFile::fake()->createWithContent('minutes.pdf', 'ACTIVITY-FILE'), $directory);
+
+        try {
+            $backup = (new BackupService($this->settings, $this->dbPath, $this->mediaPath, ['activities' => $roots['activities']]))->create();
+
+            $zip = new ZipArchive;
+            $zip->open($backup);
+            $this->assertSame('ACTIVITY-FILE', $zip->getFromName('private/'.$stored['path']));
+            $zip->close();
+        } finally {
+            Storage::disk(PrivateFileStorage::DISK)->deleteDirectory($directory);
+        }
     }
 
     #[Test]

@@ -37,6 +37,7 @@ $settingLists = [
     'opponents' => 'opponents',
     'game-formats' => 'game_formats',
     'venues' => 'venues',
+    'activity-types' => 'activity_types',
 ];
 
 $routes = [
@@ -96,6 +97,11 @@ $routes = [
     'board.members.store' => ActivityAction::BOARD_MEMBER_ADDED,
     'board.members.update' => ActivityAction::BOARD_MEMBER_UPDATED,
     'board.members.destroy' => ActivityAction::BOARD_MEMBER_REMOVED,
+
+    // social activities (creation is recorded in ActivityController::store; photo and
+    // file changes in their controllers, against the activity rather than the photo/file)
+    'activities.update' => ActivityAction::ACTIVITY_UPDATED,
+    'activities.destroy' => ActivityAction::ACTIVITY_DELETED,
 
     // documents
     'players.documents.update' => ActivityAction::DOCUMENT_UPDATED,

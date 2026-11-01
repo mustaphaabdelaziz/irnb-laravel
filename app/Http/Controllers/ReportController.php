@@ -11,6 +11,7 @@ use App\Models\Transaction;
 use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
 use App\Support\FiscalPeriod;
+use App\Support\LegacyFinanceCategory;
 use App\Support\Media;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -63,7 +64,12 @@ class ReportController extends Controller
 
         $totalIncome = (float) (clone $base)->where('transaction_type', 'income')->sum('amount');
         $totalExpense = (float) (clone $base)->where('transaction_type', 'expense')->sum('amount');
-        $totalDonations = (float) (clone $base)->where('category', 'donation')->sum('amount');
+        // By the seeded donations category, not the `category` slug: entries
+        // from the Transactions page carry the slug of the category's name.
+        $donations = LegacyFinanceCategory::byCode('income', 'DON');
+        $totalDonations = $donations
+            ? (float) (clone $base)->where('finance_category_id', $donations->id)->sum('amount')
+            : 0.0;
 
         $names = FinanceCategory::query()->get()->keyBy('id');
         $byCategory = DB::table('transactions')

@@ -2172,6 +2172,7 @@
     "stats.retry": "إعادة المحاولة",
     "stats.sort_by": "ترتيب حسب {column}",
     "stats.total": "المجموع",
+    "stats.type": "النوع",
     "stats.view": "طريقة العرض",
     "stats.view_chart": "مخطط",
     "stats.view_table": "جدول",

@@ -2172,6 +2172,7 @@
     "stats.retry": "Try again",
     "stats.sort_by": "Sort by {column}",
     "stats.total": "Total",
+    "stats.type": "Type",
     "stats.view": "View",
     "stats.view_chart": "Chart",
     "stats.view_table": "Table",

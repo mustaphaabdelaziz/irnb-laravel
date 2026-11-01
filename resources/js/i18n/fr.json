@@ -2172,6 +2172,7 @@
     "stats.retry": "Réessayer",
     "stats.sort_by": "Trier par {column}",
     "stats.total": "Total",
+    "stats.type": "Type",
     "stats.view": "Affichage",
     "stats.view_chart": "Graphique",
     "stats.view_table": "Tableau",

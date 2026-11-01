@@ -129,8 +129,9 @@ function pct(actual, planned) {
 
 const budgetColumns = computed(() => [
     { key: 'name', label: t('category'), format: 'text', sortable: true },
-    { key: 'planned', label: t('planned'), format: 'money', sortable: true, total: 'sum' },
-    { key: 'actual', label: t('actual'), format: 'money', sortable: true, total: 'sum' },
+    { key: 'type', label: t('stats.type'), format: 'text', sortable: true, csv: (r) => (r.type === 'expense' ? t('expense') : t('income')) },
+    { key: 'planned', label: t('planned'), format: 'money', sortable: true },
+    { key: 'actual', label: t('actual'), format: 'money', sortable: true },
     { key: 'used', label: '%', format: 'percent', sortable: true },
 ]);
 
@@ -142,7 +143,7 @@ const yearColumns = computed(() => [
     { key: 'total_income', label: t('total_income'), format: 'money', total: 'sum' },
     { key: 'total_expense', label: t('total_expense'), format: 'money', total: 'sum' },
     { key: 'net', label: t('net'), format: 'money', total: 'sum' },
-    { key: 'status', label: t('status'), format: 'text', align: 'center' },
+    { key: 'status', label: t('status'), format: 'text', align: 'center', csv: (row) => (row.status === 'closed' ? t('closed') : t('open')) },
 ]);
 
 // One totals object per table, handed to both the table and its CSV, so the
@@ -151,7 +152,6 @@ const totalsOf = (rows, keys) => Object.fromEntries(keys.map((key) => [key, sumC
 const monthlyTotals = computed(() => totalsOf(monthlyRows.value, ['income', 'expense', 'net']));
 const incomeTotals = computed(() => totalsOf(incomeRows.value, ['count', 'total']));
 const expenseTotals = computed(() => totalsOf(expenseRows.value, ['count', 'total']));
-const budgetTotals = computed(() => totalsOf(budgetRows.value, ['planned', 'actual']));
 const yearTotals = computed(() => totalsOf(props.years, ['total_income', 'total_expense', 'net']));
 
 const csvName = (title) => `${title} ${season.value}`;
@@ -166,13 +166,12 @@ const csvName = (title) => `${title} ${season.value}`;
 
         <div class="space-y-6">
             <StatsToolbar>
-                <div role="tablist" :aria-label="t('fiscal_year')" class="flex flex-wrap items-center gap-1.5">
+                <div role="group" :aria-label="t('fiscal_year')" class="flex flex-wrap items-center gap-1.5">
                     <button
                         v-for="y in years"
                         :key="y.id"
                         type="button"
-                        role="tab"
-                        :aria-selected="y.year === selectedYear"
+                        :aria-pressed="y.year === selectedYear"
                         class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         :class="y.year === selectedYear ? 'bg-primary-600 text-white shadow-sm' : 'text-muted-foreground hover:bg-muted hover:text-foreground'"
                         @click="selectYear(y.year)"
@@ -259,7 +258,7 @@ const csvName = (title) => `${title} ${season.value}`;
                     >
                         <Bar :data="incomeChart" :options="barOptions" />
                         <template #table>
-                            <StatTable :columns="categoryColumns" :rows="incomeRows" row-key="id" :totals="incomeTotals" dense />
+                            <StatTable :columns="categoryColumns" :rows="incomeRows" :row-key="(r) => r.id ?? 'uncategorised'" :totals="incomeTotals" dense />
                         </template>
                     </ChartCard>
                     <ChartCard
@@ -272,7 +271,7 @@ const csvName = (title) => `${title} ${season.value}`;
                     >
                         <Bar :data="expenseChart" :options="barOptions" />
                         <template #table>
-                            <StatTable :columns="categoryColumns" :rows="expenseRows" row-key="id" :totals="expenseTotals" dense />
+                            <StatTable :columns="categoryColumns" :rows="expenseRows" :row-key="(r) => r.id ?? 'uncategorised'" :totals="expenseTotals" dense />
                         </template>
                     </ChartCard>
                 </section>
@@ -284,7 +283,7 @@ const csvName = (title) => `${title} ${season.value}`;
                     :subtitle="season"
                     height="h-auto"
                     has-table
-                    :csv="{ filename: csvName(t('budget_vs_actual')), columns: budgetColumns, rows: budgetRows, totals: budgetTotals }"
+                    :csv="{ filename: csvName(t('budget_vs_actual')), columns: budgetColumns, rows: budgetRows }"
                 >
                     <div class="space-y-3">
                         <div v-for="b in budgetRows" :key="b.category_id">
@@ -292,13 +291,15 @@ const csvName = (title) => `${title} ${season.value}`;
                                 <span class="font-medium text-foreground">{{ b.name }}</span>
                                 <span class="whitespace-nowrap tabular-nums text-muted-foreground"><bdi>{{ formatMoney(b.actual) }}</bdi> / <bdi>{{ formatMoney(b.planned) }}</bdi></span>
                             </div>
-                            <div class="h-2 overflow-hidden rounded-full bg-muted" role="progressbar" :aria-valuenow="pct(b.actual, b.planned)" aria-valuemin="0" aria-valuemax="100" :aria-label="b.name">
+                            <div class="h-2 overflow-hidden rounded-full bg-muted" role="progressbar" :aria-valuenow="pct(b.actual, b.planned)" aria-valuemin="0" aria-valuemax="100" :aria-label="b.name" :aria-valuetext="`${formatMoney(b.actual)} / ${formatMoney(b.planned)} (${b.used}%)`">
                                 <div class="h-full rounded-full" :class="b.type === 'expense' && b.actual > b.planned ? 'bg-rose-500' : 'bg-primary-500'" :style="{ width: pct(b.actual, b.planned) + '%' }"></div>
                             </div>
                         </div>
                     </div>
                     <template #table>
-                        <StatTable :columns="budgetColumns" :rows="budgetRows" row-key="category_id" :totals="budgetTotals" dense />
+                        <StatTable :columns="budgetColumns" :rows="budgetRows" row-key="category_id" dense>
+                            <template #cell-type="{ row }">{{ row.type === 'expense' ? t('expense') : t('income') }}</template>
+                        </StatTable>
                     </template>
                 </ChartCard>
             </template>

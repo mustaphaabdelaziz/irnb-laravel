@@ -91,6 +91,18 @@ test('toCsv uses a column csv() accessor when given', () => {
     assert.equal(csv, `${BOM}Mois\r\nM9\r\n`);
 });
 
+test('toCsv uses a csv() accessor on a non-first column', () => {
+    const cols = [{ key: 'name', label: 'Nom' }, { key: 'status', label: 'Statut', csv: (row) => (row.status === 'closed' ? 'Clôturée' : 'Ouverte') }];
+    const csv = toCsv(cols, [{ name: 'A', status: 'closed' }, { name: 'B', status: 'open' }]);
+    assert.equal(csv, `${BOM}Nom,Statut\r\nA,Clôturée\r\nB,Ouverte\r\n`);
+});
+
+test('toCsv totals row with no summable column holds only the label', () => {
+    const cols = [{ key: 'a', label: 'A' }, { key: 'b', label: 'B' }, { key: 'c', label: 'C' }];
+    const csv = toCsv(cols, [{ a: 'x', b: 1, c: 2 }], { totals: {}, totalLabel: 'Total' });
+    assert.ok(csv.endsWith('Total,,\r\n'));
+});
+
 test('safeFilename strips characters Windows refuses and keeps Arabic', () => {
     assert.equal(safeFilename('a/b:c*?"<>|d'), 'a-b-c-d');
     assert.equal(safeFilename('المداخيل 2026/2027'), 'المداخيل 2026-2027');

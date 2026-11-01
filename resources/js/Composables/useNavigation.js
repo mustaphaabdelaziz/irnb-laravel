@@ -50,6 +50,9 @@ export function useNavigation() {
                 { label: t('meetings'), href: '/board/meetings', icon: 'clipboard', prefix: '/board/meetings', module: 'board' },
                 { label: t('tasks'), href: '/board/tasks', icon: 'task', prefix: '/board/tasks', module: 'board' },
             ] },
+            { key: 'social', label: t('nav.social'), icon: 'heart', items: [
+                { label: t('activities'), href: '/activities', icon: 'heart', prefix: '/activities', module: 'activities' },
+            ] },
             { key: 'config', label: t('nav.config'), icon: 'wrench', items: [
                 { label: t('categories'), href: '/categories', icon: 'categories', prefix: '/categories', module: 'categories' },
                 { label: t('branches'), href: '/branches', icon: 'categories', prefix: '/branches', module: 'branches' },

@@ -23,6 +23,7 @@ const SECTION_LABELS = {
     finance: 'nav_finance',
     equipment: 'nav_equipment',
     board: 'nav.board_of_directors',
+    social: 'nav.social',
     config: 'nav.config',
     system: 'nav.system',
 };

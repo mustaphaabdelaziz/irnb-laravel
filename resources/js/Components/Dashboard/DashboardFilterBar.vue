@@ -4,6 +4,7 @@ import { router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import Icon from '@/Components/Icon.vue';
 import IconButton from '@/Components/IconButton.vue';
+import StatsToolbar from '@/Components/Stats/StatsToolbar.vue';
 
 /**
  * The dashboard's controls, and the only thing that writes its URL.
@@ -20,13 +21,25 @@ const props = defineProps({
     loading: { type: Boolean, default: false },
 });
 
+const emit = defineEmits(['loading', 'failed']);
+
 const { t } = useI18n();
 
 const RANGES = ['month', 'last_month', 'quarter', 'season', 'last12', 'all'];
 
 const isAllTime = computed(() => props.filters.range === 'all');
 
+// Filters that differ from the defaults (this month, all branches, compare on).
+const activeCount = computed(() =>
+    (props.filters.range !== 'month' ? 1 : 0)
+    + (props.filters.branch ? 1 : 0)
+    + (!props.filters.compare && props.filters.range !== 'all' ? 1 : 0));
+
 function apply(changes) {
+    // Inertia has no per-visit exception hook: a visit that finishes without
+    // succeeding (network or server error) is a failure. A cancel means a newer
+    // visit superseded this one, which is not an error.
+    let ok = false;
     router.get(
         route('dashboard'),
         {
@@ -41,15 +54,26 @@ function apply(changes) {
             preserveScroll: true,
             replace: true,
             showProgress: false,
+            onStart: () => emit('loading', true),
+            onSuccess: () => { ok = true; },
+            onCancel: () => { ok = true; },
+            onFinish: () => {
+                emit('loading', false);
+                if (!ok) emit('failed');
+            },
         },
     );
+}
+
+function reset() {
+    apply({ range: 'month', branch: '', compare: true });
 }
 
 const branchLabel = (branch) => branch.localized_name || branch.name;
 </script>
 
 <template>
-    <div class="flex flex-wrap items-center gap-2">
+    <StatsToolbar :active-count="activeCount" :loading="loading" @reset="reset">
         <div class="flex items-center gap-1.5">
             <Icon name="calendar" class="size-4 text-muted-foreground" />
             <select
@@ -91,5 +115,5 @@ const branchLabel = (branch) => branch.localized_name || branch.name;
         />
 
         <span v-if="loading" class="text-xs text-muted-foreground">{{ t('dashboard.updating') }}</span>
-    </div>
+    </StatsToolbar>
 </template>

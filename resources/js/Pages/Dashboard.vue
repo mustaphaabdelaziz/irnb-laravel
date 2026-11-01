@@ -39,6 +39,8 @@ const rtl = computed(() => locale.value === 'ar');
 
 const activeTab = ref(props.filters.tab ?? 'overview');
 const loadingTab = ref(false);
+// The tab whose last fetch (or a filter reload while it was open) failed.
+const tabError = ref(null);
 
 // Tabs already fetched this session. The server is the source of truth for the
 // data; this only avoids asking twice for something that has not changed.
@@ -65,16 +67,37 @@ function selectTab(tab) {
         return;
     }
 
+    fetchTab(tab, ['filters', tab]);
+}
+
+function fetchTab(tab, only) {
+    // Inertia has no per-visit exception hook, so "finished without success"
+    // is the failure signal; a cancel (superseded by a newer visit) is not one.
+    let ok = false;
     loadingTab.value = true;
     router.get(route('dashboard'), { ...queryFromFilters(), tab }, {
-        only: ['filters', tab],
+        only,
         preserveState: true,
         preserveScroll: true,
         replace: true,
         showProgress: false,
-        onSuccess: () => { loaded[tab] = true; },
-        onFinish: () => { loadingTab.value = false; },
+        onSuccess: () => {
+            ok = true;
+            loaded[tab] = true;
+            if (tabError.value === tab) tabError.value = null;
+        },
+        onCancel: () => { ok = true; },
+        onFinish: () => {
+            loadingTab.value = false;
+            if (!ok) tabError.value = tab;
+        },
     });
+}
+
+function retry() {
+    const tab = activeTab.value;
+    loaded[tab] = false;
+    fetchTab(tab, ['filters', 'hero', tab]);
 }
 
 function queryFromFilters() {
@@ -89,6 +112,7 @@ function queryFromFilters() {
 watch(
     () => [props.filters.range, props.filters.branch, props.filters.compare],
     () => {
+        tabError.value = null;
         Object.keys(loaded).forEach((tab) => {
             loaded[tab] = tab === activeTab.value;
         });
@@ -133,6 +157,8 @@ const heroTiles = computed(() => props.hero.map((tile) => ({
                         :branches="branches"
                         :active-tab="activeTab"
                         :loading="loadingTab"
+                        @loading="(v) => (loadingTab = v)"
+                        @failed="tabError = activeTab"
                     />
                     <IconButton :href="route('reports.financial')" external target="_blank" rel="noopener noreferrer" icon="document" :label="t('export.format.pdf')" />
                 </div>
@@ -176,6 +202,11 @@ const heroTiles = computed(() => props.hero.map((tile) => ({
                         {{ t(`dashboard.tab_${tab}`) }}
                     </button>
                 </nav>
+            </div>
+
+            <div v-if="tabError === activeTab" role="alert" class="flex flex-col items-center gap-3 rounded-xl border border-border/70 px-5 py-8 text-sm text-muted-foreground">
+                <p>{{ t('stats.load_failed') }}</p>
+                <IconButton icon="refresh" :label="t('stats.retry')" size="sm" @click="retry" />
             </div>
 
             <OverviewTab v-if="activeTab === 'overview'" :data="overview" :loading="loadingTab" :rtl="rtl" />

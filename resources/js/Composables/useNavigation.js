@@ -64,6 +64,7 @@ export function useNavigation() {
                 { label: t('game_formats'), href: '/game-formats', icon: 'positions', prefix: '/game-formats', module: 'game_formats' },
                 { label: t('opponents'), href: '/opponents', icon: 'flag', prefix: '/opponents', module: 'opponents' },
                 { label: t('venues'), href: '/venues', icon: 'location', prefix: '/venues', module: 'venues' },
+                { label: t('activity_types'), href: '/activity-types', icon: 'heart', prefix: '/activity-types', module: 'activity_types' },
             ] },
             { key: 'system', label: t('nav.system'), icon: 'settings', items: [
                 { label: t('users'), href: '/users', icon: 'members', prefix: '/users', match: /^\/users(?!\/(\d+\/)?activity)/, badge: pendingApprovals, module: 'users' },

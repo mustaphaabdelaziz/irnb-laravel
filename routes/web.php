@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActivityTypeController;
 use App\Http\Controllers\AttendanceAlertsController;
 use App\Http\Controllers\AttendanceCalendarController;
 use App\Http\Controllers\AttendanceController;
@@ -309,6 +310,7 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
         // Competitions & matches — configuration lists
         Route::resource('opponents', OpponentController::class)->except(['show', 'create', 'edit']);
         Route::resource('venues', VenueController::class)->except(['show', 'create', 'edit']);
+        Route::resource('activity-types', ActivityTypeController::class)->except(['show', 'create', 'edit']);
         Route::resource('game-formats', GameFormatController::class)->except(['show', 'create', 'edit']);
 
         // Finance management — fiscal years (close/reopen), budgets, chart of accounts, accounts

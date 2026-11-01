@@ -37,6 +37,7 @@ $settingLists = [
     'opponents' => 'opponents',
     'game-formats' => 'game_formats',
     'venues' => 'venues',
+    'activity-types' => 'activity_types',
 ];
 
 $routes = [

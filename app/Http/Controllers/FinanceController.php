@@ -7,6 +7,7 @@ use App\Models\FinanceAccount;
 use App\Models\FinanceCategory;
 use App\Models\FiscalYear;
 use App\Models\Transaction;
+use App\Services\Dashboard\Support\DeltaCalculator;
 use App\Services\FinanceService;
 use App\Support\FiscalPeriod;
 use Illuminate\Database\Eloquent\Collection;
@@ -38,11 +39,15 @@ class FinanceController extends Controller
             $years->firstWhere('year', FiscalPeriod::currentKey())['year'] ?? ($years->first()['year'] ?? FiscalPeriod::currentKey())
         ));
         $fiscalYear = FiscalYear::where('year', $selectedYear)->first();
+        $detail = $fiscalYear ? $this->yearDetail($fiscalYear) : null;
+        if ($detail !== null) {
+            $detail['deltas'] = $this->seasonDeltas($detail, $years->firstWhere('year', $selectedYear - 1));
+        }
 
         return Inertia::render('Finance/Index', [
             'years' => $years,
             'selectedYear' => $selectedYear,
-            'detail' => $fiscalYear ? $this->yearDetail($fiscalYear) : null,
+            'detail' => $detail,
             'accounts' => FinanceAccount::query()
                 // The Fonds Initial stays out of sight unless it still holds money.
                 ->where(fn ($query) => $query->where('is_opening_fund', false)->orWhere('current_balance', '!=', 0))
@@ -95,6 +100,24 @@ class FinanceController extends Controller
             ->each(fn (FiscalYear $fy) => $fy->setAttribute('can_delete', ! $fy->isClosed()
                 && ! $busyIds->has($fy->id)
                 && ! $busyYears->has($fy->year)));
+    }
+
+    /**
+     * Change against the season before, from the season list already loaded —
+     * no extra query. No previous season, or one with nothing booked, means no
+     * badge rather than a made-up +100%.
+     *
+     * @param  array<string, mixed>  $detail
+     * @param  array<string, mixed>|null  $previous
+     * @return array{income: ?array, expense: ?array, net: ?array}
+     */
+    private function seasonDeltas(array $detail, ?array $previous): array
+    {
+        return [
+            'income' => DeltaCalculator::compute($detail['income'], $previous['total_income'] ?? null),
+            'expense' => DeltaCalculator::compute($detail['expense'], $previous['total_expense'] ?? null, DeltaCalculator::DOWN_GOOD),
+            'net' => DeltaCalculator::compute($detail['net'], $previous['net'] ?? null),
+        ];
     }
 
     /**

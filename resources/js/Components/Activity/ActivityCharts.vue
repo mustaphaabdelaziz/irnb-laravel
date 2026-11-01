@@ -171,7 +171,7 @@ const userTotals = computed(() => columnTotals(userColumns.value, topUsers.value
         <!-- Key figures -->
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <StatTile :label="t('activity.total')" :value="total" format="number" icon="chart" tone="primary" />
-            <StatTile :label="charts.unit === 'week' ? t('activity.active_weeks') : t('activity.active_days')" :value="activeDays" format="number" :meta="`⁦/ ${charts.buckets.length}⁩`" icon="calendar" tone="neutral" />
+            <StatTile :label="charts.unit === 'week' ? t('activity.active_weeks') : t('activity.active_days')" :value="activeDays" format="number" :meta="`2066/ ${charts.buckets.length}2069`" icon="calendar" tone="neutral" />
             <StatTile :label="t('activity.average_per_active')" :value="activeDays ? total / activeDays : 0" format="number" icon="task" tone="neutral" />
             <StatTile :label="t('activity.busiest')" :value="busiest?.count ?? 0" format="number" :meta="busiest ? bucketLabel(busiest.bucket) : null" icon="flag" tone="warning" />
         </div>

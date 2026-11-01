@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -12,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class LiteraryReport extends Model
 {
+    use SerializesClubDates;
+
     /** Every section, in the fixed print order. */
     public const SECTIONS = ['cover', 'intro', 'members', 'board', 'attendance', 'sports', 'activities', 'finance', 'conclusion'];
 

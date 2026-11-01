@@ -175,9 +175,10 @@ const exportHref = computed(() => route('players.export', filterParams.value));
 const printListHref = computed(() => route('players.print-list', filterParams.value));
 
 // The strip's "missing" link: the current list, narrowed to players missing a
-// document. It replaces the documents filter (its values OR together, so
-// adding "missing" to "expiring" would widen the list instead).
-const documentMissingHref = computed(() => (props.documentStats?.missing
+// document. It replaces the documents filter, which would widen a narrower
+// list (and its values OR together), so with a documents filter on there is
+// no link and the count shows on its own.
+const documentMissingHref = computed(() => (props.documentStats?.missing && !documentsFilter.value.length
     ? route('players.index', { ...filterParams.value, documents: ['missing'] })
     : null));
 

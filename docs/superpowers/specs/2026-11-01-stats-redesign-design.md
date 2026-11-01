@@ -71,7 +71,9 @@ New optional props: `error` (String|Boolean — shows message + Retry, emits `re
 - Props: `columns: [{ key, label, format: 'number'|'money'|'percent'|'text'|'date', align?, sortable?, total?: 'sum'|'none' }]`, `rows`, `sort` (`{ key, dir }` — optional controlled), `sortMode: 'client'|'server'` (default client), `totals` (Boolean or object of precomputed totals), `dense`, `emptyText`.
 - Emits `sort` (server mode). Slot `cell-<key>` for custom cells, slot `footer` (pagination goes here — `Pagination.vue`).
 - Always renders `<thead>` (sticky inside a scroll box), numeric columns `tabular-nums` aligned to the end, sort indicator with `aria-sort`, totals row only for columns with `total: 'sum'` (never for percent/averages), horizontal scroll on narrow screens, empty state.
-- Formatting via existing `useFormatMoney`, `useFormatDate`, `lib/attendanceStats.pct`.
+- Formatting via existing `useFormatMoney`, `useFormatDate`, `lib/attendanceStats.pct`. Money cells = `formatMoney(v)` + muted `currencyLabel` (from `useCurrency`), same as StatTile; CSV keeps the raw number and appends the currency label to that column's header.
+- `totals` object is keyed by column `key` (server-computed totals for paginated data); with `totals: true` and client rows, sums columns marked `total: 'sum'`.
+- Reports Center R1 consumes it (confirmed 2026-11-01): server sort, precomputed totals, all five formats, footer pagination slot, empty state. It rebases `feat/reports-r1` onto this branch once StatTable + statTable.js + ChartCard toggle are committed — tell that session when they are.
 
 ### `lib/statTable.js` (new, pure)
 `sortRows(rows, key, dir)` (null-last, locale-aware text compare), `sumColumn(rows, key)`, `toCsv(columns, rows)` — mirrors `App\Support\Export\CsvWriter`: UTF-8 BOM, CRLF, comma delimiter, RFC 4180 quoting, same formula-injection escaping for string cells (`= + - @` tab/CR prefixes), raw numbers rather than localized strings, header row = translated column labels, `downloadCsv(filename, csv)` (Blob + object URL, revoked). Unit tests in `tests/js/statTable.test.mjs`.

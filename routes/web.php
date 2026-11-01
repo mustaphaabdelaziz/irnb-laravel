@@ -69,6 +69,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ReportsCenterController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\StorageLocationController;
 use App\Http\Controllers\SubscriptionController;
@@ -82,6 +83,7 @@ use App\Http\Controllers\UserActivityController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VenueController;
 use App\Http\Controllers\WebsiteConfigController;
+use App\Reports\ReportRegistry;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -241,6 +243,17 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
     Route::get('/players/{player}/card', [ReportController::class, 'playerCard'])->name('players.card');
     Route::get('/players/{player}/academic-report', [ReportController::class, 'academicReport'])->name('players.academic-report');
     Route::get('/reports/financial', [ReportController::class, 'financialSummary'])->name('reports.financial');
+
+    // Reports center. Unguarded at route level (config/permissions.php): each
+    // report checks its own module's view right in the controller. The
+    // category constraint keeps /reports/financial (above) out of {category}.
+    Route::get('/reports', [ReportsCenterController::class, 'hub'])->name('reports.hub');
+    Route::get('/reports/{category}', [ReportsCenterController::class, 'category'])
+        ->whereIn('category', ReportRegistry::CATEGORIES)->name('reports.category');
+    Route::get('/reports/{category}/{report}', [ReportsCenterController::class, 'show'])
+        ->whereIn('category', ReportRegistry::CATEGORIES)->where('report', '[a-z_]+')->name('reports.view');
+    Route::get('/reports/{category}/{report}/download', [ReportsCenterController::class, 'download'])
+        ->whereIn('category', ReportRegistry::CATEGORIES)->where('report', '[a-z_]+')->name('reports.download');
 
     // Equipment — catalog (equipment list) import/export declared before the resource so the static paths win
     Route::get('/equipment/catalogs/export', [EquipmentCatalogController::class, 'export'])->name('equipment.catalogs.export');

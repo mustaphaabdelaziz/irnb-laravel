@@ -7,6 +7,8 @@ use App\Models\FinanceAccount;
 use App\Models\FinanceCategory;
 use App\Models\FiscalYear;
 use App\Models\Transaction;
+use App\Services\Dashboard\Support\DeltaCalculator;
+use App\Services\Finance\BudgetVsActual;
 use App\Services\FinanceService;
 use App\Support\FiscalPeriod;
 use Illuminate\Database\Eloquent\Collection;
@@ -38,11 +40,15 @@ class FinanceController extends Controller
             $years->firstWhere('year', FiscalPeriod::currentKey())['year'] ?? ($years->first()['year'] ?? FiscalPeriod::currentKey())
         ));
         $fiscalYear = FiscalYear::where('year', $selectedYear)->first();
+        $detail = $fiscalYear ? $this->yearDetail($fiscalYear) : null;
+        if ($detail !== null) {
+            $detail['deltas'] = $this->seasonDeltas($detail, $years->firstWhere('year', $selectedYear - 1));
+        }
 
         return Inertia::render('Finance/Index', [
             'years' => $years,
             'selectedYear' => $selectedYear,
-            'detail' => $fiscalYear ? $this->yearDetail($fiscalYear) : null,
+            'detail' => $detail,
             'accounts' => FinanceAccount::query()
                 // The Fonds Initial stays out of sight unless it still holds money.
                 ->where(fn ($query) => $query->where('is_opening_fund', false)->orWhere('current_balance', '!=', 0))
@@ -98,6 +104,24 @@ class FinanceController extends Controller
     }
 
     /**
+     * Change against the season before, from the season list already loaded —
+     * no extra query. No previous season, or one with nothing booked, means no
+     * badge rather than a made-up +100%.
+     *
+     * @param  array<string, mixed>  $detail
+     * @param  array<string, mixed>|null  $previous
+     * @return array{income: ?array, expense: ?array, net: ?array}
+     */
+    private function seasonDeltas(array $detail, ?array $previous): array
+    {
+        return [
+            'income' => DeltaCalculator::compute($detail['income'], $previous['total_income'] ?? null),
+            'expense' => DeltaCalculator::compute($detail['expense'], $previous['total_expense'] ?? null, DeltaCalculator::DOWN_GOOD),
+            'net' => DeltaCalculator::compute($detail['net'], $previous['net'] ?? null),
+        ];
+    }
+
+    /**
      * Rich detail for one fiscal year: category breakdown, monthly trend,
      * budget vs actual.
      *
@@ -140,22 +164,8 @@ class FinanceController extends Controller
             ];
         }
 
-        // Budget vs actual.
-        $budgets = Budget::where('fiscal_year_id', $fy->id)->pluck('planned_amount', 'finance_category_id');
-        $actuals = $byCategory->keyBy('category_id');
-        $budgetRows = FinanceCategory::where('is_active', true)->orderBy('type')->orderBy('sort_order')->get()
-            ->map(function (FinanceCategory $c) use ($budgets, $actuals) {
-                $planned = (float) ($budgets[$c->id] ?? 0);
-                $actual = (float) ($actuals[$c->id]->total ?? 0);
-
-                return [
-                    'category_id' => $c->id, 'name' => $c->localized_name, 'type' => $c->type, 'color' => $c->color,
-                    'planned' => $planned, 'actual' => $actual,
-                    'variance' => $c->type === 'expense' ? $planned - $actual : $actual - $planned,
-                ];
-            })
-            ->filter(fn ($r) => $r['planned'] > 0 || $r['actual'] > 0)
-            ->values();
+        // Budget vs actual (shared with the budget report).
+        $budgetRows = BudgetVsActual::for($fy);
 
         return [
             'id' => $fy->id,

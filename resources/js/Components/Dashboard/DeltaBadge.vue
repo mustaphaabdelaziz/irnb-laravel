@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useFormatNumber } from '@/Composables/useFormatNumber';
 
 /**
  * Period-over-period change.
@@ -16,6 +17,7 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
+const { formatPercent } = useFormatNumber();
 
 const toneClasses = {
     positive: 'text-emerald-700 dark:text-emerald-400',
@@ -25,7 +27,7 @@ const toneClasses = {
 
 const rising = computed(() => (props.delta?.percent ?? 0) > 0);
 const flat = computed(() => Math.abs(props.delta?.percent ?? 0) < 0.05);
-const magnitude = computed(() => Math.abs(props.delta?.percent ?? 0).toFixed(1).replace(/\.0$/, ''));
+const magnitude = computed(() => formatPercent(Math.abs(props.delta?.percent ?? 0), { trim: true }));
 </script>
 
 <template>
@@ -55,6 +57,6 @@ const magnitude = computed(() => Math.abs(props.delta?.percent ?? 0).toFixed(1).
                 stroke-linejoin="round"
             />
         </svg>
-        <span class="tabular-nums">{{ flat ? t('dashboard.delta_flat') : `${magnitude}%` }}</span>
+        <span class="tabular-nums">{{ flat ? t('dashboard.delta_flat') : magnitude }}</span>
     </p>
 </template>

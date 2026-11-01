@@ -33,16 +33,18 @@ export function isActive(item, url) {
         : current.startsWith(item.prefix);
 }
 
-// Items show only when the user can view their module (superadmin sees all).
+// Items show only when the user can view their module (superadmin sees all);
+// an item with `modules` (a Reports category) shows when any one is viewable.
 // `always` items are ungated; `superadminOnly` items need the god flag;
 // `desktopOnly` items need the desktop app. Empty sections are dropped.
 export function visibleSections(raw, { can, isSuperadmin, isDesktop }) {
+    const viewable = (i) => (i.modules ?? [i.module]).some((m) => can(m, 'view'));
     return raw
         .map((section) => ({
             ...section,
             items: section.items.filter((i) =>
                 (!i.desktopOnly || isDesktop)
-                && (i.always || (i.superadminOnly ? isSuperadmin : can(i.module, 'view')))),
+                && (i.always || (i.superadminOnly ? isSuperadmin : viewable(i)))),
         }))
         .filter((section) => section.items.length > 0);
 }

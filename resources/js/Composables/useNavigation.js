@@ -3,6 +3,7 @@ import { usePage } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useCan } from '@/Composables/useCan.js';
 import { visibleSections } from '@/lib/navigation';
+import { REPORT_CATEGORY_ICONS, REPORT_CATEGORY_MODULES } from '@/lib/reportCategories';
 
 // The one menu definition, shared by the sidebar (wide and narrow) and the
 // quick search, so a page can never be listed in one and missing in the other.
@@ -52,6 +53,16 @@ export function useNavigation() {
             ] },
             { key: 'social', label: t('nav.social'), icon: 'heart', items: [
                 { label: t('activities'), href: '/activities', icon: 'heart', prefix: '/activities', module: 'activities' },
+            ] },
+            // Each category shows when any module behind its reports is viewable;
+            // the overview when any category does.
+            { key: 'reports', label: t('reports.title'), icon: 'chart', items: [
+                { label: t('reports.overview'), href: '/reports', icon: 'chart', prefix: '/reports', exact: true,
+                    modules: [...new Set(Object.values(REPORT_CATEGORY_MODULES).flat())] },
+                ...Object.entries(REPORT_CATEGORY_MODULES).map(([key, modules]) => ({
+                    label: t(`reports.category.${key}.title`), href: `/reports/${key}`, icon: REPORT_CATEGORY_ICONS[key],
+                    prefix: `/reports/${key}`, modules,
+                })),
             ] },
             { key: 'config', label: t('nav.config'), icon: 'wrench', items: [
                 { label: t('categories'), href: '/categories', icon: 'categories', prefix: '/categories', module: 'categories' },

@@ -97,6 +97,9 @@ class DashboardController extends Controller
                     // The attendance card rides with the members tab; it needs
                     // attendance/view on top of the tab's players/view.
                     'attendance' => $user->hasPermission('attendance', 'view') ? $this->attendance->get() : null,
+                    // Document completion rides with the members tab too; it
+                    // needs documents/view, the player checklist's right.
+                    'documents' => $user->hasPermission('documents', 'view') ? $this->members->documents($filters) : null,
                 ]
                 : null,
             'operations' => fn (): ?array => $this->guard($user, 'operations')

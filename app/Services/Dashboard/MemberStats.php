@@ -8,6 +8,7 @@ use App\Models\PlayerAcademicRecord;
 use App\Services\Dashboard\Support\BranchScope;
 use App\Services\Dashboard\Support\DeltaCalculator;
 use App\Services\Dashboard\Support\MonthBucket;
+use App\Services\Player\DocumentStats;
 use App\Support\FiscalPeriod;
 use App\Support\Season;
 use Carbon\CarbonImmutable;
@@ -37,6 +38,8 @@ class MemberStats
 
     private const TOP_CITIES = 6;
 
+    public function __construct(private readonly DocumentStats $documentStats) {}
+
     /**
      * @param  bool  $money  false leaves out the median debt tile and the
      *                       debt bands.
@@ -57,6 +60,18 @@ class MemberStats
             'academic' => $this->academic($filters),
             'topCities' => $this->topCities($filters),
         ];
+    }
+
+    /**
+     * Document completion of the current members — not archived, not left —
+     * in the dashboard's branch. A snapshot of today: the date range does not
+     * apply. The caller checks documents/view (DashboardController).
+     *
+     * @return array{summary: array<string, mixed>, by_category: list<array<string, mixed>>}|null
+     */
+    public function documents(DashboardFilters $filters): ?array
+    {
+        return $this->documentStats->breakdown($this->active($filters)->notLeft());
     }
 
     private function summary(DashboardFilters $filters): array

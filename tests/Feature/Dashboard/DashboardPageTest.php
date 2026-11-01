@@ -250,7 +250,10 @@ class DashboardPageTest extends TestCase
         // not grow with the number of players at risk.
         // members: +1 for the branches the at-risk card walks (AtRisk::anyBranch):
         // a player is judged per branch; a club with N >= 2 branches adds 3 per extra branch.
-        foreach (['members' => 33, 'operations' => 12] as $tab => $budget) {
+        // members: +2 for document completion (DocumentStats::breakdown): the
+        // active required document types, and one query over the current
+        // members grouped by category (the summary is the sum of its rows).
+        foreach (['members' => 35, 'operations' => 12] as $tab => $budget) {
             $recorder = new \ArrayObject;
             DB::listen(function ($query) use ($recorder): void {
                 $recorder->append($query->sql);

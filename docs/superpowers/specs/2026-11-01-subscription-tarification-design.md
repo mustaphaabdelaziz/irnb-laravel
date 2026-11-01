@@ -96,7 +96,7 @@ If F and V are both 0 the section shows the prompt to add costs, not a win.
 
 Roster groups leave out archived players and, on an existing subscription, players marked exempt on it. Discounts and hand-added players from another category are not forecast; the override covers them.
 
-**Default sessions/week** comes from schedule rows the server sends: rows with `valid_to` empty or today or later, whose branch is empty or one of the chosen branches. They are counted per category, and the highest count among chosen categories is used. The highest, not the sum, because lines are per group. With no schedule rows the default is 0 and the section says so.
+**Default sessions/week** comes from schedule rows the server sends: rows with `valid_to` empty or today or later, whose branch is empty or one of the chosen branches. They are counted per branch and category, and the highest count among chosen categories is used. The highest, not the sum, because lines are per group. With no schedule rows the default is 0 and the section says so.
 
 ## 6. Screens
 
@@ -113,7 +113,7 @@ The status never relies on colour alone: the word win/even/lose is always shown.
 
 ## 7. Server
 
-`App\Services\Finance\TarificationData` builds the props: `forForm(?Subscription)` returns roster groups, schedule rows and saved values; `forShow` adds the real rate. Its queries select only the columns needed.
+`App\Services\Finance\TarificationData::for(?Subscription)` builds the prop: roster groups, schedule rows, saved values, money collected and the real rate. Its queries select only the columns needed, and it never loads the relations onto the subscription, which would serialise them into the `subscription` prop.
 
 Controller changes:
 
@@ -126,9 +126,9 @@ Controller changes:
 |---|---|
 | `tarification` | nullable array |
 | `sessions_per_week` | nullable integer, 0–21 |
-| `weeks` | integer, 0–53 |
+| `weeks` | nullable integer, 0–53; blank = 40 |
 | `expected_players` | nullable integer, 0–100000 |
-| `expected_payment_rate` | integer, 0–100 |
+| `expected_payment_rate` | nullable integer, 0–100; blank = 100 |
 | `lines` | array, at most 100 |
 | `lines.*.label` | required string, max 100 |
 | `lines.*.unit` | in the five units; not `per_session` when the subscription is exceptional |

@@ -81,6 +81,19 @@ class PlayersListPdfTest extends TestCase
     }
 
     #[Test]
+    public function the_name_leaves_out_the_nickname_and_keeps_father_and_grandfather(): void
+    {
+        $this->player('Amine', 'Benali', null, ['nickname' => 'Zizou', 'father' => 'Karim', 'grandfather' => 'Omar']);
+
+        $html = $this->capturePdfHtml();
+
+        $this->actingAs($this->admin())->get(route('players.print-list'))->assertOk();
+
+        $this->assertStringContainsString('Benali Amine بن Karim بن Omar', $html());
+        $this->assertStringNotContainsString('Zizou', $html());
+    }
+
+    #[Test]
     public function the_header_always_reads_the_arabic_club_name_then_the_short_name(): void
     {
         WebsiteConfig::singleton()->update([

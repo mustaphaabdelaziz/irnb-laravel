@@ -2576,7 +2576,7 @@
     "stats.doc_expiring": "Expirent sous 30 jours",
     "stats.doc_missing": "Manquants",
     "stats.doc_missing_by_type": "Documents manquants par type",
-    "stats.doc_missing_for": "manquant pour {n} joueurs",
+    "stats.doc_missing_for": "joueurs sans ce document : {n}",
     "stats.doc_no_players": "Aucun joueur ici",
     "stats.doc_none_required": "Aucun document n'est exigé pour ces joueurs",
     "stats.doc_pct": "% reçus",

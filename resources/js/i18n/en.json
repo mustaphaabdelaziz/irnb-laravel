@@ -2576,7 +2576,7 @@
     "stats.doc_expiring": "Expiring within 30 days",
     "stats.doc_missing": "Missing",
     "stats.doc_missing_by_type": "Missing documents by type",
-    "stats.doc_missing_for": "missing for {n} players",
+    "stats.doc_missing_for": "players without it: {n}",
     "stats.doc_no_players": "No players here",
     "stats.doc_none_required": "No documents are required for these players",
     "stats.doc_pct": "% received",

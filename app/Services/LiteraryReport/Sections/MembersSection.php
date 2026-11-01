@@ -13,7 +13,8 @@ use Illuminate\Support\Facades\DB;
 /**
  * Membership at the end of the period (owner rule 2026-11-01): not archived,
  * joined by that year (or no join year), and not left by that day. A player
- * in several branches counts in each branch row, once in the totals.
+ * in several branches counts in each branch row, once in the totals. A player
+ * with an empty or unknown gender is counted with the boys (the DB default is 'Male').
  */
 final class MembersSection implements Section
 {

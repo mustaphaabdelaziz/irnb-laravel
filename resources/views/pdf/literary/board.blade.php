@@ -18,7 +18,7 @@
     <table class="data">
         <tr><th>{{ $l('literary.pdf.committee') }}</th><th>{{ $l('literary.pdf.head') }}</th><th>{{ $l('literary.pdf.deputies') }}</th><th>{{ $l('literary.pdf.members_count') }}</th></tr>
         @foreach ($data['committees'] as $committee)
-            <tr><td class="start">{{ $committee['name'] }}</td><td class="start">{{ $committee['head'] ?? '—' }}</td><td class="start">{{ implode('، ', $committee['deputies']) ?: '—' }}</td><td>{{ $committee['members_count'] }}</td></tr>
+            <tr><td class="start">{{ $committee['name'] }}</td><td class="start">{{ $committee['head'] ?? '—' }}</td><td class="start">{{ implode(app()->getLocale() === 'ar' ? '، ' : ', ', $committee['deputies']) ?: '—' }}</td><td>{{ $committee['members_count'] }}</td></tr>
         @endforeach
     </table>
 @endif

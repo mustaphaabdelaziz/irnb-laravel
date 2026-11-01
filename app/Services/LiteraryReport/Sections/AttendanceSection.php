@@ -28,7 +28,7 @@ final class AttendanceSection implements Section
                 'rate' => self::rate($this->stats->categories($start, $end, $branch->id)),
             ])->values()->all();
         if (isset($byBranch[''])) {
-            // Sessions with no branch are club-wide; their rate is folded into the totals only.
+            // Sessions with no branch are club-wide: they get their own row without a rate (the category table includes them).
             $branches[] = ['name' => null, 'held' => (int) $byBranch[''], 'rate' => null];
         }
 

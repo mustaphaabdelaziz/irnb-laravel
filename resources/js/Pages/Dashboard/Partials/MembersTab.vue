@@ -8,8 +8,11 @@ import Meter from '@/Components/Dashboard/Meter.vue';
 import StatTile from '@/Components/Dashboard/StatTile.vue';
 import AttendanceCard from '@/Pages/Dashboard/Partials/AttendanceCard.vue';
 import { Card, CardHeader, CardTitle } from '@/Components/ui/card';
+import StatTable from '@/Components/Stats/StatTable.vue';
 import { Separator } from '@/Components/ui/separator';
-import { baseOptions, ordinal, seriesColor, sequential, spanLabel } from '@/lib/chartTheme';
+import { useChartTheme } from '@/Composables/useChartTheme';
+import { baseOptions, ordinal, rankedBarDataset, seriesColor, spanLabel } from '@/lib/chartTheme';
+import { sumColumn } from '@/lib/statTable';
 
 const props = defineProps({
     data: { type: Object, default: null },
@@ -19,6 +22,7 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
+const { themeVersion } = useChartTheme();
 
 const summary = computed(() => props.data?.summary ?? []);
 const growth = computed(() => props.data?.growth ?? { labels: [], joined: [], left: [], cumulative: [] });
@@ -102,7 +106,10 @@ const hasGrowth = computed(() => growth.value.joined.some((v) => v > 0) || growt
  * columns answer "how many joined", the line "how many there are" — two
  * questions a club asks together.
  */
-const growthChart = computed(() => ({
+const growthChart = computed(() => {
+    themeVersion.value; // recolour on theme toggle
+
+    return {
     labels: growth.value.labels.map(monthLabel),
     datasets: [
         {
@@ -134,33 +141,72 @@ const growthChart = computed(() => ({
             fill: false,
         },
     ],
-}));
+    };
+});
 
-const growthOptions = computed(() => baseOptions({ rtl: props.rtl }));
+const growthOptions = computed(() => {
+    themeVersion.value;
 
-const barOptions = computed(() => baseOptions({ rtl: props.rtl, horizontal: true, legend: false }));
+    return baseOptions({ rtl: props.rtl });
+});
 
-/** Magnitude: one hue, darkest for the largest bar. */
-function magnitudeChart(rows, labelFor) {
-    const ramp = sequential(6);
+const barOptions = computed(() => {
+    themeVersion.value;
+
+    return baseOptions({ rtl: props.rtl, horizontal: true, legend: false });
+});
+
+const totalsOf = (rows, keys) => Object.fromEntries(keys.map((key) => [key, sumColumn(rows, key)]));
+
+const growthColumns = computed(() => [
+    { key: 'month', label: t('dashboard.month'), format: 'text' },
+    { key: 'joined', label: t('dashboard.mem_joined'), format: 'number', total: 'sum' },
+    { key: 'left', label: t('dashboard.mem_left'), format: 'number', total: 'sum' },
+    { key: 'cumulative', label: t('dashboard.mem_total'), format: 'number' },
+]);
+const growthRows = computed(() => growth.value.labels.map((month, i) => ({
+    month,
+    joined: growth.value.joined[i] ?? 0,
+    left: growthLeft.value[i] ?? 0,
+    cumulative: growth.value.cumulative[i] ?? 0,
+})));
+const growthTotals = computed(() => totalsOf(growthRows.value, ['joined', 'left']));
+
+const countColumns = computed(() => [
+    { key: 'label', label: t('dashboard.category'), format: 'text', sortable: true },
+    { key: 'count', label: t('dashboard.members'), format: 'number', sortable: true, total: 'sum' },
+]);
+// Rows carry the display label as data, so the table, the sort and the CSV agree.
+const withLabel = (rows) => rows.map((r) => ({ ...r, label: rowLabel(r) }));
+const categoryRows = computed(() => withLabel(byCategory.value));
+const leftCategoryRows = computed(() => withLabel(leftByCategory.value));
+const categoryTotals = computed(() => totalsOf(categoryRows.value, ['count']));
+const leftCategoryTotals = computed(() => totalsOf(leftCategoryRows.value, ['count']));
+const rowKey = (r) => r.labelKey || r.name;
+
+const ageColumns = computed(() => [
+    { key: 'label', label: t('stats.age_band'), format: 'text' },
+    { key: 'count', label: t('dashboard.members'), format: 'number', total: 'sum' },
+]);
+const ageRows = computed(() => byAge.value.map((r) => ({ ...r, label: t(`dashboard.age_${r.band}`) })));
+const ageTotals = computed(() => totalsOf(ageRows.value, ['count']));
+
+/** Magnitude: one hue, darkest for the largest bar (shared ranked-bar helper). */
+function magnitudeChart(rows) {
+    themeVersion.value; // recolour on theme toggle
 
     return {
-        labels: rows.map(labelFor),
-        datasets: [{
-            label: t('dashboard.members'),
-            data: rows.map((row) => row.count),
-            backgroundColor: rows.map((_, index) => ramp[Math.max(0, ramp.length - 1 - index)] ?? ramp[0]),
-            borderRadius: 4,
-            maxBarThickness: 24,
-        }],
+        labels: rows.map((r) => r.label),
+        datasets: [rankedBarDataset(t('dashboard.members'), rows.map((r) => r.count))],
     };
 }
 
-const categoryChart = computed(() => magnitudeChart(byCategory.value, rowLabel));
-const leftCategoryChart = computed(() => magnitudeChart(leftByCategory.value, rowLabel));
+const categoryChart = computed(() => magnitudeChart(categoryRows.value));
+const leftCategoryChart = computed(() => magnitudeChart(leftCategoryRows.value));
 
 /** Age is an ordered scale, so it wears the ordinal ramp rather than magnitude. */
 const ageChart = computed(() => {
+    themeVersion.value;
     const ramp = ordinal(4);
 
     return {
@@ -177,7 +223,11 @@ const ageChart = computed(() => {
     };
 });
 
-const ageOptions = computed(() => baseOptions({ rtl: props.rtl, legend: false }));
+const ageOptions = computed(() => {
+    themeVersion.value;
+
+    return baseOptions({ rtl: props.rtl, legend: false });
+});
 
 const debtTotal = computed(() => debtBands.value.reduce((sum, band) => sum + band.count, 0) || 1);
 const statusTotal = computed(() => byStatus.value.reduce((sum, row) => sum + row.count, 0) || 1);
@@ -234,29 +284,13 @@ const genderTotal = computed(() => (split.value.male + split.value.female) || 1)
             :empty="!hasGrowth"
             :empty-hint="t('dashboard.mem_growth_empty')"
             has-table
+            :csv="{ filename: 'dashboard-member-growth', columns: growthColumns, rows: growthRows, totals: growthTotals }"
             height="h-72"
         >
             <Bar :data="growthChart" :options="growthOptions" />
 
             <template #table>
-                <table class="w-full text-sm">
-                    <thead class="sticky top-0 bg-muted/60 text-xs text-muted-foreground">
-                        <tr>
-                            <th class="px-3 py-2 text-start font-medium">{{ t('dashboard.month') }}</th>
-                            <th class="px-3 py-2 text-end font-medium">{{ t('dashboard.mem_joined') }}</th>
-                            <th class="px-3 py-2 text-end font-medium">{{ t('dashboard.mem_left') }}</th>
-                            <th class="px-3 py-2 text-end font-medium">{{ t('dashboard.mem_total') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-border/70">
-                        <tr v-for="(label, index) in growth.labels" :key="label">
-                            <td class="px-3 py-2">{{ label }}</td>
-                            <td class="px-3 py-2 text-end tabular-nums">{{ growth.joined[index] }}</td>
-                            <td class="px-3 py-2 text-end tabular-nums">{{ growthLeft[index] ?? 0 }}</td>
-                            <td class="px-3 py-2 text-end tabular-nums">{{ growth.cumulative[index] }}</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <StatTable :columns="growthColumns" :rows="growthRows" row-key="month" :totals="growthTotals" dense />
             </template>
         </ChartCard>
 
@@ -267,19 +301,13 @@ const genderTotal = computed(() => (split.value.male + split.value.female) || 1)
                 :empty="!byCategory.length"
                 :empty-hint="t('dashboard.mem_no_members')"
                 has-table
+                :csv="{ filename: 'dashboard-members-by-category', columns: countColumns, rows: categoryRows, totals: categoryTotals }"
                 height="h-72"
             >
                 <Bar :data="categoryChart" :options="barOptions" />
 
                 <template #table>
-                    <table class="w-full text-sm">
-                        <tbody class="divide-y divide-border/70">
-                            <tr v-for="row in byCategory" :key="row.labelKey || row.name">
-                                <td class="px-3 py-2">{{ rowLabel(row) }}</td>
-                                <td class="px-3 py-2 text-end tabular-nums">{{ row.count }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <StatTable :columns="countColumns" :rows="categoryRows" :row-key="rowKey" :totals="categoryTotals" dense />
                 </template>
             </ChartCard>
 
@@ -289,9 +317,15 @@ const genderTotal = computed(() => (split.value.male + split.value.female) || 1)
                 :loading="loading"
                 :empty="!byAge.length"
                 :empty-hint="t('dashboard.mem_no_members')"
+                has-table
+                :csv="{ filename: 'dashboard-members-by-age', columns: ageColumns, rows: ageRows, totals: ageTotals }"
                 height="h-72"
             >
                 <Bar :data="ageChart" :options="ageOptions" />
+
+                <template #table>
+                    <StatTable :columns="ageColumns" :rows="ageRows" row-key="band" :totals="ageTotals" dense />
+                </template>
             </ChartCard>
         </section>
 
@@ -302,19 +336,13 @@ const genderTotal = computed(() => (split.value.male + split.value.female) || 1)
             :empty="!leftByCategory.length"
             :empty-hint="t('dashboard.mem_no_leavers')"
             has-table
+            :csv="{ filename: 'dashboard-leavers-by-category', columns: countColumns, rows: leftCategoryRows, totals: leftCategoryTotals }"
             height="h-64"
         >
             <Bar :data="leftCategoryChart" :options="barOptions" />
 
             <template #table>
-                <table class="w-full text-sm">
-                    <tbody class="divide-y divide-border/70">
-                        <tr v-for="row in leftByCategory" :key="row.labelKey || row.name">
-                            <td class="px-3 py-2">{{ rowLabel(row) }}</td>
-                            <td class="px-3 py-2 text-end tabular-nums">{{ row.count }}</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <StatTable :columns="countColumns" :rows="leftCategoryRows" :row-key="rowKey" :totals="leftCategoryTotals" dense />
             </template>
         </ChartCard>
 

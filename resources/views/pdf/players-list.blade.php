@@ -69,7 +69,8 @@
                     <tr>
                         <td class="c num">{{ $loop->iteration }}</td>
                         <td class="c num">{{ $player->membership_id }}</td>
-                        <td>{{ $player->fullname }}</td>
+                        {{-- Player::fullname, minus the nickname. --}}
+                        <td>{{ \App\Models\Player::fullnameOf($player->lastname, $player->firstname, null, $player->father, $player->grandfather, $player->gender) }}</td>
                         <td class="c"><bdi dir="ltr">{{ $player->birthdate?->format('d/m/Y') }}</bdi></td>
                         <td class="c"><bdi dir="ltr">{{ $player->health_blood_group_rhesus }}</bdi></td>
                         <td class="c"><bdi dir="ltr">{{ collect($player->phones ?? [])->filter()->implode(' / ') }}</bdi></td>

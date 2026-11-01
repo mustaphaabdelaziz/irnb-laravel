@@ -121,11 +121,9 @@
 
     <div class="summary">
         <strong>{{ $L('pass_mark') }}:</strong>
-        <bdi dir="ltr">
-            @foreach ($scalePassMarks as $scale => $passMark)
-                /{{ $scale }}: {{ rtrim(rtrim(number_format($passMark, 2), '0'), '.') }}@if (!$loop->last) &middot; @endif
-            @endforeach
-        </bdi>
+        @foreach ($scalePassMarks as $scale => $passMark)
+            <bdi dir="ltr">{{ rtrim(rtrim(number_format($passMark, 2), '0'), '.') }}/{{ $scale }}</bdi>@if (!$loop->last) &middot; @endif
+        @endforeach
     </div>
 </body>
 </html>

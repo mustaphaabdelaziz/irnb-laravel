@@ -134,7 +134,7 @@ class BoardTablePdfTest extends TestCase
         {
             public function __construct(private stdClass $captured) {}
 
-            public function stream(string $html, string $filename, bool $rtl = true, bool $landscape = false): Response
+            public function stream(string $html, string $filename, ?bool $rtl = null, bool $landscape = false): Response
             {
                 $this->captured->html = $html;
 

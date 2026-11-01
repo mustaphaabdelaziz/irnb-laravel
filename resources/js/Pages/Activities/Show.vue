@@ -35,8 +35,16 @@ function uploadFile(event) {
     fileForm.post(route('activities.files.store', props.activity.id), { forceFormData: true, preserveScroll: true, onFinish: () => { event.target.value = ''; fileForm.reset(); } });
 }
 
-function toggleReport(photo) {
-    router.put(route('activities.photos.update', [props.activity.id, photo.id]), { in_report: !photo.in_report }, { preserveScroll: true });
+function toggleReport(photo, event) {
+    router.put(route('activities.photos.update', [props.activity.id, photo.id]), { in_report: !photo.in_report }, {
+        preserveScroll: true,
+        // A refused toggle (report cap) leaves the props unchanged, so Vue would not
+        // re-patch the box: put it back to whatever the server now says.
+        onFinish: () => {
+            const current = props.activity.photos.find((p) => p.id === photo.id);
+            event.target.checked = Boolean(current?.in_report);
+        },
+    });
 }
 
 function saveCaption(photo) {
@@ -116,7 +124,7 @@ const card = 'rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-s
                                 <p v-else class="truncate text-slate-600 dark:text-slate-300">{{ p.caption || '—' }}</p>
                                 <div v-if="canEdit" class="flex items-center justify-between">
                                     <label class="flex items-center gap-1" :title="t('activities.in_report_hint', { max: reportLimit })">
-                                        <input type="checkbox" :checked="p.in_report" :disabled="!p.in_report && inReportCount >= reportLimit" class="rounded border-slate-300" @change="toggleReport(p)" />
+                                        <input type="checkbox" :checked="p.in_report" :disabled="!p.in_report && inReportCount >= reportLimit" class="rounded border-slate-300" @change="toggleReport(p, $event)" />
                                         {{ t('activities.in_report') }}
                                     </label>
                                     <span class="flex">

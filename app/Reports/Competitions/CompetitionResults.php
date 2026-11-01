@@ -43,7 +43,7 @@ class CompetitionResults extends Report
     {
         return [
             Filter::select('season', 'reports.filter.season', Season::options(), Season::current()->startYear),
-            Filter::select('team_id', 'comp.team', Team::query()->with('category')->orderBy('name')->get()
+            Filter::select('team_id', 'team', Team::query()->with('category')->orderBy('name')->get()
                 ->map(fn (Team $t) => ['value' => $t->id, 'label' => trim($t->name.' · '.$t->category?->localized_name, ' ·')])->all()),
             Filter::select('competition_id', 'comp.competition', Competition::query()->orderByDesc('season_start_year')->orderBy('name')->get()
                 ->map(fn (Competition $c) => ['value' => $c->id, 'label' => $c->name.' ('.Season::forStartYear($c->season_start_year)->label().')'])->all()),
@@ -56,7 +56,7 @@ class CompetitionResults extends Report
     {
         return [
             new Column('date', 'col.date', Column::DATE),
-            new Column('team', 'comp.team'),
+            new Column('team', 'team'),
             new Column('competition', 'comp.competition'),
             new Column('round', 'comp.round_label'),
             new Column('opponent', 'comp.opponent'),
@@ -126,7 +126,7 @@ class CompetitionResults extends Report
                 ['key' => 'win', 'label' => UiLang::get('reports.result.win'), 'count' => $record['wins'], 'color' => '#16a34a'],
                 ['key' => 'draw', 'label' => UiLang::get('reports.result.draw'), 'count' => $record['draws'], 'color' => '#94a3b8'],
                 ['key' => 'loss', 'label' => UiLang::get('reports.result.loss'), 'count' => $record['losses'], 'color' => '#dc2626'],
-            ]],
+            ], 'unit' => 'reports.kpi.played'],
         ];
     }
 

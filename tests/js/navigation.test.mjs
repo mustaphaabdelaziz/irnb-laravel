@@ -87,3 +87,14 @@ test('flattenForSearch gives standalone items a null section', () => {
     assert.equal(entries[0].section, null);
     assert.equal(entries[0].haystack, 'dashboard');
 });
+
+test('visibleSections: an item with modules shows when any one is viewable', () => {
+    const reports = [{ key: 'reports', label: 'Reports', items: [
+        { label: 'Finance', prefix: '/reports/finance', modules: ['finance', 'subscriptions'] },
+        { label: 'Equipment', prefix: '/reports/equipment', modules: ['equipment', 'inventory'] },
+    ] }];
+    const can = (module) => module === 'subscriptions';
+    const out = visibleSections(reports, { can, isSuperadmin: false, isDesktop: false });
+    assert.deepEqual(out[0].items.map((i) => i.label), ['Finance']);
+    assert.equal(visibleSections(reports, { can: () => false, isSuperadmin: false, isDesktop: false }).length, 0);
+});

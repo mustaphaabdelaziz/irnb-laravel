@@ -167,10 +167,10 @@ class EquipmentInventory extends Report
         return [
             ['type' => 'doughnut', 'title' => 'reports.chart.units_by_status', 'stats' => $byStatus->map(fn ($r) => [
                 'key' => (string) $r->s, 'label' => EquipmentItem::stateLabel($r->s) ?? UiLang::get('reports.none'), 'count' => (int) $r->c,
-            ])->all()],
+            ])->all(), 'unit' => 'reports.kpi.units'],
             ['type' => 'bar', 'title' => 'reports.chart.units_by_category', 'stats' => $byCategory->map(fn ($r) => [
                 'key' => (string) $r->s, 'label' => $r->s ?: UiLang::get('reports.none'), 'count' => (int) $r->c,
-            ])->all()],
+            ])->all(), 'unit' => 'reports.kpi.units'],
         ];
     }
 

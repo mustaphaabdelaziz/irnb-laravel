@@ -8,6 +8,7 @@ use App\Models\FinanceCategory;
 use App\Models\FiscalYear;
 use App\Models\Transaction;
 use App\Services\Dashboard\Support\DeltaCalculator;
+use App\Services\Finance\BudgetVsActual;
 use App\Services\FinanceService;
 use App\Support\FiscalPeriod;
 use Illuminate\Database\Eloquent\Collection;
@@ -163,22 +164,8 @@ class FinanceController extends Controller
             ];
         }
 
-        // Budget vs actual.
-        $budgets = Budget::where('fiscal_year_id', $fy->id)->pluck('planned_amount', 'finance_category_id');
-        $actuals = $byCategory->keyBy('category_id');
-        $budgetRows = FinanceCategory::where('is_active', true)->orderBy('type')->orderBy('sort_order')->get()
-            ->map(function (FinanceCategory $c) use ($budgets, $actuals) {
-                $planned = (float) ($budgets[$c->id] ?? 0);
-                $actual = (float) ($actuals[$c->id]->total ?? 0);
-
-                return [
-                    'category_id' => $c->id, 'name' => $c->localized_name, 'type' => $c->type, 'color' => $c->color,
-                    'planned' => $planned, 'actual' => $actual,
-                    'variance' => $c->type === 'expense' ? $planned - $actual : $actual - $planned,
-                ];
-            })
-            ->filter(fn ($r) => $r['planned'] > 0 || $r['actual'] > 0)
-            ->values();
+        // Budget vs actual (shared with the budget report).
+        $budgetRows = BudgetVsActual::for($fy);
 
         return [
             'id' => $fy->id,

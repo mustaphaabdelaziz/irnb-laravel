@@ -2,30 +2,26 @@
 
 namespace App\Reports\Finance;
 
-use App\Http\Controllers\TransactionController;
 use App\Models\FinanceAccount;
 use App\Models\FinanceCategory;
-use App\Models\FiscalYear;
-use App\Models\Transaction;
 use App\Reports\Column;
-use App\Reports\Filter;
+use App\Reports\Concerns\FiltersTransactions;
 use App\Reports\Report;
 use App\Reports\ReportFilters;
 use App\Services\Dashboard\ModuleStats;
 use App\Support\FinanceAccountLabel;
-use App\Support\FiscalPeriod;
 use App\Support\UiLang;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 /**
  * Income and expenses for a period, by finance category, with the same
- * population as the Transactions screen: cancelled (archived) entries never
- * count, and with no season and no dates the current season applies.
+ * population as the Transactions screen (FiltersTransactions).
  * Cash basis: subscriptions owed are debts, not income, so they are absent.
  */
 class FinanceSummary extends Report
 {
+    use FiltersTransactions;
+
     public function __construct(private readonly ModuleStats $stats) {}
 
     public function key(): string
@@ -50,25 +46,7 @@ class FinanceSummary extends Report
 
     public function filters(): array
     {
-        $seasons = FiscalYear::query()->pluck('year')->map(fn ($y) => (int) $y)
-            ->push(FiscalPeriod::currentKey())->unique()->sortDesc()->values();
-
-        $methods = Transaction::query()->where('archived', false)->whereNotNull('payment_method')
-            ->distinct()->orderBy('payment_method')->pluck('payment_method');
-
-        return [
-            Filter::select('season', 'reports.filter.season', $seasons
-                ->map(fn (int $key) => ['value' => $key, 'label' => FiscalPeriod::label($key)])->all()),
-            Filter::date('from', 'reports.filter.from'),
-            Filter::date('to', 'reports.filter.to'),
-            Filter::multi('account_id', 'col.cash_register', FinanceAccount::query()
-                ->where('is_opening_fund', false)
-                ->with(['branch:id,name,name_ar,name_fr,name_en', 'category:id,name,name_ar,name_fr,name_en'])
-                ->orderBy('sort_order')->orderBy('name')->get()
-                ->map(fn (FinanceAccount $a) => ['value' => $a->id, 'label' => FinanceAccountLabel::for($a)])->all()),
-            Filter::multi('payment_method', 'col.payment_method', $methods
-                ->map(fn (string $m) => ['value' => $m, 'label' => $this->methodLabel($m)])->all()),
-        ];
+        return $this->transactionFilters();
     }
 
     public function columns(): array
@@ -95,7 +73,7 @@ class FinanceSummary extends Report
     /** One line per side of the books and finance category, income first, largest first. */
     public function rows(ReportFilters $filters): Collection
     {
-        $groups = $this->base($filters)->toBase()
+        $groups = $this->transactions($filters)->toBase()
             ->groupBy('transaction_type', 'finance_category_id')
             ->selectRaw('transaction_type, finance_category_id, COUNT(*) as entries, SUM(amount) as total')
             ->get();
@@ -118,7 +96,7 @@ class FinanceSummary extends Report
         [$income, $expense] = $this->incomeExpense($filters);
 
         return [
-            'entries' => $this->base($filters)->count(),
+            'entries' => $this->transactions($filters)->count(),
             'income' => $income,
             'expense' => $expense,
         ];
@@ -132,22 +110,22 @@ class FinanceSummary extends Report
             ['label' => 'reports.kpi.income', 'value' => $income, 'format' => 'money'],
             ['label' => 'reports.kpi.expense', 'value' => $expense, 'format' => 'money'],
             ['label' => 'reports.kpi.net', 'value' => $net, 'format' => 'money'],
-            ['label' => 'reports.kpi.entries', 'value' => $this->base($filters)->count(), 'format' => 'number'],
+            ['label' => 'reports.kpi.entries', 'value' => $this->transactions($filters)->count(), 'format' => 'number'],
         ];
     }
 
     public function charts(ReportFilters $filters): array
     {
         // SUBSTR works on SQLite (tests, desktop) and MySQL (web) alike.
-        $months = $this->base($filters)->toBase()
+        $months = $this->transactions($filters)->toBase()
             ->selectRaw('SUBSTR(transaction_date, 1, 7) as month, transaction_type, SUM(amount) as total')
             ->groupBy('month', 'transaction_type')->orderBy('month')->get();
 
-        $byMethod = $this->base($filters)->toBase()
+        $byMethod = $this->transactions($filters)->toBase()
             ->selectRaw('payment_method, SUM(amount) as total')->where('transaction_type', 'income')
             ->groupBy('payment_method')->orderByDesc('total')->get();
 
-        $byAccount = $this->base($filters)->toBase()
+        $byAccount = $this->transactions($filters)->toBase()
             ->selectRaw('finance_account_id, SUM(amount) as total')->where('transaction_type', 'income')
             ->groupBy('finance_account_id')->orderByDesc('total')->get();
         $accounts = FinanceAccount::query()
@@ -163,7 +141,7 @@ class FinanceSummary extends Report
             ['type' => 'bar', 'title' => 'reports.chart.expense_by_month', 'stats' => $monthly('expense'), 'unit' => 'money'],
             ['type' => 'doughnut', 'title' => 'reports.chart.income_by_method', 'stats' => $byMethod->map(fn ($r) => [
                 'key' => (string) ($r->payment_method ?? 'none'),
-                'label' => $r->payment_method ? $this->methodLabel($r->payment_method) : UiLang::get('reports.none'),
+                'label' => $this->methodLabel($r->payment_method) ?? UiLang::get('reports.none'),
                 'count' => round((float) $r->total, 2),
             ])->all(), 'unit' => 'money'],
             ['type' => 'bar', 'title' => 'reports.chart.income_by_caisse', 'stats' => $byAccount->map(fn ($r) => [
@@ -182,41 +160,8 @@ class FinanceSummary extends Report
      */
     private function incomeExpense(ReportFilters $filters): array
     {
-        $tiles = $this->stats->transactions($this->base($filters));
+        $tiles = $this->stats->transactions($this->transactions($filters));
 
         return [(float) $tiles[0]['value'], (float) $tiles[1]['value'], (float) $tiles[2]['value']];
-    }
-
-    /** @return Builder<Transaction> */
-    private function base(ReportFilters $filters): Builder
-    {
-        $query = Transaction::query()->where('archived', false);
-
-        if ($filters->filled('from')) {
-            $query->whereDate('transaction_date', '>=', $filters->get('from'));
-        }
-        if ($filters->filled('to')) {
-            $query->whereDate('transaction_date', '<=', $filters->get('to'));
-        }
-        // As on Transactions: a chosen season always applies; with none, the
-        // current season applies unless a date range already says which days.
-        if ($filters->filled('season')) {
-            $query->where('fiscal_year', $filters->get('season'));
-        } elseif (! $filters->filled('from') && ! $filters->filled('to')) {
-            $query->where('fiscal_year', FiscalPeriod::currentKey());
-        }
-        if ($filters->filled('account_id')) {
-            $query->whereIn('finance_account_id', $filters->get('account_id'));
-        }
-        if ($filters->filled('payment_method')) {
-            $query->whereIn('payment_method', $filters->get('payment_method'));
-        }
-
-        return $query;
-    }
-
-    private function methodLabel(string $code): string
-    {
-        return UiLang::get(TransactionController::PAYMENT_METHOD_KEYS[$code] ?? $code, $code);
     }
 }

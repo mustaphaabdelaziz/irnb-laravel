@@ -2,8 +2,8 @@
 // the user can view any of them. Mirrors ReportRegistry::categoryModules();
 // ReportCategoriesMirrorTest fails when the two drift apart.
 export const REPORT_CATEGORY_MODULES = {
-    "players": ["players"],
-    "finance": ["finance", "transactions", "reports"],
+    "players": ["players", "documents"],
+    "finance": ["finance", "subscriptions", "transactions", "reports"],
     "equipment": ["equipment", "inventory"],
     "competitions": ["games"],
     "attendance": ["attendance"]

@@ -5,8 +5,13 @@ namespace Tests\Feature\Reports;
 use App\Models\Player;
 use App\Models\Role;
 use App\Models\User;
+use App\Reports\Column;
+use App\Reports\Filter;
+use App\Reports\ReportFilters;
+use App\Reports\ReportRegistry;
 use App\Services\Pdf\PdfService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Inertia\Testing\AssertableInertia as Assert;
 use Mockery\MockInterface;
 use PHPUnit\Framework\Attributes\Test;
@@ -138,10 +143,34 @@ class ReportsCenterTest extends TestCase
         Player::create(['membership_id' => '2026000001', 'firstname' => 'علي', 'lastname' => 'بن']);
         $admin = User::factory()->admin()->create(['preferred_lng' => 'ar']);
 
-        foreach ([['players', 'directory'], ['finance', 'summary'], ['equipment', 'inventory'], ['competitions', 'results']] as [$category, $key]) {
-            $response = $this->actingAs($admin)->get(route('reports.download', [$category, $key, 'format' => 'pdf']));
+        foreach (app(ReportRegistry::class)->reports() as $report) {
+            $response = $this->actingAs($admin)->get(route('reports.download', [$report->category(), $report->key(), 'format' => 'pdf']));
             $response->assertOk()->assertHeader('Content-Type', 'application/pdf');
-            $this->assertStringStartsWith('%PDF', $response->getContent(), "{$category}.{$key}");
+            $this->assertStringStartsWith('%PDF', $response->getContent(), $report->id());
+        }
+    }
+
+    #[Test]
+    public function every_label_a_report_shows_exists_in_all_three_languages(): void
+    {
+        $this->actingAs($this->admin());
+        $catalogs = collect(['ar', 'fr', 'en'])->mapWithKeys(fn ($l) => [$l => json_decode((string) file_get_contents(resource_path("js/i18n/{$l}.json")), true)]);
+
+        foreach (app(ReportRegistry::class)->reports() as $report) {
+            $filters = ReportFilters::fromRequest(Request::create('/'), $report);
+            $keys = [
+                $report->title(), $report->description(),
+                ...array_map(fn (Column $c) => $c->label, $report->columns()),
+                ...array_map(fn (Filter $f) => $f->label, $report->filters()),
+                ...array_column($report->summary($filters), 'label'),
+                ...array_column($report->charts($filters), 'title'),
+                ...array_filter(array_column($report->charts($filters), 'unit'), fn ($u) => $u !== 'money'),
+            ];
+            foreach ($keys as $key) {
+                foreach ($catalogs as $locale => $catalog) {
+                    $this->assertArrayHasKey($key, $catalog, "{$report->id()}: \"{$key}\" missing in {$locale}");
+                }
+            }
         }
     }
 }

@@ -5,8 +5,17 @@ namespace App\Reports;
 use App\Models\User;
 use App\Reports\Competitions\CompetitionResults;
 use App\Reports\Equipment\EquipmentInventory;
+use App\Reports\Finance\BudgetReport;
+use App\Reports\Finance\CashBook;
 use App\Reports\Finance\FinanceSummary;
+use App\Reports\Finance\OutstandingPayments;
+use App\Reports\Finance\SubscriptionCollection;
+use App\Reports\Finance\TransactionsJournal;
+use App\Reports\Players\PlayerBirthdays;
+use App\Reports\Players\PlayerDemographics;
 use App\Reports\Players\PlayerDirectory;
+use App\Reports\Players\PlayerDocuments;
+use App\Reports\Players\PlayerMovement;
 
 /**
  * Everything the Reports center lists: the reports built on the engine, and
@@ -29,7 +38,16 @@ final class ReportRegistry
     /** @var list<class-string<Report>> */
     private const REPORTS = [
         PlayerDirectory::class,
+        PlayerDemographics::class,
+        PlayerMovement::class,
+        PlayerDocuments::class,
+        PlayerBirthdays::class,
         FinanceSummary::class,
+        TransactionsJournal::class,
+        CashBook::class,
+        BudgetReport::class,
+        OutstandingPayments::class,
+        SubscriptionCollection::class,
         EquipmentInventory::class,
         CompetitionResults::class,
     ];

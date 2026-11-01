@@ -3,8 +3,17 @@
 namespace App\Reports;
 
 use App\Models\User;
+use App\Reports\Attendance\SessionsOverview;
+use App\Reports\Competitions\CompetitionAppearances;
+use App\Reports\Competitions\CompetitionDiscipline;
+use App\Reports\Competitions\CompetitionFixtures;
 use App\Reports\Competitions\CompetitionResults;
+use App\Reports\Competitions\CompetitionSuspensions;
 use App\Reports\Equipment\EquipmentInventory;
+use App\Reports\Equipment\EquipmentLifecycle;
+use App\Reports\Equipment\EquipmentOut;
+use App\Reports\Equipment\EquipmentValuation;
+use App\Reports\Equipment\StocktakeLosses;
 use App\Reports\Finance\BudgetReport;
 use App\Reports\Finance\CashBook;
 use App\Reports\Finance\FinanceSummary;
@@ -49,7 +58,16 @@ final class ReportRegistry
         OutstandingPayments::class,
         SubscriptionCollection::class,
         EquipmentInventory::class,
+        EquipmentOut::class,
+        EquipmentValuation::class,
+        EquipmentLifecycle::class,
+        StocktakeLosses::class,
         CompetitionResults::class,
+        CompetitionFixtures::class,
+        CompetitionDiscipline::class,
+        CompetitionSuspensions::class,
+        CompetitionAppearances::class,
+        SessionsOverview::class,
     ];
 
     /**

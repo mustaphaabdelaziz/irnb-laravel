@@ -411,9 +411,23 @@ class HeroStats
             $spark[] = round($running, 2);
         }
 
+        // Balance at the end of each window: opening funds plus every counted
+        // transaction up to that day. Following the selected range, not the last
+        // two sparkline months, so "this quarter" compares with last quarter.
         $delta = null;
-        if ($filters->hasComparison() && count($spark) >= 2) {
-            $delta = DeltaCalculator::compute(end($spark), $spark[count($spark) - 2]);
+        if ($filters->hasComparison()) {
+            $ends = BranchScope::transactions(Transaction::query()->where('archived', false), $filters->branchId)
+                ->selectRaw(
+                    "SUM(CASE WHEN transaction_date <= ? THEN (CASE WHEN transaction_type = 'income' THEN amount ELSE -amount END) ELSE 0 END) as current_end, "
+                    ."SUM(CASE WHEN transaction_date <= ? THEN (CASE WHEN transaction_type = 'income' THEN amount ELSE -amount END) ELSE 0 END) as previous_end",
+                    [$filters->to->toDateString(), $filters->prevTo->toDateString()],
+                )
+                ->first();
+
+            $delta = DeltaCalculator::compute(
+                round($opening + (float) ($ends->current_end ?? 0), 2),
+                round($opening + (float) ($ends->previous_end ?? 0), 2),
+            );
         }
 
         return [

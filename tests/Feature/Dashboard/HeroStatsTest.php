@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\EquipmentCatalog;
 use App\Models\EquipmentItem;
 use App\Models\EquipmentRental;
+use App\Models\FinanceAccount;
 use App\Models\Player;
 use App\Models\PlayerSubscription;
 use App\Models\Subscription;
@@ -50,6 +51,20 @@ class HeroStatsTest extends TestCase
             'membership_id' => str_pad((string) $n, 6, '0', STR_PAD_LEFT),
             'firstname' => 'Player',
             'lastname' => "Number{$n}",
+        ], $attributes));
+    }
+
+    private function account(array $attributes = []): FinanceAccount
+    {
+        static $n = 0;
+        $n++;
+
+        return FinanceAccount::create(array_merge([
+            'name' => "Account {$n}",
+            'type' => 'cash',
+            'opening_balance' => 0,
+            'current_balance' => 0,
+            'is_active' => true,
         ], $attributes));
     }
 
@@ -296,5 +311,31 @@ class HeroStatsTest extends TestCase
         $this->player(['category_id' => $category->id]);
 
         $this->assertSame(1, $this->tiles()['members']['value']);
+    }
+
+    #[Test]
+    public function the_treasury_delta_compares_window_ends_not_the_last_two_months(): void
+    {
+        $this->account(['opening_balance' => 1000]);
+        // Quarter Apr-Jun 2026 vs Jan-Mar 2026.
+        $this->transaction('income', 1000, '2026-02-10'); // end of Q1 = 2 000
+        $this->transaction('income', 500, '2026-04-10');
+        $this->transaction('income', 500, '2026-05-10'); // end of Q2 so far = 3 000
+
+        $delta = $this->tiles(['range' => 'quarter'])['treasury']['delta'];
+
+        // 3 000 vs 2 000. (The old last-two-sparkline-months rule gives 3 000 vs 2 500 = 20%.)
+        $this->assertSame(50.0, $delta['percent']);
+        $this->assertSame('positive', $delta['tone']);
+    }
+
+    #[Test]
+    public function the_treasury_delta_is_null_when_compare_is_off_or_all_time(): void
+    {
+        $this->account(['opening_balance' => 1000]);
+        $this->transaction('income', 500, '2026-05-10');
+
+        $this->assertNull($this->tiles(['compare' => '0'])['treasury']['delta']);
+        $this->assertNull($this->tiles(['range' => 'all'])['treasury']['delta']);
     }
 }

@@ -214,3 +214,19 @@ export function barDataset(label, data, slot = 0, { stack = undefined, color = u
         stack,
     };
 }
+
+/**
+ * A "which is biggest" bar series: one hue darkening with rank, not one
+ * categorical colour per row. Rows must arrive sorted largest first.
+ */
+export function rankedBarDataset(label, values) {
+    const ramp = sequential(6);
+
+    return {
+        label,
+        data: values,
+        backgroundColor: values.map((_, index) => ramp[Math.max(0, ramp.length - 1 - index)] ?? ramp[0]),
+        borderRadius: 4,
+        maxBarThickness: 24,
+    };
+}

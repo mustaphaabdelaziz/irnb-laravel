@@ -71,6 +71,11 @@ const changeYears = computed(() => averaged.value.slice(-2).map((y) => yearLabel
 // slash so they don't re-order under the Arabic UI (same trick as MembersTab).
 const isolate = (text) => `⁦${text}⁩`;
 const latestDisplay = computed(() => (latest.value ? isolate(`${fmt(latest.value.record.gpa)} / ${latest.value.scale}`) : null));
+// Pass/fail and up/down keep their colour (and an icon, so it is not colour-only).
+const latestPasses = computed(() => (latest.value ? passes(latest.value.record.gpa, latest.value.scale) : null));
+const latestTone = computed(() => (latestPasses.value === null ? 'neutral' : latestPasses.value ? 'positive' : 'negative'));
+const changeTone = computed(() => (!yearChange.value ? 'neutral' : yearChange.value > 0 ? 'positive' : 'negative'));
+const changeIcon = computed(() => (!yearChange.value ? 'dot' : yearChange.value > 0 ? 'upload' : 'download'));
 const averageDisplay = computed(() => (currentAverage.value ? isolate(`${fmt(currentAverage.value.average)} / ${currentAverage.value.scale}`) : null));
 const averageMeta = computed(() => (currentAverage.value
     ? [yearLabel(currentAverage.value.academic_year), currentAverage.value.is_provisional ? t('provisional') : null].filter(Boolean).join(' · ')
@@ -175,9 +180,9 @@ const gradeClass = (grade, scale) => (passes(grade, scale) ? 'text-emerald-700 d
             </p>
 
             <div v-if="hasRecords" class="grid gap-3 sm:grid-cols-3">
-                <StatTile :label="t('latest_gpa')" :value="latestDisplay" format="text" tone="neutral" />
+                <StatTile :label="t('latest_gpa')" :value="latestDisplay" format="text" :tone="latestTone" :icon="latestPasses === false ? 'alert' : 'check'" />
                 <StatTile :label="t('year_average')" :value="averageDisplay" format="text" tone="neutral" :meta="averageMeta" />
-                <StatTile :label="t('year_change')" :value="changeDisplay" format="text" tone="neutral" :meta="changeYears || null" />
+                <StatTile :label="t('year_change')" :value="changeDisplay" format="text" :tone="changeTone" :icon="changeIcon" :meta="changeYears || null" />
             </div>
 
             <div v-if="averaged.length >= 2" class="h-64">

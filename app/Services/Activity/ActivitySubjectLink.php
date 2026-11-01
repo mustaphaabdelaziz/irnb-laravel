@@ -204,6 +204,7 @@ final class ActivitySubjectLink
             $subject instanceof BoardMeeting => [(string) $subject->title, route('board.meetings.show', $subject)],
             $subject instanceof BoardTask => [(string) $subject->title, route('board.tasks')],
             $subject instanceof Activity => [(string) $subject->title, route('activities.show', $subject)],
+            $subject instanceof LiteraryReport => [(string) $subject->title, route('literary-reports.edit', $subject)],
             $subject instanceof TrainingSession => [
                 ((string) $subject->category?->localized_name).' · '.$subject->date,
                 route('attendance.sessions.show', $subject),

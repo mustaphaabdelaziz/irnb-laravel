@@ -103,6 +103,10 @@ $routes = [
     'activities.update' => ActivityAction::ACTIVITY_UPDATED,
     'activities.destroy' => ActivityAction::ACTIVITY_DELETED,
 
+    // literary reports (creation is recorded in LiteraryReportController::store)
+    'literary-reports.update' => ActivityAction::LITERARY_REPORT_UPDATED,
+    'literary-reports.destroy' => ActivityAction::LITERARY_REPORT_DELETED,
+
     // documents
     'players.documents.update' => ActivityAction::DOCUMENT_UPDATED,
     'players.documents.unexempt' => ActivityAction::DOCUMENT_UNEXEMPTED,

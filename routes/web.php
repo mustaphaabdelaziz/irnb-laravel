@@ -53,6 +53,7 @@ use App\Http\Controllers\GameStatsController;
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LanguageController;
+use App\Http\Controllers\LiteraryReportController;
 use App\Http\Controllers\MemberJobController;
 use App\Http\Controllers\OpponentController;
 use App\Http\Controllers\PlayerAcademicRecordController;
@@ -391,6 +392,10 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
             Route::get('/activities/{activity}/files/{file}', [ActivityFileController::class, 'show'])->name('activities.files.show');
             Route::delete('/activities/{activity}/files/{file}', [ActivityFileController::class, 'destroy'])->name('activities.files.destroy');
         });
+
+        // Literary report (P2): saved editions, PDF computed live.
+        Route::resource('literary-reports', LiteraryReportController::class)->except(['show', 'create']);
+        Route::get('/literary-reports/{literaryReport}/pdf', [LiteraryReportController::class, 'pdf'])->name('literary-reports.pdf');
 
         Route::get('/board/tasks', [BoardController::class, 'tasks'])->name('board.tasks');
         Route::get('/board/tasks/export', [BoardController::class, 'exportTasks'])->name('board.tasks.export');

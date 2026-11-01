@@ -2,11 +2,14 @@
 
 namespace Tests\Feature\LiteraryReport;
 
+use App\Models\ActivityLog;
 use App\Models\LiteraryReport;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\Activity\ActivityAction;
 use App\Support\PermissionMap;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -55,5 +58,106 @@ class LiteraryReportCrudTest extends TestCase
         $this->assertContains('literary_reports', Role::MODULES);
         $this->assertContains('literary_reports', Role::MODULE_GROUPS['social']);
         $this->assertFalse(User::factory()->create(['role_id' => $custom->id])->hasPermission('literary_reports', 'view'));
+    }
+
+    #[Test]
+    public function the_index_lists_reports_and_needs_the_view_right(): void
+    {
+        $this->report();
+        $this->actingAs($this->admin())->get('/literary-reports')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->component('LiteraryReports/Index')->has('reports', 1)->has('defaults.period_from'));
+
+        $nobody = User::factory()->create(['role_id' => Role::factory()->create(['permissions' => []])->id]);
+        $this->actingAs($nobody)->get('/literary-reports')->assertForbidden();
+    }
+
+    #[Test]
+    public function creating_a_report_enables_every_section_and_opens_the_editor(): void
+    {
+        $admin = $this->admin();
+        $response = $this->actingAs($admin)->post('/literary-reports', [
+            'title' => 'Rapport 2025/26', 'period_from' => '2025-09-01', 'period_to' => '2026-08-31',
+        ]);
+
+        $report = LiteraryReport::sole();
+        $response->assertRedirect(route('literary-reports.edit', $report));
+        $this->assertSame(LiteraryReport::SECTIONS, $report->sections);
+        $this->assertSame($admin->id, $report->created_by_user_id);
+        $this->assertTrue(ActivityLog::where('action', ActivityAction::LITERARY_REPORT_CREATED)->where('subject_id', $report->id)->exists());
+    }
+
+    #[Test]
+    public function the_period_end_cannot_precede_its_start_and_sections_must_be_known(): void
+    {
+        $this->actingAs($this->admin())->post('/literary-reports', [
+            'title' => 'X', 'period_from' => '2026-08-31', 'period_to' => '2026-01-01',
+        ])->assertSessionHasErrors('period_to');
+
+        $report = $this->report();
+        $this->actingAs($this->admin())->put("/literary-reports/{$report->id}", [
+            'title' => 'X', 'period_from' => '2025-09-01', 'period_to' => '2026-08-31', 'sections' => ['cover', 'gossip'],
+        ])->assertSessionHasErrors('sections.1');
+    }
+
+    #[Test]
+    public function updating_saves_texts_and_section_choice(): void
+    {
+        $report = $this->report();
+        $this->actingAs($this->admin())->put("/literary-reports/{$report->id}", [
+            'title' => 'Final', 'period_from' => '2025-09-01', 'period_to' => '2026-06-30',
+            'sections' => ['cover', 'activities'],
+            'president_word' => "سطر أول\nسطر ثان", 'introduction' => null, 'conclusion' => 'Outlook',
+        ])->assertRedirect()->assertSessionHas('success', 'flash.literary_report_updated');
+
+        $fresh = $report->fresh();
+        $this->assertSame(['cover', 'activities'], $fresh->sections);
+        $this->assertSame("سطر أول\nسطر ثان", $fresh->president_word);
+        $this->assertSame('2026-06-30', $fresh->toArray()['period_to']);
+    }
+
+    #[Test]
+    public function the_editor_marks_sections_the_user_cannot_see(): void
+    {
+        $report = $this->report();
+        $user = User::factory()->create(['role_id' => Role::factory()->create(['permissions' => [
+            'literary_reports' => ['view', 'edit'], 'players' => ['view'],
+        ]])->id]);
+
+        $this->actingAs($user)->get("/literary-reports/{$report->id}/edit")
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->component('LiteraryReports/Edit')
+                ->where('report.period_from', '2025-09-01')
+                ->where('sections', fn ($sections) => collect($sections)->pluck('allowed', 'key')->all() === [
+                    'cover' => true, 'intro' => true, 'members' => true, 'board' => false, 'attendance' => false,
+                    'sports' => false, 'activities' => false, 'finance' => false, 'conclusion' => true,
+                ]));
+    }
+
+    #[Test]
+    public function deleting_removes_the_report(): void
+    {
+        $report = $this->report();
+        $this->actingAs($this->admin())->delete("/literary-reports/{$report->id}")
+            ->assertRedirect(route('literary-reports.index'));
+        $this->assertDatabaseCount('literary_reports', 0);
+    }
+
+    #[Test]
+    public function updating_and_deleting_are_recorded_in_the_activity_log(): void
+    {
+        $report = $this->report();
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->put("/literary-reports/{$report->id}", [
+            'title' => 'Renamed', 'period_from' => '2025-09-01', 'period_to' => '2026-08-31',
+        ])->assertRedirect();
+        $this->actingAs($admin)->delete("/literary-reports/{$report->id}");
+
+        foreach (['literary_report_updated', 'literary_report_deleted'] as $action) {
+            $this->assertSame(1, ActivityLog::where('action', $action)
+                ->where('subject_type', (new LiteraryReport)->getMorphClass())
+                ->where('subject_id', $report->id)->count(), $action);
+        }
     }
 }

@@ -1,0 +1,30 @@
+<?php
+
+namespace App\Http\Requests;
+
+use App\Models\LiteraryReport;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+class LiteraryReportRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true; // the route's permission middleware already decided
+    }
+
+    /** @return array<string, mixed> */
+    public function rules(): array
+    {
+        return [
+            'title' => ['required', 'string', 'max:150'],
+            'period_from' => ['required', 'date'],
+            'period_to' => ['required', 'date', 'after_or_equal:period_from'],
+            'sections' => ['sometimes', 'array'],
+            'sections.*' => ['string', Rule::in(LiteraryReport::SECTIONS)],
+            'president_word' => ['nullable', 'string', 'max:20000'],
+            'introduction' => ['nullable', 'string', 'max:20000'],
+            'conclusion' => ['nullable', 'string', 'max:20000'],
+        ];
+    }
+}

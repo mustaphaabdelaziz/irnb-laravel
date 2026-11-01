@@ -5,6 +5,10 @@
 //
 // Literal special characters must be written as {'@'}, {'|'}, {'{'}, {'}'}.
 //
+// It also rejects a dotted key whose prefix is itself a message and whose next
+// segment is a String method: vue-i18n resolves "activities.search" as a path
+// first, lands on "الأنشطة".search (a function) and crashes the render.
+//
 // Run: node scripts/i18n-compile-check.mjs   (exit 1 on any failure)
 import { baseCompile } from '@intlify/message-compiler';
 import { readFileSync } from 'node:fs';
@@ -13,6 +17,13 @@ let failures = 0;
 for (const locale of ['ar', 'fr', 'en']) {
     const messages = JSON.parse(readFileSync(new URL(`../resources/js/i18n/${locale}.json`, import.meta.url)));
     for (const [key, message] of Object.entries(messages)) {
+        const parts = key.split('.');
+        for (let i = 1; i < parts.length; i++) {
+            if (typeof messages[parts.slice(0, i).join('.')] === 'string' && parts[i] in String.prototype) {
+                failures++;
+                console.log(`✗ ${locale} ${key}: "${parts[i]}" is a String method under the message "${parts.slice(0, i).join('.')}"; rename the key`);
+            }
+        }
         if (typeof message !== 'string') continue;
         const errors = [];
         baseCompile(message, { onError: (e) => errors.push(e) });

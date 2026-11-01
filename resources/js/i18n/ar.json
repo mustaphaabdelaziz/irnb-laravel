@@ -67,7 +67,7 @@
     "activities.report": "تقرير النشاط",
     "activities.report_hint": "يُطبع هذا النص في التقرير الأدبي",
     "activities.responsible": "المسؤول",
-    "activities.search": "بحث في العنوان أو المكان أو الشركاء",
+    "activities.search_placeholder": "بحث في العنوان أو المكان أو الشركاء",
     "activities.selected_count": "{n} مختار",
     "activities.single_day_hint": "اتركه فارغاً لنشاط يوم واحد",
     "activities.starts_on": "تاريخ البداية",

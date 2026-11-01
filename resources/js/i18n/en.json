@@ -67,7 +67,7 @@
     "activities.report": "Activity report",
     "activities.report_hint": "This text is printed in the literary report",
     "activities.responsible": "Person in charge",
-    "activities.search": "Search title, location, partners",
+    "activities.search_placeholder": "Search title, location, partners",
     "activities.selected_count": "{n} selected",
     "activities.single_day_hint": "Leave empty for a one-day activity",
     "activities.starts_on": "Start date",

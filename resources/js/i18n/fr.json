@@ -67,7 +67,7 @@
     "activities.report": "Rapport de l'activité",
     "activities.report_hint": "Ce texte est imprimé dans le rapport moral",
     "activities.responsible": "Responsable",
-    "activities.search": "Rechercher titre, lieu, partenaires",
+    "activities.search_placeholder": "Rechercher titre, lieu, partenaires",
     "activities.selected_count": "{n} sélectionné(s)",
     "activities.single_day_hint": "Vide pour une activité d'un jour",
     "activities.starts_on": "Date de début",

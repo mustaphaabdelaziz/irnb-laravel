@@ -63,7 +63,7 @@ const dates = (a) => (a.ends_on && a.ends_on !== a.starts_on ? `${a.starts_on} â
             </div>
 
             <div class="flex flex-wrap items-end gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
-                <SearchInput v-model="state.search" :placeholder="t('activities.search')" class="min-w-56 flex-1" />
+                <SearchInput v-model="state.search" :placeholder="t('activities.search_placeholder')" class="min-w-56 flex-1" />
                 <MultiSelectFilter v-model="state.types" :options="types.map((ty) => ({ value: String(ty.id), label: ty.name }))" :label="t('activities.type')" :placeholder="t('activities.all_types')" collapse-all />
                 <select v-model="state.branch" class="rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900">
                     <option value="">{{ t('activities.all_branches') }}</option>

@@ -61,9 +61,10 @@ function switchBranch(id) {
     router.get(route('attendance.stats'), { ...periodQuery(props.period), ...keep.value, branch_id: id }, { preserveScroll: true, replace: true });
 }
 
-const activeCount = computed(() => (props.period.period !== 'month' ? 1 : 0) + (props.categoryId ? 1 : 0) + (props.branchId ? 1 : 0));
+// The branch is a choice (always set, never cleared), not a filter, so it is not counted and Reset keeps it.
+const activeCount = computed(() => (props.period.period !== 'month' ? 1 : 0) + (props.categoryId ? 1 : 0));
 function resetFilters() {
-    router.get(route('attendance.stats'), {}, { preserveScroll: true, replace: true });
+    router.get(route('attendance.stats'), { ...branchQuery.value }, { preserveScroll: true, replace: true });
 }
 const vsPrevious = computed(() => {
     if (props.period.period === 'month') return t('stats.vs_previous_month');

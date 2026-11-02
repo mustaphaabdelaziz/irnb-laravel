@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import StatCard from '@/Components/StatCard.vue';
+import StatTile from '@/Components/Dashboard/StatTile.vue';
 import Icon from '@/Components/Icon.vue';
 
 const props = defineProps({
@@ -63,12 +63,17 @@ function initial(n) { return (n || '?').charAt(0).toUpperCase(); }
 
             <!-- Stats -->
             <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                <StatCard :label="t('board_members')" :value="stats.members || 0" icon="board" color="primary" />
-                <StatCard :label="t('meetings')" :value="stats.meetings_held || 0" icon="calendar" color="slate" />
-                <StatCard :label="t('tasks')" :value="stats.tasks_open || 0" icon="task" color="amber" :suffix="t('in_progress')" />
-                <StatCard :label="t('completion_rate')" :value="completionRate" icon="check" color="emerald" suffix="%">
-                    <span v-if="stats.tasks_overdue" class="mt-1 inline-block text-xs font-semibold text-rose-600 dark:text-rose-400">{{ stats.tasks_overdue }} {{ t('overdue') }}</span>
-                </StatCard>
+                <StatTile :label="t('board_members')" :value="stats.members || 0" icon="board" />
+                <StatTile :label="t('meetings')" :value="stats.meetings_held || 0" icon="calendar" tone="neutral" />
+                <StatTile :label="t('tasks')" :value="stats.tasks_open || 0" icon="task" tone="warning" :meta="t('in_progress')" />
+                <StatTile
+                    :label="t('completion_rate')"
+                    :value="completionRate"
+                    format="percent"
+                    icon="check"
+                    :tone="stats.tasks_overdue ? 'negative' : 'positive'"
+                    :meta="stats.tasks_overdue ? `${stats.tasks_overdue} ${t('overdue')}` : null"
+                />
             </div>
 
             <div class="grid gap-4 lg:grid-cols-3">

@@ -195,7 +195,7 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
 
         <div class="space-y-6">
             <!-- Stats cards -->
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                 <StatTile :label="t('student_pricing')" :value="subscription.amount_student" format="money" icon="money" tone="neutral" />
                 <StatTile :label="t('worker_pricing')" :value="subscription.amount_worker" format="money" icon="money" tone="neutral" />
                 <StatTile :label="t('total_players')" :value="stats?.total ?? 0" icon="players" />

@@ -153,7 +153,7 @@ const eventLabel = (type) => {
             </div>
 
             <!-- Statistics -->
-            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
                 <StatTile :label="t('total')" :value="stats.events" icon="clipboard" tone="neutral" />
                 <StatTile :label="t('equipment.rental')" :value="stats.rentals" icon="refresh" tone="warning" />
                 <StatTile :label="t('return')" :value="stats.returns" icon="restore" />

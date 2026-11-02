@@ -45,7 +45,7 @@ const hasBranchValues = computed(
 
         <div class="space-y-6">
             <!-- Stats -->
-            <div class="grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            <div class="grid gap-4 sm:grid-cols-3 xl:grid-cols-6">
                 <StatTile :label="t('total')" :value="summary?.total || 0" icon="box" />
                 <StatTile :label="t('available')" :value="summary?.available || 0" icon="check" tone="positive" />
                 <StatTile :label="t('rented')" :value="summary?.rented || 0" icon="refresh" tone="warning" />

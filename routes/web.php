@@ -138,7 +138,10 @@ Route::get('/media/{path}', function (string $path) {
     abort_unless(Storage::disk('public')->exists($path), 404);
 
     return response()->file(Storage::disk('public')->path($path));
-})->where('path', '.*')->name('media.public');
+// Without the session: an image is not a visit. Answering with a session cookie,
+// a logo requested just before logging in could arrive after the login and put
+// the guest cookie back, and back() could land on the image.
+})->where('path', '.*')->name('media.public')->withoutMiddleware('web');
 
 // Language switch
 Route::get('/lang/{locale}', [LanguageController::class, 'switch'])->name('lang.switch');

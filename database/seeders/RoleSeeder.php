@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Role;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Schema;
 
 class RoleSeeder extends Seeder
 {
@@ -48,7 +49,9 @@ class RoleSeeder extends Seeder
                 'inventory' => ['view'],
             ],
             'is_system' => false,
-            'own_teams_only' => true,
+            // A 2026-07 migration seeds roles before this column exists; the
+            // competitions migrations add it and then set it for this role.
+            ...(Schema::hasColumn('roles', 'own_teams_only') ? ['own_teams_only' => true] : []),
         ]);
     }
 }

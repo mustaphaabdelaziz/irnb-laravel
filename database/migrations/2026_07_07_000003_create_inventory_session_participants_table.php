@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('inventory_session_participants', function (Blueprint $table) {
             $table->id();
             $table->foreignId('inventory_session_id')->constrained('inventory_sessions')->cascadeOnDelete();
-            $table->morphs('participant');
+            $table->morphs('participant', 'inventory_session_participants_participant_index');
             $table->timestamps();
 
             $table->unique(

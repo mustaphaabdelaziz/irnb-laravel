@@ -39,7 +39,7 @@ return new class extends Migration
             $table->text('note')->nullable();
             $table->timestamps();
 
-            $table->unique(['inventory_session_id', 'equipment_item_id']);
+            $table->unique(['inventory_session_id', 'equipment_item_id'], 'inventory_session_items_session_item_unique');
             $table->index(['inventory_session_id', 'counted']);
         });
     }

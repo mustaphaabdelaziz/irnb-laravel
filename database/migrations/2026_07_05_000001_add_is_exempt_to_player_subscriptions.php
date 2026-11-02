@@ -10,11 +10,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('player_subscriptions', function (Blueprint $table) {
-            $table->boolean('is_exempt')->default(false)->after('is_mandatory');
+            $table->boolean('is_exempt')->default(false);
         });
 
         // Preserve existing exemptions: any subscription that currently has a
         // non-archived donation payment was exempt under the old isExempt() rule.
+        // The link column comes from a migration that sorts after this one: on a
+        // new database it does not exist yet, and there is nothing to preserve.
+        if (! Schema::hasColumn('transactions', 'player_subscription_id')) {
+            return;
+        }
+
         DB::table('player_subscriptions')
             ->whereIn('id', function ($q) {
                 $q->select('player_subscription_id')->from('transactions')

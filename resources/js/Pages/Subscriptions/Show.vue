@@ -10,6 +10,9 @@ import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { ref, computed } from 'vue';
 import { useStatusLabel } from '@/Composables/useStatusLabel';
 import { paymentStatusColor } from '@/lib/statusLabels';
+import TarificationResult from './Partials/TarificationResult.vue';
+import { useCan } from '@/Composables/useCan';
+import { forecast, subscriptionInput } from '@/lib/tarification';
 
 const { t } = useI18n();
 const { statusLabel } = useStatusLabel();
@@ -22,6 +25,7 @@ const props = defineProps({
     availablePlayers: Array,
     outsidePlayers: { type: Array, default: null },
     stats: Object,
+    tarification: { type: Object, default: null },
 });
 
 // "2025/2026", or the kind for a one-off charge that has no season.
@@ -38,6 +42,19 @@ const categoryPrices = computed(() => {
         worker: c.pivot?.amount_worker ?? props.subscription.amount_worker,
     }));
 });
+
+const { can } = useCan();
+
+// Absent without Finance → view: the card is not rendered at all.
+const tarificationResult = computed(() => props.tarification && forecast({
+    tarification: props.tarification.saved,
+    roster: props.tarification.roster,
+    schedule: props.tarification.schedule,
+    subscription: subscriptionInput(props.subscription),
+}));
+
+const mixedPrices = computed(() => Number(props.subscription.amount_student) !== Number(props.subscription.amount_worker)
+    || categoryPrices.value.length > 0);
 
 // ── Search (the server already sends the list A→Z) ───────────────────
 const search = ref('');
@@ -225,6 +242,19 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
                         </tbody>
                     </table>
                 </div>
+            </div>
+
+            <!-- Tarification forecast (Finance → view only) -->
+            <div v-if="tarificationResult && tarificationResult.prompt" class="no-print flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-2xl bg-white px-5 py-3 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+                <p class="text-sm text-slate-500 dark:text-slate-400">{{ t(tarificationResult.prompt) }}</p>
+                <Link v-if="can('subscriptions', 'edit')" :href="route('subscriptions.edit', subscription.id)" class="text-sm font-medium text-primary-600 hover:underline dark:text-primary-400">{{ t('tarification.edit_costs') }}</Link>
+            </div>
+            <div v-else-if="tarificationResult" class="no-print rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+                <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+                    <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ t('tarification.title') }}</h2>
+                    <Link v-if="can('subscriptions', 'edit')" :href="route('subscriptions.edit', subscription.id)" class="text-sm font-medium text-primary-600 hover:underline dark:text-primary-400">{{ t('tarification.edit_costs') }}</Link>
+                </div>
+                <TarificationResult :result="tarificationResult" :collected="tarification.collected" :mixed-prices="mixedPrices" />
             </div>
 
             <!-- Payment percentage bar -->

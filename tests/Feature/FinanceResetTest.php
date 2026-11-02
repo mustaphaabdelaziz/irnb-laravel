@@ -62,12 +62,16 @@ class FinanceResetTest extends TestCase
             'player_id' => $player, 'subscription_id' => $sub, 'transaction_id' => $tx, 'year' => 2025,
             'status_at_time' => 'student', 'amount_owed' => 3000, 'amount_paid' => 1000,
         ]);
+        DB::table('subscription_tarifications')->insert(['subscription_id' => $sub, 'weeks' => 40, 'expected_payment_rate' => 100]);
+        DB::table('subscription_cost_lines')->insert([
+            'subscription_id' => $sub, 'label' => 'Coach', 'unit' => 'per_session', 'amount' => 800, 'quantity' => 1, 'sort_order' => 0,
+        ]);
         Storage::disk('local')->put('receipts/r1.pdf', 'pdf');
     }
 
     private function assertWiped(): void
     {
-        foreach (['subscriptions', 'player_subscriptions', 'transactions', 'branch_subscription', 'finance_transfers', 'budgets'] as $table) {
+        foreach (['subscriptions', 'subscription_tarifications', 'subscription_cost_lines', 'player_subscriptions', 'transactions', 'branch_subscription', 'finance_transfers', 'budgets'] as $table) {
             $this->assertSame(0, DB::table($table)->count(), "{$table} not emptied");
         }
         $this->assertEquals(0, DB::table('players')->value('outstanding_debt'));

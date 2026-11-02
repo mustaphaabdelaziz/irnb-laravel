@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Subscription;
 
 use App\Models\Subscription;
+use App\Models\SubscriptionCostLine;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -53,6 +54,37 @@ class StoreSubscriptionRequest extends FormRequest
             'category_prices.*.amount_worker' => ['nullable', 'numeric', 'min:0'],
             'branch_ids' => ['nullable', 'array'],
             'branch_ids.*' => ['integer', 'exists:branches,id'],
+            ...$this->tarificationRules($exceptional),
+        ];
+    }
+
+    /**
+     * Only for Finance → view: without these rules the block is not in validated(),
+     * so a save by anyone else leaves the costs as they were.
+     *
+     * @return array<string, mixed>
+     */
+    private function tarificationRules(bool $exceptional): array
+    {
+        if (! $this->user()?->hasPermission('finance', 'view')) {
+            return [];
+        }
+
+        $units = $exceptional
+            ? array_values(array_diff(SubscriptionCostLine::UNITS, [SubscriptionCostLine::UNIT_PER_SESSION]))
+            : SubscriptionCostLine::UNITS;
+
+        return [
+            'tarification' => ['nullable', 'array'],
+            'tarification.sessions_per_week' => ['nullable', 'integer', 'min:0', 'max:21'],
+            'tarification.weeks' => ['nullable', 'integer', 'min:0', 'max:53'],
+            'tarification.expected_players' => ['nullable', 'integer', 'min:0', 'max:100000'],
+            'tarification.expected_payment_rate' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'tarification.lines' => ['nullable', 'array', 'max:100'],
+            'tarification.lines.*.label' => ['required', 'string', 'max:100'],
+            'tarification.lines.*.unit' => ['required', Rule::in($units)],
+            'tarification.lines.*.amount' => ['required', 'numeric', 'min:0', 'max:9999999999.99'],
+            'tarification.lines.*.quantity' => ['required', 'integer', 'min:1', 'max:100000'],
         ];
     }
 
@@ -60,7 +92,7 @@ class StoreSubscriptionRequest extends FormRequest
     public function subscriptionAttributes(): array
     {
         $data = collect($this->validated())
-            ->except(['category_ids', 'category_prices', 'branch_ids'])
+            ->except(['category_ids', 'category_prices', 'branch_ids', 'tarification'])
             ->all();
 
         if ($data['kind'] === Subscription::KIND_EXCEPTIONAL) {

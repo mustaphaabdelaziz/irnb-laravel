@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Subscription extends Model
 {
@@ -66,6 +67,17 @@ class Subscription extends Model
     public function playerSubscriptions(): HasMany
     {
         return $this->hasMany(PlayerSubscription::class);
+    }
+
+    /** Forecast settings; coach pay stays out of every prop unless loaded on purpose. */
+    public function tarification(): HasOne
+    {
+        return $this->hasOne(SubscriptionTarification::class);
+    }
+
+    public function costLines(): HasMany
+    {
+        return $this->hasMany(SubscriptionCostLine::class)->orderBy('sort_order');
     }
 
     public function isExceptional(): bool

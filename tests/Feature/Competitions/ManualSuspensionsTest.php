@@ -27,7 +27,7 @@ class ManualSuspensionsTest extends TestCase
             'player_id' => $p->id, 'scope' => 'competition', 'kind' => 'matches', 'matches_count' => 2, 'reason' => 'Federation letter 12/26',
         ])->assertSessionHas('success', 'flash.suspension_added');
         $this->actingAs($admin)->post(route('competitions.suspensions.store', $competition), [
-            'player_id' => $p->id, 'scope' => 'all', 'kind' => 'dates', 'starts_on' => '2026-11-01', 'ends_on' => '2026-11-30',
+            'player_id' => $p->id, 'scope' => 'all', 'kind' => 'dates', 'starts_on' => now()->addMonth()->toDateString(), 'ends_on' => now()->addMonths(2)->toDateString(),
         ])->assertSessionHasNoErrors();
 
         $this->assertSame([['competition', 2], ['all', null]],
@@ -35,7 +35,7 @@ class ManualSuspensionsTest extends TestCase
         $this->assertSame($admin->id, Suspension::first()->created_by);
 
         $this->actingAs($admin)->get(route('competitions.show', $competition))
-            ->assertInertia(fn (Assert $page) => $page->has('suspensions', 2)->where('suspensions.0.reason', 'Federation letter 12/26')); // active first; the date ban starts in November
+            ->assertInertia(fn (Assert $page) => $page->has('suspensions', 2)->where('suspensions.0.reason', 'Federation letter 12/26')); // active first; the date ban has not started
     }
 
     #[Test]

@@ -152,7 +152,7 @@ const yearlyTotals = computed(() => columnTotals(yearlyColumns.value, yearlyRows
 
 const showModal = ref(false);
 const editingId = ref(null);
-const form = useForm({ title: '', description: '', board_member_id: null, board_meeting_id: null, due_date: '', status: 'not_started', progress_percent: 0, priority: 'medium' });
+const form = useForm(() => ({ title: '', description: '', board_member_id: null, board_meeting_id: null, due_date: '', status: 'not_started', progress_percent: 0, priority: 'medium' }));
 // Not "progress": useForm keeps upload progress under that name and nulls it after every submit.
 form.transform(({ progress_percent, ...fields }) => ({ ...fields, progress: progress_percent }));
 

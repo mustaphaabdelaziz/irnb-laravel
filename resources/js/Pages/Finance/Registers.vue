@@ -4,6 +4,7 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Icon from '@/Components/Icon.vue';
+import StatTile from '@/Components/Dashboard/StatTile.vue';
 import IconButton from '@/Components/IconButton.vue';
 import Pagination from '@/Components/Pagination.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
@@ -88,15 +89,9 @@ const formatDate = (value) => (value ? new Date(`${value}T00:00:00`).toLocaleDat
 
         <div class="space-y-6">
             <!-- Totals -->
-            <section class="grid gap-4 sm:grid-cols-2">
-                <div class="card p-5">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('total_cash') }}</p>
-                    <p class="mt-2 break-words text-2xl font-extrabold tabular-nums sm:text-3xl" :class="balanceClass(totals.cash)">{{ formatMoney(totals.cash) }}</p>
-                </div>
-                <div class="card p-5">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('active_registers') }}</p>
-                    <p class="mt-2 break-words text-2xl font-extrabold tabular-nums text-primary-700 dark:text-primary-400 sm:text-3xl">{{ totals.active }}</p>
-                </div>
+            <section class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <StatTile :label="t('total_cash')" :value="totals.cash" format="money" icon="wallet" flag-negative />
+                <StatTile :label="t('active_registers')" :value="totals.active" icon="money" tone="neutral" />
             </section>
 
             <!-- Money from before the app, still waiting to be placed -->

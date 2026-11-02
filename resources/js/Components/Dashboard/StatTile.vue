@@ -30,6 +30,8 @@ const props = defineProps({
     meta: { type: String, default: null },
     periodLabel: { type: String, default: '' },
     href: { type: String, default: null },
+    // Money only: a value below zero shows red. Off by default, opt-in per page.
+    flagNegative: { type: Boolean, default: false },
 });
 
 const { t } = useI18n();
@@ -57,6 +59,7 @@ const display = computed(() => {
 });
 
 const isEmpty = computed(() => display.value === '—');
+const isFlagged = computed(() => props.flagNegative && props.format === 'money' && Number(props.value) < 0);
 </script>
 
 <template>
@@ -91,7 +94,7 @@ const isEmpty = computed(() => display.value === '—');
                     <div class="[container-type:inline-size]">
                         <p
                             class="mt-2 flex flex-wrap items-baseline gap-x-1 text-2xl font-semibold leading-tight tracking-tight tabular-nums [overflow-wrap:anywhere] sm:text-[1.75rem] sm:leading-none"
-                            :class="isEmpty ? 'text-muted-foreground/60' : 'text-foreground'"
+                            :class="isEmpty ? 'text-muted-foreground/60' : isFlagged ? 'text-rose-600 dark:text-rose-400' : 'text-foreground'"
                         >
                             <FitFigure :value="display" />
                             <span v-if="format === 'money' && !isEmpty" class="whitespace-nowrap text-sm font-medium text-muted-foreground">{{ currencyLabel }}</span>

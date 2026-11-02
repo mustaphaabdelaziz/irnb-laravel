@@ -76,14 +76,14 @@ function initial(n) { return (n || '?').charAt(0).toUpperCase(); }
                 />
             </div>
 
-            <div class="grid gap-4 lg:grid-cols-3">
+            <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
                 <!-- Members by role -->
                 <div class="card p-5 lg:col-span-2">
                     <div class="mb-4 flex items-center justify-between">
                         <p class="text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('board_members') }}</p>
                         <Link :href="route('board.members')" class="text-xs font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-300 dark:hover:text-primary-200">{{ t('manage') ?? t('edit') }}</Link>
                     </div>
-                    <div v-if="membersByRole.length" class="grid gap-3 sm:grid-cols-2">
+                    <div v-if="membersByRole.length" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div v-for="m in membersByRole" :key="m.id" class="flex items-center gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50">
                             <span class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-base font-bold text-white">
                                 <img v-if="m.photo_url" :src="m.photo_url" :alt="m.name" class="h-full w-full object-cover" />

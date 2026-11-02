@@ -95,7 +95,7 @@ function submit() {
         <div class="space-y-4">
             <!-- Toolbar -->
             <div class="flex flex-wrap items-center justify-between gap-3">
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
                     <button @click="shift(-1)" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 rtl:rotate-180 dark:hover:text-slate-300"><Icon name="back" /></button>
                     <span class="min-w-[9rem] text-center text-sm font-bold capitalize text-slate-900 dark:text-slate-100">{{ monthLabel }}</span>
                     <button @click="shift(1)" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 ltr:rotate-180 dark:hover:text-slate-300"><Icon name="back" /></button>

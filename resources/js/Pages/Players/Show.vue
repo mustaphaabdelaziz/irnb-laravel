@@ -383,7 +383,7 @@ function formatDate(val) {
 
         <div class="space-y-6">
             <!-- Info cards row -->
-            <div class="grid gap-6 lg:grid-cols-3">
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
                 <!-- Personal info -->
                 <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 lg:col-span-2">
                     <div class="flex items-start justify-between">
@@ -396,11 +396,11 @@ function formatDate(val) {
                             {{ (player.firstname || player.fullname || '?').charAt(0).toUpperCase() }}
                         </div>
                         <div class="min-w-0">
-                            <p class="truncate text-lg font-bold text-slate-900 dark:text-slate-100">{{ player.fullname || `${player.firstname} ${player.lastname}` }}</p>
+                            <p class="break-words text-lg font-bold text-slate-900 dark:text-slate-100">{{ player.fullname || `${player.firstname} ${player.lastname}` }}</p>
                             <p class="font-mono text-sm text-slate-500 dark:text-slate-400">{{ player.membership_id }}</p>
                         </div>
                     </div>
-                    <dl class="mt-5 grid gap-x-6 gap-y-4 sm:grid-cols-2">
+                    <dl class="mt-5 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
                         <PlayerFieldRow icon="idcard" :label="t('membership_id')" :value="player.membership_id" mono />
                         <PlayerFieldRow icon="calendar" :label="t('birthdate')">
                             {{ formatDate(player.birthdate) }}

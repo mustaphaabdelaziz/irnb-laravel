@@ -49,7 +49,7 @@ function destroy() {
         </template>
 
         <div class="mx-auto max-w-2xl space-y-6">
-            <form @submit.prevent="addRole" class="flex items-end gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+            <form @submit.prevent="addRole" class="flex flex-wrap items-end gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
                 <div class="flex-1">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('name') }}</label>
                     <TextInput v-model="form.name" class="mt-1 w-full" :placeholder="t('name')" required />

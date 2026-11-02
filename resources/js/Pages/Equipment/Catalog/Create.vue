@@ -96,7 +96,7 @@ function submit() {
                     <div>
                         <InputLabel :value="t('picture')" />
                         <input type="file" accept="image/*" @change="form.picture = $event.target.files[0]"
-                            class="text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 hover:file:bg-primary-100 dark:file:bg-primary-500/10 dark:file:text-primary-300 dark:hover:file:bg-primary-500/15" />
+                            class="w-full text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 hover:file:bg-primary-100 dark:file:bg-primary-500/10 dark:file:text-primary-300 dark:hover:file:bg-primary-500/15" />
                     </div>
                 </div>
             </div>

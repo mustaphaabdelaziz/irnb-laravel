@@ -36,7 +36,7 @@ function create() {
         <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('teams') }}</h1>
-                <div class="flex items-center gap-3">
+                <div class="flex flex-wrap items-center gap-3">
                     <SeasonSelect :model-value="season" :seasons="seasons" @update:model-value="reload({ season: $event })" />
                     <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                         <input type="checkbox" :checked="showArchived" class="rounded" @change="reload({ archived: $event.target.checked ? 1 : 0 })" />

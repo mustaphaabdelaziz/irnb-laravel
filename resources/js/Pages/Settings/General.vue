@@ -550,12 +550,12 @@ function saveSettings() {
                                     <img :src="config.branding.logo" alt="Logo" class="h-16 w-16 rounded-lg object-contain" />
                                 </div>
                                 <input type="file" accept="image/*" @change="brandingForm.logo = $event.target.files[0]"
-                                    class="text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 dark:file:bg-primary-500/10 dark:file:text-primary-300" />
+                                    class="w-full text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 dark:file:bg-primary-500/10 dark:file:text-primary-300" />
                             </div>
                             <div>
                                 <InputLabel :value="t('favicon')" />
                                 <input type="file" accept="image/*" @change="brandingForm.favicon = $event.target.files[0]"
-                                    class="text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 dark:file:bg-primary-500/10 dark:file:text-primary-300" />
+                                    class="w-full text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 dark:file:bg-primary-500/10 dark:file:text-primary-300" />
                             </div>
                         </div>
                     </div>

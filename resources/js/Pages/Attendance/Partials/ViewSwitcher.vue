@@ -10,7 +10,7 @@ const VIEWS = ['month', 'week', 'agenda', 'timeline'];
 </script>
 
 <template>
-    <div role="tablist" :aria-label="t('att.views')" class="inline-flex rounded-lg bg-slate-100 p-0.5 dark:bg-slate-800">
+    <div role="tablist" :aria-label="t('att.views')" class="inline-flex max-w-full flex-wrap rounded-lg bg-slate-100 p-0.5 dark:bg-slate-800">
         <button
             v-for="v in VIEWS"
             :key="v"

@@ -38,7 +38,7 @@ function save() {
         <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">
-                    <Link :href="route('literary-reports.index')" class="text-slate-500 hover:text-slate-700 dark:text-slate-400">{{ t('literary_reports') }}</Link>
+                    <Link :href="route('literary-reports.index')" class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">{{ t('literary_reports') }}</Link>
                     <span class="mx-2 text-slate-400">/</span>{{ report.title }}
                 </h1>
                 <a v-if="!form.isDirty" :href="route('literary-reports.pdf', report.id)" target="_blank" class="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">
@@ -71,7 +71,7 @@ function save() {
                 <h2 class="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ t('literary.sections') }}</h2>
                 <ul class="grid gap-2 sm:grid-cols-2">
                     <li v-for="section in sections" :key="section.key">
-                        <label class="flex items-start gap-2 text-sm" :class="section.allowed ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'">
+                        <label class="flex items-start gap-2 text-sm" :class="section.allowed ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400 dark:text-slate-400'">
                             <input v-model="form.sections" type="checkbox" :value="section.key" :disabled="!section.allowed" class="mt-0.5 rounded border-slate-300 text-primary-600" />
                             <span>
                                 {{ t(`literary.section.${section.key}`) }}

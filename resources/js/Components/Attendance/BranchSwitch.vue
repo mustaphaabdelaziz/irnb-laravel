@@ -23,7 +23,7 @@ const { t } = useI18n();
             role="tab"
             :aria-selected="branchId === b.id"
             class="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-sm font-semibold"
-            :class="branchId === b.id ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
+            :class="branchId === b.id ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 dark:text-slate-400'"
             @click="branchId !== b.id && emit('switch', b.id)"
         >
             <img v-if="b.logo_url" :src="b.logo_url" alt="" class="h-4 w-4 rounded object-contain" />

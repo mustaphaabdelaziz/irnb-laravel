@@ -155,7 +155,7 @@ function switchLocale(code) {
             >
                 <div class="flex h-10 w-10 items-center justify-center rounded-xl" :class="appLogo ? '' : 'bg-primary-50 ring-1 ring-primary-200 dark:bg-primary-500/10 dark:ring-primary-500/25'">
                     <img v-if="appLogo" :src="appLogo" :alt="appShortName" class="h-full w-full object-contain" />
-                    <span v-else class="text-lg font-extrabold text-primary-600 dark:text-primary-400">{{ appShortName.charAt(0) }}</span>
+                    <span v-else class="text-lg font-extrabold text-primary-600 dark:text-primary-300">{{ appShortName.charAt(0) }}</span>
                 </div>
                 <div v-if="!compact" class="min-w-0">
                     <p class="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{{ appShortName }}</p>

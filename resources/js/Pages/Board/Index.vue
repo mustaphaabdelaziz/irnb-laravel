@@ -56,9 +56,9 @@ function initial(n) { return (n || '?').charAt(0).toUpperCase(); }
 
             <!-- Quick links -->
             <div class="flex flex-wrap gap-2">
-                <Link :href="route('board.members')" class="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800"><Icon name="board" /> {{ t('board_members') }}</Link>
-                <Link :href="route('board.meetings')" class="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800"><Icon name="calendar" /> {{ t('meetings') }}</Link>
-                <Link :href="route('board.tasks')" class="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800"><Icon name="task" /> {{ t('tasks') }}</Link>
+                <Link :href="route('board.members')" class="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800 dark:hover:bg-slate-800"><Icon name="board" /> {{ t('board_members') }}</Link>
+                <Link :href="route('board.meetings')" class="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800 dark:hover:bg-slate-800"><Icon name="calendar" /> {{ t('meetings') }}</Link>
+                <Link :href="route('board.tasks')" class="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800 dark:hover:bg-slate-800"><Icon name="task" /> {{ t('tasks') }}</Link>
             </div>
 
             <!-- Stats -->
@@ -81,7 +81,7 @@ function initial(n) { return (n || '?').charAt(0).toUpperCase(); }
                 <div class="card p-5 lg:col-span-2">
                     <div class="mb-4 flex items-center justify-between">
                         <p class="text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('board_members') }}</p>
-                        <Link :href="route('board.members')" class="text-xs font-semibold text-primary-600 hover:text-primary-700">{{ t('manage') ?? t('edit') }}</Link>
+                        <Link :href="route('board.members')" class="text-xs font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-300 dark:hover:text-primary-200">{{ t('manage') ?? t('edit') }}</Link>
                     </div>
                     <div v-if="membersByRole.length" class="grid gap-3 sm:grid-cols-2">
                         <div v-for="m in membersByRole" :key="m.id" class="flex items-center gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50">
@@ -91,7 +91,7 @@ function initial(n) { return (n || '?').charAt(0).toUpperCase(); }
                             </span>
                             <div class="min-w-0">
                                 <p class="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{{ m.name }}</p>
-                                <p class="truncate text-xs font-semibold text-primary-600 dark:text-primary-400">{{ roleLabel(m.role) }}</p>
+                                <p class="truncate text-xs font-semibold text-primary-600 dark:text-primary-300">{{ roleLabel(m.role) }}</p>
                             </div>
                         </div>
                     </div>
@@ -117,7 +117,7 @@ function initial(n) { return (n || '?').charAt(0).toUpperCase(); }
             <div class="card p-5">
                 <div class="mb-4 flex items-center justify-between">
                     <p class="text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('recent_tasks') }}</p>
-                    <Link :href="route('board.tasks')" class="text-xs font-semibold text-primary-600 hover:text-primary-700">{{ t('tasks') }}</Link>
+                    <Link :href="route('board.tasks')" class="text-xs font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-300 dark:hover:text-primary-200">{{ t('tasks') }}</Link>
                 </div>
                 <ul v-if="recentTasks.length" class="space-y-3">
                     <li v-for="tk in recentTasks" :key="tk.id" class="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50">

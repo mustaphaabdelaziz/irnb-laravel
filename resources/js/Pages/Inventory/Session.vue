@@ -132,7 +132,7 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
     <AuthenticatedLayout>
         <template #header>
             <div class="flex flex-wrap items-center gap-2">
-                <Link :href="route('inventory.index')" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"><Icon name="back" /></Link>
+                <Link :href="route('inventory.index')" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"><Icon name="back" /></Link>
                 <h1 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ session.reference }}</h1>
                 <span class="rounded-full px-2.5 py-0.5 text-xs font-bold" :class="isOpen ? 'bg-primary-100 text-primary-700 dark:bg-primary-500/20 dark:text-primary-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'">{{ t(session.status) }}</span>
                 <span class="ms-auto flex gap-2">
@@ -149,7 +149,7 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
                 <div class="flex flex-wrap gap-2">
                     <span v-for="(p, idx) in participants" :key="p.type + p.id" class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700 dark:bg-slate-800 dark:text-slate-200">
                         {{ p.label }}
-                        <button v-if="isOpen" @click="removeParticipant(idx)" class="text-slate-400 hover:text-rose-500">×</button>
+                        <button v-if="isOpen" @click="removeParticipant(idx)" class="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400">×</button>
                     </span>
                     <span v-if="!participants.length" class="text-sm text-slate-400">{{ t('no_results') }}</span>
                 </div>
@@ -224,15 +224,15 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
                             <tbody>
                                 <tr v-for="l in discrepancies" :key="l.id" class="border-b border-slate-50 dark:border-slate-800/50">
                                     <td class="px-3 py-2 font-medium text-slate-800 dark:text-slate-200">{{ l.item?.unique_identifier }}</td>
-                                    <td class="px-3 py-2 text-center"><span :class="l.found ? 'text-emerald-600' : 'text-rose-500'"><Icon :name="l.found ? 'check' : 'xcircle'" /></span></td>
-                                    <td class="px-3 py-2 text-slate-500">{{ l.expected_condition }}<span v-if="l.expected_location"> · {{ l.expected_location }}</span></td>
+                                    <td class="px-3 py-2 text-center"><span :class="l.found ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'"><Icon :name="l.found ? 'check' : 'xcircle'" /></span></td>
+                                    <td class="px-3 py-2 text-slate-500 dark:text-slate-400">{{ l.expected_condition }}<span v-if="l.expected_location"> · {{ l.expected_location }}</span></td>
                                     <td class="px-3 py-2 text-slate-700 dark:text-slate-300">{{ l.actual_condition }}<span v-if="l.actual_location"> · {{ l.actual_location }}</span></td>
-                                    <td class="px-3 py-2 text-slate-500">{{ l.note }}</td>
+                                    <td class="px-3 py-2 text-slate-500 dark:text-slate-400">{{ l.note }}</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                    <p v-else class="py-6 text-center text-sm text-emerald-600"><Icon name="check" /> {{ t('no_data') }}</p>
+                    <p v-else class="py-6 text-center text-sm text-emerald-600 dark:text-emerald-400"><Icon name="check" /> {{ t('no_data') }}</p>
                 </div>
             </template>
         </div>

@@ -63,7 +63,7 @@ const socialMeta = {
 
             <div class="relative mx-auto flex min-h-[78vh] max-w-4xl flex-col items-center justify-center px-4 py-24 text-center">
                 <img v-if="club.logo" :src="club.logo" :alt="club.name" class="mx-auto mb-8 h-36 w-36 object-contain animate-scale-in sm:h-44 sm:w-44" />
-                <p v-if="club.motto" class="eyebrow mb-5 text-primary-600">{{ club.motto }}</p>
+                <p v-if="club.motto" class="eyebrow mb-5 text-primary-600 dark:text-primary-300">{{ club.motto }}</p>
                 <h1 class="text-balance text-5xl font-extrabold leading-[1.02] tracking-tight text-slate-900 dark:text-slate-100 sm:text-6xl lg:text-7xl">{{ club.name }}</h1>
                 <p v-if="club.tagline" class="mx-auto mt-6 max-w-2xl text-pretty text-lg leading-relaxed text-slate-600 dark:text-slate-300">{{ club.tagline }}</p>
                 <div class="mt-10 flex flex-wrap justify-center gap-3">
@@ -83,7 +83,7 @@ const socialMeta = {
         <section v-if="club.description || club.founder || club.foundingYear || Object.keys(club.leadership || {}).length" class="relative bg-white dark:bg-slate-900 py-20">
             <div class="mx-auto max-w-4xl px-4">
                 <div class="text-center">
-                    <p class="eyebrow text-primary-600">{{ t('about') }}</p>
+                    <p class="eyebrow text-primary-600 dark:text-primary-300">{{ t('about') }}</p>
                     <h2 class="mt-2 text-balance text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{{ club.name }}</h2>
                 </div>
                 <p v-if="club.description" class="mx-auto mt-5 max-w-2xl text-pretty text-center text-lg leading-relaxed text-slate-600 dark:text-slate-300">{{ club.description }}</p>
@@ -110,26 +110,26 @@ const socialMeta = {
             <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_0%,theme(colors.primary.500/0.06),transparent_70%)]"></div>
             <div class="relative mx-auto max-w-4xl px-4">
                 <div class="text-center">
-                    <p class="eyebrow text-primary-600">{{ t('contact') }}</p>
+                    <p class="eyebrow text-primary-600 dark:text-primary-300">{{ t('contact') }}</p>
                     <h2 class="mt-2 text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{{ t('contact') }}</h2>
                 </div>
                 <div class="mt-10 grid gap-4 sm:grid-cols-2">
                     <a v-if="club.email" :href="`mailto:${club.email}`" class="card-interactive group flex items-center gap-4 p-5">
-                        <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-100 to-primary-50 text-xl text-primary-600 ring-1 ring-inset ring-primary-200/70"><Icon name="mail" /></span>
+                        <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-100 to-primary-50 text-xl text-primary-600 ring-1 ring-inset ring-primary-200/70 dark:from-primary-500/20 dark:to-primary-500/10 dark:text-primary-300 dark:ring-primary-500/20"><Icon name="mail" /></span>
                         <div class="min-w-0">
                             <p class="eyebrow text-slate-500 dark:text-slate-400">{{ t('email') }}</p>
                             <p class="truncate text-sm font-medium text-slate-900 dark:text-slate-100">{{ club.email }}</p>
                         </div>
                     </a>
                     <a v-if="club.phone" :href="`tel:${club.phone}`" class="card-interactive group flex items-center gap-4 p-5">
-                        <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-100 to-primary-50 text-xl text-primary-600 ring-1 ring-inset ring-primary-200/70"><Icon name="phone" /></span>
+                        <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-100 to-primary-50 text-xl text-primary-600 ring-1 ring-inset ring-primary-200/70 dark:from-primary-500/20 dark:to-primary-500/10 dark:text-primary-300 dark:ring-primary-500/20"><Icon name="phone" /></span>
                         <div class="min-w-0">
                             <p class="eyebrow text-slate-500 dark:text-slate-400">{{ t('phone') }}</p>
                             <p class="jersey truncate text-sm font-medium text-slate-900 dark:text-slate-100">{{ club.phone }}</p>
                         </div>
                     </a>
                     <div v-if="club.address" class="card flex items-center gap-4 p-5 sm:col-span-2">
-                        <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-100 to-primary-50 text-xl text-primary-600 ring-1 ring-inset ring-primary-200/70"><Icon name="location" /></span>
+                        <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-100 to-primary-50 text-xl text-primary-600 ring-1 ring-inset ring-primary-200/70 dark:from-primary-500/20 dark:to-primary-500/10 dark:text-primary-300 dark:ring-primary-500/20"><Icon name="location" /></span>
                         <div class="min-w-0">
                             <p class="eyebrow text-slate-500 dark:text-slate-400">{{ t('address') }}</p>
                             <p class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ club.address }}</p>
@@ -140,7 +140,7 @@ const socialMeta = {
                 <div v-if="Object.keys(club.social || {}).length" class="mt-10 flex flex-wrap justify-center gap-2.5">
                     <a v-for="(url, key) in club.social" :key="key" :href="url" target="_blank" rel="noopener"
                         :title="(socialMeta[key] && socialMeta[key].label) || key" :aria-label="(socialMeta[key] && socialMeta[key].label) || key"
-                        class="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-lg text-slate-500 dark:text-slate-400 shadow-sm transition hover:-translate-y-0.5 hover:border-primary-300 hover:text-primary-600 hover:shadow-card-hover active:scale-95">
+                        class="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-lg text-slate-500 dark:text-slate-400 shadow-sm transition hover:-translate-y-0.5 hover:border-primary-300 hover:text-primary-600 hover:shadow-card-hover active:scale-95 dark:hover:text-primary-300">
                         <Icon :name="(socialMeta[key] && socialMeta[key].icon) || 'external'" />
                     </a>
                 </div>

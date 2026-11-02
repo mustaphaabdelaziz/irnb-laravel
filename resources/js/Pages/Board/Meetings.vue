@@ -42,7 +42,7 @@ function fmtDate(d) {
 const statusChip = {
     scheduled: 'bg-primary-100 text-primary-700 dark:bg-primary-500/20 dark:text-primary-300',
     held: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300',
-    cancelled: 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400',
+    cancelled: 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-300',
 };
 
 // Cancelled meetings stay listed (history); the filter narrows the list.
@@ -60,7 +60,7 @@ const filterOptions = ['', 'scheduled', 'held', 'cancelled'];
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center gap-2">
-                <Link :href="route('board.index')" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"><Icon name="back" /></Link>
+                <Link :href="route('board.index')" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"><Icon name="back" /></Link>
                 <h1 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('meetings') }}</h1>
             </div>
         </template>
@@ -70,7 +70,7 @@ const filterOptions = ['', 'scheduled', 'held', 'cancelled'];
                 <div class="flex flex-wrap gap-1.5">
                     <button v-for="s in filterOptions" :key="s || 'all'" type="button" @click="statusFilter = s"
                         class="rounded-full px-3 py-1 text-xs font-bold transition-colors"
-                        :class="statusFilter === s ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' : 'bg-white text-slate-500 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-400 dark:ring-slate-800'">
+                        :class="statusFilter === s ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' : 'bg-white text-slate-500 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-400 dark:ring-slate-800 dark:hover:bg-slate-800'">
                         {{ s ? t(s) : t('all') }}
                     </button>
                 </div>
@@ -95,13 +95,13 @@ const filterOptions = ['', 'scheduled', 'held', 'cancelled'];
                     <div class="space-y-2">
                         <div v-for="(item, i) in form.agenda" :key="i" class="flex items-center gap-2">
                             <input v-model="form.agenda[i]" :placeholder="`${i + 1}.`" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
-                            <button type="button" @click="removeAgenda(i)" class="text-slate-300 hover:text-rose-500"><Icon name="xcircle" /></button>
+                            <button type="button" @click="removeAgenda(i)" class="text-slate-300 hover:text-rose-500 dark:hover:text-rose-400"><Icon name="xcircle" /></button>
                         </div>
                     </div>
-                    <button type="button" @click="addAgenda" class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700"><Icon name="plus" /> {{ t('add_item') }}</button>
+                    <button type="button" @click="addAgenda" class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-300 dark:hover:text-primary-200"><Icon name="plus" /> {{ t('add_item') }}</button>
                 </div>
                 <div class="flex justify-end gap-2">
-                    <button type="button" @click="showForm = false" class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">{{ t('cancel') }}</button>
+                    <button type="button" @click="showForm = false" class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-400">{{ t('cancel') }}</button>
                     <button :disabled="form.processing" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('create') }}</button>
                 </div>
             </form>

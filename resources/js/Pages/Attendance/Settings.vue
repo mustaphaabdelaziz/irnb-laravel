@@ -135,7 +135,7 @@ function destroyCustom(s) {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center gap-2">
-                <Link :href="route('attendance.index')" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 rtl:rotate-180"><Icon name="back" /></Link>
+                <Link :href="route('attendance.index')" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 rtl:rotate-180 dark:hover:text-slate-300"><Icon name="back" /></Link>
                 <h1 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('att.settings') }}</h1>
             </div>
         </template>
@@ -145,21 +145,21 @@ function destroyCustom(s) {
             <section :class="[card, 'lg:col-span-2']">
                 <h2 class="mb-3 font-bold text-slate-900 dark:text-slate-100">{{ t('att.schedules') }}</h2>
                 <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="submitSchedule">
-                    <label v-if="branches.length" class="text-xs text-slate-500">{{ t('branch') }}
+                    <label v-if="branches.length" class="text-xs text-slate-500 dark:text-slate-400">{{ t('branch') }}
                         <select v-model="scheduleForm.branch_id" :class="[input, 'block']"><option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option></select>
                     </label>
-                    <label class="text-xs text-slate-500">{{ t('att.category') }}
+                    <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.category') }}
                         <select v-model="scheduleForm.category_id" :class="[input, 'block']"><option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option></select>
                     </label>
-                    <label class="text-xs text-slate-500">{{ t('att.weekday') }}
+                    <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.weekday') }}
                         <select v-model="scheduleForm.weekday" :class="[input, 'block']"><option v-for="n in 7" :key="n" :value="n">{{ weekdayName(n) }}</option></select>
                     </label>
-                    <label class="text-xs text-slate-500">{{ t('att.start') }}<input v-model="scheduleForm.start_time" type="time" :class="[input, 'block']" /></label>
-                    <label class="text-xs text-slate-500">{{ t('att.end') }}<input v-model="scheduleForm.end_time" type="time" :class="[input, 'block']" /></label>
-                    <label class="text-xs text-slate-500">{{ t('att.valid_from') }}<input v-model="scheduleForm.valid_from" type="date" :class="[input, 'block']" /></label>
-                    <label class="text-xs text-slate-500">{{ t('att.valid_to') }}<input v-model="scheduleForm.valid_to" type="date" :class="[input, 'block']" /></label>
+                    <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.start') }}<input v-model="scheduleForm.start_time" type="time" :class="[input, 'block']" /></label>
+                    <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.end') }}<input v-model="scheduleForm.end_time" type="time" :class="[input, 'block']" /></label>
+                    <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.valid_from') }}<input v-model="scheduleForm.valid_from" type="date" :class="[input, 'block']" /></label>
+                    <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.valid_to') }}<input v-model="scheduleForm.valid_to" type="date" :class="[input, 'block']" /></label>
                     <button type="submit" :disabled="scheduleForm.processing" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">{{ editingId ? t('att.save') : t('att.add') }}</button>
-                    <button v-if="editingId" type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700" @click="resetSchedule">{{ t('att.close') }}</button>
+                    <button v-if="editingId" type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700 dark:text-slate-400" @click="resetSchedule">{{ t('att.close') }}</button>
                     <div class="w-full"><InputError v-for="(e, k) in scheduleForm.errors" :key="k" :message="e" /></div>
                 </form>
                 <table class="w-full text-sm">
@@ -168,7 +168,7 @@ function destroyCustom(s) {
                             <td class="py-2 font-medium">{{ [branchName(s.branch_id), categoryName(s.category_id)].filter(Boolean).join(' · ') }}</td>
                             <td>{{ weekdayName(s.weekday) }}</td>
                             <td dir="ltr" class="text-start">{{ s.start_time }}–{{ s.end_time }}</td>
-                            <td class="text-slate-500">{{ s.valid_from }} → {{ s.valid_to ?? '…' }}</td>
+                            <td class="text-slate-500 dark:text-slate-400">{{ s.valid_from }} → {{ s.valid_to ?? '…' }}</td>
                             <td class="text-end">
                                 <IconButton icon="pencil" :label="t('att.edit')" plain size="sm" @click="editSchedule(s)" />
                                 <IconButton icon="trash" :label="t('att.delete')" variant="danger" plain size="sm" @click="destroy('attendance.schedules.destroy', s.id)" />
@@ -182,9 +182,9 @@ function destroyCustom(s) {
             <section :class="card">
                 <h2 class="mb-3 font-bold text-slate-900 dark:text-slate-100">{{ t('att.closures') }}</h2>
                 <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="submitClosure">
-                    <label class="text-xs text-slate-500">{{ t('att.start_date') }}<input v-model="closureForm.start_date" type="date" :class="[input, 'block']" /></label>
-                    <label class="text-xs text-slate-500">{{ t('att.end_date') }}<input v-model="closureForm.end_date" type="date" :class="[input, 'block']" /></label>
-                    <label class="flex-1 text-xs text-slate-500">{{ t('att.reason') }}<input v-model="closureForm.reason" type="text" maxlength="100" :class="[input, 'block w-full']" /></label>
+                    <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.start_date') }}<input v-model="closureForm.start_date" type="date" :class="[input, 'block']" /></label>
+                    <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.end_date') }}<input v-model="closureForm.end_date" type="date" :class="[input, 'block']" /></label>
+                    <label class="flex-1 text-xs text-slate-500 dark:text-slate-400">{{ t('att.reason') }}<input v-model="closureForm.reason" type="text" maxlength="100" :class="[input, 'block w-full']" /></label>
                     <button type="submit" :disabled="closureForm.processing" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">{{ t('att.add') }}</button>
                     <div class="w-full"><InputError v-for="(e, k) in closureForm.errors" :key="k" :message="e" /></div>
                 </form>
@@ -200,16 +200,16 @@ function destroyCustom(s) {
             <section :class="card">
                 <h2 class="mb-3 font-bold text-slate-900 dark:text-slate-100">{{ t('att.targets') }}</h2>
                 <form class="flex flex-wrap items-end gap-2" @submit.prevent="submitTarget">
-                    <label v-if="branches.length" class="text-xs text-slate-500">{{ t('branch') }}
+                    <label v-if="branches.length" class="text-xs text-slate-500 dark:text-slate-400">{{ t('branch') }}
                         <select v-model="targetForm.branch_id" :class="[input, 'block']"><option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option></select>
                     </label>
-                    <label class="text-xs text-slate-500">{{ t('att.category') }}
+                    <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.category') }}
                         <select v-model="targetForm.category_id" :class="[input, 'block']"><option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option></select>
                     </label>
-                    <label class="text-xs text-slate-500">{{ t('att.season') }}
+                    <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.season') }}
                         <select v-model="targetForm.season_start_year" :class="[input, 'block']"><option v-for="s in seasons" :key="s.start_year" :value="s.start_year">{{ s.label }}</option></select>
                     </label>
-                    <label class="text-xs text-slate-500">{{ t('att.target_count') }}<input v-model.number="targetForm.target_count" type="number" min="0" max="200" :class="[input, 'block w-24']" /></label>
+                    <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.target_count') }}<input v-model.number="targetForm.target_count" type="number" min="0" max="200" :class="[input, 'block w-24']" /></label>
                     <button type="submit" :disabled="targetForm.processing" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">{{ t('att.save') }}</button>
                     <div class="w-full"><InputError v-for="(e, k) in targetForm.errors" :key="k" :message="e" /></div>
                 </form>
@@ -218,8 +218,8 @@ function destroyCustom(s) {
             <!-- Parent letter -->
             <form :class="[card, 'lg:col-span-2']" @submit.prevent="submitLetter">
                 <h2 class="mb-1 font-bold text-slate-900 dark:text-slate-100">{{ t('att.letter.settings_title') }}</h2>
-                <p class="text-xs text-slate-500">{{ t('att.letter.settings_help') }}</p>
-                <ul class="mb-3 mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.letter.settings_help') }}</p>
+                <ul class="mb-3 mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
                     <li v-for="ph in placeholderTokens" :key="ph.key">
                         <code dir="ltr" class="rounded bg-slate-100 px-1 font-mono text-slate-700 dark:bg-slate-800 dark:text-slate-200">{{ ph.token }}</code>
                         {{ t(`att.letter.ph.${ph.key}`) }}
@@ -227,11 +227,11 @@ function destroyCustom(s) {
                 </ul>
                 <div class="grid gap-4 lg:grid-cols-3">
                     <div v-for="l in LOCALES" :key="l" class="space-y-2">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ t(`att.letter.in_${l}`) }}</p>
-                        <label class="block text-xs text-slate-500">{{ t('att.letter.subject') }}
+                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t(`att.letter.in_${l}`) }}</p>
+                        <label class="block text-xs text-slate-500 dark:text-slate-400">{{ t('att.letter.subject') }}
                             <input v-model="letterForm.letter.subject[l]" type="text" maxlength="150" :dir="l === 'ar' ? 'rtl' : 'ltr'" :placeholder="builtinLetter('subject', l)" :class="[input, 'mt-1 block w-full']" />
                         </label>
-                        <label class="block text-xs text-slate-500">{{ t('att.letter.body') }}
+                        <label class="block text-xs text-slate-500 dark:text-slate-400">{{ t('att.letter.body') }}
                             <textarea v-model="letterForm.letter.body[l]" rows="8" maxlength="3000" :dir="l === 'ar' ? 'rtl' : 'ltr'" :placeholder="builtinLetter('body', l)" :class="[input, 'mt-1 block w-full']"></textarea>
                         </label>
                     </div>
@@ -244,11 +244,11 @@ function destroyCustom(s) {
             <form class="space-y-4 lg:col-span-2" @submit.prevent="submitSettings">
                 <section :class="card">
                     <h2 class="mb-1 font-bold text-slate-900 dark:text-slate-100">{{ t('att.codes') }}</h2>
-                    <p class="mb-3 text-xs text-slate-500">{{ t('att.codes_help') }}</p>
+                    <p class="mb-3 text-xs text-slate-500 dark:text-slate-400">{{ t('att.codes_help') }}</p>
                     <div class="overflow-x-auto">
                         <table class="w-full min-w-[46rem] text-sm">
                             <thead>
-                                <tr class="text-xs text-slate-500">
+                                <tr class="text-xs text-slate-500 dark:text-slate-400">
                                     <th class="py-1 text-start font-semibold">{{ t('att.col.status') }}</th>
                                     <th class="py-1 text-start font-semibold">{{ t('att.col.code') }}</th>
                                     <th class="py-1 text-start font-semibold">{{ t('att.col.color') }}</th>
@@ -299,7 +299,7 @@ function destroyCustom(s) {
 
                 <section :class="card">
                     <h2 class="mb-1 font-bold text-slate-900 dark:text-slate-100">{{ t('att.roster_statuses') }}</h2>
-                    <p class="mb-3 text-xs text-slate-500">{{ t('att.roster_statuses_settings_help') }}</p>
+                    <p class="mb-3 text-xs text-slate-500 dark:text-slate-400">{{ t('att.roster_statuses_settings_help') }}</p>
                     <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
                         <label v-for="s in playerStatuses" :key="s.id" class="inline-flex items-center gap-1.5">
                             <input v-model="settingsForm.roster_status_ids" type="checkbox" :value="s.id" class="rounded border-slate-300 text-primary-600 dark:border-slate-700 dark:bg-slate-900" />
@@ -317,31 +317,31 @@ function destroyCustom(s) {
             <!-- Custom codes -->
             <section :class="[card, 'lg:col-span-2']">
                 <h2 class="mb-1 font-bold text-slate-900 dark:text-slate-100">{{ t('att.custom.title') }}</h2>
-                <p class="mb-3 text-xs text-slate-500">{{ t('att.custom.help') }}</p>
+                <p class="mb-3 text-xs text-slate-500 dark:text-slate-400">{{ t('att.custom.help') }}</p>
                 <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="submitCustom">
-                    <label class="text-xs text-slate-500">{{ t('att.col.code') }}
+                    <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.col.code') }}
                         <input v-model="customForm.code" type="text" maxlength="3" dir="auto" :class="[input, 'block w-16 text-center font-mono uppercase']" />
                     </label>
-                    <label class="text-xs text-slate-500">{{ t('att.col.color') }}
+                    <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.col.color') }}
                         <input v-model="customForm.color" type="color" class="block h-9 w-12 cursor-pointer rounded border border-slate-300 bg-transparent p-0.5 dark:border-slate-700" />
                     </label>
-                    <label v-for="l in LOCALES" :key="l" class="text-xs text-slate-500">{{ t(`att.col.label_${l}`) }}
+                    <label v-for="l in LOCALES" :key="l" class="text-xs text-slate-500 dark:text-slate-400">{{ t(`att.col.label_${l}`) }}
                         <input v-model="customForm[`label_${l}`]" type="text" maxlength="40" :dir="l === 'ar' ? 'rtl' : 'ltr'" :class="[input, 'block w-36']" />
                     </label>
-                    <label class="text-xs text-slate-500">{{ t('att.custom.behaviour_label') }}
+                    <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.custom.behaviour_label') }}
                         <select v-model="customForm.behaviour" :class="[input, 'block']">
                             <option v-for="b in behaviours" :key="b" :value="b">{{ t(`att.custom.behaviour.${b}`) }}</option>
                         </select>
                     </label>
                     <button type="submit" :disabled="customForm.processing" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">{{ editingCustomId ? t('att.save') : t('att.custom.add') }}</button>
-                    <button v-if="editingCustomId" type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700" @click="resetCustom">{{ t('att.close') }}</button>
+                    <button v-if="editingCustomId" type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700 dark:text-slate-400" @click="resetCustom">{{ t('att.close') }}</button>
                     <div class="w-full"><InputError v-for="(e, i) in customErrors" :key="i" :message="e" /></div>
                 </form>
-                <p v-if="!customStatuses.length" class="text-sm text-slate-500">{{ t('att.custom.none') }}</p>
+                <p v-if="!customStatuses.length" class="text-sm text-slate-500 dark:text-slate-400">{{ t('att.custom.none') }}</p>
                 <div v-else class="overflow-x-auto">
                     <table class="w-full min-w-[40rem] text-sm">
                         <thead>
-                            <tr class="text-xs text-slate-500">
+                            <tr class="text-xs text-slate-500 dark:text-slate-400">
                                 <th class="py-1 text-start font-semibold">{{ t('att.col.code') }}</th>
                                 <th class="py-1 text-start font-semibold">{{ t('att.col.status') }}</th>
                                 <th class="py-1 text-start font-semibold">{{ t('att.custom.behaviour_label') }}</th>
@@ -356,7 +356,7 @@ function destroyCustom(s) {
                                 </td>
                                 <td class="py-2 pe-2 font-medium">{{ customName(s) }}</td>
                                 <td class="py-2 pe-2 text-slate-600 dark:text-slate-300">{{ t(`att.custom.behaviour.${s.behaviour}`) }}</td>
-                                <td class="py-2 pe-2 text-xs text-slate-500">{{ s.is_active ? t('att.custom.shown') : t('att.custom.hidden') }}</td>
+                                <td class="py-2 pe-2 text-xs text-slate-500 dark:text-slate-400">{{ s.is_active ? t('att.custom.shown') : t('att.custom.hidden') }}</td>
                                 <td class="whitespace-nowrap py-2 text-end">
                                     <IconButton icon="pencil" :label="t('att.edit')" plain size="sm" @click="editCustom(s)" />
                                     <IconButton :icon="s.is_active ? 'archive' : 'restore'" :label="s.is_active ? t('att.custom.hide') : t('att.custom.show')" :variant="s.is_active ? 'neutral' : 'success'" plain size="sm" @click="toggleCustom(s)" />

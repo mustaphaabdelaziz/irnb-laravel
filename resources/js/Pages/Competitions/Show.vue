@@ -69,7 +69,7 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
 
     <AuthenticatedLayout>
         <template #header>
-            <Link :href="route('competitions.index', { season: competition.season_start_year })" class="text-sm text-primary-600 hover:underline">{{ t('competitions') }}</Link>
+            <Link :href="route('competitions.index', { season: competition.season_start_year })" class="text-sm text-primary-600 hover:underline dark:text-primary-300">{{ t('competitions') }}</Link>
             <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ competition.name }}</h1>
             <div class="text-sm text-slate-500 dark:text-slate-400">
                 <Link :href="route('teams.show', { team: competition.team.id, season: competition.season_start_year })" class="hover:underline">{{ competition.team.name }} · {{ competition.team.category }}</Link>
@@ -86,7 +86,7 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
             </nav>
 
             <section v-if="tab === 'squad'" class="space-y-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
-                <p class="text-sm text-slate-500">{{ t('comp.squad_help', { n: selected.length }) }}</p>
+                <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('comp.squad_help', { n: selected.length }) }}</p>
                 <div class="grid gap-1 sm:grid-cols-2">
                     <label v-for="r in roster" :key="r.player_id" class="flex items-center gap-2 rounded px-2 py-1 text-sm hover:bg-slate-50 dark:hover:bg-slate-800">
                         <input v-model="selected" :value="r.player_id" :disabled="!canManage" type="checkbox" class="rounded" />
@@ -96,7 +96,7 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
                         <span class="text-xs text-slate-400">{{ r.category }}</span>
                     </label>
                 </div>
-                <p v-if="!roster.length" class="text-sm text-slate-500">{{ t('comp.roster_empty') }}</p>
+                <p v-if="!roster.length" class="text-sm text-slate-500 dark:text-slate-400">{{ t('comp.roster_empty') }}</p>
                 <InputError :message="squadForm.errors.player_ids" />
                 <PrimaryButton v-if="canManage" :disabled="squadForm.processing" @click="saveSquad">{{ t('save') }}</PrimaryButton>
             </section>
@@ -104,25 +104,25 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
             <section v-if="tab === 'games'" class="space-y-2 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <Link v-for="g in games" :key="g.id" :href="route('games.show', g.id)" class="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800">
                     <span><bdi dir="ltr" class="font-mono text-sm">{{ g.date }}</bdi> · {{ g.opponent }} ({{ t(`comp.side_${g.side}`) }})<span v-if="g.round_label" class="text-slate-400"> · {{ g.round_label }}</span></span>
-                    <span class="text-sm text-slate-500">
+                    <span class="text-sm text-slate-500 dark:text-slate-400">
                         <bdi v-if="g.status === 'played'" dir="ltr">{{ g.our_score }} – {{ g.their_score }}</bdi>
                         <template v-else>{{ t(`comp.status_${g.status}`) }}</template>
                     </span>
                 </Link>
-                <p v-if="!games.length" class="text-sm text-slate-500">{{ t('no_results') }}</p>
-                <Link v-if="canManage" :href="route('games.index', { team_id: competition.team.id, competition_id: competition.id, create: 1 })" class="inline-block text-sm text-primary-600 hover:underline">{{ t('comp.new_game') }} →</Link>
+                <p v-if="!games.length" class="text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</p>
+                <Link v-if="canManage" :href="route('games.index', { team_id: competition.team.id, competition_id: competition.id, create: 1 })" class="inline-block text-sm text-primary-600 hover:underline dark:text-primary-300">{{ t('comp.new_game') }} →</Link>
             </section>
 
             <section v-if="tab === 'record'" class="grid gap-4 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 sm:grid-cols-4">
                 <div v-for="key in ['played', 'wins', 'draws', 'losses', 'goals_for', 'goals_against']" :key="key" class="text-center">
                     <div class="text-2xl font-bold text-slate-900 dark:text-slate-100">{{ record[key] }}</div>
-                    <div class="text-xs uppercase text-slate-500">{{ t(`comp.record_${key}`) }}</div>
+                    <div class="text-xs uppercase text-slate-500 dark:text-slate-400">{{ t(`comp.record_${key}`) }}</div>
                 </div>
                 <div class="text-center sm:col-span-2">
                     <div class="flex justify-center gap-1">
                         <span v-for="(r, i) in record.form" :key="i" class="flex h-7 w-7 items-center justify-center rounded font-bold text-white" :class="formClass[r]">{{ t(`comp.form_${r}`) }}</span>
                     </div>
-                    <div class="mt-1 text-xs uppercase text-slate-500">{{ t('comp.form') }}</div>
+                    <div class="mt-1 text-xs uppercase text-slate-500 dark:text-slate-400">{{ t('comp.form') }}</div>
                 </div>
             </section>
 
@@ -131,7 +131,7 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
             </section>
             <section v-if="tab === 'suspensions'" class="space-y-4 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
-                    <thead class="text-xs uppercase text-slate-500"><tr>
+                    <thead class="text-xs uppercase text-slate-500 dark:text-slate-400"><tr>
                         <th class="py-1 text-start">{{ t('comp.player') }}</th><th class="py-1 text-start">{{ t('comp.ban.cause') }}</th>
                         <th class="py-1 text-start">{{ t('comp.ban.length') }}</th><th class="py-1 text-start">{{ t('status') }}</th><th class="w-10"></th>
                     </tr></thead>
@@ -139,7 +139,7 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
                         <tr v-for="s in suspensions" :key="s.id" :class="{ 'opacity-60': !s.active }">
                             <td class="py-1 font-medium">{{ s.player }}</td>
                             <td class="py-1">
-                                <template v-if="s.source === 'auto'">{{ t(`comp.flag.cause_${s.cause}`) }}<span v-if="s.trigger" class="text-xs text-slate-500"> · <bdi dir="ltr">{{ s.trigger.date }}</bdi> {{ s.trigger.opponent }}</span></template>
+                                <template v-if="s.source === 'auto'">{{ t(`comp.flag.cause_${s.cause}`) }}<span v-if="s.trigger" class="text-xs text-slate-500 dark:text-slate-400"> · <bdi dir="ltr">{{ s.trigger.date }}</bdi> {{ s.trigger.opponent }}</span></template>
                                 <template v-else>{{ s.reason || t('comp.ban.manual') }}</template>
                                 <span v-if="s.scope === 'all'" class="ms-1 rounded bg-slate-100 px-1 text-xs dark:bg-slate-800">{{ t('comp.ban.all_competitions') }}</span>
                             </td>
@@ -147,7 +147,7 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
                             <td class="py-1">{{ s.active ? t('comp.ban.active') : t('comp.ban.served') }}</td>
                             <td class="py-1 text-end"><IconButton v-if="canManage && s.deletable" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="banToRemove = s.id" /></td>
                         </tr>
-                        <tr v-if="!suspensions.length"><td colspan="5" class="py-6 text-center text-slate-500">{{ t('comp.ban.none') }}</td></tr>
+                        <tr v-if="!suspensions.length"><td colspan="5" class="py-6 text-center text-slate-500 dark:text-slate-400">{{ t('comp.ban.none') }}</td></tr>
                     </tbody>
                 </table>
 
@@ -210,7 +210,7 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
                     <label class="text-sm">{{ t('comp.yellow_threshold') }} <TextInput v-model.number="rulesForm.yellow_threshold" :disabled="!canManage" type="number" min="1" class="mt-1 w-full" :placeholder="t('comp.yellow_threshold_none')" /></label>
                     <label class="text-sm">{{ t('comp.yellow_ban_matches') }} <TextInput v-model.number="rulesForm.yellow_ban_matches" :disabled="!canManage" type="number" min="0" class="mt-1 w-full" /></label>
                 </div>
-                <p class="text-xs text-slate-500">{{ t('comp.suspension_rules_help') }}</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('comp.suspension_rules_help') }}</p>
                 <label class="block text-sm">{{ t('notes') }}
                     <textarea v-model="rulesForm.notes" :disabled="!canManage" rows="3" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800"></textarea>
                 </label>

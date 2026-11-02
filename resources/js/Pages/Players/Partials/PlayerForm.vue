@@ -372,7 +372,7 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                         <span v-for="pos in chosenOtherPositions" :key="pos.id"
                             class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
                             {{ pos.abbreviation }}
-                            <button type="button" @click="removeOtherPosition(pos.id)" :aria-label="t('remove')" class="text-slate-400 hover:text-rose-500">&times;</button>
+                            <button type="button" @click="removeOtherPosition(pos.id)" :aria-label="t('remove')" class="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400">&times;</button>
                         </span>
                     </div>
                     <SearchableSelect v-if="otherPositionOptions.length" :model-value="''" :options="otherPositionOptions"
@@ -393,13 +393,13 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                         <span v-for="id in form.branch_ids" :key="id" class="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-3 py-1 text-sm text-primary-700 dark:bg-primary-900/30 dark:text-primary-200">
                             <img v-if="branchesById[id]?.logo_url" :src="branchesById[id].logo_url" alt="" class="h-4 w-4 rounded-sm object-contain" />
                             {{ branchLabel(id) }}
-                            <button type="button" @click="removeBranch(id)" class="text-primary-400 hover:text-rose-600">×</button>
+                            <button type="button" @click="removeBranch(id)" class="text-primary-400 dark:text-primary-300 hover:text-rose-600 dark:hover:text-rose-400">×</button>
                         </span>
                     </div>
                     <InputError :message="form.errors.branch_ids" class="mt-1" />
                     <p v-if="!branches.length" class="mt-1 text-xs text-slate-400">
                         {{ t('no_branches_hint') }}
-                        <Link :href="route('branches.index')" class="text-primary-600 hover:underline">{{ t('branches') }}</Link>
+                        <Link :href="route('branches.index')" class="text-primary-600 hover:underline dark:text-primary-300">{{ t('branches') }}</Link>
                     </p>
                 </div>
                 <div>

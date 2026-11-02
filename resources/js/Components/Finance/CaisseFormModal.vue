@@ -105,7 +105,7 @@ function submit() {
                         <option value="">{{ t('caisses.no_category') }}</option>
                         <option v-for="c in categories" :key="c.id" :value="c.id" :disabled="takenCategoryIds.has(c.id)">{{ takenCategoryIds.has(c.id) ? `${label(c)} ${t('caisses.category_taken_suffix')}` : label(c) }}</option>
                     </select>
-                    <p class="mt-1 text-xs text-slate-500">{{ t('caisses.linked_category_hint') }}</p>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('caisses.linked_category_hint') }}</p>
                     <InputError :message="form.errors.category_id" class="mt-1" />
                 </label>
 

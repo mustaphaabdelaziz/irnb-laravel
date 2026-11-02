@@ -35,7 +35,7 @@ function fmtDate(d) {
 const statusChip = {
     in_progress: 'bg-primary-100 text-primary-700 dark:bg-primary-500/20 dark:text-primary-300',
     completed: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300',
-    cancelled: 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400',
+    cancelled: 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-300',
 };
 const lastDate = props.sessions[0]?.session_date;
 </script>
@@ -59,14 +59,14 @@ const lastDate = props.sessions[0]?.session_date;
             </div>
 
             <form v-if="showForm" @submit.prevent="start" class="card flex flex-wrap items-end gap-3 p-5">
-                <label class="text-sm"><span class="mb-1 block text-xs font-medium text-slate-500">{{ t('type') }}</span>
+                <label class="text-sm"><span class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('type') }}</span>
                     <select v-model="form.type" class="rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800">
                         <option value="monthly">{{ t('monthly') }}</option><option value="quarterly">{{ t('quarterly') }}</option>
                         <option value="yearly">{{ t('yearly') }}</option><option value="ad_hoc">{{ t('ad_hoc') }}</option>
                     </select></label>
-                <label class="text-sm"><span class="mb-1 block text-xs font-medium text-slate-500">{{ t('date') }}</span>
+                <label class="text-sm"><span class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('date') }}</span>
                     <input v-model="form.session_date" type="date" class="rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
-                <label class="flex-1 text-sm"><span class="mb-1 block text-xs font-medium text-slate-500">{{ t('note') }}</span>
+                <label class="flex-1 text-sm"><span class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('note') }}</span>
                     <input v-model="form.notes" class="w-full rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
                 <button :disabled="form.processing" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('start_inventory') }}</button>
             </form>
@@ -94,8 +94,8 @@ const lastDate = props.sessions[0]?.session_date;
                     </Link>
                     <div class="flex shrink-0 items-center gap-3 text-xs">
                         <template v-if="s.status === 'completed'">
-                            <span class="font-bold text-emerald-600">{{ s.total_found }} {{ t('found') }}</span>
-                            <span v-if="s.total_missing" class="font-bold text-rose-500">{{ s.total_missing }} {{ t('missing') }}</span>
+                            <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ s.total_found }} {{ t('found') }}</span>
+                            <span v-if="s.total_missing" class="font-bold text-rose-500 dark:text-rose-400">{{ s.total_missing }} {{ t('missing') }}</span>
                         </template>
                         <span class="inline-flex rounded-full px-2.5 py-0.5 font-bold" :class="statusChip[s.status]">{{ t(s.status) }}</span>
                         <IconButton icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="remove(s)" />

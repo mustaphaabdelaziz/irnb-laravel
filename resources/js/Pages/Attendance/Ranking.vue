@@ -44,7 +44,7 @@ const certificateHref = (row) => route('attendance.certificates', { ...query(), 
 // Gold, silver and bronze for the podium.
 const MEDAL = {
     1: 'bg-amber-400 text-amber-950',
-    2: 'bg-slate-300 text-slate-800',
+    2: 'bg-slate-300 text-slate-800 dark:text-slate-100',
     3: 'bg-orange-300 text-orange-950',
 };
 
@@ -86,10 +86,10 @@ const th = 'p-2 font-semibold';
             <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.ranking.help', { n: minExpected }) }}</p>
 
             <section :class="[card, 'overflow-x-auto']">
-                <p v-if="!rows.length" class="p-6 text-center text-sm text-slate-500">{{ t('att.ranking.none') }}</p>
+                <p v-if="!rows.length" class="p-6 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('att.ranking.none') }}</p>
                 <table v-else class="w-full min-w-[40rem] text-sm">
                     <thead>
-                        <tr class="bg-slate-50 text-xs text-slate-500 dark:bg-slate-800/50">
+                        <tr class="bg-slate-50 text-xs text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">
                             <th :class="[th, 'w-16 text-center']">{{ t('att.ranking.col.rank') }}</th>
                             <th :class="[th, 'text-start']">{{ t('att.player') }}</th>
                             <th :class="[th, 'text-end']">{{ t('att.col.expected') }}</th>
@@ -102,7 +102,7 @@ const th = 'p-2 font-semibold';
                         <tr v-for="row in rows" :key="row.player_id" class="border-t border-slate-100 dark:border-slate-800">
                             <td class="p-2 text-center">
                                 <span v-if="MEDAL[row.rank]" class="inline-flex size-7 items-center justify-center rounded-full text-xs font-bold" :class="MEDAL[row.rank]">{{ row.rank }}</span>
-                                <span v-else class="tabular-nums text-slate-500">{{ row.rank }}</span>
+                                <span v-else class="tabular-nums text-slate-500 dark:text-slate-400">{{ row.rank }}</span>
                             </td>
                             <td class="whitespace-nowrap p-2 font-medium">
                                 <Link v-if="can('players', 'view')" :href="profileHref(row)" class="text-primary-700 hover:underline dark:text-primary-300">{{ row.name }}</Link>
@@ -117,7 +117,7 @@ const th = 'p-2 font-semibold';
                         </tr>
                     </tbody>
                 </table>
-                <p v-if="unranked" class="px-4 pb-3 pt-2 text-xs text-slate-500">{{ t('att.ranking.unranked', { count: unranked, n: minExpected }) }}</p>
+                <p v-if="unranked" class="px-4 pb-3 pt-2 text-xs text-slate-500 dark:text-slate-400">{{ t('att.ranking.unranked', { count: unranked, n: minExpected }) }}</p>
             </section>
         </div>
     </AuthenticatedLayout>

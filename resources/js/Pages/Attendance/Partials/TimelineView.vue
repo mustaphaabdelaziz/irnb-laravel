@@ -45,7 +45,7 @@ function dotClass(e) {
 }
 // A cancelled session is drawn hollow (dashed outline, no fill).
 const cardClass = (e) => (e.state === 'cancelled'
-    ? 'border-2 border-dashed border-slate-300 bg-transparent text-slate-500 dark:border-slate-700'
+    ? 'border-2 border-dashed border-slate-300 bg-transparent text-slate-500 dark:border-slate-700 dark:text-slate-400'
     : ['border-s-4 bg-white ring-1 ring-slate-200 hover:ring-primary-300 dark:bg-slate-900 dark:ring-slate-800', KIND_BORDER[e.kind]]);
 const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900';
 
@@ -97,7 +97,7 @@ watch(() => [props.from, props.to], () => {
             <button class="rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800" @click="goToday">{{ t('att.today') }}</button>
         </div>
 
-        <button class="w-full rounded-lg border border-dashed border-slate-300 py-2 text-sm text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800" @click="earlier">↑ {{ t('att.earlier') }}</button>
+        <button class="w-full rounded-lg border border-dashed border-slate-300 py-2 text-sm text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800 dark:text-slate-400" @click="earlier">↑ {{ t('att.earlier') }}</button>
 
         <ol class="space-y-6">
             <li v-for="m in months" :key="m">
@@ -105,14 +105,14 @@ watch(() => [props.from, props.to], () => {
                 <ol class="space-y-3 border-s-2 border-slate-200 ps-6 dark:border-slate-800">
                     <li v-if="!byMonth[m]" class="text-sm text-slate-400">{{ t('att.no_events') }}</li>
                     <li v-for="e in byMonth[m] ?? []" :key="e.key">
-                        <p v-if="e.key === todayEventKey" id="att-today" class="mb-3 flex items-center gap-2 text-xs font-semibold text-primary-600">
+                        <p v-if="e.key === todayEventKey" id="att-today" class="mb-3 flex items-center gap-2 text-xs font-semibold text-primary-600 dark:text-primary-300">
                             <span class="h-px flex-1 bg-primary-300"></span>{{ t('att.today') }}<span class="h-px flex-1 bg-primary-300"></span>
                         </p>
                         <div class="relative">
                             <span class="absolute -start-[1.94rem] top-4 h-3 w-3 rounded-full ring-4 ring-white dark:ring-slate-900" :class="dotClass(e)"></span>
 
                             <Link v-if="e.type === 'session'" :href="route('attendance.sessions.show', e.id)" class="block rounded-xl p-3" :class="cardClass(e)">
-                                <div class="flex flex-wrap items-center gap-x-2 text-xs text-slate-500">
+                                <div class="flex flex-wrap items-center gap-x-2 text-xs text-slate-500 dark:text-slate-400">
                                     <span class="font-semibold capitalize">{{ dayLabel(e.date) }}</span>
                                     <span dir="ltr">{{ e.start_time }}–{{ e.end_time }}</span>
                                     <span>{{ t(`att.kind.${e.kind}`) }}</span>
@@ -129,11 +129,11 @@ watch(() => [props.from, props.to], () => {
                             </Link>
 
                             <div v-else-if="e.type === 'closure'" class="rounded-xl bg-slate-100 p-3 text-sm dark:bg-slate-800">
-                                <div class="text-xs font-semibold text-slate-500">{{ t('att.closure') }} · <span dir="ltr">{{ e.start_date }} → {{ e.end_date }}</span></div>
+                                <div class="text-xs font-semibold text-slate-500 dark:text-slate-400">{{ t('att.closure') }} · <span dir="ltr">{{ e.start_date }} → {{ e.end_date }}</span></div>
                                 <div class="font-medium text-slate-800 dark:text-slate-200">{{ e.reason }}</div>
                             </div>
 
-                            <Link v-else :href="route('attendance.sessions.show', e.session_id)" class="flex items-center gap-2 rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-800 hover:bg-amber-100 dark:bg-amber-500/10 dark:text-amber-300">
+                            <Link v-else :href="route('attendance.sessions.show', e.session_id)" class="flex items-center gap-2 rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-800 hover:bg-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-slate-800">
                                 <Icon name="flag" />
                                 <span>{{ e.milestone === 'started' ? t('att.milestone.started', { category: e.category }) : t('att.milestone.completed', { category: e.category, done: e.done, target: e.target }) }}</span>
                                 <span class="ms-auto text-xs font-normal capitalize">{{ dayLabel(e.date) }}</span>
@@ -144,6 +144,6 @@ watch(() => [props.from, props.to], () => {
             </li>
         </ol>
 
-        <button class="w-full rounded-lg border border-dashed border-slate-300 py-2 text-sm text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800" @click="later">↓ {{ t('att.later') }}</button>
+        <button class="w-full rounded-lg border border-dashed border-slate-300 py-2 text-sm text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800 dark:text-slate-400" @click="later">↓ {{ t('att.later') }}</button>
     </div>
 </template>

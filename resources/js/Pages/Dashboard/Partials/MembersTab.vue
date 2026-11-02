@@ -395,7 +395,7 @@ const docCategoryOptions = computed(() => completionOptions(docCategoryRows.valu
                     <template #table>
                         <StatTable :columns="docCategoryColumns" :rows="docCategoryRows" :row-key="(r) => r.category_id ?? 'none'" :totals="docCategoryTotals" dense>
                             <template #cell-label="{ row, formatted }">
-                                <Link v-if="row.href" :href="row.href" class="font-medium text-primary-600 hover:underline dark:text-primary-400">{{ formatted }}</Link>
+                                <Link v-if="row.href" :href="row.href" class="font-medium text-primary-600 hover:underline dark:text-primary-300">{{ formatted }}</Link>
                                 <template v-else>{{ formatted }}</template>
                             </template>
                         </StatTable>
@@ -416,7 +416,7 @@ const docCategoryOptions = computed(() => completionOptions(docCategoryRows.valu
                     <template #table>
                         <StatTable :columns="docTypeColumns" :rows="docTypeRows" row-key="id" :totals="docTypeTotals" dense>
                             <template #cell-label="{ row, formatted }">
-                                <Link v-if="row.href" :href="row.href" class="font-medium text-primary-600 hover:underline dark:text-primary-400">{{ formatted }}</Link>
+                                <Link v-if="row.href" :href="row.href" class="font-medium text-primary-600 hover:underline dark:text-primary-300">{{ formatted }}</Link>
                                 <template v-else>{{ formatted }}</template>
                             </template>
                         </StatTable>

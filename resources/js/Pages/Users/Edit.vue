@@ -71,7 +71,7 @@ const hasErrors = computed(() => Object.keys(form.errors).length > 0);
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center gap-3">
-                <Link :href="route('users.index')" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
+                <Link :href="route('users.index')" class="text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
                 </Link>
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('edit') }} — {{ user.fullname || user.name }}</h1>
@@ -129,7 +129,7 @@ const hasErrors = computed(() => Object.keys(form.errors).length > 0);
             <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('account_access') }}</h2>
 
-                <div v-if="user.is_superadmin" class="mb-4 rounded-lg bg-primary-50 px-4 py-2 text-sm text-primary-700">
+                <div v-if="user.is_superadmin" class="mb-4 rounded-lg bg-primary-50 px-4 py-2 text-sm text-primary-700 dark:bg-primary-500/10 dark:text-primary-300">
                     {{ t('super_admin') }} — {{ t('role') }}
                 </div>
 
@@ -139,7 +139,7 @@ const hasErrors = computed(() => Object.keys(form.errors).length > 0);
                         <SearchableSelect v-model="form.role_id" :options="roleOptions" :placeholder="t('no_role')" class="mt-1" />
                         <InputError :message="form.errors.role_id" class="mt-1" />
                         <p v-if="user.is_superadmin" class="mt-1 rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">{{ t('user_role_ignored') }}</p>
-                        <button type="button" class="mt-2 text-sm font-medium text-primary-600 hover:text-primary-700" @click="showAdvanced = !showAdvanced">
+                        <button type="button" class="mt-2 text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-300 dark:hover:text-primary-200" @click="showAdvanced = !showAdvanced">
                             {{ showAdvanced ? t('hide_advanced') : t('advanced_overrides') }}
                         </button>
 
@@ -177,7 +177,7 @@ const hasErrors = computed(() => Object.keys(form.errors).length > 0);
                     <img :src="user.picture_url" :alt="user.fullname" class="h-24 w-24 rounded-full object-cover" />
                 </div>
                 <input type="file" accept="image/*" @change="form.picture = $event.target.files[0]"
-                    class="text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 hover:file:bg-primary-100" />
+                    class="text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 hover:file:bg-primary-100 dark:file:bg-primary-500/10 dark:file:text-primary-300 dark:hover:file:bg-primary-500/15" />
                 <InputError :message="form.errors.picture" class="mt-1" />
             </div>
 

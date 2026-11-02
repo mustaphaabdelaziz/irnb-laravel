@@ -95,7 +95,7 @@ function destroy() {
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                             <tr v-for="row in branchStats" :key="row.branch_id ?? 'none'" class="hover:bg-slate-50 dark:hover:bg-slate-800">
-                                <td class="px-4 py-3 text-sm font-medium" :class="row.branch_id === null ? 'text-slate-400 dark:text-slate-500 italic' : 'text-slate-900 dark:text-slate-100'">{{ branchName(row) }}</td>
+                                <td class="px-4 py-3 text-sm font-medium" :class="row.branch_id === null ? 'text-slate-400 dark:text-slate-400 italic' : 'text-slate-900 dark:text-slate-100'">{{ branchName(row) }}</td>
                                 <td class="px-4 py-3 text-end text-sm">{{ formatMoney(row.owed) }}</td>
                                 <td class="px-4 py-3 text-end text-sm text-emerald-700 dark:text-emerald-400">{{ formatMoney(row.collected) }}</td>
                                 <td class="px-4 py-3 text-end text-sm" :class="row.outstanding > 0 ? 'text-rose-700 dark:text-rose-400 font-semibold' : 'text-slate-500 dark:text-slate-400'">{{ formatMoney(row.outstanding) }}</td>
@@ -149,13 +149,13 @@ function destroy() {
                                 <td class="px-4 py-3">
                                     <div class="flex flex-wrap gap-1">
                                         <Badge v-for="cat in sub.categories" :key="cat.id" :label="cat.localized_name || cat.name" color="primary" />
-                                        <span v-if="!sub.categories?.length" class="text-xs text-slate-400 dark:text-slate-500">{{ t('all') }}</span>
+                                        <span v-if="!sub.categories?.length" class="text-xs text-slate-400 dark:text-slate-400">{{ t('all') }}</span>
                                     </div>
                                 </td>
                                 <td class="px-4 py-3">
                                     <div class="flex flex-wrap gap-1">
                                         <Badge v-for="b in sub.branches" :key="b.id" :label="b.localized_name || b.name" color="emerald" />
-                                        <span v-if="!sub.branches?.length" class="text-xs text-slate-400 dark:text-slate-500">{{ t('no_branch') }}</span>
+                                        <span v-if="!sub.branches?.length" class="text-xs text-slate-400 dark:text-slate-400">{{ t('no_branch') }}</span>
                                     </div>
                                 </td>
                                 <td class="px-4 py-3 text-end">

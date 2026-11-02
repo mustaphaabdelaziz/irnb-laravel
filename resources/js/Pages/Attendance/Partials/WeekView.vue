@@ -79,7 +79,7 @@ const go = (date) => emit('navigate', { date });
             <button class="rounded-lg px-3 py-1 text-sm font-semibold text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800" @click="go(today)">{{ t('att.today') }}</button>
         </div>
 
-        <p v-if="!sessions.length" class="text-sm text-slate-500">{{ t('att.no_sessions_week') }}</p>
+        <p v-if="!sessions.length" class="text-sm text-slate-500 dark:text-slate-400">{{ t('att.no_sessions_week') }}</p>
 
         <div class="overflow-x-auto rounded-xl bg-white ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
             <div class="grid min-w-[48rem]" style="grid-template-columns: 3.5rem repeat(7, minmax(0, 1fr))">
@@ -88,10 +88,10 @@ const go = (date) => emit('navigate', { date });
                     v-for="d in days"
                     :key="d"
                     class="border-b border-s border-slate-100 p-2 text-center text-xs font-semibold capitalize dark:border-slate-800"
-                    :class="[d === today ? 'text-primary-600' : 'text-slate-500', canAdd ? 'cursor-pointer hover:bg-primary-50/60 dark:hover:bg-primary-500/5' : '']"
+                    :class="[d === today ? 'text-primary-600 dark:text-primary-300' : 'text-slate-500 dark:text-slate-400', canAdd ? 'cursor-pointer hover:bg-primary-50/60 dark:hover:bg-primary-500/5' : '']"
                     :title="canAdd ? t('att.add_on_day') : undefined"
                     @click="canAdd && emit('add', d)"
-                >{{ dayLabel(d) }}<span v-if="canAdd" class="ms-1 text-primary-600 print:hidden" aria-hidden="true">+</span></div>
+                >{{ dayLabel(d) }}<span v-if="canAdd" class="ms-1 text-primary-600 print:hidden dark:text-primary-300" aria-hidden="true">+</span></div>
 
                 <div class="relative" :style="{ height: `${height}px` }">
                     <div v-for="(h, i) in hours" :key="h" class="absolute inset-x-0 pe-1 text-end text-[10px] text-slate-400" :style="{ top: `${i * HOUR_PX}px` }"><span dir="ltr">{{ String(h).padStart(2, '0') }}:00</span></div>

@@ -28,11 +28,11 @@ function initial(n) { return (n || '?').charAt(0).toUpperCase(); }
         </span>
         <span class="min-w-0 flex-1">
             <span class="block truncate font-bold text-slate-900 dark:text-slate-100" :class="size === 'sm' ? 'text-xs' : 'text-sm'">{{ member.name }}</span>
-            <span class="block truncate text-xs font-semibold text-primary-600 dark:text-primary-400">{{ label }}</span>
+            <span class="block truncate text-xs font-semibold text-primary-600 dark:text-primary-300">{{ label }}</span>
         </span>
     </button>
     <button v-else type="button" :disabled="disabled" @click="$emit('select')"
-        class="flex w-full items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-slate-300 text-xs font-semibold text-slate-400 transition hover:border-primary-400 hover:bg-primary-50/50 hover:text-primary-600 disabled:cursor-default disabled:hover:border-slate-300 disabled:hover:bg-transparent disabled:hover:text-slate-400 dark:border-slate-700 dark:hover:border-primary-500/60 dark:hover:bg-primary-500/5"
+        class="flex w-full items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-slate-300 text-xs font-semibold text-slate-400 transition hover:border-primary-400 hover:bg-primary-50/50 hover:text-primary-600 disabled:cursor-default disabled:hover:border-slate-300 disabled:hover:bg-transparent disabled:hover:text-slate-400 dark:border-slate-700 dark:hover:border-primary-500/60 dark:hover:bg-primary-500/5 dark:hover:text-primary-300"
         :class="{ 'min-h-[4.5rem] p-3': size === 'lg', 'min-h-[4rem] p-3': size === 'md', 'min-h-[3rem] p-2': size === 'sm' }">
         <Icon v-if="!disabled" name="plus" class="h-4 w-4" />
         <span class="truncate">{{ label }}</span>

@@ -74,10 +74,10 @@ const th = 'p-2 font-semibold';
 
             <section v-for="section in sections" :key="section.key" :class="[card, 'overflow-x-auto']">
                 <h2 class="px-4 pt-4 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ section.title }}</h2>
-                <p v-if="!section.rows.length" class="p-6 text-center text-sm text-slate-500">{{ section.empty }}</p>
+                <p v-if="!section.rows.length" class="p-6 text-center text-sm text-slate-500 dark:text-slate-400">{{ section.empty }}</p>
                 <table v-else class="mt-2 w-full min-w-[48rem] text-sm">
                     <thead>
-                        <tr class="bg-slate-50 text-xs text-slate-500 dark:bg-slate-800/50">
+                        <tr class="bg-slate-50 text-xs text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">
                             <th :class="[th, 'text-start']">{{ t('att.player') }}</th>
                             <th :class="[th, 'text-start']">{{ t('att.category') }}</th>
                             <th :class="[th, 'text-start']">{{ t('att.injury.col.start') }}</th>
@@ -93,7 +93,7 @@ const th = 'p-2 font-semibold';
                                 <Link v-if="can('players', 'view')" :href="profileHref(row)" class="text-primary-700 hover:underline dark:text-primary-300">{{ row.name }}</Link>
                                 <template v-else>{{ row.name }}</template>
                             </td>
-                            <td class="whitespace-nowrap p-2 text-slate-500">{{ row.category ?? '—' }}</td>
+                            <td class="whitespace-nowrap p-2 text-slate-500 dark:text-slate-400">{{ row.category ?? '—' }}</td>
                             <td class="whitespace-nowrap p-2">{{ day(row.start) }}</td>
                             <td class="whitespace-nowrap p-2">{{ row.open ? '…' : day(row.end) }}</td>
                             <td class="p-2 text-end tabular-nums">{{ row.sessions }}</td>

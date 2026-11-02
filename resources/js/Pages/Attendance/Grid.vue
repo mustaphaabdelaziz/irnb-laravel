@@ -101,7 +101,7 @@ function save() {
         <template #header>
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
-                    <Link :href="route('attendance.index', { category_id: category.id, month, ...branchParam })" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 rtl:rotate-180"><Icon name="back" /></Link>
+                    <Link :href="route('attendance.index', { category_id: category.id, month, ...branchParam })" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 rtl:rotate-180 dark:hover:text-slate-300"><Icon name="back" /></Link>
                     <h1 class="text-lg font-bold capitalize text-slate-900 dark:text-slate-100">{{ t('att.grid') }}<template v-if="branch"> · {{ branch.name }}</template> · {{ category.name }} · {{ monthLabel }}</h1>
                 </div>
                 <div class="flex flex-wrap items-center gap-2 print:hidden">
@@ -117,19 +117,19 @@ function save() {
                 <b class="font-mono" dir="ltr">{{ legendCode(s) }}</b>{{ label(s) }}
             </span>
         </div>
-        <p class="mb-3 text-xs text-slate-500">{{ t('att.grid_help_codes', { late: code('late') }) }}</p>
+        <p class="mb-3 text-xs text-slate-500 dark:text-slate-400">{{ t('att.grid_help_codes', { late: code('late') }) }}</p>
         <InputError :message="tr(page.props.errors?.columns)" />
         <InputError v-for="(msg, idx) in columnMessages" :key="idx" :message="msg" />
 
-        <p v-if="!sessions.length" class="text-sm text-slate-500">{{ t('att.no_sessions') }}</p>
+        <p v-if="!sessions.length" class="text-sm text-slate-500 dark:text-slate-400">{{ t('att.no_sessions') }}</p>
         <div v-else class="overflow-x-auto rounded-xl bg-white ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
             <table class="text-sm">
                 <thead>
                     <tr class="bg-slate-50 dark:bg-slate-800/50">
                         <th class="sticky start-0 z-10 bg-slate-50 p-2 text-start dark:bg-slate-800">{{ t('att.player') }}</th>
-                        <th v-for="s in sessions" :key="s.id" class="min-w-[3.5rem] p-1 text-center text-xs font-semibold" :class="columnError(s.id) ? 'text-rose-600' : dirty.has(s.id) ? 'text-primary-600' : 'text-slate-500'" :title="columnError(s.id) ?? ''">
+                        <th v-for="s in sessions" :key="s.id" class="min-w-[3.5rem] p-1 text-center text-xs font-semibold" :class="columnError(s.id) ? 'text-rose-600 dark:text-rose-400' : dirty.has(s.id) ? 'text-primary-600 dark:text-primary-300' : 'text-slate-500 dark:text-slate-400'" :title="columnError(s.id) ?? ''">
                             <Link :href="route('attendance.sessions.show', s.id)" class="hover:underline">{{ dayLabel(s) }}</Link>
-                            <div class="font-normal" :class="s.state === 'held' ? 'text-emerald-600' : 'text-slate-400'">{{ s.state === 'held' ? '✓' : '·' }}</div>
+                            <div class="font-normal" :class="s.state === 'held' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'">{{ s.state === 'held' ? '✓' : '·' }}</div>
                         </th>
                     </tr>
                 </thead>

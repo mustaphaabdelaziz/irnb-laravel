@@ -538,7 +538,7 @@ function saveSettings() {
                                 {{ t('use') }}
                             </button>
                         </div>
-                        <p class="mt-3 text-xs text-slate-400 dark:text-slate-500">{{ t('preview_live_hint') }}</p>
+                        <p class="mt-3 text-xs text-slate-400 dark:text-slate-400">{{ t('preview_live_hint') }}</p>
                     </div>
 
                     <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
@@ -550,12 +550,12 @@ function saveSettings() {
                                     <img :src="config.branding.logo" alt="Logo" class="h-16 w-16 rounded-lg object-contain" />
                                 </div>
                                 <input type="file" accept="image/*" @change="brandingForm.logo = $event.target.files[0]"
-                                    class="text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700" />
+                                    class="text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 dark:file:bg-primary-500/10 dark:file:text-primary-300" />
                             </div>
                             <div>
                                 <InputLabel :value="t('favicon')" />
                                 <input type="file" accept="image/*" @change="brandingForm.favicon = $event.target.files[0]"
-                                    class="text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700" />
+                                    class="text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 dark:file:bg-primary-500/10 dark:file:text-primary-300" />
                             </div>
                         </div>
                     </div>
@@ -601,7 +601,7 @@ function saveSettings() {
                                             </select>
                                             <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">{{ t('season_start_hint') }}</span>
                                             <span class="mt-1 block text-xs text-amber-600 dark:text-amber-400">{{ t('season_start_finance_hint') }}</span>
-                                            <span v-if="settingsForm.errors['settings.seasonStartMonth']" class="mt-1 block text-xs text-rose-500">{{ settingsForm.errors['settings.seasonStartMonth'] }}</span>
+                                            <span v-if="settingsForm.errors['settings.seasonStartMonth']" class="mt-1 block text-xs text-rose-500 dark:text-rose-400">{{ settingsForm.errors['settings.seasonStartMonth'] }}</span>
                                         </label>
                                     </div>
                                 </div>
@@ -635,12 +635,12 @@ function saveSettings() {
                                 <div>
                                     <input v-model="certificatesForm['20'][row.key]" type="number" step="0.25" min="0" max="20"
                                         class="w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800" />
-                                    <span v-if="certificatesForm.errors[`settings.academicCertificates.20.${row.key}`]" class="mt-1 block text-xs text-rose-500">{{ certificatesForm.errors[`settings.academicCertificates.20.${row.key}`] }}</span>
+                                    <span v-if="certificatesForm.errors[`settings.academicCertificates.20.${row.key}`]" class="mt-1 block text-xs text-rose-500 dark:text-rose-400">{{ certificatesForm.errors[`settings.academicCertificates.20.${row.key}`] }}</span>
                                 </div>
                                 <div>
                                     <input v-model="certificatesForm['10'][row.key]" type="number" step="0.25" min="0" max="10"
                                         class="w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800" />
-                                    <span v-if="certificatesForm.errors[`settings.academicCertificates.10.${row.key}`]" class="mt-1 block text-xs text-rose-500">{{ certificatesForm.errors[`settings.academicCertificates.10.${row.key}`] }}</span>
+                                    <span v-if="certificatesForm.errors[`settings.academicCertificates.10.${row.key}`]" class="mt-1 block text-xs text-rose-500 dark:text-rose-400">{{ certificatesForm.errors[`settings.academicCertificates.10.${row.key}`] }}</span>
                                 </div>
                             </template>
                         </div>

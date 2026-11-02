@@ -70,7 +70,7 @@ const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg
         <p v-if="!hasSchedule" class="rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">{{ t('att.no_schedule') }}</p>
 
         <div class="grid grid-cols-7 gap-px overflow-hidden rounded-xl bg-slate-200 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-800">
-            <div v-for="w in weekdays" :key="w" class="bg-slate-50 p-2 text-center text-xs font-semibold text-slate-500 dark:bg-slate-900">{{ w }}</div>
+            <div v-for="w in weekdays" :key="w" class="bg-slate-50 p-2 text-center text-xs font-semibold text-slate-500 dark:bg-slate-900 dark:text-slate-400">{{ w }}</div>
             <div
                 v-for="cell in cells"
                 :key="cell.key"
@@ -79,9 +79,9 @@ const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg
                 :title="canAdd ? t('att.add_on_day') : undefined"
                 @click="canAdd && emit('add', cell.key)"
             >
-                <div class="mb-1 flex items-center justify-between text-xs font-semibold" :class="cell.key === todayKey ? 'text-primary-600' : 'text-slate-400'">
+                <div class="mb-1 flex items-center justify-between text-xs font-semibold" :class="cell.key === todayKey ? 'text-primary-600 dark:text-primary-300' : 'text-slate-400'">
                     <span>{{ cell.day }}</span>
-                    <span v-if="canAdd" class="hidden text-sm leading-none text-primary-600 group-hover:inline print:!hidden" aria-hidden="true">+</span>
+                    <span v-if="canAdd" class="hidden text-sm leading-none text-primary-600 group-hover:inline print:!hidden dark:text-primary-300" aria-hidden="true">+</span>
                 </div>
                 <Link v-for="s in cell.sessions" :key="s.id" :href="route('attendance.sessions.show', s.id)" class="mb-1 block rounded px-1.5 py-0.5 text-[11px] font-medium" :class="chip[s.state]" :title="chipTitle(s)" @click.stop>
                     <span class="flex items-center gap-1">
@@ -98,7 +98,7 @@ const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg
             </div>
         </div>
 
-        <div class="flex flex-wrap gap-3 text-xs text-slate-500">
+        <div class="flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400">
             <span v-for="(cls, kind) in KIND_DOT" :key="kind" class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full" :class="cls"></span>{{ t(`att.kind.${kind}`) }}</span>
         </div>
     </div>

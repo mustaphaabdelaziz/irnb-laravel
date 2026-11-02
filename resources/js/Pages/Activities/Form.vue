@@ -82,7 +82,7 @@ const card = 'space-y-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200
                     <div>
                         <label :class="label">{{ t('activities.ends_on') }}</label>
                         <input v-model="form.ends_on" type="date" :min="form.starts_on" :class="field" />
-                        <p class="mt-1 text-xs text-slate-500">{{ t('activities.single_day_hint') }}</p>
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('activities.single_day_hint') }}</p>
                         <InputError :message="form.errors.ends_on" class="mt-1" />
                     </div>
                 </div>
@@ -132,7 +132,7 @@ const card = 'space-y-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200
                     <div>
                         <label :class="label">{{ t('activities.cost') }}</label>
                         <TextInput v-model="form.cost" type="number" min="0" step="0.01" class="mt-1 w-full" />
-                        <p class="mt-1 text-xs text-slate-500">{{ t('activities.cost_hint') }}</p>
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('activities.cost_hint') }}</p>
                     </div>
                 </div>
                 <div>
@@ -153,7 +153,7 @@ const card = 'space-y-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200
                 <div>
                     <label :class="label">{{ t('activities.report') }}</label>
                     <textarea v-model="form.report" rows="8" :class="field" />
-                    <p class="mt-1 text-xs text-slate-500">{{ t('activities.report_hint') }}</p>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('activities.report_hint') }}</p>
                     <InputError :message="form.errors.report" class="mt-1" />
                 </div>
             </section>

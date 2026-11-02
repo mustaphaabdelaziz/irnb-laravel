@@ -81,7 +81,7 @@ function submit() {
                 <label class="block text-sm">
                     <span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('amount') }}</span>
                     <input v-model="form.amount" type="number" min="0.01" step="0.01" required class="w-full rounded-lg border-slate-200 bg-white text-sm tabular-nums dark:border-slate-700 dark:bg-slate-800" />
-                    <p v-if="tooMuch" role="alert" class="mt-1 text-xs text-rose-600">{{ t('caisses.not_enough') }}</p>
+                    <p v-if="tooMuch" role="alert" class="mt-1 text-xs text-rose-600 dark:text-rose-400">{{ t('caisses.not_enough') }}</p>
                     <InputError :message="form.errors.amount" class="mt-1" />
                 </label>
                 <label class="block text-sm">
@@ -97,7 +97,7 @@ function submit() {
             </label>
 
             <div v-if="from && to && amount > 0" class="rounded-xl bg-slate-50 p-3 text-sm dark:bg-slate-800/60">
-                <p class="mb-1 text-xs font-semibold text-slate-500">{{ t('caisses.after_move') }}</p>
+                <p class="mb-1 text-xs font-semibold text-slate-500 dark:text-slate-400">{{ t('caisses.after_move') }}</p>
                 <p class="tabular-nums">{{ from.label }}: {{ formatMoney(from.balance) }} <Icon name="arrow" class="mx-1 align-middle text-slate-400 rtl:rotate-180" /> <strong>{{ formatMoney(Number(from.balance) - amount) }}</strong></p>
                 <p class="tabular-nums">{{ to.label }}: {{ formatMoney(to.balance) }} <Icon name="arrow" class="mx-1 align-middle text-slate-400 rtl:rotate-180" /> <strong>{{ formatMoney(Number(to.balance) + amount) }}</strong></p>
             </div>

@@ -61,7 +61,7 @@ function onBlur(e) {
             class="mt-1 flex w-full items-center justify-between rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-start text-sm shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 disabled:opacity-50">
             <span :class="selected ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400'">{{ selected ? selected.label : (placeholder || '-') }}</span>
             <span class="flex items-center gap-1">
-                <span v-if="hasValue" class="text-slate-400 hover:text-rose-500" @click.stop="choose(null)">&times;</span>
+                <span v-if="hasValue" class="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400" @click.stop="choose(null)">&times;</span>
                 <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </span>
         </button>
@@ -74,7 +74,7 @@ function onBlur(e) {
                     class="cursor-pointer px-3 py-2 text-sm"
                     :class="i === active ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'">
                     <span class="block">{{ o.label }}</span>
-                    <span v-if="o.description" class="block text-xs text-slate-400 dark:text-slate-500">{{ o.description }}</span>
+                    <span v-if="o.description" class="block text-xs text-slate-400 dark:text-slate-400">{{ o.description }}</span>
                 </li>
                 <li v-if="!filtered.length" class="px-3 py-2 text-sm text-slate-400">-</li>
             </ul>

@@ -84,10 +84,10 @@ const th = 'p-2 font-semibold';
             </ul>
 
             <section :class="[card, 'overflow-x-auto']">
-                <p v-if="!rows.length" class="p-6 text-center text-sm text-slate-500">{{ t('att.risk.none') }}</p>
+                <p v-if="!rows.length" class="p-6 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('att.risk.none') }}</p>
                 <table v-else class="w-full min-w-[64rem] text-sm">
                     <thead>
-                        <tr class="bg-slate-50 text-xs text-slate-500 dark:bg-slate-800/50">
+                        <tr class="bg-slate-50 text-xs text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">
                             <th :class="[th, 'text-start']">{{ t('att.player') }}</th>
                             <th :class="[th, 'text-start']">{{ t('att.category') }}</th>
                             <th :class="[th, 'text-end']">{{ t('att.col.expected') }}</th>
@@ -106,7 +106,7 @@ const th = 'p-2 font-semibold';
                                 <Link v-if="can('players', 'view')" :href="profileHref(row)" class="text-primary-700 hover:underline dark:text-primary-300">{{ row.name }}</Link>
                                 <template v-else>{{ row.name }}</template>
                             </td>
-                            <td class="whitespace-nowrap p-2 text-slate-500">{{ row.category ?? '—' }}</td>
+                            <td class="whitespace-nowrap p-2 text-slate-500 dark:text-slate-400">{{ row.category ?? '—' }}</td>
                             <td class="p-2 text-end tabular-nums">{{ row.expected }}</td>
                             <td class="p-2 text-end font-semibold tabular-nums" :class="{ 'text-rose-600 dark:text-rose-400': row.low_score }"><bdi dir="ltr">{{ pct(row.score_pct) }}</bdi></td>
                             <td class="p-2 text-end tabular-nums">{{ row.unexcused }}</td>

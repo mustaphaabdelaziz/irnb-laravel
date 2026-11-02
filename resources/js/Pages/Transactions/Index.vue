@@ -170,8 +170,8 @@ const exportUrl = computed(() => {
     return route('transactions.export', params);
 });
 const menuItem = 'flex w-full items-center gap-2.5 px-4 py-2 text-start text-sm text-slate-700 transition-colors hover:bg-slate-100 focus:bg-slate-100 focus:outline-none dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:bg-slate-700';
-const menuHeading = 'px-4 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500';
-const menuIcon = 'text-base text-slate-400 dark:text-slate-500';
+const menuHeading = 'px-4 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-400';
+const menuIcon = 'text-base text-slate-400 dark:text-slate-400';
 const fieldClass = 'h-9 w-full rounded-lg border-slate-300 bg-white py-1 text-sm text-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200';
 
 const showCategories = ref(false);
@@ -334,7 +334,7 @@ function bulkDestroy() {
                                 class="mt-1 rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800" />
                             <div class="min-w-0 flex-1 space-y-1">
                                 <div class="flex items-start justify-between gap-3">
-                                    <Link :href="route('transactions.show', tx.id)" class="min-w-0 break-words text-sm font-semibold text-slate-900 hover:text-primary-600 dark:text-slate-100 dark:hover:text-primary-400">{{ titleOf(tx) }}</Link>
+                                    <Link :href="route('transactions.show', tx.id)" class="min-w-0 break-words text-sm font-semibold text-slate-900 hover:text-primary-600 dark:text-slate-100 dark:hover:text-primary-300">{{ titleOf(tx) }}</Link>
                                     <span class="shrink-0 text-sm font-bold tabular-nums" :class="amountClass(tx)" dir="ltr">{{ signedAmount(tx) }}</span>
                                 </div>
                                 <p class="text-xs text-slate-500 dark:text-slate-400">{{ formatDate(tx.transaction_date) }} · {{ caisseName(tx) }}</p>
@@ -343,7 +343,7 @@ function bulkDestroy() {
                                         <span class="h-2 w-2 rounded-full" :style="{ backgroundColor: tx.finance_category?.color || '#94a3b8' }" aria-hidden="true"></span>
                                         {{ categoryName(tx) }}
                                     </span>
-                                    <Link v-if="tx.player_summary" :href="route('players.show', tx.player_summary.id)" class="text-xs text-primary-600 hover:underline dark:text-primary-400">{{ tx.player_summary.name }}</Link>
+                                    <Link v-if="tx.player_summary" :href="route('players.show', tx.player_summary.id)" class="text-xs text-primary-600 hover:underline dark:text-primary-300">{{ tx.player_summary.name }}</Link>
                                     <div class="ms-auto flex items-center gap-1">
                                         <IconButton v-if="canEdit" :href="route('transactions.edit', tx.id)" icon="pencil" :label="t('edit')" plain size="sm" />
                                         <IconButton v-if="canDelete" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteId = tx.id" />
@@ -386,7 +386,7 @@ function bulkDestroy() {
                                         <Badge :label="typeLabel(tx)" :color="isIncome(tx) ? 'emerald' : 'rose'" />
                                     </td>
                                     <td class="max-w-xs px-4 py-3 text-sm">
-                                        <Link :href="route('transactions.show', tx.id)" class="block truncate font-medium text-slate-900 hover:text-primary-600 dark:text-slate-100 dark:hover:text-primary-400">{{ titleOf(tx) }}</Link>
+                                        <Link :href="route('transactions.show', tx.id)" class="block truncate font-medium text-slate-900 hover:text-primary-600 dark:text-slate-100 dark:hover:text-primary-300">{{ titleOf(tx) }}</Link>
                                         <span v-if="tx.description" class="block truncate text-xs text-slate-500 dark:text-slate-400">{{ tx.description }}</span>
                                     </td>
                                     <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-700 dark:text-slate-200">
@@ -398,7 +398,7 @@ function bulkDestroy() {
                                     <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ caisseName(tx) }}</td>
                                     <td class="whitespace-nowrap px-4 py-3 text-sm">
                                         <template v-if="tx.player_summary">
-                                            <Link :href="route('players.show', tx.player_summary.id)" class="text-primary-600 hover:underline dark:text-primary-400">{{ tx.player_summary.name }}</Link>
+                                            <Link :href="route('players.show', tx.player_summary.id)" class="text-primary-600 hover:underline dark:text-primary-300">{{ tx.player_summary.name }}</Link>
                                             <span class="block font-mono text-xs text-slate-400">{{ tx.player_summary.membership_id }}</span>
                                         </template>
                                         <span v-else class="text-slate-400">—</span>

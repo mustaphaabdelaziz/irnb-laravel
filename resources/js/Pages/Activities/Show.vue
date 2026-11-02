@@ -72,7 +72,7 @@ const card = 'rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-s
         <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <Link :href="route('activities.index')" class="text-sm text-slate-500 hover:underline">{{ t('activities') }}</Link>
+                    <Link :href="route('activities.index')" class="text-sm text-slate-500 hover:underline dark:text-slate-400">{{ t('activities') }}</Link>
                     <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ a.title }}</h1>
                 </div>
                 <div class="flex gap-2">
@@ -86,14 +86,14 @@ const card = 'rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-s
             <div class="space-y-6 lg:col-span-2">
                 <section :class="card">
                     <dl class="grid gap-3 text-sm sm:grid-cols-2">
-                        <div><dt class="text-slate-500">{{ t('activities.type') }}</dt><dd class="font-medium">{{ a.type?.name }}</dd></div>
-                        <div><dt class="text-slate-500">{{ t('activities.dates') }}</dt><dd class="font-medium">{{ dates }}</dd></div>
-                        <div v-if="a.location"><dt class="text-slate-500">{{ t('activities.location') }}</dt><dd class="font-medium">{{ a.location }}</dd></div>
-                        <div v-if="a.partners"><dt class="text-slate-500">{{ t('activities.partners') }}</dt><dd class="font-medium">{{ a.partners }}</dd></div>
-                        <div v-if="a.branch"><dt class="text-slate-500">{{ t('activities.branch') }}</dt><dd class="font-medium">{{ a.branch.localized_name }}</dd></div>
-                        <div v-if="a.categories.length"><dt class="text-slate-500">{{ t('activities.categories') }}</dt><dd class="font-medium">{{ a.categories.map((c) => c.localized_name).join('، ') }}</dd></div>
-                        <div v-if="a.responsible"><dt class="text-slate-500">{{ t('activities.responsible') }}</dt><dd class="font-medium">{{ a.responsible.name }}</dd></div>
-                        <div v-if="a.cost !== null"><dt class="text-slate-500">{{ t('activities.cost') }}</dt><dd class="font-medium">{{ a.cost }}</dd></div>
+                        <div><dt class="text-slate-500 dark:text-slate-400">{{ t('activities.type') }}</dt><dd class="font-medium">{{ a.type?.name }}</dd></div>
+                        <div><dt class="text-slate-500 dark:text-slate-400">{{ t('activities.dates') }}</dt><dd class="font-medium">{{ dates }}</dd></div>
+                        <div v-if="a.location"><dt class="text-slate-500 dark:text-slate-400">{{ t('activities.location') }}</dt><dd class="font-medium">{{ a.location }}</dd></div>
+                        <div v-if="a.partners"><dt class="text-slate-500 dark:text-slate-400">{{ t('activities.partners') }}</dt><dd class="font-medium">{{ a.partners }}</dd></div>
+                        <div v-if="a.branch"><dt class="text-slate-500 dark:text-slate-400">{{ t('activities.branch') }}</dt><dd class="font-medium">{{ a.branch.localized_name }}</dd></div>
+                        <div v-if="a.categories.length"><dt class="text-slate-500 dark:text-slate-400">{{ t('activities.categories') }}</dt><dd class="font-medium">{{ a.categories.map((c) => c.localized_name).join('، ') }}</dd></div>
+                        <div v-if="a.responsible"><dt class="text-slate-500 dark:text-slate-400">{{ t('activities.responsible') }}</dt><dd class="font-medium">{{ a.responsible.name }}</dd></div>
+                        <div v-if="a.cost !== null"><dt class="text-slate-500 dark:text-slate-400">{{ t('activities.cost') }}</dt><dd class="font-medium">{{ a.cost }}</dd></div>
                     </dl>
                     <p v-if="a.description" class="mt-4 whitespace-pre-line text-sm text-slate-700 dark:text-slate-300">{{ a.description }}</p>
                 </section>
@@ -106,13 +106,13 @@ const card = 'rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-s
 
                 <section :class="card">
                     <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-                        <h2 class="font-semibold">{{ t('activities.photos') }} <span class="text-sm font-normal text-slate-500">· {{ t('activities.in_report_count', { n: inReportCount, max: reportLimit }) }}</span></h2>
+                        <h2 class="font-semibold">{{ t('activities.photos') }} <span class="text-sm font-normal text-slate-500 dark:text-slate-400">· {{ t('activities.in_report_count', { n: inReportCount, max: reportLimit }) }}</span></h2>
                         <label v-if="canEdit" class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-primary-700">
                             <Icon name="upload" class="h-4 w-4" /> {{ t('activities.add_photos') }}
                             <input type="file" accept="image/jpeg,image/png,image/webp" multiple class="hidden" :disabled="photoForm.processing" @change="uploadPhotos" />
                         </label>
                     </div>
-                    <p v-if="photoForm.errors.photos || Object.keys(photoForm.errors).length" class="mb-2 text-sm text-red-600">{{ Object.values(photoForm.errors)[0] }}</p>
+                    <p v-if="photoForm.errors.photos || Object.keys(photoForm.errors).length" class="mb-2 text-sm text-red-600 dark:text-red-400">{{ Object.values(photoForm.errors)[0] }}</p>
                     <ul v-if="a.photos.length" class="grid grid-cols-2 gap-3 sm:grid-cols-3">
                         <li v-for="p in a.photos" :key="p.id" class="group relative overflow-hidden rounded-xl ring-1 ring-slate-200 dark:ring-slate-800" :class="p.in_report ? 'ring-2 ring-primary-500' : ''">
                             <button type="button" class="block w-full" @click="lightbox = p"><img :src="p.thumb_url" :alt="p.caption || ''" loading="lazy" class="h-32 w-full object-cover" /></button>
@@ -145,11 +145,11 @@ const card = 'rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-s
                     <p class="text-sm text-slate-600 dark:text-slate-300">{{ t('activities.beneficiaries') }}: <strong>{{ a.beneficiaries_count }}</strong></p>
                     <p class="text-sm text-slate-600 dark:text-slate-300">{{ t('activities.external_volunteers') }}: <strong>{{ a.external_volunteers_count }}</strong></p>
                     <div v-if="a.board_members.length" class="mt-3">
-                        <h3 class="text-xs font-semibold uppercase text-slate-500">{{ t('activities.board_members') }}</h3>
+                        <h3 class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('activities.board_members') }}</h3>
                         <ul class="mt-1 space-y-0.5 text-sm"><li v-for="m in a.board_members" :key="m.id">{{ m.name }}</li></ul>
                     </div>
                     <div v-if="a.players.length" class="mt-3">
-                        <h3 class="text-xs font-semibold uppercase text-slate-500">{{ t('activities.players') }}</h3>
+                        <h3 class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('activities.players') }}</h3>
                         <ul class="mt-1 space-y-0.5 text-sm">
                             <li v-for="p in a.players" :key="p.id">
                                 <Link v-if="can('players', 'view')" :href="route('players.show', p.id)" class="hover:underline">{{ p.name }}</Link>
@@ -168,11 +168,11 @@ const card = 'rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-s
                             <input type="file" accept=".pdf,.doc,.docx,image/jpeg,image/png,image/webp" class="hidden" :disabled="fileForm.processing" @change="uploadFile" />
                         </label>
                     </div>
-                    <p v-if="fileForm.errors.file" class="mb-2 text-sm text-red-600">{{ fileForm.errors.file }}</p>
+                    <p v-if="fileForm.errors.file" class="mb-2 text-sm text-red-600 dark:text-red-400">{{ fileForm.errors.file }}</p>
                     <ul v-if="a.files.length" class="divide-y divide-slate-100 text-sm dark:divide-slate-800">
                         <li v-for="f in a.files" :key="f.id" class="flex items-center justify-between gap-2 py-2">
                             <a :href="route('activities.files.show', [a.id, f.id])" target="_blank" class="truncate hover:underline">{{ f.original_name }}</a>
-                            <span class="flex shrink-0 items-center gap-1 text-xs text-slate-500">
+                            <span class="flex shrink-0 items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
                                 {{ size(f.size) }}
                                 <IconButton v-if="canEdit" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="confirm = { kind: 'file', id: f.id }" />
                             </span>

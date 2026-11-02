@@ -29,8 +29,8 @@ function switchLocale(code) {
             @click="switchLocale(loc.code)"
             class="rounded-md px-2 py-1 text-xs font-medium transition-colors"
             :class="currentLocale === loc.code
-                ? 'bg-primary-100 text-primary-700'
-                : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'"
+                ? 'bg-primary-100 text-primary-700 dark:bg-primary-500/15 dark:text-primary-300'
+                : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800'"
             :title="loc.label"
         >
             {{ loc.flag }} {{ loc.code.toUpperCase() }}

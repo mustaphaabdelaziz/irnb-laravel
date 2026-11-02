@@ -235,7 +235,7 @@ const csvName = (title) => `${title} ${season.value}`;
 
                     <div class="card p-5">
                         <p class="mb-3 text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('current_balance') }}</p>
-                        <p class="figure text-3xl font-extrabold text-primary-700 dark:text-primary-400">{{ formatMoney(currentBalance) }}</p>
+                        <p class="figure text-3xl font-extrabold text-primary-700 dark:text-primary-300">{{ formatMoney(currentBalance) }}</p>
                         <ul class="mt-4 space-y-2">
                             <li v-for="a in accounts" :key="a.id" class="flex items-center justify-between text-sm">
                                 <span class="flex min-w-0 items-center gap-2 text-slate-600 dark:text-slate-300">

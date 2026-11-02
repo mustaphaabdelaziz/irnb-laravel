@@ -22,7 +22,7 @@ defineProps({
         <template #header>
             <div class="flex items-center justify-between gap-3">
                 <h2
-                    class="text-xl font-semibold leading-tight text-gray-800"
+                    class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-100"
                 >
                     {{ t('profile') }}
                 </h2>

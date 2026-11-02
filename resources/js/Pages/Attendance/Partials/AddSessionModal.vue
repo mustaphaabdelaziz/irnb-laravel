@@ -57,7 +57,7 @@ const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg
         <form class="space-y-3 p-5" @submit.prevent="submit">
             <h2 class="font-bold text-slate-900 dark:text-slate-100">{{ form.kind === 'preseason' ? t('att.add_preseason') : t('att.add_extra') }}</h2>
             <div class="inline-flex rounded-lg p-0.5 ring-1 ring-slate-200 dark:ring-slate-700" role="radiogroup" :aria-label="t('att.col.kind')">
-                <button v-for="k in ['extra', 'preseason']" :key="k" type="button" role="radio" :aria-checked="form.kind === k" class="rounded-md px-3 py-1 text-sm font-semibold" :class="form.kind === k ? (k === 'preseason' ? 'bg-amber-500 text-white' : 'bg-primary-600 text-white') : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'" @click="form.kind = k">{{ t(`att.kind.${k}`) }}</button>
+                <button v-for="k in ['extra', 'preseason']" :key="k" type="button" role="radio" :aria-checked="form.kind === k" class="rounded-md px-3 py-1 text-sm font-semibold" :class="form.kind === k ? (k === 'preseason' ? 'bg-amber-500 text-white' : 'bg-primary-600 text-white') : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 dark:text-slate-400'" @click="form.kind = k">{{ t(`att.kind.${k}`) }}</button>
             </div>
             <label v-if="branches.length" class="block text-sm">{{ t('branch') }}
                 <select v-model="form.branch_id" :class="[input, 'mt-1 block w-full']">
@@ -91,12 +91,12 @@ const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg
                         {{ s.name }}
                     </label>
                 </div>
-                <p class="mt-1 text-xs text-slate-500">{{ t('att.roster_statuses_help') }}</p>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('att.roster_statuses_help') }}</p>
             </fieldset>
             <label class="block text-sm">{{ t('att.title_goal') }}<input v-model="form.title" type="text" maxlength="150" :placeholder="t('att.title_placeholder')" :class="[input, 'mt-1 block w-full']" /></label>
             <InputError v-for="(e, k) in form.errors" :key="k" :message="tr(e)" />
             <div class="flex justify-end gap-2">
-                <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700" @click="emit('close')">{{ t('att.close') }}</button>
+                <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700 dark:text-slate-400" @click="emit('close')">{{ t('att.close') }}</button>
                 <button type="submit" :disabled="form.processing || (playerStatuses.length > 0 && !form.roster_status_ids.length)" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('att.save') }}</button>
             </div>
         </form>

@@ -169,7 +169,7 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
         <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center gap-3">
-                    <Link :href="route('subscriptions.index')" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
+                    <Link :href="route('subscriptions.index')" class="text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                         </svg>
@@ -230,12 +230,12 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
             <!-- Tarification forecast (Finance → view only) -->
             <div v-if="tarificationResult && tarificationResult.prompt" class="no-print flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-2xl bg-white px-5 py-3 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
                 <p class="text-sm text-slate-500 dark:text-slate-400">{{ t(tarificationResult.prompt) }}</p>
-                <Link v-if="can('subscriptions', 'edit')" :href="route('subscriptions.edit', subscription.id)" class="text-sm font-medium text-primary-600 hover:underline dark:text-primary-400">{{ t('tarification.edit_costs') }}</Link>
+                <Link v-if="can('subscriptions', 'edit')" :href="route('subscriptions.edit', subscription.id)" class="text-sm font-medium text-primary-600 hover:underline dark:text-primary-300">{{ t('tarification.edit_costs') }}</Link>
             </div>
             <div v-else-if="tarificationResult" class="no-print rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
                 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
                     <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ t('tarification.title') }}</h2>
-                    <Link v-if="can('subscriptions', 'edit')" :href="route('subscriptions.edit', subscription.id)" class="text-sm font-medium text-primary-600 hover:underline dark:text-primary-400">{{ t('tarification.edit_costs') }}</Link>
+                    <Link v-if="can('subscriptions', 'edit')" :href="route('subscriptions.edit', subscription.id)" class="text-sm font-medium text-primary-600 hover:underline dark:text-primary-300">{{ t('tarification.edit_costs') }}</Link>
                 </div>
                 <TarificationResult :result="tarificationResult" :collected="tarification.collected" :mixed-prices="mixedPrices" />
             </div>
@@ -244,7 +244,7 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
             <div class="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div class="flex items-center justify-between mb-2">
                     <span class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('payment_rate') }}</span>
-                    <span class="text-lg font-bold" :class="stats?.paid_percentage >= 80 ? 'text-emerald-600' : stats?.paid_percentage >= 50 ? 'text-amber-600' : 'text-rose-600'">
+                    <span class="text-lg font-bold" :class="stats?.paid_percentage >= 80 ? 'text-emerald-600 dark:text-emerald-400' : stats?.paid_percentage >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'">
                         {{ stats?.paid_percentage ?? 0 }}%
                     </span>
                 </div>
@@ -266,11 +266,11 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
                         @click="activeTab = tab"
                         class="relative px-5 py-3 text-sm font-medium transition-colors"
                         :class="activeTab === tab
-                            ? 'text-primary-600 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary-600'
+                            ? 'text-primary-600 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary-600 dark:text-primary-300'
                             : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'">
                         {{ t(tab) }}
                         <span class="ml-1.5 rounded-full px-1.5 py-0.5 text-xs"
-                            :class="activeTab === tab ? 'bg-primary-100 text-primary-700' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'">
+                            :class="activeTab === tab ? 'bg-primary-100 text-primary-700 dark:bg-primary-500/15 dark:text-primary-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'">
                             {{ tabCount(tab) }}
                         </span>
                     </button>
@@ -307,18 +307,18 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                             <tr v-for="(ps, idx) in filteredList" :key="ps.id" class="hover:bg-slate-50/60 dark:hover:bg-slate-800">
-                                <td class="px-4 py-3 text-sm text-slate-400 dark:text-slate-500">{{ idx + 1 }}</td>
+                                <td class="px-4 py-3 text-sm text-slate-400 dark:text-slate-400">{{ idx + 1 }}</td>
                                 <td class="px-4 py-3">
                                     <Link :href="route('players.show', ps.player_id)" class="text-sm font-medium text-primary-600 hover:text-primary-800 dark:text-primary-300 dark:hover:text-primary-200">
                                         {{ ps.player?.fullname }}
                                     </Link>
-                                    <p class="text-xs text-slate-400 dark:text-slate-500">{{ ps.player?.membership_id }}</p>
+                                    <p class="text-xs text-slate-400 dark:text-slate-400">{{ ps.player?.membership_id }}</p>
                                 </td>
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ ps.player?.category?.localized_name || ps.player?.category?.name || '-' }}</td>
                                 <td class="px-4 py-3 text-end text-sm">{{ formatMoney(ps.amount_owed) }}</td>
-                                <td class="px-4 py-3 text-end text-sm text-emerald-700">{{ formatMoney(ps.amount_paid) }}</td>
+                                <td class="px-4 py-3 text-end text-sm text-emerald-700 dark:text-emerald-300">{{ formatMoney(ps.amount_paid) }}</td>
                                 <td class="px-4 py-3 text-end text-sm font-semibold"
-                                    :class="ps.remaining_amount > 0 ? 'text-rose-700' : 'text-slate-400 dark:text-slate-500'">
+                                    :class="ps.remaining_amount > 0 ? 'text-rose-700 dark:text-rose-300' : 'text-slate-400 dark:text-slate-400'">
                                     {{ formatMoney(ps.remaining_amount) }}
                                 </td>
                                 <td class="px-4 py-3">
@@ -337,10 +337,10 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
                                 <td class="px-4 py-3 text-end text-sm font-semibold text-slate-700 dark:text-slate-200">
                                     {{ formatMoney(filteredList.reduce((s, ps) => s + parseFloat(ps.amount_owed || 0), 0)) }}
                                 </td>
-                                <td class="px-4 py-3 text-end text-sm font-semibold text-emerald-700">
+                                <td class="px-4 py-3 text-end text-sm font-semibold text-emerald-700 dark:text-emerald-300">
                                     {{ formatMoney(filteredList.reduce((s, ps) => s + parseFloat(ps.amount_paid || 0), 0)) }}
                                 </td>
-                                <td class="px-4 py-3 text-end text-sm font-semibold text-rose-700">
+                                <td class="px-4 py-3 text-end text-sm font-semibold text-rose-700 dark:text-rose-300">
                                     {{ formatMoney(filteredList.reduce((s, ps) => s + parseFloat(ps.remaining_amount || 0), 0)) }}
                                 </td>
                                 <td colspan="2"></td>
@@ -401,14 +401,14 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
                         </div>
                         <label v-for="player in filteredAvailable" :key="player.id"
                             class="flex cursor-pointer items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800"
-                            :class="addPlayerForm.player_id === player.id ? 'bg-primary-50' : ''">
+                            :class="addPlayerForm.player_id === player.id ? 'bg-primary-50 dark:bg-primary-500/10' : ''">
                             <input type="radio" :value="player.id" v-model="addPlayerForm.player_id" class="text-primary-600" />
                             <div>
                                 <p class="text-sm font-medium text-slate-800 dark:text-slate-200">
                                     {{ player.fullname }}
                                     <Badge v-if="player.outside" :label="t('subscription_outside_category')" color="amber" class="ms-2" />
                                 </p>
-                                <p class="text-xs text-slate-400 dark:text-slate-500">
+                                <p class="text-xs text-slate-400 dark:text-slate-400">
                                     {{ player.membership_id }}
                                     <span v-if="player.category" class="ml-2">· {{ player.category?.localized_name || player.category?.name }}</span>
                                     <span class="ml-2">· {{ player.is_student ? t('student') : t('worker') }}</span>

@@ -64,7 +64,7 @@ function roleName(role) {
                 <div>
                     <p class="font-semibold text-slate-900 dark:text-slate-100">
                         {{ roleName(role) }}
-                        <span v-if="role.is_system" class="ms-2 rounded bg-primary-50 px-2 py-0.5 text-xs text-primary-700">{{ t('system') }}</span>
+                        <span v-if="role.is_system" class="ms-2 rounded bg-primary-50 px-2 py-0.5 text-xs text-primary-700 dark:bg-primary-500/10 dark:text-primary-300">{{ t('system') }}</span>
                     </p>
                     <p class="text-xs text-slate-400">{{ role.users_count }} {{ t('users') }}</p>
                 </div>

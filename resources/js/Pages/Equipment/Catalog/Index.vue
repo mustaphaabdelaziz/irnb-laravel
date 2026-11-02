@@ -154,7 +154,7 @@ function submitImport() {
                                     />
                                 </td>
                                 <td class="px-4 py-3">
-                                    <Link :href="route('equipment.catalogs.show', cat.id)" class="text-sm font-medium text-primary-600 hover:text-primary-800">{{ cat.name }}</Link>
+                                    <Link :href="route('equipment.catalogs.show', cat.id)" class="text-sm font-medium text-primary-600 hover:text-primary-800 dark:text-primary-300 dark:hover:text-primary-200">{{ cat.name }}</Link>
                                 </td>
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ cat.category }}</td>
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ cat.brand || '-' }}</td>
@@ -206,9 +206,9 @@ function submitImport() {
                             accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                             @change="onImportFile"
                             required
-                            class="w-full text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 hover:file:bg-primary-100"
+                            class="w-full text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 hover:file:bg-primary-100 dark:file:bg-primary-500/10 dark:file:text-primary-300 dark:hover:file:bg-primary-500/15"
                         />
-                        <p v-if="importForm.errors.file" class="text-sm text-rose-600">{{ importForm.errors.file }}</p>
+                        <p v-if="importForm.errors.file" class="text-sm text-rose-600 dark:text-rose-400">{{ importForm.errors.file }}</p>
                         <div class="flex items-center justify-between gap-3 pt-2">
                             <ExportMenu :href="route('equipment.catalogs.import.template')" :label="t('download_template')" align="left" />
                             <div class="flex gap-2">

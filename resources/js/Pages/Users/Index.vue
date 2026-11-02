@@ -148,7 +148,7 @@ function initial(user) {
                                 <td class="whitespace-nowrap px-4 py-3">
                                     <div class="flex items-center gap-3">
                                         <img v-if="user.picture_url" :src="user.picture_url" :alt="user.name" class="h-9 w-9 rounded-full object-cover" />
-                                        <span v-else class="flex h-9 w-9 items-center justify-center rounded-full bg-primary-100 text-sm font-bold text-primary-700">{{ initial(user) }}</span>
+                                        <span v-else class="flex h-9 w-9 items-center justify-center rounded-full bg-primary-100 text-sm font-bold text-primary-700 dark:bg-primary-500/15 dark:text-primary-300">{{ initial(user) }}</span>
                                         <div class="min-w-0">
                                             <p class="truncate text-sm font-medium text-slate-900 dark:text-slate-100">{{ user.fullname || user.name }}</p>
                                             <p class="truncate text-xs text-slate-500 dark:text-slate-400">{{ user.username || '-' }}</p>
@@ -170,7 +170,7 @@ function initial(user) {
                                         <Badge v-else :label="t('pending')" color="amber" />
                                         <Badge v-if="!user.is_active" :label="t('inactive')" color="rose" />
                                     </div>
-                                    <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                                    <p class="mt-1 text-xs text-slate-400 dark:text-slate-400">
                                         {{ t('last_login') }}: {{ user.logged_in_at ? new Date(user.logged_in_at).toLocaleString(locale) : t('never') }}
                                     </p>
                                 </td>

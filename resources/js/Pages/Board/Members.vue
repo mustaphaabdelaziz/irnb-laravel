@@ -211,7 +211,7 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center gap-2">
-                <Link :href="route('board.index')" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"><Icon name="back" /></Link>
+                <Link :href="route('board.index')" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"><Icon name="back" /></Link>
                 <h1 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('board_members') }}</h1>
             </div>
         </template>
@@ -301,7 +301,7 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                     </template>
                     <p v-else class="mt-6 text-center text-xs text-slate-400">
                         {{ t('board.no_committees') }}
-                        <Link v-if="can('board_committees', 'view')" :href="route('board-committees.index')" class="font-semibold text-primary-600 hover:underline">{{ t('board_committees') }}</Link>
+                        <Link v-if="can('board_committees', 'view')" :href="route('board-committees.index')" class="font-semibold text-primary-600 hover:underline dark:text-primary-300">{{ t('board_committees') }}</Link>
                     </p>
                 </div>
             </section>
@@ -316,7 +316,7 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
 
             <!-- Former members -->
             <section v-if="former.length" class="space-y-2">
-                <button type="button" @click="showFormer = !showFormer" class="flex items-center gap-1 text-sm font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400">
+                <button type="button" @click="showFormer = !showFormer" class="flex items-center gap-1 text-sm font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
                     <Icon name="chevron" class="h-4 w-4 transition-transform" :class="showFormer ? 'rotate-90' : 'rtl:rotate-180'" />
                     {{ t('board.former_members') }} ({{ former.length }})
                 </button>
@@ -332,14 +332,14 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                 <div class="my-auto w-full max-w-md space-y-3 rounded-2xl bg-white p-5 shadow-2xl dark:bg-slate-900">
                     <div class="flex items-center justify-between gap-2">
                         <h2 class="truncate text-base font-bold text-slate-900 dark:text-slate-100">{{ picker.title }}</h2>
-                        <button type="button" @click="picker = null" class="text-slate-400 hover:text-slate-600"><Icon name="xcircle" /></button>
+                        <button type="button" @click="picker = null" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><Icon name="xcircle" /></button>
                     </div>
                     <div class="relative">
                         <span class="pointer-events-none absolute inset-y-0 start-3 flex items-center text-slate-400"><Icon name="search" /></span>
                         <input v-model="pickerSearch" :placeholder="t('search_for_member')" autocomplete="off" autofocus
                             class="w-full rounded-lg border-slate-200 bg-white ps-9 text-sm dark:border-slate-700 dark:bg-slate-800" />
                     </div>
-                    <p v-if="pickerError" class="text-xs text-rose-500">{{ pickerError }}</p>
+                    <p v-if="pickerError" class="text-xs text-rose-500 dark:text-rose-400">{{ pickerError }}</p>
                     <ul class="max-h-72 overflow-auto rounded-lg ring-1 ring-slate-100 dark:ring-slate-800">
                         <li v-for="p in pickerPlayers" :key="p.id">
                             <button type="button" :disabled="pickerBusy" @click="picker.onPick(p)"
@@ -366,11 +366,11 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                         </span>
                         <div class="min-w-0 flex-1">
                             <p class="truncate text-base font-bold text-slate-900 dark:text-slate-100">{{ selected.member.name }}</p>
-                            <p class="text-xs font-semibold text-primary-600 dark:text-primary-400">{{ roleLabel(selected.member.role) }}<span v-if="selected.member.status !== 'active'"> · {{ t(selected.member.status) }}</span></p>
+                            <p class="text-xs font-semibold text-primary-600 dark:text-primary-300">{{ roleLabel(selected.member.role) }}<span v-if="selected.member.status !== 'active'"> · {{ t(selected.member.status) }}</span></p>
                             <p v-if="selected.member.phone" dir="ltr" class="mt-0.5 truncate text-start font-mono text-xs text-slate-500 dark:text-slate-400">{{ formatPhone(selected.member.phone) }}</p>
                             <p v-if="selected.member.email" class="truncate text-xs text-slate-500 dark:text-slate-400">{{ selected.member.email }}</p>
                         </div>
-                        <button type="button" @click="selected = null" class="text-slate-400 hover:text-slate-600"><Icon name="xcircle" /></button>
+                        <button type="button" @click="selected = null" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><Icon name="xcircle" /></button>
                     </div>
 
                     <p v-if="selected.member.committees?.length" class="flex flex-wrap gap-1">
@@ -385,11 +385,11 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                         <div class="grid grid-cols-3 gap-1.5">
                             <button v-for="pos in ['head', 'deputy', 'member']" :key="pos" type="button" @click="pos !== selected.position && changePosition(pos)"
                                 class="rounded-lg px-2 py-1.5 text-xs font-bold transition-colors"
-                                :class="pos === selected.position ? 'bg-primary-600 text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-700'">
+                                :class="pos === selected.position ? 'bg-primary-600 text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800'">
                                 {{ t(`board.position.${pos}`) }}
                             </button>
                         </div>
-                        <p v-if="seatError" class="text-xs text-rose-500">{{ seatError }}</p>
+                        <p v-if="seatError" class="text-xs text-rose-500 dark:text-rose-400">{{ seatError }}</p>
                     </div>
 
                     <div class="flex flex-wrap justify-end gap-2">
@@ -407,7 +407,7 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                 <form @submit.prevent="submit" class="my-auto w-full max-w-lg space-y-4 rounded-2xl bg-white p-5 shadow-2xl dark:bg-slate-900">
                     <div class="flex items-center justify-between">
                         <h2 class="text-base font-bold text-slate-900 dark:text-slate-100">{{ editingId ? t('edit') : t('add_member') }}</h2>
-                        <button type="button" @click="showForm = false" class="text-slate-400 hover:text-slate-600"><Icon name="xcircle" /></button>
+                        <button type="button" @click="showForm = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><Icon name="xcircle" /></button>
                     </div>
                     <div class="grid gap-4 sm:grid-cols-3">
                         <!-- Searchable player picker -->
@@ -426,10 +426,10 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                                         </li>
                                     </ul>
                                 </div>
-                                <button v-if="form.player_id" type="button" @click="clearPlayer" class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-rose-500 dark:hover:bg-slate-800"><Icon name="xcircle" /></button>
+                                <button v-if="form.player_id" type="button" @click="clearPlayer" class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-rose-500 dark:hover:bg-slate-800 dark:hover:text-rose-400"><Icon name="xcircle" /></button>
                             </div>
                             <p class="mt-1 text-xs text-slate-400">{{ t('pick_player_hint') }}</p>
-                            <span v-if="form.errors.player_id" class="mt-1 block text-xs text-rose-500">{{ form.errors.player_id }}</span>
+                            <span v-if="form.errors.player_id" class="mt-1 block text-xs text-rose-500 dark:text-rose-400">{{ form.errors.player_id }}</span>
                         </div>
 
                         <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('role') }}</span>
@@ -446,7 +446,7 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                             </select></label>
                     </div>
                     <div class="flex justify-end gap-2">
-                        <button type="button" @click="showForm = false" class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">{{ t('cancel') }}</button>
+                        <button type="button" @click="showForm = false" class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-400">{{ t('cancel') }}</button>
                         <button :disabled="form.processing || !form.player_id" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('save') }}</button>
                     </div>
                 </form>
@@ -462,25 +462,25 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                 <form @submit.prevent="submitTerm" class="my-auto w-full max-w-md space-y-4 rounded-2xl bg-white p-5 shadow-2xl dark:bg-slate-900">
                     <div class="flex items-center justify-between">
                         <h2 class="text-base font-bold text-slate-900 dark:text-slate-100">{{ editingTermId ? t('edit_term') : t('new_term') }}</h2>
-                        <button type="button" @click="showTermForm = false" class="text-slate-400 hover:text-slate-600"><Icon name="xcircle" /></button>
+                        <button type="button" @click="showTermForm = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><Icon name="xcircle" /></button>
                     </div>
                     <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('name') }}</span>
                         <input v-model="termForm.name" required :placeholder="'2024–2028'" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
-                        <span v-if="termForm.errors.name" class="mt-1 block text-xs text-rose-500">{{ termForm.errors.name }}</span></label>
+                        <span v-if="termForm.errors.name" class="mt-1 block text-xs text-rose-500 dark:text-rose-400">{{ termForm.errors.name }}</span></label>
                     <div class="grid grid-cols-2 gap-3">
                         <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('term_start') }}</span>
                             <input v-model="termForm.start_date" type="date" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
-                            <span v-if="termForm.errors.start_date" class="mt-1 block text-xs text-rose-500">{{ termForm.errors.start_date }}</span></label>
+                            <span v-if="termForm.errors.start_date" class="mt-1 block text-xs text-rose-500 dark:text-rose-400">{{ termForm.errors.start_date }}</span></label>
                         <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('term_end') }}</span>
                             <input v-model="termForm.end_date" type="date" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
-                            <span v-if="termForm.errors.end_date" class="mt-1 block text-xs text-rose-500">{{ termForm.errors.end_date }}</span></label>
+                            <span v-if="termForm.errors.end_date" class="mt-1 block text-xs text-rose-500 dark:text-rose-400">{{ termForm.errors.end_date }}</span></label>
                     </div>
                     <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                         <input v-model="termForm.is_current" type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500" />
                         {{ t('set_as_current_term') }}
                     </label>
                     <div class="flex justify-end gap-2">
-                        <button type="button" @click="showTermForm = false" class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">{{ t('cancel') }}</button>
+                        <button type="button" @click="showTermForm = false" class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-400">{{ t('cancel') }}</button>
                         <button :disabled="termForm.processing" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('save') }}</button>
                     </div>
                 </form>

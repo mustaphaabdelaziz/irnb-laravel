@@ -200,7 +200,7 @@ const heroTiles = computed(() => props.hero.map((tile) => ({
                         type="button"
                         class="whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition-colors"
                         :class="activeTab === tab
-                            ? 'border-primary text-primary'
+                            ? 'border-primary text-primary dark:text-primary-300'
                             : 'border-transparent text-muted-foreground hover:border-border hover:text-foreground'"
                         :aria-current="activeTab === tab ? 'page' : undefined"
                         @click="selectTab(tab)"

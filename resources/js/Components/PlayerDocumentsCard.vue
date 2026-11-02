@@ -54,7 +54,7 @@ const reasonLabels = computed(() => ({
 
 const items = computed(() => props.checklist?.items ?? []);
 
-const fileInputClass = 'mt-1 block w-full text-xs text-slate-500 file:me-3 file:rounded-lg file:border-0 file:bg-primary-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-700 hover:file:bg-primary-100 dark:text-slate-400 dark:file:bg-primary-500/10 dark:file:text-primary-300';
+const fileInputClass = 'mt-1 block w-full text-xs text-slate-500 file:me-3 file:rounded-lg file:border-0 file:bg-primary-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-700 hover:file:bg-primary-100 dark:text-slate-400 dark:file:bg-primary-500/10 dark:file:text-primary-300 dark:hover:file:bg-primary-500/15';
 
 function formatDate(value) {
     return value ? new Date(`${value}T00:00:00`).toLocaleDateString() : '—';
@@ -218,7 +218,7 @@ function confirmRemoveFile() {
 
                 <ul v-if="item.document?.files?.length" class="mt-2 space-y-1">
                     <li v-for="file in item.document.files" :key="file.id" class="flex flex-wrap items-center gap-2 text-xs">
-                        <Icon name="document" class="text-primary-500" />
+                        <Icon name="document" class="text-primary-500 dark:text-primary-300" />
                         <a :href="fileUrl(file)" target="_blank" rel="noopener" class="min-w-0 max-w-xs truncate font-medium text-primary-600 hover:underline dark:text-primary-300">{{ file.original_name }}</a>
                         <span class="text-slate-400">{{ formatSize(file.size) }} · {{ formatDate(file.uploaded_at) }}</span>
                         <IconButton :href="downloadUrl(file)" external icon="download" :label="t('doc_download')" plain size="sm" />

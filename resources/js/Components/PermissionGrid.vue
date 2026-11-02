@@ -46,7 +46,7 @@ function toggle(module, action) {
     <div class="overflow-x-auto rounded-lg ring-1 ring-slate-200 dark:ring-slate-800">
         <table class="w-full text-sm">
             <thead>
-                <tr class="text-start text-slate-500">
+                <tr class="text-start text-slate-500 dark:text-slate-400">
                     <th class="p-2 text-start">{{ t('module') }}</th>
                     <th v-for="a in actions" :key="a" class="p-2 text-center">{{ t(a) }}</th>
                 </tr>

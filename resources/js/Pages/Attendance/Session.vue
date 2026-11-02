@@ -56,7 +56,7 @@ function setStatus(row, status) {
 }
 const allPresent = () => rows.value.forEach((r) => setStatus(r, 'present'));
 
-const idleChip = 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400';
+const idleChip = 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-800';
 const counts = computed(() => rows.value.reduce((acc, r) => ((acc[r.status] = (acc[r.status] ?? 0) + 1), acc), {}));
 
 // ---- Add a player by hand: any active player, searched by full name ----
@@ -167,13 +167,13 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
         <template #header>
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
-                    <Link :href="route('attendance.index', { category_id: session.category_id, month: session.date.slice(0, 7), branch_id: session.branch_id ?? undefined })" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 rtl:rotate-180"><Icon name="back" /></Link>
+                    <Link :href="route('attendance.index', { category_id: session.category_id, month: session.date.slice(0, 7), branch_id: session.branch_id ?? undefined })" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 rtl:rotate-180 dark:hover:text-slate-300"><Icon name="back" /></Link>
                     <div>
                         <h1 class="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-slate-100">
                             <img v-if="session.branch?.logo_url" :src="session.branch.logo_url" alt="" class="h-6 w-6 rounded object-contain" />
                             <span>{{ [session.branch?.name, session.category].filter(Boolean).join(' · ') }} · {{ t(`att.kind.${session.kind}`) }}</span>
                         </h1>
-                        <p class="text-sm capitalize text-slate-500">{{ dateLabel }} · <span dir="ltr">{{ session.start_time }}–{{ session.end_time }}</span> · {{ t(`att.state.${session.state}`) }}</p>
+                        <p class="text-sm capitalize text-slate-500 dark:text-slate-400">{{ dateLabel }} · <span dir="ltr">{{ session.start_time }}–{{ session.end_time }}</span> · {{ t(`att.state.${session.state}`) }}</p>
                         <p v-if="session.moved_from" class="text-xs text-slate-400">{{ t('att.moved_from', { date: session.moved_from }) }}</p>
                     </div>
                 </div>
@@ -214,10 +214,10 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                             <IconButton v-if="editable" icon="trash" :label="t('att.remove')" variant="danger" plain size="sm" @click="removeRow(row)" />
                         </div>
                         <div v-if="takesMinutes(row.status) || takesReason(row.status) || row.note" class="mt-2 flex flex-wrap items-center gap-2">
-                            <label v-if="takesMinutes(row.status)" class="text-xs text-slate-500">{{ t('att.minutes') }}
+                            <label v-if="takesMinutes(row.status)" class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.minutes') }}
                                 <input v-model.number="row.minutes" type="number" min="1" max="600" :disabled="!editable" :class="[input, 'ms-1 w-20']" />
                             </label>
-                            <label v-if="takesReason(row.status)" class="text-xs text-slate-500">{{ t('att.reason') }}
+                            <label v-if="takesReason(row.status)" class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.reason') }}
                                 <select v-model="row.reason" :disabled="!editable" :class="[input, 'ms-1']">
                                     <option :value="null">—</option>
                                     <option v-for="r in reasons" :key="r" :value="r">{{ t(`att.reason.${r}`) }}</option>
@@ -234,11 +234,11 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                         <li v-for="c in matches" :key="c.id">
                             <button type="button" class="flex w-full flex-wrap items-center justify-between gap-x-3 px-3 py-1.5 text-start text-sm hover:bg-slate-50 dark:hover:bg-slate-800" @click="addPlayer(c)">
                                 <span class="font-medium text-slate-900 dark:text-slate-100">{{ c.name }}</span>
-                                <span class="text-xs text-slate-500">{{ [c.in_branch ? null : c.branches, c.category, c.status].filter(Boolean).join(' · ') }}</span>
+                                <span class="text-xs text-slate-500 dark:text-slate-400">{{ [c.in_branch ? null : c.branches, c.category, c.status].filter(Boolean).join(' · ') }}</span>
                             </button>
                         </li>
                     </ul>
-                    <p v-else-if="query.trim()" class="mt-2 text-xs text-slate-500">{{ t('no_results') }}</p>
+                    <p v-else-if="query.trim()" class="mt-2 text-xs text-slate-500 dark:text-slate-400">{{ t('no_results') }}</p>
                 </div>
             </section>
 
@@ -257,7 +257,7 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                 <label class="block text-sm">{{ t('att.cancel_reason') }}<input v-model="cancelForm.reason" type="text" maxlength="255" :class="[input, 'mt-1 block w-full']" /></label>
                 <InputError :message="tr(cancelForm.errors.reason)" />
                 <div class="flex justify-end gap-2">
-                    <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700" @click="showCancel = false">{{ t('att.close') }}</button>
+                    <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700 dark:text-slate-400" @click="showCancel = false">{{ t('att.close') }}</button>
                     <button type="submit" :disabled="cancelForm.processing" class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700">{{ t('att.cancel') }}</button>
                 </div>
             </form>
@@ -270,20 +270,20 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                     <input v-model="deleteMode" type="radio" value="delete" class="mt-0.5" />
                     <span>
                         <span class="block font-semibold text-slate-900 dark:text-slate-100">{{ t('att.delete_choice_delete') }}</span>
-                        <span class="block text-slate-500">{{ t('att.delete_choice_delete_hint') }}</span>
-                        <span v-if="session.kind === 'regular'" class="block text-slate-500">{{ t('att.delete_regular_hint') }}</span>
+                        <span class="block text-slate-500 dark:text-slate-400">{{ t('att.delete_choice_delete_hint') }}</span>
+                        <span v-if="session.kind === 'regular'" class="block text-slate-500 dark:text-slate-400">{{ t('att.delete_regular_hint') }}</span>
                     </span>
                 </label>
                 <label v-if="canReset" class="flex gap-2 rounded-lg p-3 text-sm ring-1 ring-slate-200 dark:ring-slate-700">
                     <input v-model="deleteMode" type="radio" value="reset" class="mt-0.5" />
                     <span>
                         <span class="block font-semibold text-slate-900 dark:text-slate-100">{{ t('att.delete_choice_reset') }}</span>
-                        <span class="block text-slate-500">{{ t('att.delete_choice_reset_hint') }}</span>
+                        <span class="block text-slate-500 dark:text-slate-400">{{ t('att.delete_choice_reset_hint') }}</span>
                     </span>
                 </label>
                 <p v-if="marksCount" class="rounded-lg bg-rose-50 p-3 text-sm font-semibold text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">{{ t('att.delete_marks_count', { count: marksCount }) }}</p>
                 <div class="flex justify-end gap-2">
-                    <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700" @click="showDelete = false">{{ t('att.close') }}</button>
+                    <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700 dark:text-slate-400" @click="showDelete = false">{{ t('att.close') }}</button>
                     <button type="submit" :disabled="deleting" class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-50">{{ deleteMode === 'reset' ? t('att.reset_confirm') : t('att.delete_confirm') }}</button>
                 </div>
             </form>
@@ -303,7 +303,7 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
 
                 <div v-if="!saved && (handAdded || playerStatuses.length)" class="space-y-3 border-t border-slate-100 pt-3 dark:border-slate-800">
                     <div v-if="handAdded" class="inline-flex rounded-lg p-0.5 ring-1 ring-slate-200 dark:ring-slate-700" role="radiogroup" :aria-label="t('att.col.kind')">
-                        <button v-for="k in ['extra', 'preseason']" :key="k" type="button" role="radio" :aria-checked="editForm.kind === k" class="rounded-md px-3 py-1 text-sm font-semibold" :class="editForm.kind === k ? (k === 'preseason' ? 'bg-amber-500 text-white' : 'bg-primary-600 text-white') : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'" @click="editForm.kind = k">{{ t(`att.kind.${k}`) }}</button>
+                        <button v-for="k in ['extra', 'preseason']" :key="k" type="button" role="radio" :aria-checked="editForm.kind === k" class="rounded-md px-3 py-1 text-sm font-semibold" :class="editForm.kind === k ? (k === 'preseason' ? 'bg-amber-500 text-white' : 'bg-primary-600 text-white') : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 dark:text-slate-400'" @click="editForm.kind = k">{{ t(`att.kind.${k}`) }}</button>
                     </div>
                     <label v-if="handAdded && branches.length" class="block text-sm">{{ t('branch') }}
                         <select v-model="editForm.branch_id" :class="[input, 'mt-1 block w-full']">
@@ -319,7 +319,7 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                                 {{ c.name }}
                             </label>
                         </div>
-                        <p class="mt-1 text-xs text-slate-500">{{ t('att.categories_help') }}</p>
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('att.categories_help') }}</p>
                     </fieldset>
                     <fieldset v-if="playerStatuses.length" class="text-sm">
                         <legend class="mb-1">{{ t('att.roster_statuses') }}</legend>
@@ -331,11 +331,11 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                         </div>
                     </fieldset>
                 </div>
-                <p v-else-if="saved" class="rounded-lg bg-slate-50 p-2 text-xs text-slate-500 dark:bg-slate-800">{{ t('att.edit_locked_hint') }}</p>
+                <p v-else-if="saved" class="rounded-lg bg-slate-50 p-2 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('att.edit_locked_hint') }}</p>
 
                 <InputError v-for="(e, k) in editForm.errors" :key="k" :message="tr(e)" />
                 <div class="flex justify-end gap-2">
-                    <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700" @click="showEdit = false">{{ t('att.close') }}</button>
+                    <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700 dark:text-slate-400" @click="showEdit = false">{{ t('att.close') }}</button>
                     <button type="submit" :disabled="editForm.processing || (editForm.kind === 'preseason' && !saved && !editForm.category_ids.length) || (!saved && playerStatuses.length > 0 && !editForm.roster_status_ids.length)" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('att.save') }}</button>
                 </div>
             </form>

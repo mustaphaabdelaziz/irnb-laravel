@@ -72,9 +72,9 @@ onMounted(() => rememberReport(props.report.id));
         <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div class="flex flex-wrap items-center gap-2">
-                    <Link :href="route('reports.hub')" class="text-sm text-slate-500 hover:text-emerald-600 print:hidden">{{ t('reports.title') }}</Link>
+                    <Link :href="route('reports.hub')" class="text-sm text-slate-500 hover:text-emerald-600 print:hidden dark:hover:text-emerald-400 dark:text-slate-400">{{ t('reports.title') }}</Link>
                     <span class="text-slate-300 print:hidden">/</span>
-                    <Link :href="route('reports.category', report.category)" class="text-sm text-slate-500 hover:text-emerald-600 print:hidden">{{ t(`reports.category.${report.category}.title`) }}</Link>
+                    <Link :href="route('reports.category', report.category)" class="text-sm text-slate-500 hover:text-emerald-600 print:hidden dark:hover:text-emerald-400 dark:text-slate-400">{{ t(`reports.category.${report.category}.title`) }}</Link>
                     <span class="text-slate-300 print:hidden">/</span>
                     <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t(report.title) }}</h1>
                 </div>
@@ -85,7 +85,7 @@ onMounted(() => rememberReport(props.report.id));
         </template>
 
         <div class="mx-auto max-w-7xl space-y-5">
-            <div class="text-sm text-slate-500">
+            <div class="text-sm text-slate-500 dark:text-slate-400">
                 <p>{{ t(report.description) }}</p>
                 <p v-if="applied.length" class="mt-1">
                     <span class="font-medium">{{ t('reports.applied_filters') }}:</span>
@@ -126,7 +126,7 @@ onMounted(() => rememberReport(props.report.id));
                        :empty-text="t('no_results')" @sort="sortBy">
                 <template #footer>
                     <div class="flex flex-wrap items-center justify-between gap-3 print:hidden">
-                        <label class="flex items-center gap-2 text-xs text-slate-500">
+                        <label class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                             {{ t('reports.per_page') }}
                             <select :value="filters.per_page" class="rounded-lg border-slate-300 py-1 text-sm dark:border-slate-700 dark:bg-slate-950"
                                     @change="reload({ ...current, per_page: $event.target.value, page: undefined })">

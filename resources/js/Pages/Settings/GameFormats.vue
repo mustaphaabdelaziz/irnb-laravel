@@ -165,7 +165,7 @@ function destroy() {
                     </div>
                     <div v-for="(s, i) in form.sanction_types" :key="i" class="mt-2 flex flex-wrap items-center gap-3 text-sm">
                         <TextInput v-model="s.key" class="w-40 font-mono" placeholder="yellow" />
-                        <span class="w-32 text-slate-500">{{ sanctionLabel(s.key) }}</span>
+                        <span class="w-32 text-slate-500 dark:text-slate-400">{{ sanctionLabel(s.key) }}</span>
                         <label class="flex items-center gap-1"><input v-model="s.ends_play" type="checkbox" class="rounded" /> {{ t('comp.ends_play') }}</label>
                         <select v-model="s.counts_as" class="rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
                             <option :value="null">{{ t('comp.counts_as_none') }}</option>

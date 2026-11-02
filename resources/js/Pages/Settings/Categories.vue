@@ -116,7 +116,7 @@ function destroy() {
                             </td>
                             <td class="px-4 py-3 text-end">
                                 <div v-if="editingId === cat.id" class="flex justify-end gap-2">
-                                    <button @click="saveEdit(cat.id)" class="text-sm text-primary-600 hover:text-primary-800">{{ t('save') }}</button>
+                                    <button @click="saveEdit(cat.id)" class="text-sm text-primary-600 hover:text-primary-800 dark:text-primary-300 dark:hover:text-primary-200">{{ t('save') }}</button>
                                     <button @click="editingId = null" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">{{ t('cancel') }}</button>
                                 </div>
                                 <div v-else class="flex justify-end gap-2">

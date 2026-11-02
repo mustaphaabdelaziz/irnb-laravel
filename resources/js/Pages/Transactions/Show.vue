@@ -41,7 +41,7 @@ const categoryName = computed(() => props.transaction.finance_category?.localize
         <template #header>
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <div class="flex min-w-0 items-center gap-2">
-                    <Link :href="route('transactions.index')" :aria-label="t('back')" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300"><Icon name="back" class="rtl:rotate-180" /></Link>
+                    <Link :href="route('transactions.index')" :aria-label="t('back')" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-300"><Icon name="back" class="rtl:rotate-180" /></Link>
                     <h1 class="min-w-0 truncate text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('transaction') }} #{{ transaction.id }}</h1>
                 </div>
                 <div class="flex items-center gap-2">
@@ -57,7 +57,7 @@ const categoryName = computed(() => props.transaction.finance_category?.localize
                 <div class="mb-5 border-b border-slate-100 pb-4 dark:border-slate-800">
                     <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('title') }}</p>
                     <h2 class="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">{{ transaction.display_title }}</h2>
-                    <Link v-if="transaction.player_summary" :href="route('players.show', transaction.player_summary.id)" class="mt-1 inline-flex items-center gap-2 text-sm text-primary-600 hover:underline">
+                    <Link v-if="transaction.player_summary" :href="route('players.show', transaction.player_summary.id)" class="mt-1 inline-flex items-center gap-2 text-sm text-primary-600 hover:underline dark:text-primary-300">
                         {{ transaction.player_summary.name }}
                         <span class="font-mono text-xs text-slate-400">{{ transaction.player_summary.membership_id }}</span>
                     </Link>
@@ -107,7 +107,7 @@ const categoryName = computed(() => props.transaction.finance_category?.localize
                 <h3 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('players') }}</h3>
                 <div class="space-y-2">
                     <div v-for="ps in transaction.player_subscriptions" :key="ps.id" class="flex items-center justify-between rounded-lg bg-slate-50 dark:bg-slate-950 px-4 py-3">
-                        <Link :href="route('players.show', ps.player_id)" class="text-sm font-medium text-primary-600 hover:underline">
+                        <Link :href="route('players.show', ps.player_id)" class="text-sm font-medium text-primary-600 hover:underline dark:text-primary-300">
                             {{ ps.player?.fullname }}
                         </Link>
                         <span class="text-sm text-slate-600 dark:text-slate-300">{{ formatMoney(ps.amount_paid) }}</span>
@@ -119,7 +119,7 @@ const categoryName = computed(() => props.transaction.finance_category?.localize
             <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div class="mb-4 flex items-center justify-between gap-2">
                     <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('receipts.history') }}</h3>
-                    <Link :href="route('receipts.verify')" class="text-sm text-primary-600 hover:underline">{{ t('receipts.verify_title') }}</Link>
+                    <Link :href="route('receipts.verify')" class="text-sm text-primary-600 hover:underline dark:text-primary-300">{{ t('receipts.verify_title') }}</Link>
                 </div>
                 <p v-if="!prints.length" class="text-sm text-slate-500 dark:text-slate-400">{{ t('receipts.never_printed') }}</p>
                 <ul v-else class="divide-y divide-slate-100 dark:divide-slate-800">

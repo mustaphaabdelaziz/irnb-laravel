@@ -36,7 +36,7 @@ const submit = () => {
     <GuestLayout>
         <Head :title="t('log_in')" />
 
-        <div v-if="status" class="mb-4 text-sm font-medium text-green-600">
+        <div v-if="status" class="mb-4 text-sm font-medium text-green-600 dark:text-green-400">
             {{ status }}
         </div>
 
@@ -76,7 +76,7 @@ const submit = () => {
                         :aria-label="showPassword ? t('hide_password') : t('show_password')"
                         :aria-pressed="showPassword"
                         tabindex="-1"
-                        class="absolute inset-y-0 end-0 mt-1 flex items-center px-3 text-slate-400 hover:text-slate-600 focus:outline-none focus-visible:text-slate-600 dark:hover:text-slate-300"
+                        class="absolute inset-y-0 end-0 mt-1 flex items-center px-3 text-slate-400 hover:text-slate-600 focus:outline-none focus-visible:text-slate-600 dark:hover:text-slate-300 dark:focus-visible:text-slate-300"
                     >
                         <!-- eye -->
                         <svg v-if="!showPassword" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -96,7 +96,7 @@ const submit = () => {
             <div class="mt-4 block">
                 <label class="flex items-center">
                     <Checkbox name="remember" v-model:checked="form.remember" />
-                    <span class="ms-2 text-sm text-gray-600"
+                    <span class="ms-2 text-sm text-gray-600 dark:text-gray-300"
                         >{{ t('remember_me') }}</span
                     >
                 </label>

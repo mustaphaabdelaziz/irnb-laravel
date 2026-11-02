@@ -125,7 +125,7 @@ function download() {
                 <button
                     v-if="onRetry"
                     type="button"
-                    class="rounded text-xs font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    class="rounded text-xs font-semibold text-primary hover:underline dark:text-primary-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     @click="onRetry()"
                 >
                     {{ t('stats.retry') }}

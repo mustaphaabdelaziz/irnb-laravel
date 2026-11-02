@@ -159,7 +159,7 @@ const card = 'rounded-xl bg-white ring-1 ring-slate-200 dark:bg-slate-900 dark:r
             </section>
 
             <div :class="[card, 'p-4']">
-                <p v-if="!hasAnyMark" class="text-center text-sm text-slate-500">{{ t('att.stats.no_data') }}</p>
+                <p v-if="!hasAnyMark" class="text-center text-sm text-slate-500 dark:text-slate-400">{{ t('att.stats.no_data') }}</p>
                 <StatusBreakdown v-else :counts="totals.counts" :pct="totals.pct" />
                 <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">{{ t('att.stats.score_help') }}</p>
             </div>
@@ -196,7 +196,7 @@ const card = 'rounded-xl bg-white ring-1 ring-slate-200 dark:bg-slate-900 dark:r
                 <h2 class="px-4 pt-4 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ t('att.stats.by_category') }}</h2>
                 <table class="mt-2 w-full min-w-[60rem] text-sm">
                     <thead>
-                        <tr class="bg-slate-50 text-xs text-slate-500 dark:bg-slate-800/50">
+                        <tr class="bg-slate-50 text-xs text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">
                             <th class="p-2 text-start font-semibold">{{ t('att.category') }}</th>
                             <th class="p-2 text-end font-semibold">{{ t('att.state.held') }}</th>
                             <th class="p-2 text-end font-semibold">{{ t('att.state.cancelled') }}</th>

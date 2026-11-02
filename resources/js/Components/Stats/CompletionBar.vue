@@ -93,7 +93,7 @@ const valueText = computed(() => t('stats.doc_value_text', {
                         v-if="item.href"
                         :href="item.href"
                         :title="t('stats.doc_see_missing')"
-                        class="font-medium text-primary-600 hover:underline dark:text-primary-400"
+                        class="font-medium text-primary-600 hover:underline dark:text-primary-300"
                     >
                         {{ item.label }} <bdi class="tabular-nums">{{ formatNumber(item.count) }}</bdi>
                     </Link>

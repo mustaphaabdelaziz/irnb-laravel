@@ -177,7 +177,7 @@ const shortName = (name) => String(name ?? '').split(' ').slice(0, 2).join(' ');
                     <div v-if="starterAt(i)" :draggable="canManage" class="flex w-16 cursor-grab flex-col items-center" @dragstart="startDrag($event, starterAt(i).player_id)" @dragend="endDrag">
                         <span class="relative flex h-9 w-9 items-center justify-center rounded-full bg-white text-sm font-bold text-slate-900 shadow ring-2 ring-primary-600">
                             {{ starterAt(i).shirt_number ?? '·' }}
-                            <span v-if="starterAt(i).is_captain" class="absolute -end-1 -top-1 rounded-full bg-amber-400 px-1 text-[10px] text-slate-900">{{ t('comp.captain_short') }}</span>
+                            <span v-if="starterAt(i).is_captain" class="absolute -end-1 -top-1 rounded-full bg-amber-400 px-1 text-[10px] text-slate-900 dark:text-slate-100">{{ t('comp.captain_short') }}</span>
                             <span v-if="starterAt(i).is_goalkeeper" class="absolute -bottom-1 -end-1 rounded-full bg-sky-500 px-1 text-[10px] text-white">{{ t('comp.goalkeeper_short') }}</span>
                         </span>
                         <span class="mt-0.5 max-w-full truncate rounded bg-black/50 px-1 text-[10px] text-white" dir="auto">{{ shortName(starterAt(i).name) }}</span>
@@ -208,13 +208,13 @@ const shortName = (name) => String(name ?? '').split(' ').slice(0, 2).join(' ');
                                 </select>
                             </div>
                         </div>
-                        <p v-if="!bench.length" class="text-sm text-slate-500">{{ t('comp.bench_empty') }}</p>
+                        <p v-if="!bench.length" class="text-sm text-slate-500 dark:text-slate-400">{{ t('comp.bench_empty') }}</p>
                     </div>
                 </div>
 
                 <!-- Starters: number, captain, goalkeeper. -->
                 <table class="min-w-full text-sm">
-                    <thead class="text-xs uppercase text-slate-500"><tr>
+                    <thead class="text-xs uppercase text-slate-500 dark:text-slate-400"><tr>
                         <th class="py-1 text-start">{{ t('comp.spot') }}</th><th class="py-1 text-start">{{ t('comp.player') }}</th>
                         <th class="w-20 py-1">{{ t('comp.shirt') }}</th><th class="py-1">{{ t('comp.captain_short') }}</th><th v-if="lineup.has_goalkeeper" class="py-1">{{ t('comp.goalkeeper_short') }}</th><th class="py-1"></th>
                     </tr></thead>
@@ -238,7 +238,7 @@ const shortName = (name) => String(name ?? '').split(' ').slice(0, 2).join(' ');
                 <InputError v-for="(msg, key) in form.errors" v-show="key !== 'players'" :key="key" :message="t(msg)" />
                 <div class="flex flex-wrap gap-2">
                     <PrimaryButton v-if="canManage" :disabled="form.processing" @click="save">{{ t('save') }}</PrimaryButton>
-                    <a :href="route('games.lineup-sheet', gameId)" target="_blank" class="self-center text-sm text-primary-600 hover:underline">{{ t('comp.lineup_sheet_pdf') }}</a>
+                    <a :href="route('games.lineup-sheet', gameId)" target="_blank" class="self-center text-sm text-primary-600 hover:underline dark:text-primary-300">{{ t('comp.lineup_sheet_pdf') }}</a>
                 </div>
             </div>
         </div>

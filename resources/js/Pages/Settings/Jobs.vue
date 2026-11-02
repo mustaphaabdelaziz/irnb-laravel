@@ -180,7 +180,7 @@ function doMerge() {
                             </td>
                             <td class="px-4 py-3 text-end align-top">
                                 <div v-if="editingId === job.id" class="flex justify-end gap-2">
-                                    <button @click="saveEdit(job.id)" class="text-sm text-primary-600 hover:text-primary-800">{{ t('save') }}</button>
+                                    <button @click="saveEdit(job.id)" class="text-sm text-primary-600 hover:text-primary-800 dark:text-primary-300 dark:hover:text-primary-200">{{ t('save') }}</button>
                                     <button @click="editingId = null" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">{{ t('cancel') }}</button>
                                 </div>
                                 <div v-else class="flex flex-col items-end gap-2">
@@ -207,7 +207,7 @@ function doMerge() {
                                             type="button"
                                             @click="askMerge(job)"
                                             :disabled="!mergeTarget[job.id]"
-                                            class="text-xs font-semibold text-primary-600 hover:text-primary-700 disabled:cursor-not-allowed disabled:text-slate-300 dark:disabled:text-slate-600"
+                                            class="text-xs font-semibold text-primary-600 hover:text-primary-700 disabled:cursor-not-allowed disabled:text-slate-300 dark:disabled:text-slate-600 dark:text-primary-300 dark:hover:text-primary-200"
                                         >{{ t('merge') }}</button>
                                     </div>
                                     <p v-if="mergeErrorId === job.id && mergeError" class="max-w-[16rem] text-xs text-rose-600 dark:text-rose-400">{{ mergeError }}</p>

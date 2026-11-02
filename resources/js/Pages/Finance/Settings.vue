@@ -95,7 +95,7 @@ function resetFinance() {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center gap-2">
-                <Link :href="route('finance.index')" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"><Icon name="back" class="rtl:rotate-180" /></Link>
+                <Link :href="route('finance.index')" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"><Icon name="back" class="rtl:rotate-180" /></Link>
                 <h1 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('finance_settings') }}</h1>
             </div>
         </template>
@@ -145,11 +145,11 @@ function resetFinance() {
                     </table>
                 </div>
                 <form @submit.prevent="addYear" class="flex flex-wrap items-end gap-3 border-t border-slate-100 px-5 py-4 dark:border-slate-800">
-                    <label class="text-sm"><span class="mb-1 block text-xs font-medium text-slate-500">{{ t('fiscal_year') }}</span>
+                    <label class="text-sm"><span class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('fiscal_year') }}</span>
                         <select v-model="yearForm.year" class="w-36 rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800">
                             <option v-for="s in seasonOptions" :key="s.value" :value="s.value">{{ s.label }}</option>
                         </select></label>
-                    <label class="text-sm"><span class="mb-1 block text-xs font-medium text-slate-500">{{ t('finance.opening_balance') }}</span>
+                    <label class="text-sm"><span class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('finance.opening_balance') }}</span>
                         <input v-model="yearForm.opening_balance" type="number" step="0.01" class="w-36 rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
                     <button class="inline-flex items-center gap-1.5 rounded-xl bg-primary-600 px-3.5 py-2 text-sm font-bold text-white hover:bg-primary-700"><Icon name="plus" /> {{ t('add_year') }}</button>
                 </form>
@@ -205,7 +205,7 @@ function resetFinance() {
                 <p class="text-sm font-bold text-rose-700 dark:text-rose-400">{{ t('finance_reset_title') }}</p>
                 <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">{{ t('finance_reset_desc') }}</p>
                 <form @submit.prevent="resetFinance" class="mt-4 flex flex-wrap items-end gap-3">
-                    <label class="text-sm"><span class="mb-1 block text-xs font-medium text-slate-500">{{ t('finance_reset_prompt') }}</span>
+                    <label class="text-sm"><span class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('finance_reset_prompt') }}</span>
                         <input v-model="resetTyped" @input="resetMismatch = false" placeholder="RESET" autocomplete="off" dir="ltr"
                             class="w-40 rounded-lg border-slate-200 bg-white py-1.5 font-mono text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
                     <button type="submit" :disabled="!resetTyped.trim()" class="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-3.5 py-2 text-sm font-bold text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50">

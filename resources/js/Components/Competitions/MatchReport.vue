@@ -146,7 +146,7 @@ function iconFor(e) {
         <section class="space-y-2">
             <h3 class="font-semibold">{{ t('comp.report_score') }}</h3>
             <div class="grid max-w-md grid-cols-[1fr_5rem_5rem] items-center gap-2 text-sm" dir="ltr">
-                <span></span><span class="text-center text-xs uppercase text-slate-500">{{ t('comp.us') }}</span><span class="text-center text-xs uppercase text-slate-500">{{ t('comp.them') }}</span>
+                <span></span><span class="text-center text-xs uppercase text-slate-500 dark:text-slate-400">{{ t('comp.us') }}</span><span class="text-center text-xs uppercase text-slate-500 dark:text-slate-400">{{ t('comp.them') }}</span>
                 <template v-for="(row, i) in periods" :key="i">
                     <span>{{ t(`comp.period_${rules.period_label}`) }} {{ i + 1 }}</span>
                     <input v-model="row.us" :disabled="!canManage" type="number" min="0" class="rounded border-slate-300 text-center dark:border-slate-700 dark:bg-slate-800" />
@@ -219,14 +219,14 @@ function iconFor(e) {
                 <InputError :message="err(`events.${index}.subtype`) || err(`events.${index}.type`)" />
                 <IconButton v-if="canManage" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="removeEvent(index)" />
             </div>
-            <p v-if="!events.length" class="text-sm text-slate-500">{{ t('comp.no_events') }}</p>
+            <p v-if="!events.length" class="text-sm text-slate-500 dark:text-slate-400">{{ t('comp.no_events') }}</p>
         </section>
 
         <!-- 3. Player grid -->
         <section class="space-y-2">
             <h3 class="font-semibold">{{ t('comp.player_grid') }}</h3>
             <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
-                <thead class="text-xs uppercase text-slate-500"><tr>
+                <thead class="text-xs uppercase text-slate-500 dark:text-slate-400"><tr>
                     <th class="py-1 text-start">{{ t('comp.player') }}</th>
                     <th v-if="rules.rolling_subs" class="py-1">{{ t('comp.played') }}</th>
                     <th class="py-1">{{ isSets ? t('comp.sets_played') : t('comp.minutes') }}</th>
@@ -236,7 +236,7 @@ function iconFor(e) {
                 </tr></thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                     <tr v-for="(p, i) in players" :key="p.player_id">
-                        <td class="py-1"><span class="font-mono text-slate-500">{{ p.shirt_number }}</span> {{ p.name }}
+                        <td class="py-1"><span class="font-mono text-slate-500 dark:text-slate-400">{{ p.shirt_number }}</span> {{ p.name }}
                             <span class="text-xs text-slate-400">· {{ t(p.role === 'starter' ? 'comp.starter' : 'comp.substitute') }}</span></td>
                         <td v-if="rules.rolling_subs" class="py-1 text-center"><input v-model="p.played" :disabled="!canManage" type="checkbox" class="rounded" /></td>
                         <td class="py-1 text-center">
@@ -254,7 +254,7 @@ function iconFor(e) {
             <label class="flex items-center justify-end gap-2 text-sm text-slate-600 dark:text-slate-300">
                 <input v-model="mvp" :value="null" :disabled="!canManage" type="radio" name="mvp" /> {{ t('comp.no_mvp') }}
             </label>
-            <p class="text-xs text-slate-500">{{ t('comp.ratings_private') }}</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('comp.ratings_private') }}</p>
         </section>
 
         <!-- 4. Notes -->
@@ -267,7 +267,7 @@ function iconFor(e) {
         </ul>
         <div class="flex flex-wrap items-center gap-3">
             <PrimaryButton v-if="canManage" :disabled="form.processing" @click="save">{{ t('comp.save_report') }}</PrimaryButton>
-            <a v-if="report.status === 'played'" :href="route('games.report-sheet', gameId)" target="_blank" class="text-sm text-primary-600 hover:underline">{{ t('comp.report_sheet_pdf') }}</a>
+            <a v-if="report.status === 'played'" :href="route('games.report-sheet', gameId)" target="_blank" class="text-sm text-primary-600 hover:underline dark:text-primary-300">{{ t('comp.report_sheet_pdf') }}</a>
         </div>
     </div>
 </template>

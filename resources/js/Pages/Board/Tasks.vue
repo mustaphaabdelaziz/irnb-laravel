@@ -93,9 +93,9 @@ const timelineGroups = computed(() => {
     return groups;
 });
 const colStyle = {
-    not_started: 'text-slate-500',
-    in_progress: 'text-primary-600',
-    completed: 'text-emerald-600',
+    not_started: 'text-slate-500 dark:text-slate-400',
+    in_progress: 'text-primary-600 dark:text-primary-300',
+    completed: 'text-emerald-600 dark:text-emerald-400',
     cancelled: 'text-slate-400',
 };
 const priorityChip = {
@@ -230,7 +230,7 @@ function onDrop(col) {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center gap-2">
-                <Link :href="route('board.index')" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"><Icon name="back" /></Link>
+                <Link :href="route('board.index')" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"><Icon name="back" /></Link>
                 <h1 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('action_items') }}</h1>
             </div>
         </template>
@@ -249,9 +249,9 @@ function onDrop(col) {
                 <option value="high">{{ t('high') }}</option><option value="medium">{{ t('medium') }}</option><option value="low">{{ t('low') }}</option>
             </select>
             <div class="ms-auto inline-flex rounded-xl bg-slate-100 p-0.5 dark:bg-slate-800">
-                <button @click="view = 'board'" class="rounded-lg px-3 py-1.5 text-xs font-bold transition-colors" :class="view === 'board' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">{{ t('board_view') }}</button>
-                <button @click="view = 'timeline'" class="rounded-lg px-3 py-1.5 text-xs font-bold transition-colors" :class="view === 'timeline' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">{{ t('timeline') }}</button>
-                <button @click="view = 'stats'" class="rounded-lg px-3 py-1.5 text-xs font-bold transition-colors" :class="view === 'stats' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">{{ t('statistics') }}</button>
+                <button @click="view = 'board'" class="rounded-lg px-3 py-1.5 text-xs font-bold transition-colors" :class="view === 'board' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 dark:text-slate-400'">{{ t('board_view') }}</button>
+                <button @click="view = 'timeline'" class="rounded-lg px-3 py-1.5 text-xs font-bold transition-colors" :class="view === 'timeline' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 dark:text-slate-400'">{{ t('timeline') }}</button>
+                <button @click="view = 'stats'" class="rounded-lg px-3 py-1.5 text-xs font-bold transition-colors" :class="view === 'stats' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 dark:text-slate-400'">{{ t('statistics') }}</button>
             </div>
             <ExportMenu :href="route('board.tasks.export')" :label="t('export')" />
             <IconButton v-if="canEdit" icon="plus" :label="t('add_task')" variant="primary" @click="openCreate" />
@@ -286,7 +286,7 @@ function onDrop(col) {
                         </div>
                         <div class="flex items-center justify-between text-xs text-slate-400">
                             <span class="truncate">{{ tk.member?.name || t('unassigned') }}</span>
-                            <span v-if="tk.due_date" :class="isOverdue(tk) ? 'font-bold text-rose-500' : ''">{{ fmtDate(tk.due_date) }}</span>
+                            <span v-if="tk.due_date" :class="isOverdue(tk) ? 'font-bold text-rose-500 dark:text-rose-400' : ''">{{ fmtDate(tk.due_date) }}</span>
                         </div>
                     </div>
                     <p v-if="!(filteredColumns[col] || []).length" class="py-4 text-center text-xs text-slate-300 dark:text-slate-600">{{ dragOverCol === col ? t('drop_here') : '—' }}</p>
@@ -319,7 +319,7 @@ function onDrop(col) {
                 <div v-if="stats.topMembers?.length" class="space-y-3">
                     <div v-for="(m, i) in stats.topMembers" :key="m.name" class="flex items-center gap-3">
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-extrabold"
-                            :class="['bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300', 'bg-slate-100 text-slate-500 dark:bg-slate-800', 'bg-orange-100 text-orange-700 dark:bg-orange-500/20'][i]">{{ i + 1 }}</span>
+                            :class="['bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300', 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400', 'bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300'][i]">{{ i + 1 }}</span>
                         <div class="min-w-0 flex-1">
                             <div class="flex items-center justify-between gap-2">
                                 <p class="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{{ m.name }}</p>
@@ -385,7 +385,7 @@ function onDrop(col) {
                                 <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
                                     <span class="inline-flex items-center gap-1 font-semibold" :class="colStyle[tk.status]">{{ t(tk.status) }}</span>
                                     <span>{{ tk.member?.name || t('unassigned') }}</span>
-                                    <span class="ms-auto inline-flex items-center gap-1" :class="isOverdue(tk) ? 'font-bold text-rose-500' : ''">
+                                    <span class="ms-auto inline-flex items-center gap-1" :class="isOverdue(tk) ? 'font-bold text-rose-500 dark:text-rose-400' : ''">
                                         <Icon name="calendar" class="h-3.5 w-3.5" /> {{ fmtDate(tk.due_date) }}
                                     </span>
                                 </div>
@@ -412,7 +412,7 @@ function onDrop(col) {
                             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-600 dark:bg-primary-500/10 dark:text-primary-300"><Icon name="task" /></span>
                             <h2 class="text-base font-bold text-slate-900 dark:text-slate-100">{{ editingId ? t('edit') : t('add_task') }}</h2>
                         </div>
-                        <button type="button" @click="showModal = false" class="rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"><Icon name="xcircle" /></button>
+                        <button type="button" @click="showModal = false" class="rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"><Icon name="xcircle" /></button>
                     </div>
 
                     <!-- Body -->
@@ -453,17 +453,17 @@ function onDrop(col) {
                             </label>
                         </div>
                         <div>
-                            <div class="mb-1 flex justify-between text-xs font-medium text-slate-500"><span>{{ t('progress') }}</span><span class="font-bold text-primary-600 dark:text-primary-400">{{ form.progress_percent }}%</span></div>
+                            <div class="mb-1 flex justify-between text-xs font-medium text-slate-500 dark:text-slate-400"><span>{{ t('progress') }}</span><span class="font-bold text-primary-600 dark:text-primary-300">{{ form.progress_percent }}%</span></div>
                             <input v-model.number="form.progress_percent" type="range" min="0" max="100" step="5" class="w-full accent-primary-600" />
                         </div>
                     </form>
 
                     <!-- Footer -->
                     <div class="flex items-center justify-between border-t border-slate-100 px-5 py-4 dark:border-slate-800">
-                        <button v-if="editingId" type="button" @click="remove" class="inline-flex items-center gap-1.5 text-sm font-semibold text-rose-500 hover:text-rose-600"><Icon name="xcircle" /> {{ t('delete') }}</button>
+                        <button v-if="editingId" type="button" @click="remove" class="inline-flex items-center gap-1.5 text-sm font-semibold text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300"><Icon name="xcircle" /> {{ t('delete') }}</button>
                         <span v-else></span>
                         <div class="flex gap-2">
-                            <button type="button" @click="showModal = false" class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">{{ t('cancel') }}</button>
+                            <button type="button" @click="showModal = false" class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-400">{{ t('cancel') }}</button>
                             <button type="submit" form="task-form" :disabled="form.processing" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('save') }}</button>
                         </div>
                     </div>

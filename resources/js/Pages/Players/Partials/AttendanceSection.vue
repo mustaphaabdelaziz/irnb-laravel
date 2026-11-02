@@ -142,7 +142,7 @@ const th = 'p-2 text-start text-xs font-semibold text-slate-500 dark:text-slate-
             <div class="h-44 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800"></div>
         </div>
 
-        <div v-else-if="failed" class="flex flex-col items-center gap-2 px-5 py-8 text-sm text-slate-500">
+        <div v-else-if="failed" class="flex flex-col items-center gap-2 px-5 py-8 text-sm text-slate-500 dark:text-slate-400">
             <p>{{ t('att.profile.load_error') }}</p>
             <IconButton icon="refresh" :label="t('att.retry')" size="sm" @click="retry" />
         </div>
@@ -161,7 +161,7 @@ const th = 'p-2 text-start text-xs font-semibold text-slate-500 dark:text-slate-
             </div>
             <p v-if="preseasonText" class="text-sm text-slate-600 dark:text-slate-300">{{ preseasonText }}</p>
 
-            <p v-if="!summary.expected" class="py-6 text-center text-sm text-slate-500">{{ t('att.stats.no_data') }}</p>
+            <p v-if="!summary.expected" class="py-6 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('att.stats.no_data') }}</p>
             <template v-else>
                 <div class="grid gap-4 lg:grid-cols-2">
                     <StatDoughnut :title="t('att.profile.by_status')" :stats="doughnutStats" :palette="doughnutPalette" :unit="t('att.sessions_unit')" />
@@ -203,11 +203,11 @@ const th = 'p-2 text-start text-xs font-semibold text-slate-500 dark:text-slate-
                                     </td>
                                     <td class="whitespace-nowrap p-2">{{ t(`att.kind.${row.kind}`) }}</td>
                                     <td class="max-w-[14rem] truncate p-2" :title="row.title ?? ''">{{ row.title }}</td>
-                                    <td class="p-2 text-slate-500">{{ row.categories.join(' · ') }}</td>
+                                    <td class="p-2 text-slate-500 dark:text-slate-400">{{ row.categories.join(' · ') }}</td>
                                     <td class="p-2"><span class="whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold" :style="chipStyle(row.status)">{{ label(row.status) }}</span></td>
                                     <td class="p-2 text-end tabular-nums">{{ row.minutes ?? '' }}</td>
                                     <td class="p-2">{{ reasonText(row) }}</td>
-                                    <td class="p-2 text-slate-500">{{ row.note }}</td>
+                                    <td class="p-2 text-slate-500 dark:text-slate-400">{{ row.note }}</td>
                                 </tr>
                             </tbody>
                         </table>

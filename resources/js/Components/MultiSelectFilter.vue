@@ -235,7 +235,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDown,
             <div class="flex items-center justify-between gap-3 border-b border-slate-100 px-3 py-1.5 text-xs dark:border-slate-800">
                 <button type="button" class="font-semibold text-primary-700 hover:underline disabled:opacity-40 dark:text-primary-300"
                     :disabled="!visible.length" @click="selectAllVisible">{{ t('select_all') }}</button>
-                <button type="button" class="font-semibold text-slate-500 hover:text-rose-600 hover:underline disabled:opacity-40 dark:text-slate-400"
+                <button type="button" class="font-semibold text-slate-500 hover:text-rose-600 hover:underline disabled:opacity-40 dark:text-slate-400 dark:hover:text-rose-400"
                     :disabled="!selected.size" @click="clear">{{ t('filter.clear') }}</button>
             </div>
 

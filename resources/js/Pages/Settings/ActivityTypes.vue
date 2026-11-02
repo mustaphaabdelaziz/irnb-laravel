@@ -69,7 +69,7 @@ function destroy() {
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                         <tr v-for="type in types" :key="type.id">
-                            <td class="px-4 py-3 text-center text-sm text-slate-500">
+                            <td class="px-4 py-3 text-center text-sm text-slate-500 dark:text-slate-400">
                                 <TextInput v-if="editingId === type.id" v-model="editForm.sort_order" type="number" min="0" class="w-16" />
                                 <span v-else>{{ type.sort_order }}</span>
                             </td>
@@ -83,7 +83,7 @@ function destroy() {
                             <td class="px-4 py-3 text-center text-sm text-slate-600 dark:text-slate-300">{{ type.activities_count }}</td>
                             <td class="px-4 py-3 text-end">
                                 <div v-if="editingId === type.id" class="flex justify-end gap-2">
-                                    <button @click="saveEdit(type.id)" class="text-sm text-primary-600 hover:text-primary-800">{{ t('save') }}</button>
+                                    <button @click="saveEdit(type.id)" class="text-sm text-primary-600 hover:text-primary-800 dark:text-primary-300 dark:hover:text-primary-200">{{ t('save') }}</button>
                                     <button @click="editingId = null" class="text-sm text-slate-500 dark:text-slate-400">{{ t('cancel') }}</button>
                                 </div>
                                 <div v-else class="flex justify-end gap-2">

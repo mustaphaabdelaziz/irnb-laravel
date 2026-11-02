@@ -189,7 +189,7 @@ function saveMembers() {
                             <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ branch.players_count }}</td>
                             <td class="px-4 py-3 text-end">
                                 <div v-if="editingId === branch.id" class="flex justify-end gap-2">
-                                    <button @click="saveEdit(branch.id)" class="text-sm text-primary-600 hover:text-primary-800">{{ t('save') }}</button>
+                                    <button @click="saveEdit(branch.id)" class="text-sm text-primary-600 hover:text-primary-800 dark:text-primary-300 dark:hover:text-primary-200">{{ t('save') }}</button>
                                     <button @click="editingId = null" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">{{ t('cancel') }}</button>
                                 </div>
                                 <div v-else class="flex justify-end gap-2">
@@ -220,7 +220,7 @@ function saveMembers() {
                     <div class="mt-4 flex flex-wrap gap-2">
                         <span v-for="id in memberIds" :key="id" class="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-3 py-1 text-sm text-primary-700 dark:bg-primary-900/30 dark:text-primary-200">
                             {{ memberName(id) }}
-                            <button type="button" @click="removeMember(id)" class="text-primary-400 hover:text-rose-600">×</button>
+                            <button type="button" @click="removeMember(id)" class="text-primary-400 dark:text-primary-300 hover:text-rose-600 dark:hover:text-rose-400">×</button>
                         </span>
                         <span v-if="!memberIds.length" class="text-sm text-slate-400">{{ t('no_results') }}</span>
                     </div>

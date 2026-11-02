@@ -35,7 +35,7 @@ const { t } = useI18n();
             <span
                 v-if="activeCount > 0"
                 aria-live="polite"
-                class="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold tabular-nums text-primary"
+                class="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold tabular-nums text-primary dark:text-primary-300"
             >{{ t('stats.active_filters', { count: activeCount }) }}</span>
             <IconButton
                 v-if="onReset && activeCount > 0"

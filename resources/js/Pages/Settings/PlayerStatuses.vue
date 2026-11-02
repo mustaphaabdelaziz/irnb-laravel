@@ -120,15 +120,15 @@ function destroy() {
                                         <input type="checkbox" v-model="editForm.is_active" class="rounded border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-primary-600 focus:ring-primary-500" />
                                         {{ t('active') }}
                                     </label>
-                                    <button @click="saveEdit(s.id)" class="text-sm text-emerald-600 hover:text-emerald-800">{{ t('save') }}</button>
-                                    <button @click="editingId = null" class="ms-3 text-sm text-slate-500">{{ t('cancel') }}</button>
+                                    <button @click="saveEdit(s.id)" class="text-sm text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-200">{{ t('save') }}</button>
+                                    <button @click="editingId = null" class="ms-3 text-sm text-slate-500 dark:text-slate-400">{{ t('cancel') }}</button>
                                 </td>
                             </template>
                             <template v-else>
                                 <td class="px-4 py-3 text-sm text-slate-900 dark:text-slate-100">
                                     {{ s.name }}
                                     <!-- Imported values that matched nothing are kept but not offered when editing a player. -->
-                                    <span v-if="!s.is_active" class="ms-2 rounded bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-xs text-slate-500">{{ t('inactive') }}</span>
+                                    <span v-if="!s.is_active" class="ms-2 rounded bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-xs text-slate-500 dark:text-slate-400">{{ t('inactive') }}</span>
                                 </td>
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ s.name_ar || '—' }}</td>
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ s.name_fr || '—' }}</td>

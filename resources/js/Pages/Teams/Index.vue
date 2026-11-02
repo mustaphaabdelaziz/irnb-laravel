@@ -68,7 +68,7 @@ function create() {
                         <option v-for="f in formatsOfBranch" :key="f.id" :value="f.id">{{ f.localized_name }}</option>
                     </select>
                     <InputError :message="form.errors.default_game_format_id ? t(form.errors.default_game_format_id) : ''" class="mt-1" />
-                    <p v-if="form.branch_id && !formatsOfBranch.length" class="mt-1 text-xs text-amber-600">{{ t('comp.no_format_for_sport') }}</p>
+                    <p v-if="form.branch_id && !formatsOfBranch.length" class="mt-1 text-xs text-amber-600 dark:text-amber-400">{{ t('comp.no_format_for_sport') }}</p>
                 </label>
                 <div class="flex items-end gap-2">
                     <PrimaryButton :disabled="form.processing">{{ t('add') }}</PrimaryButton>

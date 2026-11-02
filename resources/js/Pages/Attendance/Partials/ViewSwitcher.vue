@@ -18,7 +18,7 @@ const VIEWS = ['month', 'week', 'agenda', 'timeline'];
             role="tab"
             :aria-selected="view === v"
             class="rounded-md px-3 py-1 text-sm font-semibold"
-            :class="view === v ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
+            :class="view === v ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 dark:text-slate-400'"
             @click="view !== v && emit('switch', v)"
         >{{ t(`att.view.${v}`) }}</button>
     </div>

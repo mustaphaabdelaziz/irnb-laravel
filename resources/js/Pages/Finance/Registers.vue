@@ -72,7 +72,7 @@ const formatDate = (value) => (value ? new Date(`${value}T00:00:00`).toLocaleDat
         <template #header>
             <div class="flex items-center justify-between gap-3">
                 <div class="flex min-w-0 items-center gap-2">
-                    <Link :href="route('finance.index')" :aria-label="t('finance')" class="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800">
+                    <Link :href="route('finance.index')" :aria-label="t('finance')" class="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300">
                         <Icon name="back" class="rtl:rotate-180" />
                     </Link>
                     <div class="min-w-0">

@@ -68,7 +68,7 @@ function destroy() {
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                         <tr v-for="report in reports" :key="report.id">
                             <td class="px-4 py-3 text-sm font-medium text-slate-900 dark:text-slate-100">
-                                <Link v-if="can('literary_reports', 'edit')" :href="route('literary-reports.edit', report.id)" class="hover:text-primary-700">{{ report.title }}</Link>
+                                <Link v-if="can('literary_reports', 'edit')" :href="route('literary-reports.edit', report.id)" class="hover:text-primary-700 dark:hover:text-primary-300">{{ report.title }}</Link>
                                 <span v-else>{{ report.title }}</span>
                             </td>
                             <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300"><bdi dir="ltr">{{ report.period_from }} → {{ report.period_to }}</bdi></td>

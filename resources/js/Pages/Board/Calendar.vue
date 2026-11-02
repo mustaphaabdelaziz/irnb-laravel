@@ -87,7 +87,7 @@ function submit() {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center gap-2">
-                <Link :href="route('board.index')" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"><Icon name="back" /></Link>
+                <Link :href="route('board.index')" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"><Icon name="back" /></Link>
                 <h1 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('calendar') }}</h1>
             </div>
         </template>
@@ -96,9 +96,9 @@ function submit() {
             <!-- Toolbar -->
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center gap-2">
-                    <button @click="shift(-1)" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 rtl:rotate-180"><Icon name="back" /></button>
+                    <button @click="shift(-1)" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 rtl:rotate-180 dark:hover:text-slate-300"><Icon name="back" /></button>
                     <span class="min-w-[9rem] text-center text-sm font-bold capitalize text-slate-900 dark:text-slate-100">{{ monthLabel }}</span>
-                    <button @click="shift(1)" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 ltr:rotate-180"><Icon name="back" /></button>
+                    <button @click="shift(1)" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 ltr:rotate-180 dark:hover:text-slate-300"><Icon name="back" /></button>
                     <button @click="goToday" class="ms-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 ring-1 ring-slate-200 hover:bg-slate-50 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800">{{ t('today') }}</button>
                 </div>
                 <div class="flex items-center gap-3 text-xs text-slate-400">
@@ -121,7 +121,7 @@ function submit() {
                     >
                         <div class="mb-1 flex items-center justify-between">
                             <span class="text-xs font-semibold" :class="cell.inMonth ? 'text-slate-500 dark:text-slate-300' : 'text-slate-300 dark:text-slate-600'">{{ cell.date.getDate() }}</span>
-                            <button @click="openCreate(cell)" :title="t('add_meeting')" class="rounded p-0.5 text-slate-300 opacity-0 transition-opacity hover:bg-primary-50 hover:text-primary-600 group-hover:opacity-100 dark:hover:bg-primary-500/10"><Icon name="plus" class="h-3.5 w-3.5" /></button>
+                            <button @click="openCreate(cell)" :title="t('add_meeting')" class="rounded p-0.5 text-slate-300 opacity-0 transition-opacity hover:bg-primary-50 hover:text-primary-600 group-hover:opacity-100 dark:hover:bg-primary-500/10 dark:hover:text-primary-300"><Icon name="plus" class="h-3.5 w-3.5" /></button>
                         </div>
                         <div class="space-y-1">
                             <template v-for="e in (eventsByDate[cell.key] || [])" :key="e.kind + e.id">
@@ -148,7 +148,7 @@ function submit() {
             <form @submit.prevent="submit" class="card my-auto w-full max-w-lg space-y-4 p-5">
                 <div class="flex items-center justify-between">
                     <h2 class="text-base font-bold text-slate-900 dark:text-slate-100">{{ t('add_meeting') }}</h2>
-                    <button type="button" @click="showForm = false" class="text-slate-400 hover:text-slate-600"><Icon name="xcircle" /></button>
+                    <button type="button" @click="showForm = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><Icon name="xcircle" /></button>
                 </div>
                 <div class="grid gap-4 sm:grid-cols-2">
                     <label class="block text-sm sm:col-span-2"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('title') }}</span>
@@ -163,7 +163,7 @@ function submit() {
                         <input v-model="form.location" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
                 </div>
                 <div class="flex justify-end gap-2">
-                    <button type="button" @click="showForm = false" class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">{{ t('cancel') }}</button>
+                    <button type="button" @click="showForm = false" class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-400">{{ t('cancel') }}</button>
                     <button :disabled="form.processing" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('create') }}</button>
                 </div>
             </form>

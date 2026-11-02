@@ -86,7 +86,7 @@ onBeforeUnmount(() => clearTimeout(timer));
             @click="clear"
             :aria-label="t('clear_search')"
             :title="t('clear_search')"
-            class="absolute inset-y-0 end-0 flex items-center rounded-e-lg px-2.5 text-base text-slate-400 transition-colors hover:text-slate-600 focus:outline-none focus-visible:text-primary-600 dark:hover:text-slate-200"
+            class="absolute inset-y-0 end-0 flex items-center rounded-e-lg px-2.5 text-base text-slate-400 transition-colors hover:text-slate-600 focus:outline-none focus-visible:text-primary-600 dark:hover:text-slate-200 dark:focus-visible:text-primary-400"
         >
             <Icon name="xcircle" />
         </button>

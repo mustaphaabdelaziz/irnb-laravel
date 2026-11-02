@@ -34,7 +34,7 @@ const hasBranchValues = computed(
         <template #header>
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <Link :href="route('equipment.catalogs.index')" class="text-lg text-slate-400 dark:text-slate-500 transition-colors hover:text-slate-600 dark:hover:text-slate-300 print:hidden">
+                    <Link :href="route('equipment.catalogs.index')" class="text-lg text-slate-400 dark:text-slate-400 transition-colors hover:text-slate-600 dark:hover:text-slate-300 print:hidden">
                         <Icon name="back" class="rtl:rotate-180" />
                     </Link>
                     <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('inventory_report') }}</h1>
@@ -152,8 +152,8 @@ const hasBranchValues = computed(
                             <tr v-for="c in categoryBreakdown" :key="c.category">
                                 <td class="px-4 py-3 text-sm text-slate-900 dark:text-slate-100">{{ c.category }}</td>
                                 <td class="px-4 py-3 text-end text-sm font-semibold">{{ c.total }}</td>
-                                <td class="px-4 py-3 text-end text-sm text-emerald-700">{{ c.available }}</td>
-                                <td class="px-4 py-3 text-end text-sm text-amber-700">{{ c.rented }}</td>
+                                <td class="px-4 py-3 text-end text-sm text-emerald-700 dark:text-emerald-300">{{ c.available }}</td>
+                                <td class="px-4 py-3 text-end text-sm text-amber-700 dark:text-amber-300">{{ c.rented }}</td>
                             </tr>
                         </tbody>
                     </table>

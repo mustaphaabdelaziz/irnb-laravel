@@ -85,7 +85,7 @@ function destroy() {
 
     <AuthenticatedLayout>
         <template #header>
-            <Link :href="route('games.index')" class="text-sm text-primary-600 hover:underline">{{ t('games') }}</Link>
+            <Link :href="route('games.index')" class="text-sm text-primary-600 hover:underline dark:text-primary-300">{{ t('games') }}</Link>
             <div class="flex items-center gap-3">
                 <img v-if="game.opponent.logo_url" :src="game.opponent.logo_url" alt="" class="h-9 w-9 rounded object-contain" />
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">
@@ -158,10 +158,10 @@ function destroy() {
 
             <section v-if="tab === 'callup'" class="space-y-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div class="flex flex-wrap items-center justify-between gap-2">
-                    <span class="text-sm" :class="calledCount > game.format.max_called_up ? 'font-semibold text-rose-600' : 'text-slate-600 dark:text-slate-300'">
+                    <span class="text-sm" :class="calledCount > game.format.max_called_up ? 'font-semibold text-rose-600 dark:text-rose-400' : 'text-slate-600 dark:text-slate-300'">
                         {{ t('comp.called_count', { n: calledCount, max: game.format.max_called_up }) }}
                     </span>
-                    <a :href="route('games.convocation', game.id)" target="_blank" class="text-sm text-primary-600 hover:underline">{{ t('comp.convocation_pdf') }}</a>
+                    <a :href="route('games.convocation', game.id)" target="_blank" class="text-sm text-primary-600 hover:underline dark:text-primary-300">{{ t('comp.convocation_pdf') }}</a>
                 </div>
                 <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
                     <thead class="text-xs uppercase text-slate-500 dark:text-slate-400">
@@ -175,7 +175,7 @@ function destroy() {
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                         <tr v-for="row in callRows" :key="row.player_id" :class="{ 'bg-primary-50/50 dark:bg-primary-900/10': row.called_up }">
                             <td class="py-2 text-center"><input v-model="row.called_up" :disabled="!canManage" type="checkbox" class="rounded" /></td>
-                            <td class="py-2 font-mono text-slate-500">{{ row.shirt_number }}</td>
+                            <td class="py-2 font-mono text-slate-500 dark:text-slate-400">{{ row.shirt_number }}</td>
                             <td class="py-2">
                                 <span class="font-medium text-slate-900 dark:text-slate-100">{{ row.name }}</span>
                                 <span class="ms-2 text-xs text-slate-400">{{ row.category }}</span>
@@ -185,21 +185,21 @@ function destroy() {
                                 <TextInput v-if="!row.called_up" v-model="row.not_called_reason" :disabled="!canManage" class="w-full" :placeholder="t('comp.not_called_reason_hint')" />
                             </td>
                         </tr>
-                        <tr v-if="!callRows.length"><td colspan="4" class="py-6 text-center text-slate-500">{{ t(game.competition ? 'comp.callup_empty_squad' : 'comp.roster_empty') }}</td></tr>
+                        <tr v-if="!callRows.length"><td colspan="4" class="py-6 text-center text-slate-500 dark:text-slate-400">{{ t(game.competition ? 'comp.callup_empty_squad' : 'comp.roster_empty') }}</td></tr>
                     </tbody>
                 </table>
                 <InputError :message="callForm.errors.players ? t(callForm.errors.players) : ''" />
                 <PrimaryButton v-if="canManage" :disabled="callForm.processing" @click="saveCallUp">{{ t('save') }}</PrimaryButton>
             </section>
             <section v-if="tab === 'lineup'" class="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
-                <p v-if="!lineup.players.length" class="text-sm text-slate-500">
+                <p v-if="!lineup.players.length" class="text-sm text-slate-500 dark:text-slate-400">
                     {{ t('comp.do_callup_first') }}
-                    <button type="button" class="text-primary-600 hover:underline" @click="tab = 'callup'">{{ t('comp.tab_callup') }}</button>
+                    <button type="button" class="text-primary-600 hover:underline dark:text-primary-300" @click="tab = 'callup'">{{ t('comp.tab_callup') }}</button>
                 </p>
                 <LineupBoard v-else :game-id="game.id" :lineup="lineup" :can-manage="canManage" />
             </section>
             <section v-if="tab === 'report'" class="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
-                <p v-if="!report.players.length" class="text-sm text-slate-500">{{ t('comp.do_callup_first') }}</p>
+                <p v-if="!report.players.length" class="text-sm text-slate-500 dark:text-slate-400">{{ t('comp.do_callup_first') }}</p>
                 <MatchReport v-else :game-id="game.id" :report="report" :can-manage="canManage" />
             </section>
         </div>

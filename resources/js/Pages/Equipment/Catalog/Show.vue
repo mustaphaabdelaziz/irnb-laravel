@@ -374,7 +374,7 @@ function submitImport() {
         <template #header>
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <Link :href="route('equipment.catalogs.index')" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
+                    <Link :href="route('equipment.catalogs.index')" class="text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
                         <svg class="h-5 w-5 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
                     </Link>
                     <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ catalog.name }}</h1>
@@ -409,7 +409,7 @@ function submitImport() {
                     <div>
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('available') }} / {{ t('total') }}</p>
                         <!-- Units, not rows: one lot can hold 100 dossards. -->
-                        <p class="mt-1 text-sm font-semibold text-emerald-700">
+                        <p class="mt-1 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
                             {{ availableCount }} / {{ totalQuantity }}
                             <span class="font-normal text-slate-400">{{ t('equipment.units') }}</span>
                         </p>
@@ -546,7 +546,7 @@ function submitImport() {
                             <div class="mt-1 flex items-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2 font-mono text-sm text-slate-700 dark:text-slate-200">
                                 {{ serialPreview || '—' }}
                             </div>
-                            <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">{{ t('assigned_on_save') }}</p>
+                            <p class="mt-1 text-xs text-slate-400 dark:text-slate-400">{{ t('assigned_on_save') }}</p>
                         </div>
                         <div>
                             <InputLabel :value="t('designation')" />
@@ -736,9 +736,9 @@ function submitImport() {
                             accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                             @change="onImportFile"
                             required
-                            class="w-full text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 hover:file:bg-primary-100"
+                            class="w-full text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 hover:file:bg-primary-100 dark:file:bg-primary-500/10 dark:file:text-primary-300 dark:hover:file:bg-primary-500/15"
                         />
-                        <p v-if="importForm.errors.file" class="text-sm text-rose-600">{{ importForm.errors.file }}</p>
+                        <p v-if="importForm.errors.file" class="text-sm text-rose-600 dark:text-rose-400">{{ importForm.errors.file }}</p>
                         <div class="flex items-center justify-between gap-3 pt-2">
                             <ExportMenu :href="route('equipment.items.import.template')" :label="t('download_template')" align="left" />
                             <div class="flex gap-2">

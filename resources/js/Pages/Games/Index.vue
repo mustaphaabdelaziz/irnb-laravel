@@ -111,7 +111,7 @@ const statusClass = {
                 <label class="text-sm">{{ t('comp.opponent') }}
                     <SearchableSelect v-model="form.opponent_id" :options="opponents" class="mt-1" />
                     <InputError :message="form.errors.opponent_id" />
-                    <Link :href="route('opponents.index')" class="text-xs text-primary-600 hover:underline">{{ t('comp.manage_opponents') }}</Link>
+                    <Link :href="route('opponents.index')" class="text-xs text-primary-600 hover:underline dark:text-primary-300">{{ t('comp.manage_opponents') }}</Link>
                 </label>
                 <label class="text-sm">{{ t('comp.side') }}
                     <select v-model="form.side" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
@@ -145,15 +145,15 @@ const statusClass = {
                     <div class="divide-y divide-slate-100 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:divide-slate-800 dark:bg-slate-900 dark:ring-slate-800">
                         <Link v-for="g in upcoming" :key="g.id" :href="route('games.show', g.id)" class="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800">
                             <div>
-                                <div class="font-medium text-slate-900 dark:text-slate-100">{{ g.team }} — {{ g.opponent }} <span class="text-sm text-slate-500">({{ t(`comp.side_${g.side}`) }})</span></div>
-                                <div class="text-xs text-slate-500">{{ g.competition || t('comp.type_friendly') }}<span v-if="g.round_label"> · {{ g.round_label }}</span><span v-if="g.venue"> · {{ g.venue }}</span></div>
+                                <div class="font-medium text-slate-900 dark:text-slate-100">{{ g.team }} — {{ g.opponent }} <span class="text-sm text-slate-500 dark:text-slate-400">({{ t(`comp.side_${g.side}`) }})</span></div>
+                                <div class="text-xs text-slate-500 dark:text-slate-400">{{ g.competition || t('comp.type_friendly') }}<span v-if="g.round_label"> · {{ g.round_label }}</span><span v-if="g.venue"> · {{ g.venue }}</span></div>
                             </div>
                             <div class="text-end">
                                 <bdi dir="ltr" class="font-mono text-sm">{{ g.date }} {{ g.kickoff_time }}</bdi>
                                 <div><span class="rounded px-1.5 py-0.5 text-xs" :class="statusClass[g.status]">{{ t(`comp.status_${g.status}`) }}</span></div>
                             </div>
                         </Link>
-                        <p v-if="!upcoming.length" class="px-4 py-6 text-center text-sm text-slate-500">{{ t('no_results') }}</p>
+                        <p v-if="!upcoming.length" class="px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</p>
                     </div>
                 </section>
 
@@ -162,8 +162,8 @@ const statusClass = {
                     <div class="divide-y divide-slate-100 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:divide-slate-800 dark:bg-slate-900 dark:ring-slate-800">
                         <Link v-for="g in past.data" :key="g.id" :href="route('games.show', g.id)" class="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800">
                             <div>
-                                <div class="font-medium text-slate-900 dark:text-slate-100">{{ g.team }} — {{ g.opponent }} <span class="text-sm text-slate-500">({{ t(`comp.side_${g.side}`) }})</span></div>
-                                <div class="text-xs text-slate-500">{{ g.competition || t('comp.type_friendly') }}<span v-if="g.round_label"> · {{ g.round_label }}</span></div>
+                                <div class="font-medium text-slate-900 dark:text-slate-100">{{ g.team }} — {{ g.opponent }} <span class="text-sm text-slate-500 dark:text-slate-400">({{ t(`comp.side_${g.side}`) }})</span></div>
+                                <div class="text-xs text-slate-500 dark:text-slate-400">{{ g.competition || t('comp.type_friendly') }}<span v-if="g.round_label"> · {{ g.round_label }}</span></div>
                             </div>
                             <div class="text-end">
                                 <bdi dir="ltr" class="font-mono text-sm">{{ g.date }}</bdi>
@@ -171,7 +171,7 @@ const statusClass = {
                                 <div v-else><span class="rounded px-1.5 py-0.5 text-xs" :class="statusClass[g.status]">{{ t(`comp.status_${g.status}`) }}</span></div>
                             </div>
                         </Link>
-                        <p v-if="!past.data.length" class="px-4 py-6 text-center text-sm text-slate-500">{{ t('no_results') }}</p>
+                        <p v-if="!past.data.length" class="px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</p>
                     </div>
                     <Pagination :links="past.links" />
                 </section>
@@ -183,9 +183,9 @@ const statusClass = {
                     <span class="font-semibold"><bdi dir="ltr">{{ month }}</bdi></span>
                     <SecondaryButton @click="shiftMonth(1)">›</SecondaryButton>
                 </div>
-                <p v-if="!filters.team_id" class="mb-2 text-xs text-slate-500">{{ t('comp.calendar_training_hint') }}</p>
+                <p v-if="!filters.team_id" class="mb-2 text-xs text-slate-500 dark:text-slate-400">{{ t('comp.calendar_training_hint') }}</p>
                 <div class="grid grid-cols-7 gap-1 text-xs">
-                    <div v-for="d in 7" :key="`h${d}`" class="py-1 text-center font-semibold uppercase text-slate-500">{{ t(`comp.weekday_${d}`) }}</div>
+                    <div v-for="d in 7" :key="`h${d}`" class="py-1 text-center font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t(`comp.weekday_${d}`) }}</div>
                     <div v-for="(cell, i) in days" :key="i" class="min-h-20 rounded border border-slate-100 p-1 dark:border-slate-800" :class="{ 'bg-slate-50 dark:bg-slate-950': !cell }">
                         <template v-if="cell">
                             <div class="text-slate-400">{{ cell.day }}</div>

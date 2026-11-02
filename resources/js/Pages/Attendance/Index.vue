@@ -95,7 +95,7 @@ function openCreate(kind, date = today) {
             </div>
         </template>
 
-        <p v-if="!categories.length" class="text-sm text-slate-500">{{ t('att.no_category') }}</p>
+        <p v-if="!categories.length" class="text-sm text-slate-500 dark:text-slate-400">{{ t('att.no_category') }}</p>
 
         <div v-else class="space-y-4">
             <div class="flex flex-wrap items-center justify-between gap-3 print:hidden">

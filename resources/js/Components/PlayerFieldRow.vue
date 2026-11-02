@@ -16,7 +16,7 @@ defineProps({
 
 <template>
     <div class="flex items-start gap-2.5">
-        <span class="mt-0.5 text-slate-400 dark:text-slate-500"><Icon :name="icon" /></span>
+        <span class="mt-0.5 text-slate-400 dark:text-slate-400"><Icon :name="icon" /></span>
         <div class="min-w-0">
             <dt class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ label }}</dt>
             <dd class="text-sm text-slate-900 dark:text-slate-100" :class="mono ? 'font-mono' : ''">

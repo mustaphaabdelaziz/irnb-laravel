@@ -175,7 +175,7 @@ function submit() {
             <div v-if="form.payment_method === 'ccp'" class="rounded-xl bg-slate-50 dark:bg-slate-950 p-4 space-y-3">
                 <div class="flex items-center justify-between">
                     <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">{{ t('ccp_details') }}</p>
-                    <button v-if="clubCcp" type="button" @click="useClubCcp" class="text-xs font-medium text-primary-600 hover:underline">{{ t('use_club_ccp') }}</button>
+                    <button v-if="clubCcp" type="button" @click="useClubCcp" class="text-xs font-medium text-primary-600 hover:underline dark:text-primary-300">{{ t('use_club_ccp') }}</button>
                 </div>
                 <div class="grid gap-3 sm:grid-cols-3">
                     <div><InputLabel :value="t('ccp_number')" /><TextInput v-model="form.payment_account" class="mt-1 w-full" /></div>
@@ -213,8 +213,8 @@ function submit() {
                     </div>
                     <div class="shrink-0 text-end text-xs">
                         <p class="text-slate-500 dark:text-slate-400">{{ t('outstanding_debt') }}</p>
-                        <p class="font-semibold" :class="selectedPlayer.outstanding_debt > 0 ? 'text-rose-600' : 'text-emerald-600'">{{ formatMoney(selectedPlayer.outstanding_debt) }}</p>
-                        <a :href="route('players.show', selectedPlayer.id)" target="_blank" class="text-primary-600 hover:underline">{{ t('view_player') }} ↗</a>
+                        <p class="font-semibold" :class="selectedPlayer.outstanding_debt > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'">{{ formatMoney(selectedPlayer.outstanding_debt) }}</p>
+                        <a :href="route('players.show', selectedPlayer.id)" target="_blank" class="text-primary-600 hover:underline dark:text-primary-300">{{ t('view_player') }} ↗</a>
                     </div>
                 </div>
                 <InputError :message="form.errors.related_entity_id" class="mt-1" />
@@ -229,10 +229,10 @@ function submit() {
             <div>
                 <InputLabel :value="t('receipt')" />
                 <div v-if="transaction?.receipt_url" class="mb-2">
-                    <a :href="transaction.receipt_url" target="_blank" class="text-sm font-medium text-primary-600 hover:underline">{{ t('view') }} ↗</a>
+                    <a :href="transaction.receipt_url" target="_blank" class="text-sm font-medium text-primary-600 hover:underline dark:text-primary-300">{{ t('view') }} ↗</a>
                 </div>
                 <input type="file" accept="image/*,application/pdf" @change="form.receipt = $event.target.files[0]"
-                    class="text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 hover:file:bg-primary-100" />
+                    class="text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 hover:file:bg-primary-100 dark:file:bg-primary-500/10 dark:file:text-primary-300 dark:hover:file:bg-primary-500/15" />
                 <InputError :message="form.errors.receipt" class="mt-1" />
             </div>
         </div>

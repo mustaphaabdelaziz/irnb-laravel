@@ -100,7 +100,7 @@ function submit() {
                             <option v-for="o in activeField.options" :key="o.value" :value="o.value">{{ o.label }}</option>
                         </select>
 
-                        <p v-if="form.errors.value" class="mt-1 text-sm text-rose-600">{{ form.errors.value }}</p>
+                        <p v-if="form.errors.value" class="mt-1 text-sm text-rose-600 dark:text-rose-400">{{ form.errors.value }}</p>
                     </div>
 
                     <!-- A bulk edit is not individually undoable, so name the damage. -->

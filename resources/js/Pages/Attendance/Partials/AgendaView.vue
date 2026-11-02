@@ -27,7 +27,7 @@ const pickCategory = (value) => go({ category_id: value ? Number(value) : null }
 // Print header: the category filter as it reads in the toolbar, for the printed page.
 const categoryLabel = computed(() => props.categories.find((c) => c.id === props.categoryId)?.name ?? t('att.all_categories'));
 
-const stateClass = { planned: 'text-slate-500', held: 'text-emerald-600 dark:text-emerald-400', cancelled: 'text-slate-400' };
+const stateClass = { planned: 'text-slate-500 dark:text-slate-400', held: 'text-emerald-600 dark:text-emerald-400', cancelled: 'text-slate-400' };
 const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900';
 const print = () => window.print();
 </script>
@@ -50,11 +50,11 @@ const print = () => window.print();
                 <p class="text-sm">{{ categoryLabel }}</p>
             </div>
 
-            <p v-if="!sessions.length" class="text-sm text-slate-500">{{ t('att.no_sessions') }}</p>
+            <p v-if="!sessions.length" class="text-sm text-slate-500 dark:text-slate-400">{{ t('att.no_sessions') }}</p>
             <div v-else class="overflow-x-auto rounded-xl bg-white ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
                 <table class="w-full min-w-[44rem] text-sm">
                     <thead>
-                        <tr class="bg-slate-50 text-xs text-slate-500 dark:bg-slate-800/50">
+                        <tr class="bg-slate-50 text-xs text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">
                             <th class="p-2 text-start font-semibold">{{ t('att.date') }}</th>
                             <th class="p-2 text-start font-semibold">{{ t('att.col.time') }}</th>
                             <th class="p-2 text-start font-semibold">{{ t('att.col.kind') }}</th>

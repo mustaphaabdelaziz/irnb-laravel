@@ -373,7 +373,7 @@ function formatDate(val) {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center gap-3">
-                <Link :href="route('players.index')" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
+                <Link :href="route('players.index')" class="text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
                 </Link>
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ player.fullname || `${player.firstname} ${player.lastname}` }}</h1>
@@ -446,7 +446,7 @@ function formatDate(val) {
                                 <li v-for="contact in player.emergency_contacts" :key="contact.id" class="flex flex-wrap items-center gap-2 text-sm">
                                     <Icon name="phone" class="text-slate-400" />
                                     <span class="font-medium text-slate-800 dark:text-slate-200">{{ contact.name }}</span>
-                                    <span v-if="contact.relationship" class="text-xs text-slate-500">{{ contact.relationship }}</span>
+                                    <span v-if="contact.relationship" class="text-xs text-slate-500 dark:text-slate-400">{{ contact.relationship }}</span>
                                     <span dir="ltr" class="font-mono text-xs text-slate-600 dark:text-slate-300">{{ formatPhone((contact.phones || [])[0]) }}</span>
                                 </li>
                             </ul>
@@ -463,7 +463,7 @@ function formatDate(val) {
                     <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                         <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('outstanding_debt') }}</p>
                         <p class="mt-2 text-3xl font-bold" :class="totalDebt > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'">
-                            {{ formatMoney(totalDebt) }} <span class="text-base font-normal text-slate-400 dark:text-slate-500">{{ currencyLabel }}</span>
+                            {{ formatMoney(totalDebt) }} <span class="text-base font-normal text-slate-400 dark:text-slate-400">{{ currencyLabel }}</span>
                         </p>
                         <div class="mt-4">
                             <IconButton icon="money" :label="t('add_payment')" variant="primary" @click="showPaymentModal = true" />
@@ -522,10 +522,10 @@ function formatDate(val) {
                                 <td class="px-4 py-3 text-end text-sm">{{ formatMoney(sub.amount_owed) }}</td>
                                 <td class="px-4 py-3 text-end text-sm">
                                     <span v-if="discountLabel(sub)" class="text-amber-700 dark:text-amber-400">{{ discountLabel(sub) }}</span>
-                                    <span v-else class="text-slate-400 dark:text-slate-500">—</span>
+                                    <span v-else class="text-slate-400 dark:text-slate-400">—</span>
                                 </td>
-                                <td class="px-4 py-3 text-end text-sm text-emerald-700">{{ formatMoney(sub.amount_paid) }}</td>
-                                <td class="px-4 py-3 text-end text-sm" :class="parseFloat(sub.remaining_amount) > 0 ? 'text-rose-700 font-semibold' : 'text-slate-500 dark:text-slate-400'">
+                                <td class="px-4 py-3 text-end text-sm text-emerald-700 dark:text-emerald-300">{{ formatMoney(sub.amount_paid) }}</td>
+                                <td class="px-4 py-3 text-end text-sm" :class="parseFloat(sub.remaining_amount) > 0 ? 'text-rose-700 font-semibold dark:text-rose-300' : 'text-slate-500 dark:text-slate-400'">
                                     {{ formatMoney(sub.remaining_amount) }}
                                 </td>
                                 <td class="px-4 py-3">
@@ -568,7 +568,7 @@ function formatDate(val) {
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ statusLabel('payment_method', tx.payment_method) }}</td>
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ accountLabel(tx.finance_account) }}</td>
                                 <td class="px-4 py-3 text-end text-sm font-semibold"
-                                    :class="tx.transaction_type === 'income' ? 'text-emerald-700' : 'text-rose-700'">
+                                    :class="tx.transaction_type === 'income' ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'">
                                     {{ tx.transaction_type === 'income' ? '+' : '-' }}{{ formatMoney(tx.amount) }}
                                 </td>
                                 <td class="px-4 py-3 text-end whitespace-nowrap">
@@ -596,9 +596,9 @@ function formatDate(val) {
                         <ul class="space-y-2">
                             <li v-for="r in group.rows" :key="r.id" class="flex flex-wrap items-center gap-2 text-sm">
                                 <RentalTypeBadge :type="r.type" />
-                                <Link v-if="r.equipment_item?.catalog" :href="route('equipment.catalogs.show', r.equipment_item.catalog.id)" class="font-medium text-slate-800 hover:text-primary-600 dark:text-slate-200">{{ r.equipment_item.catalog.name }}</Link>
+                                <Link v-if="r.equipment_item?.catalog" :href="route('equipment.catalogs.show', r.equipment_item.catalog.id)" class="font-medium text-slate-800 hover:text-primary-600 dark:text-slate-200 dark:hover:text-primary-300">{{ r.equipment_item.catalog.name }}</Link>
                                 <span v-if="r.equipment_item?.unique_identifier" class="font-mono text-xs text-slate-400">{{ r.equipment_item.unique_identifier }}</span>
-                                <span v-if="(r.quantity ?? 1) > 1" class="text-xs text-slate-500">× {{ r.return_date ? r.quantity : r.quantity - (r.returned_quantity ?? 0) }}</span>
+                                <span v-if="(r.quantity ?? 1) > 1" class="text-xs text-slate-500 dark:text-slate-400">× {{ r.return_date ? r.quantity : r.quantity - (r.returned_quantity ?? 0) }}</span>
                                 <span class="text-xs text-slate-500 dark:text-slate-400">{{ t('equipment.out_since') }} {{ formatDate(r.checkout_date) }}</span>
                                 <span v-if="r.return_date" class="text-xs text-slate-500 dark:text-slate-400">· {{ t('equipment.returned_on') }} {{ formatDate(r.return_date) }}</span>
                                 <Badge v-else-if="r.is_overdue" :label="t('overdue')" color="rose" />

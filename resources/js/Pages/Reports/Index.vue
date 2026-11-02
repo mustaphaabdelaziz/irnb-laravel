@@ -44,7 +44,7 @@ function pin(card) {
         <template #header>
             <div class="flex flex-wrap items-center gap-2">
                 <template v-if="category">
-                    <Link :href="route('reports.hub')" class="text-sm text-slate-500 hover:text-emerald-600">{{ t('reports.title') }}</Link>
+                    <Link :href="route('reports.hub')" class="text-sm text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 dark:text-slate-400">{{ t('reports.title') }}</Link>
                     <span class="text-slate-300">/</span>
                 </template>
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ title }}</h1>
@@ -52,7 +52,7 @@ function pin(card) {
         </template>
 
         <div class="mx-auto max-w-6xl space-y-8">
-            <p v-if="category" class="text-sm text-slate-500">{{ t(`reports.category.${category}.description`) }}</p>
+            <p v-if="category" class="text-sm text-slate-500 dark:text-slate-400">{{ t(`reports.category.${category}.description`) }}</p>
 
             <!-- Category tiles (hub only) -->
             <div v-else class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -64,21 +64,21 @@ function pin(card) {
                         </span>
                         <div class="min-w-0">
                             <div class="font-semibold text-slate-900 dark:text-slate-100">{{ t(`reports.category.${c.key}.title`) }}</div>
-                            <div class="text-xs text-slate-500">{{ t('reports.count', { n: c.count }) }}</div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400">{{ t('reports.count', { n: c.count }) }}</div>
                         </div>
                     </div>
-                    <p class="mt-2 line-clamp-2 text-xs text-slate-500">{{ t(`reports.category.${c.key}.description`) }}</p>
+                    <p class="mt-2 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">{{ t(`reports.category.${c.key}.description`) }}</p>
                 </Link>
             </div>
 
             <!-- This viewer's pinned and recently opened reports -->
             <section v-for="block in shortcuts" :key="block.key">
-                <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">{{ t(`reports.${block.key}`) }}</h2>
+                <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t(`reports.${block.key}`) }}</h2>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     <component :is="card.external ? 'a' : Link" v-for="card in block.cards" :key="card.id"
                                :href="card.href" :target="card.external ? '_blank' : undefined"
                                class="flex items-center gap-3 rounded-xl bg-white px-4 py-3 text-sm shadow-sm ring-1 ring-slate-200 hover:ring-emerald-400 dark:bg-slate-900 dark:ring-slate-800">
-                        <Icon :name="card.icon" class="h-4 w-4 shrink-0 text-emerald-600" />
+                        <Icon :name="card.icon" class="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
                         <span class="truncate font-medium">{{ t(card.title) }}</span>
                     </component>
                 </div>
@@ -87,26 +87,26 @@ function pin(card) {
             <!-- Every report the user may open, by category -->
             <section v-for="g in groups" :key="g.key">
                 <h2 v-if="!category" class="mb-3 flex items-center gap-2 text-base font-semibold text-slate-800 dark:text-slate-200">
-                    <Icon :name="g.icon" class="h-4 w-4 text-emerald-600" />
-                    <Link :href="g.href" class="hover:text-emerald-600">{{ t(`reports.category.${g.key}.title`) }}</Link>
+                    <Icon :name="g.icon" class="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    <Link :href="g.href" class="hover:text-emerald-600 dark:hover:text-emerald-400">{{ t(`reports.category.${g.key}.title`) }}</Link>
                 </h2>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     <div v-for="card in g.cards" :key="card.id"
                          class="relative flex flex-col rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 transition hover:ring-emerald-400 dark:bg-slate-900 dark:ring-slate-800">
                         <component :is="card.external ? 'a' : Link" :href="card.href" :target="card.external ? '_blank' : undefined" class="flex-1">
                             <div class="flex items-start gap-3 pe-8">
-                                <Icon :name="card.icon" class="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+                                <Icon :name="card.icon" class="mt-0.5 h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
                                 <div>
                                     <div class="font-semibold text-slate-900 dark:text-slate-100">{{ t(card.title) }}</div>
-                                    <p class="mt-1 text-xs text-slate-500">{{ t(card.description) }}</p>
+                                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t(card.description) }}</p>
                                 </div>
                             </div>
-                            <span v-if="card.kind === 'link'" class="mt-3 inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500 dark:bg-slate-800">
+                            <span v-if="card.kind === 'link'" class="mt-3 inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                                 {{ card.external ? t('reports.opens_pdf') : t('reports.on_its_page') }}
                             </span>
                         </component>
-                        <button type="button" class="absolute end-3 top-3 rounded-lg p-1 hover:text-amber-500"
-                                :class="pinned.includes(card.id) ? 'text-amber-500' : 'text-slate-300'"
+                        <button type="button" class="absolute end-3 top-3 rounded-lg p-1 hover:text-amber-500 dark:hover:text-amber-400"
+                                :class="pinned.includes(card.id) ? 'text-amber-500 dark:text-amber-400' : 'text-slate-300'"
                                 :aria-pressed="pinned.includes(card.id)"
                                 :aria-label="pinned.includes(card.id) ? t('reports.unpin') : t('reports.pin')"
                                 :title="pinned.includes(card.id) ? t('reports.unpin') : t('reports.pin')"
@@ -117,7 +117,7 @@ function pin(card) {
                 </div>
             </section>
 
-            <p v-if="!groups.length" class="py-12 text-center text-slate-500">{{ t('no_results') }}</p>
+            <p v-if="!groups.length" class="py-12 text-center text-slate-500 dark:text-slate-400">{{ t('no_results') }}</p>
         </div>
     </AuthenticatedLayout>
 </template>

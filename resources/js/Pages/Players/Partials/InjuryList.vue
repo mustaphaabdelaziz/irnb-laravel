@@ -76,7 +76,7 @@ const input = 'mt-1 block w-full rounded-lg border-slate-300 text-sm dark:border
         <h4 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ t('att.injury.title') }}</h4>
         <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{{ t('att.injury.help') }}</p>
 
-        <p v-if="!injuries.spells.length" class="py-3 text-sm text-slate-500">{{ t('att.injury.none') }}</p>
+        <p v-if="!injuries.spells.length" class="py-3 text-sm text-slate-500 dark:text-slate-400">{{ t('att.injury.none') }}</p>
         <ol v-else class="mt-2 space-y-2">
             <li v-for="spell in injuries.spells" :key="spell.start" class="rounded-xl p-3 ring-1 ring-slate-200 dark:ring-slate-800">
                 <div class="flex flex-wrap items-center gap-2 text-sm">
@@ -87,7 +87,7 @@ const input = 'mt-1 block w-full rounded-lg border-slate-300 text-sm dark:border
                         class="rounded-full px-2 py-0.5 text-xs font-semibold"
                         :class="spell.open ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'"
                     >{{ spell.open ? t('att.injury.open') : t('att.injury.closed') }}</span>
-                    <span class="text-xs text-slate-500">{{ t('att.injury.col.sessions') }}: {{ spell.sessions }}</span>
+                    <span class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.injury.col.sessions') }}: {{ spell.sessions }}</span>
                     <span v-if="!spell.open && spell.returned_on" class="text-xs text-emerald-600 dark:text-emerald-400">{{ t('att.injury.returned_on', { date: day(spell.returned_on) }) }}</span>
                     <span v-else-if="spell.open && spell.returned_on" class="text-xs text-amber-600 dark:text-amber-400">{{ t('att.injury.expected_back', { date: day(spell.returned_on) }) }}</span>
                     <IconButton v-if="canEdit" class="ms-auto" icon="pencil" :label="spell.note ? t('att.injury.edit_details') : t('att.injury.add_details')" variant="primary" plain size="sm" @click="open(spell.start, spell.note)" />
@@ -128,12 +128,12 @@ const input = 'mt-1 block w-full rounded-lg border-slate-300 text-sm dark:border
                 <label class="block text-sm">{{ t('att.injury.col.returned_on') }}
                     <input v-model="editing.returned_on" type="date" :min="editing.start_date" :class="input" />
                 </label>
-                <p class="text-xs text-slate-500">{{ t('att.injury.returned_hint') }}</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.injury.returned_hint') }}</p>
                 <InputError :message="errorOf('returned_on')" />
                 <InputError :message="errorOf('start_date')" />
                 <InputError :message="errorOf('form')" />
                 <div class="flex justify-end gap-2">
-                    <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700" @click="close">{{ t('att.close') }}</button>
+                    <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700 dark:text-slate-400" @click="close">{{ t('att.close') }}</button>
                     <button type="submit" :disabled="saving" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('att.save') }}</button>
                 </div>
             </form>

@@ -78,15 +78,15 @@ function destroy() {
                             </td>
                             <td class="px-4 py-3 text-center">
                                 <TextInput v-if="editingId === c.id" v-model="editForm.sort_order" type="number" class="w-16" />
-                                <span v-else class="text-sm text-slate-500">{{ c.sort_order }}</span>
+                                <span v-else class="text-sm text-slate-500 dark:text-slate-400">{{ c.sort_order }}</span>
                             </td>
                             <td class="px-4 py-3 text-center">
                                 <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ c.members_count }}</span>
                             </td>
                             <td class="px-4 py-3 text-end">
                                 <div v-if="editingId === c.id" class="flex justify-end gap-2">
-                                    <button @click="saveEdit(c.id)" class="text-sm text-primary-600 hover:text-primary-800">{{ t('save') }}</button>
-                                    <button @click="editingId = null" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400">{{ t('cancel') }}</button>
+                                    <button @click="saveEdit(c.id)" class="text-sm text-primary-600 hover:text-primary-800 dark:text-primary-300 dark:hover:text-primary-200">{{ t('save') }}</button>
+                                    <button @click="editingId = null" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">{{ t('cancel') }}</button>
                                 </div>
                                 <div v-else class="flex justify-end gap-2">
                                     <IconButton icon="pencil" :label="t('edit')" plain size="sm" @click="startEdit(c)" />

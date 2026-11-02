@@ -119,7 +119,7 @@ function destroy() {
                             <td class="px-4 py-3">
                                 <p class="text-sm font-medium text-slate-900 dark:text-slate-100">
                                     {{ type.localized_name || type.name }}
-                                    <span v-if="!type.is_active" class="ms-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500 dark:bg-slate-800">{{ t('inactive') }}</span>
+                                    <span v-if="!type.is_active" class="ms-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('inactive') }}</span>
                                 </p>
                                 <p class="font-mono text-xs text-slate-400">{{ type.code }}</p>
                             </td>

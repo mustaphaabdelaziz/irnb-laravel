@@ -77,7 +77,7 @@ const eventIcon = (type) => EVENT_ICONS[normalizeEvent(type)] || 'document';
 const DOT_CLASSES = {
     emerald: 'text-emerald-600 dark:text-emerald-400 ring-emerald-400 dark:ring-emerald-500',
     amber: 'text-amber-600 dark:text-amber-400 ring-amber-400 dark:ring-amber-500',
-    primary: 'text-primary-600 dark:text-primary-400 ring-primary-400 dark:ring-primary-500',
+    primary: 'text-primary-600 dark:text-primary-300 ring-primary-400 dark:ring-primary-500',
     rose: 'text-rose-600 dark:text-rose-400 ring-rose-400 dark:ring-rose-500',
     slate: 'text-slate-500 dark:text-slate-400 ring-slate-400 dark:ring-slate-600',
 };
@@ -105,7 +105,7 @@ const eventLabel = (type) => {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center gap-3">
-                <Link :href="item.catalog ? route('equipment.catalogs.show', item.catalog.id) : route('equipment.catalogs.index')" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
+                <Link :href="item.catalog ? route('equipment.catalogs.show', item.catalog.id) : route('equipment.catalogs.index')" class="text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
                     <Icon name="back" class="text-lg rtl:rotate-180" />
                 </Link>
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ item.catalog?.name || item.unique_identifier }}</h1>
@@ -141,7 +141,7 @@ const eventLabel = (type) => {
                     <RentalTypeBadge :type="item.rented_to.type" class="me-1" />
                     <span class="font-medium text-amber-900 dark:text-amber-200">{{ item.rented_to.type === 'assignment' ? t('assigned_to') : t('rented_to') }}:</span>
                     <!-- A player links to their profile; an external person is plain text + phone. -->
-                    <Link v-if="item.rented_to.player_id" :href="route('players.show', item.rented_to.player_id)" class="ms-1 text-primary-600 dark:text-primary-400 hover:underline">
+                    <Link v-if="item.rented_to.player_id" :href="route('players.show', item.rented_to.player_id)" class="ms-1 text-primary-600 dark:text-primary-300 hover:underline">
                         {{ item.rented_to.name }}
                     </Link>
                     <span v-else class="ms-1 text-amber-900 dark:text-amber-200">

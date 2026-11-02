@@ -42,7 +42,7 @@ const { formatMoney } = useFormatMoney();
 const { formatNumber, formatPercent } = useFormatNumber();
 
 const toneClasses = {
-    primary: 'bg-primary/10 text-primary',
+    primary: 'bg-primary/10 text-primary dark:text-primary-300',
     positive: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
     negative: 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
     warning: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',

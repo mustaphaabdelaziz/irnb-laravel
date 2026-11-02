@@ -26,7 +26,7 @@ const { appName, appShortName } = useClubIdentity();
             <div class="mb-6 flex flex-col items-center gap-3 text-center">
                 <Link href="/" class="flex h-16 w-16 items-center justify-center rounded-2xl" :class="appLogo ? '' : 'bg-white shadow-card ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800'">
                     <img v-if="appLogo" :src="appLogo" :alt="appName" class="h-16 w-16 object-contain" />
-                    <span v-else class="text-2xl font-extrabold text-primary-600 dark:text-primary-400">{{ appShortName.charAt(0) }}</span>
+                    <span v-else class="text-2xl font-extrabold text-primary-600 dark:text-primary-300">{{ appShortName.charAt(0) }}</span>
                 </Link>
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ appName }}</h1>
             </div>

@@ -24,7 +24,7 @@ const lists = computed(() => [
 <template>
     <section class="rounded-xl bg-white p-4 ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
         <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.stats.ranking_help', { n: ranking.min_expected }) }}</p>
-        <p v-if="!ranking.top.length" class="py-4 text-center text-sm text-slate-500">{{ t('att.stats.no_ranking') }}</p>
+        <p v-if="!ranking.top.length" class="py-4 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('att.stats.no_ranking') }}</p>
         <div v-else class="mt-3 grid gap-4 md:grid-cols-2">
             <div v-for="list in lists" :key="list.key">
                 <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ t(`att.stats.${list.key}`) }}</h3>

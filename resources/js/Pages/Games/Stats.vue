@@ -42,7 +42,7 @@ const hasSets = computed(() => props.rows.some((r) => r.sport === 'volleyball'))
             <StatsLeaders :leaders="leaders" />
             <div class="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
                 <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
-                    <thead class="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-950"><tr>
+                    <thead class="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-950 dark:text-slate-400"><tr>
                         <th class="px-3 py-2 text-start">{{ t('comp.player') }}</th>
                         <th v-for="c in ['appearances', 'starts', 'minutes', 'goals', 'assists', 'yellows', 'reds', 'avg_rating', 'motm']" :key="c" class="px-3 py-2 text-center">{{ c === 'minutes' && hasSets ? t('comp.stats.col_minutes_sets') : t(`comp.stats.col_${c}`) }}</th>
                     </tr></thead>
@@ -59,7 +59,7 @@ const hasSets = computed(() => props.rows.some((r) => r.sport === 'volleyball'))
                             <td class="px-3 py-2 text-center">{{ r.avg_rating ?? '—' }}</td>
                             <td class="px-3 py-2 text-center">{{ r.motm }}</td>
                         </tr>
-                        <tr v-if="!rows.length"><td colspan="10" class="px-3 py-8 text-center text-slate-500">{{ t('no_results') }}</td></tr>
+                        <tr v-if="!rows.length"><td colspan="10" class="px-3 py-8 text-center text-slate-500 dark:text-slate-400">{{ t('no_results') }}</td></tr>
                     </tbody>
                 </table>
             </div>

@@ -140,7 +140,7 @@ const cardClass = 'rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-
                         <time :datetime="entry.occurred_at" class="shrink-0 text-xs text-slate-500 tabular-nums dark:text-slate-400 sm:w-40">{{ formatDate(entry.occurred_at) }}</time>
                         <div class="min-w-0 flex-1 text-sm">
                             <Link v-if="entry.subject.url" :href="entry.subject.url" class="break-words font-medium text-primary-700 hover:underline dark:text-primary-300">{{ entry.subject.label }}</Link>
-                            <span v-else-if="entry.subject.deleted" class="italic text-slate-400 dark:text-slate-500">{{ entry.subject.label }}</span>
+                            <span v-else-if="entry.subject.deleted" class="italic text-slate-400 dark:text-slate-400">{{ entry.subject.label }}</span>
                             <span v-else class="text-slate-700 dark:text-slate-200">{{ entry.subject.label }}</span>
                         </div>
                         <div class="flex flex-wrap items-center gap-1.5">
@@ -148,7 +148,7 @@ const cardClass = 'rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-
                             <span v-for="(chip, i) in chips(entry)" :key="i" class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-200">{{ chip }}</span>
                             <span
                                 v-if="entry.properties?.backfilled"
-                                class="rounded-full border border-dashed border-slate-300 px-2 py-0.5 text-xs text-slate-400 dark:border-slate-700 dark:text-slate-500"
+                                class="rounded-full border border-dashed border-slate-300 px-2 py-0.5 text-xs text-slate-400 dark:border-slate-700 dark:text-slate-400"
                                 :title="t('activity.from_history_hint')"
                             >{{ t('activity.from_history') }}</span>
                         </div>

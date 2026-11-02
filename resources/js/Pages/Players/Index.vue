@@ -359,7 +359,7 @@ function runBulk() {
                                     @click="action.onClick?.()"
                                     class="flex w-full items-center gap-2.5 px-4 py-2.5 text-start text-sm text-slate-700 transition-colors hover:bg-slate-100 focus:bg-slate-100 focus:outline-none dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:bg-slate-700"
                                 >
-                                    <Icon :name="action.icon" class="text-base text-slate-400 dark:text-slate-500" />
+                                    <Icon :name="action.icon" class="text-base text-slate-400 dark:text-slate-400" />
                                     {{ action.label }}
                                 </component>
                             </div>
@@ -411,9 +411,9 @@ function runBulk() {
                 <div class="flex w-full items-center justify-between gap-3 sm:w-auto sm:flex-1">
                     <div class="inline-flex rounded-xl bg-slate-100 p-0.5 dark:bg-slate-800">
                         <button type="button" @click="archivedView = false" :aria-pressed="!archivedView" class="rounded-lg px-3 py-1.5 text-xs font-bold transition-colors"
-                            :class="!archivedView ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">{{ t('active') }}</button>
+                            :class="!archivedView ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 dark:text-slate-400'">{{ t('active') }}</button>
                         <button type="button" @click="archivedView = true" :aria-pressed="archivedView" class="rounded-lg px-3 py-1.5 text-xs font-bold transition-colors"
-                            :class="archivedView ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'">{{ t('archived') }}</button>
+                            :class="archivedView ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 dark:text-slate-400'">{{ t('archived') }}</button>
                     </div>
                     <div class="inline-flex rounded-xl bg-slate-100 p-0.5 dark:bg-slate-800">
                         <IconButton icon="menu" :label="t('list_view')" variant="ghost" size="sm" :pressed="view === 'list'" @click="view = 'list'" />
@@ -461,7 +461,7 @@ function runBulk() {
                             <div class="mt-3 flex items-center justify-between border-t border-slate-100 pt-2 text-xs dark:border-slate-800">
                                 <Badge v-if="player.archived" :label="t('archived')" color="slate" />
                                 <Badge v-else :label="t('active')" color="emerald" />
-                                <span class="font-semibold" :class="player.total_debt > 0 ? 'text-rose-700' : 'text-emerald-700'">{{ formatMoney(player.total_debt || 0) }}</span>
+                                <span class="font-semibold" :class="player.total_debt > 0 ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300'">{{ formatMoney(player.total_debt || 0) }}</span>
                             </div>
                             <div class="mt-2 flex items-center justify-end gap-1">
                                 <IconButton v-if="!player.archived" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click.prevent.stop="archiveId = player.id" />
@@ -510,7 +510,7 @@ function runBulk() {
                                     </td>
                                     <td class="whitespace-nowrap px-4 py-3 text-sm font-mono text-slate-600 dark:text-slate-300">{{ player.membership_id }}</td>
                                     <td class="whitespace-nowrap px-4 py-3">
-                                        <Link :href="route('players.show', player.id)" class="flex items-center gap-3 text-sm font-medium text-slate-900 dark:text-slate-100 hover:text-primary-600">
+                                        <Link :href="route('players.show', player.id)" class="flex items-center gap-3 text-sm font-medium text-slate-900 dark:text-slate-100 hover:text-primary-600 dark:hover:text-primary-300">
                                             <img v-if="player.picture_url" :src="player.picture_url" :alt="player.firstname" loading="lazy" class="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700" />
                                             <span v-else class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-50 text-sm font-bold text-primary-600 ring-1 ring-primary-100 dark:bg-primary-500/10 dark:text-primary-300 dark:ring-primary-500/20">
                                                 {{ (player.lastname || player.firstname || '?').charAt(0).toUpperCase() }}
@@ -533,7 +533,7 @@ function runBulk() {
                                     </td>
                                     <td class="whitespace-nowrap px-4 py-3">
                                         <Badge v-if="Number(player.missing_documents_count) > 0" :label="t('doc_missing_count', { count: Number(player.missing_documents_count) })" color="rose" />
-                                        <Icon v-else name="check" class="text-emerald-500" :title="t('doc_complete')" />
+                                        <Icon v-else name="check" class="text-emerald-500 dark:text-emerald-400" :title="t('doc_complete')" />
                                     </td>
                                     <td class="whitespace-nowrap px-4 py-3 text-end text-sm font-semibold"
                                         :class="player.total_debt > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'">
@@ -583,9 +583,9 @@ function runBulk() {
                             accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                             @change="onImportFile"
                             required
-                            class="w-full text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 hover:file:bg-primary-100"
+                            class="w-full text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 hover:file:bg-primary-100 dark:file:bg-primary-500/10 dark:file:text-primary-300 dark:hover:file:bg-primary-500/15"
                         />
-                        <p v-if="importForm.errors.file" class="text-sm text-rose-600">{{ importForm.errors.file }}</p>
+                        <p v-if="importForm.errors.file" class="text-sm text-rose-600 dark:text-rose-400">{{ importForm.errors.file }}</p>
                         <div class="flex items-center justify-between gap-3 pt-2">
                             <ExportMenu :href="route('players.import.template')" :label="t('download_template')" align="left" />
                             <div class="flex gap-2">

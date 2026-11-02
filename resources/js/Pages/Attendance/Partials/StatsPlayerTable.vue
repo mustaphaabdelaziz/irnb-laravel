@@ -69,10 +69,10 @@ const columns = computed(() => [
 <template>
     <section class="overflow-x-auto rounded-xl bg-white ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
         <h2 class="px-4 pt-4 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ t('att.stats.players') }}</h2>
-        <p v-if="!rows.length" class="p-6 text-center text-sm text-slate-500">{{ t('att.stats.no_data') }}</p>
+        <p v-if="!rows.length" class="p-6 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('att.stats.no_data') }}</p>
         <table v-else class="mt-2 w-full min-w-[64rem] text-sm">
             <thead>
-                <tr class="bg-slate-50 text-xs text-slate-500 dark:bg-slate-800/50">
+                <tr class="bg-slate-50 text-xs text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">
                     <th
                         v-for="col in columns"
                         :key="col.key"
@@ -95,7 +95,7 @@ const columns = computed(() => [
                         <Link v-if="can('players', 'view')" :href="profileHref(row)" class="text-primary-700 hover:underline dark:text-primary-300">{{ row.name }}</Link>
                         <template v-else>{{ row.name }}</template>
                     </td>
-                    <td class="whitespace-nowrap p-2 text-slate-500">{{ row.category ?? '—' }}</td>
+                    <td class="whitespace-nowrap p-2 text-slate-500 dark:text-slate-400">{{ row.category ?? '—' }}</td>
                     <td class="p-2 text-end tabular-nums">{{ row.expected }}</td>
                     <td v-for="s in statuses" :key="s" class="whitespace-nowrap p-2 text-end tabular-nums">
                         {{ row.counts[s] }} <bdi dir="ltr" class="text-xs text-slate-400">{{ pct(row.pct[s]) }}</bdi>

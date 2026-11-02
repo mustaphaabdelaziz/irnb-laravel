@@ -34,16 +34,16 @@ const tag = computed(() => {
 const VARIANTS = {
     neutral: 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 hover:text-slate-900 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800 dark:hover:text-white',
     primary: 'bg-primary-600 text-white shadow-sm hover:bg-primary-700',
-    danger: 'bg-white text-rose-600 ring-1 ring-rose-200 hover:bg-rose-50 hover:text-rose-700 dark:bg-slate-900 dark:text-rose-300 dark:ring-rose-900/60 dark:hover:bg-rose-900/30',
-    success: 'bg-white text-emerald-600 ring-1 ring-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 dark:bg-slate-900 dark:text-emerald-300 dark:ring-emerald-900/60 dark:hover:bg-emerald-900/30',
+    danger: 'bg-white text-rose-600 ring-1 ring-rose-200 hover:bg-rose-50 hover:text-rose-700 dark:bg-slate-900 dark:text-rose-300 dark:ring-rose-900/60 dark:hover:bg-rose-900/30 dark:hover:text-rose-300',
+    success: 'bg-white text-emerald-600 ring-1 ring-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 dark:bg-slate-900 dark:text-emerald-300 dark:ring-emerald-900/60 dark:hover:bg-emerald-900/30 dark:hover:text-emerald-300',
     ghost: 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white',
 };
 
 const PLAIN = {
     neutral: 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white',
-    primary: 'text-primary-600 hover:bg-primary-50 hover:text-primary-800 dark:text-primary-300 dark:hover:bg-primary-500/10',
-    danger: 'text-rose-500 hover:bg-rose-50 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-900/30',
-    success: 'text-emerald-600 hover:bg-emerald-50 hover:text-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-900/30',
+    primary: 'text-primary-600 hover:bg-primary-50 hover:text-primary-800 dark:text-primary-300 dark:hover:bg-primary-500/10 dark:hover:text-primary-200',
+    danger: 'text-rose-500 hover:bg-rose-50 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-900/30 dark:hover:text-rose-300',
+    success: 'text-emerald-600 hover:bg-emerald-50 hover:text-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-900/30 dark:hover:text-emerald-200',
     ghost: VARIANTS.ghost,
 };
 

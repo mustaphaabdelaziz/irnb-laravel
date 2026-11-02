@@ -122,7 +122,7 @@ const attStyle = {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center gap-2">
-                <Link :href="route('board.meetings')" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"><Icon name="back" /></Link>
+                <Link :href="route('board.meetings')" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"><Icon name="back" /></Link>
                 <h1 class="truncate text-lg font-bold text-slate-900 dark:text-slate-100" :class="isCancelled ? 'line-through decoration-slate-400' : ''">{{ meeting.title }}</h1>
                 <div class="ms-auto flex items-center gap-2">
                     <IconButton v-if="canCancel" icon="xcircle" :label="t('cancel_meeting')" variant="danger" @click="openCancel" />
@@ -158,7 +158,7 @@ const attStyle = {
                             <select v-model="form.status" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
                                 <option value="scheduled">{{ t('scheduled') }}</option><option value="held">{{ t('held') }}</option>
                             </select>
-                            <span v-if="form.errors.status" class="mt-1 block text-xs text-rose-500">{{ form.errors.status }}</span></label>
+                            <span v-if="form.errors.status" class="mt-1 block text-xs text-rose-500 dark:text-rose-400">{{ form.errors.status }}</span></label>
                         <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('date') }}</span>
                             <input v-model="form.meeting_date" type="datetime-local" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
                         <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('location') }}</span>
@@ -170,10 +170,10 @@ const attStyle = {
                             <div v-for="(item, i) in form.agenda" :key="i" class="flex items-center gap-2">
                                 <span class="text-xs font-bold text-slate-400">{{ i + 1 }}</span>
                                 <input v-model="form.agenda[i]" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
-                                <button type="button" @click="form.agenda.splice(i, 1)" class="text-slate-300 hover:text-rose-500"><Icon name="xcircle" /></button>
+                                <button type="button" @click="form.agenda.splice(i, 1)" class="text-slate-300 hover:text-rose-500 dark:hover:text-rose-400"><Icon name="xcircle" /></button>
                             </div>
                         </div>
-                        <button type="button" @click="form.agenda.push('')" class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary-600"><Icon name="plus" /> {{ t('add_item') }}</button>
+                        <button type="button" @click="form.agenda.push('')" class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary-600 dark:text-primary-300"><Icon name="plus" /> {{ t('add_item') }}</button>
                     </div>
                 </section>
 
@@ -188,27 +188,27 @@ const attStyle = {
                     <div>
                         <span class="mb-1 block text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('minutes_file') }}</span>
                         <div v-if="meeting.attachment_url" class="mb-2 flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/50">
-                            <Icon name="document" class="text-primary-500" />
+                            <Icon name="document" class="text-primary-500 dark:text-primary-300" />
                             <a :href="meeting.attachment_url" target="_blank" class="min-w-0 flex-1 truncate text-sm font-medium text-primary-600 hover:underline dark:text-primary-300">{{ attachmentName || t('view_file') }}</a>
                             <IconButton icon="trash" :label="t('remove')" variant="danger" plain size="sm" @click="confirmRemoveAttachment = true" />
                         </div>
                         <div v-if="!isCancelled" class="flex flex-wrap items-center gap-2">
                             <input type="file" accept=".pdf,.doc,.docx,image/*" @change="fileForm.attachment = $event.target.files[0]"
-                                class="block w-full max-w-xs text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-primary-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-700 hover:file:bg-primary-100 dark:text-slate-400 dark:file:bg-primary-500/10 dark:file:text-primary-300" />
+                                class="block w-full max-w-xs text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-primary-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-700 hover:file:bg-primary-100 dark:text-slate-400 dark:file:bg-primary-500/10 dark:file:text-primary-300 dark:hover:file:bg-primary-500/15" />
                             <IconButton icon="upload" :label="t('upload')" :disabled="!fileForm.attachment || fileForm.processing" @click="uploadAttachment" />
                         </div>
-                        <p v-if="fileForm.errors.attachment" class="mt-1 text-xs text-rose-500">{{ fileForm.errors.attachment }}</p>
+                        <p v-if="fileForm.errors.attachment" class="mt-1 text-xs text-rose-500 dark:text-rose-400">{{ fileForm.errors.attachment }}</p>
                     </div>
                     <div>
                         <span class="mb-1 block text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('decisions') }}</span>
                         <div class="space-y-2">
                             <div v-for="(d, i) in form.decisions" :key="i" class="flex items-center gap-2">
-                                <Icon name="check" class="text-emerald-500" />
+                                <Icon name="check" class="text-emerald-500 dark:text-emerald-400" />
                                 <input v-model="form.decisions[i]" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
-                                <button type="button" @click="form.decisions.splice(i, 1)" class="text-slate-300 hover:text-rose-500"><Icon name="xcircle" /></button>
+                                <button type="button" @click="form.decisions.splice(i, 1)" class="text-slate-300 hover:text-rose-500 dark:hover:text-rose-400"><Icon name="xcircle" /></button>
                             </div>
                         </div>
-                        <button type="button" @click="form.decisions.push('')" class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary-600"><Icon name="plus" /> {{ t('add_item') }}</button>
+                        <button type="button" @click="form.decisions.push('')" class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary-600 dark:text-primary-300"><Icon name="plus" /> {{ t('add_item') }}</button>
                     </div>
                     <div v-if="!isCancelled" class="flex justify-end">
                         <button @click="saveMeeting" :disabled="form.processing" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('save_minutes') }}</button>
@@ -224,7 +224,7 @@ const attStyle = {
                                 <span class="block truncate text-sm font-medium text-slate-800 dark:text-slate-200">{{ tk.title }}</span>
                                 <span class="text-xs text-slate-400">{{ tk.member?.name || t('unassigned') }} · {{ t(tk.status) }}</span>
                             </span>
-                            <span class="text-xs font-bold text-slate-500">{{ tk.progress }}%</span>
+                            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">{{ tk.progress }}%</span>
                             <IconButton v-if="!isCancelled" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteTaskId = tk.id" />
                         </li>
                     </ul>
@@ -270,7 +270,7 @@ const attStyle = {
                 <span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('cancel_reason') }}</span>
                 <textarea v-model="cancelForm.reason" rows="3" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800"></textarea>
             </label>
-            <p v-if="cancelForm.errors.reason" class="mt-1 text-xs text-rose-500">{{ cancelForm.errors.reason }}</p>
+            <p v-if="cancelForm.errors.reason" class="mt-1 text-xs text-rose-500 dark:text-rose-400">{{ cancelForm.errors.reason }}</p>
         </ConfirmModal>
 
         <ConfirmModal :show="showDelete" :title="t('delete_meeting')" :message="t('delete_meeting_confirm')"

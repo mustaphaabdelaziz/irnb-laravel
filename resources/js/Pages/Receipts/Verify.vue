@@ -99,7 +99,7 @@ function show(name, value) {
                         <div>
                             <dt class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('receipts.number') }}</dt>
                             <dd class="mt-1 text-sm text-slate-900 dark:text-slate-100">
-                                <Link v-if="result.transaction_id" :href="route('transactions.show', result.transaction_id)" class="text-primary-600 hover:underline">#{{ result.transaction_number }}</Link>
+                                <Link v-if="result.transaction_id" :href="route('transactions.show', result.transaction_id)" class="text-primary-600 hover:underline dark:text-primary-300">#{{ result.transaction_number }}</Link>
                                 <span v-else>#{{ result.transaction_number }}</span>
                             </dd>
                         </div>
@@ -113,7 +113,7 @@ function show(name, value) {
                         </div>
                         <div v-if="snap.player_name">
                             <dt class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('player') }}</dt>
-                            <dd class="mt-1 text-sm text-slate-900 dark:text-slate-100">{{ snap.player_name }} <span class="font-mono text-xs text-slate-500">{{ snap.membership_id }}</span></dd>
+                            <dd class="mt-1 text-sm text-slate-900 dark:text-slate-100">{{ snap.player_name }} <span class="font-mono text-xs text-slate-500 dark:text-slate-400">{{ snap.membership_id }}</span></dd>
                         </div>
                         <div class="sm:col-span-2">
                             <dt class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('title') }}</dt>
@@ -144,7 +144,7 @@ function show(name, value) {
                     <div v-if="result.copies?.length" class="mt-6">
                         <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ t('receipts.history') }}</h3>
                         <ul class="mt-2 divide-y divide-slate-100 text-sm dark:divide-slate-800">
-                            <li v-for="c in result.copies" :key="c.copy_number" class="flex flex-wrap justify-between gap-2 py-2" :class="c.is_this ? 'font-semibold text-primary-700 dark:text-primary-400' : 'text-slate-700 dark:text-slate-200'">
+                            <li v-for="c in result.copies" :key="c.copy_number" class="flex flex-wrap justify-between gap-2 py-2" :class="c.is_this ? 'font-semibold text-primary-700 dark:text-primary-300' : 'text-slate-700 dark:text-slate-200'">
                                 <span>{{ c.copy_number === 1 ? t('receipts.original') : t('receipts.duplicate', { n: c.copy_number }) }} · {{ t(`receipts.format.${c.format}`) }}</span>
                                 <span>{{ c.printed_at }} · {{ c.printed_by || '—' }}</span>
                             </li>

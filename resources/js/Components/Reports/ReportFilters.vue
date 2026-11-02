@@ -40,7 +40,7 @@ function generate() {
 <template>
     <form class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 print:hidden dark:bg-slate-900 dark:ring-slate-800" @submit.prevent="generate">
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <label v-for="def in defs" :key="def.key" class="block text-xs font-medium text-slate-500">
+            <label v-for="def in defs" :key="def.key" class="block text-xs font-medium text-slate-500 dark:text-slate-400">
                 <span class="mb-1 block">{{ t(def.label) }}</span>
                 <MultiSelectFilter v-if="def.type === 'multi'" v-model="draft[def.key]" :options="def.options" :label="t(def.label)" :placeholder="t('reports.all')" />
                 <SearchableSelect v-else-if="def.type === 'select'" v-model="draft[def.key]" :options="def.options" :placeholder="t('reports.all')" />
@@ -48,7 +48,7 @@ function generate() {
                        class="w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-950">
                 <input v-else v-model="draft[def.key]" type="number" :min="def.min" :max="def.max" inputmode="numeric"
                        class="w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-950">
-                <span v-if="errors[def.key]" class="mt-1 block text-xs text-red-600">{{ errors[def.key] }}</span>
+                <span v-if="errors[def.key]" class="mt-1 block text-xs text-red-600 dark:text-red-400">{{ errors[def.key] }}</span>
             </label>
         </div>
         <div class="mt-4 flex flex-wrap gap-2">

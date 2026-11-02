@@ -40,7 +40,7 @@ const returning = ref(null);
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center gap-3">
-                <Link :href="route('equipment.catalogs.index')" class="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"><Icon name="back" /></Link>
+                <Link :href="route('equipment.catalogs.index')" class="text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-300"><Icon name="back" /></Link>
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('equipment_out') }}</h1>
             </div>
         </template>
@@ -50,7 +50,7 @@ const returning = ref(null);
                 <div class="flex gap-1.5">
                     <button v-for="tab in tabs" :key="tab.key" type="button" @click="type = tab.key"
                         class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors"
-                        :class="type === tab.key ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800'">
+                        :class="type === tab.key ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800 dark:hover:bg-slate-800'">
                         {{ t(tab.label) }}
                         <span class="rounded-full bg-black/10 px-1.5 text-xs dark:bg-white/10">{{ counts[tab.key] ?? 0 }}</span>
                     </button>
@@ -76,14 +76,14 @@ const returning = ref(null);
                                 <td class="px-4 py-3 text-sm">
                                     <div class="flex items-center gap-2">
                                         <RentalTypeBadge :type="r.type" />
-                                        <Link v-if="r.player_id" :href="route('players.show', r.player_id)" class="font-medium text-primary-600 hover:underline">{{ r.recipient_name }}</Link>
+                                        <Link v-if="r.player_id" :href="route('players.show', r.player_id)" class="font-medium text-primary-600 hover:underline dark:text-primary-300">{{ r.recipient_name }}</Link>
                                         <span v-else class="font-medium text-slate-800 dark:text-slate-200">{{ r.recipient_name || '—' }}</span>
                                     </div>
                                     <span v-if="r.membership_id" class="font-mono text-xs text-slate-400">{{ r.membership_id }}</span>
                                     <span v-else-if="r.external_phone" class="text-xs text-slate-400">{{ r.external_phone }}</span>
                                 </td>
                                 <td class="px-4 py-3 text-sm">
-                                    <Link v-if="r.catalog" :href="route('equipment.catalogs.show', r.catalog.id)" class="text-slate-800 hover:text-primary-600 dark:text-slate-200">{{ r.catalog.name }}</Link>
+                                    <Link v-if="r.catalog" :href="route('equipment.catalogs.show', r.catalog.id)" class="text-slate-800 hover:text-primary-600 dark:text-slate-200 dark:hover:text-primary-300">{{ r.catalog.name }}</Link>
                                     <span v-if="r.item_label" class="block font-mono text-xs text-slate-400">{{ r.item_label }}</span>
                                 </td>
                                 <td class="px-4 py-3 text-end text-sm font-semibold text-slate-900 dark:text-slate-100">

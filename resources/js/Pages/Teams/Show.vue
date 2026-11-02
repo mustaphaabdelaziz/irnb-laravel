@@ -101,7 +101,7 @@ const tabs = computed(() => ['roster', 'coaches', 'competitions', 'games', ...(c
         <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <Link :href="route('teams.index', { season })" class="text-sm text-primary-600 hover:underline">{{ t('teams') }}</Link>
+                    <Link :href="route('teams.index', { season })" class="text-sm text-primary-600 hover:underline dark:text-primary-300">{{ t('teams') }}</Link>
                     <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ team.name }}</h1>
                     <div class="text-sm text-slate-500 dark:text-slate-400">{{ team.branch }} · {{ team.category }} · {{ team.format }}</div>
                 </div>
@@ -163,7 +163,7 @@ const tabs = computed(() => ['roster', 'coaches', 'competitions', 'games', ...(c
                                 <IconButton v-if="canManage" icon="trash" :label="t('comp.remove')" variant="danger" plain size="sm" @click="rows.splice(i, 1)" />
                             </td>
                         </tr>
-                        <tr v-if="!rows.length"><td colspan="4" class="py-6 text-center text-slate-500">{{ t('comp.roster_empty') }}</td></tr>
+                        <tr v-if="!rows.length"><td colspan="4" class="py-6 text-center text-slate-500 dark:text-slate-400">{{ t('comp.roster_empty') }}</td></tr>
                     </tbody>
                 </table>
 
@@ -188,7 +188,7 @@ const tabs = computed(() => ['roster', 'coaches', 'competitions', 'games', ...(c
                     </select>
                     <IconButton v-if="canEditTeam" icon="trash" :label="t('comp.remove')" variant="danger" plain size="sm" @click="coachRows.splice(i, 1)" />
                 </div>
-                <p v-if="!coachRows.length" class="text-sm text-slate-500">{{ t('comp.no_coach') }}</p>
+                <p v-if="!coachRows.length" class="text-sm text-slate-500 dark:text-slate-400">{{ t('comp.no_coach') }}</p>
                 <InputError :message="coachForm.errors.coaches" />
                 <div v-if="canEditTeam" class="flex gap-2">
                     <SecondaryButton @click="coachRows.push({ user_id: '', role: 'head' })">{{ t('add') }}</SecondaryButton>
@@ -200,30 +200,30 @@ const tabs = computed(() => ['roster', 'coaches', 'competitions', 'games', ...(c
             <section v-if="tab === 'competitions'" class="space-y-2 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <Link v-for="c in competitions" :key="c.id" :href="route('competitions.show', c.id)" class="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800">
                     <span class="font-medium">{{ c.name }}</span>
-                    <span class="text-sm text-slate-500">{{ t(`comp.type_${c.type}`) }}<span v-if="c.archived"> · {{ t('archived') }}</span></span>
+                    <span class="text-sm text-slate-500 dark:text-slate-400">{{ t(`comp.type_${c.type}`) }}<span v-if="c.archived"> · {{ t('archived') }}</span></span>
                 </Link>
-                <p v-if="!competitions.length" class="text-sm text-slate-500">{{ t('no_results') }}</p>
-                <Link :href="route('competitions.index', { team_id: team.id, season })" class="inline-block text-sm text-primary-600 hover:underline">{{ t('competitions') }} →</Link>
+                <p v-if="!competitions.length" class="text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</p>
+                <Link :href="route('competitions.index', { team_id: team.id, season })" class="inline-block text-sm text-primary-600 hover:underline dark:text-primary-300">{{ t('competitions') }} →</Link>
             </section>
 
             <!-- Matches -->
             <section v-if="tab === 'games'" class="space-y-2 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <Link v-for="g in games" :key="g.id" :href="route('games.show', g.id)" class="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800">
                     <span><bdi dir="ltr" class="font-mono text-sm">{{ g.date }}</bdi> · {{ g.opponent }} ({{ t(`comp.side_${g.side}`) }})</span>
-                    <span class="text-sm text-slate-500">
+                    <span class="text-sm text-slate-500 dark:text-slate-400">
                         <template v-if="g.status === 'played'"><bdi dir="ltr">{{ g.our_score }} – {{ g.their_score }}</bdi></template>
                         <template v-else>{{ t(`comp.status_${g.status}`) }}</template>
                     </span>
                 </Link>
-                <p v-if="!games.length" class="text-sm text-slate-500">{{ t('no_results') }}</p>
-                <Link :href="route('games.index', { team_id: team.id })" class="inline-block text-sm text-primary-600 hover:underline">{{ t('games') }} →</Link>
+                <p v-if="!games.length" class="text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</p>
+                <Link :href="route('games.index', { team_id: team.id })" class="inline-block text-sm text-primary-600 hover:underline dark:text-primary-300">{{ t('games') }} →</Link>
             </section>
 
             <section v-if="tab === 'stats' && stats" class="space-y-4 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div class="flex flex-wrap items-center gap-4 text-sm">
                     <span v-for="key in ['played', 'wins', 'draws', 'losses', 'goals_for', 'goals_against']" :key="key"><b>{{ stats.record[key] }}</b> {{ t(`comp.record_${key}`) }}</span>
                     <span v-if="stats.record.form?.length" class="flex items-center gap-1">
-                        <span class="text-xs uppercase text-slate-500">{{ t('comp.form') }}</span>
+                        <span class="text-xs uppercase text-slate-500 dark:text-slate-400">{{ t('comp.form') }}</span>
                         <span v-for="(r, i) in stats.record.form" :key="i" class="flex h-6 w-6 items-center justify-center rounded text-xs font-bold text-white" :class="formClass[r]">{{ t(`comp.form_${r}`) }}</span>
                     </span>
                 </div>

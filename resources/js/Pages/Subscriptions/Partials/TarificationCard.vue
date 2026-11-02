@@ -102,25 +102,25 @@ const errorFor = (index, field) => props.form.errors[`tarification.lines.${index
 
             <div class="mt-2 space-y-3">
                 <div v-for="(line, index) in inputs.lines" :key="index" class="rounded-xl p-3 ring-1 ring-slate-200 dark:ring-slate-800">
-                    <div class="grid gap-3 sm:grid-cols-6">
-                        <label class="text-xs text-slate-500 dark:text-slate-400 sm:col-span-2">
+                    <div class="grid gap-3 sm:grid-cols-12">
+                        <label class="text-xs text-slate-500 dark:text-slate-400 sm:col-span-3">
                             {{ t('tarification.line_label') }}
                             <TextInput v-model="line.label" class="mt-0.5 w-full py-1.5 text-sm" maxlength="100" :placeholder="t('tarification.line_placeholder')" />
                             <InputError :message="errorFor(index, 'label')" class="mt-1" />
                         </label>
-                        <label class="text-xs text-slate-500 dark:text-slate-400 sm:col-span-2">
+                        <label class="text-xs text-slate-500 dark:text-slate-400 sm:col-span-4">
                             {{ t('tarification.unit_label') }}
                             <select v-model="line.unit" class="mt-0.5 w-full rounded-lg border-slate-300 py-1.5 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-900">
                                 <option v-for="unit in unitsFor(line)" :key="unit" :value="unit">{{ t(`tarification.unit.${unit}`) }}</option>
                             </select>
                             <InputError :message="errorFor(index, 'unit')" class="mt-1" />
                         </label>
-                        <label class="text-xs text-slate-500 dark:text-slate-400">
+                        <label class="text-xs text-slate-500 dark:text-slate-400 sm:col-span-3">
                             {{ t('tarification.amount') }}
                             <TextInput v-model="line.amount" type="number" step="0.01" min="0" class="mt-0.5 w-full py-1.5 text-sm" />
                             <InputError :message="errorFor(index, 'amount')" class="mt-1" />
                         </label>
-                        <label v-if="line.unit !== 'per_player'" class="text-xs text-slate-500 dark:text-slate-400">
+                        <label v-if="line.unit !== 'per_player'" class="text-xs text-slate-500 dark:text-slate-400 sm:col-span-2">
                             {{ t(`tarification.quantity.${line.unit}`) }}
                             <TextInput v-model="line.quantity" type="number" min="1" class="mt-0.5 w-full py-1.5 text-sm" />
                             <InputError :message="errorFor(index, 'quantity')" class="mt-1" />

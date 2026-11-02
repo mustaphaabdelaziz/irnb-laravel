@@ -2635,6 +2635,7 @@
     "tarification.costs": "Coûts",
     "tarification.edit_costs": "Modifier les coûts",
     "tarification.empty": "Ajoutez les coûts de l'entraîneur, du staff et du transport pour savoir si ce prix suffit.",
+    "tarification.exceptional_sessions": "Un abonnement exceptionnel n'a pas de séances : changez l'unité des coûts par séance ou retirez-les.",
     "tarification.expected_players": "Joueurs prévus",
     "tarification.hint": "Une prévision : rien ici n'est enregistré comme dépense.",
     "tarification.income": "Recettes prévues",

@@ -35,9 +35,7 @@ const statusClass = computed(() => ({
 
 <template>
     <div class="space-y-4">
-        <p v-if="result.missingSessions" class="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('tarification.no_sessions') }}</p>
-
-        <p v-else-if="!result.hasCosts" class="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('tarification.empty') }}</p>
+        <p v-if="result.prompt" class="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t(result.prompt) }}</p>
 
         <template v-else>
             <div class="rounded-xl p-4 ring-1" :class="statusClass">
@@ -61,7 +59,7 @@ const statusClass = computed(() => ({
                 <div v-for="(line, index) in result.lines" :key="index" class="flex flex-wrap justify-between gap-x-4 gap-y-1 py-2">
                     <dt>
                         <span class="text-slate-700 dark:text-slate-200">{{ line.label }}</span>
-                        <span class="ms-2 text-xs text-slate-500 dark:text-slate-400" dir="ltr">{{ lineDetail(line) }}</span>
+                        <span class="ms-2 text-xs text-slate-500 dark:text-slate-400"><bdi dir="ltr">{{ lineDetail(line) }}</bdi></span>
                     </dt>
                     <dd class="text-slate-700 dark:text-slate-200">{{ money(line.total) }}</dd>
                 </div>

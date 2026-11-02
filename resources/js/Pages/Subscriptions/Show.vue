@@ -245,8 +245,8 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
             </div>
 
             <!-- Tarification forecast (Finance → view only) -->
-            <div v-if="tarificationResult && (tarificationResult.missingSessions || !tarificationResult.hasCosts)" class="no-print flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-2xl bg-white px-5 py-3 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
-                <p class="text-sm text-slate-500 dark:text-slate-400">{{ tarificationResult.missingSessions ? t('tarification.no_sessions') : t('tarification.empty') }}</p>
+            <div v-if="tarificationResult && tarificationResult.prompt" class="no-print flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-2xl bg-white px-5 py-3 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+                <p class="text-sm text-slate-500 dark:text-slate-400">{{ t(tarificationResult.prompt) }}</p>
                 <Link v-if="can('subscriptions', 'edit')" :href="route('subscriptions.edit', subscription.id)" class="text-sm font-medium text-primary-600 hover:underline dark:text-primary-400">{{ t('tarification.edit_costs') }}</Link>
             </div>
             <div v-else-if="tarificationResult" class="no-print rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">

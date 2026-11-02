@@ -2635,6 +2635,7 @@
     "tarification.costs": "Costs",
     "tarification.edit_costs": "Edit costs",
     "tarification.empty": "Add the coach, staff and transport costs to see if this price is enough.",
+    "tarification.exceptional_sessions": "An exceptional subscription has no sessions: change the unit of the per-session costs or remove them.",
     "tarification.expected_players": "Expected players",
     "tarification.hint": "A forecast: nothing here is recorded as an expense.",
     "tarification.income": "Expected income",

@@ -207,9 +207,9 @@ const missing = (tarification, subscription = sub()) => forecast({
     roster,
     schedule: [],
     subscription,
-}).missingSessions;
+}).prompt === 'tarification.no_sessions';
 
-test('forecast: missingSessions when per-session costs have no sessions', () => {
+test('forecast: asks for sessions when per-session costs have none', () => {
     assert.equal(missing({ sessions_per_week: '', lines: [line('per_session', 800), line('per_trip', 5000)] }), true);
 });
 
@@ -224,11 +224,38 @@ test('forecast: not missing when the schedule supplies the default', () => {
         schedule,
         subscription: sub({ category_ids: [1], branch_ids: [10] }),
     });
-    assert.equal(r.missingSessions, false);
+    assert.equal(r.prompt, null);
 });
 
 test('forecast: an exceptional subscription is never missing sessions', () => {
     assert.equal(missing({ sessions_per_week: '', lines: [line('per_session', 800)] }, sub({ kind: 'exceptional' })), false);
+});
+
+const promptFor = (lines, over = {}) => forecast({
+    tarification: { sessions_per_week: 3, weeks: 40, expected_players: 20, expected_payment_rate: 85, lines },
+    roster,
+    schedule: [],
+    subscription: sub(over),
+}).prompt;
+
+test('forecast: per-session costs on an exceptional subscription give no verdict', () => {
+    assert.equal(promptFor([line('per_session', 800), line('per_trip', 5000)], { kind: 'exceptional' }), 'tarification.exceptional_sessions');
+});
+
+test('forecast: an exceptional subscription without per-session costs gets its verdict', () => {
+    assert.equal(promptFor([line('per_trip', 5000)], { kind: 'exceptional' }), null);
+});
+
+test('forecast: a per-session line of 0 on an exceptional subscription blocks nothing', () => {
+    assert.equal(promptFor([line('per_session', 0), line('per_trip', 5000)], { kind: 'exceptional' }), null);
+});
+
+test('forecast: no costs asks for costs', () => {
+    assert.equal(promptFor([]), 'tarification.empty');
+});
+
+test('forecast: an annual subscription with sessions and costs has no prompt', () => {
+    assert.equal(promptFor([line('per_session', 800)]), null);
 });
 
 test('forecast: only a per-trip line is not missing sessions', () => {

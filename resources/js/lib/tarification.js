@@ -135,22 +135,29 @@ export function forecast({ tarification, roster, schedule, subscription }) {
 
     const sessions = exceptional ? 0 : sessionsPerWeek * weeks;
     const lines = tarification.lines ?? [];
-    const missingSessions = !exceptional && sessions === 0
-        && lines.some((line) => line.unit === 'per_session' && number(line.amount) > 0 && number(line.quantity) > 0);
+    const hasSessionCost = lines.some((line) => line.unit === 'per_session' && number(line.amount) > 0 && number(line.quantity) > 0);
+
+    const result = calculate({
+        lines,
+        sessions,
+        players,
+        paymentRate: orDefault(tarification.expected_payment_rate, DEFAULT_PAYMENT_RATE),
+        price: averagePrice(roster, subscription),
+    });
+
+    // Per-session costs count as 0 without sessions, so a verdict would be a false win.
+    let prompt = null;
+    if (hasSessionCost && exceptional) prompt = 'tarification.exceptional_sessions';
+    else if (hasSessionCost && sessions === 0) prompt = 'tarification.no_sessions';
+    else if (!result.hasCosts) prompt = 'tarification.empty';
 
     return {
-        ...calculate({
-            lines,
-            sessions,
-            players,
-            paymentRate: orDefault(tarification.expected_payment_rate, DEFAULT_PAYMENT_RATE),
-            price: averagePrice(roster, subscription),
-        }),
+        ...result,
         autoPlayers: auto,
         autoSessionsPerWeek,
         sessionsPerWeek,
         weeks,
-        missingSessions,
+        prompt,
     };
 }
 

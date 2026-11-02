@@ -2,12 +2,18 @@
 
 namespace Tests\Feature;
 
+use App\Models\Branch;
+use App\Models\Category;
+use App\Models\Player;
+use App\Models\PlayerSubscription;
 use App\Models\Role;
 use App\Models\Subscription;
 use App\Models\SubscriptionCostLine;
 use App\Models\SubscriptionTarification;
+use App\Models\TrainingSchedule;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -194,5 +200,144 @@ class SubscriptionTarificationTest extends TestCase
         $this->assertEquals(16000, $subscription->amount_student);
         $this->assertSame(40, $subscription->tarification->weeks);
         $this->assertSame(3, $subscription->costLines()->count());
+    }
+
+    private int $seq = 0;
+
+    private function player(array $attributes = []): Player
+    {
+        return Player::create([
+            'membership_id' => '84'.str_pad((string) ++$this->seq, 8, '0', STR_PAD_LEFT),
+            'firstname' => 'Ali', 'lastname' => 'Test',
+            'is_student' => true, 'outstanding_debt' => 0,
+            ...$attributes,
+        ]);
+    }
+
+    #[Test]
+    public function coach_pay_never_reaches_a_user_without_finance_rights(): void
+    {
+        $subscription = $this->subscription();
+        $this->actingAs($this->admin())->put(route('subscriptions.update', $subscription), $this->payload(['tarification' => $this->tarification()]));
+
+        $user = $this->userWithoutFinance();
+
+        foreach ([route('subscriptions.create'), route('subscriptions.edit', $subscription), route('subscriptions.show', $subscription)] as $url) {
+            $this->actingAs($user)->get($url)
+                ->assertOk()
+                ->assertInertia(fn (AssertableInertia $page) => $page->missing('tarification'))
+                ->assertDontSee('Head coach');
+        }
+    }
+
+    #[Test]
+    public function the_subscription_prop_itself_never_carries_the_costs(): void
+    {
+        $subscription = $this->subscription();
+        $admin = $this->admin();
+        $this->actingAs($admin)->put(route('subscriptions.update', $subscription), $this->payload(['tarification' => $this->tarification()]));
+
+        $this->actingAs($admin)->get(route('subscriptions.show', $subscription))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->missing('subscription.tarification')
+                ->missing('subscription.cost_lines'));
+    }
+
+    #[Test]
+    public function the_prop_carries_saved_values_for_finance_users(): void
+    {
+        $subscription = $this->subscription();
+        $admin = $this->admin();
+        $this->actingAs($admin)->put(route('subscriptions.update', $subscription), $this->payload(['tarification' => $this->tarification()]));
+
+        $this->actingAs($admin)->get(route('subscriptions.edit', $subscription))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('tarification.saved.sessions_per_week', 3)
+                ->where('tarification.saved.expected_payment_rate', 85)
+                ->where('tarification.saved.lines.0.label', 'Head coach')
+                ->where('tarification.saved.lines.2.unit', 'per_trip'));
+    }
+
+    #[Test]
+    public function a_new_subscription_gets_defaults_and_the_roster(): void
+    {
+        $this->player();
+
+        $this->actingAs($this->admin())->get(route('subscriptions.create'))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('tarification.saved.weeks', 40)
+                ->where('tarification.saved.expected_payment_rate', 100)
+                ->where('tarification.saved.lines', [])
+                ->where('tarification.collected', 0)
+                ->where('tarification.realRate', null)
+                ->has('tarification.roster', 1));
+    }
+
+    #[Test]
+    public function the_roster_groups_players_once_and_leaves_out_archived_and_exempt(): void
+    {
+        $category = Category::create(['name' => 'Cadet']);
+        $football = Branch::create(['name' => 'Football']);
+        $swimming = Branch::create(['name' => 'Swimming']);
+        $subscription = $this->subscription();
+
+        $twoBranches = [$this->player(['category_id' => $category->id]), $this->player(['category_id' => $category->id])];
+        foreach ($twoBranches as $player) {
+            $player->branches()->attach([$swimming->id, $football->id]);
+        }
+        $this->player(['category_id' => $category->id, 'is_student' => false]);
+        $this->player(['archived' => true]);
+
+        $exempt = $this->player(['category_id' => $category->id]);
+        PlayerSubscription::create([
+            'player_id' => $exempt->id, 'subscription_id' => $subscription->id, 'year' => $subscription->year,
+            'status_at_time' => 'student', 'is_mandatory' => true, 'amount_owed' => 15000, 'amount_paid' => 0, 'is_exempt' => true,
+        ]);
+
+        $this->actingAs($this->admin())->get(route('subscriptions.show', $subscription))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('tarification.roster', 2)
+                ->where('tarification.roster', function ($roster) use ($category, $football, $swimming) {
+                    $groups = collect($roster)->keyBy('is_student');
+
+                    return $groups[1]['count'] === 2
+                        && $groups[1]['category_id'] === $category->id
+                        && $groups[1]['branch_ids'] === collect([$football->id, $swimming->id])->sort()->values()->all()
+                        && $groups[0]['count'] === 1
+                        && $groups[0]['branch_ids'] === [];
+                }));
+    }
+
+    #[Test]
+    public function the_schedule_counts_slots_still_valid(): void
+    {
+        $category = Category::create(['name' => 'Cadet']);
+        $slot = ['category_id' => $category->id, 'start_time' => '17:00', 'end_time' => '18:30', 'valid_from' => '2020-01-01'];
+        TrainingSchedule::create(['weekday' => 1, ...$slot]);
+        TrainingSchedule::create(['weekday' => 3, 'valid_to' => now()->addYear()->toDateString(), ...$slot]);
+        TrainingSchedule::create(['weekday' => 5, 'valid_to' => '2021-01-01', ...$slot]);
+
+        $this->actingAs($this->admin())->get(route('subscriptions.create'))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('tarification.schedule', 1)
+                ->where('tarification.schedule.0.slots', 2)
+                ->where('tarification.schedule.0.category_id', $category->id)
+                ->where('tarification.schedule.0.branch_id', null));
+    }
+
+    #[Test]
+    public function the_real_rate_is_collected_over_the_net_owed_by_non_exempt_players(): void
+    {
+        $subscription = $this->subscription();
+        $row = ['subscription_id' => $subscription->id, 'year' => $subscription->year, 'status_at_time' => 'student', 'is_mandatory' => true];
+
+        PlayerSubscription::create(['player_id' => $this->player()->id, 'amount_owed' => 10000, 'amount_paid' => 5000, ...$row]);
+        PlayerSubscription::create(['player_id' => $this->player()->id, 'amount_owed' => 10000, 'amount_paid' => 0, 'discount_type' => 'amount', 'discount_value' => 5000, ...$row]);
+        PlayerSubscription::create(['player_id' => $this->player()->id, 'amount_owed' => 10000, 'amount_paid' => 0, 'is_exempt' => true, ...$row]);
+
+        $this->actingAs($this->admin())->get(route('subscriptions.show', $subscription))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('tarification.collected', 5000)
+                ->where('tarification.realRate', 33.3));
     }
 }

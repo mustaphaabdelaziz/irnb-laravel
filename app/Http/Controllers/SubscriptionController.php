@@ -14,6 +14,7 @@ use App\Services\Dashboard\ModuleStats;
 use App\Services\Finance\PruneOutOfBranchObligations;
 use App\Services\Finance\RecalculatePlayerDebtService;
 use App\Services\Finance\SaveSubscriptionTarification;
+use App\Services\Finance\TarificationData;
 use App\Support\Export;
 use App\Support\ListFilter;
 use App\Support\UiLang;
@@ -154,7 +155,7 @@ class SubscriptionController extends Controller
         return array_map(fn (int $year) => ['value' => $year, 'label' => Subscription::seasonLabel($year)], $years);
     }
 
-    public function show(Subscription $subscription): Response
+    public function show(Request $request, Subscription $subscription): Response
     {
         $subscription->load(['categories', 'branches']);
 
@@ -187,6 +188,7 @@ class SubscriptionController extends Controller
                 'total_collected' => $totalCollected,
                 'paid_percentage' => $paidPercentage,
             ],
+            ...$this->tarificationProp($request, $subscription),
         ]);
     }
 
@@ -257,13 +259,14 @@ class SubscriptionController extends Controller
             ->all();
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
         return Inertia::render('Subscriptions/Create', [
             'seasons' => $this->seasonOptions(),
             'currentSeason' => Subscription::currentSeasonEndYear(),
             'categories' => Category::orderBy('name')->get(),
             'branches' => Branch::orderBy('name')->get(),
+            ...$this->tarificationProp($request),
         ]);
     }
 
@@ -288,7 +291,7 @@ class SubscriptionController extends Controller
             ->with('success', 'flash.subscription_created');
     }
 
-    public function edit(Subscription $subscription): Response
+    public function edit(Request $request, Subscription $subscription): Response
     {
         $subscription->load(['categories', 'branches']);
 
@@ -298,6 +301,7 @@ class SubscriptionController extends Controller
             'currentSeason' => Subscription::currentSeasonEndYear(),
             'categories' => Category::orderBy('name')->get(),
             'branches' => Branch::orderBy('name')->get(),
+            ...$this->tarificationProp($request, $subscription),
         ]);
     }
 
@@ -330,6 +334,18 @@ class SubscriptionController extends Controller
         if (is_array($data = $request->validated('tarification'))) {
             app(SaveSubscriptionTarification::class)->save($subscription, $data);
         }
+    }
+
+    /**
+     * Coach pay: without Finance → view the prop does not exist at all.
+     *
+     * @return array<string, mixed>
+     */
+    private function tarificationProp(Request $request, ?Subscription $subscription = null): array
+    {
+        return $request->user()?->hasPermission('finance', 'view')
+            ? ['tarification' => fn (): array => app(TarificationData::class)->for($subscription)]
+            : [];
     }
 
     public function destroy(Subscription $subscription): RedirectResponse

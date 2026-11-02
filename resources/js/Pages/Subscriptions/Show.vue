@@ -4,6 +4,7 @@ import Badge from '@/Components/Badge.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import ExportMenu from '@/Components/ExportMenu.vue';
 import IconButton from '@/Components/IconButton.vue';
+import StatTile from '@/Components/Dashboard/StatTile.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
@@ -194,31 +195,13 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
 
         <div class="space-y-6">
             <!-- Stats cards -->
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
-                <div class="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
-                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('student_pricing') }}</p>
-                    <p class="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">{{ formatMoney(subscription.amount_student) }}</p>
-                </div>
-                <div class="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
-                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('worker_pricing') }}</p>
-                    <p class="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">{{ formatMoney(subscription.amount_worker) }}</p>
-                </div>
-                <div class="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
-                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('total_players') }}</p>
-                    <p class="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">{{ stats?.total ?? 0 }}</p>
-                </div>
-                <div class="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-emerald-200">
-                    <p class="text-xs text-emerald-600">{{ t('paid') }}</p>
-                    <p class="mt-1 text-xl font-bold text-emerald-700">{{ stats?.paid_count ?? 0 }}</p>
-                </div>
-                <div class="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-rose-200">
-                    <p class="text-xs text-rose-600">{{ t('unpaid') }}</p>
-                    <p class="mt-1 text-xl font-bold text-rose-700">{{ stats?.unpaid_count ?? 0 }}</p>
-                </div>
-                <div class="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
-                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('collected') }}</p>
-                    <p class="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">{{ formatMoney(stats?.total_collected ?? 0) }}</p>
-                </div>
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
+                <StatTile :label="t('student_pricing')" :value="subscription.amount_student" format="money" icon="money" tone="neutral" />
+                <StatTile :label="t('worker_pricing')" :value="subscription.amount_worker" format="money" icon="money" tone="neutral" />
+                <StatTile :label="t('total_players')" :value="stats?.total ?? 0" icon="players" />
+                <StatTile :label="t('paid')" :value="stats?.paid_count ?? 0" icon="check" tone="positive" />
+                <StatTile :label="t('unpaid')" :value="stats?.unpaid_count ?? 0" icon="alert" tone="negative" />
+                <StatTile :label="t('collected')" :value="stats?.total_collected ?? 0" format="money" icon="wallet" />
             </div>
 
             <!-- Category prices (only when a category overrides the default) -->

@@ -3,6 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Badge from '@/Components/Badge.vue';
 import Icon from '@/Components/Icon.vue';
 import RentalTypeBadge from '@/Components/RentalTypeBadge.vue';
+import StatTile from '@/Components/Dashboard/StatTile.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -152,17 +153,12 @@ const eventLabel = (type) => {
             </div>
 
             <!-- Statistics -->
-            <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
-                <div v-for="s in [
-                    { label: t('total'), value: stats.events, color: 'text-slate-900 dark:text-slate-100' },
-                    { label: t('equipment.rental'), value: stats.rentals, color: 'text-amber-600 dark:text-amber-400' },
-                    { label: t('return'), value: stats.returns, color: 'text-primary-600 dark:text-primary-400' },
-                    { label: t('send_to_repair'), value: stats.repairs, color: 'text-slate-600 dark:text-slate-300' },
-                    { label: t('rented_to'), value: stats.people, color: 'text-emerald-600 dark:text-emerald-400' },
-                ]" :key="s.label" class="rounded-2xl bg-white dark:bg-slate-900 p-4 text-center shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
-                    <p class="text-2xl font-bold" :class="s.color">{{ s.value }}</p>
-                    <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{{ s.label }}</p>
-                </div>
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                <StatTile :label="t('total')" :value="stats.events" icon="clipboard" tone="neutral" />
+                <StatTile :label="t('equipment.rental')" :value="stats.rentals" icon="refresh" tone="warning" />
+                <StatTile :label="t('return')" :value="stats.returns" icon="restore" />
+                <StatTile :label="t('send_to_repair')" :value="stats.repairs" icon="wrench" tone="neutral" />
+                <StatTile :label="t('rented_to')" :value="stats.people" icon="players" tone="positive" />
             </div>
 
             <!-- History timeline -->

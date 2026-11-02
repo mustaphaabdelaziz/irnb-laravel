@@ -74,9 +74,11 @@ const isFlagged = computed(() => props.flagNegative && props.format === 'money' 
             class="h-full border-border/70 shadow-none transition-colors"
             :class="href ? 'hover:border-primary/40' : ''"
         >
-            <CardContent class="flex h-full flex-col justify-between gap-3" :class="compact ? 'p-3 sm:p-5' : 'p-5'">
-                <div class="min-w-0">
-                    <div class="flex items-start justify-between gap-3">
+            <CardContent class="flex h-full flex-col justify-between gap-3" :class="compact ? 'p-2.5 sm:p-5' : 'p-5'">
+                <div class="min-w-0 [container-type:inline-size]">
+                    <!-- A narrow tile puts the icon above the label: beside it, a word
+                         like "recouvrement" has no line it fits on and splits. -->
+                    <div class="flex items-start justify-between gap-3 [@container(max-width:9.5rem)]:flex-col-reverse [@container(max-width:9.5rem)]:gap-2">
                         <!-- Wraps rather than truncates: six tiles across leave
                              roughly 170px, and "Outstanding debt" clipped to
                              "Outstandi…" is a label that has stopped working. -->

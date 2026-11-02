@@ -163,7 +163,7 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
             </div>
 
             <!-- Summary -->
-            <div class="grid grid-cols-3 gap-2 sm:gap-4">
+            <div class="grid grid-cols-3 gap-1.5 sm:gap-4">
                 <StatTile :label="t('total_expected')" :value="session.total_expected" compact />
                 <StatTile :label="t('found')" :value="isOpen ? foundCount : session.total_found" compact />
                 <StatTile :label="t('missing')" :value="isOpen ? (countedCount - foundCount) : session.total_missing" compact />

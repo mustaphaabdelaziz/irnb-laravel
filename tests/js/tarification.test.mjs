@@ -202,6 +202,43 @@ test('forecast: an exceptional subscription has no sessions', () => {
     assert.equal(r.costs, 5000);
 });
 
+const missing = (tarification, subscription = sub()) => forecast({
+    tarification: { weeks: '', expected_players: '', expected_payment_rate: '', ...tarification },
+    roster,
+    schedule: [],
+    subscription,
+}).missingSessions;
+
+test('forecast: missingSessions when per-session costs have no sessions', () => {
+    assert.equal(missing({ sessions_per_week: '', lines: [line('per_session', 800), line('per_trip', 5000)] }), true);
+});
+
+test('forecast: not missing once the sessions per week are typed', () => {
+    assert.equal(missing({ sessions_per_week: 3, lines: [line('per_session', 800), line('per_trip', 5000)] }), false);
+});
+
+test('forecast: not missing when the schedule supplies the default', () => {
+    const r = forecast({
+        tarification: { sessions_per_week: '', weeks: '', expected_players: '', expected_payment_rate: '', lines: [line('per_session', 800), line('per_trip', 5000)] },
+        roster,
+        schedule,
+        subscription: sub({ category_ids: [1], branch_ids: [10] }),
+    });
+    assert.equal(r.missingSessions, false);
+});
+
+test('forecast: an exceptional subscription is never missing sessions', () => {
+    assert.equal(missing({ sessions_per_week: '', lines: [line('per_session', 800)] }, sub({ kind: 'exceptional' })), false);
+});
+
+test('forecast: only a per-trip line is not missing sessions', () => {
+    assert.equal(missing({ sessions_per_week: '', lines: [line('per_trip', 5000)] }), false);
+});
+
+test('forecast: a per-session line of 0 is not missing sessions', () => {
+    assert.equal(missing({ sessions_per_week: '', lines: [line('per_session', 0)] }), false);
+});
+
 test('subscriptionInput: reads the shape the Show page receives', () => {
     const input = subscriptionInput({
         kind: 'annual', amount_student: '1000.00', amount_worker: '2000.00',

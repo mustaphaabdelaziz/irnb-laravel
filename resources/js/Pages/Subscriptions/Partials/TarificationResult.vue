@@ -35,7 +35,9 @@ const statusClass = computed(() => ({
 
 <template>
     <div class="space-y-4">
-        <p v-if="!result.hasCosts" class="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('tarification.empty') }}</p>
+        <p v-if="result.missingSessions" class="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('tarification.no_sessions') }}</p>
+
+        <p v-else-if="!result.hasCosts" class="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('tarification.empty') }}</p>
 
         <template v-else>
             <div class="rounded-xl p-4 ring-1" :class="statusClass">

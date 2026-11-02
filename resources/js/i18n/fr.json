@@ -2646,6 +2646,7 @@
     "tarification.no_break_even": "À ce prix, aucun nombre de joueurs ne couvre les coûts.",
     "tarification.no_payments": "Aucun paiement pour le moment",
     "tarification.no_schedule": "Aucun planning pour cette sélection : saisissez les séances par semaine.",
+    "tarification.no_sessions": "Saisissez les séances par semaine : les coûts par séance ne sont pas encore comptés.",
     "tarification.paid_so_far": "Payé à ce jour",
     "tarification.payment_rate": "Paiement prévu %",
     "tarification.per_player": "{amount} par joueur",

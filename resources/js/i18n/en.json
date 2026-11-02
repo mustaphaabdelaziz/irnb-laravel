@@ -2646,6 +2646,7 @@
     "tarification.no_break_even": "At this price, no number of players can cover the costs.",
     "tarification.no_payments": "No payments yet",
     "tarification.no_schedule": "No training schedule for this selection: enter the sessions per week.",
+    "tarification.no_sessions": "Enter the sessions per week: per-session costs are not counted yet.",
     "tarification.paid_so_far": "Paid so far",
     "tarification.payment_rate": "Expected payment %",
     "tarification.per_player": "{amount} per player",

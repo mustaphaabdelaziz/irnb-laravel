@@ -2646,6 +2646,7 @@
     "tarification.no_break_even": "بهذا السعر، لا يغطي أي عدد من اللاعبين التكاليف.",
     "tarification.no_payments": "لا توجد مدفوعات بعد",
     "tarification.no_schedule": "لا يوجد برنامج تدريب لهذا الاختيار: أدخل عدد الحصص في الأسبوع.",
+    "tarification.no_sessions": "أدخل عدد الحصص في الأسبوع: تكاليف الحصص غير محسوبة بعد.",
     "tarification.paid_so_far": "المدفوع حتى الآن",
     "tarification.payment_rate": "نسبة الدفع المتوقعة %",
     "tarification.per_player": "{amount} لكل لاعب",

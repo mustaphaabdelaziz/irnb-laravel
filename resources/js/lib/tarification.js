@@ -133,10 +133,15 @@ export function forecast({ tarification, roster, schedule, subscription }) {
     const sessionsPerWeek = orDefault(tarification.sessions_per_week, autoSessionsPerWeek);
     const weeks = orDefault(tarification.weeks, DEFAULT_WEEKS);
 
+    const sessions = exceptional ? 0 : sessionsPerWeek * weeks;
+    const lines = tarification.lines ?? [];
+    const missingSessions = !exceptional && sessions === 0
+        && lines.some((line) => line.unit === 'per_session' && number(line.amount) > 0 && number(line.quantity) > 0);
+
     return {
         ...calculate({
-            lines: tarification.lines ?? [],
-            sessions: exceptional ? 0 : sessionsPerWeek * weeks,
+            lines,
+            sessions,
             players,
             paymentRate: orDefault(tarification.expected_payment_rate, DEFAULT_PAYMENT_RATE),
             price: averagePrice(roster, subscription),
@@ -145,6 +150,7 @@ export function forecast({ tarification, roster, schedule, subscription }) {
         autoSessionsPerWeek,
         sessionsPerWeek,
         weeks,
+        missingSessions,
     };
 }
 

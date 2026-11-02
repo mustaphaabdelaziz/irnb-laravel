@@ -54,7 +54,8 @@ watchEffect(() => {
     }
 });
 
-const lineTotal = (index) => formatNumber(result.value.lines[index]?.total ?? 0, page.props.locale || 'fr');
+const number = (value) => formatNumber(value, page.props.locale || 'fr');
+const lineTotal = (index) => number(result.value.lines[index]?.total ?? 0);
 const errorFor = (index, field) => props.form.errors[`tarification.lines.${index}.${field}`];
 </script>
 
@@ -69,28 +70,28 @@ const errorFor = (index, field) => props.form.errors[`tarification.lines.${index
                     <InputLabel :value="t('tarification.sessions_per_week')" />
                     <TextInput v-model="inputs.sessions_per_week" type="number" min="0" max="21" class="mt-1 w-full" :placeholder="String(result.autoSessionsPerWeek)" />
                     <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                        {{ result.autoSessionsPerWeek ? t('tarification.schedule_sessions', { n: result.autoSessionsPerWeek }) : t('tarification.no_schedule') }}
+                        {{ result.autoSessionsPerWeek ? t('tarification.schedule_sessions', { n: number(result.autoSessionsPerWeek) }) : t('tarification.no_schedule') }}
                     </p>
                     <InputError :message="form.errors['tarification.sessions_per_week']" class="mt-1" />
                 </div>
                 <div>
                     <InputLabel :value="t('tarification.weeks')" />
                     <TextInput v-model="inputs.weeks" type="number" min="0" max="53" class="mt-1 w-full" :placeholder="String(DEFAULT_WEEKS)" />
-                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('tarification.sessions_total', { n: result.sessions }) }}</p>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('tarification.sessions_total', { n: number(result.sessions) }) }}</p>
                     <InputError :message="form.errors['tarification.weeks']" class="mt-1" />
                 </div>
             </template>
             <div>
                 <InputLabel :value="t('tarification.expected_players')" />
                 <TextInput v-model="inputs.expected_players" type="number" min="0" class="mt-1 w-full" :placeholder="String(result.autoPlayers)" />
-                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('tarification.matching_players', { n: result.autoPlayers }) }}</p>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('tarification.matching_players', { n: number(result.autoPlayers) }) }}</p>
                 <InputError :message="form.errors['tarification.expected_players']" class="mt-1" />
             </div>
             <div>
                 <InputLabel :value="t('tarification.payment_rate')" />
                 <TextInput v-model="inputs.expected_payment_rate" type="number" min="0" max="100" class="mt-1 w-full" :placeholder="String(DEFAULT_PAYMENT_RATE)" />
                 <p v-if="exists" class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                    {{ data.realRate === null || data.realRate === 0 ? t('tarification.no_payments') : t('tarification.real_rate', { rate: data.realRate }) }}
+                    {{ data.realRate === null || data.realRate === 0 ? t('tarification.no_payments') : t('tarification.real_rate', { rate: number(data.realRate) }) }}
                 </p>
                 <InputError :message="form.errors['tarification.expected_payment_rate']" class="mt-1" />
             </div>

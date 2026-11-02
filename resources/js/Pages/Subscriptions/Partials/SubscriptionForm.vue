@@ -6,6 +6,7 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import TarificationCard from './TarificationCard.vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
@@ -17,6 +18,7 @@ const props = defineProps({
     currentSeason: { type: Number, required: true },
     subscription: { type: Object, default: null },
     submitLabel: { type: String, required: true },
+    tarification: { type: Object, default: null },
 });
 
 const isEdit = !!props.subscription;
@@ -43,6 +45,8 @@ const form = useForm({
     category_ids: sub.categories?.map((c) => c.id) || [],
     category_prices: categoryPrices,
     branch_ids: sub.branches?.map((b) => b.id) || [],
+    // Absent for users without Finance → view, so their save sends no block.
+    ...(props.tarification ? { tarification: JSON.parse(JSON.stringify(props.tarification.saved)) } : {}),
 });
 
 const isAnnual = computed(() => form.kind === 'annual');
@@ -175,6 +179,8 @@ const kinds = [
                 </div>
             </div>
         </div>
+
+        <TarificationCard v-if="tarification" :form="form" :data="tarification" :exists="isEdit" />
 
         <div class="flex items-center justify-end gap-3">
             <Link :href="route('subscriptions.index')">

@@ -306,9 +306,9 @@ function runBulk() {
 
     <AuthenticatedLayout>
         <template #header>
-            <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center justify-between gap-2 sm:gap-3">
                 <h1 class="min-w-0 truncate text-lg font-bold text-slate-900 dark:text-slate-100 sm:text-xl">{{ t('players') }}</h1>
-                <div class="flex shrink-0 items-center gap-2">
+                <div class="flex shrink-0 items-center gap-1 sm:gap-2">
                     <!-- Secondary actions inline on wide screens -->
                     <div class="hidden items-center gap-2 xl:flex">
                         <component

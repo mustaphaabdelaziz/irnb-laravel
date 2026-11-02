@@ -131,7 +131,7 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
     <Head :title="session.reference" />
     <AuthenticatedLayout>
         <template #header>
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
                 <Link :href="route('inventory.index')" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"><Icon name="back" /></Link>
                 <h1 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ session.reference }}</h1>
                 <span class="rounded-full px-2.5 py-0.5 text-xs font-bold" :class="isOpen ? 'bg-primary-100 text-primary-700 dark:bg-primary-500/20 dark:text-primary-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'">{{ t(session.status) }}</span>

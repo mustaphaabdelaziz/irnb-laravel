@@ -275,7 +275,7 @@ function switchLocale(code) {
                     {{ t('impersonate.leave') }}
                 </Link>
             </div>
-            <header ref="topBar" :class="topBarTall ? 'relative items-start' : 'sticky top-0 items-center'" class="z-30 flex min-h-16 gap-3 border-b border-slate-200/80 bg-white/75 px-4 py-1 backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-900/75 sm:px-6 print:static print:border-0 print:shadow-none">
+            <header ref="topBar" :class="topBarTall ? 'relative items-start' : 'sticky top-0 items-center'" class="z-30 flex min-h-16 flex-wrap gap-x-3 border-b border-slate-200/80 bg-white/75 px-4 py-1 backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-900/75 sm:flex-nowrap sm:px-6 print:static print:border-0 print:shadow-none">
                 <button
                     @click="mobileMenuOpen = !mobileMenuOpen"
                     class="-ms-1 rounded-lg p-2 text-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 lg:hidden print:hidden"
@@ -284,10 +284,15 @@ function switchLocale(code) {
                     <Icon name="menu" />
                 </button>
 
-                <!-- Each page's header, teleported in by AuthenticatedLayout. -->
-                <div id="app-page-header" class="min-w-0 flex-1" />
+                <!-- Each page's header, teleported in by AuthenticatedLayout. On a phone a header
+                     with controls takes its own row: beside the bar's buttons it has 171 of
+                     375 px, and they would run over them. A lone title stays on the row. -->
+                <div
+                    id="app-page-header"
+                    class="min-w-0 flex-1 max-sm:has-[a,button,input,select]:order-last max-sm:has-[a,button,input,select]:basis-full max-sm:has-[a,button,input,select]:pb-1"
+                />
 
-                <ThemeToggle class="print:hidden" />
+                <ThemeToggle class="ms-auto sm:ms-0 print:hidden" />
 
                 <a :href="route('home')" target="_blank" class="hidden rounded-lg p-2 text-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200 sm:block print:hidden" :title="t('home')">
                     <Icon name="external" />

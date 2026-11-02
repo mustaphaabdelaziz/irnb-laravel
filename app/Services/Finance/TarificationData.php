@@ -103,7 +103,7 @@ class TarificationData
                 ->map(fn ($line): array => [
                     'label' => $line->label,
                     'unit' => $line->unit,
-                    'amount' => $line->amount,
+                    'amount' => (float) $line->amount,
                     'quantity' => $line->quantity,
                 ])
                 ->all(),

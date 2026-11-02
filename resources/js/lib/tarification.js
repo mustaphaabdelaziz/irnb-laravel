@@ -38,7 +38,7 @@ export function matchingGroups(roster, subscription) {
 
     return roster.filter((group) => {
         const inCategory = !categoryIds.length || (group.category_id !== null && includesId(categoryIds, group.category_id));
-        const inBranch = !branchIds.length || group.branch_ids.some((id) => includesId(branchIds, id));
+        const inBranch = !branchIds.length || (group.branch_ids ?? []).some((id) => includesId(branchIds, id));
 
         return inCategory && inBranch;
     });

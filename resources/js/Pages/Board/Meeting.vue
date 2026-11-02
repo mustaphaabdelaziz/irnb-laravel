@@ -99,7 +99,7 @@ function saveAttendance() {
 }
 
 // Tasks
-const taskForm = useForm({ title: '', board_member_id: null, due_date: '', priority: 'medium', status: 'not_started', progress: 0, board_meeting_id: props.meeting.id });
+const taskForm = useForm({ title: '', board_member_id: null, due_date: '', priority: 'medium', status: 'not_started', board_meeting_id: props.meeting.id });
 function addTask() {
     taskForm.post(route('board.tasks.store'), { preserveScroll: true, onSuccess: () => taskForm.reset('title', 'board_member_id', 'due_date') });
 }

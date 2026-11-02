@@ -152,7 +152,9 @@ const yearlyTotals = computed(() => columnTotals(yearlyColumns.value, yearlyRows
 
 const showModal = ref(false);
 const editingId = ref(null);
-const form = useForm({ title: '', description: '', board_member_id: null, board_meeting_id: null, due_date: '', status: 'not_started', progress: 0, priority: 'medium' });
+const form = useForm({ title: '', description: '', board_member_id: null, board_meeting_id: null, due_date: '', status: 'not_started', progress_percent: 0, priority: 'medium' });
+// Not "progress": useForm keeps upload progress under that name and nulls it after every submit.
+form.transform(({ progress_percent, ...fields }) => ({ ...fields, progress: progress_percent }));
 
 function openCreate() {
     editingId.value = null;
@@ -164,7 +166,7 @@ function openEdit(tk) {
     editingId.value = tk.id;
     form.title = tk.title; form.description = tk.description || ''; form.board_member_id = tk.board_member_id;
     form.board_meeting_id = tk.board_meeting_id; form.due_date = tk.due_date ? String(tk.due_date).slice(0, 10) : ''; form.status = tk.status;
-    form.progress = tk.progress || 0; form.priority = tk.priority;
+    form.progress_percent = tk.progress || 0; form.priority = tk.priority;
     showModal.value = true;
 }
 function submit() {
@@ -451,8 +453,8 @@ function onDrop(col) {
                             </label>
                         </div>
                         <div>
-                            <div class="mb-1 flex justify-between text-xs font-medium text-slate-500"><span>{{ t('progress') }}</span><span class="font-bold text-primary-600 dark:text-primary-400">{{ form.progress }}%</span></div>
-                            <input v-model.number="form.progress" type="range" min="0" max="100" step="5" class="w-full accent-primary-600" />
+                            <div class="mb-1 flex justify-between text-xs font-medium text-slate-500"><span>{{ t('progress') }}</span><span class="font-bold text-primary-600 dark:text-primary-400">{{ form.progress_percent }}%</span></div>
+                            <input v-model.number="form.progress_percent" type="range" min="0" max="100" step="5" class="w-full accent-primary-600" />
                         </div>
                     </form>
 

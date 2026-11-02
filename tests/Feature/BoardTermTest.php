@@ -95,4 +95,16 @@ class BoardTermTest extends TestCase
 
         $this->assertSame('2026-10-05', $props['columns']['not_started'][0]['due_date']);
     }
+
+    #[Test]
+    public function a_task_added_from_a_meeting_without_a_progress_starts_at_zero(): void
+    {
+        $this->actingAs($this->admin())->post(route('board.tasks.store'), [
+            'title' => 'Book the hall',
+            'status' => 'not_started',
+            'priority' => 'medium',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(0, BoardTask::where('title', 'Book the hall')->value('progress'));
+    }
 }

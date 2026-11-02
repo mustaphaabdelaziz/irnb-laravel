@@ -80,7 +80,7 @@ const branchLabel = (branch) => branch.localized_name || branch.name;
         <div class="flex items-center gap-1.5">
             <Icon name="calendar" class="size-4 text-muted-foreground" />
             <select
-                class="h-9 rounded-lg border border-input bg-background px-2 text-sm font-medium focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
+                class="h-9 rounded-lg border border-input bg-background ps-2 pe-8 rtl:[background-position:left_0.5rem_center] text-sm font-medium focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
                 :value="filters.range"
                 :aria-label="t('dashboard.time_range')"
                 @change="apply({ range: $event.target.value })"
@@ -94,7 +94,7 @@ const branchLabel = (branch) => branch.localized_name || branch.name;
         <div v-if="branches.length > 1" class="flex items-center gap-1.5">
             <Icon name="location" class="size-4 text-muted-foreground" />
             <select
-                class="h-9 rounded-lg border border-input bg-background px-2 text-sm font-medium focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
+                class="h-9 rounded-lg border border-input bg-background ps-2 pe-8 rtl:[background-position:left_0.5rem_center] text-sm font-medium focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
                 :value="filters.branch ?? ''"
                 :aria-label="t('dashboard.branch')"
                 @change="apply({ branch: $event.target.value })"

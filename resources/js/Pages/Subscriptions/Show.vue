@@ -309,7 +309,7 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
                             <tr v-for="(ps, idx) in filteredList" :key="ps.id" class="hover:bg-slate-50/60 dark:hover:bg-slate-800">
                                 <td class="px-4 py-3 text-sm text-slate-400 dark:text-slate-500">{{ idx + 1 }}</td>
                                 <td class="px-4 py-3">
-                                    <Link :href="route('players.show', ps.player_id)" class="text-sm font-medium text-primary-600 hover:text-primary-800">
+                                    <Link :href="route('players.show', ps.player_id)" class="text-sm font-medium text-primary-600 hover:text-primary-800 dark:text-primary-300 dark:hover:text-primary-200">
                                         {{ ps.player?.fullname }}
                                     </Link>
                                     <p class="text-xs text-slate-400 dark:text-slate-500">{{ ps.player?.membership_id }}</p>

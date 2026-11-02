@@ -13,6 +13,7 @@ use App\Services\Activity\ActivityRecorder;
 use App\Services\Dashboard\ModuleStats;
 use App\Services\Finance\PruneOutOfBranchObligations;
 use App\Services\Finance\RecalculatePlayerDebtService;
+use App\Services\Finance\SaveSubscriptionTarification;
 use App\Support\Export;
 use App\Support\ListFilter;
 use App\Support\UiLang;
@@ -274,6 +275,7 @@ class SubscriptionController extends Controller
             $subscription = Subscription::create($request->subscriptionAttributes());
             $subscription->categories()->attach($request->categorySync());
             $subscription->branches()->attach($branchIds);
+            $this->saveTarification($request, $subscription);
 
             ActivityRecorder::record($request->user(), ActivityAction::SUBSCRIPTION_CREATED, $subscription, [
                 'kind' => $subscription->kind,
@@ -313,6 +315,7 @@ class SubscriptionController extends Controller
             $subscription->update($attributes);
             $subscription->categories()->sync($request->categorySync());
             $subscription->branches()->sync($request->validated('branch_ids') ?? []);
+            $this->saveTarification($request, $subscription);
 
             // Players outside the (new) branches lose the obligation while it is untouched.
             app(PruneOutOfBranchObligations::class)->forSubscription($subscription);
@@ -320,6 +323,13 @@ class SubscriptionController extends Controller
 
         return redirect()->route('subscriptions.show', $subscription)
             ->with('success', 'flash.subscription_updated');
+    }
+
+    private function saveTarification(StoreSubscriptionRequest $request, Subscription $subscription): void
+    {
+        if (is_array($data = $request->validated('tarification'))) {
+            app(SaveSubscriptionTarification::class)->save($subscription, $data);
+        }
     }
 
     public function destroy(Subscription $subscription): RedirectResponse

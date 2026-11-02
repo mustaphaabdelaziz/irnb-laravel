@@ -166,7 +166,7 @@ function resetFinance() {
                         <button @click="saveBudget" class="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-sm font-bold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900">{{ t('save_budget') }}</button>
                     </div>
                 </div>
-                <div class="grid gap-x-8 gap-y-2 sm:grid-cols-2">
+                <div class="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2">
                     <div v-for="c in categories" :key="c.id" class="flex items-center justify-between gap-2">
                         <span class="flex min-w-0 items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                             <span class="h-2.5 w-2.5 shrink-0 rounded-full" :style="{ background: c.color || '#94a3b8' }"></span>

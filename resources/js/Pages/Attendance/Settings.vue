@@ -140,7 +140,7 @@ function destroyCustom(s) {
             </div>
         </template>
 
-        <div class="grid gap-4 lg:grid-cols-2">
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <!-- Weekly schedule -->
             <section :class="[card, 'lg:col-span-2']">
                 <h2 class="mb-3 font-bold text-slate-900 dark:text-slate-100">{{ t('att.schedules') }}</h2>

@@ -12,6 +12,9 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class PdfService
 {
+    /** The time limit while mPDF lays a document out. */
+    private const RENDER_SECONDS = 300;
+
     /**
      * @param  ?bool  $rtl  null = follow the UI language (Arabic is right-to-left)
      * @param  array<string, mixed>  $config  mPDF options over the A4 defaults.
@@ -47,15 +50,28 @@ class PdfService
      * and ~20 sessions is already over that. Raise the limit for this
      * render only, then restore it so other PCRE users in the same
      * process (e.g. a queue worker) are unaffected either way.
+     *
+     * The time limit gets the same treatment. mPDF takes ~2 ms a table cell
+     * (a 1,000-line report ≈ 15 s of CPU), and the desktop server's php -S
+     * stops a request at 30 s of wall-clock time on Windows, which a busy PC
+     * reaches. A process with no limit (queue worker, CLI) never gains one.
      */
     private function write(Mpdf $mpdf, string $html): void
     {
         $previousLimit = ini_get('pcre.backtrack_limit');
+        $timeLimit = (int) ini_get('max_execution_time');
+        $extendTime = $timeLimit > 0 && function_exists('set_time_limit');
         try {
             ini_set('pcre.backtrack_limit', (string) max((int) $previousLimit, strlen($html) * 2));
+            if ($extendTime) {
+                set_time_limit(self::RENDER_SECONDS);
+            }
             $mpdf->WriteHTML($html);
         } finally {
             ini_set('pcre.backtrack_limit', $previousLimit);
+            if ($extendTime) {
+                set_time_limit($timeLimit);
+            }
         }
     }
 

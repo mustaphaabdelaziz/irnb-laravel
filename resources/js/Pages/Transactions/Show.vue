@@ -1,4 +1,5 @@
 <script setup>
+import FitFigure from '@/Components/Stats/FitFigure.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Badge from '@/Components/Badge.vue';
 import Icon from '@/Components/Icon.vue';
@@ -62,9 +63,9 @@ const categoryName = computed(() => props.transaction.finance_category?.localize
                     </Link>
                 </div>
                 <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    <div>
+                    <div class="[container-type:inline-size]">
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('amount') }}</p>
-                        <p class="mt-1 text-2xl font-bold tabular-nums [overflow-wrap:anywhere]" :class="isIncome ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'"><span dir="ltr">{{ isIncome ? '+' : '−' }}{{ formatMoney(transaction.amount) }}</span> <span class="text-sm font-medium text-slate-400">{{ currencyLabel }}</span></p>
+                        <p class="mt-1 flex flex-wrap items-baseline gap-x-1 text-2xl font-bold tabular-nums [overflow-wrap:anywhere]" :class="isIncome ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'"><FitFigure dir="ltr" :value="(isIncome ? '+' : '−') + formatMoney(transaction.amount)" /><span class="text-sm font-medium text-slate-400">{{ currencyLabel }}</span></p>
                     </div>
                     <div>
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('type') }}</p>

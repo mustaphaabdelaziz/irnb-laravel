@@ -38,6 +38,15 @@ export function formatNumber(value, appLocale) {
     return formatterFor(appLocale, 0, 2).format(Number(value));
 }
 
+// How many characters a figure takes, for shrinking it to fit its tile on one
+// line. Null when the text has words: those keep wrapping normally.
+export function figureChars(value) {
+    const text = String(value ?? '').trim();
+    if (!/\p{Nd}/u.test(text) || !/^[\p{Nd}\p{Zs}.,\u066B\u066C%\u066A+\-\u2212/']+$/u.test(text)) return null;
+
+    return [...text].length;
+}
+
 export function formatPercent(value, appLocale, { trim = false } = {}) {
     const odd = fallback(value);
     if (odd !== null) return odd;

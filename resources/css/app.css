@@ -201,6 +201,12 @@
         @apply font-display tabular-nums tracking-tight;
     }
 
+    /* One line, shrunk to the container's width (FitFigure). 0.62em is a digit in the display face. */
+    .figure-fit {
+        white-space: nowrap;
+        font-size: max(0.75rem, min(1em, calc(100cqw / (var(--figure-chars) * 0.62))));
+    }
+
     /* Subtle diagonal pitch stripes for hero / dark surfaces. */
     .pitch-stripes {
         background-image: repeating-linear-gradient(

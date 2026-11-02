@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/Components/ui/card';
 import Icon from '@/Components/Icon.vue';
 import DeltaBadge from '@/Components/Dashboard/DeltaBadge.vue';
 import Sparkline from '@/Components/Dashboard/Sparkline.vue';
+import FitFigure from '@/Components/Stats/FitFigure.vue';
 import { useI18n } from 'vue-i18n';
 import { useCurrency } from '@/Composables/useCurrency';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
@@ -69,29 +70,35 @@ const isEmpty = computed(() => display.value === '—');
             :class="href ? 'hover:border-primary/40' : ''"
         >
             <CardContent class="flex h-full flex-col justify-between gap-3 p-5">
-                <div class="flex items-start justify-between gap-3">
-                    <div class="min-w-0">
+                <div class="min-w-0">
+                    <div class="flex items-start justify-between gap-3">
                         <!-- Wraps rather than truncates: six tiles across leave
                              roughly 170px, and "Outstanding debt" clipped to
                              "Outstandi…" is a label that has stopped working. -->
-                        <p class="text-sm font-medium leading-snug text-muted-foreground">{{ label }}</p>
-                        <p
-                            class="mt-2 text-2xl font-semibold leading-tight tracking-tight tabular-nums [overflow-wrap:anywhere] sm:text-[1.75rem] sm:leading-none"
-                            :class="isEmpty ? 'text-muted-foreground/60' : 'text-foreground'"
+                        <p class="min-w-0 text-sm font-medium leading-snug text-muted-foreground">{{ label }}</p>
+
+                        <span
+                            v-if="icon"
+                            class="flex size-9 shrink-0 items-center justify-center rounded-lg"
+                            :class="toneClasses[tone] ?? toneClasses.primary"
                         >
-                            {{ display }}<span v-if="format === 'money' && !isEmpty" class="ms-1 whitespace-nowrap text-sm font-medium text-muted-foreground">{{ currencyLabel }}</span>
-                        </p>
-                        <DeltaBadge :delta="delta" :period-label="periodLabel" />
-                        <p v-if="meta" class="mt-1.5 text-xs text-muted-foreground">{{ meta }}</p>
+                            <Icon :name="icon" />
+                        </span>
                     </div>
 
-                    <span
-                        v-if="icon"
-                        class="flex size-9 shrink-0 items-center justify-center rounded-lg"
-                        :class="toneClasses[tone] ?? toneClasses.primary"
-                    >
-                        <Icon :name="icon" />
-                    </span>
+                    <!-- Below the icon, not beside it: six tiles across leave the
+                         value 70px next to the icon and 120px under it. -->
+                    <div class="[container-type:inline-size]">
+                        <p
+                            class="mt-2 flex flex-wrap items-baseline gap-x-1 text-2xl font-semibold leading-tight tracking-tight tabular-nums [overflow-wrap:anywhere] sm:text-[1.75rem] sm:leading-none"
+                            :class="isEmpty ? 'text-muted-foreground/60' : 'text-foreground'"
+                        >
+                            <FitFigure :value="display" />
+                            <span v-if="format === 'money' && !isEmpty" class="whitespace-nowrap text-sm font-medium text-muted-foreground">{{ currencyLabel }}</span>
+                        </p>
+                    </div>
+                    <DeltaBadge :delta="delta" :period-label="periodLabel" />
+                    <p v-if="meta" class="mt-1.5 text-xs text-muted-foreground">{{ meta }}</p>
                 </div>
 
                 <Sparkline :points="spark" :tone="delta?.tone ?? 'neutral'" class="self-start" />

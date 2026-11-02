@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { numberLocale, formatNumber, formatPercent } from '../../resources/js/lib/numberFormat.js';
+import { numberLocale, formatNumber, formatPercent, figureChars } from '../../resources/js/lib/numberFormat.js';
 
 const nf = (loc, opts) => new Intl.NumberFormat(loc, opts);
 const NUM = { minimumFractionDigits: 0, maximumFractionDigits: 2 };
@@ -44,4 +44,24 @@ test('formatPercent: non-numeric rules match formatNumber', () => {
     assert.equal(formatPercent('abc', 'fr'), 'abc');
     assert.equal(formatPercent(NaN, 'fr'), '—');
     assert.equal(formatPercent('12.5', 'fr'), formatPercent(12.5, 'fr'));
+});
+
+test('figureChars counts figures and leaves words alone', () => {
+    assert.equal(figureChars('372\u202f500,00'), 10);
+    assert.equal(figureChars('121.600,00'), 10);
+    assert.equal(figureChars('100%'), 4);
+    assert.equal(figureChars(189), 3);
+    assert.equal(figureChars(0), 1);
+    assert.equal(figureChars('٣٧٢٫٥'), 5);
+    assert.equal(figureChars('12/10/2026'), 10);
+    assert.equal(figureChars('-1 500'), 6);
+});
+
+test('figureChars gives null for anything that may wrap', () => {
+    assert.equal(figureChars('—'), null);
+    assert.equal(figureChars('Football'), null);
+    assert.equal(figureChars('12 joueurs'), null);
+    assert.equal(figureChars(''), null);
+    assert.equal(figureChars(null), null);
+    assert.equal(figureChars(undefined), null);
 });

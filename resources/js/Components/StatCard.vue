@@ -1,6 +1,7 @@
 <script setup>
 import { useCurrency } from '@/Composables/useCurrency';
 import Icon from '@/Components/Icon.vue';
+import FitFigure from '@/Components/Stats/FitFigure.vue';
 
 const { currencyLabel } = useCurrency();
 
@@ -54,9 +55,12 @@ const accent = {
                 :class="chip[color] || chip.slate"
             ><Icon :name="icon" /></span>
         </div>
-        <p class="figure mt-3 text-2xl font-extrabold [overflow-wrap:anywhere] sm:text-3xl" :class="valueColor[color] || valueColor.slate">
-            {{ value }}<span v-if="suffix || currency" class="ms-1 whitespace-nowrap text-base font-medium text-slate-400">{{ suffix || currencyLabel }}</span>
-        </p>
+        <div class="[container-type:inline-size]">
+            <p class="figure mt-3 flex flex-wrap items-baseline gap-x-1 text-2xl font-extrabold [overflow-wrap:anywhere] sm:text-3xl" :class="valueColor[color] || valueColor.slate">
+                <FitFigure :value="value" />
+                <span v-if="suffix || currency" class="whitespace-nowrap text-base font-medium text-slate-400">{{ suffix || currencyLabel }}</span>
+            </p>
+        </div>
         <slot />
     </article>
 </template>

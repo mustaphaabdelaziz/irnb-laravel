@@ -32,6 +32,8 @@ const props = defineProps({
     href: { type: String, default: null },
     // Money only: a value below zero shows red. Off by default, opt-in per page.
     flagNegative: { type: Boolean, default: false },
+    // Three tiles across on a phone: full padding leaves "Manquant" no room for a whole word.
+    compact: { type: Boolean, default: false },
 });
 
 const { t } = useI18n();
@@ -72,7 +74,7 @@ const isFlagged = computed(() => props.flagNegative && props.format === 'money' 
             class="h-full border-border/70 shadow-none transition-colors"
             :class="href ? 'hover:border-primary/40' : ''"
         >
-            <CardContent class="flex h-full flex-col justify-between gap-3 p-5">
+            <CardContent class="flex h-full flex-col justify-between gap-3" :class="compact ? 'p-3 sm:p-5' : 'p-5'">
                 <div class="min-w-0">
                     <div class="flex items-start justify-between gap-3">
                         <!-- Wraps rather than truncates: six tiles across leave

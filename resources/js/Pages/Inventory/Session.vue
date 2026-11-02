@@ -3,7 +3,7 @@ import { reactive, computed, ref } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import StatCard from '@/Components/StatCard.vue';
+import StatTile from '@/Components/Dashboard/StatTile.vue';
 import Icon from '@/Components/Icon.vue';
 import ExportMenu from '@/Components/ExportMenu.vue';
 import IconButton from '@/Components/IconButton.vue';
@@ -164,9 +164,9 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
 
             <!-- Summary -->
             <div class="grid grid-cols-3 gap-4">
-                <StatCard :label="t('total_expected')" :value="session.total_expected" icon="clipboard" color="slate" />
-                <StatCard :label="t('found')" :value="isOpen ? foundCount : session.total_found" icon="check" color="emerald" />
-                <StatCard :label="t('missing')" :value="isOpen ? (countedCount - foundCount) : session.total_missing" icon="alert" color="rose" />
+                <StatTile :label="t('total_expected')" :value="session.total_expected" />
+                <StatTile :label="t('found')" :value="isOpen ? foundCount : session.total_found" />
+                <StatTile :label="t('missing')" :value="isOpen ? (countedCount - foundCount) : session.total_missing" />
             </div>
 
             <!-- OPEN: count sheet -->

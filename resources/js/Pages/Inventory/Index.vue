@@ -3,7 +3,7 @@ import { ref, computed } from 'vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import StatCard from '@/Components/StatCard.vue';
+import StatTile from '@/Components/Dashboard/StatTile.vue';
 import Icon from '@/Components/Icon.vue';
 import IconButton from '@/Components/IconButton.vue';
 import { localToday } from '@/lib/localDate';
@@ -49,9 +49,9 @@ const lastDate = props.sessions[0]?.session_date;
 
         <div class="space-y-6">
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                <StatCard :label="t('equipments')" :value="itemCount" icon="equipment" color="primary" :suffix="t('items_to_count')" />
-                <StatCard :label="t('last_inventory')" :value="lastDate ? fmtDate(lastDate) : '—'" icon="clipboard" color="slate" />
-                <StatCard :label="t('inventory')" :value="sessions.length" icon="check" color="emerald" />
+                <StatTile :label="t('equipments')" :value="itemCount" icon="equipment" :meta="t('items_to_count')" />
+                <StatTile :label="t('last_inventory')" :value="lastDate ? fmtDate(lastDate) : null" format="text" icon="clipboard" tone="neutral" />
+                <StatTile :label="t('inventory')" :value="sessions.length" icon="check" tone="positive" />
             </div>
 
             <div class="flex justify-end">

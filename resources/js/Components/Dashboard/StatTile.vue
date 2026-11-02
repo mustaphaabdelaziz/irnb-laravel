@@ -78,7 +78,7 @@ const isFlagged = computed(() => props.flagNegative && props.format === 'money' 
                         <!-- Wraps rather than truncates: six tiles across leave
                              roughly 170px, and "Outstanding debt" clipped to
                              "Outstandi…" is a label that has stopped working. -->
-                        <p class="min-w-0 text-sm font-medium leading-snug text-muted-foreground">{{ label }}</p>
+                        <p class="min-w-0 hyphens-auto text-sm font-medium leading-snug text-muted-foreground [overflow-wrap:anywhere]">{{ label }}</p>
 
                         <span
                             v-if="icon"

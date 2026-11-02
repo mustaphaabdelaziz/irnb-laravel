@@ -35,7 +35,7 @@ const stateClass = {
             </div>
         </CardHeader>
         <Separator />
-        <div class="grid gap-5 px-5 py-4 lg:grid-cols-3">
+        <div class="grid grid-cols-1 gap-5 px-5 py-4 lg:grid-cols-3">
             <section>
                 <h3 class="text-sm font-semibold text-muted-foreground">{{ t('att.dash.today') }}</h3>
                 <p v-if="!data.today.length" class="mt-3 text-sm text-muted-foreground">{{ t('att.dash.none_today') }}</p>

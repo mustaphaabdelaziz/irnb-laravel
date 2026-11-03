@@ -58,16 +58,24 @@ class MembershipNumber
         return sprintf('%s-%04d-%05d', $code, self::clampYear($year), $seq);
     }
 
-    /** The next free ID for a branch and year. Players hold a copy, so both tables count. */
+    /**
+     * The lowest free ID for a branch and year: a number freed by a delete or a
+     * year correction goes back into use. Players hold a copy, so both tables count.
+     */
     public static function forBranch(Branch $branch, int $year): string
     {
         $prefix = sprintf('%s-%04d-', $branch->code, self::clampYear($year));
 
-        $max = BranchRegistration::query()->where('membership_id', 'like', $prefix.'%')->pluck('membership_id')
+        $taken = BranchRegistration::query()->where('membership_id', 'like', $prefix.'%')->pluck('membership_id')
             ->merge(Player::query()->where('membership_id', 'like', $prefix.'%')->pluck('membership_id'))
             ->map(fn (string $id) => (int) substr($id, strlen($prefix)))
-            ->max();
+            ->flip();
 
-        return self::compose($branch->code, $year, (int) $max + 1);
+        $seq = 1;
+        while ($taken->has($seq)) {
+            $seq++;
+        }
+
+        return self::compose($branch->code, $year, $seq);
     }
 }

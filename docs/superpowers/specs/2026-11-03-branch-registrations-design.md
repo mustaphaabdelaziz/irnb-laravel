@@ -106,6 +106,7 @@ Format: `{code}-{year}-{NNNNN}`, for example `FB-2022-00017`. Numbering is per b
 
 - **New registration:** issued from the branch code and the join date's year.
 - **Year correction:** new number under the new year, written to the activity log. Adding the day within the same year changes nothing.
+- **Reuse (owner decision, 2026-11-03):** a new number is the lowest one free in that branch and year. A number freed by deleting a registration or correcting a year is issued again, so an old printed card can match a later member. A left member keeps their number. Conversion keeps its own rule below.
 - **Search:** matches `membership_id` and `legacy_membership_id` on any registration.
 - **Display:** a page about a branch shows that branch's ID. Club-wide lists, PDFs and receipts show the primary registration's ID through `players.membership_id`.
 

@@ -25,7 +25,8 @@ class MembershipNumberTest extends TestCase
         $this->assertSame('FB-2022-00001', MembershipNumber::forBranch($foot, 2022));
         Player::create(['firstname' => 'A', 'membership_id' => 'FB-2022-00017']);
 
-        $this->assertSame('FB-2022-00018', MembershipNumber::forBranch($foot, 2022));
+        // The lowest free number, not the highest plus one.
+        $this->assertSame('FB-2022-00001', MembershipNumber::forBranch($foot, 2022));
         $this->assertSame('FB-2023-00001', MembershipNumber::forBranch($foot, 2023));
         $this->assertSame('SW-2022-00001', MembershipNumber::forBranch($swim, 2022));
     }

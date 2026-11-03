@@ -93,7 +93,8 @@ function addBranch() {
 }
 // Registration errors are keyed by card position, so they would land on the wrong card after a removal.
 function clearRegistrationErrors() {
-    form.clearErrors(...Object.keys(form.errors).filter((key) => key === 'registrations' || key.startsWith('registrations.')));
+    const keys = Object.keys(form.errors).filter((key) => key === 'registrations' || key.startsWith('registrations.'));
+    if (keys.length > 0) form.clearErrors(...keys);
 }
 function removeCard(index) {
     form.registrations.splice(index, 1);

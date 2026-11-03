@@ -92,7 +92,7 @@ export function cardPayload(card, leftStatusId = null) {
         other_position_ids: card.other_position_ids?.length ? card.other_position_ids : '',
         licence_number: card.licence_number || null,
         status_id: card.status_id || null,
-        left_at: isLeft ?(card.left_at || null) : null,
+        left_at: isLeft ? (card.left_at || null) : null,
         sporting_status_id: card.sporting_status_id || null,
     };
 }

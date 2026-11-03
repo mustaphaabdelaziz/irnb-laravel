@@ -34,11 +34,7 @@ class RegistrationService
         DB::transaction(function () use ($player, $cards, $user) {
             $existing = $player->registrations()->get()->keyBy('branch_id');
 
-            // The main branch's card goes first so it adopts the player's existing ID.
-            $mainId = Branch::mainId();
-            $ordered = collect($cards)->sortBy(fn (array $card) => (int) $card['branch_id'] === $mainId ? 0 : 1)->values();
-
-            foreach ($ordered as $card) {
+            foreach ($this->mainCardFirst($cards) as $card) {
                 $registration = $existing[(int) $card['branch_id']] ?? null;
                 if ($registration === null) {
                     $this->register($player, $card);
@@ -55,6 +51,23 @@ class RegistrationService
             $this->syncOtherPositions($player, $cards);
             $this->refreshMirror($player);
         });
+    }
+
+    /**
+     * The main branch's card first, so it adopts the player's existing ID whatever
+     * order the cards arrive in. The rest keep their order.
+     *
+     * @param  list<array<string, mixed>>  $cards
+     * @return list<array<string, mixed>>
+     */
+    public function mainCardFirst(array $cards): array
+    {
+        $mainId = Branch::mainId();
+
+        return collect($cards)
+            ->sortBy(fn (array $card) => (int) $card['branch_id'] === $mainId ? 0 : 1)
+            ->values()
+            ->all();
     }
 
     /** @param  array<string, mixed>  $card */

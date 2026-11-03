@@ -11,4 +11,7 @@ return [
 
     'branch_code_locked' => "This code can't change: membership IDs already use it.",
 
+    'join_date_before_birth' => 'The join date is before the birth date.',
+    'position_other_branch' => 'This position belongs to another branch.',
+
 ];

@@ -174,4 +174,7 @@ return [
 
     'branch_code_locked' => "Ce code ne peut plus changer : des numéros d'adhérent l'utilisent.",
 
+    'join_date_before_birth' => "La date d'adhésion précède la date de naissance.",
+    'position_other_branch' => 'Ce poste appartient à une autre branche.',
+
 ];

@@ -34,6 +34,7 @@ use App\Services\Player\DocumentStats;
 use App\Services\Player\MembershipNumber;
 use App\Services\Player\PlayerDocumentService;
 use App\Services\Player\RegisterPlayerService;
+use App\Services\Player\RegistrationService;
 use App\Services\Storage\FileStorageService;
 use App\Support\CertificateThresholds;
 use App\Support\ClubIdentity;
@@ -372,13 +373,31 @@ class PlayerController extends Controller
         ]);
     }
 
+    /** What a registration holds. These reach the player row only through RegistrationService. */
+    private const REGISTRATION_FIELDS = ['category_id', 'position_id', 'status_id', 'left_at', 'licence_number', 'join_year'];
+
+    /** @return array{0: array<string, mixed>, 1: ?array} the player's own fields, and the cards if any were sent */
+    private function splitCards(array $validated): array
+    {
+        $cards = $validated['registrations'] ?? null;
+        unset($validated['registrations']);
+
+        if ($cards !== null) {
+            foreach (self::REGISTRATION_FIELDS as $field) {
+                unset($validated[$field]);
+            }
+            unset($validated['other_position_ids']);
+        }
+
+        return [$validated, $cards];
+    }
+
     public function store(StorePlayerRequest $request, RegisterPlayerService $service, FileStorageService $files): RedirectResponse
     {
-        $attributes = $request->validated();
+        [$attributes, $cards] = $this->splitCards($request->validated());
         $emergencyContacts = $attributes['emergency_contacts'] ?? [];
-        $branchIds = $attributes['branch_ids'] ?? [];
         $otherPositionIds = $attributes['other_position_ids'] ?? [];
-        unset($attributes['emergency_contacts'], $attributes['picture'], $attributes['branch_ids'], $attributes['other_position_ids']);
+        unset($attributes['emergency_contacts'], $attributes['picture'], $attributes['other_position_ids']);
 
         if ($request->hasFile('picture')) {
             $stored = $files->storeImage($request->file('picture'), 'players', 512);
@@ -389,14 +408,16 @@ class PlayerController extends Controller
         // players.city is NOT NULL; an empty city is stored like the imports do.
         $attributes['city'] ??= 'Unknown';
 
-        $player = $service->handle($attributes);
+        $player = $service->handle($attributes, $cards ?? []);
 
-        $player->branches()->sync($branchIds);
-        $player->otherPositions()->sync($otherPositionIds);
+        // Only a club with no branches still sends these flat.
+        if ($cards === null) {
+            $player->otherPositions()->sync($otherPositionIds);
 
-        // The main position can never also sit in the "other positions" pivot.
-        if ($player->position_id) {
-            $player->otherPositions()->detach($player->position_id);
+            // The main position can never also sit in the "other positions" pivot.
+            if ($player->position_id) {
+                $player->otherPositions()->detach($player->position_id);
+            }
         }
 
         foreach ($emergencyContacts as $contact) {
@@ -430,21 +451,19 @@ class PlayerController extends Controller
 
     public function update(UpdatePlayerRequest $request, Player $player, FileStorageService $files): RedirectResponse
     {
-        $validated = $request->validated();
+        [$validated, $cards] = $this->splitCards($request->validated());
 
         // The key must be PRESENT (not just non-null) to trigger a sync: Inertia's
         // forceFormData conversion drops empty arrays entirely, so a form that
-        // clears every branch (or every other position, or the emergency
+        // clears every other position (or the emergency
         // contact) sends the field as '' — which ConvertEmptyStringsToNull turns
         // into a present-but-null key. Omitted entirely (e.g. another client
         // that never touches this field) must leave the existing rows untouched.
         $emergencyContactsPresent = array_key_exists('emergency_contacts', $validated);
         $emergencyContacts = $validated['emergency_contacts'] ?? [];
-        $branchIdsPresent = array_key_exists('branch_ids', $validated);
-        $branchIds = $validated['branch_ids'] ?? null;
         $otherPositionIdsPresent = array_key_exists('other_position_ids', $validated);
         $otherPositionIds = $validated['other_position_ids'] ?? null;
-        unset($validated['emergency_contacts'], $validated['picture'], $validated['branch_ids'], $validated['other_position_ids']);
+        unset($validated['emergency_contacts'], $validated['picture'], $validated['other_position_ids']);
 
         if ($request->hasFile('picture')) {
             $files->delete($player->picture_filename);
@@ -454,9 +473,9 @@ class PlayerController extends Controller
         }
 
         // Membership id encodes the join year (YYYYNNNNN). If the year changes,
-        // regenerate the id for the new year so the two stay consistent. The
-        // file number is the permanent id written on the paper folder.
-        if (! empty($validated['join_year'])
+        // regenerate the id for the new year so the two stay consistent. Only a
+        // player with no cards: a registration keeps its own ID.
+        if ($cards === null && ! empty($validated['join_year'])
             && (int) $validated['join_year'] !== (int) $player->join_year) {
             $validated['membership_id'] = MembershipNumber::generateUnique((int) $validated['join_year']);
         }
@@ -468,18 +487,18 @@ class PlayerController extends Controller
 
         $player->update($validated);
 
-        if ($branchIdsPresent) {
-            $player->branches()->sync($branchIds ?? []);
-        }
+        if ($cards !== null) {
+            app(RegistrationService::class)->sync($player, $cards, $request->user());
+        } else {
+            if ($otherPositionIdsPresent) {
+                $player->otherPositions()->sync($otherPositionIds ?? []);
+            }
 
-        if ($otherPositionIdsPresent) {
-            $player->otherPositions()->sync($otherPositionIds ?? []);
-        }
-
-        // The main position can never also sit in the "other positions" pivot
-        // (e.g. the main changed from MF to WG while WG was listed as "other").
-        if ($player->position_id) {
-            $player->otherPositions()->detach($player->position_id);
+            // The main position can never also sit in the "other positions" pivot
+            // (e.g. the main changed from MF to WG while WG was listed as "other").
+            if ($player->position_id) {
+                $player->otherPositions()->detach($player->position_id);
+            }
         }
 
         if ($emergencyContactsPresent) {

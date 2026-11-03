@@ -2,13 +2,14 @@
 
 namespace App\Http\Requests\Player;
 
-use App\Models\Branch;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class UpdatePlayerRequest extends FormRequest
 {
+    use ValidatesRegistrations;
+
     public function authorize(): bool
     {
         return true;
@@ -45,9 +46,7 @@ class UpdatePlayerRequest extends FormRequest
             'position_id' => ['nullable', 'integer', 'exists:positions,id'],
             'other_position_ids' => ['nullable', 'array'],
             'other_position_ids.*' => ['integer', 'exists:positions,id'],
-            // Required once the club has branches; with none set up there is nothing to pick.
-            'branch_ids' => [Rule::requiredIf(fn () => Branch::exists()), 'nullable', 'array'],
-            'branch_ids.*' => ['integer', 'exists:branches,id'],
+            ...$this->registrationRules(),
             'team' => ['nullable', 'string', 'max:255'],
             'health_medical_conditions' => ['nullable', 'string'],
             'health_blood_group_rhesus' => ['nullable', 'string', 'max:10'],
@@ -74,5 +73,7 @@ class UpdatePlayerRequest extends FormRequest
                 $validator->errors()->add('other_position_ids', __('The main position is already listed.'));
             }
         });
+
+        $this->validateRegistrations($validator, $this->route('player'));
     }
 }

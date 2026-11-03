@@ -38,7 +38,7 @@ class PlayerIndexDebtTest extends TestCase
             'lastname' => 'Khelifi',
             'category_id' => $category->id,
             'is_student' => true,
-        ], $admin->id);
+        ]);
         $subscription->assignTo($player);
         app(RecalculatePlayerDebtService::class)->forPlayer($player);
 

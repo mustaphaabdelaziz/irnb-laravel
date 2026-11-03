@@ -77,13 +77,16 @@ class BranchFeatureTest extends TestCase
     #[Test]
     public function creating_a_player_syncs_selected_branches(): void
     {
-        $swim = Branch::create(['name' => 'Swimming']);
-        $foot = Branch::create(['name' => 'Football']);
+        $swim = Branch::create(['name' => 'Swimming', 'code' => 'SW']);
+        $foot = Branch::create(['name' => 'Football', 'code' => 'FB']);
 
         $this->actingAs($this->admin())
             ->post(route('players.store'), [
                 'firstname' => 'Ali', 'lastname' => 'Test',
-                'branch_ids' => [$swim->id, $foot->id],
+                'registrations' => [
+                    ['branch_id' => $swim->id, 'join_date' => '2024-01-15'],
+                    ['branch_id' => $foot->id, 'join_date' => '2024-01-15'],
+                ],
             ])
             ->assertRedirect();
 
@@ -92,22 +95,24 @@ class BranchFeatureTest extends TestCase
     }
 
     #[Test]
-    public function updating_a_player_replaces_its_branches(): void
+    public function updating_a_player_marks_a_dropped_branch_left_instead_of_deleting_it(): void
     {
-        $swim = Branch::create(['name' => 'Swimming']);
-        $foot = Branch::create(['name' => 'Football']);
+        $swim = Branch::create(['name' => 'Swimming', 'code' => 'SW']);
+        $foot = Branch::create(['name' => 'Football', 'code' => 'FB']);
         $player = Player::create(['firstname' => 'Ali', 'membership_id' => '202400001', 'join_year' => 2024, 'is_student' => true]);
         $player->branches()->sync([$swim->id]);
 
         $this->actingAs($this->admin())
             ->put(route('players.update', $player), [
                 'firstname' => 'Ali', 'lastname' => 'Test',
-                'join_year' => 2024,
-                'branch_ids' => [$foot->id],
+                'registrations' => [['branch_id' => $foot->id, 'join_date' => '2024-01-15']],
             ])
             ->assertRedirect();
 
-        $this->assertSame([$foot->id], $player->fresh()->branches->pluck('id')->all());
+        // Both registrations remain; the dropped one is marked left.
+        $this->assertEqualsCanonicalizing([$swim->id, $foot->id], $player->registrations()->pluck('branch_id')->all());
+        $this->assertSame(Player::leftStatusId(), $player->registrations()->where('branch_id', $swim->id)->value('status_id'));
+        $this->assertNotSame(Player::leftStatusId(), $player->registrations()->where('branch_id', $foot->id)->value('status_id'));
     }
 
     /**
@@ -119,20 +124,20 @@ class BranchFeatureTest extends TestCase
     #[Test]
     public function clearing_every_branch_is_rejected_and_leaves_them(): void
     {
-        $swim = Branch::create(['name' => 'Swimming']);
+        $swim = Branch::create(['name' => 'Swimming', 'code' => 'SW']);
         $player = Player::create(['firstname' => 'Ali', 'membership_id' => '202400004', 'join_year' => 2024]);
         $player->branches()->sync([$swim->id]);
 
         $this->actingAs($this->admin())->put(route('players.update', $player), [
             'firstname' => 'Ali', 'lastname' => 'Test',
             'join_year' => 2024,
-            'branch_ids' => '',
-        ])->assertSessionHasErrors(['branch_ids']);
+            'registrations' => '',
+        ])->assertSessionHasErrors(['registrations']);
 
         $this->put(route('players.update', $player), [
             'firstname' => 'Ali', 'lastname' => 'Test',
             'join_year' => 2024,
-        ])->assertSessionHasErrors(['branch_ids']);
+        ])->assertSessionHasErrors(['registrations']);
 
         $this->assertSame([$swim->id], $player->fresh()->branches->pluck('id')->all());
     }

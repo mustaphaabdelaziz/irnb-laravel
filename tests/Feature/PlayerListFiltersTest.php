@@ -108,14 +108,14 @@ class PlayerListFiltersTest extends TestCase
         $this->actingAs($admin)
             ->post(route('players.store'), ['firstname' => 'Ali'])
             ->assertSessionHasErrors(['lastname'])
-            ->assertSessionDoesntHaveErrors(['branch_ids']);
+            ->assertSessionDoesntHaveErrors(['registrations']);
 
-        $branch = Branch::create(['name' => 'Football']);
+        $branch = Branch::create(['name' => 'Football', 'code' => 'FB']);
 
         $this->post(route('players.store'), ['firstname' => 'Ali', 'lastname' => 'Benali'])
-            ->assertSessionHasErrors(['branch_ids']);
+            ->assertSessionHasErrors(['registrations']);
 
-        $this->post(route('players.store'), ['firstname' => 'Ali', 'lastname' => 'Benali', 'branch_ids' => [$branch->id]])
+        $this->post(route('players.store'), ['firstname' => 'Ali', 'lastname' => 'Benali', 'registrations' => [['branch_id' => $branch->id, 'join_date' => '2024-01-15']]])
             ->assertSessionHasNoErrors();
     }
 

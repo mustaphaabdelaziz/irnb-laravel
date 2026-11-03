@@ -131,6 +131,8 @@
     "activity.action.meeting_created": "إنشاء اجتماعات",
     "activity.action.meeting_deleted": "حذف اجتماعات",
     "activity.action.meeting_updated": "تعديل اجتماعات",
+    "activity.action.membership_id_changed": "تغيير أرقام الانخراط",
+    "activity.action.membership_ids_converted": "تحويل أرقام الانخراط",
     "activity.action.password_changed": "تغيير كلمة المرور",
     "activity.action.payment_edited": "تعديل مدفوعات",
     "activity.action.payment_recorded": "تسجيل مدفوعات",

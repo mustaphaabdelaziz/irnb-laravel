@@ -131,6 +131,8 @@
     "activity.action.meeting_created": "Réunions créées",
     "activity.action.meeting_deleted": "Réunions supprimées",
     "activity.action.meeting_updated": "Réunions modifiées",
+    "activity.action.membership_id_changed": "Numéros d'adhérent modifiés",
+    "activity.action.membership_ids_converted": "Numéros d'adhérent convertis",
     "activity.action.password_changed": "Mot de passe changé",
     "activity.action.payment_edited": "Paiements modifiés",
     "activity.action.payment_recorded": "Paiements encaissés",

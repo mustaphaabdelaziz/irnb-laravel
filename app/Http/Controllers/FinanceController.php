@@ -8,6 +8,7 @@ use App\Models\FinanceCategory;
 use App\Models\FiscalYear;
 use App\Models\Transaction;
 use App\Services\Dashboard\Support\DeltaCalculator;
+use App\Services\Dashboard\Support\MonthBucket;
 use App\Services\Finance\BudgetVsActual;
 use App\Services\FinanceService;
 use App\Support\FiscalPeriod;
@@ -153,7 +154,7 @@ class FinanceController extends Controller
         $monthlyRows = DB::table('transactions')
             ->where('archived', false)->where('fiscal_year', $year)
             ->groupBy('m', 'transaction_type')
-            ->selectRaw("CAST(strftime('%m', transaction_date) AS INTEGER) as m, transaction_type, SUM(amount) as total")
+            ->selectRaw(MonthBucket::monthNumber('transaction_date').' as m, transaction_type, SUM(amount) as total')
             ->get();
         $monthly = [];
         foreach (FiscalPeriod::months() as $m) {

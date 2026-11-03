@@ -26,6 +26,21 @@ class MonthBucket
         };
     }
 
+    /** A SQL expression for the month of $column, as a number from 1 to 12. */
+    public static function monthNumber(string $column): string
+    {
+        return self::monthNumberFor(DB::connection()->getDriverName(), $column);
+    }
+
+    public static function monthNumberFor(string $driver, string $column): string
+    {
+        return match ($driver) {
+            'sqlite' => "CAST(strftime('%m', {$column}) AS INTEGER)",
+            'pgsql' => "CAST(EXTRACT(MONTH FROM {$column}) AS INTEGER)",
+            default => "MONTH({$column})",
+        };
+    }
+
     /**
      * The twelve month keys ending with $end's month, oldest first.
      *

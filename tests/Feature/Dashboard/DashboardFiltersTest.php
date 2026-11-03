@@ -145,6 +145,17 @@ class DashboardFiltersTest extends TestCase
         $this->assertStringContainsString('strftime', MonthBucket::expression('transaction_date'));
     }
 
+    /** The test suite runs on SQLite, so strftime would pass here and break on MySQL. */
+    #[Test]
+    public function each_driver_gets_its_own_month_number(): void
+    {
+        $this->assertSame("CAST(strftime('%m', d) AS INTEGER)", MonthBucket::monthNumberFor('sqlite', 'd'));
+        $this->assertSame('MONTH(d)', MonthBucket::monthNumberFor('mysql', 'd'));
+        $this->assertSame('MONTH(d)', MonthBucket::monthNumberFor('mariadb', 'd'));
+        $this->assertSame('CAST(EXTRACT(MONTH FROM d) AS INTEGER)', MonthBucket::monthNumberFor('pgsql', 'd'));
+    }
+
+
     #[Test]
     public function last_twelve_labels_end_with_the_given_month(): void
     {

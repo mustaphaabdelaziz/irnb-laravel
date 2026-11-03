@@ -94,7 +94,7 @@ class ModuleStats
     {
         $outstanding = DB::table('equipment_rentals')
             ->whereNull('return_date')
-            ->selectRaw('equipment_item_id, COALESCE(SUM(quantity - returned_quantity), 0) as out')
+            ->selectRaw('equipment_item_id, COALESCE(SUM(quantity - returned_quantity), 0) as on_loan_qty')
             ->groupBy('equipment_item_id');
 
         $row = DB::table('equipment_items')
@@ -104,7 +104,7 @@ class ModuleStats
                 'COUNT(DISTINCT equipment_items.catalog_id) as catalogs, '
                 .'SUM(equipment_items.quantity) as units, '
                 .'SUM(equipment_items.quantity * COALESCE(equipment_items.unit_price, 0)) as value, '
-                .'SUM(COALESCE(r.out, 0)) as on_loan'
+                .'SUM(COALESCE(r.on_loan_qty, 0)) as on_loan'
             )
             ->first();
 

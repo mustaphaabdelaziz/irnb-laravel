@@ -176,17 +176,17 @@ class OperationsStats
 
         $outstanding = DB::table('equipment_rentals')
             ->whereNull('return_date')
-            ->selectRaw('equipment_item_id, COALESCE(SUM(quantity - returned_quantity), 0) as out')
+            ->selectRaw('equipment_item_id, COALESCE(SUM(quantity - returned_quantity), 0) as on_loan_qty')
             ->groupBy('equipment_item_id');
 
         return $this->lowStockCache = $this->stockItems($filters)
             ->leftJoinSub($outstanding, 'r', 'r.equipment_item_id', '=', 'equipment_items.id')
             ->join('equipment_catalogs', 'equipment_catalogs.id', '=', 'equipment_items.catalog_id')
             ->groupBy('equipment_catalogs.id', 'equipment_catalogs.name')
-            ->havingRaw('SUM(equipment_items.quantity - COALESCE(r.out, 0)) <= ?', [self::LOW_STOCK_THRESHOLD])
-            ->orderByRaw('SUM(equipment_items.quantity - COALESCE(r.out, 0)) asc')
+            ->havingRaw('SUM(equipment_items.quantity - COALESCE(r.on_loan_qty, 0)) <= ?', [self::LOW_STOCK_THRESHOLD])
+            ->orderByRaw('SUM(equipment_items.quantity - COALESCE(r.on_loan_qty, 0)) asc')
             ->limit(self::LOW_STOCK_ROWS)
-            ->selectRaw('equipment_catalogs.name as name, SUM(equipment_items.quantity - COALESCE(r.out, 0)) as available')
+            ->selectRaw('equipment_catalogs.name as name, SUM(equipment_items.quantity - COALESCE(r.on_loan_qty, 0)) as available')
             ->get()
             ->map(fn (object $row): array => [
                 'name' => (string) $row->name,

@@ -102,10 +102,7 @@ class HeroStats
         $row = $query->selectRaw(
             "{$function}(CASE WHEN {$dateColumn} BETWEEN ? AND ? THEN {$inner} ELSE {$zero} END) as current_window, "
             ."{$function}(CASE WHEN {$dateColumn} BETWEEN ? AND ? THEN {$inner} ELSE {$zero} END) as previous_window",
-            [
-                $filters->from, $filters->to,
-                $filters->prevFrom, $filters->prevTo,
-            ],
+            [...$filters->window(), ...$filters->previousWindow()],
         )->first();
 
         return [

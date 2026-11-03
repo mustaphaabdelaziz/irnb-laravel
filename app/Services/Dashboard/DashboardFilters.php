@@ -117,6 +117,26 @@ class DashboardFilters
         return $this->to ?? CarbonImmutable::now();
     }
 
+    /**
+     * The window as bindings for a column that may hold a bare date.
+     *
+     * SQLite compares dates as text, and a date picked by hand is stored without
+     * a time: '2026-11-01' sorts before '2026-11-01 00:00:00', so a start with a
+     * time would drop that day. A bare start and a last-second end hold both forms.
+     *
+     * @return array{0:string,1:string}
+     */
+    public function window(): array
+    {
+        return [$this->from->toDateString(), $this->to->toDateTimeString()];
+    }
+
+    /** @return array{0:string,1:string} */
+    public function previousWindow(): array
+    {
+        return [$this->prevFrom->toDateString(), $this->prevTo->toDateTimeString()];
+    }
+
     /** @return array<string, mixed> */
     public function toArray(): array
     {

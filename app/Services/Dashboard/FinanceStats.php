@@ -117,7 +117,7 @@ class FinanceStats
             Transaction::query()->where('transactions.archived', false),
             $filters->branchId,
         )
-            ->whereBetween('transactions.transaction_date', [$filters->prevFrom, $filters->prevTo])
+            ->whereBetween('transactions.transaction_date', $filters->previousWindow())
             ->selectRaw(
                 'COUNT(*) as entries, '
                 .'SUM(transactions.amount) as amount_total, '
@@ -340,7 +340,7 @@ class FinanceStats
         );
 
         if ($filters->from !== null) {
-            $query->whereBetween('transactions.transaction_date', [$filters->from, $filters->to]);
+            $query->whereBetween('transactions.transaction_date', $filters->window());
         }
 
         return $query;

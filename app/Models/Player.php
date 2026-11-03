@@ -241,7 +241,12 @@ class Player extends Model
 
     public function branches(): BelongsToMany
     {
-        return $this->belongsToMany(Branch::class, 'branch_player');
+        return $this->belongsToMany(Branch::class, 'branch_player')->using(BranchRegistration::class);
+    }
+
+    public function registrations(): HasMany
+    {
+        return $this->hasMany(BranchRegistration::class);
     }
 
     public function playerSubscriptions(): HasMany

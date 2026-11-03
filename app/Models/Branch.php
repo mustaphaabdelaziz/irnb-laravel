@@ -22,6 +22,7 @@ class Branch extends Model
 
     protected $fillable = [
         'name',
+        'code',
         'name_ar',
         'name_fr',
         'name_en',
@@ -44,7 +45,20 @@ class Branch extends Model
 
     public function players(): BelongsToMany
     {
-        return $this->belongsToMany(Player::class, 'branch_player');
+        return $this->belongsToMany(Player::class, 'branch_player')->using(BranchRegistration::class);
+    }
+
+    public function registrations(): HasMany
+    {
+        return $this->hasMany(BranchRegistration::class);
+    }
+
+    /** The club's main branch: an organisational default, it grants no privileges. */
+    public static function mainId(): ?int
+    {
+        $id = WebsiteConfig::query()->value('main_branch_id');
+
+        return $id === null ? null : (int) $id;
     }
 
     /** Equipment lots assigned to this branch. Untagged lots are club-wide. */

@@ -18,6 +18,7 @@ class WebsiteConfig extends Model
 
     protected $fillable = [
         'singleton_key',
+        'main_branch_id',
         'club_name',
         'club_short_name',
         'tagline',

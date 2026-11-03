@@ -13,6 +13,7 @@ import Icon from '@/Components/Icon.vue';
 import IconButton from '@/Components/IconButton.vue';
 import PlayerFieldRow from '@/Components/PlayerFieldRow.vue';
 import { formatPhone } from '@/lib/phone';
+import RegistrationsSection from '@/Pages/Players/Partials/RegistrationsSection.vue';
 import AcademicSection from '@/Pages/Players/Partials/AcademicSection.vue';
 import AttendanceSection from '@/Pages/Players/Partials/AttendanceSection.vue';
 import MatchesSection from '@/Pages/Players/Partials/MatchesSection.vue';
@@ -365,6 +366,13 @@ function formatDate(val) {
     if (!val) return '-';
     return new Date(val).toLocaleDateString();
 }
+
+// A registration's dates are plain Y-m-d days: build them in local time so
+// no timezone can move them to the day before.
+function formatPlainDate(val) {
+    const [year, month, day] = String(val).slice(0, 10).split('-').map(Number);
+    return new Date(year, month - 1, day).toLocaleDateString();
+}
 </script>
 
 <template>
@@ -407,7 +415,7 @@ function formatDate(val) {
                             <span v-if="player.age != null" class="ms-1 text-slate-500 dark:text-slate-400">({{ t('age_years', { age: player.age }) }})</span>
                         </PlayerFieldRow>
                         <PlayerFieldRow icon="user" :label="t('gender')" :value="genderLabel" />
-                        <PlayerFieldRow icon="positions" :label="t('main_position')">
+                        <PlayerFieldRow v-if="!player.registrations?.length" icon="positions" :label="t('main_position')">
                             {{ player.position?.abbreviation || '—' }}
                             <span v-if="player.position?.name" class="text-slate-500 dark:text-slate-400">{{ player.position.name }}</span>
                             <span v-if="player.other_positions?.length" class="text-slate-500 dark:text-slate-400">
@@ -415,9 +423,9 @@ function formatDate(val) {
                                 <template v-for="(p, index) in player.other_positions" :key="p.id"><span :title="p.name">{{ p.abbreviation }}</span>{{ index < player.other_positions.length - 1 ? ', ' : '' }}</template>
                             </span>
                         </PlayerFieldRow>
-                        <PlayerFieldRow icon="categories" :label="t('category')" :value="player.category?.localized_name || player.category?.name" />
-                        <PlayerFieldRow icon="flag" :label="t('membership_status')" :value="player.status?.localized_name || player.status?.name" />
-                        <PlayerFieldRow v-if="player.left_at" icon="calendar" :label="t('left_at')" :value="formatDate(player.left_at)" />
+                        <PlayerFieldRow v-if="!player.registrations?.length" icon="categories" :label="t('category')" :value="player.category?.localized_name || player.category?.name" />
+                        <PlayerFieldRow v-if="!player.registrations?.length" icon="flag" :label="t('membership_status')" :value="player.status?.localized_name || player.status?.name" />
+                        <PlayerFieldRow v-if="player.left_at && !player.registrations?.length" icon="calendar" :label="t('left_at')" :value="formatDate(player.left_at)" />
                         <PlayerFieldRow icon="location" :label="t('state')" :value="[player.city, player.wilaya?.localized_name || player.wilaya?.name || player.state].filter(Boolean).join(', ')" />
                         <PlayerFieldRow icon="phone" :label="t('phone')">
                             <span v-if="player.phones?.[0]" dir="ltr" class="font-mono">{{ formatPhone(player.phones[0]) }}</span>
@@ -426,9 +434,9 @@ function formatDate(val) {
                         <PlayerFieldRow icon="mail" :label="t('email')" :value="player.email" />
                         <PlayerFieldRow icon="jobs" :label="t('job')" :value="player.is_student ? t('student') : (player.member_job?.localized_name || player.member_job?.name)" />
                         <PlayerFieldRow icon="drop" :label="t('blood_group')" :value="player.health_blood_group_rhesus" />
-                        <PlayerFieldRow icon="idcard" :label="t('licence_number')" :value="player.licence_number" />
-                        <PlayerFieldRow icon="calendar" :label="t('join_year')" :value="player.join_year" />
-                        <PlayerFieldRow icon="home" :label="t('branches')">
+                        <PlayerFieldRow v-if="!player.registrations?.length" icon="idcard" :label="t('licence_number')" :value="player.licence_number" />
+                        <PlayerFieldRow v-if="!player.registrations?.length" icon="calendar" :label="t('join_year')" :value="player.join_year" />
+                        <PlayerFieldRow v-if="!player.registrations?.length" icon="home" :label="t('branches')">
                             <span v-if="player.branches?.length" class="flex flex-wrap gap-1">
                                 <span v-for="b in player.branches" :key="b.id" class="inline-flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5 text-xs dark:bg-slate-800">
                                     <img v-if="b.logo_url" :src="b.logo_url" alt="" class="h-4 w-4 rounded-sm object-contain" />
@@ -438,6 +446,7 @@ function formatDate(val) {
                             <span v-else>—</span>
                         </PlayerFieldRow>
                     </dl>
+                    <RegistrationsSection :registrations="player.registrations" :format-date="formatPlainDate" />
 
                     <div v-if="player.emergency_contacts?.length || player.health_medical_conditions" class="mt-5 border-t border-slate-100 pt-4 dark:border-slate-800">
                         <template v-if="player.emergency_contacts?.length">

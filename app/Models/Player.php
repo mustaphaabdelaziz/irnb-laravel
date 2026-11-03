@@ -13,7 +13,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Support\Facades\DB;
 
 class Player extends Model
 {
@@ -179,6 +178,13 @@ class Player extends Model
                     foreach ($columns as $column) {
                         $inner->orWhere($column, 'like', '%'.$token.'%');
                     }
+
+                    // Every branch's ID, and the old one from before conversion.
+                    $inner->orWhereExists(fn ($q) => $q->from('branch_player')
+                        ->whereColumn('branch_player.player_id', 'players.id')
+                        ->where(fn ($ids) => $ids
+                            ->where('branch_player.membership_id', 'like', '%'.$token.'%')
+                            ->orWhere('branch_player.legacy_membership_id', 'like', '%'.$token.'%')));
                 });
             }
         });

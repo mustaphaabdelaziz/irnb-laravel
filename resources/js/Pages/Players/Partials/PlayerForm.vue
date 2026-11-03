@@ -8,13 +8,16 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import JobQuickCreateModal from '@/Components/JobQuickCreateModal.vue';
 import IconButton from '@/Components/IconButton.vue';
-import { Link, useForm } from '@inertiajs/vue3';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
+import RegistrationCard from '@/Pages/Players/Partials/RegistrationCard.vue';
+import { Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { phoneDigits } from '@/lib/phone';
 import { positionLabeller } from '@/lib/positionLabels';
 import { useCan } from '@/Composables/useCan';
 import { localToday } from '@/lib/localDate';
+import { cardFromRegistration, cardPayload, newCard } from '@/lib/registrationCards';
 
 const { t } = useI18n();
 const { can } = useCan();
@@ -24,6 +27,7 @@ const props = defineProps({
     categories: { type: Array, default: () => [] },
     positions: { type: Array, default: () => [] },
     playerStatuses: { type: Array, default: () => [] },
+    sportingStatuses: { type: Array, default: () => [] },
     jobs: { type: Array, default: () => [] },
     branches: { type: Array, default: () => [] },
     wilayas: { type: Array, default: () => [] },
@@ -59,7 +63,7 @@ const form = useForm({
     position_id: p.position_id || '',
     other_position_ids: (p.other_positions || []).map((pos) => pos.id),
     member_job_id: p.member_job_id || '',
-    branch_ids: (p.branches || []).map((b) => b.id),
+    registrations: (p.registrations || []).map((registration, index) => cardFromRegistration(registration, p.other_positions || [], index === 0)),
     join_year: p.join_year || props.defaultJoinYear,
     picture: null,
     health_medical_conditions: p.health_medical_conditions || '',
@@ -69,27 +73,40 @@ const form = useForm({
     archived: p.archived || false,
 });
 
-// --- Branch multiselect (searchable add + removable chips) ---
+// --- One card per branch ---
 const branchPick = ref('');
 const branchesById = computed(() => Object.fromEntries(props.branches.map((b) => [b.id, b])));
 const branchOptions = computed(() => {
-    const taken = new Set(form.branch_ids);
+    const taken = new Set(form.registrations.map((card) => card.branch_id));
     return props.branches
         .filter((b) => !taken.has(b.id))
         .map((b) => ({ value: b.id, label: b.localized_name || b.name }));
 });
+const defaultStatusId = computed(() => props.playerStatuses[0]?.id ?? '');
 function addBranch() {
     if (!branchPick.value) return;
     const id = Number(branchPick.value);
-    if (!form.branch_ids.includes(id)) form.branch_ids.push(id);
+    if (!form.registrations.some((card) => card.branch_id === id)) {
+        form.registrations.push(newCard(id, p, form.registrations.length === 0 && isEdit, defaultStatusId.value));
+    }
     branchPick.value = '';
 }
-function removeBranch(id) {
-    form.branch_ids = form.branch_ids.filter((x) => x !== id);
+function removeCard(index) {
+    form.registrations.splice(index, 1);
 }
-function branchLabel(id) {
-    const b = branchesById.value[id];
-    return b ? (b.localized_name || b.name) : `#${id}`;
+const usesCards = computed(() => props.branches.length > 0);
+
+// Deleting is for a registration added by mistake; a real departure is a status.
+const deletingCard = ref(null);
+function deleteCard() {
+    const card = deletingCard.value;
+    deletingCard.value = null;
+    router.delete(route('players.registrations.destroy', [p.id, card.id]), {
+        preserveScroll: true,
+        onSuccess: (page) => {
+            if (!page.props.flash?.error) form.registrations = form.registrations.filter((c) => c.id !== card.id);
+        },
+    });
 }
 
 // --- Other positions (searchable add + removable chips) ---
@@ -180,9 +197,9 @@ onBeforeUnmount(() => { if (previewUrl.value) URL.revokeObjectURL(previewUrl.val
 function submit() {
     // The branch picker is not a native field, so the browser cannot flag it;
     // say so here instead of waiting for the server's answer.
-    form.clearErrors('branch_ids');
-    if (props.branches.length && !form.branch_ids.length) {
-        form.setError('branch_ids', t('validation.branch_required'));
+    form.clearErrors('registrations');
+    if (usesCards.value && !form.registrations.length) {
+        form.setError('registrations', t('validation.branch_required'));
         return;
     }
 
@@ -217,7 +234,6 @@ function submit() {
         birthdate: data.birthdate || null,
         gender: data.gender,
         health_blood_group_rhesus: data.health_blood_group_rhesus || null,
-        licence_number: data.licence_number || null,
         // '' when empty, for the reason given at other_position_ids below: an
         // empty array never reaches the server, so the number could not be removed.
         phones: phones.length ? phones : '',
@@ -225,23 +241,21 @@ function submit() {
         wilaya_id: data.wilaya_id || null,
         city: data.city || null,
         is_student: data.is_student,
-        status_id: data.status_id || null,
-        // Only a "left" member has a leave date; empty lets the server stamp today.
-        left_at: isLeftStatus.value ? (data.left_at || null) : null,
-        category_id: data.category_id || null,
-        position_id: data.position_id || null,
-        // Inertia's FormData conversion (forceFormData: true, below) drops empty
-        // arrays entirely, so an omitted key would leave the server-side list
-        // untouched instead of clearing it. Sending '' when empty makes the
-        // "remove all other positions" case reach the server as a present,
-        // clearable value.
-        other_position_ids: data.other_position_ids.length ? data.other_position_ids : '',
         member_job_id: data.member_job_id || null,
-        // Same reasoning as other_position_ids above: an empty array is dropped
-        // entirely by forceFormData, so clearing every branch must send '' to
-        // reach the server as a present, clearable value.
-        branch_ids: data.branch_ids.length ? data.branch_ids : '',
-        join_year: data.join_year || null,
+        // A club with no branches keeps the flat fields; otherwise each card holds them.
+        ...(usesCards.value
+            ? { registrations: data.registrations.map(cardPayload) }
+            : {
+                licence_number: data.licence_number || null,
+                status_id: data.status_id || null,
+                // Only a "left" member has a leave date; empty lets the server stamp today.
+                left_at: isLeftStatus.value ? (data.left_at || null) : null,
+                category_id: data.category_id || null,
+                position_id: data.position_id || null,
+                // '' keeps an emptied list present: forceFormData drops empty arrays.
+                other_position_ids: data.other_position_ids.length ? data.other_position_ids : '',
+                join_year: data.join_year || null,
+            }),
         picture: data.picture,
         health_medical_conditions: data.health_medical_conditions || null,
         emergency_contacts: emergencyContacts.length ? emergencyContacts : '',
@@ -308,7 +322,7 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                         <option v-for="bg in ['A+','A-','B+','B-','AB+','AB-','O+','O-']" :key="bg" :value="bg">{{ bg }}</option>
                     </select>
                 </div>
-                <div>
+                <div v-if="!usesCards">
                     <InputLabel :value="t('licence_number')" />
                     <TextInput v-model="form.licence_number" class="mt-1 w-full" maxlength="50" dir="ltr" />
                     <InputError :message="form.errors.licence_number" class="mt-1" />
@@ -341,17 +355,17 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
         <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
             <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('role_and_position') }}</h2>
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <div>
+                <div v-if="!usesCards">
                     <InputLabel :value="t('membership_id')" />
                     <TextInput :model-value="membershipPreview" class="mt-1 w-full bg-slate-50 dark:bg-slate-950" readonly disabled />
                     <p class="mt-1 text-xs text-slate-400">{{ t('auto_generated') }}</p>
                 </div>
-                <div>
+                <div v-if="!usesCards">
                     <InputLabel :value="t('join_year')" />
                     <TextInput v-model="form.join_year" type="number" min="1900" :max="defaultJoinYear + 1" class="mt-1 w-full" />
                     <InputError :message="form.errors.join_year" class="mt-1" />
                 </div>
-                <div>
+                <div v-if="!usesCards">
                     <InputLabel :value="t('category')" />
                     <select v-model="form.category_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                         <option value="">{{ t('select_category') }}</option>
@@ -359,14 +373,14 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                     </select>
                     <InputError :message="form.errors.category_id" class="mt-1" />
                 </div>
-                <div>
+                <div v-if="!usesCards">
                     <InputLabel :value="t('main_position')" />
                     <select v-model="form.position_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                         <option value="">-</option>
                         <option v-for="pos in positions" :key="pos.id" :value="pos.id">{{ positionLabel(pos) }}</option>
                     </select>
                 </div>
-                <div>
+                <div v-if="!usesCards">
                     <InputLabel :value="t('other_positions')" />
                     <div v-if="chosenOtherPositions.length" class="mt-1 flex flex-wrap gap-1.5">
                         <span v-for="pos in chosenOtherPositions" :key="pos.id"
@@ -381,28 +395,30 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                 </div>
                 <div class="sm:col-span-2 lg:col-span-3">
                     <InputLabel :value="t('branches') + (branches.length ? ' *' : '')" />
-                    <SearchableSelect
-                        v-if="branches.length"
-                        v-model="branchPick"
-                        :options="branchOptions"
-                        :placeholder="t('add_branch')"
-                        class="mt-1"
-                        @update:modelValue="addBranch"
-                    />
-                    <div v-if="form.branch_ids.length" class="mt-2 flex flex-wrap gap-2">
-                        <span v-for="id in form.branch_ids" :key="id" class="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-3 py-1 text-sm text-primary-700 dark:bg-primary-900/30 dark:text-primary-200">
-                            <img v-if="branchesById[id]?.logo_url" :src="branchesById[id].logo_url" alt="" class="h-4 w-4 rounded-sm object-contain" />
-                            {{ branchLabel(id) }}
-                            <button type="button" @click="removeBranch(id)" class="text-primary-400 dark:text-primary-300 hover:text-rose-600 dark:hover:text-rose-400">×</button>
-                        </span>
-                    </div>
-                    <InputError :message="form.errors.branch_ids" class="mt-1" />
+                    <SearchableSelect v-if="branchOptions.length" v-model="branchPick" :options="branchOptions" :placeholder="t('add_branch')" class="mt-1" @update:modelValue="addBranch" />
+                    <InputError :message="form.errors.registrations" class="mt-1" />
                     <p v-if="!branches.length" class="mt-1 text-xs text-slate-400">
                         {{ t('no_branches_hint') }}
                         <Link :href="route('branches.index')" class="text-primary-600 hover:underline dark:text-primary-300">{{ t('branches') }}</Link>
                     </p>
                 </div>
-                <div>
+                <div v-if="form.registrations.length" class="space-y-4 sm:col-span-2 lg:col-span-3">
+                    <RegistrationCard
+                        v-for="(card, index) in form.registrations"
+                        :key="card.branch_id"
+                        :card="card"
+                        :index="index"
+                        :branch="branchesById[card.branch_id] || { id: card.branch_id, name: `#${card.branch_id}` }"
+                        :categories="categories"
+                        :positions="positions"
+                        :player-statuses="playerStatuses"
+                        :sporting-statuses="sportingStatuses"
+                        :errors="form.errors"
+                        @remove="removeCard(index)"
+                        @delete="deletingCard = card"
+                    />
+                </div>
+                <div v-if="!usesCards">
                     <InputLabel :value="t('membership_status')" />
                     <!-- Options come from the player_statuses lookup, so they are
                          managed in Settings and translate with the interface. -->
@@ -412,7 +428,7 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                     </select>
                     <InputError :message="form.errors.status_id" class="mt-1" />
                 </div>
-                <div v-if="isLeftStatus">
+                <div v-if="!usesCards && isLeftStatus">
                     <InputLabel :value="t('left_at')" />
                     <TextInput v-model="form.left_at" type="date" class="mt-1 w-full" />
                     <InputError :message="form.errors.left_at" class="mt-1" />
@@ -496,4 +512,5 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
         its own <form> internally, gives Enter the right target.
     -->
     <JobQuickCreateModal :show="showJobModal" @close="showJobModal = false" @created="onJobCreated" />
+    <ConfirmModal :show="!!deletingCard" :message="t('registration_delete_confirm')" @confirm="deleteCard" @cancel="deletingCard = null" />
 </template>

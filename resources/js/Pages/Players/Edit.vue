@@ -10,6 +10,7 @@ const props = defineProps({
     categories: Array,
     positions: Array,
     playerStatuses: Array,
+    sportingStatuses: { type: Array, default: () => [] },
     jobs: Array,
     branches: { type: Array, default: () => [] },
     wilayas: { type: Array, default: () => [] },
@@ -30,6 +31,6 @@ const props = defineProps({
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('edit_player') }}</h1>
             </div>
         </template>
-        <PlayerForm :player="player" :categories="categories" :positions="positions" :player-statuses="playerStatuses" :jobs="jobs" :branches="branches" :wilayas="wilayas" :communes="communes" :next-sequence-by-year="nextSequenceByYear" :default-join-year="defaultJoinYear" />
+        <PlayerForm :player="player" :categories="categories" :positions="positions" :player-statuses="playerStatuses" :sporting-statuses="sportingStatuses" :jobs="jobs" :branches="branches" :wilayas="wilayas" :communes="communes" :next-sequence-by-year="nextSequenceByYear" :default-join-year="defaultJoinYear" />
     </AuthenticatedLayout>
 </template>

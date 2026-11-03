@@ -18,6 +18,7 @@ use App\Models\PlayerAcademicRecord;
 use App\Models\PlayerEmergencyContact;
 use App\Models\PlayerStatus;
 use App\Models\Position;
+use App\Models\SportingStatus;
 use App\Models\Subscription;
 use App\Models\Transaction;
 use App\Models\WebsiteConfig;
@@ -205,6 +206,11 @@ class PlayerController extends Controller
             'memberJob',
             'status',
             'branches',
+            'registrations.branch',
+            'registrations.category',
+            'registrations.position',
+            'registrations.status',
+            'registrations.sportingStatus',
             'emergencyContacts',
             'achievements',
             'playerSubscriptions.subscription',
@@ -364,6 +370,7 @@ class PlayerController extends Controller
             'categories' => Category::orderBy('name')->get(),
             'positions' => Position::with('branch')->orderBy('name')->get(),
             'playerStatuses' => PlayerStatus::where('is_active', true)->orderBy('sort_order')->get(),
+            'sportingStatuses' => SportingStatus::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'jobs' => MemberJob::orderBy('name')->get(),
             'branches' => Branch::orderBy('name')->get(),
             'wilayas' => $geo['wilayas'],
@@ -432,7 +439,7 @@ class PlayerController extends Controller
 
     public function edit(Player $player): Response
     {
-        $player->load(['emergencyContacts', 'branches', 'otherPositions']);
+        $player->load(['emergencyContacts', 'branches', 'otherPositions', 'registrations.branch']);
         $geo = $this->algeriaGeo();
 
         return Inertia::render('Players/Edit', [
@@ -440,6 +447,7 @@ class PlayerController extends Controller
             'categories' => Category::orderBy('name')->get(),
             'positions' => Position::with('branch')->orderBy('name')->get(),
             'playerStatuses' => PlayerStatus::where('is_active', true)->orderBy('sort_order')->get(),
+            'sportingStatuses' => SportingStatus::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'jobs' => MemberJob::orderBy('name')->get(),
             'branches' => Branch::orderBy('name')->get(),
             'wilayas' => $geo['wilayas'],

@@ -24,6 +24,7 @@ $settingLists = [
     'branches' => 'branches',
     'positions' => 'positions',
     'player-statuses' => 'player_statuses',
+    'sporting-statuses' => 'sporting_statuses',
     'document-types' => 'document_types',
     'equipment-categories' => 'equipment_categories',
     'storage-locations' => 'storage_locations',

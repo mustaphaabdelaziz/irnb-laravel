@@ -22,6 +22,8 @@ class PermissionMapTest extends TestCase
         $this->assertSame(['equipment', 'view'], PermissionMap::resolve('equipment.inventory'));
         $this->assertSame(['board', 'delete'], PermissionMap::resolve('board.meetings.destroy'));
         $this->assertSame(['inventory', 'edit'], PermissionMap::resolve('inventory.participants'));
+        $this->assertSame(['player_statuses', 'view'], PermissionMap::resolve('sporting-statuses.index'));
+        $this->assertSame(['player_statuses', 'delete'], PermissionMap::resolve('sporting-statuses.destroy'));
     }
 
     #[Test]

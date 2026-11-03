@@ -6,7 +6,7 @@ import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import IconButton from '@/Components/IconButton.vue';
-import { Head, useForm, router } from '@inertiajs/vue3';
+import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref } from 'vue';
 
@@ -63,6 +63,11 @@ function destroy() {
         </template>
 
         <div class="mx-auto max-w-4xl space-y-6">
+            <div class="flex gap-3 text-sm">
+                <Link :href="route('player-statuses.index')" class="font-medium text-primary-600 hover:underline dark:text-primary-300">{{ t('player_statuses') }}</Link>
+                <Link :href="route('sporting-statuses.index')" class="font-medium text-primary-600 hover:underline dark:text-primary-300">{{ t('sporting_statuses') }}</Link>
+            </div>
+
             <!-- Add -->
             <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('add') }}</h2>

@@ -74,6 +74,7 @@ use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReportsCenterController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SportingStatusController;
 use App\Http\Controllers\StorageLocationController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\TeamCoachController;
@@ -334,6 +335,7 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
         Route::resource('jobs', MemberJobController::class)->except(['show', 'create', 'edit']);
         Route::resource('positions', PositionController::class)->except(['show', 'create', 'edit']);
         Route::resource('player-statuses', PlayerStatusController::class)->except(['show', 'create', 'edit']);
+        Route::resource('sporting-statuses', SportingStatusController::class)->except(['show', 'create', 'edit']);
         Route::resource('document-types', DocumentTypeController::class)->except(['show', 'create', 'edit']);
         // Competitions & matches — configuration lists
         Route::resource('opponents', OpponentController::class)->except(['show', 'create', 'edit']);

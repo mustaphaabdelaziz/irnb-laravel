@@ -32,6 +32,7 @@ return [
         'jobs' => 'jobs',
         'positions' => 'positions',
         'player-statuses' => 'player_statuses',
+        'sporting-statuses' => 'player_statuses',
         'document-types' => 'document_types',
         'equipment-categories' => 'equipment_categories',
         'storage-locations' => 'storage_locations',

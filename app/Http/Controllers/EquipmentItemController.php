@@ -296,7 +296,8 @@ class EquipmentItemController extends Controller
         ];
 
         $conditionBreakdown = EquipmentItem::query()
-            ->selectRaw('condition, SUM(quantity) as count')
+            ->select('condition')
+            ->selectRaw('SUM(quantity) as count')
             ->groupBy('condition')
             ->orderBy('condition')
             ->get()

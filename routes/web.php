@@ -58,6 +58,7 @@ use App\Http\Controllers\MemberJobController;
 use App\Http\Controllers\OpponentController;
 use App\Http\Controllers\PlayerAcademicRecordController;
 use App\Http\Controllers\PlayerAcademicYearController;
+use App\Http\Controllers\JoinDateController;
 use App\Http\Controllers\PlayerController;
 use App\Http\Controllers\PlayerDocumentController;
 use App\Http\Controllers\PlayerImportController;
@@ -182,6 +183,10 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
     Route::post('/players/bulk-update', [PlayerController::class, 'bulkUpdate'])->name('players.bulkUpdate');
     Route::get('/players/board-table', [PlayerPrintController::class, 'boardTable'])->name('players.board-table');
     Route::get('/players/academic-results', [PlayerPrintController::class, 'academicResults'])->name('players.academic-results');
+
+    // Join date correction queue (before the resource so the static path wins)
+    Route::get('/players/join-dates', [JoinDateController::class, 'index'])->name('players.join-dates.index');
+    Route::put('/players/join-dates/{registration}', [JoinDateController::class, 'update'])->name('players.join-dates.update');
 
     // Players
     Route::resource('players', PlayerController::class);

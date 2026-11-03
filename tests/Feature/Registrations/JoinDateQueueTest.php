@@ -1,0 +1,110 @@
+<?php
+
+namespace Tests\Feature\Registrations;
+
+use App\Models\Branch;
+use App\Models\BranchRegistration;
+use App\Models\Player;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Inertia\Testing\AssertableInertia;
+use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
+
+class JoinDateQueueTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private Branch $foot;
+
+    private Branch $swim;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->foot = Branch::create(['name' => 'Football', 'code' => 'FB']);
+        $this->swim = Branch::create(['name' => 'Swimming', 'code' => 'SW']);
+        $this->actingAs(User::factory()->create(['privileges' => ['admin'], 'is_active' => true, 'email_verified_at' => now()]));
+    }
+
+    private function member(string $name, int $year, array $branches): Player
+    {
+        $player = Player::create(['firstname' => $name, 'membership_id' => $year.substr(md5($name), 0, 5), 'join_year' => $year]);
+        $player->branches()->attach($branches);
+
+        return $player;
+    }
+
+    #[Test]
+    public function two_branch_players_come_first_and_exact_ones_stay_out(): void
+    {
+        $this->member('Single', 2017, [$this->foot->id]);
+        $this->member('Double', 2019, [$this->foot->id, $this->swim->id]);
+        $exact = $this->member('Exact', 2020, [$this->foot->id]);
+        $exact->registrations()->update(['join_date' => '2020-05-05']);
+
+        $this->get(route('players.join-dates.index'))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Players/JoinDates')
+                ->where('total', 3)
+                ->where('registrations.data.0.player_name', fn ($name) => str_contains($name, 'Double'))
+                ->where('registrations.data.1.player_name', fn ($name) => str_contains($name, 'Double'))
+                ->where('registrations.data.2.player_name', fn ($name) => str_contains($name, 'Single')));
+    }
+
+    #[Test]
+    public function it_filters_by_branch_and_year(): void
+    {
+        $this->member('A', 2017, [$this->foot->id]);
+        $this->member('B', 2019, [$this->swim->id]);
+
+        $this->get(route('players.join-dates.index', ['branch_id' => $this->swim->id]))
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('registrations.data', 1)->etc());
+        $this->get(route('players.join-dates.index', ['year' => 2017]))
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('registrations.data', 1)->etc());
+    }
+
+    #[Test]
+    public function the_entry_date_is_only_a_hint_when_its_year_matches(): void
+    {
+        $match = $this->member('Match', 2026, [$this->foot->id]);
+        $other = $this->member('Other', 2017, [$this->foot->id]);
+        DB::table('players')->where('id', $match->id)->update(['created_at' => '2026-10-24 10:00:00']);
+        DB::table('players')->where('id', $other->id)->update(['created_at' => '2026-10-24 10:00:00']);
+
+        $this->get(route('players.join-dates.index', ['year' => 2026]))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('registrations.data.0.hint', '2026-10-24')->etc());
+        $this->get(route('players.join-dates.index', ['year' => 2017]))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('registrations.data.0.hint', null)->etc());
+        $this->assertSame(2, BranchRegistration::needsJoinDate()->count());
+    }
+
+    #[Test]
+    public function saving_sets_the_date_and_rejects_bad_ones(): void
+    {
+        $player = $this->member('A', 2017, [$this->foot->id]);
+        $player->update(['birthdate' => '2010-01-01']);
+        $registration = $player->registrations()->firstOrFail();
+
+        $this->put(route('players.join-dates.update', $registration), ['join_date' => now()->addDay()->toDateString()])
+            ->assertSessionHasErrors('join_date');
+        $this->put(route('players.join-dates.update', $registration), ['join_date' => '2009-12-31'])
+            ->assertSessionHasErrors('join_date');
+
+        $this->put(route('players.join-dates.update', $registration), ['join_date' => '2017-03-12'])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('2017-03-12', $registration->fresh()->join_date->toDateString());
+    }
+
+    #[Test]
+    public function it_needs_player_rights(): void
+    {
+        $viewer = User::factory()->create(['privileges' => [], 'is_active' => true, 'email_verified_at' => now()]);
+        $registration = $this->member('A', 2017, [$this->foot->id])->registrations()->firstOrFail();
+
+        $this->actingAs($viewer)->get(route('players.join-dates.index'))->assertForbidden();
+        $this->actingAs($viewer)->put(route('players.join-dates.update', $registration), ['join_date' => '2017-03-12'])->assertForbidden();
+    }
+}

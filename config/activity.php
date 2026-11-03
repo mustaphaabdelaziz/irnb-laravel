@@ -43,6 +43,7 @@ $settingLists = [
 $routes = [
     // players
     'players.update' => ActivityAction::PLAYER_UPDATED,
+    'players.join-dates.update' => ActivityAction::PLAYER_UPDATED,
     'players.registrations.destroy' => ActivityAction::PLAYER_UPDATED,
     'players.bulkUpdate' => [ActivityAction::PLAYER_UPDATED, 'count' => 'ids'],
     'branches.players.sync' => ActivityAction::PLAYER_UPDATED,

@@ -10,6 +10,7 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref, watch, computed } from 'vue';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
+import { useCan } from '@/Composables/useCan';
 import { useBulkSelection } from '@/Composables/useBulkSelection';
 import { asList, useListFilters } from '@/Composables/useListFilters';
 import BulkEditModal from '@/Components/BulkEditModal.vue';
@@ -26,6 +27,7 @@ import { PLAYER_FILTERS_KEY, savedPlayerFilters } from '@/lib/playerListFilters'
 
 const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
+const { can } = useCan();
 
 const props = defineProps({
     strip: { type: Array, default: () => [] },
@@ -187,6 +189,7 @@ const documentMissingHref = computed(() => (props.documentStats?.missing && !doc
 // and export are format menus (ExportMenu) and sit in the toolbar instead.
 const secondaryActions = computed(() => [
     { key: 'import', label: t('import'), icon: 'upload', onClick: () => { showImport.value = true; } },
+    ...(can('players', 'edit') ? [{ key: 'join-dates', label: t('join_dates_queue'), icon: 'calendar', onClick: () => router.visit(route('players.join-dates.index')) }] : []),
 ]);
 
 // Distribution panels: map each stat source to the stat cards' {key, label, count}.

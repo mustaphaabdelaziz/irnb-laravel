@@ -33,7 +33,8 @@ class VerifyRegistrations extends Command
 
         $copyErrors = [];
         $yearErrors = [];
-        Player::query()->whereHas('registrations')->with('registrations')->chunkById(200, function ($players) use ($registrations, $earliest, &$copyErrors, &$yearErrors) {
+        $statusErrors = [];
+        Player::query()->whereHas('registrations')->with('registrations')->chunkById(200, function ($players) use ($registrations, $earliest, &$copyErrors, &$yearErrors, &$statusErrors) {
             foreach ($players as $player) {
                 $primary = $registrations->primary($player);
 
@@ -41,6 +42,13 @@ class VerifyRegistrations extends Command
                     if ((string) $player->{$field} !== (string) $primary->{$field}) {
                         $copyErrors[] = "player {$player->id}: {$field}";
                     }
+                }
+                [$status, $leftAt] = $registrations->overallStatus($primary, $player->registrations);
+                if ((string) $player->status_id !== (string) $status) {
+                    $statusErrors[] = "player {$player->id}: status_id";
+                }
+                if ((string) $player->left_at?->toDateString() !== (string) $leftAt) {
+                    $statusErrors[] = "player {$player->id}: left_at";
                 }
                 if ($primary->membership_id !== null && $player->membership_id !== $primary->membership_id) {
                     $copyErrors[] = "player {$player->id}: membership_id";
@@ -54,7 +62,12 @@ class VerifyRegistrations extends Command
         });
 
         $failures += $this->report('player copy differs from primary', $copyErrors);
+        $failures += $this->report('player status or leave date differs from the registrations', $statusErrors);
         $failures += $this->report('join year differs', $yearErrors);
+
+        $strayLeaveDates = Player::leftStatusId() === null ? [] : BranchRegistration::where(fn ($q) => $q->whereNull('status_id')->orWhere('status_id', '!=', Player::leftStatusId()))
+            ->whereNotNull('left_at')->pluck('id')->map(fn ($id) => "registration {$id}")->all();
+        $failures += $this->report('leave date on a registration that has not left', $strayLeaveDates);
 
         $this->line($failures === 0 ? 'OK' : "FAILED: {$failures} check(s)");
 

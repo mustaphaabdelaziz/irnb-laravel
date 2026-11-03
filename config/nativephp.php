@@ -100,7 +100,6 @@ return [
         'storage/app/backup-*',
         'storage/app/probe*',
         'storage/app/import-*.json',
-        'db-lagacy',
         'public/hot',
     ],
 

@@ -63,6 +63,7 @@ use App\Http\Controllers\PlayerDocumentController;
 use App\Http\Controllers\PlayerImportController;
 use App\Http\Controllers\PlayerPrintController;
 use App\Http\Controllers\PlayerStatusController;
+use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\PlayerSubscriptionController;
 use App\Http\Controllers\PlayerTransactionController;
 use App\Http\Controllers\PositionController;
@@ -178,6 +179,7 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
     Route::post('/players/bulk-archive', [PlayerController::class, 'bulkArchive'])->name('players.bulkArchive');
     Route::post('/players/bulk-restore', [PlayerController::class, 'bulkRestore'])->name('players.bulkRestore');
     Route::post('/players/bulk-force-delete', [PlayerController::class, 'bulkForceDelete'])->name('players.bulkForceDelete');
+    Route::delete('/players/{player}/registrations/{registration}', [RegistrationController::class, 'destroy'])->name('players.registrations.destroy');
     Route::post('/players/bulk-update', [PlayerController::class, 'bulkUpdate'])->name('players.bulkUpdate');
     Route::get('/players/board-table', [PlayerPrintController::class, 'boardTable'])->name('players.board-table');
     Route::get('/players/academic-results', [PlayerPrintController::class, 'academicResults'])->name('players.academic-results');
@@ -319,6 +321,7 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
         Route::resource('categories', CategoryController::class)->except(['show', 'create', 'edit']);
         Route::resource('branches', BranchController::class)->except(['show', 'create', 'edit']);
         Route::post('/branches/{branch}/players', [BranchController::class, 'syncPlayers'])->name('branches.players.sync');
+        Route::post('/branches/{branch}/main', [BranchController::class, 'setMain'])->name('branches.main');
         Route::resource('equipment-categories', EquipmentCategoryController::class)->except(['show', 'create', 'edit']);
         Route::resource('storage-locations', StorageLocationController::class)->except(['show', 'create', 'edit']);
         Route::post('/jobs/quick', [MemberJobController::class, 'quickStore'])->name('jobs.quick.store');

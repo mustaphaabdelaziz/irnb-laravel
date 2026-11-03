@@ -6,10 +6,13 @@ use App\Models\Branch;
 use App\Models\Player;
 use App\Models\PreseasonTarget;
 use App\Models\Team;
+use App\Models\WebsiteConfig;
 use App\Models\TrainingSchedule;
 use App\Models\TrainingSession;
+use App\Services\Player\RegistrationService;
 use App\Services\Storage\FileStorageService;
 use App\Support\BranchCode;
+use App\Support\ValidationAttributes;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,14 +26,22 @@ class BranchController extends Controller
 {
     public function index(): Response
     {
+        // Members who left stay in the registration but are not offered as members,
+        // or saving the members dialog would reopen them.
+        $left = Player::leftStatusId();
+        $active = fn ($q) => $left === null ? $q : $q->where(
+            fn ($w) => $w->whereNull('branch_player.status_id')->orWhere('branch_player.status_id', '!=', $left)
+        );
+
         $branches = Branch::query()
-            ->withCount('players')
-            ->with('players:id')
+            ->withCount(['players' => $active])
+            ->with(['players' => fn ($q) => $active($q->select('players.id'))])
             ->orderBy('name')
             ->get();
 
         return Inertia::render('Settings/Branches', [
             'branches' => $branches,
+            'mainBranchId' => Branch::mainId(),
             // For assigning members directly from the branches menu.
             'players' => Player::where('archived', false)->orderBy('lastname')->orderBy('firstname')->get()
                 ->map(fn (Player $p) => [
@@ -41,16 +52,47 @@ class BranchController extends Controller
         ]);
     }
 
-    public function syncPlayers(Request $request, Branch $branch): RedirectResponse
+    public function syncPlayers(Request $request, Branch $branch, RegistrationService $registrations): RedirectResponse
     {
         $validated = $request->validate([
             'player_ids' => ['present', 'array'],
             'player_ids.*' => ['integer', 'exists:players,id'],
+            'join_date' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today', 'after:1900-01-01'],
         ]);
 
-        $branch->players()->sync($validated['player_ids']);
+        $left = Player::leftStatusId();
+        $rows = $branch->registrations()->get(['player_id', 'status_id']);
+        $known = $rows->pluck('player_id')->map(fn ($id) => (int) $id)->all();
+        $active = $rows->reject(fn ($r) => $left !== null && (int) $r->status_id === $left)
+            ->pluck('player_id')->map(fn ($id) => (int) $id)->all();
+        $wanted = array_map('intval', $validated['player_ids']);
+
+        // Only a player with no row here at all is new; a returning member keeps the old date.
+        if (array_diff($wanted, $known) !== [] && empty($validated['join_date'])) {
+            throw ValidationException::withMessages([
+                'join_date' => __('validation.required', ['attribute' => ValidationAttributes::for(app()->getLocale())['join_date']]),
+            ]);
+        }
+
+        DB::transaction(function () use ($branch, $registrations, $validated, $active, $wanted) {
+            Player::whereIn('id', array_diff($wanted, $active))->get()->each(fn (Player $player) => $registrations->register($player, [
+                'branch_id' => $branch->id,
+                'join_date' => $validated['join_date'] ?? null,
+            ]));
+            Player::whereIn('id', array_diff($active, $wanted))->get()
+                ->each(fn (Player $player) => $registrations->leave($player, [$branch->id]));
+        });
 
         return back()->with('success', 'flash.branch_members_updated');
+    }
+
+    public function setMain(Branch $branch, RegistrationService $registrations): RedirectResponse
+    {
+        WebsiteConfig::singleton()->update(['main_branch_id' => $branch->id]);
+        Player::whereHas('registrations', fn ($q) => $q->where('branch_id', $branch->id))->get()
+            ->each(fn (Player $player) => $registrations->refreshMirror($player));
+
+        return back()->with('success', 'flash.branch_main_set');
     }
 
     public function store(Request $request, FileStorageService $files): RedirectResponse

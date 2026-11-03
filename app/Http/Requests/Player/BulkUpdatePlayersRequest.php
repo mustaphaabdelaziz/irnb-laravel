@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Player;
 
+use App\Models\Branch;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -29,6 +30,15 @@ class BulkUpdatePlayersRequest extends FormRequest
             'mode' => ['nullable', Rule::in(['replace', 'attach', 'detach'])],
 
             'value' => ['present'],
+
+            // A new registration needs its date; leaving a branch does not.
+            'join_date' => [
+                Rule::requiredIf(fn () => $this->input('field') === 'branches' && $this->input('mode', 'replace') !== 'detach'),
+                'nullable', 'date_format:Y-m-d', 'before_or_equal:today', 'after:1900-01-01',
+            ],
+
+            // A status belongs to one registration, so the branch must be named.
+            'branch_id' => [Rule::requiredIf(fn () => $this->input('field') === 'status_id' && Branch::exists()), 'nullable', 'integer', 'exists:branches,id'],
         ];
     }
 

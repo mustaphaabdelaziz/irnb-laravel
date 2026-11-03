@@ -29,7 +29,7 @@ final class BranchChoice
 
         $request->session()->forget(self::SESSION_KEY);
 
-        $first = Branch::orderBy('id')->value('id');
+        $first = Branch::mainId() ?? Branch::orderBy('id')->value('id');
 
         return $first === null ? null : (int) $first;
     }

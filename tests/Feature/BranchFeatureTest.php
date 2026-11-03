@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Branch;
 use App\Models\Player;
+use App\Models\PlayerStatus;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -33,16 +34,17 @@ class BranchFeatureTest extends TestCase
         $b = $this->player('202400002');
 
         $this->actingAs($this->admin())
-            ->post(route('branches.players.sync', $branch), ['player_ids' => [$a->id, $b->id]])
+            ->post(route('branches.players.sync', $branch), ['player_ids' => [$a->id, $b->id], 'join_date' => '2024-01-15'])
             ->assertRedirect();
 
         $this->assertEqualsCanonicalizing([$a->id, $b->id], $branch->fresh()->players->pluck('id')->all());
 
-        // Re-syncing replaces the set; an empty array clears it.
+        // Re-syncing replaces the set; an empty array marks everyone as left.
         $this->actingAs($this->admin())
             ->post(route('branches.players.sync', $branch), ['player_ids' => []])
             ->assertRedirect();
-        $this->assertCount(0, $branch->fresh()->players);
+        $left = PlayerStatus::where('code', 'left')->value('id');
+        $this->assertSame([$left, $left], $branch->registrations()->pluck('status_id')->all());
     }
 
     #[Test]

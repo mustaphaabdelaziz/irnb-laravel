@@ -277,11 +277,13 @@ const bulkFields = computed(() => [
         key: 'status_id',
         label: t('membership_status'),
         options: props.playerStatuses.map((s) => ({ value: s.id, label: s.localized_name || s.name })),
+        branchOptions: props.branches.map((b) => ({ value: b.id, label: b.localized_name || b.name })),
     },
     {
         key: 'branches',
         label: t('branch'),
         multiple: true,
+        needsJoinDate: true,
         options: props.branches.map((b) => ({ value: b.id, label: b.localized_name || b.name })),
     },
 ]);

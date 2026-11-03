@@ -6,7 +6,7 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import IconButton from '@/Components/IconButton.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
-import { Head, useForm, router } from '@inertiajs/vue3';
+import { Head, useForm, router, usePage } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { computed, ref } from 'vue';
 
@@ -15,16 +15,19 @@ const { t } = useI18n();
 const props = defineProps({
     branches: Array,
     players: { type: Array, default: () => [] },
+    mainBranchId: { type: Number, default: null },
 });
+
+const errors = computed(() => usePage().props.errors || {});
 
 const playersById = computed(() => Object.fromEntries(props.players.map((p) => [p.id, p])));
 
 const editingId = ref(null);
 const deleteId = ref(null);
 
-const form = useForm({ name: '', name_ar: '', name_fr: '', name_en: '', description: '', logo: null });
+const form = useForm({ name: '', code: '', name_ar: '', name_fr: '', name_en: '', description: '', logo: null });
 // Files only travel in multipart POSTs, so the update is a POST spoofing PUT.
-const editForm = useForm({ _method: 'put', name: '', name_ar: '', name_fr: '', name_en: '', description: '', logo: null, remove_logo: false });
+const editForm = useForm({ _method: 'put', name: '', code: '', name_ar: '', name_fr: '', name_en: '', description: '', logo: null, remove_logo: false });
 const addLogoInput = ref(null);
 
 function addBranch() {
@@ -41,6 +44,7 @@ function startEdit(branch) {
     editingId.value = branch.id;
     editForm.clearErrors();
     editForm.name = branch.name;
+    editForm.code = branch.code || '';
     editForm.name_ar = branch.name_ar || '';
     editForm.name_fr = branch.name_fr || '';
     editForm.name_en = branch.name_en || '';
@@ -67,11 +71,13 @@ const membersBranch = ref(null);
 const memberIds = ref([]);
 const memberPick = ref('');
 const savingMembers = ref(false);
+const membersJoinDate = ref('');
 
 function openMembers(branch) {
     membersBranch.value = branch;
     memberIds.value = (branch.players || []).map((p) => p.id);
     memberPick.value = '';
+    membersJoinDate.value = '';
 }
 
 const memberOptions = computed(() => {
@@ -99,7 +105,7 @@ function memberName(id) {
 
 function saveMembers() {
     savingMembers.value = true;
-    router.post(route('branches.players.sync', membersBranch.value.id), { player_ids: memberIds.value }, {
+    router.post(route('branches.players.sync', membersBranch.value.id), { player_ids: memberIds.value, join_date: membersJoinDate.value }, {
         preserveScroll: true,
         onSuccess: () => { membersBranch.value = null; },
         onFinish: () => { savingMembers.value = false; },
@@ -123,6 +129,11 @@ function saveMembers() {
                         <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('name') }} <span class="text-xs text-slate-400">({{ t('default') }})</span></label>
                         <TextInput v-model="form.name" class="mt-1 w-full" :placeholder="t('name')" required />
                         <InputError :message="form.errors.name" class="mt-1" />
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('branch_code') }}</label>
+                        <TextInput v-model="form.code" class="mt-1 w-full uppercase" maxlength="6" dir="ltr" />
+                        <InputError :message="form.errors.code" class="mt-1" />
                     </div>
                     <div>
                         <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('description') }}</label>
@@ -170,6 +181,9 @@ function saveMembers() {
                                     <TextInput v-model="editForm.name_fr" class="w-full" placeholder="Français" />
                                     <TextInput v-model="editForm.name_en" class="w-full" placeholder="English" />
                                     <InputError :message="editForm.errors.name" class="mt-1" />
+                                    <label class="block pt-1 text-xs font-medium text-slate-600 dark:text-slate-300">{{ t('branch_code') }}</label>
+                                    <TextInput v-model="editForm.code" class="w-full uppercase" maxlength="6" dir="ltr" />
+                                    <InputError :message="editForm.errors.code" class="mt-1" />
                                     <div class="flex flex-wrap items-center gap-3 pt-1">
                                         <img v-if="branch.logo_url && !editForm.remove_logo && !editForm.logo" :src="branch.logo_url" alt="" class="h-8 w-8 rounded object-contain" />
                                         <input type="file" accept="image/*" class="block min-w-0 flex-1 text-xs" @change="editForm.logo = $event.target.files[0] || null; editForm.remove_logo = false" />
@@ -184,6 +198,8 @@ function saveMembers() {
                                     <img v-if="branch.logo_url" :src="branch.logo_url" alt="" class="h-8 w-8 shrink-0 rounded object-contain" />
                                     <span v-else class="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-slate-100 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ (branch.localized_name || branch.name || '?').charAt(0) }}</span>
                                     <span class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ branch.localized_name || branch.name }}</span>
+                                    <span v-if="branch.id === mainBranchId" class="ms-2 rounded bg-primary-50 px-1.5 py-0.5 text-xs text-primary-700 dark:bg-primary-900/30 dark:text-primary-200">{{ t('main_branch') }}</span>
+                                    <span class="ms-2 font-mono text-xs text-slate-500 dark:text-slate-400" dir="ltr">{{ branch.code }}</span>
                                 </div>
                             </td>
                             <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ branch.players_count }}</td>
@@ -193,6 +209,7 @@ function saveMembers() {
                                     <button @click="editingId = null" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">{{ t('cancel') }}</button>
                                 </div>
                                 <div v-else class="flex justify-end gap-2">
+                                    <IconButton v-if="branch.id !== mainBranchId" icon="flag" :label="t('set_main_branch')" plain size="sm" @click="router.post(route('branches.main', branch.id), {}, { preserveScroll: true })" />
                                     <IconButton icon="players" :label="t('members')" variant="primary" plain size="sm" @click="openMembers(branch)" />
                                     <IconButton icon="pencil" :label="t('edit')" plain size="sm" @click="startEdit(branch)" />
                                     <IconButton icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteId = branch.id" />
@@ -216,6 +233,12 @@ function saveMembers() {
                     <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('members') }} — {{ membersBranch.localized_name || membersBranch.name }}</h3>
                     <div class="mt-4">
                         <SearchableSelect v-model="memberPick" :options="memberOptions" :placeholder="t('add_member')" @update:modelValue="addMember" />
+                    </div>
+                    <div class="mt-4">
+                        <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('join_date') }}</label>
+                        <input v-model="membersJoinDate" type="date" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-900 shadow-sm focus:border-primary-500 focus:ring-primary-500" />
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('join_date_for_new_members') }}</p>
+                        <InputError :message="errors.join_date" class="mt-1" />
                     </div>
                     <div class="mt-4 flex flex-wrap gap-2">
                         <span v-for="id in memberIds" :key="id" class="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-3 py-1 text-sm text-primary-700 dark:bg-primary-900/30 dark:text-primary-200">

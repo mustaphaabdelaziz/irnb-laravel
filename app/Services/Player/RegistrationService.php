@@ -181,6 +181,11 @@ class RegistrationService
             if ($registrations->isEmpty()) {
                 $player->update([$field => $value]);
 
+                // The main position can never also sit in the "other positions" pivot.
+                if ($field === 'position_id' && $value) {
+                    $player->otherPositions()->detach($value);
+                }
+
                 return;
             }
             if ($field === 'status_id' && $branchId === null) {
@@ -222,6 +227,49 @@ class RegistrationService
         return $active->firstWhere('branch_id', Branch::mainId())
             ?? $active->sortBy(fn (BranchRegistration $r) => [$this->joinSortKey($r), $r->id])->first()
             ?? $registrations->first();
+    }
+
+    /**
+     * Undo a registration added by mistake. Anything real keeps it: a subscription
+     * obligation on its branch, or being the player's last one. Later releases add
+     * documents and custom values to this check.
+     *
+     * @return string|null the flash key when refused
+     */
+    public function removeMistake(BranchRegistration $registration): ?string
+    {
+        $player = $registration->player;
+
+        if ($player->registrations()->count() === 1) {
+            return 'flash.registration_last';
+        }
+
+        $hasObligations = $player->playerSubscriptions()
+            ->whereHas('subscription.branches', fn ($q) => $q->where('branches.id', $registration->branch_id))
+            ->exists();
+        if ($hasObligations) {
+            return 'flash.registration_has_obligations';
+        }
+
+        DB::transaction(function () use ($player, $registration) {
+            $id = $registration->membership_id;
+            $branchPositions = Position::where('branch_id', $registration->branch_id)->pluck('id');
+            $player->otherPositions()->detach($branchPositions);
+            $registration->delete();
+
+            // The player's copy of the ID must keep pointing at a real one.
+            $next = $this->primary($player);
+            if ($next->membership_id === null) {
+                $next->membership_id = MembershipNumber::isLegacy($id)
+                    ? $id
+                    : ($next->effectiveYear() ? MembershipNumber::forBranch($next->branch, $next->effectiveYear()) : null);
+                $next->save();
+            }
+
+            $this->refreshMirror($player);
+        });
+
+        return null;
     }
 
     /** Copy the primary registration into players.*. A player with none keeps their own values. */

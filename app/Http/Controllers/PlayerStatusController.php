@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BranchRegistration;
 use App\Models\PlayerStatus;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -37,7 +38,7 @@ class PlayerStatusController extends Controller
     {
         // Players would be left with a dangling status. The FK is nullOnDelete,
         // so this would silently blank their status rather than error.
-        if ($playerStatus->players()->exists()) {
+        if ($playerStatus->players()->exists() || BranchRegistration::where('status_id', $playerStatus->id)->exists()) {
             return back()->with('error', 'flash.player_status_in_use');
         }
 

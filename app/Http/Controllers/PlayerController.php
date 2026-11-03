@@ -589,40 +589,51 @@ class PlayerController extends Controller
         $field = $data['field'];
         $value = $data['value'] ?? null;
 
-        DB::transaction(function () use ($ids, $field, $value, $data) {
+        $registrations = app(RegistrationService::class);
+
+        DB::transaction(function () use ($ids, $field, $value, $data, $registrations) {
+            $players = Player::whereIn('id', $ids)->get();
+
             if ($field !== 'branches') {
-                $changes = [$field => $value ?: null];
+                $branchId = isset($data['branch_id']) ? (int) $data['branch_id'] : null;
 
-                // A query update skips Player's saving hook, so the leave date
-                // follows the status here by the same rule.
-                if ($field === 'status_id') {
-                    $changes['left_at'] = Player::leaveDateUpdate($value);
-                }
+                $players->each(function (Player $player) use ($registrations, $field, $value, $branchId) {
+                    // A status belongs to one branch: a player with registrations
+                    // but none there is left alone.
+                    if ($field === 'status_id' && $branchId !== null
+                        && $player->registrations()->exists()
+                        && ! $player->registrations()->where('branch_id', $branchId)->exists()) {
+                        return;
+                    }
 
-                Player::whereIn('id', $ids)->update($changes);
-
-                if ($field === 'position_id' && $value) {
-                    // The main position can never also sit in the "other
-                    // positions" pivot — e.g. a player whose "other" was
-                    // already GK must not keep GK there once GK becomes main.
-                    DB::table('player_other_positions')
-                        ->whereIn('player_id', $ids)
-                        ->where('position_id', $value)
-                        ->delete();
-                }
+                    $registrations->setField($player, $field, $value ?: null, $branchId);
+                });
 
                 return;
             }
 
             $branchIds = array_map('intval', (array) $value);
             $mode = $data['mode'] ?? 'replace';
+            $left = Player::leftStatusId();
 
             // Branches are many-to-many, so "set" is ambiguous: replace the
-            // whole set, add to it, or remove from it.
-            Player::whereIn('id', $ids)->get()->each(fn (Player $player) => match ($mode) {
-                'attach' => $player->branches()->syncWithoutDetaching($branchIds),
-                'detach' => $player->branches()->detach($branchIds),
-                default => $player->branches()->sync($branchIds),
+            // whole set, add to it, or remove from it. Removing marks as left.
+            $players->each(function (Player $player) use ($branchIds, $mode, $data, $registrations, $left) {
+                $active = $player->registrations()
+                    ->when($left !== null, fn ($q) => $q->where(fn ($w) => $w->whereNull('status_id')->orWhere('status_id', '!=', $left)))
+                    ->pluck('branch_id')->map(fn ($id) => (int) $id)->all();
+
+                if ($mode === 'detach') {
+                    $registrations->leave($player, $branchIds);
+
+                    return;
+                }
+                foreach (array_diff($branchIds, $active) as $branchId) {
+                    $registrations->register($player, ['branch_id' => $branchId, 'join_date' => $data['join_date']]);
+                }
+                if ($mode === 'replace') {
+                    $registrations->leave($player, array_values(array_diff($active, $branchIds)));
+                }
             });
         });
 

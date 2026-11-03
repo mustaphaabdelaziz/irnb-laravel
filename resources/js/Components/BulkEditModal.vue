@@ -14,16 +14,17 @@ const props = defineProps({
     /** Route name to POST to. */
     action: { type: String, required: true },
     /**
-     * Editable fields: { key, label, options: [{value,label}], multiple? }
+     * Editable fields: { key, label, options: [{value,label}], multiple?, needsJoinDate?, branchOptions? }
      * A `multiple` field offers replace/add/remove, since setting a
-     * many-to-many is ambiguous.
+     * many-to-many is ambiguous. `needsJoinDate` asks for the date of the new
+     * registrations; `branchOptions` makes the edit apply to one chosen branch.
      */
     fields: { type: Array, default: () => [] },
 });
 
 const emit = defineEmits(['close', 'saved']);
 
-const form = useForm({ ids: [], field: '', value: null, mode: 'replace' });
+const form = useForm({ ids: [], field: '', value: null, mode: 'replace', join_date: '', branch_id: '' });
 
 const activeField = computed(() => props.fields.find((f) => f.key === form.field) ?? null);
 const isMultiple = computed(() => !!activeField.value?.multiple);
@@ -32,6 +33,8 @@ const isMultiple = computed(() => !!activeField.value?.multiple);
 watch(() => form.field, () => {
     form.value = isMultiple.value ? [] : null;
     form.mode = 'replace';
+    form.join_date = '';
+    form.branch_id = '';
     form.clearErrors();
 });
 
@@ -77,6 +80,24 @@ function submit() {
                             class="rounded-lg border px-2 py-2 text-xs font-medium transition-colors">
                             {{ t('bulk_mode_' + m) }}
                         </button>
+                    </div>
+
+                    <div v-if="activeField?.needsJoinDate && form.mode !== 'detach'">
+                        <InputLabel :value="t('join_date') + ' *'" />
+                        <input v-model="form.join_date" type="date" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-900 shadow-sm focus:border-primary-500 focus:ring-primary-500" />
+                        <p v-if="form.errors.join_date" class="mt-1 text-sm text-rose-600 dark:text-rose-400">{{ form.errors.join_date }}</p>
+                    </div>
+
+                    <!-- A field that lives on a registration applies to one branch. -->
+                    <div v-if="activeField?.branchOptions?.length">
+                        <InputLabel :value="t('branch') + ' *'" />
+                        <select v-model="form.branch_id" required
+                            class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-900 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                            <option value="" disabled>—</option>
+                            <option v-for="o in activeField.branchOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
+                        </select>
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('bulk_status_branch_hint') }}</p>
+                        <p v-if="form.errors.branch_id" class="mt-1 text-sm text-rose-600 dark:text-rose-400">{{ form.errors.branch_id }}</p>
                     </div>
 
                     <div v-if="activeField">

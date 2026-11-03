@@ -95,7 +95,7 @@ class PlayerBulkUpdateTest extends TestCase
 
         $this->actingAs($this->admin())->post(route('players.bulkUpdate'), [
             'ids' => [$player->id], 'field' => 'branches',
-            'value' => [$basket->id], 'mode' => 'attach',
+            'value' => [$basket->id], 'mode' => 'attach', 'join_date' => '2024-01-15',
         ])->assertRedirect();
 
         $this->assertCount(2, $player->fresh()->branches);
@@ -112,12 +112,14 @@ class PlayerBulkUpdateTest extends TestCase
 
         $this->actingAs($this->admin())->post(route('players.bulkUpdate'), [
             'ids' => [$player->id], 'field' => 'branches',
-            'value' => [$basket->id], 'mode' => 'replace',
+            'value' => [$basket->id], 'mode' => 'replace', 'join_date' => '2024-01-15',
         ])->assertRedirect();
 
-        $branches = $player->fresh()->branches;
-        $this->assertCount(1, $branches);
-        $this->assertSame($basket->id, $branches->first()->id);
+        // The old branch is marked as left, never dropped.
+        $left = PlayerStatus::where('code', 'left')->value('id');
+        $this->assertCount(2, $player->fresh()->branches);
+        $this->assertSame($left, $player->registrations()->where('branch_id', $football->id)->value('status_id'));
+        $this->assertNotSame($left, $player->registrations()->where('branch_id', $basket->id)->value('status_id'));
     }
 
     #[Test]
@@ -134,7 +136,11 @@ class PlayerBulkUpdateTest extends TestCase
             'value' => [$football->id], 'mode' => 'detach',
         ])->assertRedirect();
 
-        $this->assertCount(1, $player->fresh()->branches);
+        // Removing marks the registration as left; it is not deleted.
+        $left = PlayerStatus::where('code', 'left')->value('id');
+        $this->assertCount(2, $player->fresh()->branches);
+        $this->assertSame($left, $player->registrations()->where('branch_id', $football->id)->value('status_id'));
+        $this->assertNotSame($left, $player->registrations()->where('branch_id', $basket->id)->value('status_id'));
     }
 
     #[Test]

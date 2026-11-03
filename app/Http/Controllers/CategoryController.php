@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BranchRegistration;
 use App\Models\Category;
 use App\Models\Team;
 use App\Models\TrainingSession;
@@ -67,6 +68,10 @@ class CategoryController extends Controller
         // A team's age category cannot vanish under its competitions and matches.
         if (Team::where('category_id', $category->id)->exists()) {
             return back()->with('error', 'flash.category_has_teams');
+        }
+        // A registration's category is restricted: its history must not vanish.
+        if (BranchRegistration::where('category_id', $category->id)->exists()) {
+            return back()->with('error', 'flash.category_in_use');
         }
         DB::transaction(function () use ($category) {
             TrainingSession::where('category_id', $category->id)->with('categories')->get()

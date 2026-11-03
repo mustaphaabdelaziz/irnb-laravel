@@ -43,6 +43,9 @@ Figures are from the dev database, which holds the same 217 players as the resto
 | Sporting status | New separate optional list. Today's 7 statuses stay as membership status |
 | Reminders | In-app only, dismissable once a year |
 | Documents | Tracked separately per registration |
+| First branch for a player with none | Anything the card leaves empty comes from the player; position only if that branch owns it. Decided during Release 1 |
+| Rejoining a branch | Reopens the same row and keeps the original join date and ID; status and leave date clear. Decided during Release 1 |
+| Bulk status | Bulk edit asks which branch the status applies to; other branches keep their status and leave date. Decided during Release 1 |
 
 ## 3. Target data model
 
@@ -124,7 +127,7 @@ Until release 5, `players.join_year`, `category_id`, `position_id`, `licence_num
 
 ### 3.5 Removing someone from a branch
 
-Replaces every `sync` and `detach` on this table. A removal marks the registration as left, keeping its documents, values and ID. A hard delete is allowed only when the registration has no documents, values or subscription obligations and only by explicit action, for a registration added by mistake. Rejoining reopens the same row: one row per player and branch.
+Replaces every `sync` and `detach` on this table. A removal marks the registration as left, keeping its documents, values and ID. A hard delete is allowed only when the registration has no documents, values or subscription obligations and only by explicit action, for a registration added by mistake. Rejoining reopens the same row, one row per player and branch, keeping the original join date and ID.
 
 ## 4. Join date migration
 

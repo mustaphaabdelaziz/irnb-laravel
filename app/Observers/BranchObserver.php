@@ -3,11 +3,18 @@
 namespace App\Observers;
 
 use App\Models\Branch;
+use App\Models\WebsiteConfig;
 use App\Services\Finance\CashRegisterProvisioner;
+use App\Support\BranchCode;
 use Illuminate\Support\Facades\DB;
 
 class BranchObserver
 {
+    public function creating(Branch $branch): void
+    {
+        $branch->code ??= BranchCode::suggest($branch);
+    }
+
     /**
      * Every branch starts with its coffre (treasury); caisses are added by hand.
      */
@@ -19,6 +26,7 @@ class BranchObserver
         // migrations' backfills do (2026_10_23_100001_add_branch_to_attendance_tables,
         // 2026_10_23_300001_add_branch_to_injury_notes).
         if (Branch::count() === 1) {
+            WebsiteConfig::singleton()->update(['main_branch_id' => $branch->id]);
             foreach (['training_sessions', 'training_schedules', 'deleted_session_slots', 'preseason_targets', 'injury_notes'] as $table) {
                 DB::table($table)->whereNull('branch_id')->update(['branch_id' => $branch->id]);
             }

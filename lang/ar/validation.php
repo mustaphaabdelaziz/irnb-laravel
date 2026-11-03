@@ -172,4 +172,6 @@ return [
 
     'attributes' => ValidationAttributes::for('ar'),
 
+    'branch_code_locked' => 'لا يمكن تغيير الرمز بعد استخدامه في أرقام الانخراط.',
+
 ];

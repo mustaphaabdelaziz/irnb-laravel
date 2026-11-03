@@ -172,4 +172,6 @@ return [
 
     'attributes' => ValidationAttributes::for('fr'),
 
+    'branch_code_locked' => "Ce code ne peut plus changer : des numéros d'adhérent l'utilisent.",
+
 ];

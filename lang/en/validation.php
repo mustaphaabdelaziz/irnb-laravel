@@ -9,4 +9,6 @@ return [
 
     'attributes' => ValidationAttributes::for('en'),
 
+    'branch_code_locked' => "This code can't change: membership IDs already use it.",
+
 ];

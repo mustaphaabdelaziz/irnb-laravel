@@ -9,9 +9,12 @@ use App\Models\Team;
 use App\Models\TrainingSchedule;
 use App\Models\TrainingSession;
 use App\Services\Storage\FileStorageService;
+use App\Support\BranchCode;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Throwable;
@@ -120,16 +123,30 @@ class BranchController extends Controller
      */
     private function validated(Request $request, FileStorageService $files, ?int $ignoreId = null): array
     {
+        if ($request->filled('code')) {
+            $request->merge(['code' => strtoupper((string) $request->input('code'))]);
+        }
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:branches,name'.($ignoreId ? ','.$ignoreId : '')],
             'name_ar' => ['nullable', 'string', 'max:255'],
             'name_fr' => ['nullable', 'string', 'max:255'],
             'name_en' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'code' => ['nullable', 'string', 'regex:'.BranchCode::RULE, Rule::unique('branches', 'code')->ignore($ignoreId)],
             'logo' => ['nullable', 'image', 'max:2048'],
             'remove_logo' => ['nullable', 'boolean'],
         ]);
         unset($data['logo'], $data['remove_logo']);
+
+        if (empty($data['code'])) {
+            unset($data['code']);
+        } elseif ($ignoreId !== null) {
+            $branch = Branch::findOrFail($ignoreId);
+            if ($data['code'] !== $branch->code && BranchCode::isLocked($branch)) {
+                throw ValidationException::withMessages(['code' => __('validation.branch_code_locked')]);
+            }
+        }
 
         if ($request->hasFile('logo')) {
             $stored = $files->storeImage($request->file('logo'), 'branches', 256);

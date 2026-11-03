@@ -40,6 +40,7 @@ class BranchController extends Controller
         return Inertia::render('Settings/Branches', [
             'branches' => $branches,
             'mainBranchId' => Branch::mainId(),
+            'canConvertIds' => request()->user()?->isSuperadmin() ?? false,
             // For assigning members directly from the branches menu.
             'players' => Player::where('archived', false)->orderBy('lastname')->orderBy('firstname')->get()
                 ->map(fn (Player $p) => [

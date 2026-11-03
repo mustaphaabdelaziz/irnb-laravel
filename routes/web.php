@@ -55,6 +55,7 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\LiteraryReportController;
 use App\Http\Controllers\MemberJobController;
+use App\Http\Controllers\MembershipIdController;
 use App\Http\Controllers\OpponentController;
 use App\Http\Controllers\PlayerAcademicRecordController;
 use App\Http\Controllers\PlayerAcademicYearController;
@@ -510,6 +511,11 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
 
         // Wipes every financial record (backup first) — see FinanceResetService.
         Route::post('/finance/reset', [FinanceResetController::class, 'store'])->name('finance.reset');
+
+        // Old membership IDs to BRANCHCODE-YEAR-NNNNN, after the codes are chosen.
+        Route::get('/membership-ids', [MembershipIdController::class, 'index'])->name('membership-ids.index');
+        Route::post('/membership-ids/convert', [MembershipIdController::class, 'convert'])->name('membership-ids.convert');
+        Route::post('/membership-ids/undo', [MembershipIdController::class, 'undo'])->name('membership-ids.undo');
     });
 
     // Database backup & restore — desktop app only, superadmin only.

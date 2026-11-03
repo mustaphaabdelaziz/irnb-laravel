@@ -6,7 +6,7 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import IconButton from '@/Components/IconButton.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
-import { Head, useForm, router } from '@inertiajs/vue3';
+import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { computed, ref } from 'vue';
 
@@ -16,6 +16,7 @@ const props = defineProps({
     branches: Array,
     players: { type: Array, default: () => [] },
     mainBranchId: { type: Number, default: null },
+    canConvertIds: { type: Boolean, default: false },
 });
 
 
@@ -226,6 +227,8 @@ function saveMembers() {
                     </tbody>
                 </table>
             </div>
+
+            <Link v-if="canConvertIds" :href="route('membership-ids.index')" class="inline-block text-sm font-medium text-primary-600 hover:underline dark:text-primary-300">{{ t('membership_ids_convert_title') }}</Link>
         </div>
 
         <ConfirmModal :show="!!deleteId" :message="t('are_you_sure')" @confirm="destroy" @cancel="deleteId = null" />

@@ -79,11 +79,12 @@ return new class extends Migration
             ?? DB::table('branch_player')->selectRaw('branch_id, COUNT(*) AS c')
                 ->groupBy('branch_id')->orderByDesc('c')->orderBy('branch_id')->value('branch_id');
         $positionBranch = DB::table('positions')->pluck('branch_id', 'id');
+        $now = now();
 
         DB::table('players')
             ->whereIn('id', DB::table('branch_player')->select('player_id'))
             ->orderBy('id')
-            ->chunkById(500, function ($players) use ($main, $positionBranch) {
+            ->chunkById(500, function ($players) use ($main, $positionBranch, $now) {
                 $links = DB::table('branch_player')->whereIn('player_id', $players->pluck('id'))
                     ->orderBy('id')->get()->groupBy('player_id');
 
@@ -95,8 +96,8 @@ return new class extends Migration
                     $owner = $rows->firstWhere('branch_id', $positionBranch[$player->position_id] ?? null) ?? $primary;
 
                     foreach ($rows as $row) {
-                        // Already filled by an earlier run: never overwrite later edits.
-                        if ($row->membership_id !== null || $row->legacy_join_year !== null) {
+                        // Stamped by the fill below: an earlier run's row is never overwritten.
+                        if ($row->updated_at !== null) {
                             continue;
                         }
 
@@ -108,6 +109,8 @@ return new class extends Migration
                             'licence_number' => $player->licence_number,
                             'status_id' => $player->status_id,
                             'left_at' => $player->left_at,
+                            'created_at' => $now,
+                            'updated_at' => $now,
                         ]);
                     }
                 }

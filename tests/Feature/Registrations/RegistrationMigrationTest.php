@@ -153,7 +153,7 @@ class RegistrationMigrationTest extends TestCase
 
         // Simulate a crash after the Football row was filled and before the Swimming row was.
         DB::table('branch_player')->where('branch_id', $swim->id)->where('player_id', $both->id)
-            ->update(['legacy_join_year' => null, 'licence_number' => null]);
+            ->update(['legacy_join_year' => null, 'licence_number' => null, 'updated_at' => null]);
         DB::table('branch_player')->where('branch_id', $foot->id)->where('player_id', $both->id)
             ->update(['licence_number' => 'edited']);
 
@@ -167,12 +167,36 @@ class RegistrationMigrationTest extends TestCase
 
         // Now the Football row loses its id and year: the next run must restore them.
         DB::table('branch_player')->where('branch_id', $foot->id)->where('player_id', $both->id)
-            ->update(['membership_id' => null, 'legacy_join_year' => null]);
+            ->update(['membership_id' => null, 'legacy_join_year' => null, 'updated_at' => null]);
 
         $this->migrate();
 
         $byBranch = BranchRegistration::where('player_id', $both->id)->get()->keyBy('branch_id');
         $this->assertSame('201700002', $byBranch[$foot->id]->membership_id);
         $this->assertSame(2017, $byBranch[$foot->id]->legacy_join_year);
+    }
+
+    #[Test]
+    public function a_rerun_leaves_a_filled_row_alone_when_the_player_has_no_year(): void
+    {
+        $this->oldPivot();
+        $foot = Branch::create(['name' => 'Football']);
+        $swim = Branch::create(['name' => 'Swimming']);
+        $other = $this->player('201700001');
+        DB::table('branch_player')->insert(['branch_id' => $foot->id, 'player_id' => $other->id]);
+        $both = $this->player('201700002', ['join_year' => null, 'licence_number' => 'L1']);
+        DB::table('branch_player')->insert([
+            ['branch_id' => $swim->id, 'player_id' => $both->id],
+            ['branch_id' => $foot->id, 'player_id' => $both->id],
+        ]);
+
+        $this->migrate();
+        DB::table('branch_player')->where('branch_id', $swim->id)->where('player_id', $both->id)
+            ->update(['licence_number' => 'edited']);
+
+        $this->migrate();
+
+        $swimRow = BranchRegistration::where('player_id', $both->id)->where('branch_id', $swim->id)->firstOrFail();
+        $this->assertSame('edited', $swimRow->licence_number);
     }
 }

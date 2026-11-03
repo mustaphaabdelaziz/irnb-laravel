@@ -32,6 +32,10 @@ function applyFilter() {
     router.get(route('players.join-dates.index'), Object.fromEntries(Object.entries(filter.value).filter(([, value]) => value !== '')), { preserveState: true, replace: true });
 }
 
+function clearError(row) {
+    delete errors[row.id];
+}
+
 function save(row) {
     if (!dates[row.id]) return;
     router.put(route('players.join-dates.update', row.id), { join_date: dates[row.id] }, {
@@ -80,10 +84,10 @@ function save(row) {
                     </div>
                     <div>
                         <div class="flex items-center gap-2">
-                            <TextInput v-model="dates[row.id]" type="date" class="min-w-0 flex-1" :max="today" :aria-label="t('join_date')" @keyup.enter="save(row)" />
+                            <TextInput v-model="dates[row.id]" type="date" class="min-w-0 flex-1" :max="today" :aria-label="t('join_date')" @change="clearError(row)" @keyup.enter="save(row)" />
                             <button type="button" class="rounded-lg bg-primary-600 px-3 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50" :disabled="!dates[row.id]" @click="save(row)">{{ t('save') }}</button>
                         </div>
-                        <button v-if="row.hint" type="button" class="mt-1 text-xs text-primary-600 hover:underline dark:text-primary-300" @click="dates[row.id] = row.hint">
+                        <button v-if="row.hint" type="button" class="mt-1 text-xs text-primary-600 hover:underline dark:text-primary-300" @click="dates[row.id] = row.hint; clearError(row)">
                             {{ t('join_dates_hint', { date: row.hint }) }}
                         </button>
                         <p v-if="errors[row.id]" class="mt-1 text-sm text-rose-600 dark:text-rose-400">{{ errors[row.id] }}</p>

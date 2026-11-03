@@ -107,4 +107,26 @@ class JoinDateQueueTest extends TestCase
         $this->actingAs($viewer)->get(route('players.join-dates.index'))->assertForbidden();
         $this->actingAs($viewer)->put(route('players.join-dates.update', $registration), ['join_date' => '2017-03-12'])->assertForbidden();
     }
+
+    #[Test]
+    public function a_saved_last_row_returns_to_the_last_page_with_rows(): void
+    {
+        for ($i = 1; $i <= 51; $i++) {
+            $this->member('Player '.$i, 2017, [$this->foot->id]);
+        }
+
+        $page2 = $this->get(route('players.join-dates.index', ['page' => 2]))
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('registrations.data', 1)->etc());
+        $rowId = $page2->viewData('page')['props']['registrations']['data'][0]['id'];
+
+        $this->put(route('players.join-dates.update', $rowId), ['join_date' => '2017-03-12'])
+            ->assertSessionHasNoErrors();
+
+        $this->get(route('players.join-dates.index', ['page' => 2]))
+            ->assertRedirect(route('players.join-dates.index', ['page' => 1]));
+
+        $this->followingRedirects()
+            ->get(route('players.join-dates.index', ['page' => 2]))
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('registrations.data', 50)->etc());
+    }
 }

@@ -17,7 +17,7 @@ use Inertia\Response;
 /** Registrations with no exact join date, for an admin to complete. */
 class JoinDateController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         $filters = $request->validate([
             'branch_id' => ['nullable', 'integer'],
@@ -46,13 +46,20 @@ class JoinDateController extends Controller
             ->orderBy('player_id')
             ->orderBy('branch_id');
 
+        $registrations = $query->paginate(50)->withQueryString();
+
+        // Saving the last row of the last page leaves that page empty; show the new last page instead.
+        if ($registrations->currentPage() > $registrations->lastPage() && $registrations->lastPage() >= 1) {
+            return redirect()->route('players.join-dates.index', [...$filters, 'page' => $registrations->lastPage()]);
+        }
+
         return Inertia::render('Players/JoinDates', [
             'total' => (clone $base)->count(),
             'filters' => $filters,
             'branches' => Branch::orderBy('name')->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
             'categories' => Category::orderBy('name')->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
             'years' => (clone $base)->whereNotNull('legacy_join_year')->distinct()->orderByDesc('legacy_join_year')->pluck('legacy_join_year'),
-            'registrations' => $query->paginate(50)->withQueryString()
+            'registrations' => $registrations
                 ->through(fn (BranchRegistration $r) => [
                     'id' => $r->id,
                     'player_id' => $r->player_id,

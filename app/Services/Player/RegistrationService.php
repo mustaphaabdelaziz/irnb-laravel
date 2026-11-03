@@ -12,6 +12,8 @@ use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
+use RuntimeException;
 
 /**
  * The only production writer of registrations and of the players.* columns they
@@ -32,11 +34,19 @@ class RegistrationService
         DB::transaction(function () use ($player, $cards, $user) {
             $existing = $player->registrations()->get()->keyBy('branch_id');
 
-            foreach ($cards as $card) {
+            // The main branch's card goes first so it adopts the player's existing ID.
+            $mainId = Branch::mainId();
+            $ordered = collect($cards)->sortBy(fn (array $card) => (int) $card['branch_id'] === $mainId ? 0 : 1)->values();
+
+            foreach ($ordered as $card) {
                 $registration = $existing[(int) $card['branch_id']] ?? null;
-                $registration
-                    ? $this->change($registration, $card, $user)
-                    : $this->register($player, $card);
+                if ($registration === null) {
+                    $this->register($player, $card);
+                } elseif ($this->isLeft($registration) && ! array_key_exists('status_id', $card)) {
+                    $this->reopen($registration, $card, $user);
+                } else {
+                    $this->change($registration, $card, $user);
+                }
             }
 
             $absent = $existing->keys()->diff(collect($cards)->pluck('branch_id')->map(fn ($id) => (int) $id));
@@ -51,8 +61,17 @@ class RegistrationService
     public function register(Player $player, array $card): BranchRegistration
     {
         return DB::transaction(function () use ($player, $card) {
+            $current = $player->registrations()->where('branch_id', (int) $card['branch_id'])->first();
+            if ($current !== null) {
+                if ($this->isLeft($current)) {
+                    $this->reopen($current, $card);
+                }
+
+                return $current;
+            }
+
             $first = ! $player->registrations()->exists();
-            $joinDate = $card['join_date'] ?? null;
+            $joinDate = empty($card['join_date']) ? null : $card['join_date'];
             $legacyYear = $card['legacy_join_year'] ?? (($first && $joinDate === null) ? $player->join_year : null);
             $year = $joinDate !== null ? (int) substr((string) $joinDate, 0, 4) : $legacyYear;
 
@@ -64,7 +83,9 @@ class RegistrationService
 
             $details = array_fill_keys(self::DETAILS, null);
             foreach (self::DETAILS as $field) {
-                $details[$field] = $card[$field] ?? null;
+                $details[$field] = array_key_exists($field, $card)
+                    ? $card[$field]
+                    : ($first ? $this->fromPlayer($player, $field, (int) $card['branch_id']) : null);
             }
             $details['status_id'] ??= PlayerStatus::where('code', 'registered')->value('id');
 
@@ -89,7 +110,7 @@ class RegistrationService
      *
      * @param  array<string, mixed>  $card
      */
-    public function change(BranchRegistration $registration, array $card, ?User $user = null): void
+    private function change(BranchRegistration $registration, array $card, ?User $user = null): void
     {
         foreach (self::DETAILS as $field) {
             if (array_key_exists($field, $card)) {
@@ -118,44 +139,57 @@ class RegistrationService
             return;
         }
         $left = Player::leftStatusId();
+        if ($left === null) {
+            throw new RuntimeException('The "left" player status is missing.');
+        }
 
-        $player->registrations()->whereIn('branch_id', $branchIds)->get()
-            ->reject(fn (BranchRegistration $r) => (int) $r->status_id === (int) $left)
-            ->each(function (BranchRegistration $r) use ($left, $date) {
-                $r->status_id = $left;
-                $r->left_at = $date ?? now()->toDateString();
-                $r->save();
-            });
+        DB::transaction(function () use ($player, $branchIds, $left, $date) {
+            $player->registrations()->whereIn('branch_id', $branchIds)->get()
+                ->reject(fn (BranchRegistration $r) => (int) $r->status_id === $left)
+                ->each(function (BranchRegistration $r) use ($left, $date) {
+                    $r->status_id = $left;
+                    $r->left_at = $date ?? now()->toDateString();
+                    $r->save();
+                });
 
-        $this->refreshMirror($player);
+            $this->refreshMirror($player);
+        });
     }
 
-    /** One field from bulk edit: status on every registration, position on its branch's, category on the primary. */
-    public function setField(Player $player, string $field, mixed $value): void
+    /**
+     * One field from bulk edit: status on the registration of $branchId only,
+     * position on its branch's, category on the primary.
+     */
+    public function setField(Player $player, string $field, mixed $value, ?int $branchId = null): void
     {
-        $registrations = $player->registrations()->get();
+        DB::transaction(function () use ($player, $field, $value, $branchId) {
+            $registrations = $player->registrations()->get();
 
-        if ($registrations->isEmpty()) {
-            $player->update([$field => $value]);
+            if ($registrations->isEmpty()) {
+                $player->update([$field => $value]);
 
-            return;
-        }
+                return;
+            }
+            if ($field === 'status_id' && $branchId === null) {
+                throw new InvalidArgumentException('A status change needs the branch it applies to.');
+            }
 
-        $targets = match ($field) {
-            'status_id' => $registrations,
-            'position_id' => collect([$this->positionOwner($registrations, $player, $value)])->filter(),
-            default => collect([$this->primary($player)]),
-        };
+            $targets = match ($field) {
+                'status_id' => $registrations->where('branch_id', $branchId),
+                'position_id' => collect([$this->positionOwner($registrations, $player, $value)])->filter(),
+                default => collect([$this->primary($player)]),
+            };
 
-        foreach ($targets as $registration) {
-            $registration->{$field} = $value;
-            $registration->save();
-        }
+            foreach ($targets as $registration) {
+                $registration->{$field} = $value;
+                $registration->save();
+            }
 
-        if ($field === 'position_id' && $value) {
-            $player->otherPositions()->detach($value);
-        }
-        $this->refreshMirror($player);
+            if ($field === 'position_id' && $value && $targets->isNotEmpty()) {
+                $player->otherPositions()->detach($value);
+            }
+            $this->refreshMirror($player);
+        });
     }
 
     /**
@@ -198,6 +232,48 @@ class RegistrationService
             'join_year' => $registrations->map(fn (BranchRegistration $r) => $r->effectiveYear())->filter()->min() ?? $player->join_year,
             'membership_id' => $primary->membership_id ?? $player->membership_id,
         ]);
+    }
+
+    private function isLeft(BranchRegistration $registration): bool
+    {
+        return Player::isLeftStatus($registration->status_id);
+    }
+
+    /**
+     * A left registration comes back as the same row, with its ID and original
+     * join date. A card's date only fills a date the row never had.
+     *
+     * @param  array<string, mixed>  $card
+     */
+    private function reopen(BranchRegistration $registration, array $card, ?User $user = null): void
+    {
+        foreach (self::DETAILS as $field) {
+            if ($field !== 'left_at' && array_key_exists($field, $card)) {
+                $registration->{$field} = $card[$field];
+            }
+        }
+        $registration->status_id = $card['status_id'] ?? PlayerStatus::where('code', 'registered')->value('id');
+        $registration->left_at = null;
+
+        if (! empty($card['join_date']) && $registration->join_date === null) {
+            $this->applyDate($registration, (string) $card['join_date'], $user);
+        }
+        $registration->save();
+
+        $this->syncOtherPositions($registration->player, [$card]);
+        $this->refreshMirror($registration->player);
+    }
+
+    /** What a player's first registration starts from when the card is silent. */
+    private function fromPlayer(Player $player, string $field, int $branchId): mixed
+    {
+        return match ($field) {
+            'position_id' => $player->position_id !== null
+                && (int) Position::whereKey($player->position_id)->value('branch_id') === $branchId
+                ? $player->position_id : null,
+            'sporting_status_id' => null,
+            default => $player->{$field},
+        };
     }
 
     private function applyDate(BranchRegistration $registration, string $date, ?User $user): void
@@ -247,7 +323,9 @@ class RegistrationService
     /**
      * Other positions stay in player_other_positions: a position's branch says
      * which registration it belongs to. Only the branches the cards speak for
-     * change, and a main position is never also an "other" one.
+     * change, and a main position is never also an "other" one. A position with
+     * no branch is replaced whenever any card speaks, because the form re-lists
+     * those on its first card.
      *
      * @param  list<array<string, mixed>>  $cards
      */

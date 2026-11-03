@@ -209,14 +209,16 @@ class RegistrationServiceTest extends TestCase
 
         $this->service->setField($player, 'position_id', $crawl->id);
         $this->service->setField($player, 'category_id', $category->id);
-        $this->service->setField($player, 'status_id', $this->left()->id);
+        $this->service->setField($player, 'status_id', $this->left()->id, $this->swim->id);
 
         $rows = $player->registrations()->get()->keyBy('branch_id');
         $this->assertSame($crawl->id, $rows[$this->swim->id]->position_id);
         $this->assertNull($rows[$this->foot->id]->position_id);
         $this->assertSame($category->id, $rows[$this->foot->id]->category_id);
         $this->assertSame($this->left()->id, $rows[$this->swim->id]->status_id);
-        $this->assertNotNull($player->fresh()->left_at);
+        $this->assertNotSame($this->left()->id, $rows[$this->foot->id]->status_id);
+        $this->assertNull($rows[$this->foot->id]->left_at);
+        $this->assertNull($player->fresh()->left_at, 'football is still active');
     }
 
     #[Test]
@@ -230,5 +232,216 @@ class RegistrationServiceTest extends TestCase
         $this->assertSame('202200017', $row->membership_id);
         $this->assertSame(2022, $row->legacy_join_year);
         $this->assertNull($row->join_date);
+    }
+
+    private function twoRows(Player $player): void
+    {
+        $this->service->sync($player, [
+            ['branch_id' => $this->foot->id, 'join_date' => '2022-09-15'],
+            ['branch_id' => $this->swim->id, 'join_date' => '2025-03-10'],
+        ]);
+    }
+
+    #[Test]
+    public function a_first_registration_from_a_partial_card_keeps_the_players_details(): void
+    {
+        $category = Category::create(['name' => 'Senior']);
+        $gk = Position::create(['name' => 'GK', 'abbreviation' => 'GK', 'branch_id' => $this->foot->id]);
+        $player = $this->player([
+            'category_id' => $category->id,
+            'position_id' => $gk->id,
+            'licence_number' => 'L77',
+            'status_id' => $this->left()->id,
+            'left_at' => '2024-01-01',
+        ]);
+
+        $this->service->register($player, ['branch_id' => $this->foot->id, 'join_date' => '2022-09-15']);
+
+        $row = $player->registrations()->firstOrFail();
+        $this->assertSame($category->id, $row->category_id);
+        $this->assertSame($gk->id, $row->position_id);
+        $this->assertSame('L77', $row->licence_number);
+        $this->assertSame($this->left()->id, $row->status_id);
+        $this->assertSame('2024-01-01', $row->left_at->toDateString());
+        $this->assertNull($row->sporting_status_id);
+
+        $player->refresh();
+        $this->assertSame($category->id, $player->category_id);
+        $this->assertSame($gk->id, $player->position_id);
+        $this->assertSame('L77', $player->licence_number);
+        $this->assertSame($this->left()->id, $player->status_id);
+        $this->assertSame('2024-01-01', $player->left_at->toDateString());
+    }
+
+    #[Test]
+    public function a_first_registration_drops_a_position_its_branch_does_not_own(): void
+    {
+        $crawl = Position::create(['name' => 'Crawl', 'abbreviation' => 'CR', 'branch_id' => $this->swim->id]);
+        $player = $this->player(['position_id' => $crawl->id]);
+
+        $this->service->register($player, ['branch_id' => $this->foot->id]);
+
+        $this->assertNull($player->registrations()->firstOrFail()->position_id);
+    }
+
+    #[Test]
+    public function an_explicit_empty_on_the_card_wins_over_the_players_value(): void
+    {
+        $category = Category::create(['name' => 'Senior']);
+        $player = $this->player(['category_id' => $category->id]);
+
+        $this->service->register($player, ['branch_id' => $this->foot->id, 'category_id' => null]);
+
+        $this->assertNull($player->registrations()->firstOrFail()->category_id);
+    }
+
+    #[Test]
+    public function rejoining_reopens_the_row_and_keeps_the_date_and_id(): void
+    {
+        $player = $this->player();
+        $this->twoRows($player);
+        $before = $player->registrations()->where('branch_id', $this->swim->id)->firstOrFail();
+        $this->service->leave($player, [$this->swim->id], '2026-01-10');
+
+        $this->service->register($player, ['branch_id' => $this->swim->id, 'join_date' => '2026-05-05']);
+
+        $after = $player->registrations()->where('branch_id', $this->swim->id)->firstOrFail();
+        $this->assertSame($before->id, $after->id);
+        $this->assertSame('SW-2025-00001', $after->membership_id);
+        $this->assertSame('2025-03-10', $after->join_date->toDateString());
+        $this->assertNotSame($this->left()->id, $after->status_id);
+        $this->assertNull($after->left_at);
+        $this->assertSame(2, $player->registrations()->count());
+    }
+
+    #[Test]
+    public function rejoining_a_legacy_row_takes_the_date_it_was_missing(): void
+    {
+        $player = $this->player();
+        $player->branches()->attach($this->foot->id, ['membership_id' => '202200017', 'category_id' => null, 'legacy_join_year' => 2022]);
+        $this->service->leave($player, [$this->foot->id], '2026-01-10');
+
+        $this->service->register($player, ['branch_id' => $this->foot->id, 'join_date' => '2022-06-01']);
+
+        $row = $player->registrations()->firstOrFail();
+        $this->assertSame('2022-06-01', $row->join_date->toDateString());
+        $this->assertSame('202200017', $row->membership_id);
+        $this->assertNull($row->left_at);
+    }
+
+    #[Test]
+    public function registering_where_already_active_changes_nothing(): void
+    {
+        $category = Category::create(['name' => 'Senior']);
+        $player = $this->player();
+        $this->twoRows($player);
+        $before = $player->registrations()->where('branch_id', $this->swim->id)->firstOrFail();
+
+        $row = $this->service->register($player, [
+            'branch_id' => $this->swim->id, 'join_date' => '2030-01-01', 'category_id' => $category->id,
+        ]);
+
+        $this->assertSame($before->id, $row->id);
+        $fresh = $before->fresh();
+        $this->assertSame('2025-03-10', $fresh->join_date->toDateString());
+        $this->assertNull($fresh->category_id);
+        $this->assertSame(2, $player->registrations()->count());
+    }
+
+    #[Test]
+    public function a_sync_card_without_a_status_reopens_a_left_row(): void
+    {
+        $player = $this->player();
+        $this->twoRows($player);
+        $swimId = $player->registrations()->where('branch_id', $this->swim->id)->value('id');
+        $this->service->sync($player, [['branch_id' => $this->foot->id]]);
+        $this->assertSame($this->left()->id, BranchRegistration::findOrFail($swimId)->status_id);
+
+        $this->service->sync($player, [['branch_id' => $this->foot->id], ['branch_id' => $this->swim->id]]);
+
+        $swim = BranchRegistration::findOrFail($swimId);
+        $this->assertNotSame($this->left()->id, $swim->status_id);
+        $this->assertNull($swim->left_at);
+        $this->assertSame('SW-2025-00001', $swim->membership_id);
+    }
+
+    #[Test]
+    public function bulk_status_changes_one_branch_and_keeps_the_other_leave_date(): void
+    {
+        $other = PlayerStatus::where('code', '!=', 'left')->firstOrFail();
+        $player = $this->player();
+        $this->twoRows($player);
+        $this->service->leave($player, [$this->swim->id], '2024-01-01');
+
+        $this->service->setField($player, 'status_id', $other->id, $this->foot->id);
+
+        $rows = $player->registrations()->get()->keyBy('branch_id');
+        $this->assertSame($other->id, $rows[$this->foot->id]->status_id);
+        $this->assertSame($this->left()->id, $rows[$this->swim->id]->status_id);
+        $this->assertSame('2024-01-01', $rows[$this->swim->id]->left_at->toDateString());
+    }
+
+    #[Test]
+    public function bulk_status_needs_a_branch_for_a_player_with_registrations(): void
+    {
+        $player = $this->player();
+        $this->twoRows($player);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->service->setField($player, 'status_id', $this->left()->id);
+    }
+
+    #[Test]
+    public function bulk_status_skips_a_player_not_in_that_branch(): void
+    {
+        $player = $this->player();
+        $this->service->sync($player, [['branch_id' => $this->foot->id, 'join_date' => '2022-09-15']]);
+        $before = $player->registrations()->firstOrFail()->status_id;
+
+        $this->service->setField($player, 'status_id', $this->left()->id, $this->swim->id);
+
+        $this->assertSame($before, $player->registrations()->firstOrFail()->status_id);
+        $this->assertSame(1, $player->registrations()->count());
+    }
+
+    #[Test]
+    public function the_main_branch_card_adopts_the_players_id_whatever_the_order(): void
+    {
+        $player = $this->player();
+
+        $this->service->sync($player, [
+            ['branch_id' => $this->swim->id, 'join_date' => '2025-03-10'],
+            ['branch_id' => $this->foot->id],
+        ]);
+
+        $rows = $player->registrations()->get()->keyBy('branch_id');
+        $this->assertSame('202200017', $rows[$this->foot->id]->membership_id);
+        $this->assertSame('SW-2025-00001', $rows[$this->swim->id]->membership_id);
+    }
+
+    #[Test]
+    public function leaving_with_no_left_status_fails_loudly(): void
+    {
+        $player = $this->player();
+        $this->twoRows($player);
+        PlayerStatus::where('code', 'left')->delete();
+
+        $this->expectException(\RuntimeException::class);
+        $this->service->leave($player, [$this->swim->id]);
+    }
+
+    #[Test]
+    public function a_position_nobody_owns_stays_in_other_positions_after_bulk(): void
+    {
+        $judo = Branch::create(['name' => 'Judo', 'code' => 'JD']);
+        $throw = Position::create(['name' => 'Throw', 'abbreviation' => 'TH', 'branch_id' => $judo->id]);
+        $player = $this->player();
+        $this->twoRows($player);
+        $player->otherPositions()->sync([$throw->id]);
+
+        $this->service->setField($player, 'position_id', $throw->id);
+
+        $this->assertSame([$throw->id], $player->otherPositions()->pluck('positions.id')->all());
+        $this->assertNull($player->registrations()->whereNotNull('position_id')->first());
     }
 }

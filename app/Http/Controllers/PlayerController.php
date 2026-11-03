@@ -612,15 +612,16 @@ class PlayerController extends Controller
                 return;
             }
 
+            // The main branch first, so it adopts the player's existing ID.
             $branchIds = array_map('intval', (array) $value);
+            $mainId = Branch::mainId();
+            usort($branchIds, fn (int $a, int $b) => ($b === $mainId) <=> ($a === $mainId));
             $mode = $data['mode'] ?? 'replace';
-            $left = Player::leftStatusId();
 
             // Branches are many-to-many, so "set" is ambiguous: replace the
             // whole set, add to it, or remove from it. Removing marks as left.
-            $players->each(function (Player $player) use ($branchIds, $mode, $data, $registrations, $left) {
-                $active = $player->registrations()
-                    ->when($left !== null, fn ($q) => $q->where(fn ($w) => $w->whereNull('status_id')->orWhere('status_id', '!=', $left)))
+            $players->each(function (Player $player) use ($branchIds, $mode, $data, $registrations) {
+                $active = $player->registrations()->active()
                     ->pluck('branch_id')->map(fn ($id) => (int) $id)->all();
 
                 if ($mode === 'detach') {

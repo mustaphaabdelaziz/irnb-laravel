@@ -36,6 +36,11 @@ class PlayerStatusController extends Controller
 
     public function destroy(PlayerStatus $playerStatus): RedirectResponse
     {
+        // Removing a member from a branch needs this status to exist.
+        if ($playerStatus->code === 'left') {
+            return back()->with('error', 'flash.player_status_required');
+        }
+
         // Players would be left with a dangling status. The FK is nullOnDelete,
         // so this would silently blank their status rather than error.
         if ($playerStatus->players()->exists() || BranchRegistration::where('status_id', $playerStatus->id)->exists()) {

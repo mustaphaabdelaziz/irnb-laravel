@@ -179,13 +179,13 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
     Route::post('/players/bulk-archive', [PlayerController::class, 'bulkArchive'])->name('players.bulkArchive');
     Route::post('/players/bulk-restore', [PlayerController::class, 'bulkRestore'])->name('players.bulkRestore');
     Route::post('/players/bulk-force-delete', [PlayerController::class, 'bulkForceDelete'])->name('players.bulkForceDelete');
-    Route::delete('/players/{player}/registrations/{registration}', [RegistrationController::class, 'destroy'])->name('players.registrations.destroy');
     Route::post('/players/bulk-update', [PlayerController::class, 'bulkUpdate'])->name('players.bulkUpdate');
     Route::get('/players/board-table', [PlayerPrintController::class, 'boardTable'])->name('players.board-table');
     Route::get('/players/academic-results', [PlayerPrintController::class, 'academicResults'])->name('players.academic-results');
 
     // Players
     Route::resource('players', PlayerController::class);
+    Route::delete('/players/{player}/registrations/{registration}', [RegistrationController::class, 'destroy'])->name('players.registrations.destroy');
     Route::put('/players/{player}/restore', [PlayerController::class, 'restore'])->name('players.restore');
     Route::delete('/players/{player}/force', [PlayerController::class, 'forceDelete'])->name('players.forceDelete');
 

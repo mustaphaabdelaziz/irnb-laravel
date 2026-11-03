@@ -66,7 +66,7 @@ class Player extends Model
      * Keep the leave date in step with the status: only a member whose status
      * is "left" (code `left`) has one. Moving to "left" without a date stamps
      * today; moving to any other status clears it. Bulk status changes bypass
-     * model events and apply the same rule in SQL (see leaveDateUpdate()).
+     * model events, so a code path that uses them must apply this rule itself.
      */
     protected static function booted(): void
     {
@@ -111,17 +111,6 @@ class Player extends Model
     public static function isLeftStatus(mixed $statusId): bool
     {
         return $statusId !== null && $statusId !== '' && (int) $statusId === static::leftStatusId();
-    }
-
-    /**
-     * The left_at column value for a bulk status change to $statusId: keep an
-     * existing date (or stamp today) when moving to "left", clear otherwise.
-     */
-    public static function leaveDateUpdate(mixed $statusId): mixed
-    {
-        return static::isLeftStatus($statusId)
-            ? DB::raw('COALESCE(left_at, '.DB::getPdo()->quote(now()->toDateString()).')')
-            : null;
     }
 
     /** Normalise the stored photo URL to a host-relative /media path (web + desktop). */

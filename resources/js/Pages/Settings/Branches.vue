@@ -6,7 +6,7 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import IconButton from '@/Components/IconButton.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
-import { Head, useForm, router, usePage } from '@inertiajs/vue3';
+import { Head, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { computed, ref } from 'vue';
 
@@ -18,7 +18,6 @@ const props = defineProps({
     mainBranchId: { type: Number, default: null },
 });
 
-const errors = computed(() => usePage().props.errors || {});
 
 const playersById = computed(() => Object.fromEntries(props.players.map((p) => [p.id, p])));
 
@@ -72,12 +71,15 @@ const memberIds = ref([]);
 const memberPick = ref('');
 const savingMembers = ref(false);
 const membersJoinDate = ref('');
+// The date error of the last save, kept here so reopening the dialog starts clean.
+const membersDateError = ref('');
 
 function openMembers(branch) {
     membersBranch.value = branch;
     memberIds.value = (branch.players || []).map((p) => p.id);
     memberPick.value = '';
     membersJoinDate.value = '';
+    membersDateError.value = '';
 }
 
 const memberOptions = computed(() => {
@@ -105,9 +107,11 @@ function memberName(id) {
 
 function saveMembers() {
     savingMembers.value = true;
+    membersDateError.value = '';
     router.post(route('branches.players.sync', membersBranch.value.id), { player_ids: memberIds.value, join_date: membersJoinDate.value }, {
         preserveScroll: true,
         onSuccess: () => { membersBranch.value = null; },
+        onError: (e) => { membersDateError.value = e.join_date || ''; },
         onFinish: () => { savingMembers.value = false; },
     });
 }
@@ -238,7 +242,7 @@ function saveMembers() {
                         <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('join_date') }}</label>
                         <input v-model="membersJoinDate" type="date" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-900 shadow-sm focus:border-primary-500 focus:ring-primary-500" />
                         <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('join_date_for_new_members') }}</p>
-                        <InputError :message="errors.join_date" class="mt-1" />
+                        <InputError :message="membersDateError" class="mt-1" />
                     </div>
                     <div class="mt-4 flex flex-wrap gap-2">
                         <span v-for="id in memberIds" :key="id" class="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-3 py-1 text-sm text-primary-700 dark:bg-primary-900/30 dark:text-primary-200">

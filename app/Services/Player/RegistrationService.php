@@ -264,6 +264,10 @@ class RegistrationService
                     ? $id
                     : ($next->effectiveYear() ? MembershipNumber::forBranch($next->branch, $next->effectiveYear()) : null);
                 $next->save();
+            } elseif (MembershipNumber::isLegacy($id) && $next->membership_id !== $id) {
+                // The deleted row's old-format ID must stay searchable.
+                $next->legacy_membership_id ??= $id;
+                $next->save();
             }
 
             $this->refreshMirror($player);

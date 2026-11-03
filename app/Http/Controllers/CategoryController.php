@@ -71,7 +71,7 @@ class CategoryController extends Controller
         }
         // A registration's category is restricted: its history must not vanish.
         if (BranchRegistration::where('category_id', $category->id)->exists()) {
-            return back()->with('error', 'flash.category_in_use');
+            return back()->with('error', 'flash.category_has_registrations');
         }
         DB::transaction(function () use ($category) {
             TrainingSession::where('category_id', $category->id)->with('categories')->get()

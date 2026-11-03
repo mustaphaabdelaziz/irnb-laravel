@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Branch;
+use App\Models\BranchRegistration;
 use App\Models\Player;
 use App\Models\PreseasonTarget;
 use App\Models\Team;
@@ -28,10 +29,7 @@ class BranchController extends Controller
     {
         // Members who left stay in the registration but are not offered as members,
         // or saving the members dialog would reopen them.
-        $left = Player::leftStatusId();
-        $active = fn ($q) => $left === null ? $q : $q->where(
-            fn ($w) => $w->whereNull('branch_player.status_id')->orWhere('branch_player.status_id', '!=', $left)
-        );
+        $active = fn ($q) => BranchRegistration::constrainActive($q, 'branch_player.status_id');
 
         $branches = Branch::query()
             ->withCount(['players' => $active])
@@ -60,11 +58,8 @@ class BranchController extends Controller
             'join_date' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today', 'after:1900-01-01'],
         ]);
 
-        $left = Player::leftStatusId();
-        $rows = $branch->registrations()->get(['player_id', 'status_id']);
-        $known = $rows->pluck('player_id')->map(fn ($id) => (int) $id)->all();
-        $active = $rows->reject(fn ($r) => $left !== null && (int) $r->status_id === $left)
-            ->pluck('player_id')->map(fn ($id) => (int) $id)->all();
+        $known = $branch->registrations()->pluck('player_id')->map(fn ($id) => (int) $id)->all();
+        $active = $branch->registrations()->active()->pluck('player_id')->map(fn ($id) => (int) $id)->all();
         $wanted = array_map('intval', $validated['player_ids']);
 
         // Only a player with no row here at all is new; a returning member keeps the old date.
@@ -88,9 +83,14 @@ class BranchController extends Controller
 
     public function setMain(Branch $branch, RegistrationService $registrations): RedirectResponse
     {
-        WebsiteConfig::singleton()->update(['main_branch_id' => $branch->id]);
-        Player::whereHas('registrations', fn ($q) => $q->where('branch_id', $branch->id))->get()
-            ->each(fn (Player $player) => $registrations->refreshMirror($player));
+        // The primary depends on the main branch, so players of the old one can change too.
+        $oldMain = Branch::mainId();
+        DB::transaction(function () use ($branch, $registrations, $oldMain) {
+            WebsiteConfig::singleton()->update(['main_branch_id' => $branch->id]);
+            $affected = array_filter([$oldMain, $branch->id]);
+            Player::whereHas('registrations', fn ($q) => $q->whereIn('branch_id', $affected))->get()
+                ->each(fn (Player $player) => $registrations->refreshMirror($player));
+        });
 
         return back()->with('success', 'flash.branch_main_set');
     }
@@ -128,6 +128,10 @@ class BranchController extends Controller
     {
         if (Team::where('branch_id', $branch->id)->exists()) {
             return back()->with('error', 'flash.branch_has_teams');
+        }
+        // Deleting would cascade away join dates and IDs, left rows included.
+        if ($branch->registrations()->exists()) {
+            return back()->with('error', 'flash.branch_has_registrations');
         }
         // Attendance rows have no foreign key on branch_id (see the add_branch_to_attendance_tables migration).
         if (TrainingSession::where('branch_id', $branch->id)->exists() || TrainingSchedule::where('branch_id', $branch->id)->exists()) {

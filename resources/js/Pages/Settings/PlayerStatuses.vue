@@ -137,8 +137,8 @@ function destroy() {
                                 <td class="px-4 py-3 text-end">
                                     <div class="flex justify-end gap-1">
                                         <IconButton icon="pencil" :label="t('edit')" plain size="sm" @click="startEdit(s)" />
-                                        <!-- Deletion is refused server-side while players reference it. -->
-                                        <IconButton v-if="s.players_count === 0" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteId = s.id" />
+                                        <!-- Deletion is refused server-side while players reference it; the "left" status is the app's own. -->
+                                        <IconButton v-if="s.players_count === 0 && s.code !== 'left'" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteId = s.id" />
                                     </div>
                                 </td>
                             </template>

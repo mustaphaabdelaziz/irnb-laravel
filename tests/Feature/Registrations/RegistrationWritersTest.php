@@ -212,8 +212,16 @@ class RegistrationWritersTest extends TestCase
         $player = Player::create(['firstname' => 'A', 'membership_id' => '201700004', 'join_year' => 2017]);
         $player->registrations()->create(['branch_id' => $this->foot->id, 'category_id' => $category->id, 'status_id' => null]);
 
-        $this->delete(route('categories.destroy', $category))->assertSessionHas('error', 'flash.category_in_use');
+        $this->delete(route('categories.destroy', $category))->assertSessionHas('error', 'flash.category_has_registrations');
         $this->assertNotNull($category->fresh());
+
+        // Only a registration holds this status: no player row does.
+        $status = PlayerStatus::create(['name' => 'Trial', 'is_active' => true]);
+        $player->registrations()->firstOrFail()->update(['status_id' => $status->id]);
+        $this->assertFalse($status->players()->exists());
+
+        $this->delete(route('player-statuses.destroy', $status))->assertSessionHas('error', 'flash.player_status_in_use');
+        $this->assertNotNull($status->fresh());
     }
 
     #[Test]
@@ -279,5 +287,123 @@ class RegistrationWritersTest extends TestCase
             ->all();
 
         $this->assertSame([], $offenders);
+    }
+
+    #[Test]
+    public function changing_the_main_branch_refreshes_players_of_the_old_main_too(): void
+    {
+        $tennis = Branch::create(['name' => 'Tennis', 'code' => 'TN']);
+        $senior = Category::create(['name' => 'Senior']);
+        $junior = Category::create(['name' => 'Junior']);
+        $player = Player::create(['firstname' => 'A', 'membership_id' => '201700099', 'join_year' => 2017]);
+        $player->registrations()->create(['branch_id' => $this->foot->id, 'category_id' => $senior->id, 'join_date' => '2020-01-01', 'membership_id' => 'FB-2020-00001']);
+        $player->registrations()->create(['branch_id' => $tennis->id, 'category_id' => $junior->id, 'join_date' => '2019-01-01', 'membership_id' => 'TN-2019-00001']);
+        app(RegistrationService::class)->refreshMirror($player);
+        $this->assertSame('FB-2020-00001', $player->fresh()->membership_id);
+
+        $this->post(route('branches.main', $this->swim))->assertSessionHasNoErrors();
+
+        $fresh = $player->fresh();
+        $this->assertSame('TN-2019-00001', $fresh->membership_id);
+        $this->assertSame($junior->id, $fresh->category_id);
+    }
+
+    #[Test]
+    public function bulk_attach_and_replace_give_the_old_id_to_the_main_branch(): void
+    {
+        $player = Player::create(['firstname' => 'A', 'membership_id' => '201700001', 'join_year' => 2017]);
+
+        $this->post(route('players.bulkUpdate'), [
+            'ids' => [$player->id], 'field' => 'branches', 'mode' => 'attach',
+            'value' => [$this->swim->id, $this->foot->id], 'join_date' => '2025-03-10',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame('201700001', $player->registrations()->where('branch_id', $this->foot->id)->value('membership_id'));
+        $this->assertSame('SW-2025-00001', $player->registrations()->where('branch_id', $this->swim->id)->value('membership_id'));
+        $this->assertSame('201700001', $player->fresh()->membership_id);
+
+        $other = Player::create(['firstname' => 'B', 'membership_id' => '201700002', 'join_year' => 2017]);
+        $this->post(route('players.bulkUpdate'), [
+            'ids' => [$other->id], 'field' => 'branches', 'mode' => 'replace',
+            'value' => [$this->swim->id, $this->foot->id], 'join_date' => '2025-03-10',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame('201700002', $other->registrations()->where('branch_id', $this->foot->id)->value('membership_id'));
+        $this->assertSame('201700002', $other->fresh()->membership_id);
+    }
+
+    #[Test]
+    public function deleting_a_registration_keeps_its_legacy_id_findable(): void
+    {
+        $service = app(RegistrationService::class);
+        $player = Player::create(['firstname' => 'A', 'membership_id' => '201700001', 'join_year' => 2017]);
+        $swim = $service->register($player, ['branch_id' => $this->swim->id]);
+        $this->assertSame('201700001', $swim->membership_id);
+        $service->register($player, ['branch_id' => $this->foot->id, 'join_date' => '2025-03-10']);
+        $this->assertSame('FB-2025-00001', $player->registrations()->where('branch_id', $this->foot->id)->value('membership_id'));
+
+        $this->delete(route('players.registrations.destroy', [$player, $swim]))->assertSessionHas('success');
+
+        $foot = $player->registrations()->firstOrFail();
+        $this->assertSame('FB-2025-00001', $foot->membership_id);
+        $this->assertSame('201700001', $foot->legacy_membership_id);
+    }
+
+    #[Test]
+    public function deleting_a_registration_hands_its_id_to_a_primary_that_has_none(): void
+    {
+        $service = app(RegistrationService::class);
+        $player = Player::create(['firstname' => 'A', 'membership_id' => '201700001']);
+        $swim = $service->register($player, ['branch_id' => $this->swim->id]);
+        $foot = $service->register($player, ['branch_id' => $this->foot->id]);
+        $this->assertNull($foot->membership_id);
+
+        $this->delete(route('players.registrations.destroy', [$player, $swim]))->assertSessionHas('success');
+
+        $this->assertSame('201700001', $foot->fresh()->membership_id);
+        $this->assertSame('201700001', $player->fresh()->membership_id);
+    }
+
+    #[Test]
+    public function the_left_status_cannot_be_deleted(): void
+    {
+        $left = PlayerStatus::where('code', 'left')->firstOrFail();
+
+        $this->delete(route('player-statuses.destroy', $left))->assertSessionHas('error', 'flash.player_status_required');
+        $this->assertNotNull($left->fresh());
+    }
+
+    #[Test]
+    public function a_branch_holding_registrations_cannot_be_deleted(): void
+    {
+        $player = Player::create(['firstname' => 'A', 'membership_id' => '201700020', 'join_year' => 2017]);
+        $player->registrations()->create(['branch_id' => $this->swim->id]);
+        app(RegistrationService::class)->leave($player, [$this->swim->id]);
+
+        $this->delete(route('branches.destroy', $this->swim))->assertSessionHas('error', 'flash.branch_has_registrations');
+
+        $this->assertNotNull($this->swim->fresh());
+        $this->assertSame(1, $player->registrations()->count());
+    }
+
+    #[Test]
+    public function bulk_status_to_left_stamps_the_date_and_back_clears_it(): void
+    {
+        $player = $this->member('201700030');
+        $left = PlayerStatus::where('code', 'left')->value('id');
+        $registered = PlayerStatus::where('code', 'registered')->value('id');
+        $payload = ['ids' => [$player->id], 'field' => 'status_id', 'branch_id' => $this->foot->id];
+
+        $this->post(route('players.bulkUpdate'), [...$payload, 'value' => $left])->assertSessionHasNoErrors();
+        $row = $player->registrations()->firstOrFail();
+        $this->assertSame($left, $row->status_id);
+        $this->assertNotNull($row->left_at);
+        $this->assertNotNull($player->fresh()->left_at);
+
+        $this->post(route('players.bulkUpdate'), [...$payload, 'value' => $registered])->assertSessionHasNoErrors();
+        $row = $player->registrations()->firstOrFail();
+        $this->assertSame($registered, $row->status_id);
+        $this->assertNull($row->left_at);
+        $this->assertNull($player->fresh()->left_at);
     }
 }

@@ -66,6 +66,25 @@ class BranchRegistration extends Pivot
         });
     }
 
+    /** Not left: no status at all, or any status but the one coded `left`. Nothing extra when that status is missing. */
+    public function scopeActive(Builder $query): void
+    {
+        static::constrainActive($query, $query->getModel()->qualifyColumn('status_id'));
+    }
+
+    /**
+     * The same rule for a query on another model that joins this table, where
+     * the status column must be named in full (e.g. branch_player.status_id).
+     */
+    public static function constrainActive(mixed $query, string $column): mixed
+    {
+        $left = Player::leftStatusId();
+
+        return $left === null ? $query : $query->where(
+            fn ($w) => $w->whereNull($column)->orWhere($column, '!=', $left)
+        );
+    }
+
     public function scopeNeedsJoinDate(Builder $query): void
     {
         $query->whereNull($query->getModel()->qualifyColumn('join_date'));

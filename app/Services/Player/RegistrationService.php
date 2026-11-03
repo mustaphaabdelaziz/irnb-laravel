@@ -253,6 +253,8 @@ class RegistrationService
 
         DB::transaction(function () use ($player, $registration) {
             $id = $registration->membership_id;
+            // The old-format ID to keep findable: the row's recorded one, or its own ID when that is old-format.
+            $old = $registration->legacy_membership_id ?? (MembershipNumber::isLegacy($id) ? $id : null);
             $branchPositions = Position::where('branch_id', $registration->branch_id)->pluck('id');
             $player->otherPositions()->detach($branchPositions);
             $registration->delete();
@@ -263,10 +265,13 @@ class RegistrationService
                 $next->membership_id = MembershipNumber::isLegacy($id)
                     ? $id
                     : ($next->effectiveYear() ? MembershipNumber::forBranch($next->branch, $next->effectiveYear()) : null);
-                $next->save();
-            } elseif (MembershipNumber::isLegacy($id) && $next->membership_id !== $id) {
-                // The deleted row's old-format ID must stay searchable.
-                $next->legacy_membership_id ??= $id;
+            }
+            // The deleted row's old-format ID must stay searchable. The column holds one value:
+            // a next row that already has one keeps its own.
+            if ($old !== null && $next->membership_id !== $old) {
+                $next->legacy_membership_id ??= $old;
+            }
+            if ($next->isDirty()) {
                 $next->save();
             }
 

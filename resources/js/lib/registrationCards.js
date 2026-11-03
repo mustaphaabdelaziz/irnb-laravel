@@ -29,8 +29,17 @@ export function cardFromRegistration(registration, otherPositions = [], isFirst 
     };
 }
 
-/** A first card carries over what a player with no registration already holds. */
-export function newCard(branchId, player = {}, isFirst = false, defaultStatusId = '') {
+const hasNoBranch = (position) => position.branch_id === null || position.branch_id === undefined;
+const fitsBranch = (position, branchId) => hasNoBranch(position) || Number(position.branch_id) === Number(branchId);
+
+/**
+ * A first card carries over what a player with no registration already holds:
+ * the form sends every key, so the server's "take it from the player" path never runs.
+ */
+export function newCard(branchId, player = {}, isFirst = false, defaultStatusId = '', positions = []) {
+    const mainPosition = isFirst && player.position_id
+        ? positions.find((position) => Number(position.id) === Number(player.position_id))
+        : null;
     return {
         branch_id: branchId,
         membership_id: '',
@@ -39,17 +48,42 @@ export function newCard(branchId, player = {}, isFirst = false, defaultStatusId 
         is_new: true,
         join_date: '',
         category_id: isFirst ? (player.category_id || '') : '',
-        position_id: isFirst ? (player.position_id || '') : '',
-        other_position_ids: [],
+        position_id: mainPosition && fitsBranch(mainPosition, branchId) ? mainPosition.id : '',
+        other_position_ids: isFirst
+            ? (player.other_positions || []).filter((position) => fitsBranch(position, branchId)).map((position) => position.id)
+            : [],
         licence_number: isFirst ? (player.licence_number || '') : '',
         status_id: isFirst ? (player.status_id || defaultStatusId) : defaultStatusId,
-        left_at: '',
+        left_at: isFirst ? (player.left_at || '') : '',
         sporting_status_id: '',
     };
 }
 
-/** What reaches the server. '' keeps an emptied list present: forceFormData drops empty arrays. */
-export function cardPayload(card) {
+/**
+ * The cards left after one is deleted. Only the first card lists positions with
+ * no branch, so deleting it hands them to the card that becomes first.
+ */
+export function withoutCard(cards, id, positions = []) {
+    const index = cards.findIndex((card) => card.id === id);
+    const remaining = cards.filter((card) => card.id !== id);
+    if (index !== 0 || !remaining.length) return remaining;
+
+    const noBranchIds = new Set(positions.filter(hasNoBranch).map((position) => Number(position.id)));
+    const carried = (cards[0].other_position_ids || []).filter((positionId) => noBranchIds.has(Number(positionId)));
+    const existing = remaining[0].other_position_ids || [];
+    const extra = carried.filter((positionId) => !existing.some((value) => Number(value) === Number(positionId)));
+    if (!extra.length) return remaining;
+
+    return [{ ...remaining[0], other_position_ids: [...existing, ...extra] }, ...remaining.slice(1)];
+}
+
+/**
+ * What reaches the server. '' keeps an emptied list present: forceFormData drops empty arrays.
+ * Left-ness comes from the status alone, so a card never holds a flag of its own.
+ */
+export function cardPayload(card, leftStatusId = null) {
+    const isLeft = leftStatusId !== null && leftStatusId !== undefined
+        && Number(card.status_id) === Number(leftStatusId);
     return {
         branch_id: card.branch_id,
         join_date: card.join_date || null,
@@ -58,7 +92,7 @@ export function cardPayload(card) {
         other_position_ids: card.other_position_ids?.length ? card.other_position_ids : '',
         licence_number: card.licence_number || null,
         status_id: card.status_id || null,
-        left_at: card.is_left ? (card.left_at || null) : null,
+        left_at: isLeft ?(card.left_at || null) : null,
         sporting_status_id: card.sporting_status_id || null,
     };
 }

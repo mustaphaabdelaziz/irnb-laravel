@@ -23,6 +23,13 @@ const props = defineProps({
 defineEmits(['remove', 'delete']);
 
 const fieldError = (field) => props.errors[`registrations.${props.index}.${field}`];
+// The list's own error and any item's error (registrations.N.other_position_ids.M).
+const otherPositionsError = computed(() => {
+    const prefix = `registrations.${props.index}.other_position_ids`;
+    return Object.keys(props.errors)
+        .filter((key) => key === prefix || key.startsWith(`${prefix}.`))
+        .map((key) => props.errors[key])[0];
+});
 const selectClass = 'mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500';
 
 // A stored position from another branch stays selectable until it is changed.
@@ -49,10 +56,11 @@ watch(() => props.card.position_id, (id) => { removeOther(id); });
 
 // The built-in "left" status is found by its code, never its editable name.
 const isLeft = computed(() => props.playerStatuses.find((s) => Number(s.id) === Number(props.card.status_id))?.code === 'left');
+// Stamp today only when the status is changed to "left" in this form: a saved
+// left registration may have no recorded day, and opening it must not invent one.
 watch(isLeft, (left) => {
-    props.card.is_left = left;
     if (left && !props.card.left_at) props.card.left_at = localToday();
-}, { immediate: true });
+});
 
 // Empty date on a saved row: the correction queue's case, so it may stay empty here.
 const dateRequired = computed(() => props.card.is_new || props.card.had_date);
@@ -69,6 +77,8 @@ const dateRequired = computed(() => props.card.is_new || props.card.had_date);
             <IconButton v-if="card.is_new" icon="trash" :label="t('remove')" variant="danger" plain size="sm" @click="$emit('remove')" />
             <IconButton v-else icon="trash" :label="t('registration_delete')" variant="danger" plain size="sm" @click="$emit('delete')" />
         </header>
+
+        <InputError :message="fieldError('branch_id')" class="mb-3" />
 
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div>
@@ -104,7 +114,7 @@ const dateRequired = computed(() => props.card.is_new || props.card.had_date);
                     </span>
                 </div>
                 <SearchableSelect v-if="otherOptions.length" :model-value="''" :options="otherOptions" :placeholder="t('add_position')" class="mt-1" @update:modelValue="addOther" />
-                <InputError :message="fieldError('other_position_ids')" class="mt-1" />
+                <InputError :message="otherPositionsError" class="mt-1" />
             </div>
             <div>
                 <InputLabel :value="t('licence_number')" />

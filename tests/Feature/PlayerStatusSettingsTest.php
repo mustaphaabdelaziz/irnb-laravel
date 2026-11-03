@@ -57,6 +57,21 @@ class PlayerStatusSettingsTest extends TestCase
     }
 
     #[Test]
+    public function the_left_status_cannot_be_deactivated(): void
+    {
+        // The player form lists active statuses only; hiding this one would hide real leave dates.
+        $left = PlayerStatus::where('code', 'left')->first();
+        $this->assertNotNull($left);
+
+        $this->actingAs($this->admin())->put(route('player-statuses.update', $left), [
+            'name' => $left->name,
+            'is_active' => false,
+        ])->assertRedirect();
+
+        $this->assertTrue($left->fresh()->is_active);
+    }
+
+    #[Test]
     public function an_unused_status_can_be_deleted(): void
     {
         $status = PlayerStatus::where('name', 'معاقب')->first();

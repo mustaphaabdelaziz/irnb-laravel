@@ -17,7 +17,7 @@ import { phoneDigits } from '@/lib/phone';
 import { positionLabeller } from '@/lib/positionLabels';
 import { useCan } from '@/Composables/useCan';
 import { localToday } from '@/lib/localDate';
-import { cardFromRegistration, cardPayload, newCard } from '@/lib/registrationCards';
+import { cardFromRegistration, cardPayload, newCard, withoutCard } from '@/lib/registrationCards';
 
 const { t } = useI18n();
 const { can } = useCan();
@@ -87,13 +87,20 @@ function addBranch() {
     if (!branchPick.value) return;
     const id = Number(branchPick.value);
     if (!form.registrations.some((card) => card.branch_id === id)) {
-        form.registrations.push(newCard(id, p, form.registrations.length === 0 && isEdit, defaultStatusId.value));
+        form.registrations.push(newCard(id, p, form.registrations.length === 0 && isEdit, defaultStatusId.value, props.positions));
     }
     branchPick.value = '';
 }
+// Registration errors are keyed by card position, so they would land on the wrong card after a removal.
+function clearRegistrationErrors() {
+    form.clearErrors(...Object.keys(form.errors).filter((key) => key === 'registrations' || key.startsWith('registrations.')));
+}
 function removeCard(index) {
     form.registrations.splice(index, 1);
+    clearRegistrationErrors();
 }
+// The built-in "left" status is found by its code; the card's own state never decides.
+const leftStatusId = computed(() => props.playerStatuses.find((s) => s.code === 'left')?.id);
 const usesCards = computed(() => props.branches.length > 0);
 
 // Deleting is for a registration added by mistake; a real departure is a status.
@@ -104,7 +111,10 @@ function deleteCard() {
     router.delete(route('players.registrations.destroy', [p.id, card.id]), {
         preserveScroll: true,
         onSuccess: (page) => {
-            if (!page.props.flash?.error) form.registrations = form.registrations.filter((c) => c.id !== card.id);
+            if (!page.props.flash?.error) {
+                form.registrations = withoutCard(form.registrations, card.id, props.positions);
+                clearRegistrationErrors();
+            }
         },
     });
 }
@@ -244,7 +254,7 @@ function submit() {
         member_job_id: data.member_job_id || null,
         // A club with no branches keeps the flat fields; otherwise each card holds them.
         ...(usesCards.value
-            ? { registrations: data.registrations.map(cardPayload) }
+            ? { registrations: data.registrations.map((card) => cardPayload(card, leftStatusId.value)) }
             : {
                 licence_number: data.licence_number || null,
                 status_id: data.status_id || null,

@@ -27,7 +27,7 @@ class PlayerFormDataTest extends TestCase
         $this->foot = Branch::create(['name' => 'Football', 'code' => 'FB']);
         SportingStatus::create(['name' => 'Competing']);
         SportingStatus::create(['name' => 'Hidden', 'is_active' => false]);
-        $this->player = Player::create(['firstname' => 'Ali', 'membership_id' => '201700001', 'join_year' => 2017]);
+        $this->player = Player::create(['firstname' => 'Ali', 'membership_id' => '201700099', 'join_year' => 2017]);
         $this->player->registrations()->create([
             'branch_id' => $this->foot->id, 'membership_id' => 'FB-2017-00001', 'category_id' => null,
             'join_date' => '2017-03-12', 'legacy_join_year' => 2017, 'legacy_membership_id' => '201700001',
@@ -62,6 +62,20 @@ class PlayerFormDataTest extends TestCase
         $this->assertSame(1, Player::query()->search('FB-2017')->count());
         $this->assertSame(1, Player::query()->search('201700001')->count());
         $this->assertSame(0, Player::query()->search('SW-2017')->count());
+    }
+
+    #[Test]
+    public function an_old_id_kept_in_the_legacy_column_survives_removing_its_row(): void
+    {
+        $swim = Branch::create(['name' => 'Swimming', 'code' => 'SW']);
+        $this->player->registrations()->create([
+            'branch_id' => $swim->id, 'membership_id' => 'SW-2020-00001', 'join_date' => '2020-01-10',
+        ]);
+        $mistake = $this->player->registrations()->where('branch_id', $this->foot->id)->first();
+
+        $this->assertNull(app(RegistrationService::class)->removeMistake($mistake));
+
+        $this->assertSame(1, Player::query()->search('201700001')->count());
     }
 
     #[Test]

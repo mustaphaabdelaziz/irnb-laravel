@@ -29,7 +29,12 @@ class PlayerStatusController extends Controller
 
     public function update(Request $request, PlayerStatus $playerStatus): RedirectResponse
     {
-        $playerStatus->update($this->validated($request, $playerStatus));
+        $data = $this->validated($request, $playerStatus);
+        // The form lists active statuses only; a hidden "left" status would hide real leave dates.
+        if ($playerStatus->code === 'left') {
+            $data['is_active'] = true;
+        }
+        $playerStatus->update($data);
 
         return back()->with('success', 'flash.player_status_updated');
     }

@@ -446,7 +446,7 @@ function formatPlainDate(val) {
                             <span v-else>—</span>
                         </PlayerFieldRow>
                     </dl>
-                    <RegistrationsSection :registrations="player.registrations" :format-date="formatPlainDate" />
+                    <RegistrationsSection :registrations="player.registrations" :other-positions="player.other_positions || []" :format-date="formatPlainDate" />
 
                     <div v-if="player.emergency_contacts?.length || player.health_medical_conditions" class="mt-5 border-t border-slate-100 pt-4 dark:border-slate-800">
                         <template v-if="player.emergency_contacts?.length">

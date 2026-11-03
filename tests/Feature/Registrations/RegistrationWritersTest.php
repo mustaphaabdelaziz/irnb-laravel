@@ -160,7 +160,7 @@ class RegistrationWritersTest extends TestCase
     public function branch_members_keep_their_data_when_removed_and_new_ones_need_a_date(): void
     {
         $stays = $this->member('201700002');
-        $newcomer = Player::create(['firstname' => 'B', 'membership_id' => '201700003', 'join_year' => 2017]);
+        $newcomer = Player::create(['firstname' => 'B', 'membership_id' => '201700003', 'join_year' => null]);
 
         $this->post(route('branches.players.sync', $this->foot), ['player_ids' => [$stays->id, $newcomer->id]])
             ->assertSessionHasErrors('join_date');

@@ -175,7 +175,7 @@ return [
     'branch_code_locked' => "Ce code ne peut plus changer : des numéros d'adhérent l'utilisent.",
 
     'join_date_before_birth' => "La date d'adhésion précède la date de naissance.",
-    'position_other_branch' => 'Ce poste appartient à une autre branche.',
+    'position_other_branch' => 'Ce poste appartient à une autre section.',
 
     'join_date_needed' => 'La date ou l\'année d\'adhésion est requise.',
     'branch_required' => 'Veuillez choisir au moins une section.',

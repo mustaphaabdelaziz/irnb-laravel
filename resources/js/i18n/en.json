@@ -1632,6 +1632,7 @@
     "flash.branch_has_registrations": "Can't delete: this branch holds registrations.",
     "flash.branch_has_sessions": "This branch has training sessions or a weekly schedule and cannot be deleted.",
     "flash.branch_has_teams": "This branch has teams and cannot be deleted.",
+    "flash.branch_is_main": "Can't delete: this is the main branch. Make another branch the main one first.",
     "flash.branch_main_set": "Main branch set.",
     "flash.branch_members_updated": "Branch members updated.",
     "flash.branch_updated": "Branch updated successfully.",

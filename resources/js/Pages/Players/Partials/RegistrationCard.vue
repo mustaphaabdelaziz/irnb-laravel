@@ -7,8 +7,10 @@ import IconButton from '@/Components/IconButton.vue';
 import { computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { localToday } from '@/lib/localDate';
+import { useCan } from '@/Composables/useCan';
 
 const { t } = useI18n();
+const { can } = useCan();
 
 const props = defineProps({
     card: { type: Object, required: true },
@@ -75,7 +77,7 @@ const dateRequired = computed(() => props.card.is_new || props.card.had_date);
                 <span v-if="card.membership_id" class="font-mono text-xs text-slate-500 dark:text-slate-400" dir="ltr">{{ card.membership_id }}</span>
             </div>
             <IconButton v-if="card.is_new" icon="trash" :label="t('remove')" variant="danger" plain size="sm" @click="$emit('remove')" />
-            <IconButton v-else icon="trash" :label="t('registration_delete')" variant="danger" plain size="sm" @click="$emit('delete')" />
+            <IconButton v-else-if="can('players', 'delete')" icon="trash" :label="t('registration_delete')" variant="danger" plain size="sm" @click="$emit('delete')" />
         </header>
 
         <InputError :message="fieldError('branch_id')" class="mb-3" />

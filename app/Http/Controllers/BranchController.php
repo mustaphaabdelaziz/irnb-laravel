@@ -59,22 +59,16 @@ class BranchController extends Controller
             'join_date' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today', 'after:1900-01-01'],
         ]);
 
-        $known = $branch->registrations()->pluck('player_id')->map(fn ($id) => (int) $id)->all();
         $active = $branch->registrations()->active()->pluck('player_id')->map(fn ($id) => (int) $id)->all();
         $wanted = array_map('intval', $validated['player_ids']);
+        $joining = Player::whereIn('id', array_diff($wanted, $active))->get();
 
-        // Only a player with no row here at all is new; a returning member keeps the old date.
-        if (array_diff($wanted, $known) !== [] && empty($validated['join_date'])) {
-            throw ValidationException::withMessages([
-                'join_date' => __('validation.required', ['attribute' => ValidationAttributes::for(app()->getLocale())['join_date']]),
-            ]);
-        }
+        // The date is for a genuinely new registration only: a returning member keeps
+        // theirs, and a first registration of a player who holds a year keeps that year.
+        $registrations->assertSharedDate($joining->map(fn (Player $p) => [$p, $branch->id]), $validated['join_date'] ?? null);
 
-        DB::transaction(function () use ($branch, $registrations, $validated, $active, $wanted) {
-            Player::whereIn('id', array_diff($wanted, $active))->get()->each(fn (Player $player) => $registrations->register($player, [
-                'branch_id' => $branch->id,
-                'join_date' => $validated['join_date'] ?? null,
-            ]));
+        DB::transaction(function () use ($branch, $registrations, $validated, $active, $wanted, $joining) {
+            $joining->each(fn (Player $player) => $registrations->registerWithSharedDate($player, $branch->id, $validated['join_date'] ?? null));
             Player::whereIn('id', array_diff($active, $wanted))->get()
                 ->each(fn (Player $player) => $registrations->leave($player, [$branch->id]));
         });
@@ -127,6 +121,10 @@ class BranchController extends Controller
 
     public function destroy(Branch $branch, FileStorageService $files): RedirectResponse
     {
+        // The main branch is reassigned first; the only branch left may still go.
+        if (Branch::mainId() === $branch->id && Branch::where('id', '!=', $branch->id)->exists()) {
+            return back()->with('error', 'flash.branch_is_main');
+        }
         if (Team::where('branch_id', $branch->id)->exists()) {
             return back()->with('error', 'flash.branch_has_teams');
         }

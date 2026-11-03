@@ -13,6 +13,7 @@ use App\Models\WebsiteConfig;
 use App\Services\Activity\ActivityAction;
 use App\Services\Player\RegistrationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -274,17 +275,6 @@ class RegistrationServiceTest extends TestCase
     }
 
     #[Test]
-    public function a_first_registration_drops_a_position_its_branch_does_not_own(): void
-    {
-        $crawl = Position::create(['name' => 'Crawl', 'abbreviation' => 'CR', 'branch_id' => $this->swim->id]);
-        $player = $this->player(['position_id' => $crawl->id]);
-
-        $this->service->register($player, ['branch_id' => $this->foot->id]);
-
-        $this->assertNull($player->registrations()->firstOrFail()->position_id);
-    }
-
-    #[Test]
     public function an_explicit_empty_on_the_card_wins_over_the_players_value(): void
     {
         $category = Category::create(['name' => 'Senior']);
@@ -315,18 +305,104 @@ class RegistrationServiceTest extends TestCase
     }
 
     #[Test]
-    public function rejoining_a_legacy_row_takes_the_date_it_was_missing(): void
+    public function rejoining_a_legacy_row_keeps_it_dateless_with_its_id_and_year(): void
     {
         $player = $this->player();
         $player->branches()->attach($this->foot->id, ['membership_id' => '202200017', 'category_id' => null, 'legacy_join_year' => 2022]);
         $this->service->leave($player, [$this->foot->id], '2026-01-10');
 
-        $this->service->register($player, ['branch_id' => $this->foot->id, 'join_date' => '2022-06-01']);
+        $this->service->register($player, ['branch_id' => $this->foot->id, 'join_date' => '2026-11-01']);
+
+        $row = $player->registrations()->firstOrFail();
+        $this->assertNull($row->join_date);
+        $this->assertSame('202200017', $row->membership_id);
+        $this->assertSame(2022, $row->legacy_join_year);
+        $this->assertNull($row->left_at);
+        $fresh = $player->fresh();
+        $this->assertSame('202200017', $fresh->membership_id);
+        $this->assertSame(2022, (int) $fresh->join_year);
+    }
+
+    #[Test]
+    public function a_date_typed_on_a_left_rows_own_card_still_saves(): void
+    {
+        $player = $this->player();
+        $player->branches()->attach($this->foot->id, ['membership_id' => '202200017', 'category_id' => null, 'legacy_join_year' => 2022]);
+        $this->service->leave($player, [$this->foot->id]);
+
+        $this->service->sync($player, [['branch_id' => $this->foot->id, 'join_date' => '2022-06-01']]);
 
         $row = $player->registrations()->firstOrFail();
         $this->assertSame('2022-06-01', $row->join_date->toDateString());
         $this->assertSame('202200017', $row->membership_id);
-        $this->assertNull($row->left_at);
+        $this->assertFalse(Player::isLeftStatus($row->status_id));
+    }
+
+    #[Test]
+    public function a_first_registration_of_a_player_who_holds_a_year_keeps_year_and_id(): void
+    {
+        $player = $this->player();
+
+        $this->service->registerWithSharedDate($player, $this->foot->id, '2026-11-01');
+
+        $row = $player->registrations()->firstOrFail();
+        $this->assertNull($row->join_date);
+        $this->assertSame(2022, $row->legacy_join_year);
+        $this->assertSame('202200017', $row->membership_id);
+        $this->assertSame(2022, (int) $player->fresh()->join_year);
+    }
+
+    #[Test]
+    public function a_player_with_no_year_takes_the_shared_date(): void
+    {
+        $player = $this->player(['join_year' => null]);
+
+        $this->service->registerWithSharedDate($player, $this->foot->id, '2026-11-01');
+
+        $row = $player->registrations()->firstOrFail();
+        $this->assertSame('2026-11-01', $row->join_date->toDateString());
+        $this->assertSame(2026, (int) $player->fresh()->join_year);
+    }
+
+    #[Test]
+    public function a_first_registration_keeps_a_branchless_position(): void
+    {
+        $wing = Position::create(['name' => 'Wing', 'abbreviation' => 'WG']);
+        $player = $this->player(['position_id' => $wing->id]);
+
+        $this->service->register($player, ['branch_id' => $this->foot->id]);
+
+        $this->assertSame($wing->id, $player->registrations()->firstOrFail()->position_id);
+        $this->assertSame($wing->id, $player->fresh()->position_id);
+        $this->assertSame(0, $player->otherPositions()->count());
+    }
+
+    #[Test]
+    public function a_first_registration_moves_a_position_another_branch_owns_to_other_positions(): void
+    {
+        $crawl = Position::create(['name' => 'Crawl', 'abbreviation' => 'CR', 'branch_id' => $this->swim->id]);
+        $player = $this->player(['position_id' => $crawl->id]);
+
+        $this->service->register($player, ['branch_id' => $this->foot->id]);
+
+        $this->assertNull($player->registrations()->firstOrFail()->position_id);
+        $this->assertNull($player->fresh()->position_id);
+        $this->assertSame([$crawl->id], $player->otherPositions()->pluck('positions.id')->all());
+    }
+
+    #[Test]
+    public function left_at_is_stored_as_a_plain_date(): void
+    {
+        $player = $this->player();
+        $this->service->register($player, ['branch_id' => $this->foot->id]);
+        $this->service->register($player, ['branch_id' => $this->swim->id]);
+        $this->service->leave($player, [$this->foot->id], '2024-02-03');
+
+        $this->assertSame('2024-02-03', DB::table('branch_player')->where('branch_id', $this->foot->id)->value('left_at'));
+
+        $leaver = $this->player(['membership_id' => '202200018', 'status_id' => $this->left()->id, 'left_at' => '2023-05-06']);
+        $this->service->register($leaver, ['branch_id' => $this->foot->id]);
+        $this->assertSame('2023-05-06', DB::table('branch_player')->where('player_id', $leaver->id)->value('left_at'));
     }
 
     #[Test]

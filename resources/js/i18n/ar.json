@@ -1632,6 +1632,7 @@
     "flash.branch_has_registrations": "لا يمكن الحذف: يضم هذا الفرع تسجيلات.",
     "flash.branch_has_sessions": "لهذا الفرع حصص تدريب أو برنامج أسبوعي ولا يمكن حذفه.",
     "flash.branch_has_teams": "لهذا الفرع فرق ولا يمكن حذفه.",
+    "flash.branch_is_main": "لا يمكن الحذف: هذا هو الفرع الرئيسي. عيّن فرعا رئيسيا آخر أولا.",
     "flash.branch_main_set": "تم تعيين الفرع الرئيسي.",
     "flash.branch_members_updated": "تم تحديث أعضاء الفرع.",
     "flash.branch_updated": "تم تحديث الفرع بنجاح.",

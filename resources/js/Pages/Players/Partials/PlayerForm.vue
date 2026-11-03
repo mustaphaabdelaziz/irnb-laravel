@@ -111,6 +111,8 @@ function deleteCard() {
     deletingCard.value = null;
     router.delete(route('players.registrations.destroy', [p.id, card.id]), {
         preserveScroll: true,
+        // Keep what was typed on the form, also when the delete is refused.
+        preserveState: true,
         onSuccess: (page) => {
             if (!page.props.flash?.error) {
                 form.registrations = withoutCard(form.registrations, card.id, props.positions);

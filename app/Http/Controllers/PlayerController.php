@@ -369,7 +369,7 @@ class PlayerController extends Controller
         return Inertia::render('Players/Create', [
             'categories' => Category::orderBy('name')->get(),
             'positions' => Position::with('branch')->orderBy('name')->get(),
-            'playerStatuses' => PlayerStatus::where('is_active', true)->orderBy('sort_order')->get(),
+            'playerStatuses' => PlayerStatus::where('is_active', true)->orWhere('code', 'left')->orderBy('sort_order')->get(),
             'sportingStatuses' => SportingStatus::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'jobs' => MemberJob::orderBy('name')->get(),
             'branches' => Branch::orderBy('name')->get(),
@@ -446,7 +446,7 @@ class PlayerController extends Controller
             'player' => $player,
             'categories' => Category::orderBy('name')->get(),
             'positions' => Position::with('branch')->orderBy('name')->get(),
-            'playerStatuses' => PlayerStatus::where('is_active', true)->orderBy('sort_order')->get(),
+            'playerStatuses' => PlayerStatus::where('is_active', true)->orWhere('code', 'left')->orderBy('sort_order')->get(),
             'sportingStatuses' => SportingStatus::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'jobs' => MemberJob::orderBy('name')->get(),
             'branches' => Branch::orderBy('name')->get(),
@@ -626,6 +626,16 @@ class PlayerController extends Controller
             usort($branchIds, fn (int $a, int $b) => ($b === $mainId) <=> ($a === $mainId));
             $mode = $data['mode'] ?? 'replace';
 
+            // The shared date is for a genuinely new registration only. Check it
+            // before anything is written.
+            if ($mode !== 'detach') {
+                $registrations->assertSharedDate($players->flatMap(function (Player $player) use ($branchIds) {
+                    $active = $player->registrations()->active()->pluck('branch_id')->map(fn ($id) => (int) $id)->all();
+
+                    return array_map(fn (int $branchId) => [$player, $branchId], array_values(array_diff($branchIds, $active)));
+                })->all(), $data['join_date'] ?? null);
+            }
+
             // Branches are many-to-many, so "set" is ambiguous: replace the
             // whole set, add to it, or remove from it. Removing marks as left.
             $players->each(function (Player $player) use ($branchIds, $mode, $data, $registrations) {
@@ -638,7 +648,7 @@ class PlayerController extends Controller
                     return;
                 }
                 foreach (array_diff($branchIds, $active) as $branchId) {
-                    $registrations->register($player, ['branch_id' => $branchId, 'join_date' => $data['join_date']]);
+                    $registrations->registerWithSharedDate($player, $branchId, $data['join_date'] ?? null);
                 }
                 if ($mode === 'replace') {
                     $registrations->leave($player, array_values(array_diff($active, $branchIds)));

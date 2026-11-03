@@ -83,8 +83,9 @@ function submit() {
                     </div>
 
                     <div v-if="activeField?.needsJoinDate && form.mode !== 'detach'">
-                        <InputLabel :value="t('join_date') + ' *'" />
+                        <InputLabel :value="t('join_date')" />
                         <input v-model="form.join_date" type="date" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-900 shadow-sm focus:border-primary-500 focus:ring-primary-500" />
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('join_date_for_new_members') }}</p>
                         <p v-if="form.errors.join_date" class="mt-1 text-sm text-rose-600 dark:text-rose-400">{{ form.errors.join_date }}</p>
                     </div>
 

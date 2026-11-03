@@ -31,11 +31,9 @@ class BulkUpdatePlayersRequest extends FormRequest
 
             'value' => ['present'],
 
-            // A new registration needs its date; leaving a branch does not.
-            'join_date' => [
-                Rule::requiredIf(fn () => $this->input('field') === 'branches' && $this->input('mode', 'replace') !== 'detach'),
-                'nullable', 'date_format:Y-m-d', 'before_or_equal:today', 'after:1900-01-01',
-            ],
+            // Only a genuinely new registration takes this date, so the controller
+            // requires it when at least one selected player does (RegistrationService::assertSharedDate).
+            'join_date' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today', 'after:1900-01-01'],
 
             // A status belongs to one registration, so the branch must be named.
             'branch_id' => [Rule::requiredIf(fn () => $this->input('field') === 'status_id' && Branch::exists()), 'nullable', 'integer', 'exists:branches,id'],

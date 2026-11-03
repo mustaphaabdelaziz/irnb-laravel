@@ -43,8 +43,9 @@ Figures are from the dev database, which holds the same 217 players as the resto
 | Sporting status | New separate optional list. Today's 7 statuses stay as membership status |
 | Reminders | In-app only, dismissable once a year |
 | Documents | Tracked separately per registration |
-| First branch for a player with none | Anything the card leaves empty comes from the player; position only if that branch owns it. Decided during Release 1 |
+| First branch for a player with none | Anything the card leaves empty comes from the player; the registration takes the position if that branch owns it or no branch does, and a position another branch owns moves to the other positions so nothing is lost. The year the player holds is kept as legacy_join_year. Decided during Release 1 |
 | Rejoining a branch | Reopens the same row and keeps the original join date and ID; status and leave date clear. Decided during Release 1 |
+| Date shared by bulk edit or the Members dialog | Applies only to a genuinely new registration. A rejoiner, or the first registration of a player who holds a year, takes none and enters the queue. Required only when someone selected takes it, and not before their birth date. Decided during Release 1 |
 | Bulk status | Bulk edit asks which branch the status applies to; other branches keep their status and leave date. Decided during Release 1 |
 
 ## 3. Target data model

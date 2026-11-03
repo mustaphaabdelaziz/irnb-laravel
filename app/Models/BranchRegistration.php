@@ -48,7 +48,7 @@ class BranchRegistration extends Pivot
                 'position_id' => $ownsPosition ? $player->position_id : null,
                 'licence_number' => $player->licence_number,
                 'status_id' => $player->status_id,
-                'left_at' => $player->left_at,
+                'left_at' => $player->left_at?->toDateString(),
                 'legacy_join_year' => $player->join_year,
             ]);
         });

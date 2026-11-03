@@ -11,7 +11,9 @@ use App\Models\User;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
 use Illuminate\Support\Collection;
+use App\Support\ValidationAttributes;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -39,7 +41,12 @@ class RegistrationService
                 if ($registration === null) {
                     $this->register($player, $card);
                 } elseif ($this->isLeft($registration) && ! array_key_exists('status_id', $card)) {
-                    $this->reopen($registration, $card, $user);
+                    $this->reopen($registration, $card);
+                    // A date typed on this row's own card is the admin's choice for this player.
+                    if (! empty($card['join_date']) && $registration->join_date === null) {
+                        $this->applyDate($registration, (string) $card['join_date'], $user);
+                        $registration->save();
+                    }
                 } else {
                     $this->change($registration, $card, $user);
                 }
@@ -85,7 +92,8 @@ class RegistrationService
 
             $first = ! $player->registrations()->exists();
             $joinDate = empty($card['join_date']) ? null : $card['join_date'];
-            $legacyYear = $card['legacy_join_year'] ?? (($first && $joinDate === null) ? $player->join_year : null);
+            // legacy_join_year always keeps the year the player held before this registration.
+            $legacyYear = $card['legacy_join_year'] ?? ($first ? $player->join_year : null);
             $year = $joinDate !== null ? (int) substr((string) $joinDate, 0, 4) : $legacyYear;
 
             $id = match (true) {
@@ -110,11 +118,84 @@ class RegistrationService
                 ...$details,
             ]);
 
+            // A main position another branch owns is not lost: it waits among the other positions.
+            if ($first && ! array_key_exists('position_id', $card) && $player->position_id !== null) {
+                $owner = Position::whereKey($player->position_id)->value('branch_id');
+                if ($owner !== null && (int) $owner !== (int) $card['branch_id']) {
+                    $player->otherPositions()->syncWithoutDetaching([$player->position_id]);
+                }
+            }
+
             $this->syncOtherPositions($player, [$card]);
             $this->refreshMirror($player);
 
             return $registration;
         });
+    }
+
+    /**
+     * Whether a date shared by many players (bulk edit, the Members dialog) is theirs
+     * to take for this branch: only a genuinely new registration. A player with no row
+     * here who holds a year and has no other registration keeps that year instead.
+     */
+    public function takesSharedDate(Player $player, int $branchId): bool
+    {
+        if ($player->registrations()->where('branch_id', $branchId)->exists()) {
+            return false;
+        }
+
+        return $player->registrations()->exists() || $player->join_year === null;
+    }
+
+    /** Register with the shared date, passed only when the registration takes it. */
+    public function registerWithSharedDate(Player $player, int $branchId, ?string $date): BranchRegistration
+    {
+        $card = ['branch_id' => $branchId];
+        if (! empty($date) && $this->takesSharedDate($player, $branchId)) {
+            $card['join_date'] = $date;
+        }
+
+        return $this->register($player, $card);
+    }
+
+    /**
+     * Check the shared date before anything is written. It is required when at least
+     * one of the registrations takes it, and may not precede a taker's birth date.
+     *
+     * @param  iterable<array{0: Player, 1: int}>  $pairs  player and branch about to be registered
+     *
+     * @throws ValidationException
+     */
+    public function assertSharedDate(iterable $pairs, ?string $date): void
+    {
+        // A player's second new branch in one save follows their first, so it takes the date too.
+        $newFor = [];
+        $takers = collect($pairs)->filter(function (array $pair) use (&$newFor) {
+            [$player, $branchId] = $pair;
+            if ($player->registrations()->where('branch_id', $branchId)->exists()) {
+                return false;
+            }
+            $takes = $this->takesSharedDate($player, $branchId) || ($newFor[$player->id] ?? 0) > 0;
+            $newFor[$player->id] = ($newFor[$player->id] ?? 0) + 1;
+
+            return $takes;
+        });
+        if ($takers->isEmpty()) {
+            return;
+        }
+        if (empty($date)) {
+            throw ValidationException::withMessages([
+                'join_date' => __('validation.required', ['attribute' => ValidationAttributes::for(app()->getLocale())['join_date']]),
+            ]);
+        }
+        $before = $takers->contains(function (array $pair) use ($date) {
+            $birth = $pair[0]->birthdate?->toDateString();
+
+            return $birth !== null && $date < $birth;
+        });
+        if ($before) {
+            throw ValidationException::withMessages(['join_date' => __('validation.join_date_before_birth')]);
+        }
     }
 
     /**
@@ -290,18 +371,34 @@ class RegistrationService
         }
 
         $registrations = $player->registrations()->get();
-        $left = Player::leftStatusId();
-        $allLeft = $left !== null && $registrations->every(fn (BranchRegistration $r) => (int) $r->status_id === $left);
+        [$status, $leftAt] = $this->overallStatus($primary, $registrations);
 
         DB::table('players')->where('id', $player->id)->update([
             'category_id' => $primary->category_id,
             'position_id' => $primary->position_id,
             'licence_number' => $primary->licence_number,
-            'status_id' => $allLeft ? $left : $primary->status_id,
-            'left_at' => $allLeft ? $registrations->max(fn (BranchRegistration $r) => $r->left_at?->toDateString()) : null,
+            'status_id' => $status,
+            'left_at' => $leftAt,
             'join_year' => $registrations->map(fn (BranchRegistration $r) => $r->effectiveYear())->filter()->min() ?? $player->join_year,
             'membership_id' => $primary->membership_id ?? $player->membership_id,
         ]);
+    }
+
+    /**
+     * The status and leave date the player copy holds: left only when left
+     * everywhere (with the latest leave date), else the primary's status and no date.
+     *
+     * @param  Collection<int, BranchRegistration>  $registrations
+     * @return array{0: int|null, 1: string|null}
+     */
+    public function overallStatus(BranchRegistration $primary, Collection $registrations): array
+    {
+        $left = Player::leftStatusId();
+        if ($left !== null && $registrations->every(fn (BranchRegistration $r) => (int) $r->status_id === $left)) {
+            return [$left, $registrations->max(fn (BranchRegistration $r) => $r->left_at?->toDateString())];
+        }
+
+        return [$primary->status_id, null];
     }
 
     private function isLeft(BranchRegistration $registration): bool
@@ -310,12 +407,12 @@ class RegistrationService
     }
 
     /**
-     * A left registration comes back as the same row, with its ID and original
-     * join date. A card's date only fills a date the row never had.
+     * A left registration comes back as the same row, with its ID, year and original
+     * join date, or none if it never had one. A card's date changes nothing here.
      *
      * @param  array<string, mixed>  $card
      */
-    private function reopen(BranchRegistration $registration, array $card, ?User $user = null): void
+    private function reopen(BranchRegistration $registration, array $card): void
     {
         foreach (self::DETAILS as $field) {
             if ($field !== 'left_at' && array_key_exists($field, $card)) {
@@ -323,11 +420,7 @@ class RegistrationService
             }
         }
         $registration->status_id = $card['status_id'] ?? PlayerStatus::where('code', 'registered')->value('id');
-        $registration->left_at = null;
-
-        if (! empty($card['join_date']) && $registration->join_date === null) {
-            $this->applyDate($registration, (string) $card['join_date'], $user);
-        }
+        // The saving hook clears left_at once the status is no longer left.
         $registration->save();
 
         $this->syncOtherPositions($registration->player, [$card]);
@@ -338,9 +431,11 @@ class RegistrationService
     private function fromPlayer(Player $player, string $field, int $branchId): mixed
     {
         return match ($field) {
+            // A branchless position stays; one another branch owns waits among the other positions.
             'position_id' => $player->position_id !== null
-                && (int) Position::whereKey($player->position_id)->value('branch_id') === $branchId
+                && in_array(Position::whereKey($player->position_id)->value('branch_id'), [null, $branchId], false)
                 ? $player->position_id : null,
+            'left_at' => $player->left_at?->toDateString(),
             'sporting_status_id' => null,
             default => $player->{$field},
         };

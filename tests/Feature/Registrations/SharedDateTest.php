@@ -44,10 +44,10 @@ class SharedDateTest extends TestCase
         return $player;
     }
 
-    private function bulk(array $ids, ?string $date, int $branchId): \Illuminate\Testing\TestResponse
+    private function bulk(array $ids, ?string $date, int $branchId, string $mode = 'attach'): \Illuminate\Testing\TestResponse
     {
         return $this->post(route('players.bulkUpdate'), array_filter([
-            'ids' => $ids, 'field' => 'branches', 'mode' => 'attach', 'value' => [$branchId], 'join_date' => $date,
+            'ids' => $ids, 'field' => 'branches', 'mode' => $mode, 'value' => [$branchId], 'join_date' => $date,
         ], fn ($v) => $v !== null));
     }
 
@@ -193,6 +193,73 @@ class SharedDateTest extends TestCase
         $this->bulk([$holder->id], '2001-01-01', $this->foot->id)->assertSessionHasNoErrors();
 
         $this->assertSame(1, $holder->registrations()->count());
+    }
+
+    /** @return array{rejoiner: Player, holder: Player, fresh: Player, second: Player} */
+    private function mix(): array
+    {
+        $holder = Player::create(['firstname' => 'H', 'membership_id' => '201500001', 'join_year' => 2015]);
+        $fresh = Player::create(['firstname' => 'N', 'membership_id' => '202000001', 'join_year' => null]);
+        $second = Player::create(['firstname' => 'S', 'membership_id' => '201600001', 'join_year' => 2016]);
+        $second->branches()->attach($this->swim->id, ['membership_id' => '201600001', 'category_id' => null, 'legacy_join_year' => 2016]);
+
+        return ['rejoiner' => $this->leaver(), 'holder' => $holder, 'fresh' => $fresh, 'second' => $second];
+    }
+
+    private function assertMixSettled(array $m): void
+    {
+        $this->assertUntouched($m['rejoiner']);
+
+        $holder = $m['holder']->registrations()->firstOrFail();
+        $this->assertNull($holder->join_date);
+        $this->assertSame('201500001', $holder->membership_id);
+        $this->assertSame(2015, $holder->legacy_join_year);
+
+        $this->assertSame('2026-11-01', $m['fresh']->registrations()->firstOrFail()->join_date->toDateString());
+
+        $newRow = $m['second']->registrations()->where('branch_id', $this->foot->id)->firstOrFail();
+        $this->assertSame('2026-11-01', $newRow->join_date->toDateString());
+        $this->assertSame('FB-2026-00001', $newRow->membership_id);
+        $kept = $m['second']->registrations()->where('branch_id', $this->swim->id)->firstOrFail();
+        $this->assertSame('201600001', $kept->membership_id);
+    }
+
+    private function mixIds(array $m): array
+    {
+        return array_values(array_map(fn (Player $p) => $p->id, $m));
+    }
+
+    #[Test]
+    public function a_mixed_selection_settles_each_player_by_kind_in_bulk_attach(): void
+    {
+        $m = $this->mix();
+
+        $this->bulk($this->mixIds($m), '2026-11-01', $this->foot->id)->assertSessionHasNoErrors();
+
+        $this->assertMixSettled($m);
+        $this->assertSame(2, $m['second']->registrations()->count());
+    }
+
+    #[Test]
+    public function a_mixed_selection_settles_each_player_by_kind_in_bulk_replace(): void
+    {
+        $m = $this->mix();
+
+        $this->bulk($this->mixIds($m), '2026-11-01', $this->foot->id, 'replace')->assertSessionHasNoErrors();
+
+        $this->assertMixSettled($m);
+        $this->assertTrue(Player::isLeftStatus($m['second']->registrations()->where('branch_id', $this->swim->id)->firstOrFail()->status_id));
+    }
+
+    #[Test]
+    public function a_mixed_selection_settles_each_player_by_kind_in_the_dialog(): void
+    {
+        $m = $this->mix();
+
+        $this->dialog($this->foot, $this->mixIds($m), '2026-11-01')->assertSessionHasNoErrors();
+
+        $this->assertMixSettled($m);
+        $this->assertSame(2, $m['second']->registrations()->count());
     }
 
     #[Test]

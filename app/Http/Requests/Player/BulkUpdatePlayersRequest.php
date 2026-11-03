@@ -55,7 +55,7 @@ class BulkUpdatePlayersRequest extends FormRequest
         $validator->sometimes('value', ['nullable', 'integer', 'exists:player_statuses,id'],
             fn ($input) => $input->field === 'status_id');
 
-        $validator->sometimes('value', ['array'],
+        $validator->sometimes('value', ['array', 'min:1'],
             fn ($input) => $input->field === 'branches');
 
         $validator->sometimes('value.*', ['integer', 'exists:branches,id'],

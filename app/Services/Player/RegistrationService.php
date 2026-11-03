@@ -10,8 +10,8 @@ use App\Models\Position;
 use App\Models\User;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
-use Illuminate\Support\Collection;
 use App\Support\ValidationAttributes;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
@@ -42,11 +42,6 @@ class RegistrationService
                     $this->register($player, $card);
                 } elseif ($this->isLeft($registration) && ! array_key_exists('status_id', $card)) {
                     $this->reopen($registration, $card);
-                    // A date typed on this row's own card is the admin's choice for this player.
-                    if (! empty($card['join_date']) && $registration->join_date === null) {
-                        $this->applyDate($registration, (string) $card['join_date'], $user);
-                        $registration->save();
-                    }
                 } else {
                     $this->change($registration, $card, $user);
                 }
@@ -119,7 +114,7 @@ class RegistrationService
             ]);
 
             // A main position another branch owns is not lost: it waits among the other positions.
-            if ($first && ! array_key_exists('position_id', $card) && $player->position_id !== null) {
+            if ($first && $player->position_id !== null && (int) ($card['position_id'] ?? 0) !== (int) $player->position_id) {
                 $owner = Position::whereKey($player->position_id)->value('branch_id');
                 if ($owner !== null && (int) $owner !== (int) $card['branch_id']) {
                     $player->otherPositions()->syncWithoutDetaching([$player->position_id]);

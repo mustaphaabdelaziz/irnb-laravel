@@ -49,9 +49,10 @@ export function newCard(branchId, player = {}, isFirst = false, defaultStatusId 
         join_date: '',
         category_id: isFirst ? (player.category_id || '') : '',
         position_id: mainPosition && fitsBranch(mainPosition, branchId) ? mainPosition.id : '',
-        other_position_ids: isFirst
-            ? (player.other_positions || []).filter((position) => fitsBranch(position, branchId)).map((position) => position.id)
-            : [],
+        // Positions of this branch show on any card; those with no branch only on the first.
+        other_position_ids: (player.other_positions || [])
+            .filter((position) => (hasNoBranch(position) ? isFirst : fitsBranch(position, branchId)))
+            .map((position) => position.id),
         licence_number: isFirst ? (player.licence_number || '') : '',
         status_id: isFirst ? (player.status_id || defaultStatusId) : defaultStatusId,
         left_at: isFirst ? (player.left_at || '') : '',

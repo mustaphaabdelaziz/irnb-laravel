@@ -51,11 +51,16 @@ test('the first card carries other positions of its branch and those with no bra
     assert.deepEqual(newCard(2, player, true, 4, POSITIONS).other_position_ids, [6, 8]);
 });
 
-test('a later card carries nothing from the player', () => {
+test('a later card carries no main position or leave date from the player', () => {
     const card = newCard(2, { position_id: 6, left_at: '2025-06-30', other_positions: [{ id: 6, branch_id: 2 }] }, false, 4, POSITIONS);
     assert.equal(card.position_id, '');
     assert.equal(card.left_at, '');
-    assert.deepEqual(card.other_position_ids, []);
+});
+
+test('a later card lists the saved other positions of its own branch, not those of others or with none', () => {
+    const player = { other_positions: [{ id: 7, branch_id: 1 }, { id: 6, branch_id: 2 }, { id: 8, branch_id: null }] };
+    assert.deepEqual(newCard(2, player, false, 4, POSITIONS).other_position_ids, [6]);
+    assert.deepEqual(newCard(3, player, false, 4, POSITIONS).other_position_ids, []);
 });
 
 test('deleting the first card hands its no-branch other positions to the new first card', () => {

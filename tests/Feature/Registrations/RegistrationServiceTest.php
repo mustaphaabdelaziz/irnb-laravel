@@ -324,21 +324,6 @@ class RegistrationServiceTest extends TestCase
     }
 
     #[Test]
-    public function a_date_typed_on_a_left_rows_own_card_still_saves(): void
-    {
-        $player = $this->player();
-        $player->branches()->attach($this->foot->id, ['membership_id' => '202200017', 'category_id' => null, 'legacy_join_year' => 2022]);
-        $this->service->leave($player, [$this->foot->id]);
-
-        $this->service->sync($player, [['branch_id' => $this->foot->id, 'join_date' => '2022-06-01']]);
-
-        $row = $player->registrations()->firstOrFail();
-        $this->assertSame('2022-06-01', $row->join_date->toDateString());
-        $this->assertSame('202200017', $row->membership_id);
-        $this->assertFalse(Player::isLeftStatus($row->status_id));
-    }
-
-    #[Test]
     public function a_first_registration_of_a_player_who_holds_a_year_keeps_year_and_id(): void
     {
         $player = $this->player();

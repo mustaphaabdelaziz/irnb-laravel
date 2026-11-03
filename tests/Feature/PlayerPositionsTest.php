@@ -145,11 +145,11 @@ class PlayerPositionsTest extends TestCase
     }
 
     #[Test]
-    public function the_import_prefers_a_position_not_tied_to_a_sport_when_an_abbreviation_is_shared(): void
+    public function the_import_prefers_the_cards_branch_position_when_an_abbreviation_is_shared(): void
     {
         $football = Branch::create(['name' => 'Football']);
-        Position::create(['branch_id' => $football->id, 'abbreviation' => 'GK', 'name' => 'Goalkeeper']);
-        $anySport = Position::create(['branch_id' => null, 'abbreviation' => 'GK', 'name' => 'Keeper']);
+        $footballGk = Position::create(['branch_id' => $football->id, 'abbreviation' => 'GK', 'name' => 'Goalkeeper']);
+        Position::create(['branch_id' => null, 'abbreviation' => 'GK', 'name' => 'Keeper']);
 
         $cells = array_fill(0, 21, '');
         $cells[0] = 'Amine';
@@ -161,7 +161,7 @@ class PlayerPositionsTest extends TestCase
             'file' => UploadedFile::fake()->createWithContent('players.csv', $csv),
         ])->assertRedirect();
 
-        $this->assertSame($anySport->id, Player::query()->firstOrFail()->position_id);
+        $this->assertSame($footballGk->id, Player::query()->firstOrFail()->registrations()->firstOrFail()->position_id);
     }
 
     #[Test]

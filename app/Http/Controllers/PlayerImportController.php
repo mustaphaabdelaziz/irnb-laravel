@@ -151,7 +151,7 @@ class PlayerImportController extends Controller
                     'city' => $data['city'] ?: 'Unknown',
                     'state' => $data['state'] ?: 'Unknown',
                     'category_id' => $categories[mb_strtolower((string) $data['category'])] ?? null,
-                    'position_id' => $this->resolvePosition($positions, $data['position']),
+                    'position_id' => null, // resolved below, once the card's branch is known
                     // Older 19-column files (and anyone who still fills the template's
                     // legacy "state" column) have no "wilaya" cell at all — fall back
                     // to "state" so those rows still resolve a wilaya_id. When both are
@@ -166,13 +166,26 @@ class PlayerImportController extends Controller
                 ];
 
                 $join = $this->joinFields($data['join_year']);
+                if ($join['join_date'] && $attributes['birthdate'] && $join['join_date'] < $attributes['birthdate']) {
+                    throw new RuntimeException(__('validation.join_date_before_birth'));
+                }
+
                 $cards = [];
+                $branchId = $branches->isEmpty() ? null : $this->resolveBranch($branches, $data['branch'] ?? null);
+                $attributes['position_id'] = $this->resolvePosition($positions, $data['position'], $branchId);
+                $others = collect(explode(',', (string) ($data['other_positions'] ?? '')))
+                    ->map(fn ($value) => $this->resolvePosition($positions, trim($value), $branchId))
+                    ->filter()
+                    ->reject(fn ($id) => (int) $id === (int) ($attributes['position_id'] ?? 0))
+                    ->unique()
+                    ->values()
+                    ->all();
 
                 if ($branches->isEmpty()) {
                     $attributes['join_year'] = $join['join_date'] ? (int) substr($join['join_date'], 0, 4) : $join['legacy_join_year'];
                 } else {
                     $cards[] = [
-                        'branch_id' => $this->resolveBranch($branches, $data['branch'] ?? null),
+                        'branch_id' => $branchId,
                         ...$join,
                         'category_id' => $attributes['category_id'] ?? null,
                         'position_id' => $attributes['position_id'] ?? null,
@@ -182,14 +195,6 @@ class PlayerImportController extends Controller
                 }
 
                 $player = $service->handle($attributes, $cards);
-
-                $others = collect(explode(',', (string) ($data['other_positions'] ?? '')))
-                    ->map(fn ($value) => $this->resolvePosition($positions, trim($value)))
-                    ->filter()
-                    ->reject(fn ($id) => (int) $id === (int) ($cards[0]['position_id'] ?? $attributes['position_id'] ?? 0))
-                    ->unique()
-                    ->values()
-                    ->all();
 
                 if ($others !== []) {
                     $player->otherPositions()->sync($others);
@@ -234,13 +239,26 @@ class PlayerImportController extends Controller
     }
 
     /**
-     * The import file has no sport column and imported players start with no
-     * branch, so a shared abbreviation ("GK" in football and handball) goes to
-     * a position tied to no sport, else the oldest (see PositionMatcher).
+     * The import file has no sport column. With branches, a position is read
+     * against the registration's branch, so a shared abbreviation ("GK" in
+     * football and handball) goes to that branch's one. A position tied to
+     * another branch is refused, as the player form refuses it; one tied to no
+     * branch is allowed. With no branches, see PositionMatcher.
+     *
+     * @throws RuntimeException when the only match belongs to another branch
      */
-    private function resolvePosition($positions, ?string $value): ?int
+    private function resolvePosition($positions, ?string $value, ?int $branchId = null): ?int
     {
-        return PositionMatcher::match($positions, $value);
+        $id = PositionMatcher::match($positions, $value, $branchId === null ? [] : [$branchId]);
+
+        if ($id !== null && $branchId !== null) {
+            $branch = $positions->firstWhere('id', $id)->branch_id;
+            if ($branch !== null && (int) $branch !== $branchId) {
+                throw new RuntimeException(__('validation.position_other_branch'));
+            }
+        }
+
+        return $id;
     }
 
     /**
@@ -254,6 +272,10 @@ class PlayerImportController extends Controller
         $cell = trim((string) $cell);
 
         if (preg_match('/^\d{4}$/', $cell)) {
+            if ((int) $cell < 1900 || (int) $cell > now()->year) {
+                throw new RuntimeException(__('validation.join_date_needed'));
+            }
+
             return ['join_date' => null, 'legacy_join_year' => (int) $cell];
         }
 
@@ -280,8 +302,11 @@ class PlayerImportController extends Controller
                 if ($date === false || $date->format('j/n/Y') !== (int) $m[1].'/'.(int) $m[2].'/'.$m[3]) {
                     return null;
                 }
-            } elseif (preg_match('/^\d{4}-\d{1,2}-\d{1,2}/', $cell)) {
-                $date = Carbon::parse($cell);
+            } elseif (preg_match('/^(\d{4})-(\d{1,2})-(\d{1,2})$/', $cell, $m)) {
+                $date = Carbon::createFromFormat('!Y-n-j', (int) $m[1].'-'.(int) $m[2].'-'.(int) $m[3]);
+                if ($date === false || $date->format('Y-n-j') !== (int) $m[1].'-'.(int) $m[2].'-'.(int) $m[3]) {
+                    return null;
+                }
             } else {
                 return null;
             }

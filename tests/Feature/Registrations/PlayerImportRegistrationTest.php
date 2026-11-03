@@ -4,6 +4,7 @@ namespace Tests\Feature\Registrations;
 
 use App\Models\Branch;
 use App\Models\Player;
+use App\Models\Position;
 use App\Models\User;
 use App\Models\WebsiteConfig;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -137,5 +138,94 @@ class PlayerImportRegistrationTest extends TestCase
         $player = Player::firstOrFail();
         $this->assertSame(2020, $player->join_year);
         $this->assertSame(0, $player->registrations()->count());
+    }
+
+    #[Test]
+    public function a_year_outside_the_range_is_a_row_error(): void
+    {
+        Branch::create(['name' => 'Football', 'code' => 'FB']);
+
+        foreach (['2099', '0001', (string) (now()->year + 1)] as $cell) {
+            $this->import([['firstname' => 'Bad', 'lastname' => 'A', 'join_year' => $cell]])
+                ->assertSessionHas('error');
+        }
+        $this->assertSame(0, Player::count());
+
+        $this->import([['firstname' => 'Ok', 'lastname' => 'A', 'join_year' => (string) now()->year]]);
+        $this->assertSame(1, Player::count());
+    }
+
+    #[Test]
+    public function an_overflowing_or_decorated_iso_cell_is_a_row_error(): void
+    {
+        Branch::create(['name' => 'Football', 'code' => 'FB']);
+
+        foreach (['2022-02-30', '2022-09-15 -1 year'] as $cell) {
+            $this->import([['firstname' => 'Bad', 'lastname' => 'A', 'join_year' => $cell]])
+                ->assertSessionHas('error');
+        }
+        $this->assertSame(0, Player::count());
+
+        $this->import([['firstname' => 'Ok', 'lastname' => 'A', 'join_year' => '2022-09-15']]);
+        $this->assertSame('2022-09-15', Player::firstOrFail()->registrations()->firstOrFail()->join_date->toDateString());
+    }
+
+    #[Test]
+    public function a_join_date_before_the_birth_date_is_a_row_error_but_a_year_compares_nothing(): void
+    {
+        Branch::create(['name' => 'Football', 'code' => 'FB']);
+
+        $this->import([['firstname' => 'Early', 'lastname' => 'A', 'birthdate' => '2010-05-01', 'join_year' => '2009-01-01']])
+            ->assertSessionHas('error');
+        $this->assertSame(0, Player::count());
+
+        $this->import([['firstname' => 'Year', 'lastname' => 'A', 'birthdate' => '2010-05-01', 'join_year' => '2009']]);
+        $this->assertSame(1, Player::count());
+    }
+
+    #[Test]
+    public function a_position_from_another_branch_is_a_row_error(): void
+    {
+        $foot = Branch::create(['name' => 'Football', 'code' => 'FB']);
+        $swim = Branch::create(['name' => 'Swimming', 'code' => 'SW']);
+        Position::create(['name' => 'Striker', 'abbreviation' => 'ST', 'branch_id' => $foot->id]);
+        Position::create(['name' => 'Sprinter', 'abbreviation' => 'SP', 'branch_id' => $swim->id]);
+        Position::create(['name' => 'Reserve', 'abbreviation' => 'RS']);
+
+        $row = ['lastname' => 'A', 'join_year' => '2025-03-10', 'branch' => 'SW'];
+
+        $this->import([['firstname' => 'Main', 'position' => 'ST'] + $row])->assertSessionHas('error');
+        $this->import([['firstname' => 'Other', 'other_positions' => 'SP, ST'] + $row])->assertSessionHas('error');
+        $this->assertSame(0, Player::count());
+
+        $this->import([['firstname' => 'Fine', 'position' => 'SP', 'other_positions' => 'RS'] + $row]);
+        $player = Player::where('firstname', 'Fine')->firstOrFail();
+        $this->assertSame('Sprinter', $player->registrations()->firstOrFail()->position->name);
+        $this->assertSame(['Reserve'], $player->otherPositions()->pluck('name')->all());
+    }
+
+    #[Test]
+    public function a_shared_abbreviation_resolves_to_the_cards_branch(): void
+    {
+        $foot = Branch::create(['name' => 'Football', 'code' => 'FB']);
+        $hand = Branch::create(['name' => 'Handball', 'code' => 'HB']);
+        Position::create(['name' => 'Goalkeeper', 'abbreviation' => 'GK', 'branch_id' => $foot->id]);
+        $handGk = Position::create(['name' => 'Goalkeeper', 'abbreviation' => 'GK', 'branch_id' => $hand->id]);
+
+        $this->import([['firstname' => 'Keeper', 'lastname' => 'A', 'join_year' => '2025-03-10', 'branch' => 'HB', 'position' => 'GK']]);
+
+        $this->assertSame($handGk->id, Player::firstOrFail()->registrations()->firstOrFail()->position_id);
+    }
+
+    #[Test]
+    public function an_empty_branch_cell_is_the_main_branch(): void
+    {
+        Branch::create(['name' => 'Football', 'code' => 'FB']);
+        $swim = Branch::create(['name' => 'Swimming', 'code' => 'SW']);
+        WebsiteConfig::singleton()->update(['main_branch_id' => $swim->id]);
+
+        $this->import([['firstname' => 'Main', 'lastname' => 'A', 'join_year' => '2025-03-10', 'branch' => '']]);
+
+        $this->assertSame($swim->id, Player::firstOrFail()->registrations()->firstOrFail()->branch_id);
     }
 }

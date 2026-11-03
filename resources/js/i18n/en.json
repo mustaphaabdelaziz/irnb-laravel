@@ -132,7 +132,6 @@
     "activity.action.meeting_deleted": "Meetings deleted",
     "activity.action.meeting_updated": "Meetings edited",
     "activity.action.membership_id_changed": "Membership IDs changed",
-    "activity.action.membership_ids_converted": "Membership IDs converted",
     "activity.action.password_changed": "Own password changed",
     "activity.action.payment_edited": "Payments edited",
     "activity.action.payment_recorded": "Payments recorded",

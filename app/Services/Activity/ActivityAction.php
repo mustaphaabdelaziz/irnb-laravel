@@ -19,8 +19,6 @@ class ActivityAction
 
     const MEMBERSHIP_ID_CHANGED = 'membership_id_changed';
 
-    const MEMBERSHIP_IDS_CONVERTED = 'membership_ids_converted';
-
     const JOB_CREATED = 'job_created';
 
     const ACADEMIC_RECORD_ADDED = 'academic_record_added';
@@ -275,7 +273,6 @@ class ActivityAction
         self::PLAYER_IMPORTED,
         self::PLAYER_ARCHIVED,
         self::MEMBERSHIP_ID_CHANGED,
-        self::MEMBERSHIP_IDS_CONVERTED,
         self::JOB_CREATED,
         self::ACADEMIC_RECORD_ADDED,
         self::TRANSACTION_RECORDED,
@@ -398,7 +395,6 @@ class ActivityAction
             self::PLAYER_IMPORTED,
             self::PLAYER_ARCHIVED,
             self::MEMBERSHIP_ID_CHANGED,
-            self::MEMBERSHIP_IDS_CONVERTED,
             self::JOB_CREATED,
             self::ACADEMIC_RECORD_ADDED,
             self::PLAYER_UPDATED,

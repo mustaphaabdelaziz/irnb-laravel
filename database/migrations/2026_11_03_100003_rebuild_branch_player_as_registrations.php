@@ -28,7 +28,7 @@ return new class extends Migration
         if (! Schema::hasColumn('branch_player', 'id')) {
             Schema::dropIfExists('branch_player_new');
             $this->create('branch_player_new');
-            DB::statement('INSERT INTO branch_player_new (branch_id, player_id) SELECT branch_id, player_id FROM branch_player');
+            DB::statement('INSERT INTO branch_player_new (branch_id, player_id) SELECT branch_id, player_id FROM branch_player ORDER BY player_id, branch_id');
             Schema::drop('branch_player');
             Schema::rename('branch_player_new', 'branch_player');
         }
@@ -90,16 +90,16 @@ return new class extends Migration
                 foreach ($players as $player) {
                     $rows = $links[$player->id];
 
-                    // Already filled by an earlier run: never overwrite later edits.
-                    if ($rows->contains(fn ($row) => $row->membership_id !== null || $row->legacy_join_year !== null)) {
-                        continue;
-                    }
-
                     $primary = $rows->firstWhere('branch_id', $main) ?? $rows->first();
                     // A position no registration's branch owns stays on the primary: nothing is lost.
                     $owner = $rows->firstWhere('branch_id', $positionBranch[$player->position_id] ?? null) ?? $primary;
 
                     foreach ($rows as $row) {
+                        // Already filled by an earlier run: never overwrite later edits.
+                        if ($row->membership_id !== null || $row->legacy_join_year !== null) {
+                            continue;
+                        }
+
                         DB::table('branch_player')->where('id', $row->id)->update([
                             'membership_id' => $row->id === $primary->id ? $player->membership_id : null,
                             'legacy_join_year' => $player->join_year,

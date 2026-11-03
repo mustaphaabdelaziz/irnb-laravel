@@ -134,4 +134,45 @@ class RegistrationMigrationTest extends TestCase
         $player->branches()->detach($foot->id);
         $this->assertSame(0, BranchRegistration::count());
     }
+
+    #[Test]
+    public function a_run_that_stopped_inside_a_player_finishes_on_the_next_run(): void
+    {
+        $this->oldPivot();
+        $foot = Branch::create(['name' => 'Football']);
+        $swim = Branch::create(['name' => 'Swimming']);
+        $other = $this->player('201700001');
+        DB::table('branch_player')->insert(['branch_id' => $foot->id, 'player_id' => $other->id]);
+        $both = $this->player('201700002', ['licence_number' => 'L1']);
+        DB::table('branch_player')->insert([
+            ['branch_id' => $swim->id, 'player_id' => $both->id],
+            ['branch_id' => $foot->id, 'player_id' => $both->id],
+        ]);
+
+        $this->migrate();
+
+        // Simulate a crash after the Football row was filled and before the Swimming row was.
+        DB::table('branch_player')->where('branch_id', $swim->id)->where('player_id', $both->id)
+            ->update(['legacy_join_year' => null, 'licence_number' => null]);
+        DB::table('branch_player')->where('branch_id', $foot->id)->where('player_id', $both->id)
+            ->update(['licence_number' => 'edited']);
+
+        $this->migrate();
+
+        $byBranch = BranchRegistration::where('player_id', $both->id)->get()->keyBy('branch_id');
+        $this->assertSame(2017, $byBranch[$swim->id]->legacy_join_year);
+        $this->assertSame('L1', $byBranch[$swim->id]->licence_number);
+        $this->assertNull($byBranch[$swim->id]->membership_id);
+        $this->assertSame('edited', $byBranch[$foot->id]->licence_number);
+
+        // Now the Football row loses its id and year: the next run must restore them.
+        DB::table('branch_player')->where('branch_id', $foot->id)->where('player_id', $both->id)
+            ->update(['membership_id' => null, 'legacy_join_year' => null]);
+
+        $this->migrate();
+
+        $byBranch = BranchRegistration::where('player_id', $both->id)->get()->keyBy('branch_id');
+        $this->assertSame('201700002', $byBranch[$foot->id]->membership_id);
+        $this->assertSame(2017, $byBranch[$foot->id]->legacy_join_year);
+    }
 }

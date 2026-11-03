@@ -7,6 +7,7 @@ use App\Models\Player;
 use App\Models\User;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -67,10 +68,16 @@ class MembershipIdConversion
 
         DB::transaction(function () use ($changes, $user) {
             foreach ($changes as $change) {
-                BranchRegistration::whereKey($change['registration_id'])->update([
-                    'membership_id' => $change['to'],
-                    'legacy_membership_id' => $change['from'],
-                ]);
+                // A row with no ID keeps whatever old ID it holds and is never undone.
+                BranchRegistration::whereKey($change['registration_id'])->update(
+                    $change['from'] === null
+                        ? ['membership_id' => $change['to']]
+                        : [
+                            'membership_id' => $change['to'],
+                            'legacy_membership_id' => $change['from'],
+                            'converted_membership_id' => $change['to'],
+                        ]
+                );
             }
             Player::whereIn('id', array_unique(array_column($changes, 'player_id')))->get()
                 ->each(fn (Player $player) => $this->registrations->refreshMirror($player));
@@ -83,16 +90,34 @@ class MembershipIdConversion
         return count($changes);
     }
 
-    /** Rows that held no old ID keep their new one: it is still valid. */
+    /** Rows the conversion wrote and that still hold the ID it gave them. */
+    private function undoable(): Builder
+    {
+        return BranchRegistration::whereNotNull('converted_membership_id')
+            ->whereColumn('membership_id', 'converted_membership_id');
+    }
+
+    public function canUndo(): bool
+    {
+        return $this->undoable()->exists();
+    }
+
+    /**
+     * Restores only rows the conversion wrote (converted_membership_id) whose ID
+     * has not changed since. Rows that held no ID keep their new one: it is still
+     * valid. A row whose year was corrected, or that took a deleted row's old ID,
+     * keeps its current ID and its stored old ID.
+     */
     public function undo(?User $user): int
     {
-        $rows = BranchRegistration::whereNotNull('legacy_membership_id')->get();
+        $rows = $this->undoable()->get();
 
         DB::transaction(function () use ($rows, $user) {
             foreach ($rows as $row) {
                 BranchRegistration::whereKey($row->id)->update([
                     'membership_id' => $row->legacy_membership_id,
                     'legacy_membership_id' => null,
+                    'converted_membership_id' => null,
                 ]);
             }
             Player::whereIn('id', $rows->pluck('player_id')->unique())->get()

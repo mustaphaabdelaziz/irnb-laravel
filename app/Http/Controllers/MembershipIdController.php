@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Branch;
-use App\Models\BranchRegistration;
 use App\Services\Player\MembershipIdConversion;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,7 +21,7 @@ class MembershipIdController extends Controller
             'samples' => array_slice($plan['changes'], 0, 10),
             'yearChanges' => array_values(array_filter($plan['changes'], fn (array $c) => $c['year_changed'])),
             'skipped' => $plan['skipped'],
-            'canUndo' => BranchRegistration::whereNotNull('legacy_membership_id')->exists(),
+            'canUndo' => $conversion->canUndo(),
         ]);
     }
 

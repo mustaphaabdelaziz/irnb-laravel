@@ -8,6 +8,7 @@ use App\Models\Player;
 use App\Models\User;
 use App\Models\WebsiteConfig;
 use App\Services\Player\MembershipIdConversion;
+use App\Services\Player\RegistrationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
@@ -136,6 +137,81 @@ class MembershipIdConversionTest extends TestCase
         $this->assertSame('202200017', $player->registrations()->first()->membership_id);
         $this->assertNull($player->registrations()->first()->legacy_membership_id);
         $this->assertSame('202200017', $player->fresh()->membership_id);
+    }
+
+    #[Test]
+    public function deleting_a_registration_after_conversion_leaves_nothing_to_undo(): void
+    {
+        $player = $this->member('202200001', 2022, [[$this->foot, '202200001'], [$this->swim, null]]);
+        $this->conversion->convert(null);
+        $first = $player->registrations()->where('branch_id', $this->foot->id)->firstOrFail();
+
+        app(RegistrationService::class)->removeMistake($first);
+
+        $this->assertSame(0, $this->conversion->undo(null));
+        $survivor = $player->registrations()->firstOrFail();
+        $this->assertSame('SW-2022-00001', $survivor->membership_id);
+        $this->assertSame('202200001', $survivor->legacy_membership_id);
+    }
+
+    #[Test]
+    public function deleting_without_any_conversion_offers_no_undo_and_keeps_the_id(): void
+    {
+        $player = $this->member('FB-2022-00001', 2022, [[$this->foot, '202200001'], [$this->swim, 'SW-2022-00001']]);
+        app(RegistrationService::class)->removeMistake($player->registrations()->where('branch_id', $this->foot->id)->firstOrFail());
+
+        $survivor = $player->registrations()->firstOrFail();
+        $this->assertSame('202200001', $survivor->legacy_membership_id);
+
+        $this->actingAs($this->userWith(['superadmin']))->get(route('membership-ids.index'))
+            ->assertInertia(fn (Assert $page) => $page->where('canUndo', false));
+        $this->assertSame(0, $this->conversion->undo(null));
+        $this->assertSame('SW-2022-00001', $survivor->fresh()->membership_id);
+    }
+
+    #[Test]
+    public function a_corrected_year_keeps_its_id_on_undo_while_other_rows_are_restored(): void
+    {
+        $corrected = $this->member('202200001', 2022, [[$this->foot, '202200001']]);
+        $other = $this->member('202200002', 2022, [[$this->foot, '202200002']]);
+        $this->conversion->convert(null);
+
+        app(RegistrationService::class)->setJoinDate($corrected->registrations()->firstOrFail(), '2023-05-01');
+
+        $this->assertSame(1, $this->conversion->undo(null));
+        $row = $corrected->registrations()->firstOrFail();
+        $this->assertSame('FB-2023-00001', $row->membership_id);
+        $this->assertSame('202200001', $row->legacy_membership_id);
+        $this->assertSame('202200002', $other->registrations()->firstOrFail()->membership_id);
+    }
+
+    #[Test]
+    public function a_row_with_no_id_keeps_the_old_id_it_already_holds(): void
+    {
+        $player = $this->member('202200001', 2022, [[$this->foot, null]]);
+        $player->registrations()->update(['legacy_membership_id' => '202100009']);
+
+        $this->conversion->convert(null);
+
+        $row = $player->registrations()->firstOrFail();
+        $this->assertSame('FB-2022-00001', $row->membership_id);
+        $this->assertSame('202100009', $row->legacy_membership_id);
+        $this->assertSame(0, $this->conversion->undo(null));
+        $this->assertSame('FB-2022-00001', $row->fresh()->membership_id);
+    }
+
+    #[Test]
+    public function convert_undo_convert_gives_the_same_ids(): void
+    {
+        $player = $this->member('201800012', 2019, [[$this->foot, '201800012']]);
+
+        $this->conversion->convert(null);
+        $first = $player->registrations()->firstOrFail()->membership_id;
+        $this->conversion->undo(null);
+        $this->conversion->convert(null);
+
+        $this->assertSame($first, $player->registrations()->firstOrFail()->membership_id);
+        $this->assertSame($first, $player->fresh()->membership_id);
     }
 
     #[Test]

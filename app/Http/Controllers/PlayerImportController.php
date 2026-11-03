@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Branch;
 use App\Models\Category;
 use App\Models\MemberJob;
 use App\Models\Position;
@@ -18,6 +19,8 @@ use App\Support\WilayaMatcher;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Throwable;
 
@@ -52,13 +55,15 @@ class PlayerImportController extends Controller
         ['key' => 'skill_level', 'label' => 'col.skill_level', 'hint' => 'col.hint.one_to_ten', 'legacy' => ['المستوى (1-10)'], 'example' => '5', 'retired' => true],
         ['key' => 'blood_group', 'label' => 'col.blood_group', 'legacy' => ['فصيلة الدم'], 'example' => 'O+'],
         ['key' => 'medical_conditions', 'label' => 'col.medical_conditions', 'legacy' => ['الحالات الصحية'], 'example' => ''],
-        ['key' => 'join_year', 'label' => 'col.join_year', 'legacy' => ['سنة الانضمام'], 'example' => ''],
+        ['key' => 'join_year', 'label' => 'col.join_date', 'hint' => 'col.hint.date_or_year', 'legacy' => ['سنة الانضمام', 'Join year', "Année d'adhésion"], 'example' => '2024-09-01'],
         // Appended last on purpose: older files simply have no cell here.
         ['key' => 'wilaya', 'label' => 'col.wilaya', 'hint' => 'col.hint.code_or_name', 'legacy' => ['الولاية (الرمز أو الاسم)'], 'example' => '47'],
         ['key' => 'other_positions', 'label' => 'col.other_positions', 'hint' => 'col.hint.comma_separated', 'legacy' => ['مراكز أخرى (مفصولة بفاصلة)'], 'example' => 'WG, LB'],
         // Appended last: older files have no cell here. Legacy keeps the headers
         // from before the column was renamed "federation licence".
         ['key' => 'licence_number', 'label' => 'col.licence_number', 'legacy' => ['رقم الإجازة', 'Licence number', 'Numéro de licence'], 'example' => ''],
+        // Appended last: older files have no cell here. Empty means the main branch.
+        ['key' => 'branch', 'label' => 'col.branch', 'legacy' => ['الفرع'], 'example' => ''],
     ];
 
     /** Stored gender code => UI label key. */
@@ -119,6 +124,7 @@ class PlayerImportController extends Controller
         }
 
         $wilayas = WilayaMatcher::lookup();
+        $branches = Branch::all();
 
         $imported = 0;
         $errors = [];
@@ -157,15 +163,30 @@ class PlayerImportController extends Controller
                     'health_blood_group_rhesus' => $data['blood_group'] ?: null,
                     'licence_number' => trim((string) ($data['licence_number'] ?? '')) ?: null,
                     'health_medical_conditions' => $data['medical_conditions'] ?: null,
-                    'join_year' => is_numeric($data['join_year']) ? (int) $data['join_year'] : now()->year,
                 ];
 
-                $player = $service->handle($attributes);
+                $join = $this->joinFields($data['join_year']);
+                $cards = [];
+
+                if ($branches->isEmpty()) {
+                    $attributes['join_year'] = $join['join_date'] ? (int) substr($join['join_date'], 0, 4) : $join['legacy_join_year'];
+                } else {
+                    $cards[] = [
+                        'branch_id' => $this->resolveBranch($branches, $data['branch'] ?? null),
+                        ...$join,
+                        'category_id' => $attributes['category_id'] ?? null,
+                        'position_id' => $attributes['position_id'] ?? null,
+                        'licence_number' => $attributes['licence_number'] ?? null,
+                    ];
+                    unset($attributes['category_id'], $attributes['position_id'], $attributes['licence_number']);
+                }
+
+                $player = $service->handle($attributes, $cards);
 
                 $others = collect(explode(',', (string) ($data['other_positions'] ?? '')))
                     ->map(fn ($value) => $this->resolvePosition($positions, trim($value)))
                     ->filter()
-                    ->reject(fn ($id) => (int) $id === (int) ($attributes['position_id'] ?? 0))
+                    ->reject(fn ($id) => (int) $id === (int) ($cards[0]['position_id'] ?? $attributes['position_id'] ?? 0))
                     ->unique()
                     ->values()
                     ->all();
@@ -220,6 +241,75 @@ class PlayerImportController extends Controller
     private function resolvePosition($positions, ?string $value): ?int
     {
         return PositionMatcher::match($positions, $value);
+    }
+
+    /**
+     * A full date is exact. A year alone stays a year: it is never turned into
+     * a date, and the registration enters the correction queue.
+     *
+     * @return array{join_date: ?string, legacy_join_year: ?int}
+     */
+    private function joinFields(?string $cell): array
+    {
+        $cell = trim((string) $cell);
+
+        if (preg_match('/^\d{4}$/', $cell)) {
+            return ['join_date' => null, 'legacy_join_year' => (int) $cell];
+        }
+
+        $date = $this->parseJoinDate($cell);
+        if ($date === null) {
+            throw new RuntimeException(__('validation.join_date_needed'));
+        }
+
+        return ['join_date' => $date, 'legacy_join_year' => null];
+    }
+
+    /**
+     * A date the form would accept: 2022-09-15, 15/09/2022 (day first) or an
+     * Excel serial. Words such as "tomorrow", a future day or one before 1900
+     * are refused, as the form refuses them.
+     */
+    private function parseJoinDate(string $cell): ?string
+    {
+        try {
+            if (preg_match('/^\d{5}(\.\d+)?$/', $cell)) {
+                $date = Carbon::create(1899, 12, 30)->addDays((int) $cell);
+            } elseif (preg_match('#^(\d{1,2})[/.](\d{1,2})[/.](\d{4})$#', $cell, $m)) {
+                $date = Carbon::createFromFormat('!d/m/Y', "$m[1]/$m[2]/$m[3]");
+                if ($date === false || $date->format('j/n/Y') !== (int) $m[1].'/'.(int) $m[2].'/'.$m[3]) {
+                    return null;
+                }
+            } elseif (preg_match('/^\d{4}-\d{1,2}-\d{1,2}/', $cell)) {
+                $date = Carbon::parse($cell);
+            } else {
+                return null;
+            }
+        } catch (Throwable) {
+            return null;
+        }
+
+        if ($date->isFuture() || $date->year < 1900) {
+            return null;
+        }
+
+        return $date->format('Y-m-d');
+    }
+
+    /** The cell's branch by any of its names or code; empty means the main branch, else the only one. */
+    private function resolveBranch(Collection $branches, ?string $cell): int
+    {
+        $cell = mb_strtolower(trim((string) $cell));
+
+        if ($cell === '') {
+            $id = Branch::mainId() ?? ($branches->count() === 1 ? $branches->first()->id : null);
+        } else {
+            $id = $branches->first(fn (Branch $b) => in_array($cell, array_map('mb_strtolower', array_filter(
+                [$b->name, $b->name_ar, $b->name_fr, $b->name_en, $b->code]
+            )), true))?->id;
+        }
+
+        return $id ?? throw new RuntimeException(__('validation.branch_required'));
     }
 
     private function parseDate(?string $value): ?string

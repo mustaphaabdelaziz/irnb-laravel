@@ -177,4 +177,7 @@ return [
     'join_date_before_birth' => 'تاريخ الانضمام يسبق تاريخ الميلاد.',
     'position_other_branch' => 'هذا المركز تابع لفرع آخر.',
 
+    'join_date_needed' => 'تاريخ الانضمام أو سنته مطلوب.',
+    'branch_required' => 'يرجى اختيار فرع واحد على الأقل.',
+
 ];

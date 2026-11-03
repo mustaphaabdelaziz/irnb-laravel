@@ -111,6 +111,7 @@ class PlayerWilayaTest extends TestCase
         $row = function (string $wilaya, string $membership) {
             $cells = array_fill(0, 20, '');
             $cells[0] = 'Amine'.$membership;
+            $cells[18] = '2024'; // join year: an empty one is a row error
             $cells[19] = $wilaya;
 
             return implode(',', $cells);
@@ -183,6 +184,7 @@ class PlayerWilayaTest extends TestCase
         $row = function (string $wilaya, string $tag) {
             $cells = array_fill(0, 20, '');
             $cells[0] = 'Amine'.$tag;
+            $cells[18] = '2024'; // join year: an empty one is a row error
             $cells[19] = $wilaya;
 
             return implode(',', $cells);
@@ -343,6 +345,7 @@ class PlayerWilayaTest extends TestCase
         $row = function (string $state, string $tag) {
             $cells = array_fill(0, 19, '');
             $cells[0] = 'Amine'.$tag;
+            $cells[18] = '2024'; // join year: an empty one is a row error
             $cells[10] = $state; // legacy "state" column, no "wilaya" cell at all
 
             return $cells;
@@ -374,6 +377,7 @@ class PlayerWilayaTest extends TestCase
     {
         $cells = array_fill(0, 21, '');
         $cells[0] = 'Amine';
+        $cells[18] = '2024'; // join year: an empty one is a row error
         $cells[10] = 'Ghardaïa'; // legacy state cell -> would resolve to 47
         $cells[19] = '16'; // wilaya cell -> must win, resolves to Alger (16)
 
@@ -412,6 +416,7 @@ class PlayerWilayaTest extends TestCase
         $row = function (string $wilaya, string $tag) {
             $cells = array_fill(0, 21, '');
             $cells[0] = 'Amine'.$tag;
+            $cells[18] = '2024'; // join year: an empty one is a row error
             $cells[19] = $wilaya;
 
             return $cells;

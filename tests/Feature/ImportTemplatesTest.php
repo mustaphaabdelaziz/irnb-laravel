@@ -155,8 +155,8 @@ class ImportTemplatesTest extends TestCase
     #[Test]
     public function the_players_import_reads_an_xlsx_with_columns_in_another_order(): void
     {
-        $headers = [UiLang::get('col.lastname', null, 'ar'), UiLang::get('col.firstname', null, 'ar'), UiLang::get('col.gender', null, 'ar'), UiLang::get('col.player_type', null, 'ar')];
-        $file = $this->xlsx($headers, [['بن علي', 'محمد', UiLang::get('female', null, 'ar'), UiLang::get('student', null, 'fr')]]);
+        $headers = [UiLang::get('col.lastname', null, 'ar'), UiLang::get('col.firstname', null, 'ar'), UiLang::get('col.gender', null, 'ar'), UiLang::get('col.player_type', null, 'ar'), UiLang::get('col.join_date', null, 'ar')];
+        $file = $this->xlsx($headers, [['بن علي', 'محمد', UiLang::get('female', null, 'ar'), UiLang::get('student', null, 'fr'), '2024-09-01']]);
 
         $this->actingAs($this->user('ar'))->post(route('players.import.store'), ['file' => $file]);
 

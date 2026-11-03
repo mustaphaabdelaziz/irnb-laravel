@@ -111,6 +111,7 @@ class JobLocalizationTest extends TestCase
 
         $cells = array_fill(0, 21, '');
         $cells[0] = 'Amine';
+        $cells[18] = '2024'; // join year: an empty one is a row error
         $cells[13] = 'أستاذ'; // the job column
         $csv = "\xEF\xBB\xBF".implode("\n", [implode(',', array_fill(0, 21, 'h')), implode(',', $cells)])."\n";
 

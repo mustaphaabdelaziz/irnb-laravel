@@ -120,6 +120,7 @@ class PlayerPositionsTest extends TestCase
 
         $cells = array_fill(0, 21, '');
         $cells[0] = 'Amine';
+        $cells[18] = '2024'; // join year: an empty one is a row error
         $cells[12] = 'MF';          // main position, existing column
         $cells[20] = 'WG, LB';      // other positions, appended column
 
@@ -152,6 +153,7 @@ class PlayerPositionsTest extends TestCase
 
         $cells = array_fill(0, 21, '');
         $cells[0] = 'Amine';
+        $cells[18] = '2024'; // join year: an empty one is a row error
         $cells[12] = 'GK';
         $csv = "\xEF\xBB\xBF".implode(',', array_fill(0, 21, 'h'))."\n".implode(',', $cells)."\n";
 

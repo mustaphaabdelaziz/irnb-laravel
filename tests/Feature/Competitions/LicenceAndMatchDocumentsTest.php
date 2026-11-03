@@ -100,11 +100,11 @@ class LicenceAndMatchDocumentsTest extends TestCase
     public function a_file_with_the_old_licence_header_still_imports(): void
     {
         $this->category();
-        $header = [UiLang::get('col.firstname', null, 'en'), UiLang::get('col.lastname', null, 'en'), 'Licence number'];
+        $header = [UiLang::get('col.firstname', null, 'en'), UiLang::get('col.lastname', null, 'en'), 'Licence number', UiLang::get('col.join_date', null, 'en')];
 
         $fh = fopen('php://temp', 'r+');
         fputcsv($fh, $header);
-        fputcsv($fh, ['Karim', 'Safir', 'LIC-88']);
+        fputcsv($fh, ['Karim', 'Safir', 'LIC-88', '2024-09-01']);
         rewind($fh);
         $path = tempnam(sys_get_temp_dir(), 'imp').'.csv';
         file_put_contents($path, stream_get_contents($fh));

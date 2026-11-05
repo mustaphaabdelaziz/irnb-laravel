@@ -35,6 +35,8 @@ class MemberJobController extends Controller
             ])->withInput();
         }
 
+        $this->ensureNameIsFree($request);
+
         $job = MemberJob::create($validated);
         ActivityRecorder::record($request->user(), ActivityAction::JOB_CREATED, $job);
 
@@ -53,6 +55,8 @@ class MemberJobController extends Controller
             return response()->json(['duplicate' => $existing], 409);
         }
 
+        $this->ensureNameIsFree($request);
+
         $job = MemberJob::create($validated);
         ActivityRecorder::record($request->user(), ActivityAction::JOB_CREATED, $job);
 
@@ -64,13 +68,15 @@ class MemberJobController extends Controller
 
     public function update(Request $request, MemberJob $job): RedirectResponse
     {
-        $validated = $this->validated($request, $job);
+        $validated = $this->validated($request);
 
         if ($existing = $this->duplicates->exact($validated, $job->id)) {
             return back()->withErrors([
                 'name' => __('This job already exists as ":name".', ['name' => $existing->name]),
             ])->withInput();
         }
+
+        $this->ensureNameIsFree($request, $job);
 
         $job->update($validated);
 
@@ -110,16 +116,26 @@ class MemberJobController extends Controller
     }
 
     /** @return array<string, mixed> */
-    private function validated(Request $request, ?MemberJob $existing = null): array
+    private function validated(Request $request): array
     {
-        $unique = 'unique:member_jobs,name'.($existing ? ','.$existing->id : '');
-
         return $request->validate([
-            'name' => ['required', 'string', 'max:255', $unique],
+            'name' => ['required', 'string', 'max:255'],
             'name_ar' => ['nullable', 'string', 'max:255'],
             'name_fr' => ['nullable', 'string', 'max:255'],
             'name_en' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+        ]);
+    }
+
+    /**
+     * Runs after the duplicate finder, which names the existing job. This only
+     * catches what the finder cannot see: a name of punctuation has an empty
+     * key, and the unique index would answer it with a 500.
+     */
+    private function ensureNameIsFree(Request $request, ?MemberJob $existing = null): void
+    {
+        $request->validate([
+            'name' => ['unique:member_jobs,name'.($existing ? ','.$existing->id : '')],
         ]);
     }
 }

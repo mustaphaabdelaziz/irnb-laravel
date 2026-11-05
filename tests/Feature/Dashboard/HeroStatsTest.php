@@ -182,6 +182,33 @@ class HeroStatsTest extends TestCase
         $this->assertSame(1000.0, $this->tiles()['net_cash_flow']['value']);
     }
 
+    /** SQLite compares dates as text, and '2026-05-01' sorts before '2026-05-01 00:00:00'. */
+    #[Test]
+    public function a_transaction_on_the_first_day_of_the_window_counts(): void
+    {
+        $this->transaction('income', 1000, '2026-05-01');
+        $this->transaction('expense', 300, '2026-05-02');
+
+        $this->assertSame(700.0, $this->tiles()['net_cash_flow']['value']);
+    }
+
+    #[Test]
+    public function a_transaction_on_the_first_day_of_the_previous_window_counts(): void
+    {
+        $this->transaction('income', 1000, '2026-05-02');
+        $this->transaction('income', 500, '2026-04-01');
+
+        $this->assertSame(100.0, $this->tiles()['net_cash_flow']['delta']['percent']);
+    }
+
+    #[Test]
+    public function a_transaction_late_on_the_last_day_of_the_window_counts(): void
+    {
+        $this->transaction('income', 1000, '2026-05-31 23:30:00');
+
+        $this->assertSame(1000.0, $this->tiles()['net_cash_flow']['value']);
+    }
+
     #[Test]
     public function net_cash_flow_compares_against_the_previous_period(): void
     {

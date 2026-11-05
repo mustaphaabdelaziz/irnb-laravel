@@ -118,6 +118,28 @@ class EquipmentInventoryReportTest extends TestCase
     }
 
     #[Test]
+    public function the_condition_breakdown_counts_units_per_condition(): void
+    {
+        $this->lot(50, ['condition' => 'New']);
+        $this->lot(20, ['condition' => 'New']);
+        $this->lot(6, ['condition' => 'Good']);
+
+        $this->assertSame(
+            ['Good' => 6, 'New' => 70],
+            collect($this->props()['conditionBreakdown'])->pluck('count', 'condition')->sortKeys()->all(),
+        );
+    }
+
+    /** MySQL and MariaDB reserve CONDITION: unquoted it fails there and passes on SQLite. */
+    #[Test]
+    public function the_condition_column_is_never_written_bare_in_raw_sql(): void
+    {
+        $source = file_get_contents(app_path('Http/Controllers/EquipmentItemController.php'));
+
+        $this->assertDoesNotMatchRegularExpression('/Raw\(\s*[\'"][^\'"]*\bcondition\b/', $source);
+    }
+
+    #[Test]
     public function asset_value_multiplies_units_by_the_batch_price(): void
     {
         $this->lot(50, ['unit_price' => 120]);

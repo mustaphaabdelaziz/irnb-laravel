@@ -7,8 +7,8 @@ use App\Models\Player;
 use App\Models\Transaction;
 use App\Services\Dashboard\Support\BranchScope;
 use App\Services\Dashboard\Support\DeltaCalculator;
+use App\Services\Dashboard\Support\EffectiveDueDate;
 use App\Services\Dashboard\Support\MonthBucket;
-use App\Support\FiscalPeriod;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
@@ -102,10 +102,7 @@ class HeroStats
         $row = $query->selectRaw(
             "{$function}(CASE WHEN {$dateColumn} BETWEEN ? AND ? THEN {$inner} ELSE {$zero} END) as current_window, "
             ."{$function}(CASE WHEN {$dateColumn} BETWEEN ? AND ? THEN {$inner} ELSE {$zero} END) as previous_window",
-            [
-                $filters->from, $filters->to,
-                $filters->prevFrom, $filters->prevTo,
-            ],
+            [...$filters->window(), ...$filters->previousWindow()],
         )->first();
 
         return [
@@ -213,8 +210,7 @@ class HeroStats
 
     private function effectiveDueDate(): string
     {
-        // Without a due date a subscription is due when its season ends.
-        return "COALESCE(player_subscriptions.due_date, (player_subscriptions.year || '".FiscalPeriod::endSuffix()."'))";
+        return EffectiveDueDate::expression();
     }
 
     /** @return list<float> */

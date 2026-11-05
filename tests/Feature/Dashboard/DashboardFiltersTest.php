@@ -145,6 +145,27 @@ class DashboardFiltersTest extends TestCase
         $this->assertStringContainsString('strftime', MonthBucket::expression('transaction_date'));
     }
 
+    /** The test suite runs on SQLite, so strftime would pass here and break on MySQL. */
+    #[Test]
+    public function each_driver_gets_its_own_month_number(): void
+    {
+        $this->assertSame("CAST(strftime('%m', d) AS INTEGER)", MonthBucket::monthNumberFor('sqlite', 'd'));
+        $this->assertSame('MONTH(d)', MonthBucket::monthNumberFor('mysql', 'd'));
+        $this->assertSame('MONTH(d)', MonthBucket::monthNumberFor('mariadb', 'd'));
+        $this->assertSame('CAST(EXTRACT(MONTH FROM d) AS INTEGER)', MonthBucket::monthNumberFor('pgsql', 'd'));
+    }
+
+    #[Test]
+    public function the_window_starts_as_a_bare_date_and_ends_on_the_last_second(): void
+    {
+        $this->travelTo('2026-05-14 10:00:00');
+
+        $filters = $this->filters();
+
+        $this->assertSame(['2026-05-01', '2026-05-31 23:59:59'], $filters->window());
+        $this->assertSame(['2026-04-01', '2026-04-30 23:59:59'], $filters->previousWindow());
+    }
+
     #[Test]
     public function last_twelve_labels_end_with_the_given_month(): void
     {

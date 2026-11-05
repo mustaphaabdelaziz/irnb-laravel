@@ -6,8 +6,8 @@ use App\Models\EquipmentRental;
 use App\Models\Player;
 use App\Models\Transaction;
 use App\Services\Dashboard\Support\BranchScope;
+use App\Services\Dashboard\Support\EffectiveDueDate;
 use App\Services\Dashboard\Support\MonthBucket;
-use App\Support\FiscalPeriod;
 use App\Support\UiLang;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Query\Builder;
@@ -140,8 +140,7 @@ class OverviewStats
 
     private function effectiveDueDate(): string
     {
-        // Without a due date a subscription is due when its season ends.
-        return "COALESCE(player_subscriptions.due_date, (player_subscriptions.year || '".FiscalPeriod::endSuffix()."'))";
+        return EffectiveDueDate::expression();
     }
 
     /**
@@ -199,7 +198,7 @@ class OverviewStats
     {
         $outstanding = DB::table('equipment_rentals')
             ->whereNull('return_date')
-            ->selectRaw('equipment_item_id, COALESCE(SUM(quantity - returned_quantity), 0) as out')
+            ->selectRaw('equipment_item_id, COALESCE(SUM(quantity - returned_quantity), 0) as on_loan_qty')
             ->groupBy('equipment_item_id');
 
         return DB::table('equipment_items')
@@ -212,7 +211,7 @@ class OverviewStats
                     ->select('equipment_item_id'),
             ))
             ->groupBy('equipment_items.catalog_id')
-            ->havingRaw('SUM(equipment_items.quantity - COALESCE(r.out, 0)) <= ?', [self::LOW_STOCK_THRESHOLD])
+            ->havingRaw('SUM(equipment_items.quantity - COALESCE(r.on_loan_qty, 0)) <= ?', [self::LOW_STOCK_THRESHOLD])
             ->select('equipment_items.catalog_id')
             ->get()
             ->count();

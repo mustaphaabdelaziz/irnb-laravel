@@ -81,6 +81,24 @@ class FinanceStatsTest extends TestCase
     }
 
     #[Test]
+    public function the_first_day_of_the_window_counts(): void
+    {
+        $this->transaction('income', 1000, '2026-05-01');
+        $this->transaction('expense', 500, '2026-05-03');
+
+        $this->assertSame(750.0, $this->summary()['avg_transaction']['value']);
+    }
+
+    #[Test]
+    public function the_first_day_of_the_previous_window_counts(): void
+    {
+        $this->transaction('income', 1000, '2026-05-02');
+        $this->transaction('income', 500, '2026-04-01');
+
+        $this->assertSame(100.0, $this->summary()['avg_transaction']['delta']['percent']);
+    }
+
+    #[Test]
     public function archived_transactions_are_excluded_from_the_average(): void
     {
         $this->transaction('income', 1000, '2026-05-02');

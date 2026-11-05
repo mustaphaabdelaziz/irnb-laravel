@@ -288,21 +288,31 @@ class RegistrationService
 
     /**
      * The main branch's registration if not left, else the earliest joined not
-     * left, else the lowest id.
+     * left, else the lowest id. Reads fresh rows, because writers call it straight
+     * after changing them. A loop over many players uses RegistrationDisplay.
      */
     public function primary(Player $player): ?BranchRegistration
     {
-        $registrations = $player->registrations()->orderBy('id')->get();
+        return self::pickPrimary($player->registrations()->orderBy('id')->get(), Branch::mainId(), Player::leftStatusId());
+    }
+
+    /**
+     * The same choice from rows already in hand, with no query.
+     *
+     * @param  Collection<int, BranchRegistration>  $registrations
+     */
+    public static function pickPrimary(Collection $registrations, ?int $mainBranchId, ?int $leftStatusId): ?BranchRegistration
+    {
         if ($registrations->isEmpty()) {
             return null;
         }
 
-        $left = Player::leftStatusId();
-        $active = $registrations->reject(fn (BranchRegistration $r) => $left !== null && (int) $r->status_id === $left);
+        $ordered = $registrations->sortBy('id')->values();
+        $active = $ordered->reject(fn (BranchRegistration $r) => $leftStatusId !== null && (int) $r->status_id === $leftStatusId);
 
-        return $active->firstWhere('branch_id', Branch::mainId())
-            ?? $active->sortBy(fn (BranchRegistration $r) => [$this->joinSortKey($r), $r->id])->first()
-            ?? $registrations->first();
+        return ($mainBranchId === null ? null : $active->firstWhere('branch_id', $mainBranchId))
+            ?? $active->sortBy(fn (BranchRegistration $r) => [self::joinSortKey($r), $r->id])->first()
+            ?? $ordered->first();
     }
 
     /**
@@ -388,9 +398,19 @@ class RegistrationService
      */
     public function overallStatus(BranchRegistration $primary, Collection $registrations): array
     {
-        $left = Player::leftStatusId();
-        if ($left !== null && $registrations->every(fn (BranchRegistration $r) => (int) $r->status_id === $left)) {
-            return [$left, $registrations->max(fn (BranchRegistration $r) => $r->left_at?->toDateString())];
+        return self::overallOf($primary, $registrations, Player::leftStatusId());
+    }
+
+    /**
+     * The same answer with no query.
+     *
+     * @param  Collection<int, BranchRegistration>  $registrations
+     * @return array{0: int|null, 1: string|null}
+     */
+    public static function overallOf(BranchRegistration $primary, Collection $registrations, ?int $leftStatusId): array
+    {
+        if ($leftStatusId !== null && $registrations->every(fn (BranchRegistration $r) => (int) $r->status_id === $leftStatusId)) {
+            return [$leftStatusId, $registrations->max(fn (BranchRegistration $r) => $r->left_at?->toDateString())];
         }
 
         return [$primary->status_id, null];
@@ -463,7 +483,7 @@ class RegistrationService
     }
 
     /** An exact date sorts by itself; a year-only row sorts at the end of its year; unknown goes last. */
-    private function joinSortKey(BranchRegistration $registration): string
+    private static function joinSortKey(BranchRegistration $registration): string
     {
         return $registration->join_date?->toDateString()
             ?? ($registration->legacy_join_year !== null ? $registration->legacy_join_year.'-12-31' : '9999-12-31');

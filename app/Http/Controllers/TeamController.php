@@ -13,6 +13,7 @@ use App\Services\Competitions\CompetitionRecord;
 use App\Services\Competitions\MatchStats;
 use App\Services\Competitions\PlayerFlags;
 use App\Services\Competitions\TeamAccess;
+use App\Services\Competitions\TeamMembers;
 use App\Services\Player\DocumentStats;
 use App\Support\Season;
 use Illuminate\Http\RedirectResponse;
@@ -75,26 +76,30 @@ class TeamController extends Controller
         $team->load(['branch', 'category', 'defaultFormat']);
         $injured = $flags->injured();
 
-        $roster = $team->rosterFor($season)->with('category')->get()
+        $members = TeamMembers::of($team);
+
+        $roster = $team->rosterFor($season)->with(TeamMembers::RELATIONS)->get()
             ->map(fn (Player $p) => [
                 'player_id' => $p->id,
                 'name' => $p->fullname,
-                'category' => $p->category?->localized_name,
+                'category' => $members->category($p)?->localized_name,
                 'shirt_number' => $p->pivot->shirt_number,
                 'injured' => isset($injured[$p->id]),
+                // Stays on the roster, marked; can't be called up or copied to next season.
+                'left_branch' => $members->hasLeft($p),
             ])->sortBy('name')->values();
-        $badges = $flags->for($roster->pluck('player_id')->all(), $request->user());
+        $badges = $flags->for($roster->pluck('player_id')->all(), $request->user(), team: $team);
         $roster = $roster->map(fn (array $row) => $row + ['flags' => $badges[$row['player_id']] ?? null])->values();
 
         $candidates = Player::query()->where('archived', false)->notLeft()
             ->whereNotIn('id', $roster->pluck('player_id'))
-            ->with('branches:id')
+            ->with('registrations')
             ->get(['id', 'category_id', ...Player::NAME_COLUMNS])
             ->map(fn (Player $p) => [
                 'id' => $p->id,
                 'name' => $p->fullname,
-                'category_id' => $p->category_id,
-                'in_sport' => $p->branches->contains('id', $team->branch_id),
+                'category_id' => $members->categoryId($p),
+                'in_sport' => $members->isActiveMember($p),
             ])->sortBy('name')->values();
 
         return Inertia::render('Teams/Show', [

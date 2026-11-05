@@ -15,6 +15,7 @@ use App\Services\Competitions\PlayerFlags;
 use App\Services\Competitions\SuspensionEngine;
 use App\Services\Competitions\SuspensionStatus;
 use App\Services\Competitions\TeamAccess;
+use App\Services\Competitions\TeamMembers;
 use App\Support\Season;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -90,13 +91,15 @@ class CompetitionController extends Controller
         $season = $competition->season_start_year;
         $squad = DB::table('competition_players')->where('competition_id', $competition->id)->pluck('hidden', 'player_id');
         $games = $competition->games()->with('opponent:id,name')->orderBy('date')->get();
-        $roster = $team->rosterFor($season)->with('category')->get()
+        $members = TeamMembers::of($team);
+        $roster = $team->rosterFor($season)->with(TeamMembers::RELATIONS)->get()
             ->map(fn (Player $p) => [
                 'player_id' => $p->id,
                 'name' => $p->fullname,
-                'category' => $p->category?->localized_name,
+                'category' => $members->category($p)?->localized_name,
                 'shirt_number' => $p->pivot->shirt_number,
                 'in_squad' => $squad->has($p->id) && ! $squad[$p->id],
+                'left_branch' => $members->hasLeft($p),
             ])->sortBy('name')->values();
         $badges = $flags->for($roster->pluck('player_id')->all(), $request->user(), null, $competition);
         $roster = $roster->map(fn (array $row) => $row + ['flags' => $badges[$row['player_id']] ?? null])->values();

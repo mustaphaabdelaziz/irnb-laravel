@@ -92,6 +92,7 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
                         <input v-model="selected" :value="r.player_id" :disabled="!canManage" type="checkbox" class="rounded" />
                         <span class="w-6 text-end font-mono text-slate-400">{{ r.shirt_number }}</span>
                         <span class="font-medium">{{ r.name }}</span>
+                        <span v-if="r.left_branch" class="rounded bg-slate-200 px-1.5 py-0.5 text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-200">{{ t('comp.left_branch') }}</span>
                         <PlayerBadges :flags="r.flags" />
                         <span class="text-xs text-slate-400">{{ r.category }}</span>
                     </label>

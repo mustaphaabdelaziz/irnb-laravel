@@ -50,7 +50,7 @@ const pickable = computed(() => props.candidates
 
 function addPlayer(id) {
     const c = props.candidates.find((x) => x.id === Number(id));
-    if (c) rows.value.push({ player_id: c.id, name: c.name, category: null, shirt_number: null, injured: false });
+    if (c) rows.value.push({ player_id: c.id, name: c.name, category: null, shirt_number: null, injured: false, left_branch: false });
     pick.value = '';
 }
 
@@ -156,6 +156,7 @@ const tabs = computed(() => ['roster', 'coaches', 'competitions', 'games', ...(c
                             </td>
                             <td class="py-2 font-medium text-slate-900 dark:text-slate-100">
                                 {{ row.name }}
+                                <span v-if="row.left_branch" class="ms-2 rounded bg-slate-200 px-1.5 py-0.5 text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-200">{{ t('comp.left_branch') }}</span>
                                 <PlayerBadges :flags="row.flags" class="ms-2" />
                             </td>
                             <td class="py-2 text-slate-500 dark:text-slate-400">{{ row.category }}</td>

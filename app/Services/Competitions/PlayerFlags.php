@@ -7,6 +7,7 @@ use App\Models\Competition;
 use App\Models\DocumentType;
 use App\Models\Game;
 use App\Models\Player;
+use App\Models\Team;
 use App\Models\User;
 use App\Services\Attendance\InjurySpells;
 use App\Services\Player\DocumentChecklist;
@@ -49,7 +50,7 @@ final class PlayerFlags
      * @param  list<int>  $playerIds
      * @return array<int, array{injured: bool, suspended: bool, suspension: ?array, no_licence: bool, documents_missing: bool, documents: list<string>, unpaid: bool, debt: ?float}>
      */
-    public function for(array $playerIds, ?User $viewer = null, ?Game $game = null, ?Competition $competition = null): array
+    public function for(array $playerIds, ?User $viewer = null, ?Game $game = null, ?Competition $competition = null, ?Team $team = null): array
     {
         $ids = array_values(array_unique(array_map('intval', $playerIds)));
         if ($ids === []) {

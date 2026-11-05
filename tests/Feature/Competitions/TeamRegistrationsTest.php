@@ -4,6 +4,7 @@ namespace Tests\Feature\Competitions;
 
 use App\Models\GameEvent;
 use App\Models\GamePlayer;
+use App\Models\Position;
 use App\Models\Team;
 use App\Services\Pdf\PdfService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -150,6 +151,52 @@ class TeamRegistrationsTest extends TestCase
         return $this->actingAs($this->admin())->put(route('games.call-up.update', $game), [
             'players' => [['player_id' => $playerId, 'called_up' => true, 'not_called_reason' => null]],
         ]);
+    }
+
+    #[Test]
+    public function the_lineup_shows_the_usual_position_of_the_teams_branch(): void
+    {
+        $keeper = Position::create(['branch_id' => $this->foot->id, 'name' => 'Keeper', 'abbreviation' => 'GK']);
+        $free = Position::create(['branch_id' => $this->swim->id, 'name' => 'Freestyle', 'abbreviation' => 'FR']);
+        $player = $this->bothActive();
+        $player->registrations()->where('branch_id', $this->foot->id)->update(['position_id' => $keeper->id]);
+        $player->registrations()->where('branch_id', $this->swim->id)->update(['position_id' => $free->id]);
+        $this->onRoster($this->swimTeam, 2026, [$player]);
+        $game = $this->game($this->swimTeam);
+        $this->callUp($game, $player->id)->assertSessionHasNoErrors();
+
+        $this->actingAs($this->admin())->get(route('games.show', $game))->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('lineup.players.0.usual_position', 'FR'));
+    }
+
+    #[Test]
+    public function no_registration_shows_their_own_position(): void
+    {
+        $keeper = Position::create(['branch_id' => $this->foot->id, 'name' => 'Keeper', 'abbreviation' => 'GK']);
+        $flat = $this->noRegistration();
+        $flat->update(['position_id' => $keeper->id]);
+        $this->onRoster($this->footTeam, 2026, [$flat]);
+        $game = $this->game($this->footTeam);
+        $this->callUp($game, $flat->id)->assertSessionHasNoErrors();
+
+        $this->actingAs($this->admin())->get(route('games.show', $game))->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('lineup.players.0.usual_position', 'GK'));
+    }
+
+    #[Test]
+    public function a_player_called_up_before_leaving_stays_in_the_lineup(): void
+    {
+        $player = $this->bothActive();
+        $this->onRoster($this->footTeam, 2026, [$player]);
+        $game = $this->game($this->footTeam);
+        $this->callUp($game, $player->id)->assertSessionHasNoErrors();
+
+        app(\App\Services\Player\RegistrationService::class)->leave($player, [$this->foot->id], $this->leaveDate);
+
+        $this->actingAs($this->admin())->get(route('games.show', $game))->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('candidates', 0)
+                ->where('lineup.players.0.player_id', $player->id));
     }
 
     #[Test]

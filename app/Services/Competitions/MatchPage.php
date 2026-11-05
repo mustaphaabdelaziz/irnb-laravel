@@ -16,8 +16,9 @@ final class MatchPage
     /** @param  array<int, true>|null  $injured  PlayerFlags::injured(), when the caller already has it */
     public function lineup(Game $game, ?array $injured = null): array
     {
-        $game->loadMissing(['format.formations', 'players.player.position']);
+        $game->loadMissing(['team', 'format.formations', 'players.player.position', 'players.player.registrations.position']);
         $injured ??= $this->flags->injured();
+        $members = TeamMembers::of($game->team);
         $formations = $game->format->formations
             ->map(fn (Formation $f) => ['id' => $f->id, 'name' => $f->name, 'slots' => $f->slots])->values();
         if ($formations->isEmpty()) {
@@ -38,7 +39,7 @@ final class MatchPage
                     'player_id' => $gp->player_id,
                     'name' => $gp->player->fullname,
                     'shirt_number' => $gp->shirt_number,
-                    'usual_position' => $gp->player->position?->abbreviation,
+                    'usual_position' => $members->position($gp->player)?->abbreviation,
                     'injured' => isset($injured[$gp->player_id]),
                     'role' => $gp->role === 'starter' ? 'starter' : 'bench',
                     'slot' => $gp->slot,

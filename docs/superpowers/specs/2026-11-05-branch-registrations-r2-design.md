@@ -1,6 +1,6 @@
 # Branch registrations, Release 2: readers and category split
 
-**Status: design approved by the owner 2026-11-05; this written spec awaits the owner's review.**
+**Status: approved by the owner 2026-11-05. Plan: `docs/superpowers/plans/2026-11-05-branch-registrations-r2.md`.**
 Baseline: `feat/branch-registrations-r1` at `8fe9643`. Parent spec: `2026-11-03-branch-registrations-design.md`, which stays in force except where this document changes it. Its database line, release table and caisse claim are corrected to match.
 
 ## 1. Goal
@@ -109,7 +109,7 @@ Bulk assign, the available list and the player page's catalog all use this. The 
 
 Follows parent spec sections 3.2 and 7.
 
-- `player_documents` gets `branch_registration_id`, nullable only for players with no registration. Unique becomes (`branch_registration_id`, `document_type_id`). `player_id` stays.
+- `player_documents` gets `branch_registration_id`, nullable only for players with no registration. Unique becomes (`branch_registration_id`, `document_type_id`). `player_id` stays. No foreign key: adding one on SQLite rebuilds the table and cascades away document files, so `registrations:verify` reports a row that points nowhere. A blank value escapes the unique key, so the writers hold that rule for a player with no registration.
 - Existing rows go to the main registration. **Those 9 players' swimming documents start as missing**, as the owner chose; the report to the owner says so.
 - `document_type_branch` is not in this release, so every type applies to every branch.
 - `DocumentChecklist` and its SQL twins work per registration. **Photo:** a player with a profile picture has Photo received on every registration.
@@ -161,7 +161,7 @@ Findings go to the owner, who decides. A page failing online today is a fix for 
 
 ## 11. Category split
 
-**Schema:** `categories` gets `branch_id` (FK, nullable, see below) and `is_active`. Unique name becomes unique (`branch_id`, `name`). The parent spec's `sort_order` waits for the later branch-admin release, because nothing here needs it; lists keep sorting by name.
+**Schema:** `categories` gets `branch_id` (nullable, see below; a foreign key on PostgreSQL and MariaDB only, because adding one on SQLite rebuilds the table and cascades into its children) and `is_active`. Unique name becomes unique (`branch_id`, `name`). The parent spec's `sort_order` waits for the later branch-admin release, because nothing here needs it; lists keep sorting by name.
 
 **Migration:**
 
@@ -234,7 +234,13 @@ Readers (1 to 6) must finish before the split (7), or two-branch players drop ou
 **Pinned figures, on a copy of real data, before and after each part:**
 
 - Total owed, paid and discount per subscription and per player: **identical**.
-- Each one-branch player's eligibility, roster, list row and report row: **identical**.
+- Each one-branch player's eligibility, roster, list row and report row: **identical**, except where a decision above changes them on purpose:
+  - A player who has left is no longer eligible for new charges (section 5).
+  - A player is listed on an unmarked session on their leave date; the old code stopped the day before (section 6).
+  - A left registration counts as nothing missing (section 8).
+  - Category charts count active registrations, so people who left drop out (section 9).
+  - The match "unpaid" badge counts that sport's debts only (section 7).
+  - One-branch swimmers' category IDs move to swimming's copies; the names stay the same (section 11).
 - Every difference a two-branch player shows is listed and traceable to a decision above.
 
 **`registrations:verify` gains:** every category has a branch once any branch exists; each registration's category belongs to its branch; sessions, schedules, teams and caisses likewise; every document row has a registration, unless the player has none; price rows still give each player the same amount.

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\SerializesClubDates;
 use App\Support\Media;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -107,6 +108,55 @@ class Player extends Model
             ->orWhereNotIn($column, PlayerStatus::query()->select('id')->where('code', 'left')));
     }
 
+    /**
+     * The one answer to "is this player in this branch, with this category and
+     * status, on this date": all conditions hold on the same registration. A
+     * player with no registration at all is judged on their own columns, and has
+     * no branch. Null means no condition; an empty list matches nothing, so a
+     * computed list can never silently widen to everyone.
+     */
+    public function scopeRegisteredWhere(
+        Builder $query,
+        iterable|int|null $branches = null,
+        iterable|int|null $categories = null,
+        iterable|int|null $statuses = null,
+        CarbonInterface|string|null $activeOn = null,
+        bool $active = false,
+    ): void {
+        $playerKey = $query->getModel()->qualifyColumn('id');
+
+        $rows = BranchRegistration::query()
+            ->selectRaw('1')
+            ->whereColumn('branch_player.player_id', $playerKey)
+            ->when($branches !== null, fn ($q) => $q->inBranches($branches))
+            ->when($categories !== null, fn ($q) => $q->inCategories($categories))
+            ->when($statuses !== null, fn ($q) => $q->withStatuses($statuses))
+            ->when($activeOn !== null, fn ($q) => $q->activeOn($activeOn))
+            ->when($active, fn ($q) => $q->active());
+
+        $query->where(function (Builder $either) use ($rows, $playerKey, $branches, $categories, $statuses, $activeOn, $active) {
+            $either->whereExists($rows);
+
+            if ($branches !== null) {
+                return;
+            }
+
+            $either->orWhere(function (Builder $flat) use ($playerKey, $categories, $statuses, $activeOn, $active) {
+                $column = $flat->getModel()->qualifyColumn(...);
+                $flat->whereNotExists(fn ($q) => $q->selectRaw('1')->from('branch_player')->whereColumn('branch_player.player_id', $playerKey))
+                    ->when($categories !== null, fn ($q) => $q->whereIn($column('category_id'), collect($categories)->all()))
+                    ->when($statuses !== null, fn ($q) => $q->whereIn($column('status_id'), collect($statuses)->all()))
+                    ->when($activeOn !== null, fn ($q) => BranchRegistration::constrainActiveOn($q, $column('status_id'), $column('left_at'), $activeOn))
+                    ->when($active, fn ($q) => $q->notLeft());
+            });
+        });
+    }
+
+    /** This player's registration in a branch, from the loaded rows: no query per row when eager-loaded. */
+    public function registrationIn(?int $branchId): ?BranchRegistration
+    {
+        return $branchId === null ? null : $this->registrations->firstWhere('branch_id', $branchId);
+    }
     public static function isLeftStatus(mixed $statusId): bool
     {
         return $statusId !== null && $statusId !== '' && (int) $statusId === static::leftStatusId();

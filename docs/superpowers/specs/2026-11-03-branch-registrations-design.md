@@ -5,7 +5,7 @@ Date: 2026-11-03. Baseline: `main` at `e3e030e`.
 
 No "previous audit" exists in the repo, specs, memory, git or past session logs. The owner chose on 2026-11-03 to plan from today's code, so this document is the architecture and there is nothing else to merge with.
 
-Stack stays as it is: Laravel 13, Vue 3 with Inertia, Eloquent, SQLite on desktop and dev, MySQL family on the server. No new dependencies and no new state library. Forms get their data through Inertia props, as they do today.
+Stack stays as it is: Laravel 13, Vue 3 with Inertia, Eloquent, SQLite on desktop and dev, PostgreSQL on the server (owner, 2026-11-05; this line first said MySQL family, when the production database was unknown). No new dependencies and no new state library. Forms get their data through Inertia props, as they do today.
 
 ## 1. What the code and data show
 
@@ -200,19 +200,19 @@ Known traps in this form: `forceFormData` drops empty arrays, so clearing a list
 
 Built in a worktree, one branch per release, each merged only after owner approval. No desktop build unless the owner asks.
 
-**Release 1 and Release 2 reach production together.** Found while planning Release 1: until readers move, a player who leaves one branch but stays in another still appears in the branch they left, and readers see only the primary registration's category. Each other release can ship alone.
+**Release 1, Release 2 and the category split reach production together** (split added by the owner, 2026-11-05; `2026-11-05-branch-registrations-r2-design.md` holds the details and overrides this document where they differ). Found while planning Release 1: until readers move, a player who leaves one branch but stays in another still appears in the branch they left, and readers see only the primary registration's category. Each other release can ship alone.
 
 | Release | Content | Depends on |
 |---|---|---|
 | **1 Foundation** | Table rebuild, backfill, sporting statuses, `RegistrationService` as sole writer, mirror, removal rule, branch code and main branch fields, player cards with the shared categories, correction queue, ID format and conversion screen, `registrations:verify` | |
-| **2 Readers** | Move from `players.*` to the registration, by batch: (a) subscriptions and finance, (b) attendance, (c) teams and competitions, (d) documents to per-registration, (e) lists, exports, imports, dashboards, literary report | 1 |
-| **3 Branch admin** | Branch detail page, active flags, per-branch documents, custom fields, **category split** | 2 |
+| **2 Readers** | Move from `players.*` to the registration, by batch: (a) subscriptions and finance, (b) attendance, (c) teams and competitions, (d) documents to per-registration, (e) lists, exports, imports, dashboards, literary report. Then the **category split** and a branch page with a Categories tab | 1 |
+| **3 Branch admin** | More branch page tabs, active flags, per-branch documents, custom fields | 2 |
 | **4 Stats and anniversaries** | Sections 5 and 6 | 1 only, so it can go earlier if preferred |
 | **5 Contract** | Drop the mirror columns and old key paths. Separate approval, at least one release after 2 and 3 are verified on production | all |
 
 **Why the category split comes after the readers:** if categories split first, a two-branch player's mirror points at football's Senior and they drop out of swim Senior rosters. Once readers use the registration's own category, the split is only a data change.
 
-**Category split (release 3):** the main branch keeps today's rows and IDs, so its foreign keys don't move. Each other branch gets copies of the categories its registrations use. Then swim registrations, branch-tagged sessions, schedules and teams, swim caisses (id 27) and subscription prices are repointed. An untagged subscription gets a price row for each copy, so amounts don't change. Pickers use the existing `positionLabeller` approach ("Senior · Swimming"). `CategoryObserver` creates a caisse for the owning branch only. `users.category_id` (1 row) stays on the main branch's row.
+**Category split (release 2, see its spec):** the main branch keeps today's rows and IDs, so its foreign keys don't move. Each other branch gets copies of the categories its registrations use. Then swim registrations, branch-tagged sessions, schedules and teams, swim caisses (id 27) and subscription prices are repointed. An untagged subscription gets a price row for each copy, so amounts don't change. Pickers use the existing `positionLabeller` approach ("Senior · Swimming"). The split creates no caisse: a category never creates one (`CashRegisterProvisioner`), which corrects an earlier claim here about `CategoryObserver`. `users.category_id` (1 row) stays on the main branch's row.
 
 **Rollback:** every release has a pre-migration backup and working `down` methods. Nothing is dropped before release 5.
 

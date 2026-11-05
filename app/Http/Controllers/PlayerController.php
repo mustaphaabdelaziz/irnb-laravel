@@ -35,6 +35,7 @@ use App\Services\Player\DocumentStats;
 use App\Services\Player\MembershipNumber;
 use App\Services\Player\PlayerDocumentService;
 use App\Services\Player\RegisterPlayerService;
+use App\Services\Player\RegistrationDisplay;
 use App\Services\Player\RegistrationService;
 use App\Services\Storage\FileStorageService;
 use App\Support\CertificateThresholds;
@@ -268,7 +269,7 @@ class PlayerController extends Controller
 
     /**
      * The subscription catalog this player may pay, with their status for each:
-     * every subscription open to the player's category and branch (mandatory and optional),
+     * every subscription open to one of their active registrations (mandatory and optional),
      * plus any other subscription they are already assigned to, so existing
      * debts stay payable.
      *
@@ -277,6 +278,7 @@ class PlayerController extends Controller
     private function availableSubscriptions(Player $player, DefaultRegisterResolver $registers): Collection
     {
         $assigned = $player->playerSubscriptions->keyBy('subscription_id');
+        $display = RegistrationDisplay::make();
 
         return Subscription::query()
             ->where(fn ($query) => $query
@@ -286,9 +288,9 @@ class PlayerController extends Controller
             ->orderByDesc('year')
             ->orderBy('name')
             ->get()
-            ->map(function (Subscription $s) use ($player, $assigned, $registers) {
+            ->map(function (Subscription $s) use ($player, $assigned, $registers, $display) {
                 $ps = $assigned->get($s->id);
-                $owed = $s->amountFor($player);
+                $owed = $s->amountFor($player, $display);
 
                 return [
                     'subscription_id' => $s->id,

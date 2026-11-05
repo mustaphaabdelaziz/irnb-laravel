@@ -15,6 +15,7 @@ use App\Services\Finance\PruneOutOfBranchObligations;
 use App\Services\Finance\RecalculatePlayerDebtService;
 use App\Services\Finance\SaveSubscriptionTarification;
 use App\Services\Finance\TarificationData;
+use App\Services\Player\RegistrationDisplay;
 use App\Support\Export;
 use App\Support\ListFilter;
 use App\Support\UiLang;
@@ -198,14 +199,19 @@ class SubscriptionController extends Controller
      */
     private function unassignedPlayers(Subscription $subscription, bool $outside = false): Collection
     {
+        $display = RegistrationDisplay::make();
+
         return Player::query()->eligibleFor($subscription, anyCategory: $outside)
             ->when($outside, fn ($query) => $query->whereNotIn('id', Player::query()->select('id')->eligibleFor($subscription)))
             ->where('archived', false)
             ->whereNotIn('id', PlayerSubscription::query()->select('player_id')->where('subscription_id', $subscription->id))
-            ->with('category')
+            ->with(['category', 'registrations'])
             ->orderBy('lastname')
             ->get(['id', ...Player::NAME_COLUMNS, 'is_student', 'category_id', 'membership_id'])
-            ->each(fn (Player $player) => $player->setAttribute('price', $subscription->amountFor($player)));
+            ->each(function (Player $player) use ($subscription, $display) {
+                $player->setAttribute('price', $subscription->amountFor($player, $display));
+                $player->unsetRelation('registrations');
+            });
     }
 
     /**
@@ -380,8 +386,10 @@ class SubscriptionController extends Controller
         $newPlayers = $players->reject(fn (Player $player) => $existingPlayerIds->contains($player->id));
 
         DB::transaction(function () use ($newPlayers, $subscription, $request) {
+            $display = RegistrationDisplay::make();
+
             foreach ($newPlayers as $player) {
-                $subscription->assignTo($player);
+                $subscription->assignTo($player, $display);
                 app(RecalculatePlayerDebtService::class)->forPlayer($player);
             }
 

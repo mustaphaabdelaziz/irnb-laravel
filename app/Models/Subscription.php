@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\SerializesClubDates;
+use App\Services\Player\RegistrationDisplay;
 use App\Support\FiscalPeriod;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -143,24 +144,52 @@ class Subscription extends Model
 
     /**
      * What this subscription charges the player: the student or the worker rate,
-     * taken from their category's override when it sets one. A player from
-     * outside its categories pays the price of its one category when it has
-     * just one, the default otherwise.
+     * from the override of the category that prices them (see pricingCategoryId).
+     * A category not on its list pays the price of its one category when it has
+     * just one, the default otherwise. A loop passes one $display.
      */
-    public function amountFor(Player $player): float
+    public function amountFor(Player $player, ?RegistrationDisplay $display = null): float
     {
         $column = $player->is_student ? 'amount_student' : 'amount_worker';
 
-        $category = $player->category_id
-            ? $this->categories->firstWhere('id', $player->category_id)
-            : null;
+        $categoryId = $this->pricingCategoryId($player, $display ?? RegistrationDisplay::make());
+        $category = $categoryId ? $this->categories->firstWhere('id', $categoryId) : null;
         $category ??= $this->categories->count() === 1 ? $this->categories->first() : null;
 
         return (float) ($category?->pivot?->{$column} ?? $this->{$column});
     }
 
+    /**
+     * The one active registration matching a subscription with branches; the main
+     * registration when several match or it has no branch. Nothing when a
+     * hand-added player matches none. A player with no registration: their own.
+     */
+    private function pricingCategoryId(Player $player, RegistrationDisplay $display): ?int
+    {
+        $main = $display->main($player);
+        if ($main === null) {
+            return $player->category_id;
+        }
+
+        $branchIds = $this->branches->pluck('id');
+        if ($branchIds->isEmpty()) {
+            return $main->category_id;
+        }
+
+        $categoryIds = $this->categories->pluck('id');
+        $matching = $player->registrations->filter(fn ($row) => $branchIds->contains($row->branch_id)
+            && $display->isActiveIn($player, (int) $row->branch_id)
+            && ($categoryIds->isEmpty() || $categoryIds->contains($row->category_id)));
+
+        return match ($matching->count()) {
+            0 => null,
+            1 => $matching->first()->category_id,
+            default => $main->category_id,
+        };
+    }
+
     /** Put a player on this subscription, owing the rate for their status. */
-    public function assignTo(Player $player): PlayerSubscription
+    public function assignTo(Player $player, ?RegistrationDisplay $display = null): PlayerSubscription
     {
         return $this->playerSubscriptions()->create([
             'player_id' => $player->id,
@@ -171,7 +200,7 @@ class Subscription extends Model
             'status_at_time' => $player->is_student ? 'student' : 'worker',
             // A one-off charge is never mandatory (it still counts as debt).
             'is_mandatory' => ! $this->isExceptional() && (bool) $this->is_mandatory,
-            'amount_owed' => $this->amountFor($player),
+            'amount_owed' => $this->amountFor($player, $display),
             'amount_paid' => 0,
         ]);
     }

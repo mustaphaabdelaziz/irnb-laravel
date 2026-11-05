@@ -79,7 +79,7 @@ Bulk assign, the available list and the player page's catalog all use this. The 
 
 **Leaving:** `leave()` touches no charge. `PruneOutOfBranchObligations` keeps counting a left registration as in the branch, so it can't delete that debt.
 
-**Caisse for a payment** (`DefaultRegisterResolver`): the subscription's branch if it has exactly one; otherwise the main registration's. Never a branch the player left, and never "first row, no order".
+**Caisse for a payment** (`DefaultRegisterResolver`): the subscription's branch if it has exactly one; otherwise the main registration's. Never a branch the player left, and never "first row, no order". This is only the caisse preselected on the form (owner, 2026-11-05): the cashier may pick any active caisse, and that choice is kept. An old debt from a branch the player left preselects that branch's caisse.
 
 **Reports and dashboards:** `ReadsObligations` and `OutstandingPayments` filter through the shared query and show the registration's category and ID. `BranchScope` keeps counting left registrations, since their debt is still owed. `TarificationData` reads each registration's category; whether it counts left players stays as it is today, and that behaviour is reported to the owner as a question.
 
@@ -109,7 +109,7 @@ Bulk assign, the available list and the player page's catalog all use this. The 
 
 Follows parent spec sections 3.2 and 7.
 
-- `player_documents` gets `branch_registration_id`, nullable only for players with no registration. Unique becomes (`branch_registration_id`, `document_type_id`). `player_id` stays. No foreign key: adding one on SQLite rebuilds the table and cascades away document files, so `registrations:verify` reports a row that points nowhere. A blank value escapes the unique key, so the writers hold that rule for a player with no registration.
+- `player_documents` gets `branch_registration_id`, nullable only for players with no registration. Unique becomes (`branch_registration_id`, `document_type_id`). `player_id` stays. A foreign key on every database (owner, 2026-11-05: "protect it"), `ON DELETE SET NULL`, so removing a registration never takes a document or its files with it. SQLite gets it from `ALTER TABLE ... ADD COLUMN ... REFERENCES`, which needs no table rebuild, so document files are not at risk. `registrations:verify` still reports a row with no registration. A blank value escapes the unique key, so the writers hold that rule for a player with no registration.
 - Existing rows go to the main registration. **Those 9 players' swimming documents start as missing**, as the owner chose; the report to the owner says so.
 - `document_type_branch` is not in this release, so every type applies to every branch.
 - `DocumentChecklist` and its SQL twins work per registration. **Photo:** a player with a profile picture has Photo received on every registration.
@@ -161,7 +161,7 @@ Findings go to the owner, who decides. A page failing online today is a fix for 
 
 ## 11. Category split
 
-**Schema:** `categories` gets `branch_id` (nullable, see below; a foreign key on PostgreSQL and MariaDB only, because adding one on SQLite rebuilds the table and cascades into its children) and `is_active`. Unique name becomes unique (`branch_id`, `name`). The parent spec's `sort_order` waits for the later branch-admin release, because nothing here needs it; lists keep sorting by name.
+**Schema:** `categories` gets `branch_id` (nullable, see below; a foreign key on every database, `ON DELETE RESTRICT`; SQLite gets it from `ALTER TABLE ... ADD COLUMN ... REFERENCES`, which needs no table rebuild, so its children are not at risk) and `is_active`. Unique name becomes unique (`branch_id`, `name`). The parent spec's `sort_order` waits for the later branch-admin release, because nothing here needs it; lists keep sorting by name.
 
 **Migration:**
 

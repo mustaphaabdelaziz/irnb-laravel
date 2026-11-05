@@ -12,7 +12,7 @@
 
 **Part-specific constraints:**
 
-- **No foreign key on `branch_registration_id`.** Adding one on SQLite rebuilds the table inside the migration's transaction, where `PRAGMA foreign_keys` is ignored, so the drop would cascade away `player_document_files`. A column with a foreign key also can't be dropped on SQLite. This follows `2026_10_23_300001_add_branch_to_injury_notes`. `registrations:verify` reports a row pointing nowhere.
+- **A foreign key on `branch_registration_id` on every database, `ON DELETE SET NULL`** (owner, 2026-11-05: "protect it"). Laravel's `foreign()` on SQLite rebuilds the table inside the migration's transaction, where `PRAGMA foreign_keys` is ignored, and the drop would cascade away `player_document_files`. So never use it there: SQLite gets the key from raw `ALTER TABLE ... ADD COLUMN ... REFERENCES`, which rewrites nothing. Checked on SQLite 3.40 with foreign keys on: bad IDs refused, files kept through add and drop, native `DROP COLUMN` works. Not `RESTRICT`, because deleting a player cascades through both `branch_player` and `player_documents` and would be refused. `removeMistake` still refuses a registration that holds documents (Task P5.3). `registrations:verify` still reports a row with no registration.
 - A player with no registration keeps `branch_registration_id` NULL. NULLs never collide in a unique index, so for those players "one row per type" is held by the writers (the `store` check and `firstOrNew` in `exempt`) and by `registrations:verify`. A virtual key column isn't used, because it needs PostgreSQL 18.
 - SQL terms use a subquery for the `left` status, not a lookup, so no read is added per call. `DocumentStatsTest` pins the query counts.
 - A player with no registration has their own row in every term, **even with a branch given**. A team's roster may hold such a player, and they have no branch to be excluded from.
@@ -105,6 +105,31 @@ class DocumentRegistrationMigrationTest extends TestCase
         $this->assertSame($service->primary($leftMain)->id, (int) DB::table('player_documents')->where('id', $ids[1])->value('branch_registration_id'));
         $this->assertSame($this->swim->id, $service->primary($leftMain)->branch_id);
         $this->assertNull(DB::table('player_documents')->where('id', $ids[2])->value('branch_registration_id'));
+    }
+
+    #[Test]
+    public function a_document_cannot_name_a_registration_that_does_not_exist(): void
+    {
+        $this->assertTrue(collect(Schema::getForeignKeys('player_documents'))->contains(fn (array $key) => $key['columns'] === ['branch_registration_id']));
+
+        $this->expectException(QueryException::class);
+        $this->row($this->bothActive(), 999999);
+    }
+
+    #[Test]
+    public function removing_a_registration_keeps_the_document_and_its_files(): void
+    {
+        $player = $this->bothActive();
+        $registration = $player->registrationIn($this->foot->id)->id;
+        $document = $this->row($player, $registration);
+        DB::table('player_document_files')->insert([
+            'player_document_id' => $document, 'path' => 'a', 'original_name' => 'a.pdf', 'mime' => 'application/pdf', 'size' => 1,
+        ]);
+
+        DB::table('branch_player')->where('id', $registration)->delete();
+
+        $this->assertNull(DB::table('player_documents')->where('id', $document)->value('branch_registration_id'));
+        $this->assertSame(1, DB::table('player_document_files')->where('player_document_id', $document)->count());
     }
 
     #[Test]
@@ -221,10 +246,11 @@ use Illuminate\Support\Facades\Schema;
  * so a two-branch player's other branch starts with its documents missing, as the
  * owner chose. A player with no registration keeps a blank value.
  *
- * No foreign key: on SQLite one would rebuild this table inside the migration's
- * transaction, where foreign_keys can't be switched off, and the drop would
- * cascade away player_document_files. registrations:verify reports a row that
- * points nowhere.
+ * The foreign key blanks the link on delete, so a removed registration never takes
+ * a document or its files with it. On SQLite it is declared with the column:
+ * foreign() would rebuild this table inside the migration's transaction, where
+ * foreign_keys can't be switched off, and the drop would cascade away
+ * player_document_files.
  *
  * Every step checks its own work, so a run that failed half way (MySQL DDL is not
  * transactional) finishes on the next run, and a second run changes nothing.
@@ -238,10 +264,16 @@ return new class extends Migration
 
     private const PLAYER_INDEX = 'player_documents_player_id_index';
 
+    private const FOREIGN = 'player_documents_registration_foreign';
+
     public function up(): void
     {
         if (! Schema::hasColumn('player_documents', 'branch_registration_id')) {
-            Schema::table('player_documents', fn (Blueprint $t) => $t->unsignedBigInteger('branch_registration_id')->nullable());
+            if ($this->isSqlite()) {
+                DB::statement('ALTER TABLE player_documents ADD COLUMN branch_registration_id INTEGER REFERENCES branch_player(id) ON DELETE SET NULL');
+            } else {
+                Schema::table('player_documents', fn (Blueprint $t) => $t->unsignedBigInteger('branch_registration_id')->nullable());
+            }
         }
         // MySQL's player_id foreign key must keep an index once the old key is gone.
         if (! Schema::hasIndex('player_documents', self::PLAYER_INDEX)) {
@@ -256,6 +288,19 @@ return new class extends Migration
         if (Schema::hasIndex('player_documents', self::OLD_UNIQUE)) {
             Schema::table('player_documents', fn (Blueprint $t) => $t->dropUnique(self::OLD_UNIQUE));
         }
+        if (! $this->isSqlite() && ! $this->hasForeignKey()) {
+            Schema::table('player_documents', fn (Blueprint $t) => $t->foreign('branch_registration_id', self::FOREIGN)->references('id')->on('branch_player')->nullOnDelete());
+        }
+    }
+
+    private function isSqlite(): bool
+    {
+        return Schema::getConnection()->getDriverName() === 'sqlite';
+    }
+
+    private function hasForeignKey(): bool
+    {
+        return collect(Schema::getForeignKeys('player_documents'))->contains(fn (array $key) => $key['columns'] === ['branch_registration_id']);
     }
 
     public function backfill(): void
@@ -310,6 +355,9 @@ return new class extends Migration
                 }
             });
 
+        if (! $this->isSqlite() && $this->hasForeignKey()) {
+            Schema::table('player_documents', fn (Blueprint $t) => $t->dropForeign(self::FOREIGN));
+        }
         if (Schema::hasIndex('player_documents', self::UNIQUE)) {
             Schema::table('player_documents', fn (Blueprint $t) => $t->dropUnique(self::UNIQUE));
         }

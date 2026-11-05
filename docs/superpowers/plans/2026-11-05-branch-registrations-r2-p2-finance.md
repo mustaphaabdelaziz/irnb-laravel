@@ -21,7 +21,7 @@ See the main plan `2026-11-05-branch-registrations-r2.md`. They apply in full. P
 
 | Case | Rule |
 |---|---|
-| Player left football and pays a football debt, with no caisse chosen | The subscription's branch: football's caisse. "Never a branch the player left" limits the main-registration fallback, so the money still lands with the sport it was owed to |
+| Player left football and pays a football debt, with no caisse chosen | The subscription's branch: football's caisse. "Never a branch the player left" limits the main-registration fallback, so the money still lands with the sport it was owed to. **Preselected only** (owner, 2026-11-05): the cashier can pick any active caisse and that choice is kept |
 | Player left everywhere pays with no subscription | Club-level cash, or blank if the club has none |
 | No-branch subscription whose main category isn't on its list, though another registration's is | The spec's literal rule: main registration, then the existing fallbacks (sole category's price, then default) |
 | Grouped receipt with a donation line for the excess | The donation has no subscription and doesn't break "all lines share it" |
@@ -1256,6 +1256,24 @@ class DefaultRegisterRegistrationTest extends TestCase
         $service->register($player, ['branch_id' => $this->foot->id, 'category_id' => $this->senior->id]);
 
         $this->assertSame($this->footSenior->id, $this->resolver()->forPlayer($player->fresh())->id);
+    }
+
+    #[Test]
+    public function a_caisse_chosen_on_the_form_replaces_the_preselected_one(): void
+    {
+        $player = $this->leftFootball();
+        $owed = \App\Models\PlayerSubscription::create([
+            'player_id' => $player->id, 'subscription_id' => $this->sub([$this->foot])->id,
+            'year' => (int) now()->year, 'status_at_time' => 'student',
+            'is_mandatory' => false, 'amount_owed' => 1500, 'amount_paid' => 0,
+        ]);
+
+        $this->actingAs(User::factory()->admin()->create())->post(route('players.transactions.store', $player), [
+            'player_subscription_id' => $owed->id, 'category' => 'subscription', 'amount' => 1500,
+            'payment_method' => 'cash', 'finance_account_id' => $this->swimU15->id,
+        ])->assertRedirect();
+
+        $this->assertSame($this->swimU15->id, Transaction::query()->sole()->finance_account_id);
     }
 
     #[Test]

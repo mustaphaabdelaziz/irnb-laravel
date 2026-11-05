@@ -14,7 +14,7 @@ The main plan `2026-11-05-branch-registrations-r2.md` applies in full. Parts 1 t
 
 Part-specific constraints:
 
-- **No foreign key on SQLite for `categories.branch_id`.** Adding one rebuilds the table there, and `categories` has cascading children, so a rebuild would delete them. This follows `2026_10_23_100001_add_branch_to_attendance_tables`. PostgreSQL and MariaDB get the foreign key. `BranchController::destroy` enforces the rule for all three. This is the one adjustment to the spec's "FK, nullable".
+- **A foreign key on `categories.branch_id` on every database, `ON DELETE RESTRICT`** (owner, 2026-11-05: "protect it"). Laravel's `foreign()` on SQLite rebuilds the table, and `categories` has cascading children, so a rebuild would delete them. So never use it there: SQLite gets the key from raw `ALTER TABLE ... ADD COLUMN ... REFERENCES`, which rewrites nothing. Checked on SQLite 3.40 with foreign keys on: bad IDs and deleting a branch that still owns a category are refused, children kept, native `DROP COLUMN` works. `BranchController::destroy` deletes a branch's unused categories first and refuses a used one. A test that deletes a branch owning categories, or names a branch that doesn't exist, now fails on SQLite as it would on PostgreSQL: fix the test, not the key.
 - **A category with no owner is valid only where no branch exists.** Production gets there only with no branches at all, because the first branch adopts every unowned category and `registrations:verify` fails on any left over once a branch exists. `CategoryOwnership` and the pickers accept an unowned category on any branch, so test fixtures that don't care about ownership keep working.
 - **`sort_order` is not added.** Lists keep sorting by name, or by ID where they do today.
 - **A stored value that no longer fits stays until edited**, as positions do. Every ownership check exempts the value already saved.
@@ -264,6 +264,23 @@ class SplitCategoriesMigrationTest extends TestCase
 
         $this->assertNull($this->copyOf($ecole, $swim));
         $this->assertEquals($ecole->id, DB::table('attendances')->where('training_session_id', $session)->value('category_id'));
+    }
+
+    #[Test]
+    public function the_branch_link_is_a_real_foreign_key_and_its_children_survive(): void
+    {
+        $foot = $this->football();
+        $senior = $this->shared('Senior');
+        $this->member([['branch_id' => $foot->id, 'category_id' => $senior->id]]);
+        $registrations = DB::table('branch_player')->count();
+
+        $this->migration()->up();
+
+        $this->assertSame($registrations, DB::table('branch_player')->count(), 'adding the key must not cascade');
+        $this->assertTrue(collect(\Illuminate\Support\Facades\Schema::getForeignKeys('categories'))->contains(fn (array $key) => $key['columns'] === ['branch_id']));
+
+        $this->expectException(\Illuminate\Database\QueryException::class);
+        DB::table('categories')->where('id', $senior->id)->update(['branch_id' => 999999]);
     }
 
     #[Test]
@@ -523,8 +540,9 @@ use Illuminate\Support\Facades\Schema;
  * Every schema step checks its own work and the data runs in one transaction,
  * so a failed run finishes on the next one and a second run changes nothing.
  *
- * No foreign key on SQLite: adding one rebuilds the table, and categories has
- * cascading children. BranchController::destroy() refuses a category still used.
+ * On SQLite the foreign key is declared with the column: foreign() would rebuild
+ * the table, and categories has cascading children. BranchController::destroy()
+ * deletes unused categories first and refuses a category still used.
  */
 return new class extends Migration
 {
@@ -541,7 +559,11 @@ return new class extends Migration
     public function up(): void
     {
         if (! Schema::hasColumn('categories', 'branch_id')) {
-            Schema::table('categories', fn (Blueprint $t) => $t->unsignedBigInteger('branch_id')->nullable());
+            if ($this->isSqlite()) {
+                DB::statement('ALTER TABLE categories ADD COLUMN branch_id INTEGER REFERENCES branches(id) ON DELETE RESTRICT');
+            } else {
+                Schema::table('categories', fn (Blueprint $t) => $t->unsignedBigInteger('branch_id')->nullable());
+            }
         }
         if (! Schema::hasColumn('categories', 'is_active')) {
             Schema::table('categories', fn (Blueprint $t) => $t->boolean('is_active')->default(true));
@@ -552,7 +574,7 @@ return new class extends Migration
         if (Schema::hasIndex('categories', 'categories_name_unique')) {
             Schema::table('categories', fn (Blueprint $t) => $t->dropUnique('categories_name_unique'));
         }
-        if ($this->usesForeignKey() && ! $this->hasForeignKey()) {
+        if (! $this->isSqlite() && ! $this->hasForeignKey()) {
             Schema::table('categories', fn (Blueprint $t) => $t->foreign('branch_id', self::FOREIGN)->references('id')->on('branches')->restrictOnDelete());
         }
 
@@ -698,9 +720,9 @@ return new class extends Migration
         return $registration->legacy_join_year !== null ? $registration->legacy_join_year.'-12-31' : '9999-12-31';
     }
 
-    private function usesForeignKey(): bool
+    private function isSqlite(): bool
     {
-        return Schema::getConnection()->getDriverName() !== 'sqlite';
+        return Schema::getConnection()->getDriverName() === 'sqlite';
     }
 
     private function hasForeignKey(): bool
@@ -725,7 +747,7 @@ return new class extends Migration
             }
         });
 
-        if ($this->usesForeignKey() && $this->hasForeignKey()) {
+        if (! $this->isSqlite() && $this->hasForeignKey()) {
             Schema::table('categories', fn (Blueprint $t) => $t->dropForeign(self::FOREIGN));
         }
         if (! Schema::hasIndex('categories', 'categories_name_unique')) {

@@ -31,27 +31,45 @@ export function lineCost(line, { sessions, players }) {
 
 const includesId = (ids, id) => ids.some((other) => Number(other) === Number(id));
 
-// Same rule as Subscription::scopeOpenTo: no category or no branch means open.
-export function matchingGroups(roster, subscription) {
+// The registrations a subscription applies to, as in Player::scopeEligibleFor:
+// branch and category hold on one row. With none, the group's own category and no branch.
+function matchingRows(group, subscription) {
     const categoryIds = subscription.category_ids ?? [];
     const branchIds = subscription.branch_ids ?? [];
+    const rows = group.registrations?.length ? group.registrations : [{ branch_id: null, category_id: group.category_id }];
 
-    return roster.filter((group) => {
-        const inCategory = !categoryIds.length || (group.category_id !== null && includesId(categoryIds, group.category_id));
-        const inBranch = !branchIds.length || (group.branch_ids ?? []).some((id) => includesId(branchIds, id));
+    return rows.filter((row) => {
+        const inCategory = !categoryIds.length || (row.category_id !== null && includesId(categoryIds, row.category_id));
+        const inBranch = !branchIds.length || (row.branch_id !== null && includesId(branchIds, row.branch_id));
 
         return inCategory && inBranch;
     });
+}
+
+export function matchingGroups(roster, subscription) {
+    return roster.filter((group) => matchingRows(group, subscription).length > 0);
 }
 
 export function autoPlayers(roster, subscription) {
     return matchingGroups(roster, subscription).reduce((sum, group) => sum + group.count, 0);
 }
 
+// The category that prices a group: the one matching row of a subscription with
+// branches, otherwise the main one. Off the list: its sole category, or none.
+function pricingCategory(group, subscription) {
+    const rows = matchingRows(group, subscription);
+    const categoryIds = subscription.category_ids ?? [];
+    const category = (subscription.branch_ids ?? []).length && rows.length === 1 ? rows[0].category_id : group.category_id;
+
+    if (includesId(categoryIds, category)) return category;
+
+    return categoryIds.length === 1 ? categoryIds[0] : null;
+}
+
 // Same result as Subscription::amountFor, from values that may still be unsaved.
 function priceFor(group, subscription) {
     const column = group.is_student ? 'amount_student' : 'amount_worker';
-    const override = subscription.category_prices?.[group.category_id]?.[column];
+    const override = subscription.category_prices?.[pricingCategory(group, subscription)]?.[column];
 
     return number(isBlank(override) ? subscription[column] : override);
 }

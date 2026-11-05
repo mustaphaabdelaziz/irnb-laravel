@@ -28,10 +28,11 @@ class TarificationData
     }
 
     /**
-     * Active players grouped by category, status and exact set of branches: a
+     * Players grouped by main category, status and exact set of registrations: a
      * small prop however big the club, and a player in two branches counts once.
+     * A left player or registration still counts here. The owner is asked about this.
      *
-     * @return list<array{category_id: int|null, is_student: bool, branch_ids: list<int>, count: int}>
+     * @return list<array{category_id: int|null, is_student: bool, registrations: list<array{branch_id: int, category_id: int|null}>, count: int}>
      */
     private function roster(?Subscription $subscription): array
     {
@@ -42,9 +43,14 @@ class TarificationData
                 ->where('is_exempt', true)
                 ->pluck('player_id');
 
-        $branches = DB::table('branch_player')->orderBy('branch_id')->get(['player_id', 'branch_id'])
+        $registrations = DB::table('branch_player')->orderBy('branch_id')->get(['player_id', 'branch_id', 'category_id'])
             ->groupBy('player_id')
-            ->map(fn (Collection $rows): array => $rows->pluck('branch_id')->map(fn ($id) => (int) $id)->all());
+            ->map(fn (Collection $rows): array => $rows
+                ->map(fn ($row): array => [
+                    'branch_id' => (int) $row->branch_id,
+                    'category_id' => $row->category_id === null ? null : (int) $row->category_id,
+                ])
+                ->all());
 
         return Player::query()
             ->where('archived', false)
@@ -54,12 +60,12 @@ class TarificationData
             ->groupBy(fn ($player): string => implode('|', [
                 $player->category_id ?? '',
                 (int) $player->is_student,
-                implode(',', $branches[$player->id] ?? []),
+                json_encode($registrations[$player->id] ?? []),
             ]))
             ->map(fn (Collection $players): array => [
                 'category_id' => $players->first()->category_id === null ? null : (int) $players->first()->category_id,
                 'is_student' => (bool) $players->first()->is_student,
-                'branch_ids' => $branches[$players->first()->id] ?? [],
+                'registrations' => $registrations[$players->first()->id] ?? [],
                 'count' => $players->count(),
             ])
             ->values()

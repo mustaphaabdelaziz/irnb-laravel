@@ -12,6 +12,8 @@ use App\Models\SubscriptionCostLine;
 use App\Models\SubscriptionTarification;
 use App\Models\TrainingSchedule;
 use App\Models\User;
+use App\Services\Finance\TarificationData;
+use App\Services\Player\RegistrationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia;
 use PHPUnit\Framework\Attributes\Test;
@@ -302,10 +304,37 @@ class SubscriptionTarificationTest extends TestCase
 
                     return $groups[1]['count'] === 2
                         && $groups[1]['category_id'] === $category->id
-                        && $groups[1]['branch_ids'] === collect([$football->id, $swimming->id])->sort()->values()->all()
+                        && collect($groups[1]['registrations'])->pluck('branch_id')->all() === collect([$football->id, $swimming->id])->sort()->values()->all()
                         && $groups[0]['count'] === 1
-                        && $groups[0]['branch_ids'] === [];
+                        && $groups[0]['registrations'] === [];
                 }));
+    }
+
+    #[Test]
+    public function the_roster_reads_each_registrations_category_and_still_counts_left_players(): void
+    {
+        $senior = Category::create(['name' => 'Senior']);
+        $u15 = Category::create(['name' => 'U15']);
+        $football = Branch::create(['name' => 'Football']);
+        $swimming = Branch::create(['name' => 'Swimming']);
+        $service = app(RegistrationService::class);
+
+        $two = $this->player();
+        $service->register($two, ['branch_id' => $football->id, 'category_id' => $senior->id]);
+        $service->register($two, ['branch_id' => $swimming->id, 'category_id' => $u15->id]);
+
+        $left = $this->player();
+        $service->register($left, ['branch_id' => $football->id, 'category_id' => $senior->id]);
+        $service->leave($left, [$football->id], '2026-03-15');
+
+        $roster = collect(app(TarificationData::class)->for(null)['roster']);
+
+        $this->assertSame(2, $roster->sum('count'));
+        $this->assertTrue($roster->contains(fn (array $group) => $group['registrations'] === [
+            ['branch_id' => $football->id, 'category_id' => $senior->id],
+            ['branch_id' => $swimming->id, 'category_id' => $u15->id],
+        ]));
+        $this->assertSame($senior->id, $roster->firstWhere('count', 1)['category_id']);
     }
 
     #[Test]

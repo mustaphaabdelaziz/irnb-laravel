@@ -103,10 +103,10 @@ test('calculate: no costs means no verdict, not a win', () => {
 });
 
 const roster = [
-    { category_id: 1, is_student: true, branch_ids: [10], count: 5 },
-    { category_id: 1, is_student: false, branch_ids: [10, 20], count: 3 },
-    { category_id: 2, is_student: true, branch_ids: [20], count: 4 },
-    { category_id: null, is_student: true, branch_ids: [], count: 2 },
+    { category_id: 1, is_student: true, registrations: [{ branch_id: 10, category_id: 1 }], count: 5 },
+    { category_id: 1, is_student: false, registrations: [{ branch_id: 10, category_id: 1 }, { branch_id: 20, category_id: 1 }], count: 3 },
+    { category_id: 2, is_student: true, registrations: [{ branch_id: 20, category_id: 2 }], count: 4 },
+    { category_id: null, is_student: true, registrations: [], count: 2 },
 ];
 
 test('matchingGroups: no category and no branch is open to everyone', () => {

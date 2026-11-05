@@ -84,4 +84,52 @@ class MarkCategoryRegistrationTest extends TestCase
 
         $this->assertSame($this->u15->id, $this->storedCategory($session, $player));
     }
+
+    #[Test]
+    public function saving_marks_costs_no_query_per_player(): void
+    {
+        // Saving writes each mark with its own updateOrCreate, so only the queries
+        // that look the categories up (everything off the attendances table) are counted.
+        $lookups = function (int $players): int {
+            $session = $this->sessionIn($this->swim, [$this->u15], sprintf('2026-04-%02d', $players));
+            $rows = [];
+            foreach (range(1, $players) as $n) {
+                $rows[] = ['player_id' => $this->bothActive("Q{$players}x{$n}")->id, 'status' => 'present'];
+            }
+
+            DB::flushQueryLog();
+            DB::enableQueryLog();
+            app(MarkRecorder::class)->save($session, $rows, null);
+            $log = DB::getQueryLog();
+            DB::disableQueryLog();
+
+            return count(array_filter($log, fn (array $q) => ! str_contains($q['query'], 'attendances')));
+        };
+
+        $small = $lookups(2);
+        $large = $lookups(20);
+
+        $this->assertGreaterThan(0, $small);
+        $this->assertSame($small, $large);
+    }
+
+    #[Test]
+    public function a_mixed_save_keeps_the_old_mark_and_categorises_the_new_one(): void
+    {
+        $old = $this->bothActive('Old');
+        $new = $this->bothActive('New');
+        $session = $this->sessionIn($this->swim, [$this->u15]);
+        $this->storedCategory($session, $old);
+
+        DB::table('branch_player')->whereIn('player_id', [$old->id, $new->id])->where('branch_id', $this->swim->id)->update(['category_id' => $this->senior->id]);
+
+        app(MarkRecorder::class)->save($session, [
+            ['player_id' => $old->id, 'status' => 'absent_excused'],
+            ['player_id' => $new->id, 'status' => 'present'],
+        ], null);
+
+        $marks = Attendance::where('training_session_id', $session->id)->pluck('category_id', 'player_id');
+        $this->assertSame($this->u15->id, $marks[$old->id]);
+        $this->assertSame($this->senior->id, $marks[$new->id]);
+    }
 }

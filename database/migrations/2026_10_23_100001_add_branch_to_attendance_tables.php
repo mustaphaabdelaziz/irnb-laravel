@@ -43,7 +43,7 @@ return new class extends Migration
                 continue;
             }
             if (! Schema::hasColumn($table, 'branch_key')) {
-                Schema::table($table, fn (Blueprint $t) => $t->unsignedBigInteger('branch_key')->virtualAs('coalesce(branch_id, 0)'));
+                Schema::table($table, fn (Blueprint $t) => self::branchKey($t));
             }
             // MySQL needs an index starting with category_id for its foreign key once the old unique is gone.
             if (! Schema::hasIndex($table, "{$table}_category_id_index")) {
@@ -88,6 +88,13 @@ return new class extends Migration
         foreach (array_keys(self::KEYS) as $table) {
             DB::table($table)->whereNull('branch_id')->update(['branch_id' => $branchId]);
         }
+    }
+
+    /** PostgreSQL cannot put a unique index on a virtual generated column; SQLite cannot add a stored one. */
+    private static function branchKey(Blueprint $t): void
+    {
+        $column = $t->unsignedBigInteger('branch_key');
+        DB::getDriverName() === 'pgsql' ? $column->storedAs('coalesce(branch_id, 0)') : $column->virtualAs('coalesce(branch_id, 0)');
     }
 
     public function down(): void

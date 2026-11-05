@@ -10,12 +10,12 @@ return new class extends Migration
         // Clean up duplicate treasuries - keep the oldest one per branch
         DB::statement('
             DELETE FROM finance_accounts
-            WHERE is_treasury = 1
+            WHERE is_treasury IS TRUE
             AND id NOT IN (
                 SELECT id FROM (
                     SELECT MIN(id) as id
                     FROM finance_accounts
-                    WHERE is_treasury = 1
+                    WHERE is_treasury IS TRUE
                     GROUP BY branch_id
                 ) AS keep
             )

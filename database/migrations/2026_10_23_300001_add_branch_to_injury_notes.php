@@ -34,7 +34,7 @@ return new class extends Migration
             Schema::table('injury_notes', fn (Blueprint $t) => $t->index('branch_id', 'injury_notes_branch_id_index'));
         }
         if (! Schema::hasColumn('injury_notes', 'branch_key')) {
-            Schema::table('injury_notes', fn (Blueprint $t) => $t->unsignedBigInteger('branch_key')->virtualAs('coalesce(branch_id, 0)'));
+            Schema::table('injury_notes', fn (Blueprint $t) => self::branchKey($t));
         }
         // Starts with player_id: MySQL's player_id foreign key keeps an index once the old key is gone.
         if (! Schema::hasIndex('injury_notes', self::UNIQUE)) {
@@ -81,6 +81,13 @@ return new class extends Migration
                 ->value('training_sessions.branch_id');
             DB::table('injury_notes')->where('id', $note->id)->update(['branch_id' => $branchId ?? $largest]);
         }
+    }
+
+    /** PostgreSQL cannot put a unique index on a virtual generated column; SQLite cannot add a stored one. */
+    private static function branchKey(Blueprint $t): void
+    {
+        $column = $t->unsignedBigInteger('branch_key');
+        DB::getDriverName() === 'pgsql' ? $column->storedAs('coalesce(branch_id, 0)') : $column->virtualAs('coalesce(branch_id, 0)');
     }
 
     public function down(): void

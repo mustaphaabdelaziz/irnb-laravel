@@ -9,6 +9,7 @@ use App\Models\TrainingSession;
 use App\Models\User;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
+use App\Services\Player\RegistrationDisplay;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -36,12 +37,12 @@ final class MarkRecorder
         return DB::transaction(function () use ($session, $marks, $user, $log) {
             $playerIds = array_map(fn (array $mark) => (int) $mark['player_id'], $marks);
 
-            // One query for the roster's current category: a new mark takes
-            // it, but an existing mark keeps whatever category_id it already
-            // has (see the loop below) — later roster moves never rewrite it.
-            $categoryByPlayer = Player::whereIn('id', $playerIds)->pluck('category_id', 'id');
             $existingPlayerIds = $session->attendances()->whereIn('player_id', $playerIds)->pluck('player_id')
                 ->map(fn ($id) => (int) $id)->all();
+            // A new mark takes the player's category in the session's branch, but an
+            // existing mark keeps whatever category_id it already has (see the loop
+            // below) — later roster moves never rewrite it.
+            $categoryByPlayer = $this->newMarkCategories($session, array_diff($playerIds, $existingPlayerIds));
 
             foreach ($marks as $mark) {
                 $status = (string) $mark['status'];
@@ -79,5 +80,24 @@ final class MarkRecorder
 
             return count($playerIds);
         });
+    }
+
+    /**
+     * Each player's category in the session's branch; a player added by hand
+     * with no registration there, or a session with no branch, takes the main one.
+     *
+     * @param  array<int, int>  $playerIds
+     * @return array<int, int|null> by player id
+     */
+    private function newMarkCategories(TrainingSession $session, array $playerIds): array
+    {
+        if ($playerIds === []) {
+            return [];
+        }
+        $display = RegistrationDisplay::make();
+
+        return Player::with('registrations')->whereIn('id', $playerIds)->get(['id', 'category_id'])
+            ->mapWithKeys(fn (Player $player) => [$player->id => $display->values($player, $session->branch_id)['category_id']])
+            ->all();
     }
 }

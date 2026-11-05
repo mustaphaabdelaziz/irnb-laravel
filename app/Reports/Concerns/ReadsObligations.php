@@ -2,10 +2,12 @@
 
 namespace App\Reports\Concerns;
 
+use App\Models\Player;
 use App\Models\PlayerSubscription;
 use App\Models\Subscription;
 use App\Reports\Filter;
 use App\Reports\ReportFilters;
+use App\Services\Player\RegistrationDisplay;
 use App\Support\UiLang;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -58,17 +60,27 @@ trait ReadsObligations
         if ($filters->filled('subscription_id')) {
             $query->whereIn('s.id', $filters->get('subscription_id'));
         }
-        if ($filters->filled('category_id')) {
-            $query->whereIn('players.category_id', $filters->get('category_id'));
+        $branches = $filters->filled('branch_id') ? $filters->get('branch_id') : null;
+        $categories = $filters->filled('category_id') ? $filters->get('category_id') : null;
+
+        // Left registrations count: their debt is still owed.
+        if ($branches !== null || $categories !== null) {
+            $query->whereIn('players.id', Player::query()->select('players.id')->registeredWhere(branches: $branches, categories: $categories));
         }
-        if ($filters->filled('branch_id')) {
-            $query->whereIn('players.id', DB::table('branch_player')->whereIn('branch_id', $filters->get('branch_id'))->select('player_id'));
+
+        // One branch selected shows that registration; otherwise the player copy holds the main one.
+        $branch = RegistrationDisplay::singleBranch($branches);
+        if ($branch !== null) {
+            $query->join('branch_player as shown', fn ($join) => $join->on('shown.player_id', '=', 'players.id')->where('shown.branch_id', $branch));
         }
+        $identity = $branch === null
+            ? ['players.membership_id', 'players.category_id']
+            : ['shown.membership_id as membership_id', 'shown.category_id as category_id'];
 
         return $query->get([
             'ps.id', 'ps.player_id', 'ps.label', 'ps.amount_owed', 'ps.amount_paid', 'ps.is_exempt', 'ps.discount_type', 'ps.discount_value', 'ps.due_date',
             's.id as subscription_id', 's.name as subscription_name', 's.year as subscription_year', 's.kind as subscription_kind',
-            'players.membership_id', 'players.category_id', 'players.phones',
+            ...$identity, 'players.phones',
             'players.firstname', 'players.lastname', 'players.nickname', 'players.father', 'players.grandfather', 'players.gender',
         ])->map(function (object $row) {
             $row->money = PlayerSubscription::moneyFor($row->amount_owed, $row->amount_paid, (bool) $row->is_exempt, $row->discount_type, $row->discount_value);

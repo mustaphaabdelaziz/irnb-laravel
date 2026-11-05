@@ -228,7 +228,7 @@ final class InjurySpells
             }
         }
         $rows = array_values(array_filter(
-            $this->names->attach($rows),
+            $this->names->attach($rows, $branchId),
             fn (array $row) => $row['active'] && ($categoryId === null || $row['category_id'] === $categoryId),
         ));
 

@@ -101,10 +101,11 @@ class AttendanceRankingController extends Controller
             if ($row === null) {
                 $own = $this->stats->players($period['from'], $period['to'], $category->id, $playerId, $branchId)[$playerId] ?? null;
                 // Neither expected in the branch's category over the period nor in it now: no certificate "for" it.
-                $inItNow = (int) Player::whereKey($playerId)->value('category_id') === $category->id
-                    && ($branchId === null || DB::table('branch_player')->where('branch_id', $branchId)->where('player_id', $playerId)->exists());
+                $inItNow = Player::whereKey($playerId)
+                    ->registeredWhere(branches: $branchId, categories: [$category->id], active: true)
+                    ->exists();
                 abort_if(($own['expected'] ?? 0) === 0 && ! $inItNow, 404);
-                $row = $this->names->attach([$own ?? $this->stats->emptyRow($playerId)])[0];
+                $row = $this->names->attach([$own ?? $this->stats->emptyRow($playerId)], $branchId)[0];
                 // Departed or archived: no certificate for them either, even outside the ranking.
                 abort_if(! $row['active'], 404);
             }
@@ -182,7 +183,7 @@ class AttendanceRankingController extends Controller
     private function ranking(int $categoryId, array $period, ?int $branchId = null): array
     {
         $rows = $this->stats->players($period['from'], $period['to'], $categoryId, null, $branchId);
-        $active = array_values(array_filter($this->names->attach($rows), fn (array $row) => $row['active']));
+        $active = array_values(array_filter($this->names->attach($rows, $branchId), fn (array $row) => $row['active']));
         $ranked = AttendanceStats::ranked($active);
 
         return ['rows' => $ranked, 'unranked' => count($active) - count($ranked)];

@@ -128,7 +128,7 @@ class AttendanceStatsController extends Controller
         ['from' => $from, 'to' => $to] = $period->toArray();
 
         $rows = $this->stats->players($from, $to, $categoryId, null, $branchId);
-        $players = $this->withNames($rows);
+        $players = $this->withNames($rows, $branchId);
         $sessions = $this->stats->sessionsByMonth($from, $to, $categoryId, $branchId);
 
         return [
@@ -154,10 +154,10 @@ class AttendanceStatsController extends Controller
         ];
     }
 
-    /** Adds each player's name, membership id and current category (PlayerNames); sorted by name. */
-    private function withNames(array $rows): array
+    /** Adds each player's name, membership id and current category in the branch (PlayerNames); sorted by name. */
+    private function withNames(array $rows, ?int $branchId): array
     {
-        return collect($this->names->attach($rows))
+        return collect($this->names->attach($rows, $branchId))
             ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
             ->values()
             ->all();

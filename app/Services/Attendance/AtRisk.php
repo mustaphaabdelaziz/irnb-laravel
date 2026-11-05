@@ -58,9 +58,9 @@ final class AtRisk
     }
 
     /**
-     * Every active player (not archived, not left) at risk over the period
+     * Every active player (not archived, not left this branch) at risk over the period
      * in one branch, worst first: lowest score % (none last), then longest
-     * streak, then name. $categoryId keeps the players now in that category;
+     * streak, then name. $categoryId keeps the players now in that category in the branch;
      * their numbers still cover all their marks in the branch, since the
      * risk is the person's. Six queries whatever the roster (the custom
      * codes: 1, players(): 2, the streak scan: 1, names: 2), four when
@@ -70,7 +70,7 @@ final class AtRisk
      */
     public function list(string $from, string $to, ?int $categoryId = null, ?int $branchId = null): array
     {
-        return $this->named($this->flagged($from, $to, $branchId), $categoryId);
+        return $this->named($this->flagged($from, $to, $branchId), $categoryId, $branchId);
     }
 
     /**
@@ -99,7 +99,7 @@ final class AtRisk
         }
 
         $rows = [];
-        foreach ($this->named($flagged, null) as $row) {
+        foreach ($this->named($flagged, null, null) as $row) {
             $rows[$row['player_id']] ??= $row;   // worst first: a player's first row is their worst branch
         }
 
@@ -161,15 +161,15 @@ final class AtRisk
     }
 
     /**
-     * Names attached (PlayerNames), active players only, optionally those now
+     * Names attached (PlayerNames) from the branch's registration, active players only, optionally those now
      * in $categoryId, worst first (usort is stable: equal rows keep their order).
      *
      * @return list<array<string, mixed>>
      */
-    private function named(array $flagged, ?int $categoryId): array
+    private function named(array $flagged, ?int $categoryId, ?int $branchId): array
     {
         $rows = array_values(array_filter(
-            $this->names->attach($flagged),
+            $this->names->attach($flagged, $branchId),
             fn (array $row) => $row['active'] && ($categoryId === null || $row['category_id'] === $categoryId),
         ));
         usort($rows, fn (array $a, array $b) => [$a['score_pct'] ?? 101, $b['longest_streak'], $a['name']]

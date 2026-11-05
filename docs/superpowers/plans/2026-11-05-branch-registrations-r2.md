@@ -935,6 +935,64 @@ git commit -m "feat(registrations): one shared query for branch, category and st
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
+- [ ] **Step 8: Make player search ignore letter case on every database**
+
+Owner's decision 2026-11-05. PostgreSQL's `LIKE` is case-sensitive, and this release makes every membership ID Latin, so `fb-2010-00001` must find `FB-2010-00001`. The suite runs on SQLite, whose `LIKE` already ignores case, so one of the two tests checks the SQL PostgreSQL would receive.
+
+Add to `tests/Feature/PlayerSearchTest.php`, with `use Illuminate\Database\Query\Grammars\PostgresGrammar;` and `use Illuminate\Support\Facades\DB;`:
+
+```php
+    #[Test]
+    public function a_lower_case_membership_id_finds_the_player(): void
+    {
+        $player = Player::create([
+            'membership_id' => 'FB-2010-00001',
+            'firstname' => 'Lina',
+            'lastname' => 'Saidi',
+            'is_student' => true,
+            'outstanding_debt' => 0,
+        ]);
+
+        $this->assertEquals([$player->id], Player::query()->search('fb-2010-00001')->pluck('id')->all());
+    }
+
+    #[Test]
+    public function search_asks_postgresql_to_ignore_letter_case(): void
+    {
+        $query = Player::query()->search('fb-2010');
+        $query->getQuery()->grammar = new PostgresGrammar(DB::connection());
+
+        $this->assertStringContainsString(' ilike ', $query->toSql());
+        $this->assertStringNotContainsString(' like ', $query->toSql());
+    }
+```
+
+Run: `php artisan test tests/Feature/PlayerSearchTest.php`. Expected: the second test FAILS.
+
+In `Player::scopeSearch` (`app/Models/Player.php`), use Laravel's `whereLike`, which sends `ilike` to PostgreSQL and `like` elsewhere. Replace the column loop's body and the ID conditions:
+
+```php
+                    foreach ($columns as $column) {
+                        $inner->orWhereLike($column, '%'.$token.'%');
+                    }
+
+                    // Every branch's ID, and the old one from before conversion.
+                    $inner->orWhereExists(fn ($q) => $q->from('branch_player')
+                        ->whereColumn('branch_player.player_id', 'players.id')
+                        ->where(fn ($ids) => $ids
+                            ->whereLike('branch_player.membership_id', '%'.$token.'%')
+                            ->orWhereLike('branch_player.legacy_membership_id', '%'.$token.'%')));
+```
+
+Run: `php artisan test tests/Feature/PlayerSearchTest.php`. Expected: all PASS. The other searches stay as they are; they are a separate job.
+
+```bash
+git add app/Models/Player.php tests/Feature/PlayerSearchTest.php
+git commit -m "fix(players): search ignores letter case on PostgreSQL too
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+```
+
 ### Task 6: `RegistrationDisplay` and a `primary()` that doesn't query per row
 
 **Files:**
@@ -1308,9 +1366,14 @@ Nothing reads the new code yet, so this proves the SQL itself.
 PostgreSQL, on a separate empty database:
 
 ```bash
+"/c/Program Files/PostgreSQL/18/bin/dropdb" --if-exists -h 127.0.0.1 -p 5544 -U postgres sportclub_r2_test
 "/c/Program Files/PostgreSQL/18/bin/createdb" -h 127.0.0.1 -p 5544 -U postgres sportclub_r2_test
+# Three old migrations fail on a new PostgreSQL database (pg-report.md, finding A, decision pending).
+# Patch them for this run only, and never commit the patch.
+git apply .superpowers/r2/pg-throwaway-migration-patches.diff
 ( . .superpowers/r2/env-pgsql.sh; export DB_DATABASE=sportclub_r2_test DB_URL=
-  php artisan test tests/Feature/Registrations/SharedQueryTest.php tests/Feature/Registrations/RegistrationDisplayTest.php )
+  php artisan test tests/Feature/Registrations/SharedQueryTest.php tests/Feature/Registrations/RegistrationDisplayTest.php tests/Feature/PlayerSearchTest.php )
+git checkout -- database/migrations
 ```
 
 MariaDB, on a private instance:

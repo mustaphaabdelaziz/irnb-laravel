@@ -267,6 +267,37 @@ class SplitCategoriesMigrationTest extends TestCase
     }
 
     #[Test]
+    public function a_price_on_a_subscription_ticked_only_for_that_branch_brings_its_category(): void
+    {
+        [, $swim] = [$this->football(), $this->swimming()];
+        $cadets = $this->shared('Cadets');
+        $piscine = $this->priced('Piscine 2026', $cadets, [$swim]);
+
+        $this->migration()->up();
+
+        $copy = $this->copyOf($cadets, $swim);
+        $this->assertNotNull($copy);
+        $row = DB::table('category_subscription')->where('subscription_id', $piscine->id)->sole();
+        $this->assertEquals($copy->id, $row->category_id);
+        $this->assertEquals(1500, $row->amount_student);
+        $this->assertEquals(2500, $row->amount_worker);
+    }
+
+    #[Test]
+    public function a_price_on_a_shared_or_unticked_subscription_alone_causes_no_copy(): void
+    {
+        [$foot, $swim] = [$this->football(), $this->swimming()];
+        $cadets = $this->shared('Cadets');
+        $this->priced('Both', $cadets, [$foot, $swim]);
+        $this->priced('Everyone', $cadets, []);
+
+        $this->migration()->up();
+
+        $this->assertNull($this->copyOf($cadets, $swim));
+        $this->assertSame(2, DB::table('category_subscription')->where('category_id', $cadets->id)->count());
+    }
+
+    #[Test]
     public function the_branch_link_is_a_real_foreign_key_and_its_children_survive(): void
     {
         $foot = $this->football();
@@ -610,7 +641,7 @@ return new class extends Migration
         return (int) (DB::table('website_configs')->value('main_branch_id') ?? $branchIds->first());
     }
 
-    /** @return Collection<int, int> the categories this branch uses but does not own */
+    /** @return Collection<int, int> the categories this branch uses, or prices on a subscription ticked only for it, but does not own */
     private function usedFromElsewhere(int $branchId): Collection
     {
         $used = collect(self::BY_BRANCH)
@@ -621,6 +652,13 @@ return new class extends Migration
             ->merge(DB::table('activity_category as link')
                 ->join('activities as activity', 'activity.id', '=', 'link.activity_id')
                 ->where('activity.branch_id', $branchId)->distinct()->pluck('link.category_id'))
+            ->merge(DB::table('category_subscription as price')
+                ->join('branch_subscription as ticked', 'ticked.subscription_id', '=', 'price.subscription_id')
+                ->where('ticked.branch_id', $branchId)
+                ->whereNotExists(fn ($other) => $other->from('branch_subscription as other')
+                    ->whereColumn('other.subscription_id', 'price.subscription_id')
+                    ->where('other.branch_id', '!=', $branchId))
+                ->distinct()->pluck('price.category_id'))
             ->unique()->values();
 
         return DB::table('categories')->whereIn('id', $used)->where('branch_id', '!=', $branchId)->orderBy('id')->pluck('id');

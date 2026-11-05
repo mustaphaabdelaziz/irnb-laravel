@@ -157,7 +157,7 @@ A private instance on a scratch data directory and its own port, never the machi
 
 Findings go to the owner, who decides. A page failing online today is a fix for `main`, on its own branch, not something to hold back for this release.
 
-**Step 8 repeats it** on the finished work, and adds the migrations and the suite. Every new query and migration in this release must run on SQLite, MariaDB and PostgreSQL.
+**Step 8 repeats it** on the finished work, and adds the migrations and the suite. Every new query and migration in this release must run on SQLite, MariaDB and PostgreSQL. Player search, including every membership ID, ignores letter case on all three, because this release makes every ID Latin and PostgreSQL's `LIKE` is case-sensitive (owner 2026-11-05). The other searches are a separate job.
 
 ## 11. Category split
 
@@ -166,7 +166,7 @@ Findings go to the owner, who decides. A page failing online today is a fix for 
 **Migration:**
 
 1. Every category goes to the main branch, keeping its ID. A club with one branch stops here. A club with no branches leaves all of them blank.
-2. For each other branch, find the categories used by its registrations, sessions, schedules, targets, deleted slots, teams, caisses or activities. Copy each, with all its names and description.
+2. For each other branch, find the categories used by its registrations, sessions, schedules, targets, deleted slots, teams, caisses or activities, or priced on a subscription ticked only for that branch (owner 2026-11-05: "Piscine 2026" ticked only for swimming, with a Cadets price and no swimming Cadets yet, brings Cadets to swimming). A price on a subscription ticked for several branches, or none, causes no copy by itself. Copy each, with all its names and description.
 3. Repoint that branch's rows to the copy: registrations, sessions and the session pivot, schedules, targets, deleted slots, teams, caisses, activity pivot, attendance marks through their session. Generation marks for a repointed schedule's category are copied, so no month is generated twice.
 4. Prices in `category_subscription`: a subscription ticked only for that branch has its row moved to the copy. A subscription ticked for several branches, or none, gets a row for the copy with the same amounts. So no amount changes.
 5. Refresh the mirror for players whose main registration moved.

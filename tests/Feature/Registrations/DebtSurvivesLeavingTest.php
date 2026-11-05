@@ -59,9 +59,13 @@ class DebtSurvivesLeavingTest extends TestCase
         $player = $this->bothActive();
         $owed = $this->footballSub()->assignTo($player);
 
-        app(RegistrationService::class)->leave($player, [$this->foot->id, $this->swim->id], $this->leaveDate);
+        $before = (array) DB::table('player_subscriptions')->find($owed->id);
 
-        $this->assertModelExists($owed);
+        app(RegistrationService::class)->leave($player, [$this->foot->id, $this->swim->id], $this->leaveDate);
+        app(RecalculatePlayerDebtService::class)->forPlayer($player);
+
+        $this->assertEquals($before, (array) DB::table('player_subscriptions')->find($owed->id));
+        $this->assertSame(1500.0, (float) $player->fresh()->outstanding_debt);
     }
 
     #[Test]

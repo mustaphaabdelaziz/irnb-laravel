@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\Player;
 use App\Models\User;
+use Illuminate\Database\Query\Grammars\PostgresGrammar;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -136,5 +138,28 @@ class PlayerSearchTest extends TestCase
         // (the scope also feeds an id subquery elsewhere, where "everybody" would widen it).
         $this->assertSame([], $this->search('بن'));
         $this->assertSame([], $this->search('بن بن'));
+    }
+    #[Test]
+    public function a_lower_case_membership_id_finds_the_player(): void
+    {
+        $player = Player::create([
+            'membership_id' => 'FB-2010-00001',
+            'firstname' => 'Lina',
+            'lastname' => 'Saidi',
+            'is_student' => true,
+            'outstanding_debt' => 0,
+        ]);
+
+        $this->assertEquals([$player->id], Player::query()->search('fb-2010-00001')->pluck('id')->all());
+    }
+
+    #[Test]
+    public function search_asks_postgresql_to_ignore_letter_case(): void
+    {
+        $query = Player::query()->search('fb-2010');
+        $query->getQuery()->grammar = new PostgresGrammar(DB::connection());
+
+        $this->assertStringContainsString(' ilike ', $query->toSql());
+        $this->assertStringNotContainsString(' like ', $query->toSql());
     }
 }

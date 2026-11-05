@@ -226,15 +226,15 @@ class Player extends Model
             foreach ($tokens as $token) {
                 $outer->where(function (Builder $inner) use ($token, $columns) {
                     foreach ($columns as $column) {
-                        $inner->orWhere($column, 'like', '%'.$token.'%');
+                        $inner->orWhereLike($column, '%'.$token.'%');
                     }
 
                     // Every branch's ID, and the old one from before conversion.
                     $inner->orWhereExists(fn ($q) => $q->from('branch_player')
                         ->whereColumn('branch_player.player_id', 'players.id')
                         ->where(fn ($ids) => $ids
-                            ->where('branch_player.membership_id', 'like', '%'.$token.'%')
-                            ->orWhere('branch_player.legacy_membership_id', 'like', '%'.$token.'%')));
+                            ->whereLike('branch_player.membership_id', '%'.$token.'%')
+                            ->orWhereLike('branch_player.legacy_membership_id', '%'.$token.'%')));
                 });
             }
         });

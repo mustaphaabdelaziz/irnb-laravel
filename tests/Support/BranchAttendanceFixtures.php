@@ -59,8 +59,9 @@ trait BranchAttendanceFixtures
         $both = $this->player($u15);
         $footer = $this->player($u15);
         $swimmer = $this->player($u15);
-        $foot->players()->attach([$both->id, $footer->id]);
-        $swim->players()->attach([$both->id, $swimmer->id]);
+        // Real registrations carry an ID: the first one is the player's own, a later one is distinct.
+        $foot->players()->attach([$both->id => ['membership_id' => $both->membership_id], $footer->id => ['membership_id' => $footer->membership_id]]);
+        $swim->players()->attach([$both->id => ['membership_id' => "SW-{$both->membership_id}"], $swimmer->id => ['membership_id' => $swimmer->membership_id]]);
         foreach (['2026-09-07', '2026-09-14', '2026-09-21', '2026-09-28', '2026-10-05'] as $i => $date) {
             $football = $this->branchSession($foot, $u15, $date);
             $swimming = $this->branchSession($swim, $u15, $date);
@@ -86,8 +87,8 @@ trait BranchAttendanceFixtures
         [$foot, $swim] = $this->twoSports();
         $u15 = $this->category('U15');
         $both = $this->player($u15);
-        $foot->players()->attach($both->id);
-        $swim->players()->attach($both->id);
+        $foot->players()->attach($both->id, ['membership_id' => $both->membership_id]);
+        $swim->players()->attach($both->id, ['membership_id' => "SW-{$both->membership_id}"]);
         $this->branchMark($this->branchSession($foot, $u15, '2026-10-01'), $both, AttendanceStatus::Present);
         $this->branchMark($this->branchSession($foot, $u15, '2026-10-05'), $both, AttendanceStatus::NotTraining, 'injury');
         $this->branchMark($this->branchSession($swim, $u15, '2026-10-08'), $both, AttendanceStatus::Present);

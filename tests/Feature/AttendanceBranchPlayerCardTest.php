@@ -109,7 +109,7 @@ class AttendanceBranchPlayerCardTest extends TestCase
 
         $this->actingAs($this->admin())->get(route('attendance.players.report', ['player' => $both, 'branch_id' => $swim->id]))->assertOk();
 
-        $this->assertSame("attendance-{$both->membership_id}-2026-09-01-2027-08-31-b{$swim->id}.pdf", $seen['filename']);
+        $this->assertSame("attendance-SW-{$both->membership_id}-2026-09-01-2027-08-31-b{$swim->id}.pdf", $seen['filename']);
         $this->assertStringContainsString('Swimming', $seen['html']);
     }
 

@@ -39,8 +39,8 @@
             @endif
             <td style="vertical-align:top;">
                 <div style="font-size:14px; font-weight:bold;">{{ $player->fullname }}</div>
-                <div style="font-family:monospace;">{{ $player->membership_id }}</div>
-                <div class="muted">{{ $player->category?->localized_name }}</div>
+                <div style="font-family:monospace;">{{ $shown['membership_id'] }}</div>
+                <div class="muted">{{ $shown['category'] }}</div>
                 @if (!empty($branch))
                     <div class="muted">{{ $L('branch') }}: {{ $branch }}</div>
                 @endif

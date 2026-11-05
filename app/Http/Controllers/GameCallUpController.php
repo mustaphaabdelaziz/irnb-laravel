@@ -11,6 +11,7 @@ use App\Services\Competitions\CallUpCandidates;
 use App\Services\Competitions\GameMinutes;
 use App\Services\Competitions\SuspensionEngine;
 use App\Services\Competitions\TeamAccess;
+use App\Services\Competitions\TeamMembers;
 use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
 use Carbon\CarbonImmutable;
@@ -146,7 +147,8 @@ class GameCallUpController extends Controller
         $game->load(['team.category', 'competition', 'opponent', 'venue']);
         $locale = app()->getLocale();
 
-        $players = $game->players()->where('called_up', true)->with('player.category')->get()
+        $members = TeamMembers::of($game->team);
+        $players = $game->players()->where('called_up', true)->with(['player' => fn ($q) => $q->with(TeamMembers::RELATIONS)])->get()
             ->sortBy([
                 fn (GamePlayer $a, GamePlayer $b) => ($a->shirt_number ?? 999) <=> ($b->shirt_number ?? 999),
                 fn (GamePlayer $a, GamePlayer $b) => strcmp($a->player->fullname, $b->player->fullname),
@@ -154,7 +156,7 @@ class GameCallUpController extends Controller
             ->map(fn (GamePlayer $gp) => [
                 'shirt' => $gp->shirt_number,
                 'name' => $gp->player->fullname,
-                'category' => $gp->player->category?->localized_name,
+                'category' => $members->category($gp->player)?->localized_name,
             ])->values()->all();
 
         $coaches = $game->team->coachesFor($game->season_start_year)->get()

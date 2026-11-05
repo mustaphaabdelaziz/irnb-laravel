@@ -9,8 +9,9 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Who may be called up for a game: the competition's visible squad members
- * still on the team's season roster, or that roster for a friendly. Each
- * player carries the roster's shirt number; ordered by number, then name.
+ * still on the team's season roster, or that roster for a friendly, minus
+ * anyone who left the team's branch. Each player carries the roster's shirt
+ * number; ordered by number, then name.
  */
 final class CallUpCandidates
 {
@@ -25,7 +26,10 @@ final class CallUpCandidates
                 ->whereIn('player_id', $shirts->keys())->pluck('player_id')
             : $shirts->keys();
 
-        return Player::query()->whereIn('id', $ids)->with('category')->get()
+        $members = TeamMembers::of($game->team);
+
+        return Player::query()->whereIn('id', $ids)->with(TeamMembers::RELATIONS)->get()
+            ->reject(fn (Player $p) => $members->hasLeft($p))
             ->each(fn (Player $p) => $p->setAttribute('shirt_number', ($n = $shirts[$p->id] ?? null) === null ? null : (int) $n))
             ->sortBy([
                 fn (Player $a, Player $b) => ($a->shirt_number ?? 999) <=> ($b->shirt_number ?? 999),

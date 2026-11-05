@@ -18,6 +18,7 @@ use App\Services\Competitions\MatchPage;
 use App\Services\Competitions\PlayerFlags;
 use App\Services\Competitions\SuspensionEngine;
 use App\Services\Competitions\TeamAccess;
+use App\Services\Competitions\TeamMembers;
 use App\Services\Competitions\TrainingCanceller;
 use App\Support\Season;
 use Carbon\CarbonImmutable;
@@ -134,11 +135,12 @@ class GameController extends Controller
                 $rows = $game->players->keyBy('player_id');
                 $list = $candidates->for($game);
                 $badges = $flags->for($list->pluck('id')->all(), $request->user(), $game);
+                $members = TeamMembers::of($game->team);
 
                 return $list->map(fn (Player $p) => [
                     'player_id' => $p->id,
                     'name' => $p->fullname,
-                    'category' => $p->category?->localized_name,
+                    'category' => $members->category($p)?->localized_name,
                     'shirt_number' => $rows->get($p->id)?->shirt_number ?? $p->shirt_number,
                     'called_up' => (bool) $rows->get($p->id)?->called_up,
                     'not_called_reason' => $rows->get($p->id)?->not_called_reason,

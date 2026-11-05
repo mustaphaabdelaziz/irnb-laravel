@@ -48,12 +48,18 @@ final class TeamRoster
         });
     }
 
-    /** Copies last season's roster (and numbers) onto an empty $season, leaving out archived players and those who left. */
+    /**
+     * Copies last season's roster (and numbers) onto an empty $season, leaving out
+     * archived players, those who left the club, and those who left the team's branch.
+     */
     public function copyFromPreviousSeason(Team $team, int $season): int
     {
+        $left = Player::leftStatusId();
         $rows = DB::table('team_players')
             ->where('team_id', $team->id)->where('season_start_year', $season - 1)
-            ->whereIn('player_id', Player::query()->where('archived', false)->notLeft()->select('id'))
+            ->whereIn('player_id', Player::query()->where('archived', false)->notLeft()
+                ->whereNot(fn ($q) => $q->registeredWhere(branches: $team->branch_id, statuses: $left === null ? [] : [$left]))
+                ->select('id'))
             ->get(['player_id', 'shirt_number'])
             ->map(fn ($row) => ['player_id' => (int) $row->player_id, 'shirt_number' => $row->shirt_number === null ? null : (int) $row->shirt_number])
             ->all();

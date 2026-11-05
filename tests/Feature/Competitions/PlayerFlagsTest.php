@@ -3,6 +3,7 @@
 namespace Tests\Feature\Competitions;
 
 use App\Models\DocumentType;
+use App\Models\PlayerSubscription;
 use App\Models\Role;
 use App\Models\Suspension;
 use App\Models\User;
@@ -17,13 +18,21 @@ class PlayerFlagsTest extends TestCase
 {
     use CompetitionFixtures, RefreshDatabase;
 
+    private function charge(\App\Models\Player $player, float $owed): void
+    {
+        PlayerSubscription::create([
+            'player_id' => $player->id, 'subscription_id' => null, 'label' => 'Fee', 'year' => 2026,
+            'status_at_time' => 'student', 'is_mandatory' => true, 'amount_owed' => $owed, 'amount_paid' => 0,
+        ]);
+    }
+
     #[Test]
     public function flags_cover_licence_documents_debt_and_suspension(): void
     {
         $team = $this->team();
         DocumentType::create(['code' => 'medical', 'name' => 'Medical', 'validity' => 'none', 'is_required' => false, 'required_for_matches' => true, 'is_active' => true]);
         $p = $this->player($team->category);
-        $p->update(['outstanding_debt' => 1500]);
+        $this->charge($p, 1500);
         $ok = $this->player($team->category, ['licence_number' => 'L-1']);
         Suspension::create(['player_id' => $p->id, 'team_id' => $team->id, 'source' => 'manual', 'kind' => 'dates', 'starts_on' => now()->subDay()->toDateString(), 'ends_on' => now()->addDays(5)->toDateString(), 'reason' => 'Discipline']);
 
@@ -46,7 +55,7 @@ class PlayerFlagsTest extends TestCase
     {
         $team = $this->team();
         $p = $this->player($team->category);
-        $p->update(['outstanding_debt' => 900]);
+        $this->charge($p, 900);
         $this->onRoster($team, 2026, [$p]);
         $game = $this->game($team);
         $viewer = User::factory()->create(['role_id' => Role::factory()->create(['permissions' => ['games' => ['view']]])->id]);

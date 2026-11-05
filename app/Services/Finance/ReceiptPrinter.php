@@ -2,6 +2,7 @@
 
 namespace App\Services\Finance;
 
+use App\Models\Player;
 use App\Models\ReceiptPrint;
 use App\Models\Transaction;
 use App\Models\User;
@@ -39,6 +40,8 @@ class ReceiptPrinter
         '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9',
     ];
 
+    public function __construct(private readonly ReceiptRegistration $registrations) {}
+
     /** @param  Collection<int, Transaction>|null  $lines  the payment group printed with it */
     public function record(Transaction $transaction, string $format, ?User $user, ?Collection $lines = null): ReceiptPrint
     {
@@ -75,7 +78,7 @@ class ReceiptPrinter
      */
     public function snapshot(Transaction $transaction, ?Collection $lines = null): array
     {
-        $single = $this->single($transaction);
+        $single = [...$this->single($transaction), 'membership_id' => $this->printedId($transaction, $lines)];
         if (! $lines || $lines->count() < 2) {
             return $single;
         }
@@ -98,6 +101,27 @@ class ReceiptPrinter
                 'status' => $each[$i]['status'],
             ])->all(),
         ];
+    }
+
+    /**
+     * The ID the paper prints. Not in CHECKED_FIELDS: it is a record of the paper,
+     * and a registration's ID changing later doesn't make the payment suspect.
+     *
+     * @param  Collection<int, Transaction>|null  $lines
+     */
+    private function printedId(Transaction $transaction, ?Collection $lines): ?string
+    {
+        $player = $transaction->related_entity_type === 'Player' && $transaction->related_entity_id
+            ? Player::with('registrations')->find($transaction->related_entity_id)
+            : null;
+        if ($player === null) {
+            return null;
+        }
+
+        $registration = $this->registrations->shown($player, $lines ?? collect([$transaction]));
+
+        // A registration with no ID of its own shows none; the player's own only when there is no registration.
+        return $registration ? $registration->membership_id : $player->membership_id;
     }
 
     /** @return array<string, mixed> */

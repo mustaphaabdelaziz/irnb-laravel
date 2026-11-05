@@ -64,11 +64,11 @@
         <div class="rule"></div>
         <table class="rows">
             <tr><td colspan="2" style="font-weight:bold; font-size:9.5pt;">{{ $player->fullname }}</td></tr>
-            @if ($player->membership_id)
-                <tr><td>{{ __('Membership No.') }}</td><td class="value" align="{{ $end }}">{{ $player->membership_id }}</td></tr>
+            @if ($memberId)
+                <tr><td>{{ __('Membership No.') }}</td><td class="value" align="{{ $end }}">{{ $memberId }}</td></tr>
             @endif
-            @if ($player->category)
-                <tr><td>{{ __('Category') }}</td><td class="value" align="{{ $end }}">{{ $player->category->localized_name }}</td></tr>
+            @if ($memberCategory)
+                <tr><td>{{ __('Category') }}</td><td class="value" align="{{ $end }}">{{ $memberCategory }}</td></tr>
             @endif
         </table>
     @endif

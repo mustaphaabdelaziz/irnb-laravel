@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\Finance\ReceiptData;
 use App\Services\Finance\ReceiptPrinter;
 use App\Services\Pdf\PdfService;
+use App\Services\Player\RegistrationService;
 use App\Support\PermissionMap;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -39,7 +40,8 @@ class ReceiptPrintTest extends TestCase
             'firstname' => 'Yacine', 'lastname' => 'Brahimi',
             'is_student' => true, 'outstanding_debt' => 0,
         ]);
-        $player->branches()->attach(Branch::create(['name' => 'Football'])->id);
+        // Registered through the service: the first registration carries the player's ID.
+        app(RegistrationService::class)->register($player, ['branch_id' => Branch::create(['name' => 'Football'])->id]);
 
         return $player;
     }

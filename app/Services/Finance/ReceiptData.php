@@ -24,6 +24,8 @@ class ReceiptData
         'recordedBy', 'receivedBy', ...TransactionTitle::RELATIONS, ...Transaction::FINANCE_ACCOUNT_LABEL,
     ];
 
+    public function __construct(private readonly ReceiptRegistration $registrations) {}
+
     /**
      * @param  Collection<int, Transaction>|null  $lines  its payment group, when paid together
      * @return array<string, mixed>
@@ -34,8 +36,9 @@ class ReceiptData
         $grouped = $lines && $lines->count() > 1;
 
         $player = $transaction->related_entity_type === 'Player' && $transaction->related_entity_id
-            ? Player::with(['category', 'branches'])->find($transaction->related_entity_id)
+            ? Player::with(['category', 'registrations.branch', 'registrations.category'])->find($transaction->related_entity_id)
             : null;
+        $registration = $player ? $this->registrations->shown($player, $lines ?? collect([$transaction])) : null;
 
         return [
             'club' => ClubHeader::data(),
@@ -51,7 +54,10 @@ class ReceiptData
             'accountLabel' => FinanceAccountLabel::for($transaction->financeAccount) ?: null,
             'player' => $player,
             'relatedName' => $player?->fullname,
-            'branches' => $player?->branches->map(fn ($branch) => $branch->localized_name)->filter()->implode(' · ') ?: null,
+            'branches' => $registration?->branch?->localized_name,
+            // A registration with no ID of its own shows none; the player's own only when there is no registration.
+            'memberId' => $registration ? $registration->membership_id : $player?->membership_id,
+            'memberCategory' => ($registration ? $registration->category : $player?->category)?->localized_name,
             'subscription' => $this->subscription($transaction),
             // One block per payment of the group, then their total as the amount paid.
             'lines' => $grouped

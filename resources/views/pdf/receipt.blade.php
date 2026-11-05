@@ -42,9 +42,9 @@
         @endunless
         <tr><td class="label">{{ __('Payment date') }}</td><td>{{ $transaction->transaction_date?->format('Y-m-d') }}</td></tr>
         @if ($relatedName)
-            <tr><td class="label">{{ __('Member') }}</td><td>{{ $relatedName }}@if ($player?->membership_id) — {{ $player->membership_id }}@endif</td></tr>
-            @if ($player?->category)
-                <tr><td class="label">{{ __('Category') }}</td><td>{{ $player->category->localized_name }}</td></tr>
+            <tr><td class="label">{{ __('Member') }}</td><td>{{ $relatedName }}@if ($memberId) — {{ $memberId }}@endif</td></tr>
+            @if ($memberCategory)
+                <tr><td class="label">{{ __('Category') }}</td><td>{{ $memberCategory }}</td></tr>
             @endif
         @endif
         @if ($branches)

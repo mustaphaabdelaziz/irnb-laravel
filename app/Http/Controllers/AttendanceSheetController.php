@@ -40,7 +40,7 @@ class AttendanceSheetController extends Controller
     public function __construct(private readonly PdfService $pdf) {}
 
     /** One category's month in one branch (BranchChoice, as on the calendar): players × sessions, A4 landscape (right-to-left in Arabic). */
-    public function month(Request $request, MonthSheet $sheet, AttendanceStatusCatalog $catalog): Response
+    public function month(Request $request, MonthSheet $sheet, AttendanceStatusCatalog $catalog, Roster $roster): Response
     {
         $data = $request->validate([
             'category_id' => ['required', 'integer', 'exists:categories,id'],
@@ -76,10 +76,11 @@ class AttendanceSheetController extends Controller
         }
 
         // Players from another category (a joint session's roster, a guest) carry its name.
-        // Deliberately the player's CURRENT category_id, not any mark's frozen one: unlike the
-        // session sheet/screen, the month grid is a forward-looking blank sheet the coach fills
-        // in on the pitch, so it lists people as they are today (see rows_follow_the_roster_rules()).
-        $otherIds = $players->pluck('category_id')->filter()->map(fn ($id) => (int) $id)
+        // Deliberately the player's CURRENT category in this branch, not any mark's frozen one:
+        // unlike the session sheet/screen, the month grid is a forward-looking blank sheet the coach
+        // fills in on the pitch, so it lists people as they are today (see rows_follow_the_roster_rules()).
+        $categoryOf = $roster->categoryIdsIn($players, $branch?->id);
+        $otherIds = collect($categoryOf)->filter()->map(fn ($id) => (int) $id)
             ->reject(fn (int $id) => $id === $category->id)->unique()->values()->all();
         $others = Category::whereIn('id', $otherIds)->get()
             ->mapWithKeys(fn (Category $c) => [$c->id => $c->localized_name]);
@@ -95,7 +96,7 @@ class AttendanceSheetController extends Controller
             'rows' => $players->map(fn (Player $p) => [
                 'id' => $p->id,
                 'name' => self::name($p),
-                'category' => $others->get((int) $p->category_id),
+                'category' => $others->get((int) ($categoryOf[$p->id] ?? 0)),
             ])->values()->all(),
             'cells' => $cells,
             'filled' => $request->boolean('filled'),
@@ -121,6 +122,7 @@ class AttendanceSheetController extends Controller
         // Primary category first, then the others of a joint pre-season session.
         $categories = $session->orderedCategories()->mapWithKeys(fn (Category $c) => [$c->id => $c->localized_name]);
         $joint = $categories->count() > 1;
+        $rowCategories = $joint ? $roster->categoryIdsIn($players, $session->branch_id) : [];
         // Loaded once, always: the category tag needs the mark's frozen category_id
         // even on a blank sheet, only the status/minutes/reason/note stay gated by $filled.
         $marks = $session->attendances()->get()->keyBy('player_id');
@@ -141,15 +143,15 @@ class AttendanceSheetController extends Controller
                 'cancelled' => $session->state === SessionState::Cancelled,
                 'cancel_reason' => $session->cancel_reason,
             ],
-            'rows' => $players->map(function (Player $p) use ($marks, $categories, $joint, $filled) {
+            'rows' => $players->map(function (Player $p) use ($marks, $categories, $joint, $filled, $rowCategories) {
                 $mark = $marks->get($p->id);
 
                 return [
                     'name' => self::name($p),
                     // Where a player comes from only matters when several categories share the session.
                     // Once marked, the mark's own category_id (fixed at marking time) wins over the
-                    // player's current one, so a later category change never retags a frozen session.
-                    'category' => $joint ? $categories->get($mark?->category_id ?? $p->category_id) : null,
+                    // player's current one in this branch, so a later change never retags a frozen session.
+                    'category' => $joint ? $categories->get($mark?->category_id ?? $rowCategories[$p->id] ?? null) : null,
                     'status' => $filled ? $mark?->status : null,
                     'minutes' => $filled ? $mark?->minutes : null,
                     'reason' => $filled ? $mark?->reason?->value : null,

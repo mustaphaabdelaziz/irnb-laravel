@@ -13,6 +13,8 @@ use App\Models\TrainingSession;
 use App\Services\Attendance\AttendanceStatusCatalog;
 use App\Services\Attendance\MarkRecorder;
 use App\Services\Attendance\Roster;
+use App\Services\Player\RegistrationDisplay;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -32,6 +34,7 @@ class AttendanceController extends Controller
         $categories = $session->orderedCategories()
             ->mapWithKeys(fn (Category $c) => [$c->id => $c->localized_name]);
         $joint = $categories->count() > 1;
+        $rowCategories = $joint ? $roster->categoryIdsIn($players, $session->branch_id) : [];
 
         return Inertia::render('Attendance/Session', [
             'session' => [
@@ -47,7 +50,7 @@ class AttendanceController extends Controller
             ],
             'saved' => $marks->isNotEmpty(),
             'marksCount' => $marks->count(),
-            'rows' => $players->map(function (Player $p) use ($marks, $categories, $joint) {
+            'rows' => $players->map(function (Player $p) use ($marks, $categories, $joint, $rowCategories) {
                 $mark = $marks->get($p->id);
 
                 return [
@@ -56,39 +59,15 @@ class AttendanceController extends Controller
                     'picture' => $p->picture_url,
                     // Where a player comes from only matters when several categories share the session.
                     // Once marked, the mark's own category_id (fixed at marking time) wins over the
-                    // player's current one, so a later category change never retags a frozen session.
-                    'category' => $joint ? $categories->get($mark?->category_id ?? $p->category_id) : null,
+                    // player's current one in this branch, so a later change never retags a frozen session.
+                    'category' => $joint ? $categories->get($mark?->category_id ?? $rowCategories[$p->id] ?? null) : null,
                     'status' => $mark?->status ?? AttendanceStatus::Present->value,
                     'minutes' => $mark?->minutes,
                     'reason' => $mark?->reason?->value,
                     'note' => $mark?->note,
                 ];
             })->values(),
-            // Anyone to add by hand, whatever their status, category or branch: not archived,
-            // not gone before the session date, not already listed; searched by full name;
-            // the session's branch members first.
-            'candidates' => Player::with(['status', 'category', 'branches'])
-                ->where('archived', false)
-                ->where(fn ($q) => $q->whereNull('left_at')->orWhereDate('left_at', '>', $session->date))
-                ->whereNotIn('id', $players->modelKeys())
-                // A legacy "left" status with no leave date has left all the same.
-                ->when(Player::leftStatusId(), fn ($q, int $left) => $q->where(fn ($q) => $q->whereNull('status_id')
-                    ->orWhere('status_id', '!=', $left)
-                    ->orWhereNotNull('left_at')))
-                ->orderBy('lastname')->orderBy('firstname')
-                ->get([...Roster::COLUMNS, 'status_id'])
-                // The session's branch members first (a stable sort keeps the name order); others are guests.
-                ->sortBy(fn (Player $p) => $session->branch_id !== null && ! $p->branches->contains('id', $session->branch_id))
-                ->map(fn (Player $p) => [
-                    'id' => $p->id,
-                    'name' => $p->fullname,
-                    'picture' => $p->picture_url,
-                    'status' => $p->status?->localized_name,
-                    'category' => $p->category?->localized_name,
-                    'branches' => $p->branches->map(fn ($b) => $b->localized_name)->implode(', '),
-                    'in_branch' => $session->branch_id === null || $p->branches->contains('id', $session->branch_id),
-                ])
-                ->values(),
+            'candidates' => $this->candidates($session, $players),
             'lastCoach' => TrainingSession::where('category_id', $session->category_id)
                 ->where('branch_id', $session->branch_id)
                 ->whereKeyNot($session->id)->whereNotNull('coach')
@@ -112,5 +91,51 @@ class AttendanceController extends Controller
         ]);
 
         return back()->with('success', 'flash.attendance_saved');
+    }
+
+    /**
+     * Anyone to add by hand, whatever their status, category or branch: not archived,
+     * still a member somewhere on the session date, not already listed; searched by
+     * full name. The session's active members come first, with that branch's values.
+     * Everyone else is a guest, with their main values and the branches they're still in.
+     *
+     * @param  Collection<int, Player>  $listed
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    private function candidates(TrainingSession $session, Collection $listed): \Illuminate\Support\Collection
+    {
+        $display = RegistrationDisplay::make();
+        $branchNames = Branch::all()->mapWithKeys(fn (Branch $b) => [$b->id => $b->localized_name]);
+        $categoryNames = Category::all()->mapWithKeys(fn (Category $c) => [$c->id => $c->localized_name]);
+        $statusNames = PlayerStatus::all()->mapWithKeys(fn (PlayerStatus $s) => [$s->id => $s->localized_name]);
+        $branchId = $session->branch_id;
+        $inBranch = fn (Player $p) => $branchId === null || $display->isActiveIn($p, $branchId);
+
+        return Player::with('registrations')
+            ->registeredWhere(activeOn: $session->date)
+            ->where('archived', false)
+            ->whereNotIn('id', $listed->modelKeys())
+            ->orderBy('lastname')->orderBy('firstname')
+            ->get([...Roster::COLUMNS, 'status_id', 'left_at'])
+            // The session's branch members first (a stable sort keeps the name order); others are guests.
+            ->sortBy(fn (Player $p) => ! $inBranch($p))
+            ->map(function (Player $p) use ($display, $branchId, $inBranch, $branchNames, $categoryNames, $statusNames) {
+                $values = $display->values($p, $inBranch($p) ? $branchId : null);
+
+                return [
+                    'id' => $p->id,
+                    'name' => $p->fullname,
+                    'picture' => $p->picture_url,
+                    'status' => $statusNames->get($values['status_id']),
+                    'category' => $categoryNames->get($values['category_id']),
+                    'branches' => $p->registrations
+                        ->filter(fn ($r) => $display->isActiveIn($p, (int) $r->branch_id))
+                        ->sortBy('branch_id')
+                        ->map(fn ($r) => $branchNames->get($r->branch_id))
+                        ->implode(', '),
+                    'in_branch' => $inBranch($p),
+                ];
+            })
+            ->values();
     }
 }

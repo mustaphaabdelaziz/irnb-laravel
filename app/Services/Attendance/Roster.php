@@ -5,7 +5,9 @@ namespace App\Services\Attendance;
 use App\Models\Player;
 use App\Models\PlayerStatus;
 use App\Models\TrainingSession;
+use App\Services\Player\RegistrationDisplay;
 use App\Support\AttendanceSettings;
+use Illuminate\Database\Eloquent\Collection as PlayerRows;
 use Illuminate\Support\Collection;
 
 /**
@@ -94,6 +96,21 @@ final class Roster
         return Player::whereIn('id', $session->attendances()->select('player_id'))
             ->orderBy('lastname')->orderBy('firstname')
             ->get(self::COLUMNS);
+    }
+
+    /**
+     * The category to tag each listed player with: their registration's in the
+     * branch, else their main one, else their own. One load for any number of players.
+     *
+     * @param  PlayerRows<int, Player>  $players
+     * @return array<int, int|null> by player id
+     */
+    public function categoryIdsIn(PlayerRows $players, ?int $branchId): array
+    {
+        $players->loadMissing('registrations');
+        $display = RegistrationDisplay::make();
+
+        return $players->mapWithKeys(fn (Player $player) => [$player->id => $display->values($player, $branchId)['category_id']])->all();
     }
 
     /**

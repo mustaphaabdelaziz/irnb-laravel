@@ -463,8 +463,8 @@ class MemberStats
         $row = $this->active($filters)
             ->toBase()
             ->selectRaw(
-                'COUNT(CASE WHEN is_student = 1 THEN 1 END) as students, '
-                .'COUNT(CASE WHEN is_student = 0 THEN 1 END) as workers, '
+                'COUNT(CASE WHEN is_student IS TRUE THEN 1 END) as students, '
+                .'COUNT(CASE WHEN is_student IS FALSE THEN 1 END) as workers, '
                 ."COUNT(CASE WHEN gender = 'Male' THEN 1 END) as male, "
                 ."COUNT(CASE WHEN gender = 'Female' THEN 1 END) as female"
             )

@@ -183,7 +183,7 @@ final class DocumentChecklist
         return [
             'EXISTS (SELECT 1 FROM player_documents pd'
                 .' INNER JOIN document_types dt ON dt.id = pd.document_type_id'
-                .' WHERE pd.player_id = players.id AND dt.is_active = 1'
+                .' WHERE pd.player_id = players.id AND dt.is_active IS TRUE'
                 // A profile picture settles the Photo, so its record cannot expire.
                 ." AND (dt.code <> ? OR players.picture_url IS NULL OR players.picture_url = '')"
                 ." AND pd.state = 'received' AND pd.valid_until >= ? AND pd.valid_until < ?)",

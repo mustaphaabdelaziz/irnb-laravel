@@ -9,6 +9,7 @@ use App\Reports\Concerns\FiltersPlayers;
 use App\Reports\Filter;
 use App\Reports\Report;
 use App\Reports\ReportFilters;
+use App\Services\Dashboard\Support\MonthBucket;
 use App\Support\UiLang;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -112,7 +113,7 @@ class PlayerMovement extends Report
         $joined = $this->applyCategoryBranch(Player::query()->whereNotNull('join_year'), $filters)->toBase()
             ->groupBy('join_year')->orderBy('join_year')->selectRaw('join_year as y, COUNT(*) as c')->get();
         $left = $this->applyCategoryBranch(Player::query()->whereNotNull('left_at'), $filters)->toBase()
-            ->selectRaw('SUBSTR(left_at, 1, 4) as y, COUNT(*) as c')->groupBy('y')->orderBy('y')->get();
+            ->selectRaw('SUBSTR('.MonthBucket::expression('left_at').', 1, 4) as y, COUNT(*) as c')->groupBy('y')->orderBy('y')->get();
 
         $series = fn ($rows) => $rows->map(fn ($r) => ['key' => (string) $r->y, 'label' => (string) $r->y, 'count' => (int) $r->c])->take(-10)->values()->all();
 

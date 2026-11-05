@@ -119,12 +119,12 @@ class OperationsStats
             ->selectRaw(
                 'subscriptions.name as name, subscriptions.year as year, '
                 .'COUNT(*) as enrolled, '
-                .'COUNT(CASE WHEN player_subscriptions.is_exempt = 1 THEN 1 END) as exempt, '
-                .'COUNT(CASE WHEN player_subscriptions.is_exempt = 0 AND player_subscriptions.amount_paid >= player_subscriptions.amount_owed THEN 1 END) as paid, '
-                .'COUNT(CASE WHEN player_subscriptions.is_exempt = 0 AND player_subscriptions.amount_paid > 0 AND player_subscriptions.amount_paid < player_subscriptions.amount_owed THEN 1 END) as partial, '
-                .'COUNT(CASE WHEN player_subscriptions.is_exempt = 0 AND player_subscriptions.amount_paid <= 0 AND player_subscriptions.amount_owed > 0 THEN 1 END) as unpaid, '
-                .'SUM(CASE WHEN player_subscriptions.is_exempt = 0 THEN player_subscriptions.amount_paid ELSE 0 END) as collected, '
-                .'SUM(CASE WHEN player_subscriptions.is_exempt = 0 THEN player_subscriptions.amount_owed ELSE 0 END) as billed'
+                .'COUNT(CASE WHEN player_subscriptions.is_exempt IS TRUE THEN 1 END) as exempt, '
+                .'COUNT(CASE WHEN player_subscriptions.is_exempt IS FALSE AND player_subscriptions.amount_paid >= player_subscriptions.amount_owed THEN 1 END) as paid, '
+                .'COUNT(CASE WHEN player_subscriptions.is_exempt IS FALSE AND player_subscriptions.amount_paid > 0 AND player_subscriptions.amount_paid < player_subscriptions.amount_owed THEN 1 END) as partial, '
+                .'COUNT(CASE WHEN player_subscriptions.is_exempt IS FALSE AND player_subscriptions.amount_paid <= 0 AND player_subscriptions.amount_owed > 0 THEN 1 END) as unpaid, '
+                .'SUM(CASE WHEN player_subscriptions.is_exempt IS FALSE THEN player_subscriptions.amount_paid ELSE 0 END) as collected, '
+                .'SUM(CASE WHEN player_subscriptions.is_exempt IS FALSE THEN player_subscriptions.amount_owed ELSE 0 END) as billed'
             )
             ->get()
             ->map(function (object $row): array {

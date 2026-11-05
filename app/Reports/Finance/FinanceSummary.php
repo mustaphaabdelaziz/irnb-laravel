@@ -9,6 +9,7 @@ use App\Reports\Concerns\FiltersTransactions;
 use App\Reports\Report;
 use App\Reports\ReportFilters;
 use App\Services\Dashboard\ModuleStats;
+use App\Services\Dashboard\Support\MonthBucket;
 use App\Support\FinanceAccountLabel;
 use App\Support\UiLang;
 use Illuminate\Support\Collection;
@@ -116,9 +117,8 @@ class FinanceSummary extends Report
 
     public function charts(ReportFilters $filters): array
     {
-        // SUBSTR works on SQLite (tests, desktop) and MySQL (web) alike.
         $months = $this->transactions($filters)->toBase()
-            ->selectRaw('SUBSTR(transaction_date, 1, 7) as month, transaction_type, SUM(amount) as total')
+            ->selectRaw(MonthBucket::expression('transaction_date').' as month, transaction_type, SUM(amount) as total')
             ->groupBy('month', 'transaction_type')->orderBy('month')->get();
 
         $byMethod = $this->transactions($filters)->toBase()

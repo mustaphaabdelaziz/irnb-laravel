@@ -84,7 +84,7 @@ final class RegistrationDisplay
             'licence_number' => $row->licence_number,
             'status_id' => $status,
             'left_at' => $leftAt,
-            'membership_id' => $row->membership_id ?? $player->membership_id,
+            'membership_id' => $row->membership_id,
             'in_branch' => $inBranch,
             'left_branch' => $inBranch && $this->isLeft($row),
         ];

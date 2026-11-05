@@ -105,6 +105,19 @@ class RegistrationDisplayTest extends TestCase
     }
 
     #[Test]
+    public function a_registration_without_an_id_shows_none_but_no_registration_shows_the_players(): void
+    {
+        $player = $this->loaded($this->bothActive());
+        $this->assertNull($player->registrations->firstWhere('branch_id', $this->swim->id)->membership_id);
+
+        $values = RegistrationDisplay::make()->values($player, $this->swim->id);
+        $this->assertNull($values['membership_id']);
+
+        $flat = $this->loaded($this->noRegistration());
+        $this->assertSame($flat->membership_id, RegistrationDisplay::make()->values($flat)['membership_id']);
+    }
+
+    #[Test]
     public function active_in_means_a_registration_there_not_left(): void
     {
         $display = RegistrationDisplay::make();

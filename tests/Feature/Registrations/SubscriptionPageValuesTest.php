@@ -75,6 +75,21 @@ class SubscriptionPageValuesTest extends TestCase
     }
 
     #[Test]
+    public function a_registration_without_an_id_shows_none_not_the_players_other_id(): void
+    {
+        $player = $this->bothActive();
+        $this->assertNull($player->registrationIn($this->swim->id)->membership_id);
+        $sub = $this->sub([$this->swim]);
+
+        $offered = $this->props($sub)['availablePlayers'][0];
+        $this->assertNull($offered['membership_id']);
+
+        $sub->assignTo($player);
+        $row = $this->props($sub)['playerSubscriptions'][0]['player'];
+        $this->assertNull($row['membership_id']);
+    }
+
+    #[Test]
     public function no_branch_or_two_branches_show_the_main_registration(): void
     {
         $player = $this->bothActive();

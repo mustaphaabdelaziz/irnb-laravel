@@ -208,7 +208,7 @@ class SubscriptionController extends Controller
         $row = $display->shown($player, $branchId);
 
         return [
-            'membership_id' => $row?->membership_id ?? $player->membership_id,
+            'membership_id' => $row === null ? $player->membership_id : $row->membership_id,
             'category' => $row ? $row->category : $player->category,
         ];
     }

@@ -519,7 +519,11 @@ class TransactionController extends Controller
             'players' => Player::query()
                 ->where(fn (Builder $q) => $q->where('archived', false)
                     ->when($ownPlayerId, fn (Builder $q) => $q->orWhere('id', $ownPlayerId)))
-                ->with(['branches:id,name,name_ar,name_fr,name_en', 'category:id,name,name_ar,name_fr,name_en'])
+                ->with([
+                    'branches:id,name,name_ar,name_fr,name_en',
+                    'category:id,name,name_ar,name_fr,name_en',
+                    'registrations:id,player_id,branch_id,category_id,status_id,join_date,legacy_join_year',
+                ])
                 ->orderBy('lastname')->orderBy('firstname')
                 ->get([
                     'id', ...Player::NAME_COLUMNS,

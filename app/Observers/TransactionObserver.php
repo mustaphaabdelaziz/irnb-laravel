@@ -63,12 +63,16 @@ class TransactionObserver
 
         if (empty($transaction->finance_account_id)) {
             $player = $transaction->related_entity_type === 'Player' && $transaction->related_entity_id
-                ? Player::with('branches:id')->find($transaction->related_entity_id)
+                ? Player::with('registrations')->find($transaction->related_entity_id)
+                : null;
+            $subscription = $player && $transaction->player_subscription_id
+                ? PlayerSubscription::with(['subscription.branches:id', 'subscription.categories:id'])
+                    ->find($transaction->player_subscription_id)?->subscription
                 : null;
             $registers = DefaultRegisterResolver::load();
 
             $transaction->finance_account_id = ($player
-                ? $registers->forPlayer($player)
+                ? ($subscription ? $registers->forSubscription($subscription, $player) : null) ?? $registers->forPlayer($player)
                 : $registers->for(null, null))?->id;
         }
     }

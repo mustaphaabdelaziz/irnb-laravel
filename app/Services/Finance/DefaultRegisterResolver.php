@@ -5,11 +5,13 @@ namespace App\Services\Finance;
 use App\Models\FinanceAccount;
 use App\Models\Player;
 use App\Models\Subscription;
+use App\Services\Player\RegistrationDisplay;
 use Illuminate\Support\Collection;
 
 /**
  * Picks the cash register a payment lands in when none was chosen: the
- * category register of the player's branch, else that branch's treasury,
+ * subscription's branch when it has exactly one, else the player's main
+ * registration, each with its category register, else that branch's treasury,
  * else the first club-level cash account. The server default and the value
  * the forms pre-select both come from here, so they cannot disagree.
  *
@@ -25,6 +27,8 @@ final class DefaultRegisterResolver
     private Collection $treasuries;
 
     private ?FinanceAccount $clubWide;
+
+    private ?RegistrationDisplay $display = null;
 
     /** @param Collection<int, FinanceAccount> $accounts active accounts */
     public function __construct(Collection $accounts)
@@ -60,24 +64,38 @@ final class DefaultRegisterResolver
             ?? $this->clubWide;
     }
 
-    /** Expects the player's branches to be loaded; the first one is theirs. */
+    /**
+     * The main registration's register. Never a branch the player left: left
+     * everywhere, or with no registration, it is the club-level account. Eager-load
+     * `registrations` when resolving for many players.
+     */
     public function forPlayer(Player $player): ?FinanceAccount
     {
-        return $this->for($player->branches->first()?->id, $player->category_id);
+        $this->display ??= RegistrationDisplay::make();
+        $main = $this->display->main($player);
+
+        return $main !== null && $this->display->isActiveIn($player, (int) $main->branch_id)
+            ? $this->for((int) $main->branch_id, $main->category_id)
+            : $this->for(null, null);
     }
 
     /**
-     * The register of a subscription tied to exactly one branch and one
-     * category, or null when it spans several. Expects both relations loaded.
+     * The register of a subscription tied to exactly one branch, or null otherwise.
+     * Its one category, else the player's category in that branch, else that branch's
+     * treasury. A debt of a branch the player left still lands there: the money
+     * was owed to that sport. Expects both relations loaded.
      */
-    public function forSubscription(Subscription $subscription): ?FinanceAccount
+    public function forSubscription(Subscription $subscription, Player $player): ?FinanceAccount
     {
-        if ($subscription->branches->count() !== 1 || $subscription->categories->count() !== 1) {
+        if ($subscription->branches->count() !== 1) {
             return null;
         }
 
-        return $this->categoryRegisters->get(
-            $subscription->branches->first()->id.':'.$subscription->categories->first()->id
-        );
+        $branchId = (int) $subscription->branches->first()->id;
+        $categoryId = $subscription->categories->count() === 1
+            ? $subscription->categories->first()->id
+            : $player->registrationIn($branchId)?->category_id;
+
+        return $this->for($branchId, $categoryId);
     }
 }

@@ -303,7 +303,7 @@ class PlayerController extends Controller
                     'amount_owed' => $ps ? (float) $ps->amount_owed : $owed,
                     'amount_paid' => $ps ? (float) $ps->amount_paid : 0.0,
                     'remaining_amount' => $ps ? (float) $ps->remaining_amount : $owed,
-                    'default_finance_account_id' => $registers->forSubscription($s)?->id,
+                    'default_finance_account_id' => $registers->forSubscription($s, $player)?->id,
                 ];
             })
             ->values();

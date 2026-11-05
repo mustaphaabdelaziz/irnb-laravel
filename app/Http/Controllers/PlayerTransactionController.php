@@ -394,15 +394,15 @@ class PlayerTransactionController extends Controller
 
     /**
      * Where a payment lands when the form left the register empty: the register
-     * of a single-branch, single-category subscription, else the player's default.
+     * of a one-branch subscription, else the player's default.
      */
     private function defaultRegisterId(Player $player, ?PlayerSubscription $sub = null): ?int
     {
         $registers = DefaultRegisterResolver::load();
-        $player->loadMissing('branches:id');
+        $player->loadMissing('registrations');
         $subscription = $sub?->loadMissing(['subscription.branches:id', 'subscription.categories:id'])->subscription;
 
-        $register = ($subscription ? $registers->forSubscription($subscription) : null)
+        $register = ($subscription ? $registers->forSubscription($subscription, $player) : null)
             ?? $registers->forPlayer($player);
 
         return $register?->id;

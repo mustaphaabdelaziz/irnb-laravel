@@ -66,6 +66,70 @@ class JobDuplicateTest extends TestCase
     }
 
     #[Test]
+    public function the_quick_endpoint_hands_back_the_existing_job_for_the_same_spelling(): void
+    {
+        $existing = MemberJob::create(['name' => 'Menuisier', 'name_fr' => 'Menuisier']);
+
+        $this->actingAs($this->admin())
+            ->postJson(route('jobs.quick.store'), ['name' => 'Menuisier'])
+            ->assertStatus(409)
+            ->assertJsonPath('duplicate.id', $existing->id);
+
+        $this->assertSame(1, MemberJob::query()->count());
+    }
+
+    #[Test]
+    public function the_same_spelling_names_the_existing_job_on_the_settings_page(): void
+    {
+        MemberJob::create(['name' => 'Menuisier', 'name_fr' => 'Menuisier']);
+
+        $this->actingAs($this->admin())
+            ->post(route('jobs.store'), ['name' => 'Menuisier'])
+            ->assertSessionHasErrors(['name' => __('This job already exists as ":name".', ['name' => 'Menuisier'])]);
+
+        $this->assertSame(1, MemberJob::query()->count());
+    }
+
+    #[Test]
+    public function renaming_a_job_to_another_jobs_name_names_that_job(): void
+    {
+        MemberJob::create(['name' => 'Menuisier']);
+        $job = MemberJob::create(['name' => 'Plombier']);
+
+        $this->actingAs($this->admin())
+            ->put(route('jobs.update', $job), ['name' => 'Menuisier'])
+            ->assertSessionHasErrors(['name' => __('This job already exists as ":name".', ['name' => 'Menuisier'])]);
+
+        $this->assertSame('Plombier', $job->fresh()->name);
+    }
+
+    #[Test]
+    public function a_job_keeps_its_own_name_on_save(): void
+    {
+        $job = MemberJob::create(['name' => 'Menuisier']);
+
+        $this->actingAs($this->admin())
+            ->put(route('jobs.update', $job), ['name' => 'Menuisier', 'description' => 'Bois'])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('Bois', $job->fresh()->description);
+    }
+
+    #[Test]
+    public function a_name_of_only_punctuation_is_still_refused_when_taken(): void
+    {
+        // Its key is empty, so the finder cannot see it; the unique index would answer with a 500.
+        MemberJob::create(['name' => '---']);
+
+        $this->actingAs($this->admin())
+            ->postJson(route('jobs.quick.store'), ['name' => '---'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('name');
+
+        $this->assertSame(1, MemberJob::query()->count());
+    }
+
+    #[Test]
     public function a_near_duplicate_is_reported_but_still_created(): void
     {
         MemberJob::create(['name' => 'Informaticien', 'name_fr' => 'Informaticien']);

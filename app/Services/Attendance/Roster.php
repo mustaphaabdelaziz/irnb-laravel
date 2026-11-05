@@ -9,10 +9,11 @@ use App\Support\AttendanceSettings;
 use Illuminate\Support\Collection;
 
 /**
- * Who is expected at a session. Before the first save it is the members of
- * the session's branch (any branch for a club-wide session) in every category
- * of the session on that date whose player status is in the session's roster
- * set; after, it is exactly the saved marks. Freezing it
+ * Who is expected at a session. Before the first save it is the players with one
+ * registration in the session's branch (any registration for a session with no
+ * branch), in a category of the session, on the roster on that date, up to and
+ * including their leave date; a player with no registration is judged on their
+ * own columns. After the first save it is exactly the saved marks. Freezing it
  * keeps history fair: later category or status changes, departures and
  * newcomers never rewrite a past session.
  *
@@ -36,34 +37,51 @@ final class Roster
     private ?array $statuses = null;
 
     /**
-     * A player has one category, so several categories never list anyone twice.
-     *
      * @param  int|array<int, int>  $categoryIds
      * @param  list<int>|null  $statusIds  the roster set; null = the settings' default
-     * @param  int|null  $branchId  only members of this branch; null = the whole club
+     * @param  int|null  $branchId  only this branch's registrations; null = any registration
      * @return Collection<int, Player>
      */
     public function expected(int|array $categoryIds, string $date, ?array $statusIds = null, ?int $branchId = null): Collection
     {
         $statusIds ??= $this->defaultStatusIds();
 
-        return Player::whereIn('category_id', (array) $categoryIds)
-            ->when($branchId !== null, fn ($q) => $q->whereHas('branches', fn ($b) => $b->where('branches.id', $branchId)))
+        return Player::registeredWhere(
+            branches: $branchId,
+            categories: (array) $categoryIds,
+            also: fn ($row, string $status, string $leftAt) => $this->onRoster($row, $status, $leftAt, $date, $statusIds),
+        )
             ->where('archived', false)
-            ->where(fn ($q) => $q->whereNull('left_at')->orWhereDate('left_at', '>', $date))
-            ->when($statusIds !== [], fn ($q) => $q->where(function ($q) use ($statusIds) {
-                $q->whereIn('status_id', $statusIds);
-                ['registered' => $registered, 'left' => $left] = $this->codedStatuses();
-                if ($registered !== null && in_array($registered, $statusIds, true)) {
-                    $q->orWhereNull('status_id');
-                    if ($left !== null) {
-                        // Left after the date (the date condition above); a legacy "left" with no date never counts.
-                        $q->orWhere(fn ($q) => $q->where('status_id', $left)->whereNotNull('left_at'));
-                    }
-                }
-            }))
             ->orderBy('lastname')->orderBy('firstname')
             ->get(self::COLUMNS);
+    }
+
+    /**
+     * Not gone before the date, with a status in the roster set. When the set holds
+     * registered: no status at all (older records) and left later (members on that
+     * date) count too. A legacy "left" with no date never does.
+     *
+     * @param  list<int>  $statusIds
+     */
+    private function onRoster(mixed $row, string $status, string $leftAt, string $date, array $statusIds): void
+    {
+        // SQLite may hold a date with a time: compare on the day alone.
+        $row->where(fn ($q) => $q->whereNull($leftAt)->orWhere($leftAt, '>=', substr($date, 0, 10)));
+
+        if ($statusIds === []) {
+            return;
+        }
+
+        $row->where(function ($q) use ($status, $leftAt, $statusIds) {
+            $q->whereIn($status, $statusIds);
+            ['registered' => $registered, 'left' => $left] = $this->codedStatuses();
+            if ($registered !== null && in_array($registered, $statusIds, true)) {
+                $q->orWhereNull($status);
+                if ($left !== null) {
+                    $q->orWhere(fn ($q) => $q->where($status, $left)->whereNotNull($leftAt));
+                }
+            }
+        });
     }
 
     /** @return Collection<int, Player> */

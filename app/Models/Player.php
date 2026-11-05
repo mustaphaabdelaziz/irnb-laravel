@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\SerializesClubDates;
 use App\Support\Media;
 use Carbon\CarbonInterface;
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -114,6 +115,9 @@ class Player extends Model
      * player with no registration at all is judged on their own columns, and has
      * no branch. Null means no condition; an empty list matches nothing, so a
      * computed list can never silently widen to everyone.
+     *
+     * $also adds a rule of the caller's to that same row, or to a player's own
+     * columns: called with the query and the status and leave-date column names.
      */
     public function scopeRegisteredWhere(
         Builder $query,
@@ -122,6 +126,7 @@ class Player extends Model
         iterable|int|null $statuses = null,
         CarbonInterface|string|null $activeOn = null,
         bool $active = false,
+        ?Closure $also = null,
     ): void {
         $playerKey = $query->getModel()->qualifyColumn('id');
 
@@ -132,22 +137,24 @@ class Player extends Model
             ->when($categories !== null, fn ($q) => $q->inCategories($categories))
             ->when($statuses !== null, fn ($q) => $q->withStatuses($statuses))
             ->when($activeOn !== null, fn ($q) => $q->activeOn($activeOn))
-            ->when($active, fn ($q) => $q->active());
+            ->when($active, fn ($q) => $q->active())
+            ->when($also !== null, fn ($q) => $also($q, 'branch_player.status_id', 'branch_player.left_at'));
 
-        $query->where(function (Builder $either) use ($rows, $playerKey, $branches, $categories, $statuses, $activeOn, $active) {
+        $query->where(function (Builder $either) use ($rows, $playerKey, $branches, $categories, $statuses, $activeOn, $active, $also) {
             $either->whereExists($rows);
 
             if ($branches !== null) {
                 return;
             }
 
-            $either->orWhere(function (Builder $flat) use ($playerKey, $categories, $statuses, $activeOn, $active) {
+            $either->orWhere(function (Builder $flat) use ($playerKey, $categories, $statuses, $activeOn, $active, $also) {
                 $column = $flat->getModel()->qualifyColumn(...);
                 $flat->whereNotExists(fn ($q) => $q->selectRaw('1')->from('branch_player')->whereColumn('branch_player.player_id', $playerKey))
                     ->when($categories !== null, fn ($q) => $q->whereIn($column('category_id'), collect($categories)->all()))
                     ->when($statuses !== null, fn ($q) => $q->whereIn($column('status_id'), collect($statuses)->all()))
                     ->when($activeOn !== null, fn ($q) => BranchRegistration::constrainActiveOn($q, $column('status_id'), $column('left_at'), $activeOn))
-                    ->when($active, fn ($q) => $q->notLeft());
+                    ->when($active, fn ($q) => $q->notLeft())
+                    ->when($also !== null, fn ($q) => $also($q, $column('status_id'), $column('left_at')));
             });
         });
     }

@@ -10,7 +10,8 @@ use App\Models\Subscription;
  * A branch subscription is only for that branch's players. When its branches
  * change, the players left outside lose the obligation — but only while it is
  * still untouched (unpaid, not exempt, no payment on file). Anything paid,
- * partly paid or exempt stays, so no recorded money loses its obligation.
+ * partly paid or exempt stays, so no recorded money loses its obligation. A
+ * registration marked left still counts as in the branch: leaving never cancels debt.
  */
 class PruneOutOfBranchObligations
 {

@@ -12,6 +12,9 @@ use Illuminate\Support\Facades\DB;
  * Players, subscriptions and equipment reach it through pivots; transactions
  * reach it through their finance account. Re-deriving that per widget is how a
  * branch filter ends up meaning four different things on one page.
+ *
+ * A player who left a branch still counts in it here, because their debt there
+ * is still owed. A figure about current members must add its own active rule.
  */
 class BranchScope
 {

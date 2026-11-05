@@ -101,47 +101,44 @@ class Subscription extends Model
     }
 
     /**
-     * Subscriptions a player may be charged: open to their category (see
-     * forCategory) and to one of their branches — a subscription with no
-     * branch is open to every branch.
+     * Subscriptions a player may be newly charged: open to the branch and the
+     * category of one active registration. Left everywhere: none. A player with no
+     * registration at all has only their own category, and no branch.
      */
     public function scopeOpenTo(Builder $query, Player $player): Builder
     {
-        $branchIds = $player->branches()->pluck('branches.id');
+        $rows = $player->registrations()->active()->get(['branch_id', 'category_id']);
 
-        return $query->forCategory($player->category_id)
-            ->where(function (Builder $query) use ($branchIds) {
-                $query->whereDoesntHave('branches');
+        if ($rows->isEmpty()) {
+            if ($player->registrations()->exists() || Player::isLeftStatus($player->status_id)) {
+                return $query->whereRaw('1 = 0');
+            }
+            $rows = collect([(object) ['branch_id' => null, 'category_id' => $player->category_id]]);
+        }
 
-                if ($branchIds->isNotEmpty()) {
-                    $query->orWhereHas('branches', fn (Builder $sub) => $sub->whereIn('branches.id', $branchIds));
-                }
-            });
-    }
+        return $query->where(function (Builder $any) use ($rows) {
+            foreach ($rows as $row) {
+                $any->orWhere(fn (Builder $one) => $one
+                    ->forCategory($row->category_id)
+                    ->where(function (Builder $open) use ($row) {
+                        $open->whereDoesntHave('branches');
 
-    public function appliesToCategory(?int $categoryId): bool
-    {
-        $categoryIds = $this->categories->pluck('id')->map(fn ($id) => (int) $id);
-
-        return $categoryIds->isEmpty() || ($categoryId !== null && $categoryIds->contains($categoryId));
-    }
-
-    public function appliesToBranches(iterable $branchIds): bool
-    {
-        $own = $this->branches->pluck('id')->map(fn ($id) => (int) $id);
-
-        return $own->isEmpty() || $own->intersect(collect($branchIds)->map(fn ($id) => (int) $id))->isNotEmpty();
+                        if ($row->branch_id) {
+                            $open->orWhereHas('branches', fn (Builder $sub) => $sub->where('branches.id', $row->branch_id));
+                        }
+                    }));
+            }
+        });
     }
 
     /**
-     * Whether the player may be put on this subscription: their category and one
-     * of their branches. $anyCategory waives the category (a hand-picked player
-     * from another category); the branch must still match.
+     * Whether the player may be put on this subscription: Player::scopeEligibleFor,
+     * so the rule exists once. $anyCategory waives the category (a hand-picked
+     * player from another category); the branch must still match.
      */
     public function appliesTo(Player $player, bool $anyCategory = false): bool
     {
-        return ($anyCategory || $this->appliesToCategory($player->category_id))
-            && $this->appliesToBranches($player->branches()->pluck('branches.id'));
+        return Player::query()->whereKey($player->id)->eligibleFor($this, $anyCategory)->exists();
     }
 
     /**

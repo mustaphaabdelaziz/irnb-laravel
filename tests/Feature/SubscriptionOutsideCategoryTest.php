@@ -14,9 +14,8 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * A player has one category for all their branches, so the subscription page
- * can hand-pick a player of its branches from another category (football A,
- * swimming B). The branch rule still holds.
+ * The subscription page can hand-pick an active member of its branches from
+ * another category (football A, swimming B). The branch rule still holds.
  */
 class SubscriptionOutsideCategoryTest extends TestCase
 {

@@ -105,8 +105,8 @@ const showAddPlayerModal = ref(false);
 const playerSearch = ref('');
 const addPlayerForm = useForm({ player_id: '' });
 
-// Players of the subscription's branches but another category (a player has
-// one category for all their branches), fetched the first time it is ticked.
+// Active members of the subscription's branches it doesn't otherwise apply to,
+// fetched the first time it is ticked.
 const showOutside = ref(false);
 const loadingOutside = ref(false);
 

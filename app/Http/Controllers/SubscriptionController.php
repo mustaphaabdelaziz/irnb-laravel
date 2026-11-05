@@ -175,11 +175,9 @@ class SubscriptionController extends Controller
             'playerSubscriptions' => $rows,
             'categories' => Category::orderBy('name')->get(),
             'availablePlayers' => $this->unassignedPlayers($subscription),
-            // Players of its branches but another category (a footballer of
-            // category A who also swims in B), loaded when the add dialog asks.
-            'outsidePlayers' => Inertia::optional(fn () => $subscription->categories->isEmpty() ? [] : $this->unassignedPlayers($subscription, outside: true)
-                ->whereNotIn('category_id', $subscription->categories->pluck('id'))
-                ->values()),
+            // Active members of its branches it doesn't otherwise apply to (a footballer
+            // of category A who also swims in B), loaded when the add dialog asks.
+            'outsidePlayers' => Inertia::optional(fn () => $subscription->categories->isEmpty() ? [] : $this->unassignedPlayers($subscription, outside: true)),
             'stats' => [
                 'total' => $total,
                 'paid_count' => $paidCount,
@@ -201,6 +199,7 @@ class SubscriptionController extends Controller
     private function unassignedPlayers(Subscription $subscription, bool $outside = false): Collection
     {
         return Player::query()->eligibleFor($subscription, anyCategory: $outside)
+            ->when($outside, fn ($query) => $query->whereNotIn('id', Player::query()->select('id')->eligibleFor($subscription)))
             ->where('archived', false)
             ->whereNotIn('id', PlayerSubscription::query()->select('player_id')->where('subscription_id', $subscription->id))
             ->with('category')
@@ -365,49 +364,36 @@ class SubscriptionController extends Controller
             'assign_all' => ['nullable', 'boolean'],
         ]);
 
-        $query = Player::query()->eligibleFor($subscription);
+        $query = $request->boolean('assign_all')
+            ? Player::query()
+                ->eligibleFor($subscription, onlyCategory: $request->filled('category_id') ? $request->integer('category_id') : null)
+                ->where('archived', false)
+            : Player::query()->eligibleFor($subscription)->whereIn('id', $request->input('player_ids', []));
 
-        if ($request->boolean('assign_all')) {
-            $query->where('archived', false);
-            if ($request->filled('category_id')) {
-                $query->where('category_id', $request->input('category_id'));
-            }
-        } else {
-            $query->whereIn('id', $request->input('player_ids', []));
-        }
-
-        $playerIds = $query->pluck('id');
+        $players = $query->with('registrations')->get();
 
         $existingPlayerIds = PlayerSubscription::query()
             ->where('subscription_id', $subscription->id)
-            ->whereIn('player_id', $playerIds)
+            ->whereIn('player_id', $players->modelKeys())
             ->pluck('player_id');
 
-        $newPlayerIds = $playerIds->diff($existingPlayerIds);
+        $newPlayers = $players->reject(fn (Player $player) => $existingPlayerIds->contains($player->id));
 
-        DB::transaction(function () use ($newPlayerIds, $subscription, $request) {
-            $assigned = 0;
-
-            foreach ($newPlayerIds as $playerId) {
-                $player = Player::find($playerId);
-                if (! $player) {
-                    continue;
-                }
-
+        DB::transaction(function () use ($newPlayers, $subscription, $request) {
+            foreach ($newPlayers as $player) {
                 $subscription->assignTo($player);
                 app(RecalculatePlayerDebtService::class)->forPlayer($player);
-                $assigned++;
             }
 
-            if ($assigned > 0) {
+            if ($newPlayers->isNotEmpty()) {
                 ActivityRecorder::record($request->user(), ActivityAction::PLAYERS_ASSIGNED, $subscription, [
-                    'count' => $assigned,
+                    'count' => $newPlayers->count(),
                 ]);
             }
         });
 
         return redirect()->route('subscriptions.show', $subscription)
-            ->with('success', ['key' => 'flash.players_assigned', 'params' => ['count' => $newPlayerIds->count()]]);
+            ->with('success', ['key' => 'flash.players_assigned', 'params' => ['count' => $newPlayers->count()]]);
     }
 
     public function assignOne(Request $request, Subscription $subscription): RedirectResponse

@@ -169,26 +169,30 @@ class Player extends Model
     }
 
     /**
-     * Players a subscription applies to: those of its categories (everyone when
-     * it has none) who also belong to one of its branches (any branch when it
-     * has none). The query-side twin of Subscription::appliesTo().
+     * Players a subscription applies to: one active registration in one of its
+     * branches (any branch when it has none) with one of its categories (any
+     * when it has none). Subscription::appliesTo asks this same query.
      *
-     * With $anyCategory only the branch rule holds: a player whose one category
-     * belongs to another of their branches can still be put on it by hand.
+     * With $anyCategory only the branch rule holds: a player of another category
+     * can still be put on it by hand. $onlyCategory narrows to one category,
+     * on that same registration.
      */
-    public function scopeEligibleFor(Builder $query, Subscription $subscription, bool $anyCategory = false): void
+    public function scopeEligibleFor(Builder $query, Subscription $subscription, bool $anyCategory = false, ?int $onlyCategory = null): void
     {
-        $categoryIds = $subscription->categories->pluck('id');
+        $own = $subscription->categories->pluck('id');
+        $branches = $subscription->branches->pluck('id');
 
-        if ($categoryIds->isNotEmpty() && ! $anyCategory) {
-            $query->whereIn('category_id', $categoryIds);
-        }
+        $categories = match (true) {
+            $onlyCategory !== null => $anyCategory || $own->isEmpty() || $own->contains($onlyCategory) ? [$onlyCategory] : [],
+            $anyCategory || $own->isEmpty() => null,
+            default => $own,
+        };
 
-        $branchIds = $subscription->branches->pluck('id');
-
-        if ($branchIds->isNotEmpty()) {
-            $query->whereHas('branches', fn (Builder $branch) => $branch->whereIn('branches.id', $branchIds));
-        }
+        $query->registeredWhere(
+            branches: $branches->isEmpty() ? null : $branches,
+            categories: $categories,
+            active: true,
+        );
     }
 
     /**

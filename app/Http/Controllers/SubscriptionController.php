@@ -160,7 +160,7 @@ class SubscriptionController extends Controller
     {
         $subscription->load(['categories', 'branches']);
 
-        $rows = $this->showRows($this->assignedQuery($subscription)->get());
+        $rows = $this->showRows($this->assignedQuery($subscription)->get(), $this->pageBranch($subscription));
         $statuses = array_count_values(array_column($rows, 'payment_status'));
 
         // Calculate stats
@@ -191,6 +191,28 @@ class SubscriptionController extends Controller
         ]);
     }
 
+    /** The branch this subscription's page speaks for: its one branch, otherwise none (main values). */
+    private function pageBranch(Subscription $subscription): ?int
+    {
+        return RegistrationDisplay::singleBranch($subscription->branches->pluck('id'));
+    }
+
+    /**
+     * What the page and export show for a player: that branch's registration, else
+     * the main one. A player with no registration shows their own values.
+     *
+     * @return array{membership_id: ?string, category: ?Category}
+     */
+    private function shownValues(Player $player, ?int $branchId, RegistrationDisplay $display): array
+    {
+        $row = $display->shown($player, $branchId);
+
+        return [
+            'membership_id' => $row?->membership_id ?? $player->membership_id,
+            'category' => $row ? $row->category : $player->category,
+        ];
+    }
+
     /**
      * Active players not yet on the subscription, each with what they would owe
      * (category price override included). $outside drops the category rule.
@@ -200,16 +222,20 @@ class SubscriptionController extends Controller
     private function unassignedPlayers(Subscription $subscription, bool $outside = false): Collection
     {
         $display = RegistrationDisplay::make();
+        $branchId = $this->pageBranch($subscription);
 
         return Player::query()->eligibleFor($subscription, anyCategory: $outside)
             ->when($outside, fn ($query) => $query->whereNotIn('id', Player::query()->select('id')->eligibleFor($subscription)))
             ->where('archived', false)
             ->whereNotIn('id', PlayerSubscription::query()->select('player_id')->where('subscription_id', $subscription->id))
-            ->with(['category', 'registrations'])
+            ->with(['category', 'registrations.category'])
             ->orderBy('lastname')
             ->get(['id', ...Player::NAME_COLUMNS, 'is_student', 'category_id', 'membership_id'])
-            ->each(function (Player $player) use ($subscription, $display) {
+            ->each(function (Player $player) use ($subscription, $display, $branchId) {
+                $shown = $this->shownValues($player, $branchId, $display);
                 $player->setAttribute('price', $subscription->amountFor($player, $display));
+                $player->setAttribute('membership_id', $shown['membership_id']);
+                $player->setRelation('category', $shown['category']);
                 $player->unsetRelation('registrations');
             });
     }
@@ -223,7 +249,7 @@ class SubscriptionController extends Controller
      * @param  Collection<int, PlayerSubscription>  $playerSubscriptions
      * @return list<array<string, mixed>>
      */
-    private function showRows(Collection $playerSubscriptions): array
+    private function showRows(Collection $playerSubscriptions, ?int $branchId): array
     {
         $categories = [];
         $category = function (?Category $category) use (&$categories): ?array {
@@ -238,10 +264,13 @@ class SubscriptionController extends Controller
             ];
         };
 
+        $display = RegistrationDisplay::make();
+
         return $playerSubscriptions
-            ->map(function (PlayerSubscription $ps) use ($category) {
+            ->map(function (PlayerSubscription $ps) use ($category, $display, $branchId) {
                 $money = $ps->money();
                 $player = $ps->player;
+                $shown = $player === null ? null : $this->shownValues($player, $branchId, $display);
 
                 return [
                     'id' => $ps->id,
@@ -252,10 +281,10 @@ class SubscriptionController extends Controller
                     'payment_status' => $money['status'],
                     'player' => $player === null ? null : [
                         'id' => $player->id,
-                        'membership_id' => $player->membership_id,
+                        'membership_id' => $shown['membership_id'],
                         'lastname' => $player->lastname,
                         'fullname' => $player->fullname,
-                        'category' => $category($player->category),
+                        'category' => $category($shown['category']),
                     ],
                 ];
             })
@@ -465,6 +494,7 @@ class SubscriptionController extends Controller
             ->with([
                 'player' => fn ($player) => $player->select(['id', 'membership_id', 'category_id', ...Player::NAME_COLUMNS]),
                 'player.category',
+                'player.registrations.category',
             ]);
     }
 
@@ -493,17 +523,21 @@ class SubscriptionController extends Controller
             'col.membership_id', 'col.player_name', 'col.category', 'col.amount_owed', 'col.amount_paid', 'col.status',
         ])];
 
+        $display = RegistrationDisplay::make();
+        $branchId = $this->pageBranch($subscription);
+
         $rows = [];
         $rowNum = 1;
         foreach ($playerSubscriptions as $ps) {
             $player = $ps->player;
             $name = $player ? $player->fullname : 'N/A';
+            $shown = $player ? $this->shownValues($player, $branchId, $display) : ['membership_id' => null, 'category' => null];
 
             $rows[] = [
                 $rowNum++,
-                $player?->membership_id !== null ? (string) $player->membership_id : '-',
+                $shown['membership_id'] !== null ? (string) $shown['membership_id'] : '-',
                 $name,
-                $player?->category?->localized_name ?? '-',
+                $shown['category']?->localized_name ?? '-',
                 (float) $ps->amount_owed,
                 (float) $ps->amount_paid,
                 // Same key the page's statusLabel('payment', ...) resolves to.

@@ -18,6 +18,7 @@ import AcademicSection from '@/Pages/Players/Partials/AcademicSection.vue';
 import AttendanceSection from '@/Pages/Players/Partials/AttendanceSection.vue';
 import MatchesSection from '@/Pages/Players/Partials/MatchesSection.vue';
 import PlayerDocumentsCard from '@/Components/PlayerDocumentsCard.vue';
+import BranchSwitch from '@/Components/Attendance/BranchSwitch.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useCurrency } from '@/Composables/useCurrency';
@@ -48,6 +49,16 @@ const props = defineProps({
     // Status names and colours for the attendance card; null without attendance/view.
     attendanceCodes: { type: Object, default: null },
 });
+
+// One documents tab per registration, main first. Below two, BranchSwitch shows nothing.
+const documentTabs = computed(() => props.documents?.tabs ?? []);
+const documentBranchId = ref(documentTabs.value[0]?.branch_id ?? null);
+const documentBranches = computed(() => documentTabs.value.map((tab) => ({
+    id: tab.branch_id,
+    name: tab.left ? `${tab.branch_name} · ${t('doc_tab_left')}` : tab.branch_name,
+    logo_url: tab.logo_url,
+})));
+const shownDocuments = computed(() => documentTabs.value.find((tab) => tab.branch_id === documentBranchId.value) ?? props.documents);
 
 const subscriptions = computed(() => props.player?.player_subscriptions ?? []);
 const transactions = computed(() => props.transactions ?? []);
@@ -495,7 +506,16 @@ function formatPlainDate(val) {
             <MatchesSection v-if="can('games', 'view')" :player="player" />
 
             <!-- Documents: checklist + actions (absent without the documents permission) -->
-            <PlayerDocumentsCard v-if="documents" :player-id="player.id" :checklist="documents" />
+            <div v-if="documents" class="space-y-3">
+                <BranchSwitch :branches="documentBranches" :branch-id="documentBranchId" @switch="documentBranchId = $event" />
+                <!-- Keyed, so an open form never carries over to another registration. -->
+                <PlayerDocumentsCard
+                    :key="shownDocuments.registration_id ?? 'alone'"
+                    :player-id="player.id"
+                    :checklist="shownDocuments"
+                    :registration-id="shownDocuments.registration_id"
+                />
+            </div>
 
             <!-- Subscriptions -->
             <div class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">

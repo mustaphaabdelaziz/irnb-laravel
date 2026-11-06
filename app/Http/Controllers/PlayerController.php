@@ -258,7 +258,7 @@ class PlayerController extends Controller
             // Owner decision: documents have their own permission. Without
             // documents/view the checklist is not even sent to the page.
             'documents' => $request->user()?->hasPermission('documents', 'view')
-                ? DocumentChecklist::for($player)
+                ? DocumentChecklist::forPlayer($player)
                 : null,
             // The attendance card fetches its own data (attendance.players.show);
             // the page only carries the status names and colours it draws with.

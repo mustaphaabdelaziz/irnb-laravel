@@ -17,8 +17,10 @@ import { localToday } from '@/lib/localDate';
 
 const props = defineProps({
     playerId: { type: Number, required: true },
-    // DocumentChecklist::for(): { items, missing_count, expiring_count }
+    // DocumentChecklist::for(): { registration_id, left, items, missing_count, expiring_count }
     checklist: { type: Object, required: true },
+    // Which registration new records go on; null for a player with none.
+    registrationId: { type: Number, default: null },
 });
 
 const { t } = useI18n();
@@ -50,6 +52,7 @@ const reasonLabels = computed(() => ({
     exempt: t('doc_reason_exempt'),
     optional: t('doc_optional'),
     age: t('doc_reason_age'),
+    left: t('doc_reason_left'),
 }));
 
 const items = computed(() => props.checklist?.items ?? []);
@@ -90,11 +93,12 @@ const downloadUrl = (file) => route('players.documents.files.download', { player
 
 // --- Mark received / renew (same form) ---
 const receiving = ref(null);
-const receiveForm = useForm({ document_type_id: null, received_at: '', valid_until: '', notes: '', files: [] });
+const receiveForm = useForm({ document_type_id: null, branch_registration_id: null, received_at: '', valid_until: '', notes: '', files: [] });
 
 function openReceive(item) {
     receiveForm.clearErrors();
     receiveForm.document_type_id = item.type.id;
+    receiveForm.branch_registration_id = props.registrationId;
     receiveForm.received_at = todayIso();
     receiveForm.valid_until = '';
     receiveForm.notes = item.document?.notes ?? '';
@@ -106,6 +110,7 @@ function submitReceive() {
     const item = receiving.value;
     const options = {
         preserveScroll: true,
+        preserveState: true,
         forceFormData: true,
         onSuccess: () => { receiving.value = null; },
     };
@@ -135,6 +140,7 @@ function openUpload(item) {
 function submitUpload() {
     uploadForm.post(route('players.documents.files.store', { player: props.playerId, document: uploading.value.document.id }), {
         preserveScroll: true,
+        preserveState: true,
         forceFormData: true,
         onSuccess: () => { uploading.value = null; },
     });
@@ -142,11 +148,12 @@ function submitUpload() {
 
 // --- Exempt / undo ---
 const exempting = ref(null);
-const exemptForm = useForm({ document_type_id: null, reason: '' });
+const exemptForm = useForm({ document_type_id: null, branch_registration_id: null, reason: '' });
 
 function openExempt(item) {
     exemptForm.clearErrors();
     exemptForm.document_type_id = item.type.id;
+    exemptForm.branch_registration_id = props.registrationId;
     exemptForm.reason = '';
     exempting.value = item;
 }
@@ -154,6 +161,7 @@ function openExempt(item) {
 function submitExempt() {
     exemptForm.post(route('players.documents.exempt', props.playerId), {
         preserveScroll: true,
+        preserveState: true,
         onSuccess: () => { exempting.value = null; },
     });
 }
@@ -163,7 +171,7 @@ const unexempting = ref(null);
 function confirmUnexempt() {
     const item = unexempting.value;
     unexempting.value = null;
-    router.delete(route('players.documents.unexempt', { player: props.playerId, document: item.document.id }), { preserveScroll: true });
+    router.delete(route('players.documents.unexempt', { player: props.playerId, document: item.document.id }), { preserveScroll: true, preserveState: true });
 }
 
 // --- Remove a file ---
@@ -172,7 +180,7 @@ const removingFile = ref(null);
 function confirmRemoveFile() {
     const file = removingFile.value;
     removingFile.value = null;
-    router.delete(route('players.documents.files.destroy', { player: props.playerId, file: file.id }), { preserveScroll: true });
+    router.delete(route('players.documents.files.destroy', { player: props.playerId, file: file.id }), { preserveScroll: true, preserveState: true });
 }
 </script>
 
@@ -183,7 +191,8 @@ function confirmRemoveFile() {
                 <Icon name="folder" class="text-slate-400" /> {{ t('documents') }}
             </h3>
             <div class="flex flex-wrap items-center gap-2">
-                <Badge v-if="checklist.missing_count > 0" :label="t('doc_missing_count', { count: checklist.missing_count })" color="rose" />
+                <Badge v-if="checklist.left" :label="t('doc_reason_left')" color="slate" />
+                <Badge v-else-if="checklist.missing_count > 0" :label="t('doc_missing_count', { count: checklist.missing_count })" color="rose" />
                 <Badge v-else :label="t('doc_complete')" color="emerald" />
                 <Badge v-if="checklist.expiring_count > 0" :label="t('doc_expiring_count', { count: checklist.expiring_count })" color="amber" />
             </div>

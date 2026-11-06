@@ -118,6 +118,45 @@ class ListRuleTest extends TestCase
     }
 
     #[Test]
+    public function an_overlaid_player_is_clean_and_saving_leaves_the_mirror_alone(): void
+    {
+        $player = $this->bothActive();
+        $mirror = DB::table('players')->where('id', $player->id)->first();
+        $loaded = Player::with('registrations')->findOrFail($player->id);
+
+        RegistrationDisplay::make()->overlay($loaded, $this->swim->id);
+
+        $this->assertSame($this->u15->id, $loaded->category_id);
+        $this->assertFalse($loaded->isDirty());
+        $loaded->save();
+        $this->assertEquals($mirror, DB::table('players')->where('id', $player->id)->first());
+    }
+
+    #[Test]
+    public function a_registration_without_its_own_id_overlays_no_id(): void
+    {
+        $player = $this->bothActive();
+        DB::table('branch_player')->where('player_id', $player->id)->where('branch_id', $this->swim->id)->update(['membership_id' => null]);
+        $loaded = Player::with('registrations')->findOrFail($player->id);
+
+        RegistrationDisplay::make()->overlay($loaded, $this->swim->id);
+
+        $this->assertNull($loaded->membership_id);
+    }
+
+    #[Test]
+    public function an_unloaded_registration_relation_does_not_leave_a_stale_mirror_relation(): void
+    {
+        $player = $this->bothActive();
+        $loaded = Player::with(['category', 'registrations'])->findOrFail($player->id);
+        $this->assertSame($this->senior->id, $loaded->category->id);
+
+        RegistrationDisplay::make()->overlay($loaded, $this->swim->id);
+
+        $this->assertSame($this->u15->id, $loaded->category->id);
+    }
+
+    #[Test]
     public function overlay_with_no_row_there_changes_nothing(): void
     {
         $loaded = Player::with('registrations')->findOrFail($this->noRegistration()->id);

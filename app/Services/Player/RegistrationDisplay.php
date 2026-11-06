@@ -111,9 +111,15 @@ final class RegistrationDisplay
         // A registration with no ID of its own shows none; players.membership_id is only for players with no registration.
         $player->membership_id = $row->membership_id;
 
+        // Clean, so a stray save() cannot write one branch's values over the players.* mirror.
+        $player->syncOriginal();
+
         foreach (['category', 'position', 'status'] as $relation) {
             if ($row->relationLoaded($relation)) {
                 $player->setRelation($relation, $row->getRelation($relation));
+            } else {
+                // No stale mirror relation next to the branch's *_id: it loads on demand.
+                $player->unsetRelation($relation);
             }
         }
         if ($player->relationLoaded('otherPositions')) {

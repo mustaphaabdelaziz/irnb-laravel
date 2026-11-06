@@ -200,11 +200,13 @@ class Player extends Model
             $query->registeredWhere(categories: $categories, active: $statusAsked ? ! $askedLeft : $hideLeft);
         }
     }
+
     /** This player's registration in a branch, from the loaded rows: no query per row when eager-loaded. */
     public function registrationIn(?int $branchId): ?BranchRegistration
     {
         return $branchId === null ? null : $this->registrations->firstWhere('branch_id', $branchId);
     }
+
     public static function isLeftStatus(mixed $statusId): bool
     {
         return $statusId !== null && $statusId !== '' && (int) $statusId === static::leftStatusId();

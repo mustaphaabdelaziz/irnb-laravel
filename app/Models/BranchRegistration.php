@@ -148,6 +148,7 @@ class BranchRegistration extends Pivot
                 ->select(['id as player_id', DB::raw('NULL as branch_id'), ...$columns])
                 ->whereNotExists(fn ($q) => $q->select(DB::raw(1))->from('branch_player')->whereColumn('branch_player.player_id', 'players.id')));
     }
+
     public function scopeNeedsJoinDate(Builder $query): void
     {
         $query->whereNull($query->getModel()->qualifyColumn('join_date'));

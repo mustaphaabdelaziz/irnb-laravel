@@ -129,9 +129,11 @@ class RegistrationService
             // day was never recorded stays undated, past the saving hook's "stamp today".
             $copiesUndatedLeft = $first && ! array_key_exists('status_id', $card) && ! array_key_exists('left_at', $card)
                 && Player::isLeftStatus($player->status_id) && $player->left_at === null;
-            $registration = $copiesUndatedLeft
-                ? $player->registrations()->createQuietly($attributes)
-                : $player->registrations()->create($attributes);
+            $registration = $player->registrations()->create($attributes);
+            if ($copiesUndatedLeft) {
+                // Events fire (the first registration adopts the documents); only the stamped day goes.
+                $registration->forceFill(['left_at' => null])->saveQuietly();
+            }
 
             // A main position another branch owns is not lost: it waits among the other positions.
             if ($first && $player->position_id !== null && (int) ($card['position_id'] ?? 0) !== (int) $player->position_id) {

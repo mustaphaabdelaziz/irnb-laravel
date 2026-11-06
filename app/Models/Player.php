@@ -127,6 +127,7 @@ class Player extends Model
         CarbonInterface|string|null $activeOn = null,
         bool $active = false,
         ?Closure $also = null,
+        bool $noStatus = false,
     ): void {
         $playerKey = $query->getModel()->qualifyColumn('id');
 
@@ -135,23 +136,27 @@ class Player extends Model
             ->whereColumn('branch_player.player_id', $playerKey)
             ->when($branches !== null, fn ($q) => $q->inBranches($branches))
             ->when($categories !== null, fn ($q) => $q->inCategories($categories))
-            ->when($statuses !== null, fn ($q) => $q->withStatuses($statuses))
+            ->when($statuses !== null && ! $noStatus, fn ($q) => $q->withStatuses($statuses))
+            ->when($noStatus, fn ($q) => $q->where(fn ($s) => $s->whereNull('branch_player.status_id')
+                ->when($statuses !== null, fn ($s) => $s->orWhereIn('branch_player.status_id', collect($statuses)->all()))))
             ->when($activeOn !== null, fn ($q) => $q->activeOn($activeOn))
             ->when($active, fn ($q) => $q->active())
             ->when($also !== null, fn ($q) => $also($q, 'branch_player.status_id', 'branch_player.left_at'));
 
-        $query->where(function (Builder $either) use ($rows, $playerKey, $branches, $categories, $statuses, $activeOn, $active, $also) {
+        $query->where(function (Builder $either) use ($rows, $playerKey, $branches, $categories, $statuses, $activeOn, $active, $also, $noStatus) {
             $either->whereExists($rows);
 
             if ($branches !== null) {
                 return;
             }
 
-            $either->orWhere(function (Builder $flat) use ($playerKey, $categories, $statuses, $activeOn, $active, $also) {
+            $either->orWhere(function (Builder $flat) use ($playerKey, $categories, $statuses, $activeOn, $active, $also, $noStatus) {
                 $column = $flat->getModel()->qualifyColumn(...);
                 $flat->whereNotExists(fn ($q) => $q->selectRaw('1')->from('branch_player')->whereColumn('branch_player.player_id', $playerKey))
                     ->when($categories !== null, fn ($q) => $q->whereIn($column('category_id'), collect($categories)->all()))
-                    ->when($statuses !== null, fn ($q) => $q->whereIn($column('status_id'), collect($statuses)->all()))
+                    ->when($statuses !== null && ! $noStatus, fn ($q) => $q->whereIn($column('status_id'), collect($statuses)->all()))
+                    ->when($noStatus, fn ($q) => $q->where(fn ($s) => $s->whereNull($column('status_id'))
+                        ->when($statuses !== null, fn ($s) => $s->orWhereIn($column('status_id'), collect($statuses)->all()))))
                     ->when($activeOn !== null, fn ($q) => BranchRegistration::constrainActiveOn($q, $column('status_id'), $column('left_at'), $activeOn))
                     ->when($active, fn ($q) => $q->notLeft())
                     ->when($also !== null, fn ($q) => $also($q, $column('status_id'), $column('left_at')));
@@ -159,6 +164,42 @@ class Player extends Model
         });
     }
 
+    /**
+     * What a list's filters mean. With a branch, every condition holds on that
+     * branch's registration. Club-wide, a status is the person's overall status
+     * (left only when left everywhere), and a category is any registration still
+     * active, or any at all when the list asks for left people or shows everyone.
+     */
+    public function scopeListedWhere(
+        Builder $query,
+        ?array $branches = null,
+        ?array $categories = null,
+        ?array $statuses = null,
+        bool $noStatus = false,
+        bool $hideLeft = false,
+    ): void {
+        $statusAsked = $statuses !== null || $noStatus;
+
+        if ($branches !== null) {
+            $query->registeredWhere(branches: $branches, categories: $categories, statuses: $statuses, active: $hideLeft && ! $statusAsked, noStatus: $noStatus);
+
+            return;
+        }
+
+        $column = $query->getModel()->qualifyColumn('status_id');
+        if ($statusAsked) {
+            $query->where(fn (Builder $q) => $q
+                ->when($noStatus, fn ($q) => $q->orWhereNull($column))
+                ->when($statuses !== null, fn ($q) => $q->orWhereIn($column, $statuses)));
+        } elseif ($hideLeft) {
+            $query->notLeft();
+        }
+
+        if ($categories !== null) {
+            $askedLeft = in_array(static::leftStatusId(), $statuses ?? [], false);
+            $query->registeredWhere(categories: $categories, active: $statusAsked ? ! $askedLeft : $hideLeft);
+        }
+    }
     /** This player's registration in a branch, from the loaded rows: no query per row when eager-loaded. */
     public function registrationIn(?int $branchId): ?BranchRegistration
     {

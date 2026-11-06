@@ -90,6 +90,41 @@ final class RegistrationDisplay
         ];
     }
 
+    /**
+     * Put one branch's values on the player, for a row or a printed page: the
+     * attributes, and the relations the caller loaded on the registration. Not for
+     * saving. No row in that branch, or no branch asked: nothing changes, because
+     * players.* already holds the main registration.
+     */
+    public function overlay(Player $player, ?int $branchId): Player
+    {
+        $row = $player->registrationIn($branchId);
+        if ($row === null) {
+            return $player;
+        }
+
+        $player->category_id = $row->category_id;
+        $player->position_id = $row->position_id;
+        $player->licence_number = $row->licence_number;
+        $player->status_id = $row->status_id;
+        $player->left_at = $row->left_at?->toDateString();
+        // A registration with no ID of its own shows none; players.membership_id is only for players with no registration.
+        $player->membership_id = $row->membership_id;
+
+        foreach (['category', 'position', 'status'] as $relation) {
+            if ($row->relationLoaded($relation)) {
+                $player->setRelation($relation, $row->getRelation($relation));
+            }
+        }
+        if ($player->relationLoaded('otherPositions')) {
+            $player->setRelation('otherPositions', $player->otherPositions
+                ->filter(fn ($position) => $position->branch_id === null || (int) $position->branch_id === $branchId)
+                ->values());
+        }
+
+        return $player;
+    }
+
     private function isLeft(BranchRegistration $row): bool
     {
         return $this->leftStatusId !== null && (int) $row->status_id === $this->leftStatusId;

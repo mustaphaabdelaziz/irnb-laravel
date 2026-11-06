@@ -4,6 +4,7 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Icon from '@/Components/Icon.vue';
 import ThemeToggle from '@/Components/ThemeToggle.vue';
+import { PRODUCT_MARK, PRODUCT_NAME } from '@/lib/productBrand';
 
 const { t } = useI18n();
 const page = usePage();
@@ -149,7 +150,12 @@ const socialMeta = {
 
         <footer class="relative border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-8 text-center">
             <div class="pointer-events-none absolute inset-x-0 top-0 mx-auto h-px max-w-md bg-gradient-to-r from-transparent via-primary-400/40 to-transparent"></div>
-            <p class="text-sm text-slate-500 dark:text-slate-400">© {{ new Date().getFullYear() }} {{ club.name }}</p>
+            <!-- The copyright is the product's, not the club's. -->
+            <p class="flex items-center justify-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                <img :src="PRODUCT_MARK.light" alt="" class="h-6 w-6 object-contain dark:hidden" />
+                <img :src="PRODUCT_MARK.dark" alt="" class="hidden h-6 w-6 object-contain dark:block" />
+                <span>© {{ new Date().getFullYear() }} <span class="font-bold text-slate-700 dark:text-slate-200">{{ PRODUCT_NAME }}</span></span>
+            </p>
         </footer>
     </div>
 </template>

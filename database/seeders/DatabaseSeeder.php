@@ -2,13 +2,12 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
+    // Model events stay on: BranchObserver adopts the categories, sets the main branch and
+    // provisions the coffre, and User gets its username, exactly as creating them in the app does.
     public function run(): void
     {
         $this->call([

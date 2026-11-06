@@ -35,6 +35,7 @@ use App\Services\Player\DocumentStats;
 use App\Services\Player\MembershipNumber;
 use App\Services\Player\PlayerDocumentService;
 use App\Services\Player\RegisterPlayerService;
+use App\Services\Player\RegistrationCounts;
 use App\Services\Player\RegistrationDisplay;
 use App\Services\Player\RegistrationService;
 use App\Services\Storage\FileStorageService;
@@ -83,6 +84,10 @@ class PlayerController extends Controller
 
         $this->applyPlayerFilters($query, $request);
 
+        // One branch selected: each row shows that registration. None or several: the main one, on players.*.
+        $shownBranch = $this->selectedBranch($request);
+        $this->withShownRegistration($query, $shownBranch);
+
         // Page size picked on the list; anything else falls back to 25.
         $perPage = in_array((int) $request->input('per_page'), [25, 50, 100, 200], true)
             ? (int) $request->input('per_page')
@@ -94,47 +99,58 @@ class PlayerController extends Controller
 
         // The rows never show the age, and working it out (a date difference
         // on the club clock) was ~0.2 ms a row.
-        $players->getCollection()->each->setAppends(['fullname']);
+        $display = RegistrationDisplay::make();
+        $players->getCollection()->each(function (Player $player) use ($display, $shownBranch) {
+            $player->setAppends(['fullname']);
+            if ($shownBranch !== null) {
+                $display->overlay($player, $shownBranch)->unsetRelation('registrations');
+            }
+        });
 
         // Prefer the current-locale name, falling back to the base name.
         $locale = in_array(app()->getLocale(), ['ar', 'fr', 'en'], true) ? app()->getLocale() : 'en';
-        $localeCol = 'categories.name_'.$locale;
 
         // Every chart describes the same population the list is showing, but
         // each one ignores its OWN filter — otherwise picking a category
         // collapses the category chart to a single 100% slice and the user can
         // no longer switch category by clicking it.
-        $categoryStats = $this->statsQuery($request, 'category_id')
-            ->leftJoin('categories', 'categories.id', '=', 'players.category_id')
-            ->groupBy('players.category_id', 'categories.name', $localeCol)
-            ->selectRaw("players.category_id, COALESCE(NULLIF({$localeCol}, ''), categories.name) as name, COUNT(*) as total")
-            ->orderByDesc('total')
-            ->get()
-            ->map(fn ($row) => [
-                'category_id' => $row->category_id,
-                'name' => $row->name,
-                'count' => (int) $row->total,
-            ])
+        // Per registration: a two-branch player counts in both bars (the page says so).
+        $categoryStats = RegistrationCounts::byCategory(
+            $this->statsQuery($request, 'category_id'),
+            $this->filteredBranches($request),
+            $this->chartsIncludeLeft($request),
+        )
+            ->map(fn (object $row) => ['category_id' => $row->key, 'name' => $row->name, 'count' => $row->total])
             ->values();
 
+        // One branch: that registration's status. Otherwise once per person, overall.
         $statusCol = 'player_statuses.name_'.$locale;
-        $statusStats = $this->statsQuery($request, 'status')
-            ->leftJoin('player_statuses', 'player_statuses.id', '=', 'players.status_id')
-            ->groupBy('players.status_id', 'player_statuses.name', $statusCol)
-            ->selectRaw("players.status_id, COALESCE(NULLIF({$statusCol}, ''), player_statuses.name) as name, COUNT(*) as total")
-            ->orderByDesc('total')
-            ->get()
-            ->map(fn ($row) => [
-                'status_id' => $row->status_id,
-                'name' => $row->name,
-                'count' => (int) $row->total,
-            ])
+        $statusStats = ($shownBranch !== null
+            ? RegistrationCounts::byStatus($this->statsQuery($request, 'status'), [$shownBranch], includeLeft: true)
+                ->map(fn (object $row) => ['status_id' => $row->key, 'name' => $row->name, 'count' => $row->total])
+            : $this->statsQuery($request, 'status')
+                ->leftJoin('player_statuses', 'player_statuses.id', '=', 'players.status_id')
+                ->groupBy('players.status_id', 'player_statuses.name', $statusCol)
+                ->selectRaw("players.status_id, COALESCE(NULLIF({$statusCol}, ''), player_statuses.name) as name, COUNT(*) as total")
+                ->orderByDesc('total')
+                ->get()
+                ->map(fn ($row) => [
+                    'status_id' => $row->status_id,
+                    'name' => $row->name,
+                    'count' => (int) $row->total,
+                ]))
             ->values();
 
-        $positionStats = $this->statsQuery($request, 'position_id')
-            ->leftJoin('positions', 'positions.id', '=', 'players.position_id')
-            ->groupBy('players.position_id', 'positions.name')
-            ->selectRaw('players.position_id, positions.name, COUNT(*) as total')
+        $positionRows = $shownBranch !== null
+            ? RegistrationCounts::rows($this->statsQuery($request, 'position_id'), [$shownBranch], $this->chartsIncludeLeft($request))
+                ->leftJoin('positions', 'positions.id', '=', 'reg.position_id')
+                ->groupBy('reg.position_id', 'positions.name')
+                ->selectRaw('reg.position_id as position_id, positions.name, COUNT(*) as total')
+            : $this->statsQuery($request, 'position_id')
+                ->leftJoin('positions', 'positions.id', '=', 'players.position_id')
+                ->groupBy('players.position_id', 'positions.name')
+                ->selectRaw('players.position_id, positions.name, COUNT(*) as total');
+        $positionStats = $positionRows
             ->orderByDesc('total')
             ->get()
             ->map(fn ($row) => [
@@ -683,22 +699,29 @@ class PlayerController extends Controller
     {
         $query = Player::query()->with(['category', 'position', 'otherPositions', 'branches', 'status', 'wilaya', 'memberJob']);
         $this->applyPlayerFilters($query, $request);
+        $shownBranch = $this->selectedBranch($request);
+        $this->withShownRegistration($query, $shownBranch);
+        $display = RegistrationDisplay::make();
 
-        $rows = $query->orderBy('lastname')->orderBy('firstname')->get()->map(fn (Player $p) => [
-            $p->membership_id,
-            $p->wilaya?->localized_name,
-            $p->position?->abbreviation,
-            $p->otherPositions->pluck('abbreviation')->implode(', '),
-            $p->fullname,
-            $p->category?->localized_name,
-            $p->status?->localized_name,
-            $p->is_student ? UiLang::get('student', 'student') : UiLang::get('worker', 'worker'),
-            $p->join_year !== null ? (int) $p->join_year : null,
-            (float) $p->outstanding_debt,
-            collect($p->phones ?? [])->implode(' / '),
-            $p->branches->map(fn (Branch $b) => $b->localized_name)->implode(' / '),
-            $p->memberJob?->localized_name,
-        ]);
+        $rows = $query->orderBy('lastname')->orderBy('firstname')->get()->map(function (Player $p) use ($display, $shownBranch) {
+            $display->overlay($p, $shownBranch);
+
+            return [
+                $p->membership_id,
+                $p->wilaya?->localized_name,
+                $p->position?->abbreviation,
+                $p->otherPositions->pluck('abbreviation')->implode(', '),
+                $p->fullname,
+                $p->category?->localized_name,
+                $p->status?->localized_name,
+                $p->is_student ? UiLang::get('student', 'student') : UiLang::get('worker', 'worker'),
+                $p->join_year !== null ? (int) $p->join_year : null,
+                (float) $p->outstanding_debt,
+                collect($p->phones ?? [])->implode(' / '),
+                $p->branches->map(fn (Branch $b) => $b->localized_name)->implode(' / '),
+                $p->memberJob?->localized_name,
+            ];
+        });
 
         $headers = array_map(fn (string $key) => UiLang::get($key), [
             'col.membership_id', 'col.wilaya', 'col.main_position', 'col.other_positions',
@@ -718,11 +741,14 @@ class PlayerController extends Controller
     {
         $query = Player::query();
         $this->applyPlayerFilters($query, $request);
-        $players = $query->orderBy('lastname')->orderBy('firstname')->get();
+        $shownBranch = $this->selectedBranch($request);
+        $this->withShownRegistration($query, $shownBranch);
+        $display = RegistrationDisplay::make();
+        $players = $query->orderBy('lastname')->orderBy('firstname')->get()
+            ->each(fn (Player $player) => $display->overlay($player, $shownBranch));
 
         $spec = $this->filterSpecs();
-        $branchIds = array_filter(ListFilter::get($request, 'branch_id', $spec['branch_id']), 'ctype_digit');
-        $branch = count($branchIds) === 1 ? Branch::find((int) reset($branchIds)) : null;
+        $branch = $shownBranch === null ? null : Branch::find($shownBranch);
 
         $categoryIds = array_filter(ListFilter::get($request, 'category_id', $spec['category_id']), 'ctype_digit');
         $categories = $categoryIds === [] ? [] : Category::whereIn('id', $categoryIds)->get()
@@ -830,41 +856,27 @@ class PlayerController extends Controller
             $query->whereIn('health_blood_group_rhesus', $bloodGroups);
         }
 
-        if ($categoryIds = $ids($pick('category_id'))) {
-            $query->whereIn('category_id', $categoryIds);
-        }
-
         $archivedView = $request->has('archived') && $request->boolean('archived');
 
         $statuses = $pick('status');
-        if ($statuses !== []) {
-            // Status ids, plus "none" for players with no status at all.
-            $noStatus = in_array('none', $statuses, true);
-            $statusIds = $ids($statuses);
 
-            $query->where(function ($q) use ($noStatus, $statusIds) {
-                if ($noStatus) {
-                    $q->orWhereNull('status_id');
-                }
-                if ($statusIds !== []) {
-                    $q->orWhereIn('status_id', $statusIds);
-                }
-            });
-        } elseif ($hideLeftByDefault && ! $searching && ! $archivedView) {
-            // "Left the club" stays out of sight until a status is picked. A
-            // search still finds them (the row shows its status), and the
-            // archived view is its own bucket, shown whole.
-            $query->notLeft();
-        }
+        // Branch, category and status go together: with a branch, all three hold on
+        // that branch's registration. "Left the club" stays out of sight until a
+        // status is picked. A search still finds them (the row shows its status),
+        // and the archived view is its own bucket, shown whole.
+        $query->listedWhere(
+            branches: $ids($pick('branch_id')) ?: null,
+            categories: $ids($pick('category_id')) ?: null,
+            statuses: $ids($statuses) ?: null,
+            noStatus: in_array('none', $statuses, true),
+            hideLeft: $statuses === [] && $hideLeftByDefault && ! $searching && ! $archivedView,
+        );
 
         if ($positionIds = $ids($pick('position_id'))) {
-            // "Plays X" means the main position or one of the others.
+            // "Plays X" means a main position on any registration, or one of the others.
             $query->where(fn ($q) => $q->whereIn('position_id', $positionIds)
+                ->orWhereHas('registrations', fn ($r) => $r->whereIn('position_id', $positionIds))
                 ->orWhereHas('otherPositions', fn ($p) => $p->whereIn('positions.id', $positionIds)));
-        }
-
-        if ($branchIds = $ids($pick('branch_id'))) {
-            $query->whereHas('branches', fn ($q) => $q->whereIn('branches.id', $branchIds));
         }
 
         $wilayas = $pick('wilaya_id');
@@ -965,6 +977,37 @@ class PlayerController extends Controller
             // missing | expiring | missing-{documentTypeId}
             'documents' => '/^(missing|expiring|missing-[1-9]\d*)$/',
         ];
+    }
+
+    /** @return list<int>|null the branches the list is filtered on */
+    private function filteredBranches(Request $request): ?array
+    {
+        $values = ListFilter::get($request, 'branch_id', $this->filterSpecs()['branch_id']);
+
+        return array_values(array_map('intval', array_filter($values, 'ctype_digit'))) ?: null;
+    }
+
+    /** Whether the list is showing left people, so per-registration charts count them too. */
+    private function chartsIncludeLeft(Request $request): bool
+    {
+        $statuses = ListFilter::get($request, 'status', $this->filterSpecs()['status']);
+
+        return in_array((string) Player::leftStatusId(), $statuses, true)
+            || ($request->filled('search') && is_string($request->input('search')))
+            || ($request->has('archived') && $request->boolean('archived'));
+    }
+
+    /** The eager load behind RegistrationDisplay::overlay, only when one branch is shown. */
+    private function withShownRegistration($query, ?int $branchId): void
+    {
+        if ($branchId !== null) {
+            $query->with([
+                'registrations:id,player_id,branch_id,membership_id,category_id,position_id,licence_number,status_id,left_at',
+                'registrations.category:id,name,name_ar,name_fr,name_en',
+                'registrations.position:id,name,abbreviation,branch_id',
+                'registrations.status:id,name,name_ar,name_fr,name_en,sort_order,is_active,code',
+            ]);
+        }
     }
 
     /**

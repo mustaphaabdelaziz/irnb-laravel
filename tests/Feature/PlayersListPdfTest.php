@@ -58,7 +58,7 @@ class PlayersListPdfTest extends TestCase
         $ziani = $this->player('Yanis', 'Ziani', null, ['birthdate' => '2011-07-20', 'health_blood_group_rhesus' => 'A-']);
         $benali = $this->player('Amine', 'Benali', null, ['birthdate' => '2010-03-04', 'health_blood_group_rhesus' => 'O+', 'phones' => ['0555 12 34 56', '0661 00 11 22']]);
         $kaci = $this->player('Sami', 'Kaci');
-        $football->players()->attach([$ziani->id, $benali->id]);
+        $football->players()->attach([$ziani->id => ['membership_id' => $ziani->membership_id], $benali->id => ['membership_id' => $benali->membership_id]]);
         $swim->players()->attach($kaci->id);
 
         $html = $this->capturePdfHtml();

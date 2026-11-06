@@ -150,7 +150,7 @@ class BranchFeatureTest extends TestCase
         $swim = Branch::create(['name' => 'Swimming']);
         $inSwim = Player::create(['firstname' => 'A', 'membership_id' => '202400001', 'join_year' => 2024]);
         $notInSwim = Player::create(['firstname' => 'B', 'membership_id' => '202400002', 'join_year' => 2024]);
-        $inSwim->branches()->sync([$swim->id]);
+        $inSwim->branches()->sync([$swim->id => ['membership_id' => '202400001']]);
 
         $this->actingAs($this->admin())
             ->get(route('players.export', ['branch_id' => $swim->id]))

@@ -391,7 +391,7 @@ function runBulk() {
                 </button>
                 <div v-if="statsOpen" id="player-stats" class="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
                     <StatBars v-if="statusChips.length || hasActiveFilters" v-model="statusFilter" :title="t('by_status')" :stats="statusChips" class="xl:col-span-3" />
-                    <StatBars v-if="categoryChips.length || hasActiveFilters" v-model="categoryFilter" :title="t('by_category')" :stats="categoryChips" class="xl:col-span-3" />
+                    <StatBars v-if="categoryChips.length || hasActiveFilters" v-model="categoryFilter" :title="t('by_category')" :stats="categoryChips" :note="!branchFilter.length && branches.length > 1 ? t('chart_note.bars_can_exceed_total') : null" class="xl:col-span-3" />
                     <StatBars v-if="positionChips.length || hasActiveFilters" v-model="positionFilter" :title="t('by_position')" :stats="positionChips" class="xl:col-span-2" />
                     <StatBars v-if="ageChips.length || hasActiveFilters" v-model="ageFilter" :title="t('by_age')" :stats="ageChips" class="xl:col-span-2" />
                     <StatBars v-if="familyChips.length || hasActiveFilters" v-model="lastnameFilter" :title="t('by_family_name')" :stats="familyChips" class="md:col-span-2 xl:col-span-2" />

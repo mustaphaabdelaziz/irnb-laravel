@@ -20,6 +20,8 @@ const props = defineProps({
     unit: { type: String, default: null },
     // 'money' when count holds amounts (Transactions): shown as money
     format: { type: String, default: 'number' },
+    // A short remark under the title.
+    note: { type: String, default: null },
 });
 const emit = defineEmits(['update:modelValue']);
 
@@ -49,6 +51,7 @@ const width = (count) => `${Math.max(2, Math.round((count / max.value) * 100))}%
             </div>
         </div>
 
+        <p v-if="note" class="mb-2 text-xs text-slate-500 dark:text-slate-400">{{ note }}</p>
         <p v-if="!stats.length" class="py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</p>
 
         <!-- Capped height: a long list scrolls inside its card instead of

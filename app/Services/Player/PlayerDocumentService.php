@@ -2,6 +2,7 @@
 
 namespace App\Services\Player;
 
+use App\Models\BranchRegistration;
 use App\Models\DocumentType;
 use App\Models\Player;
 use App\Models\PlayerDocument;
@@ -19,16 +20,18 @@ use Throwable;
  */
 class PlayerDocumentService
 {
-    public function __construct(private PrivateFileStorage $storage) {}
+    public function __construct(private PrivateFileStorage $storage, private RegistrationService $registrations) {}
 
     /**
      * @param  array{received_at: string, valid_until: ?string, notes: ?string}  $receipt
      * @param  list<UploadedFile>  $files
+     * @param  BranchRegistration|null  $registration  null: the main one
      */
-    public function markReceived(Player $player, DocumentType $type, array $receipt, array $files, ?User $by): PlayerDocument
+    public function markReceived(Player $player, DocumentType $type, array $receipt, array $files, ?User $by, ?BranchRegistration $registration = null): PlayerDocument
     {
         $document = PlayerDocument::create([
             'player_id' => $player->id,
+            'branch_registration_id' => ($registration ?? $this->registrations->primary($player))?->id,
             'document_type_id' => $type->id,
             'state' => PlayerDocument::RECEIVED,
             'received_at' => $receipt['received_at'],
@@ -67,11 +70,16 @@ class PlayerDocumentService
         $this->recordUpload($document, $attached, $by);
     }
 
-    /** With or without an existing row; a received row keeps its dates and files. */
-    public function exempt(Player $player, DocumentType $type, string $reason, ?User $by): PlayerDocument
+    /**
+     * With or without an existing row; a received row keeps its dates and files.
+     *
+     * @param  BranchRegistration|null  $registration  null: the main one
+     */
+    public function exempt(Player $player, DocumentType $type, string $reason, ?User $by, ?BranchRegistration $registration = null): PlayerDocument
     {
         $document = PlayerDocument::firstOrNew([
             'player_id' => $player->id,
+            'branch_registration_id' => ($registration ?? $this->registrations->primary($player))?->id,
             'document_type_id' => $type->id,
         ]);
 

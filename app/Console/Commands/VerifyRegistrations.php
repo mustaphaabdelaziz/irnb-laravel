@@ -69,6 +69,24 @@ class VerifyRegistrations extends Command
             ->whereNotNull('left_at')->pluck('id')->map(fn ($id) => "registration {$id}")->all();
         $failures += $this->report('leave date on a registration that has not left', $strayLeaveDates);
 
+        $homelessDocuments = DB::table('player_documents as pd')
+            ->where(fn ($q) => $q
+                ->where(fn ($blank) => $blank->whereNull('pd.branch_registration_id')
+                    ->whereExists(fn ($r) => $r->selectRaw('1')->from('branch_player')->whereColumn('branch_player.player_id', 'pd.player_id')))
+                ->orWhere(fn ($named) => $named->whereNotNull('pd.branch_registration_id')
+                    ->whereNotExists(fn ($r) => $r->selectRaw('1')->from('branch_player')
+                        ->whereColumn('branch_player.id', 'pd.branch_registration_id')
+                        ->whereColumn('branch_player.player_id', 'pd.player_id'))))
+            ->pluck('pd.id')->map(fn ($id) => "document {$id}")->all();
+        $failures += $this->report('document with no registration of its player', $homelessDocuments);
+
+        // The unique key can't see blanks: for a player with no registration, the writers keep it to one.
+        $doubledDocuments = DB::table('player_documents')->whereNull('branch_registration_id')
+            ->groupBy('player_id', 'document_type_id')->havingRaw('COUNT(*) > 1')
+            ->get(['player_id', 'document_type_id'])
+            ->map(fn ($row) => "player {$row->player_id}: type {$row->document_type_id}")->all();
+        $failures += $this->report('document held twice', $doubledDocuments);
+
         $this->line($failures === 0 ? 'OK' : "FAILED: {$failures} check(s)");
 
         return $failures === 0 ? self::SUCCESS : self::FAILURE;

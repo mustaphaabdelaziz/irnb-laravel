@@ -317,8 +317,8 @@ class RegistrationService
 
     /**
      * Undo a registration added by mistake. Anything real keeps it: a subscription
-     * obligation on its branch, or being the player's last one. Later releases add
-     * documents and custom values to this check.
+     * obligation on its branch, a document recorded on it, or being the player's
+     * last one. Later releases add custom values to this check.
      *
      * @return string|null the flash key when refused
      */
@@ -335,6 +335,9 @@ class RegistrationService
             ->exists();
         if ($hasObligations) {
             return 'flash.registration_has_obligations';
+        }
+        if ($registration->documents()->exists()) {
+            return 'flash.registration_has_documents';
         }
 
         DB::transaction(function () use ($player, $registration) {

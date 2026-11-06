@@ -3,6 +3,7 @@
 namespace Tests\Feature\Registrations;
 
 use App\Models\Branch;
+use App\Models\DocumentType;
 use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -121,5 +122,51 @@ class VerifyRegistrationsTest extends TestCase
         $this->artisan('registrations:verify')
             ->expectsOutputToContain('no branch: 1')
             ->assertExitCode(0);
+    }
+
+    #[Test]
+    public function a_document_with_no_registration_fails_when_the_player_has_one(): void
+    {
+        $player = $this->member();
+        DB::table('player_documents')->insert([
+            'player_id' => $player->id, 'branch_registration_id' => null,
+            'document_type_id' => DocumentType::query()->value('id'), 'state' => 'received',
+        ]);
+
+        $this->artisan('registrations:verify')
+            ->expectsOutputToContain('document with no registration of its player')
+            ->assertExitCode(1);
+    }
+
+    #[Test]
+    public function a_document_on_another_players_registration_fails(): void
+    {
+        $player = $this->member();
+        $other = Player::create(['firstname' => 'B', 'membership_id' => '201700002']);
+        DB::table('player_documents')->insert([
+            'player_id' => $other->id, 'branch_registration_id' => $player->registrations()->value('id'),
+            'document_type_id' => DocumentType::query()->value('id'), 'state' => 'received',
+        ]);
+
+        $this->artisan('registrations:verify')
+            ->expectsOutputToContain('document with no registration of its player')
+            ->assertExitCode(1);
+    }
+
+    #[Test]
+    public function a_blank_document_passes_for_a_player_with_no_registration_unless_doubled(): void
+    {
+        $this->member();
+        $flat = Player::create(['firstname' => 'B', 'membership_id' => '201700002']);
+        $row = ['player_id' => $flat->id, 'branch_registration_id' => null, 'document_type_id' => DocumentType::query()->value('id'), 'state' => 'received'];
+        DB::table('player_documents')->insert($row);
+
+        $this->artisan('registrations:verify')->assertExitCode(0);
+
+        DB::table('player_documents')->insert($row);
+
+        $this->artisan('registrations:verify')
+            ->expectsOutputToContain('document held twice')
+            ->assertExitCode(1);
     }
 }

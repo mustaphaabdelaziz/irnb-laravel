@@ -1784,6 +1784,7 @@
     "flash.preseason_target_saved": "Objectif de préparation enregistré.",
     "flash.previous_debt_added": "Dette antérieure ajoutée.",
     "flash.registration_deleted": "Inscription supprimée.",
+    "flash.registration_has_documents": "Suppression impossible : des documents sont enregistrés dans cette section.",
     "flash.registration_has_obligations": "Suppression impossible : des cotisations sont liées à cette section. Indiquez plutôt un départ.",
     "flash.registration_last": "Impossible de supprimer la dernière inscription du joueur.",
     "flash.report_saved": "Rapport de match enregistré.",

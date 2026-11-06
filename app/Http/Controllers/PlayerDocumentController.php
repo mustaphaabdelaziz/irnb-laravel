@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BranchRegistration;
 use App\Models\DocumentType;
 use App\Models\Player;
 use App\Models\PlayerDocument;
 use App\Models\PlayerDocumentFile;
 use App\Services\Player\PlayerDocumentService;
+use App\Services\Player\RegistrationService;
 use App\Services\Storage\PrivateFileStorage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -31,12 +33,17 @@ class PlayerDocumentController extends Controller
     public function store(Request $request, Player $player): RedirectResponse
     {
         $type = $this->activeType($request);
+        $registration = $this->registration($request, $player);
 
-        if ($player->documents()->where('document_type_id', $type->id)->exists()) {
+        $held = $player->documents()
+            ->where('branch_registration_id', $registration?->id)
+            ->where('document_type_id', $type->id)
+            ->exists();
+        if ($held) {
             return back()->with('error', 'flash.document_already_recorded');
         }
 
-        $this->documents->markReceived($player, $type, $this->receipt($request, $type), $this->files($request), $request->user());
+        $this->documents->markReceived($player, $type, $this->receipt($request, $type), $this->files($request), $request->user(), $registration);
 
         return back()->with('success', 'flash.document_received');
     }
@@ -57,11 +64,12 @@ class PlayerDocumentController extends Controller
     public function exempt(Request $request, Player $player): RedirectResponse
     {
         $type = $this->activeType($request);
+        $registration = $this->registration($request, $player);
         $data = $request->validate([
             'reason' => ['required', 'string', 'min:3', 'max:255'],
         ]);
 
-        $this->documents->exempt($player, $type, $data['reason'], $request->user());
+        $this->documents->exempt($player, $type, $data['reason'], $request->user(), $registration);
 
         return back()->with('success', 'flash.document_exempted');
     }
@@ -118,6 +126,16 @@ class PlayerDocumentController extends Controller
         $this->documents->removeFile($file);
 
         return back()->with('success', 'flash.document_file_removed');
+    }
+
+    /** The registration the page's tab names, otherwise the main one; none for a player without any. */
+    private function registration(Request $request, Player $player): ?BranchRegistration
+    {
+        $id = $request->validate([
+            'branch_registration_id' => ['nullable', 'integer', Rule::exists('branch_player', 'id')->where('player_id', $player->id)],
+        ])['branch_registration_id'] ?? null;
+
+        return $id === null ? app(RegistrationService::class)->primary($player) : BranchRegistration::findOrFail($id);
     }
 
     private function activeType(Request $request): DocumentType

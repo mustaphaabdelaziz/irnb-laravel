@@ -1784,6 +1784,7 @@
     "flash.preseason_target_saved": "Pre-season target saved.",
     "flash.previous_debt_added": "Previous debt added.",
     "flash.registration_deleted": "Registration deleted.",
+    "flash.registration_has_documents": "Can't delete: documents are recorded on this branch.",
     "flash.registration_has_obligations": "Can't delete: subscriptions are tied to this branch. Mark the player as left instead.",
     "flash.registration_last": "Can't delete a player's last registration.",
     "flash.report_saved": "Match report saved.",

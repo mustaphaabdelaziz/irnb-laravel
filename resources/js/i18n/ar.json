@@ -1784,6 +1784,7 @@
     "flash.preseason_target_saved": "تم حفظ عدد حصص التحضير.",
     "flash.previous_debt_added": "تمت إضافة دين سابق.",
     "flash.registration_deleted": "تم حذف التسجيل.",
+    "flash.registration_has_documents": "لا يمكن الحذف: توجد وثائق مسجلة في هذا الفرع.",
     "flash.registration_has_obligations": "لا يمكن الحذف: توجد اشتراكات مرتبطة بهذا الفرع. سجل مغادرة الفرع بدلا من ذلك.",
     "flash.registration_last": "لا يمكن حذف آخر تسجيل للاعب.",
     "flash.report_saved": "تم حفظ تقرير المباراة.",

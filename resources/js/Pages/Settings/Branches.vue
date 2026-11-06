@@ -22,12 +22,9 @@ const props = defineProps({
 
 const playersById = computed(() => Object.fromEntries(props.players.map((p) => [p.id, p])));
 
-const editingId = ref(null);
 const deleteId = ref(null);
 
 const form = useForm({ name: '', code: '', name_ar: '', name_fr: '', name_en: '', description: '', logo: null });
-// Files only travel in multipart POSTs, so the update is a POST spoofing PUT.
-const editForm = useForm({ _method: 'put', name: '', code: '', name_ar: '', name_fr: '', name_en: '', description: '', logo: null, remove_logo: false });
 const addLogoInput = ref(null);
 
 function addBranch() {
@@ -37,26 +34,6 @@ function addBranch() {
             form.reset();
             if (addLogoInput.value) addLogoInput.value.value = '';
         },
-    });
-}
-
-function startEdit(branch) {
-    editingId.value = branch.id;
-    editForm.clearErrors();
-    editForm.name = branch.name;
-    editForm.code = branch.code || '';
-    editForm.name_ar = branch.name_ar || '';
-    editForm.name_fr = branch.name_fr || '';
-    editForm.name_en = branch.name_en || '';
-    editForm.description = branch.description || '';
-    editForm.logo = null;
-    editForm.remove_logo = false;
-}
-
-function saveEdit(id) {
-    editForm.post(route('branches.update', id), {
-        forceFormData: true,
-        onSuccess: () => { editingId.value = null; },
     });
 }
 
@@ -180,43 +157,20 @@ function saveMembers() {
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                         <tr v-for="branch in branches" :key="branch.id">
                             <td class="px-4 py-3">
-                                <div v-if="editingId === branch.id" class="space-y-1.5">
-                                    <TextInput v-model="editForm.name" class="w-full" :placeholder="t('name')" />
-                                    <TextInput v-model="editForm.name_ar" class="w-full" placeholder="العربية" />
-                                    <TextInput v-model="editForm.name_fr" class="w-full" placeholder="Français" />
-                                    <TextInput v-model="editForm.name_en" class="w-full" placeholder="English" />
-                                    <InputError :message="editForm.errors.name" class="mt-1" />
-                                    <label class="block pt-1 text-xs font-medium text-slate-600 dark:text-slate-300">{{ t('branch_code') }}</label>
-                                    <TextInput v-model="editForm.code" class="w-full uppercase" maxlength="6" dir="ltr" />
-                                    <InputError :message="editForm.errors.code" class="mt-1" />
-                                    <div class="flex flex-wrap items-center gap-3 pt-1">
-                                        <img v-if="branch.logo_url && !editForm.remove_logo && !editForm.logo" :src="branch.logo_url" alt="" class="h-8 w-8 rounded object-contain" />
-                                        <input type="file" accept="image/*" class="block min-w-0 flex-1 text-xs" @change="editForm.logo = $event.target.files[0] || null; editForm.remove_logo = false" />
-                                        <label v-if="branch.logo_url && !editForm.logo" class="inline-flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
-                                            <input v-model="editForm.remove_logo" type="checkbox" class="rounded border-slate-300 text-rose-600 focus:ring-rose-500 dark:border-slate-700" />
-                                            {{ t('remove') }}
-                                        </label>
-                                    </div>
-                                    <InputError :message="editForm.errors.logo" class="mt-1" />
-                                </div>
-                                <div v-else class="flex items-center gap-2">
+                                <div class="flex items-center gap-2">
                                     <img v-if="branch.logo_url" :src="branch.logo_url" alt="" class="h-8 w-8 shrink-0 rounded object-contain" />
                                     <span v-else class="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-slate-100 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ (branch.localized_name || branch.name || '?').charAt(0) }}</span>
-                                    <span class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ branch.localized_name || branch.name }}</span>
+                                    <Link :href="route('branches.show', branch.id)" class="text-sm font-medium text-slate-900 hover:underline dark:text-slate-100">{{ branch.localized_name || branch.name }}</Link>
                                     <span v-if="branch.id === mainBranchId" class="ms-2 rounded bg-primary-50 px-1.5 py-0.5 text-xs text-primary-700 dark:bg-primary-900/30 dark:text-primary-200">{{ t('main_branch') }}</span>
                                     <span class="ms-2 font-mono text-xs text-slate-500 dark:text-slate-400" dir="ltr">{{ branch.code }}</span>
                                 </div>
                             </td>
                             <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ branch.players_count }}</td>
                             <td class="px-4 py-3 text-end">
-                                <div v-if="editingId === branch.id" class="flex justify-end gap-2">
-                                    <button @click="saveEdit(branch.id)" class="text-sm text-primary-600 hover:text-primary-800 dark:text-primary-300 dark:hover:text-primary-200">{{ t('save') }}</button>
-                                    <button @click="editingId = null" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">{{ t('cancel') }}</button>
-                                </div>
-                                <div v-else class="flex justify-end gap-2">
+                                <div class="flex justify-end gap-2">
                                     <IconButton v-if="branch.id !== mainBranchId" icon="flag" :label="t('set_main_branch')" plain size="sm" @click="router.post(route('branches.main', branch.id), {}, { preserveScroll: true })" />
                                     <IconButton icon="players" :label="t('members')" variant="primary" plain size="sm" @click="openMembers(branch)" />
-                                    <IconButton icon="pencil" :label="t('edit')" plain size="sm" @click="startEdit(branch)" />
+                                    <IconButton icon="pencil" :label="t('edit')" plain size="sm" :href="route('branches.show', branch.id)" />
                                     <IconButton icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteId = branch.id" />
                                 </div>
                             </td>

@@ -2,58 +2,94 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Branch;
 use App\Models\BranchRegistration;
 use App\Models\Category;
 use App\Models\Team;
 use App\Models\TrainingSession;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class CategoryController extends Controller
 {
-    public function index(): Response
+    /** Categories live on their branch's page. A club with no branches keeps this page. */
+    public function index(): Response|RedirectResponse
     {
-        $categories = Category::query()
-            ->withCount('players')
-            ->orderBy('name')
-            ->get();
+        $main = Branch::mainId() ?? Branch::query()->orderBy('id')->value('id');
+        if ($main !== null) {
+            return redirect()->route('categories.show', $main);
+        }
 
         return Inertia::render('Settings/Categories', [
-            'categories' => $categories,
+            'categories' => $this->listed(null),
+        ]);
+    }
+
+    /** The Categories tab of a branch's page. */
+    public function show(Branch $branch): Response
+    {
+        return Inertia::render('Settings/BranchDetail', [
+            'branch' => $branch,
+            'tab' => 'categories',
+            'categories' => $this->listed($branch->id),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:categories,name'],
-            'name_ar' => ['nullable', 'string', 'max:255'],
-            'name_fr' => ['nullable', 'string', 'max:255'],
-            'name_en' => ['nullable', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-        ]);
+        $request->validate(['branch_id' => ['nullable', 'integer', 'exists:branches,id']]);
+        $branchId = $request->filled('branch_id') ? (int) $request->input('branch_id') : Branch::mainId();
 
-        Category::create($validated);
+        Category::create($this->validateNames($request, $branchId) + ['branch_id' => $branchId]);
 
         return back()->with('success', 'flash.category_created');
     }
 
+    /** A category can't move to another branch: its rows and prices stay with it. */
     public function update(Request $request, Category $category): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:categories,name,'.$category->id],
+        $category->update($this->validateNames($request, $category->branch_id, $category->id));
+
+        return back()->with('success', 'flash.category_updated');
+    }
+
+    /** Hidden from pickers for new choices, kept where stored, still in reports. */
+    public function toggleActive(Category $category): RedirectResponse
+    {
+        $category->update(['is_active' => ! $category->is_active]);
+
+        return back()->with('success', $category->is_active ? 'flash.category_activated' : 'flash.category_deactivated');
+    }
+
+    /** @return Collection<int, Category> */
+    private function listed(?int $branchId): Collection
+    {
+        return Category::query()
+            ->when($branchId !== null, fn ($q) => $q->where('branch_id', $branchId))
+            ->withCount('registrations')
+            ->orderBy('name')
+            ->get();
+    }
+
+    /** @return array<string, mixed> */
+    private function validateNames(Request $request, ?int $branchId, ?int $ignoreId = null): array
+    {
+        return $request->validate([
+            'name' => [
+                'required', 'string', 'max:255',
+                Rule::unique('categories', 'name')->ignore($ignoreId)
+                    ->where(fn ($q) => $branchId === null ? $q->whereNull('branch_id') : $q->where('branch_id', $branchId)),
+            ],
             'name_ar' => ['nullable', 'string', 'max:255'],
             'name_fr' => ['nullable', 'string', 'max:255'],
             'name_en' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
         ]);
-
-        $category->update($validated);
-
-        return back()->with('success', 'flash.category_updated');
     }
 
     /**

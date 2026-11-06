@@ -21,6 +21,7 @@ class PerListPermissionsTest extends TestCase
     public function every_configuration_list_resolves_to_its_own_module(): void
     {
         $this->assertSame(['categories', 'view'], PermissionMap::resolve('categories.index'));
+        $this->assertSame(['categories', 'view'], PermissionMap::resolve('categories.show'));
         $this->assertSame(['branches', 'view'], PermissionMap::resolve('branches.index'));
         $this->assertSame(['positions', 'view'], PermissionMap::resolve('positions.index'));
         $this->assertSame(['player_statuses', 'view'], PermissionMap::resolve('player-statuses.index'));

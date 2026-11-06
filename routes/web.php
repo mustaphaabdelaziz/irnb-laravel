@@ -326,7 +326,9 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
 
         // Settings - lookup tables
         Route::resource('categories', CategoryController::class)->except(['show', 'create', 'edit']);
-        Route::resource('branches', BranchController::class)->except(['show', 'create', 'edit']);
+        Route::post('/categories/{category}/active', [CategoryController::class, 'toggleActive'])->name('categories.toggle-active');
+        Route::get('/branches/{branch}/categories', [CategoryController::class, 'show'])->name('categories.show');
+        Route::resource('branches', BranchController::class)->except(['create', 'edit']);
         Route::post('/branches/{branch}/players', [BranchController::class, 'syncPlayers'])->name('branches.players.sync');
         Route::post('/branches/{branch}/main', [BranchController::class, 'setMain'])->name('branches.main');
         Route::resource('equipment-categories', EquipmentCategoryController::class)->except(['show', 'create', 'edit']);

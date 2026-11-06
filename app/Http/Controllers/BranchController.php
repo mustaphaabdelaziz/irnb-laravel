@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Branch;
 use App\Models\BranchRegistration;
+use App\Models\Category;
 use App\Models\Player;
 use App\Models\PreseasonTarget;
 use App\Models\Team;
@@ -48,6 +49,16 @@ class BranchController extends Controller
                     'fullname' => $p->fullname,
                     'membership_id' => $p->membership_id,
                 ]),
+        ]);
+    }
+
+    /** The General tab of a branch's page. */
+    public function show(Branch $branch): Response
+    {
+        return Inertia::render('Settings/BranchDetail', [
+            'branch' => $branch,
+            'tab' => 'general',
+            'categories' => [],
         ]);
     }
 
@@ -136,12 +147,18 @@ class BranchController extends Controller
         if (TrainingSession::where('branch_id', $branch->id)->exists() || TrainingSchedule::where('branch_id', $branch->id)->exists()) {
             return back()->with('error', 'flash.branch_has_sessions');
         }
+        // A branch's unused categories go with it; one still used refuses the delete.
+        $categories = Category::where('branch_id', $branch->id)->get();
+        if ($categories->contains(fn (Category $category) => $category->isInUse())) {
+            return back()->with('error', 'flash.branch_has_used_categories');
+        }
         $files->delete($branch->logo_filename);
-        DB::transaction(function () use ($branch) {
+        DB::transaction(function () use ($branch, $categories) {
             PreseasonTarget::where('branch_id', $branch->id)->delete();
             DB::table('deleted_session_slots')->where('branch_id', $branch->id)->delete();
             // Only stale details can remain: a branch with sessions is refused above.
             DB::table('injury_notes')->where('branch_id', $branch->id)->delete();
+            $categories->each->delete();
             $branch->delete();
         });
 

@@ -22,12 +22,13 @@ class BranchObserver
     {
         app(CashRegisterProvisioner::class)->forBranch($branch);
 
-        // The club's first branch adopts every club-wide attendance row, as the
-        // migrations' backfills do (2026_10_23_100001_add_branch_to_attendance_tables,
-        // 2026_10_23_300001_add_branch_to_injury_notes).
+        // The club's first branch adopts every club-wide row, as the migrations'
+        // backfills do (2026_10_23_100001_add_branch_to_attendance_tables,
+        // 2026_10_23_300001_add_branch_to_injury_notes), and every unowned category
+        // (2026_11_06_100001_split_categories_by_branch).
         if (Branch::count() === 1) {
             WebsiteConfig::singleton()->update(['main_branch_id' => $branch->id]);
-            foreach (['training_sessions', 'training_schedules', 'deleted_session_slots', 'preseason_targets', 'injury_notes'] as $table) {
+            foreach (['training_sessions', 'training_schedules', 'deleted_session_slots', 'preseason_targets', 'injury_notes', 'categories'] as $table) {
                 DB::table($table)->whereNull('branch_id')->update(['branch_id' => $branch->id]);
             }
         }

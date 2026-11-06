@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Branch;
 use App\Models\Category;
 use Illuminate\Database\Seeder;
 
@@ -17,8 +18,11 @@ class CategorySeeder extends Seeder
             ['name' => 'Ecole', 'description' => 'For school-level members of the club'],
         ];
 
+        // With no branch yet they wait, and the first branch adopts them.
+        $mainId = Branch::mainId();
+
         foreach ($categories as $category) {
-            Category::firstOrCreate(['name' => $category['name']], $category);
+            Category::firstOrCreate(['name' => $category['name']], $category + ['branch_id' => $mainId]);
         }
     }
 }

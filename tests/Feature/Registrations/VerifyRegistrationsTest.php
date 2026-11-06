@@ -221,25 +221,25 @@ class VerifyRegistrationsTest extends TestCase
     }
 
     #[Test]
-    public function same_named_categories_priced_differently_fail(): void
+    public function same_named_categories_priced_differently_only_warn(): void
     {
         [, , $senior, $swimSenior] = $this->club();
         $subscription = Subscription::create(['name' => 'S', 'year' => 2026, 'amount_student' => 1, 'amount_worker' => 1]);
         $subscription->categories()->attach($senior->id, ['amount_student' => 100, 'amount_worker' => 200]);
         $subscription->categories()->attach($swimSenior->id, ['amount_student' => 150, 'amount_worker' => 200]);
 
-        $this->artisan('registrations:verify')->expectsOutputToContain('same-named categories priced differently')->assertExitCode(1);
+        $this->artisan('registrations:verify')->expectsOutputToContain('warning: same-named categories priced differently')->assertExitCode(0);
     }
 
     #[Test]
-    public function a_copy_with_no_price_row_fails_where_the_subscription_applies(): void
+    public function a_copy_with_no_price_row_only_warns_where_the_subscription_applies(): void
     {
         [$foot, $swim, $senior] = $this->club();
         $subscription = Subscription::create(['name' => 'S', 'year' => 2026, 'amount_student' => 1, 'amount_worker' => 1]);
         $subscription->categories()->attach($senior->id, ['amount_student' => 100, 'amount_worker' => 200]);
         $subscription->branches()->attach([$foot->id, $swim->id]);
 
-        $this->artisan('registrations:verify')->expectsOutputToContain('same-named category with no price row')->assertExitCode(1);
+        $this->artisan('registrations:verify')->expectsOutputToContain('warning: same-named category with no price row')->assertExitCode(0);
     }
 
     #[Test]

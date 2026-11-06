@@ -91,8 +91,9 @@ class VerifyRegistrations extends Command
         $failures += $this->report('category with no branch', $this->unownedCategories());
         $failures += $this->report('category of another branch', $this->misplacedCategories());
         [$priced, $unpriced] = $this->priceProblems();
-        $failures += $this->report('same-named categories priced differently (expected only after someone sets a price per branch)', $priced);
-        $failures += $this->report('same-named category with no price row (expected only after someone removes one)', $unpriced);
+        // Right on deploy day, but normal edits later (a price set per branch) make them differ for good: a warning, never a failure.
+        $this->warning('same-named categories priced differently (expected once someone sets a price per branch)', $priced);
+        $this->warning('same-named category with no price row (expected once someone removes one)', $unpriced);
 
         $this->line($failures === 0 ? 'OK' : "FAILED: {$failures} check(s)");
 
@@ -188,6 +189,19 @@ class VerifyRegistrations extends Command
         }
 
         return [$priced, $unpriced];
+    }
+
+    /** @param  list<string>  $problems */
+    private function warning(string $label, array $problems): void
+    {
+        if ($problems === []) {
+            return;
+        }
+
+        $this->warn('warning: '.$label.': '.count($problems));
+        foreach (array_slice($problems, 0, 20) as $problem) {
+            $this->line('  '.$problem);
+        }
     }
 
     /** @param  list<string>  $problems */

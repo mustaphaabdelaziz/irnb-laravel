@@ -155,4 +155,19 @@ class SessionPageRegistrationTest extends TestCase
         // The mirror says Senior; in swimming this player is U15, so no label.
         $this->assertStringNotContainsString('(Senior)', $seen['html']);
     }
+
+    #[Test]
+    public function a_player_who_left_after_the_session_date_is_in_branch_for_that_session(): void
+    {
+        $leftFoot = $this->leftFootball();
+        $before = $this->sessionIn($this->foot, [$this->u17], '2026-03-10');
+        $after = $this->sessionIn($this->foot, [$this->u17], '2026-04-01');
+
+        $this->actingAs($this->admin())->get(route('attendance.sessions.show', $before))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('candidates', fn (Collection $c) => $c->firstWhere('id', $leftFoot->id)['in_branch'] === true));
+        $this->get(route('attendance.sessions.show', $after))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('candidates', fn (Collection $c) => $c->firstWhere('id', $leftFoot->id)['in_branch'] === false));
+    }
 }

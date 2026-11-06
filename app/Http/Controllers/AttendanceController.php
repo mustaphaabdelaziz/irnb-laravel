@@ -109,7 +109,7 @@ class AttendanceController extends Controller
         $categoryNames = Category::all()->mapWithKeys(fn (Category $c) => [$c->id => $c->localized_name]);
         $statusNames = PlayerStatus::all()->mapWithKeys(fn (PlayerStatus $s) => [$s->id => $s->localized_name]);
         $branchId = $session->branch_id;
-        $inBranch = fn (Player $p) => $branchId === null || $display->isActiveIn($p, $branchId);
+        $inBranch = fn (Player $p) => $branchId === null || $display->isActiveOn($p, $branchId, (string) $session->date);
 
         return Player::with('registrations')
             ->registeredWhere(activeOn: $session->date)

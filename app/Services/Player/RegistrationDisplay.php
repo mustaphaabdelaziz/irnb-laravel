@@ -56,6 +56,20 @@ final class RegistrationDisplay
         return $row !== null && ! $this->isLeft($row);
     }
 
+    /** Whether the player is in the branch on a date: not left, or leaving on that day or later (the roster's rule). */
+    public function isActiveOn(Player $player, int $branchId, string $date): bool
+    {
+        $row = $player->registrationIn($branchId);
+        if ($row === null) {
+            return false;
+        }
+        if (! $this->isLeft($row)) {
+            return true;
+        }
+
+        return $row->left_at !== null && substr((string) $row->left_at, 0, 10) >= substr($date, 0, 10);
+    }
+
     /**
      * @return array{registration_id: int|null, branch_id: int|null, category_id: int|null, position_id: int|null, licence_number: string|null, status_id: int|null, left_at: string|null, membership_id: string|null, in_branch: bool, left_branch: bool}
      */

@@ -152,8 +152,6 @@ class AttendanceBranchMigrationTest extends TestCase
     {
         $u15 = $this->category();
         $foot = Branch::create(['name' => 'Foot']);
-        // Not about ownership: the category stays unowned, as before the split.
-        $u15->update(['branch_id' => null]);
         PreseasonTarget::create(['branch_id' => $foot->id, 'category_id' => $u15->id, 'season_start_year' => 2026, 'target_count' => 10]);
         DB::table('deleted_session_slots')->insert(['branch_id' => $foot->id, 'category_id' => $u15->id, 'date' => '2026-10-12', 'start_time' => '18:00', 'created_at' => now()]);
 

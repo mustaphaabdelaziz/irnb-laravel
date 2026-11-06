@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\CategoryInUse;
 use App\Models\Branch;
 use App\Models\BranchRegistration;
 use App\Models\Category;
@@ -147,20 +148,30 @@ class BranchController extends Controller
         if (TrainingSession::where('branch_id', $branch->id)->exists() || TrainingSchedule::where('branch_id', $branch->id)->exists()) {
             return back()->with('error', 'flash.branch_has_sessions');
         }
-        // A branch's unused categories go with it; one still used refuses the delete.
-        $categories = Category::where('branch_id', $branch->id)->get();
-        if ($categories->contains(fn (Category $category) => $category->isInUse())) {
+        // The branch's own targets and tombstones are not "use". Another branch's rows on one of
+        // its categories are: that refuses, and the transaction rolls everything back.
+        try {
+            DB::transaction(function () use ($branch) {
+                PreseasonTarget::where('branch_id', $branch->id)->delete();
+                DB::table('deleted_session_slots')->where('branch_id', $branch->id)->delete();
+                // Only stale details can remain: a branch with sessions is refused above.
+                DB::table('injury_notes')->where('branch_id', $branch->id)->delete();
+
+                $categories = Category::where('branch_id', $branch->id)->get();
+                // Generation marks are per category (no branch column) and cascade with it.
+                DB::table('session_generation_marks')->whereIn('category_id', $categories->modelKeys())->delete();
+                if ($categories->contains(fn (Category $category) => $category->isInUse())) {
+                    throw new CategoryInUse;
+                }
+
+                $categories->each->delete();
+                $branch->delete();
+            });
+        } catch (CategoryInUse) {
             return back()->with('error', 'flash.branch_has_used_categories');
         }
+        // Only once the delete has committed is the logo file safe to drop.
         $files->delete($branch->logo_filename);
-        DB::transaction(function () use ($branch, $categories) {
-            PreseasonTarget::where('branch_id', $branch->id)->delete();
-            DB::table('deleted_session_slots')->where('branch_id', $branch->id)->delete();
-            // Only stale details can remain: a branch with sessions is refused above.
-            DB::table('injury_notes')->where('branch_id', $branch->id)->delete();
-            $categories->each->delete();
-            $branch->delete();
-        });
 
         return back()->with('success', 'flash.branch_deleted');
     }

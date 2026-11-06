@@ -193,6 +193,54 @@ class BranchPageTest extends TestCase
         $this->delete(route('branches.destroy', $extra))->assertSessionHas('error', 'flash.branch_has_used_categories');
     }
 
+
+    #[Test]
+    public function a_branchs_own_targets_and_tombstones_do_not_block_deleting_it(): void
+    {
+        $this->twoSportClub();
+        $extra = Branch::create(['name' => 'Tennis', 'code' => 'TN']);
+        $owned = Category::create(['name' => 'Loisir', 'branch_id' => $extra->id]);
+        \App\Models\PreseasonTarget::create(['branch_id' => $extra->id, 'category_id' => $owned->id, 'season_start_year' => 2026, 'target_count' => 10]);
+        \Illuminate\Support\Facades\DB::table('deleted_session_slots')->insert(['branch_id' => $extra->id, 'category_id' => $owned->id, 'date' => '2026-10-12', 'start_time' => '18:00', 'created_at' => now()]);
+        \Illuminate\Support\Facades\DB::table('session_generation_marks')->insert(['category_id' => $owned->id, 'month' => '2026-10', 'created_at' => now()]);
+
+        $this->delete(route('branches.destroy', $extra))->assertSessionHas('success', 'flash.branch_deleted');
+
+        $this->assertFalse(Branch::whereKey($extra->id)->exists());
+        $this->assertFalse(Category::whereKey($owned->id)->exists());
+        $this->assertSame(0, \App\Models\PreseasonTarget::count());
+        $this->assertSame(0, \Illuminate\Support\Facades\DB::table('deleted_session_slots')->count());
+    }
+
+    #[Test]
+    public function another_branchs_target_on_the_category_refuses_and_deletes_nothing(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+        $this->twoSportClub();
+        \Illuminate\Support\Facades\Storage::disk('public')->put('branches/logo.png', 'x');
+        $extra = Branch::create(['name' => 'Tennis', 'code' => 'TN', 'logo_filename' => 'branches/logo.png']);
+        $owned = Category::create(['name' => 'Loisir', 'branch_id' => $extra->id]);
+        \App\Models\PreseasonTarget::create(['branch_id' => $extra->id, 'category_id' => $owned->id, 'season_start_year' => 2026, 'target_count' => 10]);
+        \App\Models\PreseasonTarget::create(['branch_id' => $this->foot->id, 'category_id' => $owned->id, 'season_start_year' => 2026, 'target_count' => 5]);
+
+        $this->delete(route('branches.destroy', $extra))->assertSessionHas('error', 'flash.branch_has_used_categories');
+
+        $this->assertTrue(Branch::whereKey($extra->id)->exists());
+        $this->assertTrue(Category::whereKey($owned->id)->exists());
+        $this->assertSame(2, \App\Models\PreseasonTarget::count());
+        \Illuminate\Support\Facades\Storage::disk('public')->assertExists('branches/logo.png');
+    }
+
+    #[Test]
+    public function adding_without_a_branch_falls_back_to_the_lowest_branch_when_no_main_is_set(): void
+    {
+        $this->twoSportClub();
+        \App\Models\WebsiteConfig::singleton()->update(['main_branch_id' => null]);
+
+        $this->post(route('categories.store'), ['name' => 'Cadet'])->assertSessionHasNoErrors();
+
+        $this->assertSame(min($this->foot->id, $this->swim->id), Category::where('name', 'Cadet')->value('branch_id'));
+    }
     #[Test]
     public function the_branches_list_links_to_the_page(): void
     {

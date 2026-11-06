@@ -43,7 +43,7 @@ class CategoryController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate(['branch_id' => ['nullable', 'integer', 'exists:branches,id']]);
-        $branchId = $request->filled('branch_id') ? (int) $request->input('branch_id') : Branch::mainId();
+        $branchId = $request->filled('branch_id') ? (int) $request->input('branch_id') : (Branch::mainId() ?? Branch::query()->orderBy('id')->value('id'));
 
         Category::create($this->validateNames($request, $branchId) + ['branch_id' => $branchId]);
 

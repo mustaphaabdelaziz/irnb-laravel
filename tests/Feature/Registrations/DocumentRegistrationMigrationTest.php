@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Registrations;
 
+use App\Models\Branch;
 use App\Models\DocumentType;
 use App\Models\Player;
 use App\Models\PlayerDocument;
@@ -157,6 +158,19 @@ class DocumentRegistrationMigrationTest extends TestCase
 
         app(RegistrationService::class)->register($player, ['branch_id' => $this->swim->id]);
         $this->assertSame($first->id, $document->fresh()->branch_registration_id);
+    }
+
+    #[Test]
+    public function a_later_registration_leaves_unlinked_rows_alone(): void
+    {
+        $player = $this->bothActive();
+        $orphan = $this->row($player, $player->registrationIn($this->foot->id)->id);
+        DB::table('branch_player')->where('id', $player->registrationIn($this->foot->id)->id)->delete();
+        $this->assertNull(DB::table('player_documents')->where('id', $orphan)->value('branch_registration_id'));
+
+        app(RegistrationService::class)->register($player, ['branch_id' => Branch::create(['name' => 'Judo'])->id]);
+
+        $this->assertNull(DB::table('player_documents')->where('id', $orphan)->value('branch_registration_id'));
     }
 
     #[Test]

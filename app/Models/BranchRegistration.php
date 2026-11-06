@@ -57,8 +57,13 @@ class BranchRegistration extends Pivot
             ]);
         });
 
-        // A player's first registration takes over the documents held before it.
+        // A player's first registration takes over the documents held before it. Later ones
+        // leave unlinked rows alone: those belong to a registration that was removed.
         static::created(function (BranchRegistration $registration) {
+            if (DB::table('branch_player')->where('player_id', $registration->player_id)->where('id', '!=', $registration->id)->exists()) {
+                return;
+            }
+
             DB::table('player_documents')
                 ->where('player_id', $registration->player_id)
                 ->whereNull('branch_registration_id')

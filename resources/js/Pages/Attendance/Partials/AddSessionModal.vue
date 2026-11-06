@@ -60,6 +60,7 @@ function submit() {
 }
 
 const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
+const otherErrors = computed(() => Object.fromEntries(Object.entries(form.errors).filter(([k]) => k !== 'category_id')));
 const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900';
 </script>
 
@@ -106,7 +107,7 @@ const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg
                 <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('att.roster_statuses_help') }}</p>
             </fieldset>
             <label class="block text-sm">{{ t('att.title_goal') }}<input v-model="form.title" type="text" maxlength="150" :placeholder="t('att.title_placeholder')" :class="[input, 'mt-1 block w-full']" /></label>
-            <InputError v-for="(e, k) in form.errors" v-show="k !== 'category_id'" :key="k" :message="tr(e)" />
+            <InputError v-for="(e, k) in otherErrors" :key="k" :message="tr(e)" />
             <div class="flex justify-end gap-2">
                 <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700 dark:text-slate-400" @click="emit('close')">{{ t('att.close') }}</button>
                 <button type="submit" :disabled="form.processing || (playerStatuses.length > 0 && !form.roster_status_ids.length)" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('att.save') }}</button>

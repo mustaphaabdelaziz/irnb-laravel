@@ -35,10 +35,10 @@ const otherPositionsError = computed(() => {
 });
 const selectClass = 'mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500';
 
-// A stored position from another branch stays selectable until it is changed.
 // Only this branch's categories, plus the stored one until it is changed.
 const branchCategories = computed(() => categoriesForBranch(props.categories, props.branch.id, [props.card.category_id]));
 
+// A stored position from another branch stays selectable until it is changed.
 const branchPositions = computed(() => props.positions.filter((position) => Number(position.branch_id) === Number(props.branch.id)
     || position.branch_id === null
     || Number(position.id) === Number(props.card.position_id)));

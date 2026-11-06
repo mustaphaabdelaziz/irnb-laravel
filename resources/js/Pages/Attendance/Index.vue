@@ -100,21 +100,21 @@ function openCreate(kind, date = today) {
             </div>
         </template>
 
-        <p v-if="!branchCategories.length" class="text-sm text-slate-500 dark:text-slate-400">{{ t('att.no_category') }}</p>
-
-        <div v-else class="space-y-4">
+        <div class="space-y-4">
             <div class="flex flex-wrap items-center justify-between gap-3 print:hidden">
                 <div class="flex flex-wrap items-center gap-2">
                     <BranchSwitch :branches="branches" :branch-id="branchId" @switch="switchBranch" />
                     <ViewSwitcher :view="view" @switch="switchView" />
                 </div>
-                <div v-if="can('attendance', 'add')" class="flex gap-2">
+                <div v-if="can('attendance', 'add') && branchCategories.length" class="flex gap-2">
                     <IconButton icon="plus" :label="t('att.add_extra')" variant="primary" @click="openCreate('extra')" />
                     <IconButton icon="flag" :label="t('att.add_preseason')" @click="openCreate('preseason')" />
                 </div>
             </div>
 
-            <MonthView v-if="view === 'month'" :categories="branchCategories" :category-id="categoryId" :month="month" :sessions="sessions" :preseason="preseason" :has-schedule="hasSchedule" :can-add="can('attendance', 'add')" @navigate="navigate" @add="(date) => openCreate('extra', date)" />
+            <p v-if="!branchCategories.length" class="text-sm text-slate-500 dark:text-slate-400">{{ t('att.no_category') }}</p>
+
+            <MonthView v-else-if="view === 'month'" :categories="branchCategories" :category-id="categoryId" :month="month" :sessions="sessions" :preseason="preseason" :has-schedule="hasSchedule" :can-add="can('attendance', 'add')" @navigate="navigate" @add="(date) => openCreate('extra', date)" />
             <WeekView v-else-if="view === 'week'" :week="week" :sessions="sessions" :can-add="can('attendance', 'add')" @navigate="navigate" @add="(date) => openCreate('extra', date)" />
             <AgendaView v-else-if="view === 'agenda'" :categories="branchCategories" :category-id="categoryId" :month="month" :sessions="sessions" @navigate="navigate" />
             <TimelineView v-else-if="view === 'timeline'" :categories="branchCategories" :category-id="categoryId" :kind="kind" :from="from" :to="to" :events="events" @navigate="navigate" />

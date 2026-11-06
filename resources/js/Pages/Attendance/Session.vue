@@ -1,5 +1,5 @@
 <script setup>
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
@@ -115,6 +115,12 @@ const showEdit = ref(false);
 const editForm = useForm({ title: '', date: '', start_time: '', end_time: '', coach: '', notes: '', branch_id: null, roster_status_ids: [], kind: 'extra', category_ids: [] });
 // The session's own categories stay listed until they are changed.
 const editCategories = computed(() => categoriesForBranch(props.allCategories, editForm.branch_id, props.session.categories.map((c) => c.id)));
+// A different branch offers different categories: drop the ticked ones that no longer fit.
+watch(() => editForm.branch_id, (branchId, before) => {
+    if (before === null || branchId === before) return; // null: the dialog is being filled
+    const fits = categoriesForBranch(props.allCategories, branchId);
+    editForm.category_ids = editForm.category_ids.filter((id) => fits.some((c) => c.id === id));
+});
 const sortedKey = (ids) => [...ids].sort((a, b) => a - b).join(',');
 let prefilledStatusKey = '';
 function openEdit() {

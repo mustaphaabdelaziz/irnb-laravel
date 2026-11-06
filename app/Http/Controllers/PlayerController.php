@@ -263,6 +263,8 @@ class PlayerController extends Controller
 
         return Inertia::render('Players/Show', [
             'player' => $player,
+            // The tab the page opens on, and the ID it shows first.
+            'mainBranchId' => RegistrationDisplay::make()->main($player)?->branch_id,
             'transactions' => $transactions,
             'availableSubscriptions' => $this->availableSubscriptions($player, $registers),
             'totalDebt' => $player->calculateTotalDebt(),

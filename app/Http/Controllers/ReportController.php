@@ -10,6 +10,7 @@ use App\Models\Player;
 use App\Models\Transaction;
 use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
+use App\Services\Player\RegistrationDisplay;
 use App\Support\FiscalPeriod;
 use App\Support\LegacyFinanceCategory;
 use App\Support\Media;
@@ -21,9 +22,10 @@ class ReportController extends Controller
 {
     public function __construct(private PdfService $pdf) {}
 
-    public function playerCard(Player $player): Response
+    public function playerCard(Request $request, Player $player): Response
     {
-        $player->load(['category', 'position']);
+        $player->load(['category', 'position', 'registrations.category', 'registrations.position']);
+        RegistrationDisplay::make()->overlay($player, $request->integer('branch') ?: null);
 
         $html = view('pdf.member-card', [
             'club' => ClubHeader::data(),
@@ -34,11 +36,12 @@ class ReportController extends Controller
         return $this->pdf->stream($html, "member-card-{$player->membership_id}.pdf");
     }
 
-    public function academicReport(Player $player): Response
+    public function academicReport(Request $request, Player $player): Response
     {
         abort_unless($player->is_student, 404);
 
-        $player->load(['category', 'academicYears.records']);
+        $player->load(['category', 'academicYears.records', 'registrations.category']);
+        RegistrationDisplay::make()->overlay($player, $request->integer('branch') ?: null);
 
         // Pass mark per scale in use (primary /10, everything else /20), for the legend at the bottom.
         $scalePassMarks = collect(EducationLevel::cases())

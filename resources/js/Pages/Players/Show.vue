@@ -37,6 +37,7 @@ const { can } = useCan();
 
 const props = defineProps({
     player: Object,
+    mainBranchId: { type: Number, default: null },
     totalDebt: Number,
     transactions: { type: Array, default: () => [] },
     availableSubscriptions: { type: Array, default: () => [] },
@@ -52,13 +53,30 @@ const props = defineProps({
 
 // One documents tab per registration, main first. Below two, BranchSwitch shows nothing.
 const documentTabs = computed(() => props.documents?.tabs ?? []);
-const documentBranchId = ref(documentTabs.value[0]?.branch_id ?? null);
+const documentBranchId = ref(props.mainBranchId);
+
+// One tab per registration: the page shows the chosen tab's ID, the main one first.
+const registrationTabs = computed(() => (props.player.registrations ?? []).map((registration) => ({
+    id: registration.branch_id,
+    name: registration.branch?.localized_name || registration.branch?.name,
+    logo_url: registration.branch?.logo_url,
+})));
+// The chosen tab falls back to the main branch when it is no longer in the list.
+const shownBranchId = computed(() => (registrationTabs.value.some((tab) => tab.id === documentBranchId.value) ? documentBranchId.value : props.mainBranchId));
+const shownMembershipId = computed(() => (props.player.registrations ?? [])
+    .find((registration) => registration.branch_id === shownBranchId.value)?.membership_id
+    || props.player.membership_id);
+
+// The card asks which branch only when the player is active in several.
+const cardRegistrations = computed(() => (props.player.registrations ?? []).filter((registration) => registration.status?.code !== 'left'));
+const showCardPicker = ref(false);
+const cardHref = (branchId) => route('players.card', branchId ? { player: props.player.id, branch: branchId } : props.player.id);
 const documentBranches = computed(() => documentTabs.value.map((tab) => ({
     id: tab.branch_id,
     name: tab.left ? `${tab.branch_name} · ${t('doc_tab_left')}` : tab.branch_name,
     logo_url: tab.logo_url,
 })));
-const shownDocuments = computed(() => documentTabs.value.find((tab) => tab.branch_id === documentBranchId.value) ?? props.documents);
+const shownDocuments = computed(() => documentTabs.value.find((tab) => tab.branch_id === shownBranchId.value) ?? props.documents);
 
 const subscriptions = computed(() => props.player?.player_subscriptions ?? []);
 const transactions = computed(() => props.transactions ?? []);
@@ -407,7 +425,10 @@ function formatPlainDate(val) {
                 <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 lg:col-span-2">
                     <div class="flex items-start justify-between">
                         <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('basic_info') }}</h2>
-                        <IconButton :href="route('players.edit', player.id)" icon="pencil" :label="t('edit')" plain size="sm" />
+                        <div class="flex flex-wrap items-center justify-end gap-2">
+                            <BranchSwitch :branches="registrationTabs" :branch-id="shownBranchId" @switch="documentBranchId = $event" />
+                            <IconButton :href="route('players.edit', player.id)" icon="pencil" :label="t('edit')" plain size="sm" />
+                        </div>
                     </div>
                     <div class="mt-4 flex items-center gap-4">
                         <img v-if="player.picture_url" :src="player.picture_url" :alt="player.fullname || player.firstname" class="h-20 w-20 shrink-0 rounded-xl object-cover ring-1 ring-slate-200 dark:ring-slate-700" />
@@ -416,11 +437,11 @@ function formatPlainDate(val) {
                         </div>
                         <div class="min-w-0">
                             <p class="break-words text-lg font-bold text-slate-900 dark:text-slate-100">{{ player.fullname || `${player.firstname} ${player.lastname}` }}</p>
-                            <p class="font-mono text-sm text-slate-500 dark:text-slate-400">{{ player.membership_id }}</p>
+                            <p class="font-mono text-sm text-slate-500 dark:text-slate-400">{{ shownMembershipId }}</p>
                         </div>
                     </div>
                     <dl class="mt-5 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
-                        <PlayerFieldRow icon="idcard" :label="t('membership_id')" :value="player.membership_id" mono />
+                        <PlayerFieldRow icon="idcard" :label="t('membership_id')" :value="shownMembershipId" mono />
                         <PlayerFieldRow icon="calendar" :label="t('birthdate')">
                             {{ formatDate(player.birthdate) }}
                             <span v-if="player.age != null" class="ms-1 text-slate-500 dark:text-slate-400">({{ t('age_years', { age: player.age }) }})</span>
@@ -492,14 +513,15 @@ function formatPlainDate(val) {
 
                     <div class="flex flex-wrap items-center gap-2 rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                         <IconButton :href="route('players.edit', player.id)" icon="pencil" :label="t('edit_player')" />
-                        <IconButton :href="route('players.card', player.id)" external target="_blank" icon="idcard" :label="t('member_card')" />
+                        <IconButton v-if="cardRegistrations.length > 1" icon="idcard" :label="t('member_card')" @click="showCardPicker = true" />
+                        <IconButton v-else :href="cardHref(cardRegistrations[0]?.branch_id)" external target="_blank" icon="idcard" :label="t('member_card')" />
                         <IconButton icon="trash" :label="t('delete')" variant="danger" @click="showDeleteModal = true" />
                     </div>
                 </div>
             </div>
 
             <!-- Studies: only students carry an education section -->
-            <AcademicSection v-if="player.is_student" :player="player" :certificate-thresholds="certificateThresholds" :current-school-year="currentSchoolYear" />
+            <AcademicSection v-if="player.is_student" :player="player" :branch-id="shownBranchId" :certificate-thresholds="certificateThresholds" :current-school-year="currentSchoolYear" />
 
             <!-- Attendance: fetches its own data (attendance/view) after the profile has painted -->
             <AttendanceSection v-if="can('attendance', 'view')" :player="player" />
@@ -507,7 +529,7 @@ function formatPlainDate(val) {
 
             <!-- Documents: checklist + actions (absent without the documents permission) -->
             <div v-if="documents" class="space-y-3">
-                <BranchSwitch :branches="documentBranches" :branch-id="documentBranchId" @switch="documentBranchId = $event" />
+                <BranchSwitch :branches="documentBranches" :branch-id="shownBranchId" @switch="documentBranchId = $event" />
                 <!-- Keyed, so an open form never carries over to another registration. -->
                 <PlayerDocumentsCard
                     :key="shownDocuments.registration_id ?? 'alone'"
@@ -639,6 +661,22 @@ function formatPlainDate(val) {
         </div>
 
         <!-- Payment modal -->
+        <Modal :show="showCardPicker" @close="showCardPicker = false" max-width="md">
+            <div class="p-6">
+                <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('member_card_pick_branch') }}</h3>
+                <ul class="mt-4 space-y-2">
+                    <li v-for="registration in cardRegistrations" :key="registration.id">
+                        <a :href="cardHref(registration.branch_id)" target="_blank" rel="noopener"
+                            class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800"
+                            @click="showCardPicker = false">
+                            <span class="min-w-0 truncate">{{ registration.branch?.localized_name || registration.branch?.name }}</span>
+                            <span class="shrink-0 font-mono text-xs text-slate-500 dark:text-slate-400" dir="ltr">{{ registration.membership_id || '—' }}</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </Modal>
+
         <Modal :show="showPaymentModal" @close="showPaymentModal = false" max-width="md">
             <form @submit.prevent="submitPayment" class="p-6">
                 <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('add_payment') }}</h3>

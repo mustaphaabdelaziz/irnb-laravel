@@ -16,6 +16,8 @@ import AcademicYearModal from '@/Pages/Players/Partials/AcademicYearModal.vue';
 
 const props = defineProps({
     player: { type: Object, required: true },
+    /** The registration tab the player page is showing: the printout follows it. */
+    branchId: { type: Number, default: null },
     certificateThresholds: { type: Object, default: () => ({}) },
     currentSchoolYear: { type: Number, default: null },
 });
@@ -168,7 +170,7 @@ const gradeClass = (grade, scale) => (passes(grade, scale) ? 'text-emerald-700 d
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 px-5 py-4">
             <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('academic_progress') }}</h3>
             <div class="flex items-center gap-2">
-                <IconButton :href="route('players.academic-report', player.id)" external target="_blank" icon="print" :label="t('print_academic_report')" size="sm" />
+                <IconButton :href="route('players.academic-report', branchId ? { player: player.id, branch: branchId } : player.id)" external target="_blank" icon="print" :label="t('print_academic_report')" size="sm" />
                 <IconButton v-if="can('players', 'add')" icon="plus" :label="t('add_gpa')" variant="primary" size="sm" @click="openAdd()" />
             </div>
         </div>

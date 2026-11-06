@@ -137,11 +137,9 @@ class ClubIdentityTest extends TestCase
     #[Test]
     public function no_club_name_is_hardcoded_in_the_application(): void
     {
-        // Two places may still say it: the one-off importer that brought this
-        // club's data over from its previous system, and a code comment that
-        // explains the two-product setup. Neither reaches a screen.
+        // One place may still say it: a code comment that explains the
+        // two-product setup. It never reaches a screen.
         $allowed = [
-            'app/Console/Commands/ImportMongoJsonData.php',
             'app/Services/Backup/BackupService.php',
         ];
 

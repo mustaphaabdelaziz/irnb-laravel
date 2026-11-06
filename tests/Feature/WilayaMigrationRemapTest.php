@@ -158,8 +158,8 @@ class WilayaMigrationRemapTest extends TestCase
 
     /**
      * A row with no external_id and a name that happens to match one of the
-     * northern (1-48) wilayas is reachable in practice: ImportMongoJsonData
-     * writes a null external_id when the source record has none. If the
+     * northern (1-48) wilayas is reachable in practice: the old Mongo importer
+     * wrote a null external_id when the source record had none. If the
      * correct row for that code already exists elsewhere in the table (i.e.
      * outside this legacy selection), the null-id row must never steal it -
      * that would violate unique(country_id, external_id) in the move phase

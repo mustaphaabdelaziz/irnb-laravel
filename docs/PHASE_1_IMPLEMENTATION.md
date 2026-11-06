@@ -16,7 +16,7 @@
 - `users` table extended with migration fields required by legacy data model.
 - Eloquent models added with casts and relations for all new tables.
 - Environment defaults switched to PostgreSQL in `.env.example`.
-- Mongo JSON import command implemented as `irnb:import-mongo-json` with legacy ID mapping for:
+- Mongo JSON import command implemented as `irnb:import-mongo-json` (removed in November 2026, once branch registrations made it obsolete) with legacy ID mapping for:
   - lookups (countries, categories, jobs, positions, subscriptions)
   - users and players
   - transactions

@@ -146,6 +146,10 @@ class VerifyRegistrations extends Command
                 ->join('categories', 'categories.id', '=', 'attendances.category_id')
                 ->whereNotNull('training_sessions.branch_id')->whereNotNull('categories.branch_id')
                 ->whereColumn('categories.branch_id', '!=', 'training_sessions.branch_id')
+                // A guest (no registration in the session's branch) is marked with their main registration's category.
+                ->whereExists(fn ($r) => $r->selectRaw('1')->from('branch_player')
+                    ->whereColumn('branch_player.player_id', 'attendances.player_id')
+                    ->whereColumn('branch_player.branch_id', 'training_sessions.branch_id'))
                 ->pluck('attendances.id'),
         ];
         foreach ($linked as $label => $ids) {

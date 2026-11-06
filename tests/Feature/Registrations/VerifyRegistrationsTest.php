@@ -10,6 +10,8 @@ use App\Models\DocumentType;
 use App\Models\Player;
 use App\Models\Subscription;
 use App\Models\TrainingSession;
+use App\Services\Attendance\MarkRecorder;
+use App\Services\Player\RegistrationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -205,7 +207,7 @@ class VerifyRegistrationsTest extends TestCase
     {
         [$foot, , , $swimSenior] = $this->club();
         $player = Player::create(['firstname' => 'A', 'membership_id' => '202000001', 'join_year' => 2020]);
-        app(\App\Services\Player\RegistrationService::class)->register($player, ['branch_id' => $foot->id, 'category_id' => $swimSenior->id]);
+        app(RegistrationService::class)->register($player, ['branch_id' => $foot->id, 'category_id' => $swimSenior->id]);
 
         $this->artisan('registrations:verify')->expectsOutputToContain('category of another branch')->assertExitCode(1);
     }
@@ -299,8 +301,39 @@ class VerifyRegistrationsTest extends TestCase
         [$foot, , $senior, $swimSenior] = $this->club();
         $session = TrainingSession::create(['branch_id' => $foot->id, 'category_id' => $senior->id, 'date' => '2026-03-02', 'start_time' => '18:00', 'end_time' => '19:00', 'kind' => 'preseason', 'state' => 'held']);
         $player = Player::create(['firstname' => 'A', 'membership_id' => '202000002', 'join_year' => 2020]);
+        // Registered in the session's branch (a guest's mark may carry another branch's category).
+        app(RegistrationService::class)->register($player, ['branch_id' => $foot->id, 'category_id' => $senior->id]);
         DB::table('attendances')->insert(['training_session_id' => $session->id, 'player_id' => $player->id, 'category_id' => $swimSenior->id, 'status' => 'present']);
 
         $this->artisan('registrations:verify')->expectsOutputToContain('category of another branch')->assertExitCode(1);
+    }
+
+    #[Test]
+    public function a_guests_mark_saved_by_the_recorder_passes(): void
+    {
+        [$foot, $swim, $senior, $swimSenior] = $this->club();
+        $guest = Player::create(['firstname' => 'G', 'membership_id' => '202000003', 'join_year' => 2020]);
+        app(RegistrationService::class)->register($guest, ['branch_id' => $foot->id, 'category_id' => $senior->id]);
+        $session = TrainingSession::create(['branch_id' => $swim->id, 'category_id' => $swimSenior->id, 'date' => '2026-03-02', 'start_time' => '18:00', 'end_time' => '19:00', 'kind' => 'preseason', 'state' => 'held']);
+
+        app(MarkRecorder::class)->save($session, [['player_id' => $guest->id, 'status' => 'present']], null);
+
+        // The guest's mark carries their main registration's category (football Senior), not the swimming one.
+        $this->assertSame($senior->id, (int) DB::table('attendances')->where('player_id', $guest->id)->value('category_id'));
+        $this->artisan('registrations:verify')->assertExitCode(0);
+    }
+
+    #[Test]
+    public function a_registered_players_mark_with_a_foreign_category_still_fails(): void
+    {
+        [$foot, $swim, $senior, $swimSenior] = $this->club();
+        $player = Player::create(['firstname' => 'R', 'membership_id' => '202000004', 'join_year' => 2020]);
+        $service = app(RegistrationService::class);
+        $service->register($player, ['branch_id' => $foot->id, 'category_id' => $senior->id]);
+        $service->register($player, ['branch_id' => $swim->id, 'category_id' => $swimSenior->id]);
+        $session = TrainingSession::create(['branch_id' => $swim->id, 'category_id' => $swimSenior->id, 'date' => '2026-03-02', 'start_time' => '18:00', 'end_time' => '19:00', 'kind' => 'preseason', 'state' => 'held']);
+        DB::table('attendances')->insert(['training_session_id' => $session->id, 'player_id' => $player->id, 'category_id' => $senior->id, 'status' => 'present']);
+
+        $this->artisan('registrations:verify')->expectsOutputToContain('attendance')->assertExitCode(1);
     }
 }

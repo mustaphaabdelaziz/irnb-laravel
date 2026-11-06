@@ -14,6 +14,7 @@ return [
     'join_date_before_birth' => 'The join date is before the birth date.',
     'position_other_branch' => 'This position belongs to another branch.',
     'category_other_branch' => 'This category belongs to another branch.',
+    'category_not_in_branch' => 'The category ":name" does not exist in this branch.',
 
     'join_date_needed' => 'A join date or year is required.',
     'branch_required' => 'Please choose at least one branch.',

@@ -101,12 +101,13 @@ class PlayerImportController extends Controller
         [$headerRow, $map] = (new ImportColumns(self::COLUMNS))->locate($rows);
         $rows = array_values(array_slice($rows, $headerRow + 1));
 
-        // Match a category by any of its names (base + per-locale), case-insensitively.
+        // Match a category by any of its names (base + per-locale), case-insensitively, within
+        // its branch. Key 0 holds categories with no owner: a club with no branches.
         $categories = [];
-        foreach (Category::all(['id', 'name', 'name_ar', 'name_fr', 'name_en']) as $category) {
+        foreach (Category::all(['id', 'name', 'name_ar', 'name_fr', 'name_en', 'branch_id']) as $category) {
             foreach ([$category->name, $category->name_ar, $category->name_fr, $category->name_en] as $variant) {
                 if ($variant !== null && $variant !== '') {
-                    $categories[mb_strtolower(trim($variant))] = $category->id;
+                    $categories[(int) $category->branch_id][mb_strtolower(trim($variant))] = $category->id;
                 }
             }
         }
@@ -150,7 +151,7 @@ class PlayerImportController extends Controller
                     'email' => $data['email'] ?: null,
                     'city' => $data['city'] ?: 'Unknown',
                     'state' => $data['state'] ?: 'Unknown',
-                    'category_id' => $categories[mb_strtolower((string) $data['category'])] ?? null,
+                    'category_id' => null, // resolved below, once the card's branch is known
                     'position_id' => null, // resolved below, once the card's branch is known
                     // Older 19-column files (and anyone who still fills the template's
                     // legacy "state" column) have no "wilaya" cell at all — fall back
@@ -173,6 +174,7 @@ class PlayerImportController extends Controller
                 $cards = [];
                 $branchId = $branches->isEmpty() ? null : $this->resolveBranch($branches, $data['branch'] ?? null);
                 $attributes['position_id'] = $this->resolvePosition($positions, $data['position'], $branchId);
+                $attributes['category_id'] = $this->resolveCategory($categories, $data['category'] ?? null, $branchId);
                 $others = collect(explode(',', (string) ($data['other_positions'] ?? '')))
                     ->map(fn ($value) => $this->resolvePosition($positions, trim($value), $branchId))
                     ->filter()
@@ -236,6 +238,30 @@ class PlayerImportController extends Controller
         }
 
         return $data;
+    }
+
+    /**
+     * With branches, a name is read within the row's branch, and one that branch
+     * lacks is a row error: nothing is ever created silently. With no branches an
+     * unknown name stays blank, as it always has.
+     *
+     * @param  array<int, array<string, int>>  $categories  branch id (0: no owner) => name => category id
+     *
+     * @throws RuntimeException when the branch has no such category
+     */
+    private function resolveCategory(array $categories, ?string $cell, ?int $branchId): ?int
+    {
+        $name = mb_strtolower(trim((string) $cell));
+        if ($name === '') {
+            return null;
+        }
+
+        $id = ($branchId === null ? null : ($categories[$branchId][$name] ?? null)) ?? ($categories[0][$name] ?? null);
+        if ($id === null && $branchId !== null) {
+            throw new RuntimeException(__('validation.category_not_in_branch', ['name' => trim((string) $cell)]));
+        }
+
+        return $id;
     }
 
     /**

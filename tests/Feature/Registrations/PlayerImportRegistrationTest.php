@@ -3,6 +3,7 @@
 namespace Tests\Feature\Registrations;
 
 use App\Models\Branch;
+use App\Models\Category;
 use App\Models\Player;
 use App\Models\Position;
 use App\Models\User;
@@ -227,5 +228,70 @@ class PlayerImportRegistrationTest extends TestCase
         $this->import([['firstname' => 'Main', 'lastname' => 'A', 'join_year' => '2025-03-10', 'branch' => '']]);
 
         $this->assertSame($swim->id, Player::firstOrFail()->registrations()->firstOrFail()->branch_id);
+    }
+
+    #[Test]
+    public function a_category_name_is_looked_up_within_the_rows_branch(): void
+    {
+        $foot = Branch::create(['name' => 'Football', 'code' => 'FB']);
+        $swim = Branch::create(['name' => 'Swimming', 'code' => 'SW']);
+        Category::create(['name' => 'Senior', 'branch_id' => $foot->id]);
+        $swimSenior = Category::create(['name' => 'Senior', 'branch_id' => $swim->id]);
+
+        $this->import([['firstname' => 'Ali', 'lastname' => 'B', 'category' => 'senior', 'branch' => 'Swimming', 'join_year' => '2020']]);
+
+        $this->assertSame($swimSenior->id, Player::where('firstname', 'Ali')->firstOrFail()->registrationIn($swim->id)->category_id);
+    }
+
+    #[Test]
+    public function a_row_with_no_branch_uses_the_main_branchs_category(): void
+    {
+        $foot = Branch::create(['name' => 'Football', 'code' => 'FB']);
+        $swim = Branch::create(['name' => 'Swimming', 'code' => 'SW']);
+        $senior = Category::create(['name' => 'Senior', 'branch_id' => $foot->id]);
+        Category::create(['name' => 'Senior', 'branch_id' => $swim->id]);
+
+        $this->import([['firstname' => 'Ali', 'lastname' => 'B', 'category' => 'Senior', 'join_year' => '2020']]);
+
+        $this->assertSame($senior->id, Player::where('firstname', 'Ali')->firstOrFail()->registrationIn($foot->id)->category_id);
+    }
+
+    #[Test]
+    public function a_name_the_branch_does_not_have_is_a_row_error_and_nothing_is_created(): void
+    {
+        $foot = Branch::create(['name' => 'Football', 'code' => 'FB']);
+        Branch::create(['name' => 'Swimming', 'code' => 'SW']);
+        Category::create(['name' => 'Ecole', 'branch_id' => $foot->id]);
+
+        $response = $this->import([['firstname' => 'Ali', 'lastname' => 'B', 'category' => 'Ecole', 'branch' => 'Swimming', 'join_year' => '2020']]);
+
+        $this->assertSame(0, Player::where('firstname', 'Ali')->count());
+        $this->assertSame(1, Category::where('name', 'Ecole')->count());
+        $this->assertStringContainsString('Ecole', json_encode(session()->all(), JSON_UNESCAPED_UNICODE));
+        $response->assertRedirect();
+    }
+
+    #[Test]
+    public function an_empty_category_cell_is_fine(): void
+    {
+        $foot = Branch::create(['name' => 'Football', 'code' => 'FB']);
+
+        $this->import([['firstname' => 'Ali', 'lastname' => 'B', 'category' => '', 'join_year' => '2020']]);
+
+        $this->assertNull(Player::where('firstname', 'Ali')->firstOrFail()->registrationIn($foot->id)->category_id);
+    }
+
+    #[Test]
+    public function with_no_branches_any_category_name_still_matches_and_an_unknown_one_stays_blank(): void
+    {
+        $senior = Category::create(['name' => 'Senior']);
+
+        $this->import([
+            ['firstname' => 'Ali', 'lastname' => 'B', 'category' => 'Senior', 'join_year' => '2020'],
+            ['firstname' => 'Omar', 'lastname' => 'B', 'category' => 'Nothing', 'join_year' => '2020'],
+        ]);
+
+        $this->assertSame($senior->id, Player::where('firstname', 'Ali')->value('category_id'));
+        $this->assertNull(Player::where('firstname', 'Omar')->value('category_id'));
     }
 }

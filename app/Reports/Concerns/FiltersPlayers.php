@@ -3,7 +3,6 @@
 namespace App\Reports\Concerns;
 
 use App\Models\Branch;
-use App\Models\Category;
 use App\Models\Player;
 use App\Reports\Filter;
 use App\Reports\ReportFilters;

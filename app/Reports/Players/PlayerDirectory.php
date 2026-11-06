@@ -3,7 +3,6 @@
 namespace App\Reports\Players;
 
 use App\Models\Branch;
-use App\Models\Category;
 use App\Models\Player;
 use App\Models\PlayerStatus;
 use App\Reports\Column;

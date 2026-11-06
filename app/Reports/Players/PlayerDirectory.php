@@ -165,6 +165,7 @@ class PlayerDirectory extends Report
             $this->base($filters),
             $this->listFilters($filters)['branches'],
             $this->includesLeft($filters),
+            $this->listFilters($filters)['categories'],
         );
 
         $byGender = $this->base($filters)->toBase()

@@ -20,28 +20,29 @@ final class RegistrationCounts
      *
      * @param  list<int|string>|null  $branches  null: every branch
      */
-    public static function rows(EloquentBuilder|QueryBuilder $players, ?array $branches = null, bool $includeLeft = false): QueryBuilder
+    public static function rows(EloquentBuilder|QueryBuilder $players, ?array $branches = null, bool $includeLeft = false, ?array $categories = null): QueryBuilder
     {
         $ids = clone $players;
         $ids = $ids instanceof EloquentBuilder ? $ids->toBase() : $ids;
 
         $query = DB::query()->fromSub(BranchRegistration::everyRow(), 'reg')
             ->whereIn('reg.player_id', $ids->reorder()->select('players.id'))
-            ->when($branches !== null, fn ($q) => $q->whereIn('reg.branch_id', $branches));
+            ->when($branches !== null, fn ($q) => $q->whereIn('reg.branch_id', $branches))
+            ->when($categories !== null, fn ($q) => $q->whereIn('reg.category_id', $categories));
 
         return $includeLeft ? $query : BranchRegistration::constrainActive($query, 'reg.status_id');
     }
 
     /** @return Collection<int, object{key: int|null, name: string|null, total: int}> */
-    public static function byCategory(EloquentBuilder|QueryBuilder $players, ?array $branches = null, bool $includeLeft = false): Collection
+    public static function byCategory(EloquentBuilder|QueryBuilder $players, ?array $branches = null, bool $includeLeft = false, ?array $categories = null): Collection
     {
-        return self::grouped(self::rows($players, $branches, $includeLeft), 'categories', 'category_id');
+        return self::grouped(self::rows($players, $branches, $includeLeft, $categories), 'categories', 'category_id');
     }
 
     /** @return Collection<int, object{key: int|null, name: string|null, total: int}> */
-    public static function byStatus(EloquentBuilder|QueryBuilder $players, ?array $branches = null, bool $includeLeft = false): Collection
+    public static function byStatus(EloquentBuilder|QueryBuilder $players, ?array $branches = null, bool $includeLeft = false, ?array $categories = null): Collection
     {
-        return self::grouped(self::rows($players, $branches, $includeLeft), 'player_statuses', 'status_id');
+        return self::grouped(self::rows($players, $branches, $includeLeft, $categories), 'player_statuses', 'status_id');
     }
 
     /** The locale's name, falling back to the base name, chosen in SQL like the dashboard's lookups. */

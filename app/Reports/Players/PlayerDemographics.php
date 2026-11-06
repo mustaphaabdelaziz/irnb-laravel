@@ -161,7 +161,7 @@ class PlayerDemographics extends Report
     /** One row per registration: the table's rows, where a two-branch player counts in both. */
     private function registrationRows(ReportFilters $filters): Collection
     {
-        return RegistrationCounts::rows($this->population($filters), $this->listFilters($filters)['branches'], $this->includesLeft($filters))
+        return RegistrationCounts::rows($this->population($filters), $this->listFilters($filters)['branches'], $this->includesLeft($filters), $this->listFilters($filters)['categories'])
             ->join('players', 'players.id', '=', 'reg.player_id')
             ->get(['reg.player_id', 'reg.category_id', 'players.gender', 'players.birthdate']);
     }

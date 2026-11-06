@@ -165,4 +165,16 @@ class PlayerReportsRegistrationsTest extends TestCase
         $this->assertSame('U15', $this->report('birthdays', ['month' => 5, 'branch_id' => [$this->swim->id]])['rows']['data'][0]['category']);
         $this->assertSame('Senior', $this->report('birthdays', ['month' => 5])['rows']['data'][0]['category']);
     }
+
+    #[Test]
+    public function directory_category_chart_leaves_out_the_other_categories_bars(): void
+    {
+        $this->bothActive();
+        $senior = ['category_id' => [$this->senior->id]];
+
+        $bars = fn (array $q) => collect($this->report('directory', $q)['charts'][0]['stats'])->pluck('count', 'label')->all();
+
+        $this->assertEquals(['Senior' => 1], $bars($senior));
+        $this->assertEquals(['Senior' => 1], $bars([...$senior, 'branch_id' => [$this->foot->id, $this->swim->id]]));
+    }
 }

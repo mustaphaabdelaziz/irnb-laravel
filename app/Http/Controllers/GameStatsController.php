@@ -7,6 +7,7 @@ use App\Models\Team;
 use App\Services\Competitions\MatchStats;
 use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
+use App\Support\CategoryLabels;
 use App\Support\Export;
 use App\Support\Season;
 use App\Support\UiLang;
@@ -24,14 +25,15 @@ class GameStatsController extends Controller
     {
         $f = $this->filters($request);
         $rows = $this->stats->players($f['season'], $f['team_id'], $f['competition_id']);
+        $labels = CategoryLabels::make();
 
         return Inertia::render('Games/Stats', [
             'rows' => $rows,
             'leaders' => MatchStats::leaderboards($rows),
             'season' => $f['season'],
             'seasons' => Season::options(),
-            'teams' => Team::query()->with('category')->orderBy('name')->get()
-                ->map(fn (Team $t) => ['value' => $t->id, 'label' => $t->name.' · '.$t->category?->localized_name]),
+            'teams' => Team::query()->orderBy('name')->get()
+                ->map(fn (Team $t) => ['value' => $t->id, 'label' => $t->labelWith($labels)]),
             'competitions' => Competition::query()->where('season_start_year', $f['season'])->orderBy('name')->get(['id', 'name', 'team_id']),
             'filters' => ['team_id' => $f['team_id'], 'competition_id' => $f['competition_id']],
         ]);

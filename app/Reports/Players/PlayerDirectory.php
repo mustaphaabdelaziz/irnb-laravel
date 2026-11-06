@@ -13,6 +13,7 @@ use App\Reports\Report;
 use App\Reports\ReportFilters;
 use App\Services\Player\RegistrationCounts;
 use App\Services\Player\RegistrationDisplay;
+use App\Support\CategoryLabels;
 use App\Support\UiLang;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -52,8 +53,7 @@ class PlayerDirectory extends Report
         $joinYears = Player::query()->whereNotNull('join_year')->distinct()->orderByDesc('join_year')->pluck('join_year');
 
         return [
-            Filter::multi('category_id', 'col.category', Category::orderBy('name')->get()
-                ->map(fn (Category $c) => ['value' => $c->id, 'label' => $c->localized_name])->all()),
+            Filter::multi('category_id', 'col.category', CategoryLabels::make()->options()),
             Filter::multi('branch_id', 'col.branches', Branch::orderBy('name')->get()
                 ->map(fn (Branch $b) => ['value' => $b->id, 'label' => $b->localized_name])->all()),
             Filter::select('gender', 'col.gender', [

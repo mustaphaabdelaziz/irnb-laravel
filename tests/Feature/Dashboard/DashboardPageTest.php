@@ -253,7 +253,9 @@ class DashboardPageTest extends TestCase
         // members: +2 for document completion (DocumentStats::breakdown): the
         // active required document types, and one query over the current
         // members grouped by category (the summary is the sum of its rows).
-        foreach (['members' => 35, 'operations' => 12] as $tab => $budget) {
+        // members: +2 for the category names (CategoryLabels::make(), one flat query each): the
+        // category chart and the document completion rows add the sport when a name repeats.
+        foreach (['members' => 37, 'operations' => 12] as $tab => $budget) {
             $recorder = new \ArrayObject;
             DB::listen(function ($query) use ($recorder): void {
                 $recorder->append($query->sql);

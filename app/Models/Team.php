@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\SerializesClubDates;
+use App\Support\CategoryLabels;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -70,5 +71,13 @@ class Team extends Model
     public function games(): HasMany
     {
         return $this->hasMany(Game::class);
+    }
+
+    /** "Team · Category", with the sport added when another sport repeats the category's name. */
+    public function labelWith(CategoryLabels $labels): string
+    {
+        $category = $labels->of($this->category_id);
+
+        return $category === null ? $this->name : $this->name.' · '.$category;
     }
 }

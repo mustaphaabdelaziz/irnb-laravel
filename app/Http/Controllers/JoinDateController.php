@@ -57,7 +57,7 @@ class JoinDateController extends Controller
             'total' => (clone $base)->count(),
             'filters' => $filters,
             'branches' => Branch::orderBy('name')->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
-            'categories' => Category::orderBy('name')->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
+            'categories' => Category::with('branch:id,name,name_ar,name_fr,name_en')->orderBy('name')->get(['id', 'name', 'name_ar', 'name_fr', 'name_en', 'branch_id']),
             'years' => (clone $base)->whereNotNull('legacy_join_year')->distinct()->orderByDesc('legacy_join_year')->pluck('legacy_join_year'),
             'registrations' => $registrations
                 ->through(fn (BranchRegistration $r) => [

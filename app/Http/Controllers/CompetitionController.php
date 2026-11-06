@@ -16,6 +16,7 @@ use App\Services\Competitions\SuspensionEngine;
 use App\Services\Competitions\SuspensionStatus;
 use App\Services\Competitions\TeamAccess;
 use App\Services\Competitions\TeamMembers;
+use App\Support\CategoryLabels;
 use App\Support\Season;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -37,11 +38,13 @@ class CompetitionController extends Controller
         $season = $request->integer('season') ?: Season::current()->startYear;
 
         $competitions = Competition::query()
-            ->with(['team.category', 'games:id,competition_id,date,status,our_score,their_score'])
+            ->with(['team', 'games:id,competition_id,date,status,our_score,their_score'])
             ->where('season_start_year', $season)
             ->when($filters['team_id'] ?? null, fn ($q, $id) => $q->where('team_id', $id))
             ->when(! $request->boolean('archived'), fn ($q) => $q->where('archived', false))
             ->orderBy('name')->get();
+
+        $labels = CategoryLabels::make();
 
         return Inertia::render('Competitions/Index', [
             'competitions' => $competitions->map(fn (Competition $c) => [
@@ -49,12 +52,12 @@ class CompetitionController extends Controller
                 'name' => $c->name,
                 'type' => $c->type->value,
                 'archived' => $c->archived,
-                'team' => $c->team->name.' · '.$c->team->category?->localized_name,
+                'team' => $c->team->labelWith($labels),
                 'games_count' => $c->games->count(),
                 'record' => CompetitionRecord::fromGames($c->games),
             ]),
-            'teams' => Team::query()->where('archived', false)->with('category')->orderBy('name')->get()
-                ->map(fn (Team $t) => ['value' => $t->id, 'label' => $t->name.' · '.$t->category?->localized_name, 'branch_id' => $t->branch_id]),
+            'teams' => Team::query()->where('archived', false)->orderBy('name')->get()
+                ->map(fn (Team $t) => ['value' => $t->id, 'label' => $t->labelWith($labels), 'branch_id' => $t->branch_id]),
             'formats' => GameFormat::query()->where('active', true)->whereNotNull('branch_id')->orderBy('name')
                 ->get(['id', 'branch_id', 'name', 'name_ar', 'name_fr', 'name_en']),
             'types' => CompetitionType::values(),

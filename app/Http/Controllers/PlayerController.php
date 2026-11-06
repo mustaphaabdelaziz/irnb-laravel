@@ -173,7 +173,7 @@ class PlayerController extends Controller
             // A closure like the lookups below: the strip is unfiltered, so a
             // filter reload should not pay to recompute it.
             'strip' => fn (): array => app(ModuleStats::class)->players(),
-            'categories' => fn () => Category::orderBy('name')->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
+            'categories' => fn () => Category::with('branch:id,name,name_ar,name_fr,name_en')->orderBy('name')->get(['id', 'name', 'name_ar', 'name_fr', 'name_en', 'branch_id']),
             'branches' => fn () => Branch::orderBy('name')->get(),
             // positions feeds the bulk-edit field picker as well as the filter.
             // Its branch tells apart two sports' positions sharing a name.

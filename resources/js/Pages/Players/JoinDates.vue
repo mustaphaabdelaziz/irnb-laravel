@@ -2,9 +2,10 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { reactive, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { localToday } from '@/lib/localDate';
+import { sportLabeller } from '@/lib/sportLabels';
 
 const { t } = useI18n();
 
@@ -17,6 +18,7 @@ const props = defineProps({
     years: { type: Array, default: () => [] },
 });
 
+const categoryLabel = computed(() => sportLabeller(props.categories, (c) => c.localized_name || c.name));
 const dates = reactive({});
 const errors = reactive({});
 const today = localToday();
@@ -64,7 +66,7 @@ function save(row) {
                 </select>
                 <select v-model="filter.category_id" :class="selectClass" :aria-label="t('category')" @change="applyFilter">
                     <option value="">{{ t('category') }}</option>
-                    <option v-for="category in categories" :key="category.id" :value="category.id">{{ category.localized_name || category.name }}</option>
+                    <option v-for="category in categories" :key="category.id" :value="category.id">{{ categoryLabel(category) }}</option>
                 </select>
                 <select v-model="filter.year" :class="selectClass" :aria-label="t('join_year')" @change="applyFilter">
                     <option value="">{{ t('join_year') }}</option>

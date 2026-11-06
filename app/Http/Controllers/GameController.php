@@ -20,6 +20,7 @@ use App\Services\Competitions\SuspensionEngine;
 use App\Services\Competitions\TeamAccess;
 use App\Services\Competitions\TeamMembers;
 use App\Services\Competitions\TrainingCanceller;
+use App\Support\CategoryLabels;
 use App\Support\Season;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -68,13 +69,14 @@ class GameController extends Controller
         }
 
         $user = $request->user();
+        $labels = CategoryLabels::make();
 
         return Inertia::render('Games/Index', $props + [
             'view' => $view,
             'month' => $month,
             'filters' => Arr::only($filters, ['team_id', 'competition_id', 'status']),
-            'teams' => Team::query()->where('archived', false)->with('category')->orderBy('name')->get()
-                ->map(fn (Team $t) => ['value' => $t->id, 'label' => $t->name.' · '.$t->category?->localized_name]),
+            'teams' => Team::query()->where('archived', false)->orderBy('name')->get()
+                ->map(fn (Team $t) => ['value' => $t->id, 'label' => $t->labelWith($labels)]),
             'competitions' => Competition::query()->where('archived', false)->orderByDesc('season_start_year')->orderBy('name')
                 ->get(['id', 'team_id', 'name', 'season_start_year']),
             'opponents' => Opponent::query()->orderBy('name')->get(['id', 'name'])->map(fn (Opponent $o) => ['value' => $o->id, 'label' => $o->name]),

@@ -8,6 +8,7 @@ use App\Models\Player;
 use App\Reports\Filter;
 use App\Reports\ReportFilters;
 use App\Services\Player\RegistrationDisplay;
+use App\Support\CategoryLabels;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -18,8 +19,7 @@ trait FiltersPlayers
 {
     protected function categoryFilter(): Filter
     {
-        return Filter::multi('category_id', 'col.category', Category::orderBy('name')->get()
-            ->map(fn (Category $c) => ['value' => $c->id, 'label' => $c->localized_name])->all());
+        return Filter::multi('category_id', 'col.category', CategoryLabels::make()->options());
     }
 
     protected function branchFilter(): Filter

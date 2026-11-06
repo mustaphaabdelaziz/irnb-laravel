@@ -8,6 +8,7 @@ use App\Models\GameEvent;
 use App\Models\GamePlayer;
 use App\Models\User;
 use App\Services\Pdf\ClubHeader;
+use App\Support\CategoryLabels;
 use Carbon\CarbonImmutable;
 
 /**
@@ -102,7 +103,7 @@ final class MatchSheets
     private function header(Game $game): array
     {
         return [
-            'team' => $game->team->name.' · '.$game->team->category?->localized_name,
+            'team' => $game->team->labelWith(CategoryLabels::make()),
             'opponent' => $game->opponent->name,
             'side' => $game->side->value,
             'competition' => $game->competition?->name,

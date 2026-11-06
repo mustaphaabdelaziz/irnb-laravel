@@ -2,7 +2,6 @@
 
 namespace App\Reports\Players;
 
-use App\Models\Category;
 use App\Models\Player;
 use App\Models\PlayerStatus;
 use App\Reports\Column;
@@ -11,6 +10,7 @@ use App\Reports\Filter;
 use App\Reports\Report;
 use App\Reports\ReportFilters;
 use App\Services\Player\RegistrationCounts;
+use App\Support\CategoryLabels;
 use App\Support\UiLang;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -87,10 +87,10 @@ class PlayerDemographics extends Report
 
     public function rows(ReportFilters $filters): Collection
     {
-        $names = Category::all()->keyBy('id');
+        $labels = CategoryLabels::make();
 
         return $this->registrationRows($filters)->groupBy('category_id')->map(fn (Collection $group, $categoryId) => [
-            'category' => $names->get($categoryId)?->localized_name ?? UiLang::get('reports.none'),
+            'category' => $labels->of($categoryId) ?? UiLang::get('reports.none'),
             'total' => $group->count(),
             'boys' => $group->where('gender', 'Male')->count(),
             'girls' => $group->where('gender', 'Female')->count(),

@@ -14,6 +14,7 @@ use App\Services\Competitions\TeamAccess;
 use App\Services\Competitions\TeamMembers;
 use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
+use App\Support\CategoryLabels;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -166,7 +167,7 @@ class GameCallUpController extends Controller
         $html = view('pdf.game-convocation', [
             'club' => ClubHeader::data(),
             'game' => [
-                'team' => $game->team->name.' · '.$game->team->category?->localized_name,
+                'team' => $game->team->labelWith(CategoryLabels::make()),
                 'opponent' => $game->opponent->name,
                 'side' => $game->side->value,
                 'competition' => $game->competition?->name,

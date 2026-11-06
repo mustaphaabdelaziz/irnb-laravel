@@ -6,6 +6,7 @@ use App\Models\Competition;
 use App\Models\Team;
 use App\Reports\Filter;
 use App\Reports\ReportFilters;
+use App\Support\CategoryLabels;
 use App\Support\Season;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -15,10 +16,12 @@ trait FiltersGames
     /** @return list<Filter> */
     protected function gameFilters(): array
     {
+        $labels = CategoryLabels::make();
+
         return [
             Filter::select('season', 'reports.filter.season', Season::options(), Season::current()->startYear),
-            Filter::select('team_id', 'team', Team::query()->with('category')->orderBy('name')->get()
-                ->map(fn (Team $t) => ['value' => $t->id, 'label' => trim($t->name.' · '.$t->category?->localized_name, ' ·')])->all()),
+            Filter::select('team_id', 'team', Team::query()->orderBy('name')->get()
+                ->map(fn (Team $t) => ['value' => $t->id, 'label' => $t->labelWith($labels)])->all()),
             Filter::select('competition_id', 'comp.competition', Competition::query()->orderByDesc('season_start_year')->orderBy('name')->get()
                 ->map(fn (Competition $c) => ['value' => $c->id, 'label' => $c->name.' ('.Season::forStartYear($c->season_start_year)->label().')'])->all()),
         ];

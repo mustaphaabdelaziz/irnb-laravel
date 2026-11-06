@@ -152,7 +152,6 @@ function clearFilters() {
 const singleCategory = computed(() => (categoryFilter.value.length === 1 ? categoryFilter.value[0] : ''));
 
 // Options of the select filters.
-const categoryOptions = computed(() => props.categories.map((c) => ({ value: c.id, label: c.localized_name || c.name })));
 const branchOptions = computed(() => props.branches.map((b) => ({ value: b.id, label: b.localized_name || b.name })));
 // "none" = players with no status at all; mixable with the statuses.
 const statusOptions = computed(() => [
@@ -193,9 +192,10 @@ const secondaryActions = computed(() => [
 ]);
 
 // Distribution panels: map each stat source to the stat cards' {key, label, count}.
-const categoryChips = computed(() => props.categoryStats.map((s) => ({
-    key: s.category_id ?? '', label: s.name || t('uncategorized'), count: s.count,
-})));
+const categoryChips = computed(() => props.categoryStats.map((s) => {
+    const category = props.categories.find((c) => c.id === s.category_id);
+    return { key: s.category_id ?? '', label: category ? categoryLabel.value(category) : (s.name || t('uncategorized')), count: s.count };
+}));
 const statusChips = computed(() => props.statusStats.map((s) => ({
     key: s.status_id ?? 'none', label: s.status_id ? s.name : t('filter.no_status'), count: s.count,
 })));
@@ -205,6 +205,9 @@ const positionChips = computed(() => props.positionStats.map((s) => {
     const position = props.positions.find((p) => p.id === s.position_id);
     return { key: s.position_id ?? '', label: position ? positionLabel.value(position) : (s.name || t('unassigned')), count: s.count };
 }));
+// Two sports may share a category name; those get " · Sport" appended too.
+const categoryLabel = computed(() => sportLabeller(props.categories, (c) => c.localized_name || c.name));
+const categoryOptions = computed(() => props.categories.map((c) => ({ value: c.id, label: categoryLabel.value(c) })));
 const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 const ageLabel = (bucket) => (bucket === 'u10' ? '< 10' : bucket === 'unknown' ? t('unknown') : bucket);
 const ageChips = computed(() => props.ageStats.map((s) => ({
@@ -269,7 +272,7 @@ const bulkFields = computed(() => [
     {
         key: 'category_id',
         label: t('category'),
-        options: props.categories.map((c) => ({ value: c.id, label: c.localized_name || c.name })),
+        options: props.categories.map((c) => ({ value: c.id, label: categoryLabel.value(c) })),
     },
     {
         key: 'position_id',

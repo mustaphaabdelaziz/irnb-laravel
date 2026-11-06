@@ -290,7 +290,7 @@ class DocumentStatsTest extends TestCase
             $queries++;
         });
         $result = $this->stats()->breakdown(Player::query());
-        $this->assertSame(4, $queries, 'the types and the grouped query, then the types and the summary');
+        $this->assertSame(5, $queries, 'the types, the category names, the grouped query, then the types and the summary');
 
         // Worst first: two 0 % rows (no category sorts before "U13" by name), then Seniors.
         $this->assertSame([null, 'U13', 'Seniors'], array_column($result['by_category'], 'name'));

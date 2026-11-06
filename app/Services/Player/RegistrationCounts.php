@@ -3,6 +3,7 @@
 namespace App\Services\Player;
 
 use App\Models\BranchRegistration;
+use App\Support\CategoryLabels;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
@@ -36,7 +37,14 @@ final class RegistrationCounts
     /** @return Collection<int, object{key: int|null, name: string|null, total: int}> */
     public static function byCategory(EloquentBuilder|QueryBuilder $players, ?array $branches = null, bool $includeLeft = false, ?array $categories = null): Collection
     {
-        return self::grouped(self::rows($players, $branches, $includeLeft, $categories), 'categories', 'category_id');
+        $labels = CategoryLabels::make();
+
+        return self::grouped(self::rows($players, $branches, $includeLeft, $categories), 'categories', 'category_id')
+            ->map(function (object $row) use ($labels) {
+                $row->name = $labels->of($row->key) ?? $row->name;
+
+                return $row;
+            });
     }
 
     /** @return Collection<int, object{key: int|null, name: string|null, total: int}> */

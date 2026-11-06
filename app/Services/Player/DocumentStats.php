@@ -4,6 +4,7 @@ namespace App\Services\Player;
 
 use App\Models\DocumentType;
 use App\Models\PlayerStatus;
+use App\Support\CategoryLabels;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
@@ -75,9 +76,11 @@ final class DocumentStats
             )
             ->get();
 
+        $labels = CategoryLabels::make();
+
         $byCategory = $rows->map(fn (object $row): array => [
             'category_id' => $row->category_id === null ? null : (int) $row->category_id,
-            'name' => $row->category_name ?: null,
+            'name' => $labels->of($row->category_id) ?? ($row->category_name ?: null),
             ...$this->rowCounts($row, $types),
             'players_total' => (int) $row->players_total,
             'players_complete' => (int) $row->players_complete,

@@ -11,6 +11,7 @@ use App\Reports\Column;
 use App\Reports\Filter;
 use App\Reports\Report;
 use App\Reports\ReportFilters;
+use App\Support\CategoryLabels;
 use App\Support\Season;
 use App\Support\UiLang;
 use Illuminate\Database\Eloquent\Builder;
@@ -50,8 +51,7 @@ class SessionsOverview extends Report
             Filter::date('to', 'reports.filter.to'),
             Filter::select('branch_id', 'reports.filter.branch', Branch::orderBy('name')->get()
                 ->map(fn (Branch $b) => ['value' => $b->id, 'label' => $b->localized_name])->all()),
-            Filter::multi('category_id', 'col.category', Category::orderBy('name')->get()
-                ->map(fn (Category $c) => ['value' => $c->id, 'label' => $c->localized_name])->all()),
+            Filter::multi('category_id', 'col.category', CategoryLabels::make()->options()),
             Filter::multi('state', 'col.status', array_map(
                 fn (string $s) => ['value' => $s, 'label' => UiLang::get('att.state.'.$s)], SessionState::values())),
             Filter::multi('kind', 'col.type', array_map(

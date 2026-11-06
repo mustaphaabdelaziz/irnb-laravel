@@ -311,7 +311,7 @@ class SubscriptionTarificationTest extends TestCase
     }
 
     #[Test]
-    public function the_roster_reads_each_registrations_category_and_still_counts_left_players(): void
+    public function the_roster_reads_each_registrations_category_and_leaves_out_left_players(): void
     {
         $senior = Category::create(['name' => 'Senior']);
         $u15 = Category::create(['name' => 'U15']);
@@ -323,18 +323,27 @@ class SubscriptionTarificationTest extends TestCase
         $service->register($two, ['branch_id' => $football->id, 'category_id' => $senior->id]);
         $service->register($two, ['branch_id' => $swimming->id, 'category_id' => $u15->id]);
 
+        // Left every branch: not counted at all.
         $left = $this->player();
         $service->register($left, ['branch_id' => $football->id, 'category_id' => $senior->id]);
         $service->leave($left, [$football->id], '2026-03-15');
 
+        // Left swimming only: counted for football alone.
+        $leftOne = $this->player();
+        $service->register($leftOne, ['branch_id' => $football->id, 'category_id' => $senior->id]);
+        $service->register($leftOne, ['branch_id' => $swimming->id, 'category_id' => $u15->id]);
+        $service->leave($leftOne, [$swimming->id], '2026-03-15');
+
         $roster = collect(app(TarificationData::class)->for(null)['roster']);
 
         $this->assertSame(2, $roster->sum('count'));
-        $this->assertTrue($roster->contains(fn (array $group) => $group['registrations'] === [
+        $this->assertTrue($roster->contains(fn (array $group) => $group['count'] === 1 && $group['registrations'] === [
             ['branch_id' => $football->id, 'category_id' => $senior->id],
             ['branch_id' => $swimming->id, 'category_id' => $u15->id],
         ]));
-        $this->assertSame($senior->id, $roster->firstWhere('count', 1)['category_id']);
+        $this->assertTrue($roster->contains(fn (array $group) => $group['count'] === 1 && $group['registrations'] === [
+            ['branch_id' => $football->id, 'category_id' => $senior->id],
+        ]));
     }
 
     #[Test]

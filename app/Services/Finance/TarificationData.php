@@ -2,13 +2,13 @@
 
 namespace App\Services\Finance;
 
+use App\Models\BranchRegistration;
 use App\Models\Player;
 use App\Models\PlayerSubscription;
 use App\Models\Subscription;
 use App\Models\SubscriptionTarification;
 use App\Models\TrainingSchedule;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 /**
  * The inputs of a subscription's forecast. Results are computed in the browser
@@ -30,7 +30,7 @@ class TarificationData
     /**
      * Players grouped by main category, status and exact set of registrations: a
      * small prop however big the club, and a player in two branches counts once.
-     * A left player or registration still counts here. The owner is asked about this.
+     * Left registrations and players are left out: they can no longer be charged (owner, 2026-11-06).
      *
      * @return list<array{category_id: int|null, is_student: bool, registrations: list<array{branch_id: int, category_id: int|null}>, count: int}>
      */
@@ -43,7 +43,7 @@ class TarificationData
                 ->where('is_exempt', true)
                 ->pluck('player_id');
 
-        $registrations = DB::table('branch_player')->orderBy('branch_id')->get(['player_id', 'branch_id', 'category_id'])
+        $registrations = BranchRegistration::query()->active()->orderBy('branch_id')->toBase()->get(['player_id', 'branch_id', 'category_id'])
             ->groupBy('player_id')
             ->map(fn (Collection $rows): array => $rows
                 ->map(fn ($row): array => [
@@ -54,6 +54,7 @@ class TarificationData
 
         return Player::query()
             ->where('archived', false)
+            ->registeredWhere(active: true)
             ->whereNotIn('id', $exempt)
             ->toBase()
             ->get(['id', 'category_id', 'is_student'])

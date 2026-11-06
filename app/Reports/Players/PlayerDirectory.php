@@ -7,17 +7,26 @@ use App\Models\Category;
 use App\Models\Player;
 use App\Models\PlayerStatus;
 use App\Reports\Column;
+use App\Reports\Concerns\FiltersPlayers;
 use App\Reports\Filter;
 use App\Reports\Report;
 use App\Reports\ReportFilters;
+use App\Services\Player\RegistrationCounts;
+use App\Services\Player\RegistrationDisplay;
 use App\Support\UiLang;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 
 /** Every player matching the filters, with identity, contact and club details. */
 class PlayerDirectory extends Report
 {
+    use FiltersPlayers;
+
+    /** Set by rows(): the runner calls row() on this same instance. */
+    private ?int $rowBranch = null;
+
+    private ?RegistrationDisplay $display = null;
+
     public function key(): string
     {
         return 'directory';
@@ -100,14 +109,26 @@ class PlayerDirectory extends Report
         return true;
     }
 
+    public function note(ReportFilters $filters): ?string
+    {
+        return $this->overlapNote($filters);
+    }
+
     public function rows(ReportFilters $filters): Builder
     {
-        return $this->base($filters)->with(['category', 'status', 'branches']);
+        $this->rowBranch = $this->shownBranch($filters);
+        $this->display = RegistrationDisplay::make();
+
+        return $this->base($filters)
+            ->with(['category', 'status', 'branches'])
+            ->when($this->rowBranch !== null, fn ($q) => $q->with(['registrations.category', 'registrations.status']));
     }
 
     /** @param Player $record */
     public function row(mixed $record): array
     {
+        $this->display->overlay($record, $this->rowBranch);
+
         return [
             'membership_id' => $record->membership_id,
             'name' => $record->fullname,
@@ -140,19 +161,21 @@ class PlayerDirectory extends Report
 
     public function charts(ReportFilters $filters): array
     {
-        $byCategory = $this->base($filters)->toBase()
-            ->groupBy('category_id')->selectRaw('category_id, COUNT(*) as c')->orderByDesc('c')->get();
-        $names = Category::whereIn('id', $byCategory->pluck('category_id')->filter())->get()->keyBy('id');
+        $byCategory = RegistrationCounts::byCategory(
+            $this->base($filters),
+            $this->listFilters($filters)['branches'],
+            $this->includesLeft($filters),
+        );
 
         $byGender = $this->base($filters)->toBase()
             ->groupBy('gender')->selectRaw('gender, COUNT(*) as c')->orderByDesc('c')->get();
 
         return [
-            ['type' => 'bar', 'title' => 'reports.chart.by_category', 'stats' => $byCategory->map(fn ($r) => [
-                'key' => (int) $r->category_id,
-                'label' => $names->get($r->category_id)?->localized_name ?? UiLang::get('reports.none'),
-                'count' => (int) $r->c,
-            ])->all()],
+            ['type' => 'bar', 'title' => 'reports.chart.by_category', 'stats' => $byCategory->map(fn (object $r) => [
+                'key' => (int) $r->key,
+                'label' => $r->name ?? UiLang::get('reports.none'),
+                'count' => $r->total,
+            ])->values()->all()],
             ['type' => 'doughnut', 'title' => 'reports.chart.by_gender', 'stats' => $byGender->map(fn ($r) => [
                 'key' => (string) ($r->gender ?? 'none'),
                 'label' => $r->gender ? UiLang::get(strtolower($r->gender), $r->gender) : UiLang::get('reports.none'),
@@ -166,17 +189,12 @@ class PlayerDirectory extends Report
     {
         $query = Player::query()->where('archived', (bool) $filters->get('archived'));
 
-        if ($filters->filled('category_id')) {
-            $query->whereIn('category_id', $filters->get('category_id'));
-        }
-        if ($filters->filled('branch_id')) {
-            $query->whereIn('id', DB::table('branch_player')->whereIn('branch_id', $filters->get('branch_id'))->select('player_id'));
-        }
+        $query->listedWhere(
+            ...$this->listFilters($filters),
+            statuses: $filters->filled('status_id') ? (array) $filters->get('status_id') : null,
+        );
         if ($filters->filled('gender')) {
             $query->where('gender', $filters->get('gender'));
-        }
-        if ($filters->filled('status_id')) {
-            $query->whereIn('status_id', $filters->get('status_id'));
         }
         if ($filters->filled('join_year')) {
             $query->where('join_year', $filters->get('join_year'));

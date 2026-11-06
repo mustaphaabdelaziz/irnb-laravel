@@ -3,15 +3,17 @@
 namespace App\Reports\Players;
 
 use App\Models\Branch;
+use App\Models\BranchRegistration;
 use App\Models\Player;
 use App\Reports\Column;
 use App\Reports\Concerns\FiltersPlayers;
 use App\Reports\Filter;
 use App\Reports\Report;
 use App\Reports\ReportFilters;
-use App\Services\Dashboard\Support\MonthBucket;
+use App\Services\Player\RegistrationDisplay;
 use App\Support\UiLang;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 /**
  * Who joined and who left. Joins follow the join year on the player record
@@ -20,6 +22,10 @@ use Illuminate\Database\Eloquent\Builder;
 class PlayerMovement extends Report
 {
     use FiltersPlayers;
+
+    private ?int $rowBranch = null;
+
+    private ?RegistrationDisplay $display = null;
 
     public function key(): string
     {
@@ -44,7 +50,9 @@ class PlayerMovement extends Report
     public function filters(): array
     {
         $joinYears = Player::query()->whereNotNull('join_year')->distinct()->pluck('join_year')->map(fn ($y) => (int) $y);
-        $leftYears = Player::query()->whereNotNull('left_at')->pluck('left_at')->map(fn ($d) => (int) substr((string) $d, 0, 4));
+        $leftYears = BranchRegistration::query()->whereNotNull('left_at')->pluck('left_at')
+            ->merge(Player::query()->whereNotNull('left_at')->pluck('left_at'))
+            ->map(fn ($d) => (int) substr((string) $d, 0, 4));
         $years = $joinYears->merge($leftYears)->push((int) now()->year)->unique()->sortDesc()->values();
 
         return [
@@ -83,12 +91,19 @@ class PlayerMovement extends Report
 
     public function rows(ReportFilters $filters): Builder
     {
-        return $this->base($filters, (string) $filters->get('movement'))->with(['category', 'status', 'branches']);
+        $this->rowBranch = $this->shownBranch($filters);
+        $this->display = RegistrationDisplay::make();
+
+        return $this->base($filters, (string) $filters->get('movement'))
+            ->with(['category', 'status', 'branches'])
+            ->when($this->rowBranch !== null, fn ($q) => $q->with(['registrations.category', 'registrations.status']));
     }
 
     /** @param Player $record */
     public function row(mixed $record): array
     {
+        $this->display->overlay($record, $this->rowBranch);
+
         return [
             'membership_id' => $record->membership_id,
             'name' => $record->fullname,
@@ -112,21 +127,47 @@ class PlayerMovement extends Report
     {
         $joined = $this->applyCategoryBranch(Player::query()->whereNotNull('join_year'), $filters)->toBase()
             ->groupBy('join_year')->orderBy('join_year')->selectRaw('join_year as y, COUNT(*) as c')->get();
-        $left = $this->applyCategoryBranch(Player::query()->whereNotNull('left_at'), $filters)->toBase()
-            ->selectRaw('SUBSTR('.MonthBucket::expression('left_at').', 1, 4) as y, COUNT(*) as c')->groupBy('y')->orderBy('y')->get();
 
-        $series = fn ($rows) => $rows->map(fn ($r) => ['key' => (string) $r->y, 'label' => (string) $r->y, 'count' => (int) $r->c])->take(-10)->values()->all();
+        $series = fn (Collection $rows) => $rows->map(fn ($r) => ['key' => (string) $r->y, 'label' => (string) $r->y, 'count' => (int) $r->c])->take(-10)->values()->all();
 
         return [
             ['type' => 'bar', 'title' => 'reports.chart.joins_by_year', 'stats' => $series($joined)],
-            ['type' => 'bar', 'title' => 'reports.chart.leavers_by_year', 'stats' => $series($left)],
+            ['type' => 'bar', 'title' => 'reports.chart.leavers_by_year', 'stats' => $series($this->leftByYear($filters))],
         ];
+    }
+
+    /** Grouped in PHP: a year taken from a date has no form all three databases accept. */
+    private function leftByYear(ReportFilters $filters): Collection
+    {
+        $dates = $filters->filled('branch_id')
+            ? $this->leftRegistrations($filters)->pluck('left_at')
+            : $this->applyCategoryBranch(Player::query()->whereNotNull('left_at'), $filters)->pluck('left_at');
+
+        return $dates->countBy(fn ($date) => substr((string) $date, 0, 4))
+            ->sortKeys()
+            ->map(fn (int $count, string $year) => (object) ['y' => $year, 'c' => $count])
+            ->values();
+    }
+
+    /** With a branch selected, "left" means left that branch, whatever the player's other branches. */
+    private function leftRegistrations(ReportFilters $filters, ?int $year = null): Builder
+    {
+        return BranchRegistration::query()
+            ->inBranches((array) $filters->get('branch_id'))
+            ->whereNotNull('left_at')
+            ->when($filters->filled('category_id'), fn ($q) => $q->inCategories((array) $filters->get('category_id')))
+            ->when($year !== null, fn ($q) => $q->whereDate('left_at', '>=', $year.'-01-01')->whereDate('left_at', '<', ($year + 1).'-01-01'));
     }
 
     /** @return Builder<Player> */
     private function base(ReportFilters $filters, string $movement): Builder
     {
         $year = (int) $filters->get('year');
+
+        if ($movement === 'left' && $filters->filled('branch_id')) {
+            return Player::query()->whereIn('id', $this->leftRegistrations($filters, $year)->select('player_id'));
+        }
+
         $query = $movement === 'left'
             ? Player::query()->whereDate('left_at', '>=', $year.'-01-01')->whereDate('left_at', '<', ($year + 1).'-01-01')
             : Player::query()->where('join_year', $year);

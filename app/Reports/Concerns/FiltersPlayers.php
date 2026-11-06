@@ -4,10 +4,11 @@ namespace App\Reports\Concerns;
 
 use App\Models\Branch;
 use App\Models\Category;
+use App\Models\Player;
 use App\Reports\Filter;
 use App\Reports\ReportFilters;
+use App\Services\Player\RegistrationDisplay;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
 
 /**
  * The category and branch filters every player report offers, and how they
@@ -27,19 +28,36 @@ trait FiltersPlayers
             ->map(fn (Branch $b) => ['value' => $b->id, 'label' => $b->localized_name])->all());
     }
 
-    /**
-     * @param  string  $playerColumn  the column holding the player id ("id" on players)
-     * @param  string  $categoryColumn  the column holding the category id
-     */
-    protected function applyCategoryBranch(Builder $query, ReportFilters $filters, string $playerColumn = 'id', string $categoryColumn = 'category_id'): Builder
+    /** Narrow a query on players by the shared list rule. Other tables use their own query. */
+    protected function applyCategoryBranch(Builder $query, ReportFilters $filters): Builder
     {
-        if ($filters->filled('category_id')) {
-            $query->whereIn($categoryColumn, $filters->get('category_id'));
-        }
-        if ($filters->filled('branch_id')) {
-            $query->whereIn($playerColumn, DB::table('branch_player')->whereIn('branch_id', $filters->get('branch_id'))->select('player_id'));
-        }
+        return $query->listedWhere(...$this->listFilters($filters));
+    }
 
-        return $query;
+    /** @return array{branches: ?array, categories: ?array} */
+    protected function listFilters(ReportFilters $filters): array
+    {
+        return [
+            'branches' => $filters->filled('branch_id') ? (array) $filters->get('branch_id') : null,
+            'categories' => $filters->filled('category_id') ? (array) $filters->get('category_id') : null,
+        ];
+    }
+
+    /** The branch whose values the rows show: exactly one selected. */
+    protected function shownBranch(ReportFilters $filters): ?int
+    {
+        return RegistrationDisplay::singleBranch($filters->filled('branch_id') ? (array) $filters->get('branch_id') : null);
+    }
+
+    /** Whether the status filter asks for left people. */
+    protected function includesLeft(ReportFilters $filters): bool
+    {
+        return $filters->filled('status_id') && in_array(Player::leftStatusId(), (array) $filters->get('status_id'), false);
+    }
+
+    /** The remark for per-registration category figures, when they can exceed the people total. */
+    protected function overlapNote(ReportFilters $filters): ?string
+    {
+        return ! $filters->filled('branch_id') && Branch::count() > 1 ? 'chart_note.bars_can_exceed_total' : null;
     }
 }

@@ -22,6 +22,7 @@ const { currencyLabel } = useCurrency();
 const page = usePage();
 const props = defineProps({
     report: Object,
+    note: { type: String, default: null },
     filterDefs: Array,
     filters: Object,
     applied: Array,
@@ -101,6 +102,7 @@ onMounted(() => rememberReport(props.report.id));
                 <StatTile v-for="tile in summary" :key="tile.label" :label="t(tile.label)" :value="tile.value" :format="tile.format" />
             </div>
 
+            <p v-if="note" class="text-sm text-slate-500 dark:text-slate-400">{{ t(note) }}</p>
             <div v-if="charts.length" class="flex justify-end print:hidden">
                 <div class="inline-flex rounded-lg ring-1 ring-slate-300 dark:ring-slate-700" role="group">
                     <button v-for="v in ['table', 'chart']" :key="v" type="button" :aria-pressed="view === v"

@@ -10,7 +10,9 @@ use App\Reports\Concerns\FiltersPlayers;
 use App\Reports\Filter;
 use App\Reports\Report;
 use App\Reports\ReportFilters;
+use App\Services\Player\RegistrationCounts;
 use App\Support\UiLang;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -78,11 +80,16 @@ class PlayerDemographics extends Report
         return false;
     }
 
+    public function note(ReportFilters $filters): ?string
+    {
+        return $this->overlapNote($filters);
+    }
+
     public function rows(ReportFilters $filters): Collection
     {
         $names = Category::all()->keyBy('id');
 
-        return $this->players($filters)->groupBy('category_id')->map(fn (Collection $group, $categoryId) => [
+        return $this->registrationRows($filters)->groupBy('category_id')->map(fn (Collection $group, $categoryId) => [
             'category' => $names->get($categoryId)?->localized_name ?? UiLang::get('reports.none'),
             'total' => $group->count(),
             'boys' => $group->where('gender', 'Male')->count(),
@@ -142,16 +149,27 @@ class PlayerDemographics extends Report
         ];
     }
 
-    /** @return Collection<int, Player> the filtered, non-archived players (three columns only) */
+    /** @return Builder<Player> who the report is about */
+    private function population(ReportFilters $filters): Builder
+    {
+        return Player::query()->where('archived', false)->listedWhere(
+            ...$this->listFilters($filters),
+            statuses: $filters->filled('status_id') ? (array) $filters->get('status_id') : null,
+        );
+    }
+
+    /** One row per registration: the table's rows, where a two-branch player counts in both. */
+    private function registrationRows(ReportFilters $filters): Collection
+    {
+        return RegistrationCounts::rows($this->population($filters), $this->listFilters($filters)['branches'], $this->includesLeft($filters))
+            ->join('players', 'players.id', '=', 'reg.player_id')
+            ->get(['reg.player_id', 'reg.category_id', 'players.gender', 'players.birthdate']);
+    }
+
+    /** Once per person, for the totals and the tiles: those the rows count. */
     private function players(ReportFilters $filters): Collection
     {
-        $query = Player::query()->where('archived', false);
-        $this->applyCategoryBranch($query, $filters);
-        if ($filters->filled('status_id')) {
-            $query->whereIn('status_id', $filters->get('status_id'));
-        }
-
-        return $query->toBase()->get(['category_id', 'gender', 'birthdate']);
+        return $this->registrationRows($filters)->unique('player_id')->values();
     }
 
     private function averageAge(Collection $players): ?float

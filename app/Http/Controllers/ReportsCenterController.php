@@ -58,6 +58,7 @@ class ReportsCenterController extends Controller
             'totals' => $report->totals($filters) ?: null,
             'summary' => $report->summary($filters),
             'charts' => $report->charts($filters),
+            'note' => $report->note($filters),
             'generatedAt' => now()->format('Y-m-d H:i'),
         ]);
     }

@@ -65,6 +65,12 @@ abstract class Report
         return 'reports.'.$this->id().'.description';
     }
 
+    /** i18n key of a remark shown above the results, or null. */
+    public function note(ReportFilters $filters): ?string
+    {
+        return null;
+    }
+
     /** Card icon (Icon.vue name). */
     public function icon(): string
     {

@@ -8,6 +8,7 @@ use App\Reports\Concerns\FiltersPlayers;
 use App\Reports\Filter;
 use App\Reports\Report;
 use App\Reports\ReportFilters;
+use App\Services\Player\RegistrationDisplay;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -79,11 +80,16 @@ class PlayerBirthdays extends Report
         $month = (int) $filters->get('month');
         $year = (int) now()->year;
 
-        $query = Player::query()->where('archived', false)->whereNotNull('birthdate')->with('category');
+        $branch = $this->shownBranch($filters);
+        $display = RegistrationDisplay::make();
+
+        $query = Player::query()->where('archived', false)->whereNotNull('birthdate')->with('category')
+            ->when($branch !== null, fn ($q) => $q->with('registrations.category'));
         $this->applyCategoryBranch($query, $filters);
 
         return $query->get()
             ->filter(fn (Player $p) => (int) $p->birthdate->month === $month)
+            ->each(fn (Player $p) => $display->overlay($p, $branch))
             ->map(fn (Player $p) => [
                 'day' => (int) $p->birthdate->day,
                 'name' => $p->fullname,

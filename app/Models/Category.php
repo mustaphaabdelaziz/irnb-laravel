@@ -47,6 +47,7 @@ class Category extends Model
     private const USED_IN = [
         'branch_player', 'teams', 'training_sessions', 'training_session_category', 'training_schedules',
         'finance_accounts', 'category_subscription', 'activity_category', 'attendances', 'players', 'users',
+        'preseason_targets', 'deleted_session_slots', 'session_generation_marks',
     ];
 
     public function branch(): BelongsTo

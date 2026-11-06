@@ -76,7 +76,8 @@ return new class extends Migration
             }
         }
 
-        $this->refreshMirror($moved->unique()->values(), $mainId);
+        // The mirror follows the app's rule: no main branch set means no preference.
+        $this->refreshMirror($moved->unique()->values(), DB::table('website_configs')->value('main_branch_id'));
     }
 
     private function mainId(Collection $branchIds): int
@@ -176,7 +177,7 @@ return new class extends Migration
      *
      * @param  Collection<int, int>  $playerIds
      */
-    private function refreshMirror(Collection $playerIds, int $mainId): void
+    private function refreshMirror(Collection $playerIds, mixed $mainBranch): void
     {
         $left = DB::table('player_statuses')->where('code', 'left')->value('id');
 
@@ -184,7 +185,7 @@ return new class extends Migration
             $rows = DB::table('branch_player')->whereIn('player_id', $chunk->values()->all())->orderBy('id')->get()->groupBy('player_id');
             foreach ($rows as $playerId => $registrations) {
                 $active = $registrations->reject(fn (object $r) => $left !== null && (int) $r->status_id === (int) $left);
-                $primary = $active->first(fn (object $r) => (int) $r->branch_id === $mainId)
+                $primary = $active->first(fn (object $r) => $mainBranch !== null && (int) $r->branch_id === (int) $mainBranch)
                     ?? $active->sortBy(fn (object $r) => [$this->joinSortKey($r), $r->id])->first()
                     ?? $registrations->first();
                 DB::table('players')->where('id', $playerId)->update(['category_id' => $primary->category_id]);

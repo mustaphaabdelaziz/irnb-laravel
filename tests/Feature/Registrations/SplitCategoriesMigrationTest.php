@@ -177,11 +177,15 @@ class SplitCategoriesMigrationTest extends TestCase
         $foot = $this->football();
         $senior = $this->shared('Senior');
         $this->member([['branch_id' => $foot->id, 'category_id' => $senior->id]]);
-        $registrations = DB::table('branch_player')->count();
+        $this->heldSession($foot, $senior);
+        $this->priced('Priced', $senior, [$foot]);
+        $children = ['branch_player', 'training_session_category', 'category_subscription', 'training_sessions'];
+        $before = array_map(fn (string $t) => DB::table($t)->count(), $children);
+        $this->assertNotContains(0, $before);
 
         $this->migration()->up();
 
-        $this->assertSame($registrations, DB::table('branch_player')->count(), 'adding the key must not cascade');
+        $this->assertSame($before, array_map(fn (string $t) => DB::table($t)->count(), $children), 'adding the key must not cascade');
         $this->assertTrue(collect(\Illuminate\Support\Facades\Schema::getForeignKeys('categories'))->contains(fn (array $key) => $key['columns'] === ['branch_id']));
 
         $this->expectException(\Illuminate\Database\QueryException::class);
@@ -359,6 +363,46 @@ class SplitCategoriesMigrationTest extends TestCase
 
         $this->expectException(QueryException::class);
         DB::table('categories')->insert(['name' => 'Senior']);
+    }
+
+    #[Test]
+    public function the_mirror_follows_pick_primary_when_no_main_branch_is_set(): void
+    {
+        [$foot, $swim] = [$this->football(), $this->swimming()];
+        \App\Models\WebsiteConfig::singleton()->update(['main_branch_id' => null]);
+        $senior = $this->shared('Senior');
+        $player = $this->member([
+            ['branch_id' => $foot->id, 'category_id' => $senior->id, 'join_date' => '2022-09-01'],
+            ['branch_id' => $swim->id, 'category_id' => $senior->id, 'join_date' => '2020-09-01'],
+        ]);
+
+        $this->migration()->up();
+
+        $copy = $this->copyOf($senior, $swim);
+        $this->assertEquals($copy->id, DB::table('players')->where('id', $player->id)->value('category_id'), 'the earliest join is main when no branch is');
+        $this->artisan('registrations:verify')->assertExitCode(0);
+    }
+
+    #[Test]
+    #[\PHPUnit\Framework\Attributes\DataProvider('cascadingTables')]
+    public function a_category_used_only_by_a_cascading_table_is_in_use(string $table): void
+    {
+        $foot = $this->football();
+        $category = $this->shared('Solo');
+        $this->assertFalse($category->isInUse());
+
+        match ($table) {
+            'preseason_targets' => DB::table($table)->insert(['branch_id' => $foot->id, 'category_id' => $category->id, 'season_start_year' => 2026, 'target_count' => 10]),
+            'deleted_session_slots' => DB::table($table)->insert(['branch_id' => $foot->id, 'category_id' => $category->id, 'date' => '2026-03-02', 'start_time' => '18:00']),
+            'session_generation_marks' => DB::table($table)->insert(['category_id' => $category->id, 'month' => '2026-03', 'created_at' => now()]),
+        };
+
+        $this->assertTrue($category->isInUse(), $table);
+    }
+
+    public static function cascadingTables(): array
+    {
+        return ['preseason_targets' => ['preseason_targets'], 'deleted_session_slots' => ['deleted_session_slots'], 'session_generation_marks' => ['session_generation_marks']];
     }
 
     /** Sessions, schedules, slots, targets, teams, caisses and activities on the category, one set per branch. */

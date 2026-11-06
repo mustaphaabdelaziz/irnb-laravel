@@ -383,6 +383,7 @@ const docCategoryOptions = computed(() => completionOptions(docCategoryRows.valu
             <div class="grid gap-5 lg:grid-cols-2">
                 <ChartCard
                     :title="t('stats.doc_by_category')"
+                    :subtitle="branchId ? null : t('chart_note.bars_can_exceed_total')"
                     :loading="loading"
                     :empty="docEmpty"
                     :empty-hint="t('dashboard.mem_no_members')"
@@ -471,6 +472,7 @@ const docCategoryOptions = computed(() => completionOptions(docCategoryRows.valu
         <section class="grid gap-5 lg:grid-cols-2">
             <ChartCard
                 :title="t('dashboard.mem_by_category')"
+                :subtitle="branchId ? null : t('chart_note.bars_can_exceed_total')"
                 :loading="loading"
                 :empty="!byCategory.length"
                 :empty-hint="t('dashboard.mem_no_members')"
@@ -505,7 +507,7 @@ const docCategoryOptions = computed(() => completionOptions(docCategoryRows.valu
 
         <ChartCard
             :title="t('dashboard.mem_left_by_category')"
-            :subtitle="t('dashboard.mem_left_by_category_hint')"
+            :subtitle="branchId ? t('dashboard.mem_left_by_category_hint') : `${t('dashboard.mem_left_by_category_hint')} ${t('chart_note.bars_can_exceed_total')}`"
             :loading="loading"
             :empty="!leftByCategory.length"
             :empty-hint="t('dashboard.mem_no_leavers')"

@@ -3,16 +3,19 @@
 namespace App\Services\Dashboard;
 
 use App\Enums\AcademicCertificate;
+use App\Models\BranchRegistration;
 use App\Models\Player;
 use App\Models\PlayerAcademicRecord;
 use App\Services\Dashboard\Support\BranchScope;
 use App\Services\Dashboard\Support\DeltaCalculator;
 use App\Services\Dashboard\Support\MonthBucket;
 use App\Services\Player\DocumentStats;
+use App\Services\Player\RegistrationCounts;
 use App\Support\FiscalPeriod;
 use App\Support\Season;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -166,10 +169,9 @@ class MemberStats
         }
 
         $row = $this->leavers($filters)
-            ->toBase()
             ->selectRaw(
-                'COUNT(CASE WHEN players.left_at BETWEEN ? AND ? THEN 1 END) as current_window, '
-                .'COUNT(CASE WHEN players.left_at BETWEEN ? AND ? THEN 1 END) as previous_window',
+                'COUNT(CASE WHEN leavers.left_at BETWEEN ? AND ? THEN 1 END) as current_window, '
+                .'COUNT(CASE WHEN leavers.left_at BETWEEN ? AND ? THEN 1 END) as previous_window',
                 [
                     $filters->from->toDateString(), $filters->to->toDateString(),
                     $filters->prevFrom?->toDateString(), $filters->prevTo?->toDateString(),
@@ -184,20 +186,18 @@ class MemberStats
     }
 
     /**
-     * Members who left in the window, per category — which teams lose players.
+     * Registrations that left in the window, per category: which teams lose
+     * players. A member who left football but still swims counts here.
      */
     private function leftByCategory(DashboardFilters $filters): array
     {
-        $query = $this->leavers($filters);
-
-        if ($filters->from !== null) {
-            $query->whereBetween('players.left_at', [$filters->from->toDateString(), $filters->to->toDateString()]);
-        }
-
         $localeColumn = 'categories.name_'.app()->getLocale();
 
-        return $query->toBase()
-            ->leftJoin('categories', 'categories.id', '=', 'players.category_id')
+        return DB::query()->fromSub(BranchRegistration::everyRow(), 'reg')
+            ->whereNotNull('reg.left_at')
+            ->when($filters->branchId !== null, fn ($q) => $q->where('reg.branch_id', $filters->branchId))
+            ->when($filters->from !== null, fn ($q) => $q->whereBetween('reg.left_at', [$filters->from->toDateString(), $filters->to->toDateString()]))
+            ->leftJoin('categories', 'categories.id', '=', 'reg.category_id')
             ->groupBy('categories.id', 'categories.name', $localeColumn)
             ->orderByDesc('total')
             ->selectRaw("COALESCE(NULLIF({$localeColumn}, ''), categories.name) as name, COUNT(*) as total")
@@ -212,16 +212,19 @@ class MemberStats
     }
 
     /**
-     * Every member with a recorded leave date, archived or not: a leaver who
-     * was later archived still left. Members marked "left" before leave dates
-     * were recorded have none, and are not counted.
+     * Who left, with a recorded leave date, archived or not: a leaver who was
+     * later archived still left. Club-wide that is people who left everywhere,
+     * the only ones with a date on the player copy. With a branch, it is whoever
+     * left that branch. Members marked "left" before leave dates were recorded
+     * have none, and are not counted.
      */
-    private function leavers(DashboardFilters $filters): Builder
+    private function leavers(DashboardFilters $filters): QueryBuilder
     {
-        return BranchScope::players(
-            Player::query()->whereNotNull('players.left_at'),
-            $filters->branchId,
-        );
+        $source = $filters->branchId === null
+            ? DB::table('players')->whereNotNull('left_at')->select('left_at')
+            : DB::table('branch_player')->where('branch_id', $filters->branchId)->whereNotNull('left_at')->select('left_at');
+
+        return DB::query()->fromSub($source, 'leavers');
     }
 
     private function archivedInWindow(DashboardFilters $filters): int
@@ -325,10 +328,9 @@ class MemberStats
             $cumulative[] = $running;
         }
 
-        $leftBucket = MonthBucket::expression('players.left_at');
+        $leftBucket = MonthBucket::expression('leavers.left_at');
         $leftByMonth = $this->leavers($filters)
-            ->where('players.left_at', '>=', CarbonImmutable::parse($labels[0].'-01')->toDateString())
-            ->toBase()
+            ->where('leavers.left_at', '>=', CarbonImmutable::parse($labels[0].'-01')->toDateString())
             ->selectRaw("{$leftBucket} as bucket, COUNT(*) as total")
             ->groupBy('bucket')
             ->pluck('total', 'bucket')
@@ -342,24 +344,34 @@ class MemberStats
         ];
     }
 
+    /** Per active registration: a two-branch player counts in both bars. The chart says so. */
     private function byCategory(DashboardFilters $filters): array
     {
-        return $this->groupedByRelation(
-            $filters,
-            'categories',
-            'players.category_id',
-            'categories.id',
-        );
+        return $this->counted(RegistrationCounts::byCategory(
+            $this->active($filters),
+            $filters->branchId === null ? null : [$filters->branchId],
+        ));
     }
 
+    /** Club-wide: once per person, overall. With a branch: that registration's status. */
     private function byStatus(DashboardFilters $filters): array
     {
-        return $this->groupedByRelation(
-            $filters,
-            'player_statuses',
-            'players.status_id',
-            'player_statuses.id',
-        );
+        return $filters->branchId === null
+            ? $this->groupedByRelation($filters, 'player_statuses', 'players.status_id', 'player_statuses.id')
+            : $this->counted(RegistrationCounts::byStatus($this->active($filters), [$filters->branchId], includeLeft: true));
+    }
+
+    /** @param  Collection<int, object>  $rows */
+    private function counted(Collection $rows): array
+    {
+        return $rows
+            ->map(fn (object $row): array => [
+                'name' => $row->name ?: null,
+                'labelKey' => $row->name ? null : 'uncategorised',
+                'count' => $row->total,
+            ])
+            ->values()
+            ->all();
     }
 
     /**

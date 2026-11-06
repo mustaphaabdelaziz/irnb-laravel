@@ -62,6 +62,11 @@ final class DocumentChecklist
     public static function for(Player $player, ?CarbonInterface $today = null, ?BranchRegistration $registration = null): array
     {
         $today = self::today($today);
+
+        if ($registration !== null && $registration->player_id !== $player->id) {
+            throw new \InvalidArgumentException("Registration {$registration->id} does not belong to player {$player->id}.");
+        }
+
         $registration ??= app(RegistrationService::class)->primary($player);
         $left = $registration !== null && Player::isLeftStatus($registration->status_id);
 
@@ -251,7 +256,8 @@ final class DocumentChecklist
                 // A profile picture settles the Photo, so its record cannot expire.
                 ." AND (dt.code <> ? OR players.picture_url IS NULL OR players.picture_url = '')"
                 ." AND pd.state = 'received' AND pd.valid_until >= ? AND pd.valid_until < ?"
-                .' AND (pd.branch_registration_id IS NULL OR pd.branch_registration_id IN (SELECT r.id FROM branch_player r'
+                .' AND ((pd.branch_registration_id IS NULL AND NOT EXISTS (SELECT 1 FROM branch_player r0 WHERE r0.player_id = players.id))'
+                .' OR pd.branch_registration_id IN (SELECT r.id FROM branch_player r'
                 .' WHERE r.player_id = players.id AND '.self::ACTIVE_ROW
                 .($branchId !== null ? ' AND r.branch_id = ?' : '')
                 .')))',

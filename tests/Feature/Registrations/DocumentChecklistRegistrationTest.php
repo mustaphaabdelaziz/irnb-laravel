@@ -267,4 +267,32 @@ class DocumentChecklistRegistrationTest extends TestCase
 
         $this->assertSame(2, $this->missingSql($player));
     }
+
+    #[Test]
+    public function an_unlinked_paper_of_a_registered_player_does_not_count_as_expiring(): void
+    {
+        $player = $this->bothActive();
+        $document = $this->received($player, $this->swim, now()->addDays(10)->toDateString());
+        $this->assertTrue($this->expiringSql($player, $this->swim));
+
+        // The registration goes without the service: the foreign key unlinks the paper.
+        DB::table('branch_player')->where('player_id', $player->id)->where('branch_id', $this->swim->id)->delete();
+        $this->assertNull($document->fresh()->branch_registration_id);
+
+        $this->assertFalse($this->expiringSql($player));
+        $this->assertFalse($this->expiringSql($player, $this->foot));
+        $this->assertFalse($this->expiringSql($player, $this->swim));
+        $this->assertSame(0, DocumentChecklist::for($player)['expiring_count']);
+    }
+
+    #[Test]
+    public function a_registration_of_another_player_is_refused(): void
+    {
+        $player = $this->bothActive();
+        $other = $this->leftFootball();
+
+        $this->expectException(\InvalidArgumentException::class);
+
+        DocumentChecklist::for($player, null, $other->registrations()->firstOrFail());
+    }
 }

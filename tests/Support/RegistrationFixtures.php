@@ -29,8 +29,8 @@ trait RegistrationFixtures
     {
         $this->foot = Branch::create(['name' => 'Football', 'code' => 'FB']);
         $this->swim = Branch::create(['name' => 'Swimming', 'code' => 'SW']);
-        $this->senior = Category::create(['name' => 'Senior']);
-        $this->u15 = Category::create(['name' => 'U15']);
+        $this->senior = Category::create(['name' => 'Senior', 'branch_id' => $this->foot->id]);
+        $this->u15 = Category::create(['name' => 'U15', 'branch_id' => $this->swim->id]);
     }
 
     private function bothActive(string $name = 'Both'): Player

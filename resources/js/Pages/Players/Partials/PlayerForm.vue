@@ -14,7 +14,7 @@ import { Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { phoneDigits } from '@/lib/phone';
-import { positionLabeller } from '@/lib/positionLabels';
+import { sportLabeller } from '@/lib/sportLabels';
 import { useCan } from '@/Composables/useCan';
 import { localToday } from '@/lib/localDate';
 import { cardFromRegistration, cardPayload, newCard, withFreshIds, withoutCard } from '@/lib/registrationCards';
@@ -129,7 +129,7 @@ function deleteCard() {
 // (e.g. bounced back through a validation error round-trip), so every
 // comparison below normalizes with Number() before matching.
 // Two sports may share a position name; those get " · Sport" appended.
-const positionLabel = computed(() => positionLabeller(props.positions, (pos) => `${pos.abbreviation} - ${pos.name}`));
+const positionLabel = computed(() => sportLabeller(props.positions, (pos) => `${pos.abbreviation} - ${pos.name}`));
 const otherPositionOptions = computed(() => props.positions
     .filter((pos) => String(pos.id) !== String(form.position_id)
         && !form.other_position_ids.some((id) => Number(id) === Number(pos.id)))

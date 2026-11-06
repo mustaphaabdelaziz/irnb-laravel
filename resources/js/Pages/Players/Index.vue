@@ -22,7 +22,7 @@ import IconButton from '@/Components/IconButton.vue';
 import AcademicResultsPrint from '@/Pages/Players/Partials/AcademicResultsPrint.vue';
 import CompletionBar from '@/Components/Stats/CompletionBar.vue';
 import { completionBarProps } from '@/lib/completion';
-import { positionLabeller } from '@/lib/positionLabels';
+import { sportLabeller } from '@/lib/sportLabels';
 import { PLAYER_FILTERS_KEY, savedPlayerFilters } from '@/lib/playerListFilters';
 
 const { t } = useI18n();
@@ -200,7 +200,7 @@ const statusChips = computed(() => props.statusStats.map((s) => ({
     key: s.status_id ?? 'none', label: s.status_id ? s.name : t('filter.no_status'), count: s.count,
 })));
 // Two sports may share a position name; those get " · Sport" appended.
-const positionLabel = computed(() => positionLabeller(props.positions));
+const positionLabel = computed(() => sportLabeller(props.positions));
 const positionChips = computed(() => props.positionStats.map((s) => {
     const position = props.positions.find((p) => p.id === s.position_id);
     return { key: s.position_id ?? '', label: position ? positionLabel.value(position) : (s.name || t('unassigned')), count: s.count };

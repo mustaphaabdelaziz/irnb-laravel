@@ -9,6 +9,7 @@ use App\Models\TrainingSession;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
 use App\Services\Attendance\Roster;
+use App\Support\CategoryOwnership;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -46,6 +47,7 @@ class TrainingSessionController extends Controller
             ? $this->uniqueIds([(int) $data['category_id'], ...($data['category_ids'] ?? [])])
             : [(int) $data['category_id']];
         $branchId = isset($data['branch_id']) ? (int) $data['branch_id'] : null;
+        CategoryOwnership::assertIn('category_id', $categoryIds, $branchId);
         $this->assertSlotFree($branchId, $categoryIds, $data['date'], $data['start_time']);
 
         try {
@@ -112,6 +114,9 @@ class TrainingSessionController extends Controller
         };
         $sortedCategoryIds = $categoryIds;
         sort($sortedCategoryIds);
+
+        // A session keeps a category that no longer fits, unless it changes branch.
+        CategoryOwnership::assertIn('category_ids', $categoryIds, $branchId, $branchId === $session->branch_id ? $currentIds : null);
 
         $errors = [];
         if ($kind === null || ($kind === SessionKind::Regular && $session->kind !== SessionKind::Regular)) {

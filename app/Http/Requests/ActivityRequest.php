@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\CategoryOwnership;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ActivityRequest extends FormRequest
@@ -35,6 +36,17 @@ class ActivityRequest extends FormRequest
             'board_member_ids' => ['nullable', 'array', 'max:200'],
             'board_member_ids.*' => ['integer', 'exists:board_members,id'],
         ];
+    }
+
+    /** A category must belong to the chosen branch, if any. One already saved stays until edited. */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $stored = $this->route('activity')?->categories()->pluck('categories.id');
+            if (CategoryOwnership::outside($this->input('category_ids'), array_filter([$this->input('branch_id')]), $stored)) {
+                $validator->errors()->add('category_ids', __('validation.category_other_branch'));
+            }
+        });
     }
 
     /** The activity's own columns, counts defaulted to 0. @return array<string, mixed> */

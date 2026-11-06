@@ -4,6 +4,7 @@ namespace App\Services\Player;
 
 use App\Models\Branch;
 use App\Models\BranchRegistration;
+use App\Models\Category;
 use App\Models\Player;
 use App\Models\PlayerStatus;
 use App\Models\Position;
@@ -269,9 +270,9 @@ class RegistrationService
 
     /**
      * One field from bulk edit: status on the registration of $branchId only,
-     * position on its branch's, category on the primary.
+     * position and category on the registration in their branch.
      *
-     * @return bool whether anything was written: a position no registration of this player can hold writes nothing
+     * @return bool whether anything was written: a position or category no registration of this player can hold writes nothing
      */
     public function setField(Player $player, string $field, mixed $value, ?int $branchId = null): bool
     {
@@ -295,6 +296,7 @@ class RegistrationService
             $targets = match ($field) {
                 'status_id' => $registrations->where('branch_id', $branchId),
                 'position_id' => collect([$this->positionOwner($registrations, $player, $value)])->filter(),
+                'category_id' => collect([$this->categoryOwner($registrations, $player, $value)])->filter(),
                 default => collect([$this->primary($player)]),
             };
 
@@ -525,6 +527,17 @@ class RegistrationService
             return $this->primary($player);
         }
         $branchId = Position::whereKey($positionId)->value('branch_id');
+
+        return $branchId === null ? $this->primary($player) : $registrations->firstWhere('branch_id', $branchId);
+    }
+
+    /** @param  Collection<int, BranchRegistration>  $registrations */
+    private function categoryOwner(Collection $registrations, Player $player, mixed $categoryId): ?BranchRegistration
+    {
+        if (! $categoryId) {
+            return $this->primary($player);
+        }
+        $branchId = Category::whereKey($categoryId)->value('branch_id');
 
         return $branchId === null ? $this->primary($player) : $registrations->firstWhere('branch_id', $branchId);
     }

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Player;
 
 use App\Models\Branch;
+use App\Models\Category;
 use App\Models\Player;
 use App\Models\Position;
 use App\Support\ValidationAttributes;
@@ -35,6 +36,7 @@ trait ValidatesRegistrations
         $validator->after(function (Validator $validator) use ($player) {
             $existing = $player ? $player->registrations()->get()->keyBy('branch_id') : collect();
             $branchOf = Position::query()->pluck('branch_id', 'id');
+            $categoryOwner = Category::query()->pluck('branch_id', 'id');
             $birthdate = $this->input('birthdate') ?: $player?->birthdate?->toDateString();
 
             foreach ((array) $this->input('registrations', []) as $i => $card) {
@@ -48,6 +50,13 @@ trait ValidatesRegistrations
                 }
                 if (! empty($date) && $birthdate && $date < $birthdate) {
                     $validator->errors()->add("registrations.$i.join_date", __('validation.join_date_before_birth'));
+                }
+
+                $category = $card['category_id'] ?? null;
+                $keepsCategory = $saved !== null && (int) $saved->category_id === (int) $category;
+                $categoryBranch = $categoryOwner[$category] ?? null;
+                if ($category && ! $keepsCategory && $categoryBranch !== null && (int) $categoryBranch !== $branchId) {
+                    $validator->errors()->add("registrations.$i.category_id", __('validation.category_other_branch'));
                 }
 
                 $main = $card['position_id'] ?? null;

@@ -15,6 +15,7 @@ use App\Models\TrainingSchedule;
 use App\Models\TrainingSession;
 use App\Services\Attendance\AttendanceCode;
 use App\Support\AttendanceSettings;
+use App\Support\CategoryOwnership;
 use App\Support\Season;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -123,7 +124,7 @@ class AttendanceSettingsController extends Controller
 
     public function updateSchedule(Request $request, TrainingSchedule $schedule): RedirectResponse
     {
-        $data = $this->validateSchedule($request);
+        $data = $this->validateSchedule($request, $schedule);
         // One transaction: see purgeFuturePlanned().
         DB::transaction(function () use ($schedule, $data) {
             $schedule->update($data);
@@ -180,6 +181,7 @@ class AttendanceSettingsController extends Controller
             'season_start_year' => ['required', 'integer', 'between:2000,2100'],
             'target_count' => ['required', 'integer', 'between:0,200'],
         ]);
+        CategoryOwnership::assertIn('category_id', $data['category_id'], isset($data['branch_id']) ? (int) $data['branch_id'] : null);
 
         PreseasonTarget::updateOrCreate(
             ['branch_id' => $data['branch_id'] ?? null, 'category_id' => $data['category_id'], 'season_start_year' => $data['season_start_year']],
@@ -237,9 +239,9 @@ class AttendanceSettingsController extends Controller
         ])->values()->all();
     }
 
-    private function validateSchedule(Request $request): array
+    private function validateSchedule(Request $request, ?TrainingSchedule $schedule = null): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'branch_id' => [Rule::requiredIf(fn () => Branch::exists()), 'nullable', 'integer', 'exists:branches,id'],
             'category_id' => ['required', 'integer', 'exists:categories,id'],
             'weekday' => ['required', 'integer', 'between:1,7'],
@@ -248,6 +250,10 @@ class AttendanceSettingsController extends Controller
             'valid_from' => ['required', 'date_format:Y-m-d'],
             'valid_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:valid_from'],
         ]);
+        $branchId = isset($data['branch_id']) ? (int) $data['branch_id'] : null;
+        CategoryOwnership::assertIn('category_id', $data['category_id'], $branchId, $schedule !== null && $schedule->branch_id === $branchId ? $schedule->category_id : null);
+
+        return $data;
     }
 
     /**

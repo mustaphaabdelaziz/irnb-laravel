@@ -38,6 +38,7 @@ class AttendanceSettingsBranchTest extends TestCase
         $u15 = $this->category();
         $foot = Branch::create(['name' => 'Foot']);
         $swim = Branch::create(['name' => 'Swim']);
+        $u15->update(['branch_id' => null]); // unowned: this test is not about ownership
         $admin = $this->admin();
 
         foreach ([[$foot->id, 10], [$swim->id, 4], [$foot->id, 12]] as [$branchId, $count]) {

@@ -4,6 +4,7 @@ namespace App\Http\Requests\Subscription;
 
 use App\Models\Subscription;
 use App\Models\SubscriptionCostLine;
+use App\Support\CategoryOwnership;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -56,6 +57,17 @@ class StoreSubscriptionRequest extends FormRequest
             'branch_ids.*' => ['integer', 'exists:branches,id'],
             ...$this->tarificationRules($exceptional),
         ];
+    }
+
+    /** A category must belong to a ticked branch, if any. One already saved stays until edited. */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $stored = $this->route('subscription')?->categories()->pluck('categories.id');
+            if (CategoryOwnership::outside($this->input('category_ids'), (array) $this->input('branch_ids', []), $stored)) {
+                $validator->errors()->add('category_ids', __('validation.category_other_branch'));
+            }
+        });
     }
 
     /**

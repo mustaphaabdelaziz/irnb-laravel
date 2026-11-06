@@ -15,6 +15,7 @@ use App\Services\Competitions\PlayerFlags;
 use App\Services\Competitions\TeamAccess;
 use App\Services\Competitions\TeamMembers;
 use App\Services\Player\DocumentStats;
+use App\Support\CategoryOwnership;
 use App\Support\Season;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -180,6 +181,7 @@ class TeamController extends Controller
         }
         $data = $request->validate($rules);
         $branchId = $team?->branch_id ?? (int) $data['branch_id'];
+        CategoryOwnership::assertIn('category_id', $data['category_id'], $branchId, $team?->category_id);
 
         if ((int) GameFormat::whereKey($data['default_game_format_id'])->value('branch_id') !== $branchId) {
             throw ValidationException::withMessages(['default_game_format_id' => 'comp.error.format_other_sport']);

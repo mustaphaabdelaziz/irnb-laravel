@@ -6,6 +6,7 @@ use App\Models\Branch;
 use App\Models\FinanceAccount;
 use App\Services\Finance\CashRegisterProvisioner;
 use App\Services\FinanceService;
+use App\Support\CategoryOwnership;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -123,6 +124,8 @@ class FinanceAccountController extends Controller
         $categoryId = array_key_exists('category_id', $data) ? $data['category_id'] : $account?->category_id;
 
         if (! empty($categoryId) && ! empty($data['branch_id'])) {
+            CategoryOwnership::assertIn('category_id', $categoryId, (int) $data['branch_id'],
+                $account !== null && (int) $account->branch_id === (int) $data['branch_id'] ? $account->category_id : null);
             $taken = FinanceAccount::where('branch_id', $data['branch_id'])
                 ->where('category_id', $categoryId)
                 ->when($account, fn ($q) => $q->whereKeyNot($account->id))

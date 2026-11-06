@@ -106,6 +106,7 @@ class TrainingSessionUpdateTest extends TestCase
         $u15 = $this->category();
         $foot = Branch::create(['name' => 'Foot']);
         $swim = Branch::create(['name' => 'Swim']);
+        $u15->update(['branch_id' => null]); // unowned: this test is not about ownership
         $registered = (int) PlayerStatus::where('code', 'registered')->value('id');
         $training = $this->makeTraining($u15, ['branch_id' => $foot->id, 'roster_status_ids' => [$registered]]);
         $this->mark($training, $this->player($u15));
@@ -126,6 +127,7 @@ class TrainingSessionUpdateTest extends TestCase
         $u15 = $this->category();
         $foot = Branch::create(['name' => 'Foot']);
         $swim = Branch::create(['name' => 'Swim']);
+        $u15->update(['branch_id' => null]); // unowned: this test is not about ownership
         $training = $this->makeTraining($u15, ['branch_id' => $foot->id, 'kind' => SessionKind::Regular]);
 
         $this->edit($training, ['branch_id' => $swim->id])->assertSessionHasErrors(['branch_id' => 'att.error.not_hand_added']);
@@ -183,6 +185,7 @@ class TrainingSessionUpdateTest extends TestCase
         $u15 = $this->category();
         $foot = Branch::create(['name' => 'Foot']);
         $swim = Branch::create(['name' => 'Swim']);
+        $u15->update(['branch_id' => null]); // unowned: this test is not about ownership
         $footballer = $this->player($u15);
         $swimmer = $this->player($u15);
         $foot->players()->attach($footballer->id);

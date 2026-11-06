@@ -50,6 +50,7 @@ class AttendanceSessionBranchTest extends TestCase
         $u15 = $this->category();
         $foot = Branch::create(['name' => 'Foot']);
         $swim = Branch::create(['name' => 'Swim']);
+        $u15->update(['branch_id' => null]); // unowned: this test is not about ownership
         $admin = $this->admin();
 
         $this->actingAs($admin)->post(route('attendance.sessions.store'), $this->payload($u15->id, ['branch_id' => $foot->id]))->assertSessionHasNoErrors();

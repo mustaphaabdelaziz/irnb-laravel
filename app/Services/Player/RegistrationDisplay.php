@@ -5,6 +5,7 @@ namespace App\Services\Player;
 use App\Models\Branch;
 use App\Models\BranchRegistration;
 use App\Models\Player;
+use Illuminate\Support\Collection;
 
 /**
  * Which registration's values a list, page or report shows for a player. Build
@@ -34,6 +35,12 @@ final class RegistrationDisplay
     public function main(Player $player): ?BranchRegistration
     {
         return RegistrationService::pickPrimary($player->registrations, $this->mainBranchId, $this->leftStatusId);
+    }
+
+    /** The registration among these rows that RegistrationService::pickPrimary picks (the main one when it is among them). */
+    public function pick(Collection $rows): ?BranchRegistration
+    {
+        return RegistrationService::pickPrimary($rows, $this->mainBranchId, $this->leftStatusId);
     }
 
     /** That branch's registration when the player has one, otherwise the main one. */

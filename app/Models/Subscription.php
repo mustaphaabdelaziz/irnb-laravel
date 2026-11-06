@@ -160,9 +160,12 @@ class Subscription extends Model
     }
 
     /**
-     * The one active registration matching a subscription with branches; the main
-     * registration when several match or it has no branch. Nothing when a
-     * hand-added player matches none. A player with no registration: their own.
+     * The category that prices the player: among the active registrations in a
+     * ticked branch (if any is ticked) holding a listed category (if any is
+     * listed), the only one; the main one if it is among several, otherwise the
+     * first in RegistrationService::pickPrimary order. None: the main
+     * registration's category when no branch is ticked, nothing otherwise.
+     * A player with no registration: their own.
      */
     private function pricingCategoryId(Player $player, RegistrationDisplay $display): ?int
     {
@@ -172,19 +175,15 @@ class Subscription extends Model
         }
 
         $branchIds = $this->branches->pluck('id');
-        if ($branchIds->isEmpty()) {
-            return $main->category_id;
-        }
-
         $categoryIds = $this->categories->pluck('id');
-        $matching = $player->registrations->filter(fn ($row) => $branchIds->contains($row->branch_id)
+        $matching = $player->registrations->filter(fn ($row) => ($branchIds->isEmpty() || $branchIds->contains($row->branch_id))
             && $display->isActiveIn($player, (int) $row->branch_id)
             && ($categoryIds->isEmpty() || $categoryIds->contains($row->category_id)));
 
         return match ($matching->count()) {
-            0 => null,
+            0 => $branchIds->isEmpty() ? $main->category_id : null,
             1 => $matching->first()->category_id,
-            default => $main->category_id,
+            default => $display->pick($matching)->category_id,
         };
     }
 

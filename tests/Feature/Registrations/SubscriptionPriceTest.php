@@ -2,12 +2,14 @@
 
 namespace Tests\Feature\Registrations;
 
+use App\Models\Branch;
 use App\Models\Category;
 use App\Models\Player;
 use App\Models\PlayerSubscription;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Services\Player\RegistrationDisplay;
+use App\Services\Player\RegistrationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
@@ -100,7 +102,8 @@ class SubscriptionPriceTest extends TestCase
 
         // Main category Senior is not on the list: sole category's price, then default.
         $this->assertSame(700.0, $this->sub([], [$this->u15->id => 700.0])->amountFor($player));
-        $this->assertSame(1500.0, $this->sub([], [$this->u15->id => 700.0, $junior->id => 650.0])->amountFor($player));
+        // I1: the swimming row is listed, so it prices the player (was the 1500 default).
+        $this->assertSame(700.0, $this->sub([], [$this->u15->id => 700.0, $junior->id => 650.0])->amountFor($player));
     }
 
     #[Test]
@@ -144,5 +147,55 @@ class SubscriptionPriceTest extends TestCase
             ->post(route('subscriptions.assign', $sub), ['assign_all' => true]);
 
         $this->assertSame(700.0, (float) PlayerSubscription::where('player_id', $two->id)->sole()->amount_owed);
+    }
+
+    #[Test]
+    public function a_second_sports_category_prices_a_subscription_listing_only_it_even_when_main_is_elsewhere(): void
+    {
+        $player = $this->bothActive();
+        $junior = Category::create(['name' => 'Junior', 'branch_id' => $this->swim->id]);
+        $list = [$this->u15->id => 700.0, $junior->id => 650.0];
+
+        // Main is football Senior, which is not listed: the swimming row that is listed prices it.
+        $this->assertSame(700.0, $this->sub([], $list)->amountFor($player));
+        $this->assertSame(700.0, $this->sub([$this->foot, $this->swim], $list)->amountFor($player));
+    }
+
+    #[Test]
+    public function the_price_of_the_second_sport_holds_at_assignment_and_bulk_assign(): void
+    {
+        $player = $this->bothActive();
+        $junior = Category::create(['name' => 'Junior', 'branch_id' => $this->swim->id]);
+        $sub = $this->sub([], [$this->u15->id => 700.0, $junior->id => 650.0]);
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)->post(route('subscriptions.assign', $sub), ['assign_all' => true]);
+        $this->assertSame(700.0, (float) PlayerSubscription::where('player_id', $player->id)->sole()->amount_owed);
+
+        $other = $this->bothActive('Other');
+        $this->post(route('subscriptions.assignOne', $sub), ['player_id' => $other->id]);
+        $this->assertSame(700.0, (float) PlayerSubscription::where('player_id', $other->id)->sole()->amount_owed);
+    }
+
+    #[Test]
+    public function several_matches_with_main_among_them_charge_main(): void
+    {
+        $sub = $this->sub([], [$this->senior->id => 900.0, $this->u15->id => 700.0]);
+
+        $this->assertSame(900.0, $sub->amountFor($this->bothActive()));
+    }
+
+    #[Test]
+    public function several_matches_without_main_charge_the_first_in_primary_order(): void
+    {
+        $player = $this->bothActive();
+        $hockey = Branch::create(['name' => 'Hockey', 'code' => 'HK']);
+        $hockeyU15 = Category::create(['name' => 'U15', 'branch_id' => $hockey->id]);
+        app(RegistrationService::class)->register($player, ['branch_id' => $hockey->id, 'category_id' => $hockeyU15->id]);
+
+        // Main (football Senior) is not listed; swimming registered before hockey.
+        $sub = $this->sub([], [$hockeyU15->id => 400.0, $this->u15->id => 700.0]);
+
+        $this->assertSame(700.0, $sub->amountFor($player->refresh()));
     }
 }

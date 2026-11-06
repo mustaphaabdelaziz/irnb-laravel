@@ -249,4 +249,20 @@ class BranchPageTest extends TestCase
         $this->get(route('branches.index'))->assertOk();
         $this->get(route('branches.show', $this->foot))->assertOk();
     }
+
+    #[Test]
+    public function the_branch_payload_holds_only_what_each_tab_uses(): void
+    {
+        $this->twoSportClub();
+
+        $this->get(route('branches.show', $this->swim))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('branch', fn ($branch) => collect($branch)->keys()->sort()->values()->all()
+                    === ['code', 'description', 'id', 'localized_name', 'logo_url', 'name', 'name_ar', 'name_en', 'name_fr']));
+
+        $this->get(route('categories.show', $this->swim))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('branch', fn ($branch) => collect($branch)->keys()->sort()->values()->all()
+                    === ['id', 'localized_name', 'logo_url', 'name']));
+    }
 }

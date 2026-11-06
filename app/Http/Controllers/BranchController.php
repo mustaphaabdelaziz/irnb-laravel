@@ -57,7 +57,7 @@ class BranchController extends Controller
     public function show(Branch $branch): Response
     {
         return Inertia::render('Settings/BranchDetail', [
-            'branch' => $branch,
+            'branch' => $branch->only(['id', 'name', 'localized_name', 'logo_url', 'name_ar', 'name_fr', 'name_en', 'description', 'code']),
             'tab' => 'general',
             'categories' => [],
         ]);

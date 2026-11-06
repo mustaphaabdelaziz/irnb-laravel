@@ -34,7 +34,7 @@ class CategoryController extends Controller
     public function show(Branch $branch): Response
     {
         return Inertia::render('Settings/BranchDetail', [
-            'branch' => $branch,
+            'branch' => $branch->only(['id', 'name', 'localized_name', 'logo_url']),
             'tab' => 'categories',
             'categories' => $this->listed($branch->id),
         ]);

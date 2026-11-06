@@ -113,7 +113,7 @@ class VerifyRegistrations extends Command
     private function misplacedCategories(): array
     {
         $problems = [];
-        foreach (['branch_player' => 'registration', 'training_sessions' => 'session', 'training_schedules' => 'schedule', 'teams' => 'team', 'finance_accounts' => 'caisse'] as $table => $label) {
+        foreach (['branch_player' => 'registration', 'training_sessions' => 'session', 'training_schedules' => 'schedule', 'deleted_session_slots' => 'deleted slot', 'preseason_targets' => 'preseason target', 'teams' => 'team', 'finance_accounts' => 'caisse'] as $table => $label) {
             $ids = DB::table($table)->join('categories', 'categories.id', '=', "$table.category_id")
                 ->whereNotNull("$table.branch_id")->whereNotNull('categories.branch_id')
                 ->whereColumn('categories.branch_id', '!=', "$table.branch_id")
@@ -131,6 +131,26 @@ class VerifyRegistrations extends Command
             ->pluck('training_session_category.training_session_id');
         foreach ($joint as $id) {
             $problems[] = "session $id (joint)";
+        }
+
+        $linked = [
+            'activity' => DB::table('activity_category')
+                ->join('activities', 'activities.id', '=', 'activity_category.activity_id')
+                ->join('categories', 'categories.id', '=', 'activity_category.category_id')
+                ->whereNotNull('activities.branch_id')->whereNotNull('categories.branch_id')
+                ->whereColumn('categories.branch_id', '!=', 'activities.branch_id')
+                ->pluck('activity_category.activity_id'),
+            'attendance' => DB::table('attendances')
+                ->join('training_sessions', 'training_sessions.id', '=', 'attendances.training_session_id')
+                ->join('categories', 'categories.id', '=', 'attendances.category_id')
+                ->whereNotNull('training_sessions.branch_id')->whereNotNull('categories.branch_id')
+                ->whereColumn('categories.branch_id', '!=', 'training_sessions.branch_id')
+                ->pluck('attendances.id'),
+        ];
+        foreach ($linked as $label => $ids) {
+            foreach ($ids as $id) {
+                $problems[] = "$label $id";
+            }
         }
 
         return $problems;
@@ -169,7 +189,6 @@ class VerifyRegistrations extends Command
 
         return [$priced, $unpriced];
     }
-
 
     /** @param  list<string>  $problems */
     private function report(string $label, array $problems): int

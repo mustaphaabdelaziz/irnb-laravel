@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Registrations;
 
+use App\Models\Activity;
+use App\Models\ActivityType;
 use App\Models\Branch;
 use App\Models\Category;
 use App\Models\DocumentType;
@@ -261,5 +263,44 @@ class VerifyRegistrationsTest extends TestCase
         $subscription->branches()->attach([$foot->id, $swim->id]);
 
         $this->artisan('registrations:verify')->assertExitCode(0);
+    }
+
+    #[Test]
+    public function a_deleted_slot_of_another_branch_fails(): void
+    {
+        [$foot, , , $swimSenior] = $this->club();
+        DB::table('deleted_session_slots')->insert(['branch_id' => $foot->id, 'category_id' => $swimSenior->id, 'date' => '2026-03-02', 'start_time' => '18:00']);
+
+        $this->artisan('registrations:verify')->expectsOutputToContain('category of another branch')->assertExitCode(1);
+    }
+
+    #[Test]
+    public function a_preseason_target_of_another_branch_fails(): void
+    {
+        [$foot, , , $swimSenior] = $this->club();
+        DB::table('preseason_targets')->insert(['branch_id' => $foot->id, 'category_id' => $swimSenior->id, 'season_start_year' => 2026, 'target_count' => 10]);
+
+        $this->artisan('registrations:verify')->expectsOutputToContain('category of another branch')->assertExitCode(1);
+    }
+
+    #[Test]
+    public function an_activity_category_of_another_branch_fails(): void
+    {
+        [$foot, , , $swimSenior] = $this->club();
+        $activity = Activity::create(['title' => 'Camp', 'activity_type_id' => ActivityType::query()->value('id'), 'starts_on' => '2026-03-02', 'branch_id' => $foot->id]);
+        DB::table('activity_category')->insert(['activity_id' => $activity->id, 'category_id' => $swimSenior->id]);
+
+        $this->artisan('registrations:verify')->expectsOutputToContain('category of another branch')->assertExitCode(1);
+    }
+
+    #[Test]
+    public function an_attendance_category_of_another_branch_fails(): void
+    {
+        [$foot, , $senior, $swimSenior] = $this->club();
+        $session = TrainingSession::create(['branch_id' => $foot->id, 'category_id' => $senior->id, 'date' => '2026-03-02', 'start_time' => '18:00', 'end_time' => '19:00', 'kind' => 'preseason', 'state' => 'held']);
+        $player = Player::create(['firstname' => 'A', 'membership_id' => '202000002', 'join_year' => 2020]);
+        DB::table('attendances')->insert(['training_session_id' => $session->id, 'player_id' => $player->id, 'category_id' => $swimSenior->id, 'status' => 'present']);
+
+        $this->artisan('registrations:verify')->expectsOutputToContain('category of another branch')->assertExitCode(1);
     }
 }

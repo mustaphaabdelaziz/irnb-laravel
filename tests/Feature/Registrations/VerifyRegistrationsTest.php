@@ -3,8 +3,11 @@
 namespace Tests\Feature\Registrations;
 
 use App\Models\Branch;
+use App\Models\Category;
 use App\Models\DocumentType;
 use App\Models\Player;
+use App\Models\Subscription;
+use App\Models\TrainingSession;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -168,5 +171,95 @@ class VerifyRegistrationsTest extends TestCase
         $this->artisan('registrations:verify')
             ->expectsOutputToContain('document held twice')
             ->assertExitCode(1);
+    }
+
+    private function club(): array
+    {
+        $foot = Branch::firstOrCreate(['name' => 'Football'], ['code' => 'FB']);
+        $swim = Branch::firstOrCreate(['name' => 'Swimming'], ['code' => 'SW']);
+
+        return [$foot, $swim, Category::create(['name' => 'Senior', 'branch_id' => $foot->id]), Category::create(['name' => 'Senior', 'branch_id' => $swim->id])];
+    }
+
+    #[Test]
+    public function an_unowned_category_fails_once_a_branch_exists(): void
+    {
+        $this->club();
+        Category::create(['name' => 'Orphan']);
+
+        $this->artisan('registrations:verify')->expectsOutputToContain('category with no branch')->assertExitCode(1);
+    }
+
+    #[Test]
+    public function an_unowned_category_is_fine_with_no_branches(): void
+    {
+        Category::create(['name' => 'Senior']);
+
+        $this->artisan('registrations:verify')->assertExitCode(0);
+    }
+
+    #[Test]
+    public function a_registrations_category_of_another_branch_fails(): void
+    {
+        [$foot, , , $swimSenior] = $this->club();
+        $player = Player::create(['firstname' => 'A', 'membership_id' => '202000001', 'join_year' => 2020]);
+        app(\App\Services\Player\RegistrationService::class)->register($player, ['branch_id' => $foot->id, 'category_id' => $swimSenior->id]);
+
+        $this->artisan('registrations:verify')->expectsOutputToContain('category of another branch')->assertExitCode(1);
+    }
+
+    #[Test]
+    public function a_session_pivot_category_of_another_branch_fails(): void
+    {
+        [$foot, , $senior, $swimSenior] = $this->club();
+        $session = TrainingSession::create(['branch_id' => $foot->id, 'category_id' => $senior->id, 'date' => '2026-03-02', 'start_time' => '18:00', 'end_time' => '19:00', 'kind' => 'preseason', 'state' => 'held']);
+        $session->categories()->syncWithoutDetaching([$senior->id, $swimSenior->id]);
+
+        $this->artisan('registrations:verify')->expectsOutputToContain('category of another branch')->assertExitCode(1);
+    }
+
+    #[Test]
+    public function same_named_categories_priced_differently_fail(): void
+    {
+        [, , $senior, $swimSenior] = $this->club();
+        $subscription = Subscription::create(['name' => 'S', 'year' => 2026, 'amount_student' => 1, 'amount_worker' => 1]);
+        $subscription->categories()->attach($senior->id, ['amount_student' => 100, 'amount_worker' => 200]);
+        $subscription->categories()->attach($swimSenior->id, ['amount_student' => 150, 'amount_worker' => 200]);
+
+        $this->artisan('registrations:verify')->expectsOutputToContain('same-named categories priced differently')->assertExitCode(1);
+    }
+
+    #[Test]
+    public function a_copy_with_no_price_row_fails_where_the_subscription_applies(): void
+    {
+        [$foot, $swim, $senior] = $this->club();
+        $subscription = Subscription::create(['name' => 'S', 'year' => 2026, 'amount_student' => 1, 'amount_worker' => 1]);
+        $subscription->categories()->attach($senior->id, ['amount_student' => 100, 'amount_worker' => 200]);
+        $subscription->branches()->attach([$foot->id, $swim->id]);
+
+        $this->artisan('registrations:verify')->expectsOutputToContain('same-named category with no price row')->assertExitCode(1);
+    }
+
+    #[Test]
+    public function a_copy_with_no_price_row_is_fine_where_the_subscription_does_not_apply(): void
+    {
+        [$foot, , $senior] = $this->club();
+        $subscription = Subscription::create(['name' => 'S', 'year' => 2026, 'amount_student' => 1, 'amount_worker' => 1]);
+        $subscription->categories()->attach($senior->id, ['amount_student' => 100, 'amount_worker' => 200]);
+        $subscription->branches()->attach([$foot->id]);
+
+        $this->artisan('registrations:verify')->assertExitCode(0);
+    }
+
+    #[Test]
+    public function matching_prices_pass(): void
+    {
+        [$foot, $swim, $senior, $swimSenior] = $this->club();
+        $subscription = Subscription::create(['name' => 'S', 'year' => 2026, 'amount_student' => 1, 'amount_worker' => 1]);
+        $subscription->categories()->attach($senior->id, ['amount_student' => 100, 'amount_worker' => 200]);
+        $subscription->categories()->attach($swimSenior->id, ['amount_student' => 100, 'amount_worker' => 200]);
+        $subscription->branches()->attach([$foot->id, $swim->id]);
+
+        $this->artisan('registrations:verify')->assertExitCode(0);
     }
 }

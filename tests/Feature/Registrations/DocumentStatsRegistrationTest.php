@@ -85,7 +85,10 @@ class DocumentStatsRegistrationTest extends TestCase
         $summary = $this->stats()->summary(Player::query());
         $this->assertSame(1, $summary['required']);
 
-        $this->assertSame(0, $this->stats()->summary(Player::query(), null, $this->foot->id)['required']);
+        $none = $this->stats()->summary(Player::query(), null, $this->foot->id);
+        $this->assertSame(0, $none['required']);
+        $this->assertSame(0, $none['players_total']);
+        $this->assertSame(0, $none['players_complete']);
     }
 
     #[Test]
@@ -96,6 +99,7 @@ class DocumentStatsRegistrationTest extends TestCase
         $result = $this->stats()->breakdown(Player::query());
 
         $this->assertSame(0, $result['summary']['required']);
+        $this->assertSame(0, $this->stats()->summary(Player::query(), null, $this->foot->id)['players_total']);
         $this->assertSame([], $result['by_category']);
     }
 
@@ -196,5 +200,56 @@ class DocumentStatsRegistrationTest extends TestCase
         $list(['branch_id' => [$this->swim->id], 'documents' => ['missing']])->assertInertia(fn (Assert $page) => $page->has('players.data', 1)->etc());
         $list(['documents' => ['missing']])->assertInertia(fn (Assert $page) => $page->has('players.data', 1)->etc());
         $list(['branch_id' => [$this->foot->id], 'documents' => ['missing-'.$this->medical->id]])->assertInertia(fn (Assert $page) => $page->has('players.data', 0)->etc());
+    }
+
+    #[Test]
+    public function a_branchs_figures_count_only_people_active_in_it(): void
+    {
+        $this->leftFootball();
+        $this->leftBoth('Gone');
+        $this->noRegistration();
+
+        $foot = $this->stats()->summary(Player::query(), null, $this->foot->id);
+        $this->assertSame(1, $foot['players_total']);
+        $this->assertSame(1, $foot['required']);
+
+        $swim = $this->stats()->summary(Player::query(), null, $this->swim->id);
+        $this->assertSame(2, $swim['players_total']);
+        $this->assertSame(0, $swim['players_complete']);
+    }
+
+    #[Test]
+    public function the_dashboard_branch_figures_leave_out_someone_who_left_that_branch(): void
+    {
+        $this->leftFootball();
+        $admin = User::factory()->admin()->create();
+
+        $documents = $this->actingAs($admin)
+            ->get(route('dashboard', ['branch' => $this->foot->id]), [
+                'X-Inertia' => 'true',
+                'X-Inertia-Version' => (string) app(HandleInertiaRequests::class)->version(request()),
+                'X-Inertia-Partial-Component' => 'Dashboard',
+                'X-Inertia-Partial-Data' => 'members',
+            ])
+            ->assertOk()->json('props.members.documents');
+
+        $this->assertSame(0, $documents['summary']['players_total']);
+        $this->assertSame(0, $documents['summary']['players_complete']);
+        $this->assertSame([], $documents['by_category']);
+    }
+
+    #[Test]
+    public function the_team_page_leaves_out_a_guest_from_another_sport(): void
+    {
+        $member = $this->bothActive();
+        $guest = $this->bothActive('Guest');
+        app(\App\Services\Player\RegistrationService::class)->leave($guest, [$this->swim->id], $this->leaveDate);
+        $team = $this->team($this->u15, ['branch_id' => $this->swim->id]);
+        $this->onRoster($team, \App\Support\Season::current()->startYear, [$member, $guest]);
+
+        $this->actingAs($this->admin())->get(route('teams.show', $team))->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('documentStats.players_total', 1)
+                ->where('documentStats.players_complete', 0));
     }
 }

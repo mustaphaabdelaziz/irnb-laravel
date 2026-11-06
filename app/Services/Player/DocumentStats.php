@@ -110,6 +110,14 @@ final class DocumentStats
         $query = $players instanceof EloquentBuilder ? (clone $players)->toBase() : clone $players;
         $query->reorder()->select([]);
 
+        // With a branch, the people counted are those with an active registration
+        // there, or none at all: the same population as perRegistration.
+        if ($branchId !== null) {
+            $query->where(fn ($who) => $who
+                ->whereExists(fn ($reg) => $this->activeRegistration($reg->selectRaw('1')->from('branch_player as reg')->whereColumn('reg.player_id', 'players.id')->where('reg.branch_id', $branchId)))
+                ->orWhereNotExists(fn ($any) => $any->selectRaw('1')->from('branch_player as any_reg')->whereColumn('any_reg.player_id', 'players.id')));
+        }
+
         return $this->withTerms($query, $types, $today, $branchId, joinedRow: false);
     }
 
@@ -126,9 +134,7 @@ final class DocumentStats
 
         $query = DB::table('players')
             ->leftJoin('branch_player as reg', function ($join) use ($branchId) {
-                $join->on('reg.player_id', '=', 'players.id')
-                    ->where(fn ($active) => $active->whereNull('reg.status_id')
-                        ->orWhereNotIn('reg.status_id', PlayerStatus::query()->select('id')->where('code', 'left')));
+                $this->activeRegistration($join->on('reg.player_id', '=', 'players.id'));
                 if ($branchId !== null) {
                     $join->where('reg.branch_id', $branchId);
                 }
@@ -139,6 +145,13 @@ final class DocumentStats
             ->selectRaw('CASE WHEN reg.id IS NULL THEN players.category_id ELSE reg.category_id END as category_id');
 
         return $this->withTerms($query, $types, $today, $branchId, joinedRow: true);
+    }
+
+    /** Restricts a registration aliased reg to one whose status is not left. */
+    private function activeRegistration($query)
+    {
+        return $query->where(fn ($active) => $active->whereNull('reg.status_id')
+            ->orWhereNotIn('reg.status_id', PlayerStatus::query()->select('id')->where('code', 'left')));
     }
 
     private function withTerms(QueryBuilder $query, Collection $types, CarbonImmutable $today, ?int $branchId, bool $joinedRow): QueryBuilder

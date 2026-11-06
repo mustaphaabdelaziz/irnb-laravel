@@ -6,6 +6,7 @@ use App\Models\Concerns\SerializesClubDates;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
@@ -54,6 +55,14 @@ class BranchRegistration extends Pivot
                 'left_at' => $player->left_at?->toDateString(),
                 'legacy_join_year' => $player->join_year,
             ]);
+        });
+
+        // A player's first registration takes over the documents held before it.
+        static::created(function (BranchRegistration $registration) {
+            DB::table('player_documents')
+                ->where('player_id', $registration->player_id)
+                ->whereNull('branch_registration_id')
+                ->update(['branch_registration_id' => $registration->id]);
         });
 
         // Same rule as Player: only a "left" registration has a leave date.
@@ -169,6 +178,11 @@ class BranchRegistration extends Pivot
     public function status(): BelongsTo
     {
         return $this->belongsTo(PlayerStatus::class, 'status_id');
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(PlayerDocument::class, 'branch_registration_id');
     }
 
     public function sportingStatus(): BelongsTo

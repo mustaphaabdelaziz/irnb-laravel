@@ -20,6 +20,9 @@ class RegistrationMigrationTest extends TestCase
 
     private function oldPivot(): void
     {
+        // The legacy state predates the documents foreign key on branch_player(id).
+        (require database_path('migrations/2026_11_05_500001_add_registration_to_player_documents.php'))->down();
+
         Schema::drop('branch_player');
         Schema::create('branch_player', function (Blueprint $table) {
             $table->foreignId('branch_id')->constrained('branches')->cascadeOnDelete();

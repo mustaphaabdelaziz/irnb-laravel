@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Branch;
 use App\Models\DocumentType;
 use App\Models\Player;
 use App\Models\PlayerDocument;
@@ -43,9 +44,10 @@ class PlayerDocumentModelTest extends TestCase
     }
 
     #[Test]
-    public function a_player_has_at_most_one_row_per_type(): void
+    public function a_registration_has_at_most_one_row_per_type(): void
     {
         $player = $this->player();
+        $player->branches()->attach(Branch::create(['name' => 'Football'])->id);
         $this->document($player);
 
         $this->expectException(QueryException::class);

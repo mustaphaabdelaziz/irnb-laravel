@@ -139,7 +139,7 @@ class TeamController extends Controller
             'canEditTeam' => ! TeamAccess::isScoped($request->user()) && $request->user()->hasPermission('teams', 'edit'),
             // Document completion of this season's roster; needs documents/view.
             'documentStats' => fn (): ?array => $request->user()->hasPermission('documents', 'view')
-                ? app(DocumentStats::class)->summary(Player::query()->whereIn('players.id', $roster->pluck('player_id')->all()))
+                ? app(DocumentStats::class)->summary(Player::query()->whereIn('players.id', $roster->pluck('player_id')->all()), null, $team->branch_id)
                 : null,
         ]);
     }

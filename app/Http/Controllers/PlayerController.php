@@ -64,7 +64,8 @@ class PlayerController extends Controller
     {
         // Missing documents per row, computed in SQL — the twin of the player
         // page's checklist (DocumentChecklist; the two are tested to agree).
-        [$missingSql, $missingBindings] = DocumentChecklist::missingCountSql();
+        // One branch selected: that registration's. Otherwise any active one's.
+        [$missingSql, $missingBindings] = DocumentChecklist::missingCountSql(null, null, $this->selectedBranch($request));
 
         $query = Player::query()
             ->select('players.*')
@@ -188,7 +189,7 @@ class PlayerController extends Controller
             // pages, the rows' own filters). Needs documents/view, like the
             // player checklist; a closure so other partial reloads skip it.
             'documentStats' => fn (): ?array => $request->user()?->hasPermission('documents', 'view')
-                ? app(DocumentStats::class)->summary($this->statsQuery($request))
+                ? app(DocumentStats::class)->summary($this->statsQuery($request), null, $this->selectedBranch($request))
                 : null,
             // Multi-select filters come back as lists, whatever shape was sent.
             'filters' => ListFilter::echo($request, $this->filterSpecs(), ['search', 'archived', 'per_page']),
@@ -885,9 +886,10 @@ class PlayerController extends Controller
         }
 
         if ($documents = $pick('documents')) {
-            $query->where(function ($q) use ($documents) {
+            $branchId = $this->selectedBranch($request);
+            $query->where(function ($q) use ($documents, $branchId) {
                 foreach ($documents as $filter) {
-                    $q->orWhere(fn ($one) => $this->applyDocumentsFilter($one, $filter));
+                    $q->orWhere(fn ($one) => $this->applyDocumentsFilter($one, $filter, $branchId));
                 }
             });
         }
@@ -999,26 +1001,32 @@ class PlayerController extends Controller
      * checklist, so the list, its charts and the export agree with the
      * player page. An unknown value filters nothing.
      */
-    private function applyDocumentsFilter($query, string $filter): void
+    private function applyDocumentsFilter($query, string $filter, ?int $branchId): void
     {
         if ($filter === 'missing') {
-            [$sql, $bindings] = DocumentChecklist::missingCountSql();
+            [$sql, $bindings] = DocumentChecklist::missingCountSql(null, null, $branchId);
             $query->whereRaw("{$sql} > 0", $bindings);
 
             return;
         }
 
         if ($filter === 'expiring') {
-            [$sql, $bindings] = DocumentChecklist::expiringSoonSql();
+            [$sql, $bindings] = DocumentChecklist::expiringSoonSql(null, $branchId);
             $query->whereRaw($sql, $bindings);
 
             return;
         }
 
         if (preg_match('/^missing-(\d+)$/', $filter, $match)) {
-            [$sql, $bindings] = DocumentChecklist::missingCountSql(null, (int) $match[1]);
+            [$sql, $bindings] = DocumentChecklist::missingCountSql(null, (int) $match[1], $branchId);
             $query->whereRaw("{$sql} > 0", $bindings);
         }
+    }
+
+    /** The branch the list's filter means: exactly one selected, otherwise none. */
+    private function selectedBranch(Request $request): ?int
+    {
+        return RegistrationDisplay::singleBranch(ListFilter::get($request, 'branch_id', ListFilter::IDS));
     }
 
     /**

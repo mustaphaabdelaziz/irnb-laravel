@@ -71,7 +71,7 @@ class MemberStats
      */
     public function documents(DashboardFilters $filters): ?array
     {
-        return $this->documentStats->breakdown($this->active($filters)->notLeft());
+        return $this->documentStats->breakdown($this->active($filters)->notLeft(), null, $filters->branchId);
     }
 
     private function summary(DashboardFilters $filters): array

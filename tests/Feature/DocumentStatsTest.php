@@ -274,7 +274,7 @@ class DocumentStatsTest extends TestCase
     }
 
     #[Test]
-    public function the_breakdown_groups_by_category_in_one_query_and_adds_up_to_the_summary(): void
+    public function the_breakdown_groups_by_category_and_a_club_of_one_category_each_adds_up_to_the_summary(): void
     {
         $seniors = Category::create(['name' => 'Seniors']);
         $u13 = Category::create(['name' => 'U13']);
@@ -290,7 +290,7 @@ class DocumentStatsTest extends TestCase
             $queries++;
         });
         $result = $this->stats()->breakdown(Player::query());
-        $this->assertSame(2, $queries, 'one read of the types, one grouped query');
+        $this->assertSame(4, $queries, 'the types and the grouped query, then the types and the summary');
 
         // Worst first: two 0 % rows (no category sorts before "U13" by name), then Seniors.
         $this->assertSame([null, 'U13', 'Seniors'], array_column($result['by_category'], 'name'));
@@ -305,7 +305,7 @@ class DocumentStatsTest extends TestCase
         $this->assertNull($rows['none']['category_id']);
         $this->assertSame(3, $rows['none']['required']);
 
-        // Categories partition the players, so their rows add up to the summary.
+        // Nobody here holds two registrations, so the lines add up to the summary.
         $this->assertSame(13, $result['summary']['required']);
         $this->assertSame(4, $result['summary']['players_total']);
         $this->assertSame($result['summary'], $this->summary());

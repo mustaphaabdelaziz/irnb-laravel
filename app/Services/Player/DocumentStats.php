@@ -3,6 +3,7 @@
 namespace App\Services\Player;
 
 use App\Models\DocumentType;
+use App\Models\PlayerStatus;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
@@ -17,14 +18,18 @@ use Illuminate\Support\Facades\DB;
  *
  * The caller passes an already-filtered players builder; its select list and
  * ordering are replaced and its filters kept. An inner derived table gives one
- * 1/0 column per active required type and measure (r_ = required,
- * e_ = expiring, m_ = missing — DocumentChecklist's SQL twins), and the outer
+ * count column per active required type and measure (r_ = required,
+ * e_ = expiring, m_ = missing: DocumentChecklist's SQL terms), and the outer
  * query sums them. No per-player PHP loop.
+ *
+ * Each active registration owes its own documents; a person counts once in the
+ * summary. With a branch given, only that branch's registration owes. A left
+ * registration owes nothing.
  */
 final class DocumentStats
 {
     /** @return array<string, mixed>|null null when no active required type exists */
-    public function summary(EloquentBuilder|QueryBuilder $players, ?CarbonInterface $today = null): ?array
+    public function summary(EloquentBuilder|QueryBuilder $players, ?CarbonInterface $today = null, ?int $branchId = null): ?array
     {
         $types = $this->types();
 
@@ -33,7 +38,7 @@ final class DocumentStats
         }
 
         $row = DB::query()
-            ->fromSub($this->perPlayer($players, $types, $this->today($today), withCategory: false), 'per_player')
+            ->fromSub($this->perPlayer($players, $types, $this->today($today), $branchId), 'per_player')
             ->selectRaw($this->aggregateSql($types))
             ->first();
 
@@ -41,12 +46,13 @@ final class DocumentStats
     }
 
     /**
-     * The summary and one row per category, from ONE grouped query: the
-     * categories partition the players, so the summary is their sum.
+     * The summary, plus one line per category with one row per active
+     * registration: a two-branch player sits in each of their categories, so
+     * these lines can add up to more people than the summary counts.
      *
      * @return array{summary: array<string, mixed>, by_category: list<array<string, mixed>>}|null
      */
-    public function breakdown(EloquentBuilder|QueryBuilder $players, ?CarbonInterface $today = null): ?array
+    public function breakdown(EloquentBuilder|QueryBuilder $players, ?CarbonInterface $today = null, ?int $branchId = null): ?array
     {
         $types = $this->types();
 
@@ -60,11 +66,11 @@ final class DocumentStats
         $localeColumn = 'categories.name_'.$locale;
 
         $rows = DB::query()
-            ->fromSub($this->perPlayer($players, $types, $this->today($today), withCategory: true), 'per_player')
-            ->leftJoin('categories', 'categories.id', '=', 'per_player.category_id')
-            ->groupBy('per_player.category_id', 'categories.name', $localeColumn)
+            ->fromSub($this->perRegistration($players, $types, $this->today($today), $branchId), 'per_row')
+            ->leftJoin('categories', 'categories.id', '=', 'per_row.category_id')
+            ->groupBy('per_row.category_id', 'categories.name', $localeColumn)
             ->selectRaw(
-                "per_player.category_id, COALESCE(NULLIF({$localeColumn}, ''), categories.name) as category_name, "
+                "per_row.category_id, COALESCE(NULLIF({$localeColumn}, ''), categories.name) as category_name, "
                 .$this->aggregateSql($types)
             )
             ->get();
@@ -78,7 +84,7 @@ final class DocumentStats
         ])->all();
 
         return [
-            'summary' => $this->summaryFrom($rows->all(), $types),
+            'summary' => $this->summary($players, $today, $branchId),
             'by_category' => self::worstFirst($byCategory),
         ];
     }
@@ -98,17 +104,50 @@ final class DocumentStats
         return CarbonImmutable::parse($today ?? CarbonImmutable::today())->startOfDay();
     }
 
-    /** One row per player: r_{id}, e_{id}, m_{id} for every type (and category_id when grouping). */
-    private function perPlayer(EloquentBuilder|QueryBuilder $players, Collection $types, CarbonImmutable $today, bool $withCategory): QueryBuilder
+    /** One row per player: r_{id}, e_{id}, m_{id} for every type. */
+    private function perPlayer(EloquentBuilder|QueryBuilder $players, Collection $types, CarbonImmutable $today, ?int $branchId): QueryBuilder
     {
         $query = $players instanceof EloquentBuilder ? (clone $players)->toBase() : clone $players;
-        $query->reorder()->select($withCategory ? ['players.category_id'] : []);
+        $query->reorder()->select([]);
 
+        return $this->withTerms($query, $types, $today, $branchId, joinedRow: false);
+    }
+
+    /**
+     * One row per active registration, or per player with no registration at all:
+     * category_id, then the same columns. Players come through a subquery, so their
+     * filters' bare column names can't collide with the joined registration's.
+     * A player left everywhere, or absent from the branch, has no row.
+     */
+    private function perRegistration(EloquentBuilder|QueryBuilder $players, Collection $types, CarbonImmutable $today, ?int $branchId): QueryBuilder
+    {
+        $population = ($players instanceof EloquentBuilder ? (clone $players)->toBase() : clone $players)
+            ->reorder()->select('players.id');
+
+        $query = DB::table('players')
+            ->leftJoin('branch_player as reg', function ($join) use ($branchId) {
+                $join->on('reg.player_id', '=', 'players.id')
+                    ->where(fn ($active) => $active->whereNull('reg.status_id')
+                        ->orWhereNotIn('reg.status_id', PlayerStatus::query()->select('id')->where('code', 'left')));
+                if ($branchId !== null) {
+                    $join->where('reg.branch_id', $branchId);
+                }
+            })
+            ->whereIn('players.id', $population)
+            ->where(fn ($row) => $row->whereNotNull('reg.id')
+                ->orWhereNotExists(fn ($any) => $any->selectRaw('1')->from('branch_player as any_reg')->whereColumn('any_reg.player_id', 'players.id')))
+            ->selectRaw('CASE WHEN reg.id IS NULL THEN players.category_id ELSE reg.category_id END as category_id');
+
+        return $this->withTerms($query, $types, $today, $branchId, joinedRow: true);
+    }
+
+    private function withTerms(QueryBuilder $query, Collection $types, CarbonImmutable $today, ?int $branchId, bool $joinedRow): QueryBuilder
+    {
         foreach ($types as $type) {
             $terms = [
-                'r' => DocumentChecklist::requiredTypeSql($type, $today),
-                'e' => DocumentChecklist::expiringTypeSql($type, $today),
-                'm' => DocumentChecklist::missingTypeSql($type, $today),
+                'r' => DocumentChecklist::requiredTypeSql($type, $today, $branchId, $joinedRow),
+                'e' => DocumentChecklist::expiringTypeSql($type, $today, $branchId, $joinedRow),
+                'm' => DocumentChecklist::missingRowsSql($type, $today, $branchId, $joinedRow),
             ];
 
             foreach ($terms as $prefix => [$sql, $bindings]) {
@@ -119,7 +158,7 @@ final class DocumentStats
         return $query;
     }
 
-    /** Outer select: player counts and one SUM per inner column. Type ids are integers from the database. */
+    /** Outer select: row counts and one SUM per inner column. Type ids are integers from the database. */
     private function aggregateSql(Collection $types): string
     {
         $missingTotal = $types->map(fn (DocumentType $type) => "m_{$type->id}")->implode(' + ');
@@ -139,7 +178,7 @@ final class DocumentStats
     }
 
     /**
-     * @param  iterable<object>  $rows  aggregate rows (one, or one per category)
+     * @param  iterable<object>  $rows  aggregate rows (the one row)
      * @return array<string, mixed>
      */
     private function summaryFrom(iterable $rows, Collection $types): array

@@ -1,5 +1,6 @@
 import { computed } from 'vue';
 import { usePage } from '@inertiajs/vue3';
+import { PRODUCT_NAME } from '@/lib/productBrand';
 
 /**
  * Mirrors App\Support\ClubIdentity::DEFAULT_SHORT_NAME.
@@ -7,7 +8,7 @@ import { usePage } from '@inertiajs/vue3';
  * The server always shares a resolved name, so this only shows on a page that
  * renders without shared props. Keep the two in step.
  */
-export const DEFAULT_CLUB_SHORT_NAME = 'Sports Club';
+export const DEFAULT_CLUB_SHORT_NAME = PRODUCT_NAME;
 
 /**
  * The club's name as the club set it in Settings -> General.

@@ -38,11 +38,11 @@ class ClubIdentityTest extends TestCase
     }
 
     #[Test]
-    public function a_missing_or_blank_short_name_falls_back_to_the_neutral_default(): void
+    public function a_missing_or_blank_short_name_falls_back_to_the_product_name(): void
     {
-        $this->assertSame('Sports Club', ClubIdentity::shortName(null));
-        $this->assertSame('Sports Club', ClubIdentity::shortName(new WebsiteConfig(['club_short_name' => null])));
-        $this->assertSame('Sports Club', ClubIdentity::shortName(new WebsiteConfig(['club_short_name' => '   '])));
+        $this->assertSame('ASIREM', ClubIdentity::shortName(null));
+        $this->assertSame('ASIREM', ClubIdentity::shortName(new WebsiteConfig(['club_short_name' => null])));
+        $this->assertSame('ASIREM', ClubIdentity::shortName(new WebsiteConfig(['club_short_name' => '   '])));
     }
 
     #[Test]
@@ -83,9 +83,9 @@ class ClubIdentityTest extends TestCase
             ->get(route('dashboard'))
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('appShortName', 'Sports Club')
+                ->where('appShortName', 'ASIREM')
                 ->where('appName.ar', ClubIdentity::DEFAULT_NAME['ar'])
-                ->where('appName.en', 'Sports Club'));
+                ->where('appName.en', 'ASIREM'));
     }
 
     #[Test]
@@ -130,8 +130,8 @@ class ClubIdentityTest extends TestCase
             ->assertRedirect()
             ->assertSessionHasNoErrors();
 
-        // An emptied name means "no short name", so the neutral default shows.
-        $this->assertSame('Sports Club', ClubIdentity::shortName(WebsiteConfig::singleton()));
+        // An emptied name means "no short name", so the product name shows.
+        $this->assertSame('ASIREM', ClubIdentity::shortName(WebsiteConfig::singleton()));
     }
 
     #[Test]

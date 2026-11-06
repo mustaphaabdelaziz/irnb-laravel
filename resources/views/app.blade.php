@@ -18,18 +18,17 @@
         @php
             $websiteConfig = \App\Models\WebsiteConfig::singleton();
             // Not config('app.name'): that is a technical identifier — it names
-            // the desktop app's data folder — and reads "SPORT_CLUB" here.
+            // the desktop app's data folder — not the club.
             $appTitle = \App\Support\ClubIdentity::shortName($websiteConfig);
             $branding = $websiteConfig->branding ?? [];
-            $logoUrl = $branding['logo'] ?? null;
+            // A club that never uploaded a logo shows the product's icon.
+            $iconUrl = ($branding['logo'] ?? null) ?: \App\Support\ProductBrand::FAVICON;
             $primaryVars = \App\Support\Theme::cssVars($branding);
             $themeColor = \App\Support\Theme::themeColor($branding);
         @endphp
         <title inertia>{{ $appTitle }}</title>
-        @if($logoUrl)
-            <link rel="icon" type="image/png" href="{{ $logoUrl }}">
-            <link rel="apple-touch-icon" href="{{ $logoUrl }}">
-        @endif
+        <link rel="icon" type="image/png" href="{{ $iconUrl }}">
+        <link rel="apple-touch-icon" href="{{ $iconUrl }}">
 
         <!-- Fonts (Inter, Cairo, Noto Sans Arabic) are bundled by Vite from app.js — no CDN, works offline. -->
         <meta name="theme-color" content="{{ $themeColor }}">

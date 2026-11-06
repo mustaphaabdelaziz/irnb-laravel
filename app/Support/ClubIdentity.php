@@ -8,27 +8,27 @@ use App\Models\WebsiteConfig;
  * The club's name, and what to show before a club has set one.
  *
  * A club sets its name in Settings -> General. Until it does, every surface
- * shows these neutral defaults — never another club's name, because the app is
- * sold to more than one club. The defaults live here and only here;
+ * shows the product's own name, ASIREM — never another club's name, because
+ * the app is sold to more than one club. The defaults live here and only here;
  * resources/js/Composables/useClubIdentity.js mirrors the short name for the
  * rare page that renders without shared props.
  */
 final class ClubIdentity
 {
-    public const DEFAULT_SHORT_NAME = 'Sports Club';
+    public const DEFAULT_SHORT_NAME = ProductBrand::NAME;
 
     /** @var array{ar: string, fr: string, en: string} */
     public const DEFAULT_NAME = [
-        'ar' => 'النادي الرياضي',
-        'fr' => 'Club sportif',
-        'en' => 'Sports Club',
+        'ar' => 'أسيرم',
+        'fr' => ProductBrand::NAME,
+        'en' => ProductBrand::NAME,
     ];
 
     /** @var array{ar: string, fr: string, en: string} */
     public const DEFAULT_TAGLINE = [
-        'ar' => 'التميّز في الرياضة',
-        'fr' => 'L’excellence sportive',
-        'en' => 'Excellence in sports',
+        'ar' => 'منصة إدارة الرياضة',
+        'fr' => 'Plateforme de gestion sportive',
+        'en' => 'Sports Management Platform',
     ];
 
     /** The saved short name, or the neutral default when none is set. */

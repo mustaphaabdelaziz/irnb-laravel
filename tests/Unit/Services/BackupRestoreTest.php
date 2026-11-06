@@ -1189,6 +1189,24 @@ class BackupRestoreTest extends TestCase
     }
 
     #[Test]
+    public function a_backup_taken_before_the_asirem_rename_still_restores(): void
+    {
+        // The worst case of the rename: the packaged runtime cannot read NATIVEPHP_APP_ID, so
+        // the old name is all the manifest has to match on, and it no longer equals ours.
+        config(['app.name' => 'SPORT_CLUB', 'nativephp.app_id' => null]);
+        $backup = $this->service()->create();
+
+        $pdo = new \PDO('sqlite:'.$this->dbPath);
+        $pdo->exec("INSERT INTO players (name) VALUES ('Omar')");
+        $pdo = null;
+
+        config(['app.name' => 'ASIREM']);
+
+        $this->assertNull($this->service()->restore($backup));
+        $this->assertSame(['Ali'], $this->players());
+    }
+
+    #[Test]
     public function it_rejects_a_backup_whose_database_is_corrupt_without_touching_the_live_data(): void
     {
         $corrupt = $this->destination.DIRECTORY_SEPARATOR.BackupService::PREFIX.'2026-01-02_000000.zip';

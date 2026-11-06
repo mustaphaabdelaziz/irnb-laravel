@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Support\ProductBrand;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -47,6 +48,12 @@ class NativeAppServiceProvider implements ProvidesPhpIni
 
         $marker = dirname($dbPath).DIRECTORY_SEPARATOR.'.seeded';
 
+        if (! file_exists($marker) && $this->adoptLegacyData($dbPath)) {
+            // 0. The club ran this app before it was renamed to ASIREM: its
+            //    data now lives here, so the seed must not replace it.
+            @file_put_contents($marker, (string) time());
+        }
+
         if (! file_exists($marker)) {
             // 1. Seed the database. The seed ships inside the app bundle
             //    (base_path), not the user's redirected storage_path.
@@ -91,6 +98,48 @@ class NativeAppServiceProvider implements ProvidesPhpIni
         } catch (\Throwable $e) {
             report($e);
         }
+    }
+
+    /**
+     * Copy the data of the app's pre-ASIREM name into this, its new data folder.
+     *
+     * Electron names the data folder after APP_NAME (%APPDATA%\sport-club
+     * before, %APPDATA%\asirem now), so the renamed app starts on an empty
+     * folder. Without this, an update would open on the seed instead of the
+     * club's own records. The old folder is left as it was: it is the only
+     * copy if anything here goes wrong.
+     */
+    protected function adoptLegacyData(string $dbPath): bool
+    {
+        $userData = dirname($dbPath, 2);
+
+        foreach (ProductBrand::LEGACY_DATA_DIRS as $name) {
+            $legacy = dirname($userData).DIRECTORY_SEPARATOR.$name;
+            $legacyDb = $legacy.DIRECTORY_SEPARATOR.'database'.DIRECTORY_SEPARATOR.basename($dbPath);
+
+            if (strcasecmp($legacy, $userData) === 0 || ! is_file($legacyDb)) {
+                continue;
+            }
+
+            // Release the SQLite handle so the file can be replaced on Windows.
+            DB::disconnect();
+
+            // The database with its -wal and -shm, or the newest writes are lost.
+            foreach (['', '-wal', '-shm'] as $suffix) {
+                @unlink($dbPath.$suffix);
+
+                if (is_file($legacyDb.$suffix)) {
+                    @copy($legacyDb.$suffix, $dbPath.$suffix);
+                }
+            }
+
+            // Media, player documents, minutes, receipts.
+            $this->copyDirectory($legacy.DIRECTORY_SEPARATOR.'storage'.DIRECTORY_SEPARATOR.'app', storage_path('app'));
+
+            return true;
+        }
+
+        return false;
     }
 
     /**

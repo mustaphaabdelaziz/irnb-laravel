@@ -1,13 +1,19 @@
 <script setup>
 import { computed } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
+import { useI18n } from 'vue-i18n';
 import ThemeToggle from '@/Components/ThemeToggle.vue';
 import FlashMessages from '@/Components/FlashMessages.vue';
 import { useClubIdentity } from '@/Composables/useClubIdentity';
+import { PRODUCT_LOGO, PRODUCT_MARK, PRODUCT_NAME } from '@/lib/productBrand';
 
+const { t } = useI18n();
 const page = usePage();
 const appLogo = computed(() => page.props.branding?.logo ?? null);
 const { appName, appShortName } = useClubIdentity();
+// A club that set neither a logo nor a name gets the full ASIREM logo instead
+// of a letter tile over the product name; the footer would then repeat it.
+const productOnly = computed(() => !appLogo.value && appShortName.value === PRODUCT_NAME);
 </script>
 
 <template>
@@ -23,10 +29,20 @@ const { appName, appShortName } = useClubIdentity();
         </div>
 
         <div class="relative w-full max-w-md animate-fade-up">
-            <div class="mb-6 flex flex-col items-center gap-3 text-center">
-                <Link href="/" class="flex h-16 w-16 items-center justify-center rounded-2xl" :class="appLogo ? '' : 'bg-white shadow-card ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800'">
+            <div v-if="productOnly" class="mb-6 flex justify-center">
+                <Link href="/">
+                    <h1 class="sr-only">{{ PRODUCT_NAME }}</h1>
+                    <img :src="PRODUCT_LOGO.light" :alt="PRODUCT_NAME" class="h-40 w-40 object-contain dark:hidden" />
+                    <img :src="PRODUCT_LOGO.dark" :alt="PRODUCT_NAME" class="hidden h-40 w-40 object-contain dark:block" />
+                </Link>
+            </div>
+            <div v-else class="mb-6 flex flex-col items-center gap-3 text-center">
+                <Link href="/" class="flex h-16 w-16 items-center justify-center rounded-2xl">
                     <img v-if="appLogo" :src="appLogo" :alt="appName" class="h-16 w-16 object-contain" />
-                    <span v-else class="text-2xl font-extrabold text-primary-600 dark:text-primary-300">{{ appShortName.charAt(0) }}</span>
+                    <template v-else>
+                        <img :src="PRODUCT_MARK.light" :alt="appName" class="h-16 w-16 object-contain dark:hidden" />
+                        <img :src="PRODUCT_MARK.dark" :alt="appName" class="hidden h-16 w-16 object-contain dark:block" />
+                    </template>
                 </Link>
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ appName }}</h1>
             </div>
@@ -34,6 +50,12 @@ const { appName, appShortName } = useClubIdentity();
             <div class="card p-6 shadow-soft sm:p-8">
                 <slot />
             </div>
+
+            <p v-if="!productOnly" class="mt-6 flex items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                <img :src="PRODUCT_MARK.light" alt="" class="h-5 w-5 object-contain dark:hidden" />
+                <img :src="PRODUCT_MARK.dark" alt="" class="hidden h-5 w-5 object-contain dark:block" />
+                <span><span class="font-bold text-slate-700 dark:text-slate-200">{{ PRODUCT_NAME }}</span> · {{ t('product_tagline') }}</span>
+            </p>
         </div>
     </div>
 </template>

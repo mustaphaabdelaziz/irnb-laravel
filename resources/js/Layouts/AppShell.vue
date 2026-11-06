@@ -22,6 +22,7 @@ import { useSidebarState } from '@/Composables/useSidebarState.js';
 import { isActive } from '@/lib/navigation';
 import { useCan } from '@/Composables/useCan.js';
 import { useClubIdentity } from '@/Composables/useClubIdentity';
+import { PRODUCT_MARK, PRODUCT_NAME } from '@/lib/productBrand';
 import FlashMessages from '@/Components/FlashMessages.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
@@ -153,9 +154,12 @@ function switchLocale(code) {
                 class="flex h-16 shrink-0 items-center border-b border-slate-200 dark:border-slate-800"
                 :class="compact ? 'justify-center px-0' : 'gap-3 px-5'"
             >
-                <div class="flex h-10 w-10 items-center justify-center rounded-xl" :class="appLogo ? '' : 'bg-primary-50 ring-1 ring-primary-200 dark:bg-primary-500/10 dark:ring-primary-500/25'">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
                     <img v-if="appLogo" :src="appLogo" :alt="appShortName" class="h-full w-full object-contain" />
-                    <span v-else class="text-lg font-extrabold text-primary-600 dark:text-primary-300">{{ appShortName.charAt(0) }}</span>
+                    <template v-else>
+                        <img :src="PRODUCT_MARK.light" :alt="appShortName" class="h-full w-full object-contain dark:hidden" />
+                        <img :src="PRODUCT_MARK.dark" :alt="appShortName" class="hidden h-full w-full object-contain dark:block" />
+                    </template>
                 </div>
                 <div v-if="!compact" class="min-w-0">
                     <p class="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{{ appShortName }}</p>
@@ -263,6 +267,12 @@ function switchLocale(code) {
                         />
                     </button>
                 </div>
+                <!-- The product under the club's own name. -->
+                <p class="flex items-center justify-center gap-1.5 text-[0.65rem] font-bold tracking-wider text-slate-400 dark:text-slate-500" :title="compact ? PRODUCT_NAME : null">
+                    <img :src="PRODUCT_MARK.light" alt="" class="h-4 w-4 object-contain dark:hidden" />
+                    <img :src="PRODUCT_MARK.dark" alt="" class="hidden h-4 w-4 object-contain dark:block" />
+                    <span v-if="!compact">{{ PRODUCT_NAME }}</span>
+                </p>
             </div>
         </aside>
 

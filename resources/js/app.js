@@ -16,11 +16,12 @@ import { DEFAULT_CLUB_SHORT_NAME } from './Composables/useClubIdentity';
 import AppShell from './Layouts/AppShell.vue';
 import { usesAppShell } from './lib/layouts';
 import { rememberedFilterOptions } from './lib/playerListFilters';
+import { pageTitle } from './lib/productBrand';
 
-// The tab title's suffix is the club's saved short name, kept current from
-// each page's shared props. It used to be VITE_APP_NAME, which is baked in at
-// build time and ignores Settings entirely — so every club sold a copy would
-// see the build's name in its browser tabs, not its own.
+// The tab title's suffix is the club's saved short name, then the product's,
+// kept current from each page's shared props. It used to be VITE_APP_NAME,
+// which is baked in at build time and ignores Settings entirely — so every
+// club sold a copy would see the build's name in its browser tabs, not its own.
 let clubShortName = DEFAULT_CLUB_SHORT_NAME;
 
 const rememberClubName = (pageProps) => {
@@ -45,7 +46,7 @@ createInertiaApp({
         // A bare visit to the player list brings its remembered filters along.
         visitOptions: (href, options) => rememberedFilterOptions(href, options, route('players.index')),
     },
-    title: (title) => (title ? `${title} - ${clubShortName}` : clubShortName),
+    title: (title) => pageTitle(title, clubShortName),
     resolve: async (name) => {
         const page = await resolvePageComponent(
             `./Pages/${name}.vue`,

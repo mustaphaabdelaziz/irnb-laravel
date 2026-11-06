@@ -2,6 +2,7 @@
 
 namespace App\Services\Backup;
 
+use App\Support\ProductBrand;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -220,9 +221,13 @@ class BackupService
         // matching is enough to accept, and only a backup that matches NEITHER — or one whose
         // manifest carries neither, and so identifies nothing at all — is refused. That still
         // turns away a genuinely foreign archive, which agrees with us on neither count.
+        //
+        // The app was renamed to ASIREM, so a name it shipped under before counts as ours too:
+        // otherwise every backup taken before the rename would be refused by the renamed app.
         $matches = is_array($manifest) && (
             $this->identityMatches($manifest['app_id'] ?? null, config('nativephp.app_id'))
             || $this->identityMatches($manifest['app'] ?? null, config('app.name'))
+            || in_array($manifest['app'] ?? null, ProductBrand::LEGACY_APP_NAMES, true)
         );
 
         if (! $matches) {

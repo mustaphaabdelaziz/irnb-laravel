@@ -7,22 +7,97 @@ use App\Models\Category;
 use App\Models\PlayerStatus;
 use App\Models\User;
 use App\Services\LiteraryReport\Sections\MembersSection;
+use App\Services\Player\RegistrationService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\CompetitionFixtures;
+use Tests\Support\RegistrationFixtures;
 use Tests\TestCase;
 
 class MembersSectionTest extends TestCase
 {
     use CompetitionFixtures;
     use RefreshDatabase;
+    use RegistrationFixtures;
 
     private int $playerSeq = 0;
 
     private function build(): array
     {
         return app(MembersSection::class)->build(CarbonImmutable::parse('2025-09-01'), CarbonImmutable::parse('2026-08-31'));
+    }
+
+    private function byBranch(array $data): array
+    {
+        return collect($data['rows'])->mapWithKeys(fn ($r) => [($r['branch'] ?? '-').'/'.$r['category'] => $r['total']])->all();
+    }
+
+    #[Test]
+    public function a_branch_row_shows_that_branchs_category(): void
+    {
+        $this->twoSportClub();
+        $this->bothActive();
+
+        $data = $this->build();
+
+        $this->assertSame(1, $data['total']);
+        $this->assertSame(['Football/Senior' => 1, 'Swimming/U15' => 1], $this->byBranch($data));
+        $this->assertTrue($data['multi_branch']);
+    }
+
+    #[Test]
+    public function a_branch_left_before_the_period_end_loses_its_row_only(): void
+    {
+        $this->twoSportClub();
+        $this->leftFootball();
+
+        $data = $this->build();
+
+        $this->assertSame(1, $data['total']);
+        $this->assertSame(['Swimming/U15' => 1], $this->byBranch($data));
+        $this->assertFalse($data['multi_branch']);
+    }
+
+    #[Test]
+    public function a_branch_left_after_the_period_end_keeps_its_row(): void
+    {
+        $this->twoSportClub();
+        $player = $this->bothActive();
+        app(RegistrationService::class)->leave($player, [$this->foot->id], '2026-10-01');
+
+        $this->assertSame(['Football/Senior' => 1, 'Swimming/U15' => 1], $this->byBranch($this->build()));
+    }
+
+    #[Test]
+    public function leaving_on_the_last_day_counts_as_gone(): void
+    {
+        $this->twoSportClub();
+        $player = $this->bothActive();
+        app(RegistrationService::class)->leave($player, [$this->foot->id], '2026-08-31');
+
+        $this->assertSame(['Swimming/U15' => 1], $this->byBranch($this->build()));
+    }
+
+    #[Test]
+    public function left_everywhere_is_not_a_member(): void
+    {
+        $this->twoSportClub();
+        $this->leftBoth();
+
+        $data = $this->build();
+
+        $this->assertSame(0, $data['total']);
+        $this->assertSame(1, $data['left']);
+    }
+
+    #[Test]
+    public function no_registration_stays_in_the_no_branch_row(): void
+    {
+        $this->twoSportClub();
+        $this->noRegistration();
+
+        $this->assertSame(['-/Senior' => 1], $this->byBranch($this->build()));
     }
 
     #[Test]

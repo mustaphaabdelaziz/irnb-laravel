@@ -37,12 +37,20 @@ class PlayerPrintController extends Controller
             ? Season::forStartYear((int) $validated['season'])
             : Season::current();
 
+        // Left members stay listed, as they always have here; the ID is the one
+        // this category's registration holds.
         $players = Player::query()
-            ->where('category_id', $category->id)
+            ->registeredWhere(categories: [$category->id])
             ->where('archived', false)
+            ->with('registrations')
             ->orderBy('lastname')
             ->orderBy('firstname')
-            ->get();
+            ->get()
+            ->each(function (Player $player) use ($category) {
+                $row = $player->registrations->firstWhere('category_id', $category->id);
+                // A registration with no ID of its own shows none; the player's own ID only when they have no registration.
+                $player->membership_id = $row ? $row->membership_id : $player->membership_id;
+            });
 
         // PDF stays the default (it is the printed sheet); xlsx/csv are extras.
         $format = $request->query('format');

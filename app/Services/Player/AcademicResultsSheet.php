@@ -24,17 +24,21 @@ final class AcademicResultsSheet
         $players = Player::query()
             ->where('is_student', true)
             ->where('archived', false)
-            ->when($categoryId, fn ($query) => $query->where('category_id', $categoryId))
+            ->when($categoryId, fn ($query) => $query->registeredWhere(categories: [$categoryId]))
             ->with([
                 'category',
                 'academicYears' => fn ($query) => $query->where('academic_year', $schoolYear)->with('records'),
             ])
             ->get();
 
+        // A chosen category is the section's heading, whichever registration holds it.
+        // Otherwise each student sits under their main category, once.
+        $chosen = $categoryId ? Category::find($categoryId) : null;
+
         return $players
-            ->groupBy(fn (Player $player) => $player->category_id ?? 0)
+            ->groupBy(fn (Player $player) => $categoryId ?? $player->category_id ?? 0)
             ->map(fn (Collection $group) => [
-                'category' => $group->first()->category,
+                'category' => $chosen ?? $group->first()->category,
                 'rows' => self::rank($group),
             ])
             // Categories by name, the order the players list uses; no category last.

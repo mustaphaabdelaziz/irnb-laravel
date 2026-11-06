@@ -3,6 +3,7 @@
 namespace App\Services\LiteraryReport\Sections;
 
 use App\Models\Branch;
+use App\Models\BranchRegistration;
 use App\Models\Category;
 use App\Models\Player;
 use App\Support\Season;
@@ -13,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * Membership at the end of the period (owner rule 2026-11-01): not archived,
  * joined by that year (or no join year), and not left by that day. A player
- * in several branches counts in each branch row, once in the totals. A player
+ * in several branches counts in each branch row, with that branch's category, once in the totals. A player
  * with an empty or unknown gender is counted with the boys (the DB default is 'Male').
  */
 final class MembersSection implements Section
@@ -29,11 +30,12 @@ final class MembersSection implements Section
                 ->orWhereDate('left_at', '>', $end));
 
         $active = (clone $activeQuery)->get(['id', 'category_id', 'gender']);
-        $links = DB::table('branch_player')
+        // The registrations still active at the end of that day, each with its own category.
+        $links = BranchRegistration::query()
+            ->activeOn($to->addDay()->toDateString())
             ->whereIn('player_id', (clone $activeQuery)->select('id'))
-            ->get(['player_id', 'branch_id'])
-            ->groupBy('player_id')
-            ->map(fn ($rows) => $rows->pluck('branch_id')->all());
+            ->get(['player_id', 'branch_id', 'category_id'])
+            ->groupBy('player_id');
 
         $categories = Category::query()->get(['id', 'name', 'name_ar', 'name_fr', 'name_en'])->keyBy('id');
         $branches = Branch::query()->get(['id', 'name', 'name_ar', 'name_fr', 'name_en'])->keyBy('id');
@@ -43,11 +45,14 @@ final class MembersSection implements Section
         foreach ($active as $player) {
             $isFemale = strtolower((string) $player->gender) === 'female';
             $female += $isFemale ? 1 : 0;
-            foreach ($links->get($player->id, [null]) as $branchId) {
-                $key = ($branchId ?? 0).'|'.($player->category_id ?? 0);
+            // No registration: the "no branch" bucket, on the player's own category.
+            $memberships = $links->get($player->id)?->map(fn (BranchRegistration $r) => [$r->branch_id, $r->category_id])->all()
+                ?? [[null, $player->category_id]];
+            foreach ($memberships as [$branchId, $categoryId]) {
+                $key = ($branchId ?? 0).'|'.($categoryId ?? 0);
                 $rows[$key] ??= [
                     'branch' => $branchId ? $branches->get($branchId)?->localized_name : null,
-                    'category' => $player->category_id ? $categories->get($player->category_id)?->localized_name : null,
+                    'category' => $categoryId ? $categories->get($categoryId)?->localized_name : null,
                     'male' => 0, 'female' => 0, 'total' => 0,
                 ];
                 $rows[$key][$isFemale ? 'female' : 'male']++;
@@ -64,7 +69,7 @@ final class MembersSection implements Section
             'male' => $active->count() - $female,
             'female' => $female,
             'rows' => $rows,
-            'multi_branch' => $links->contains(fn (array $ids) => count($ids) > 1),
+            'multi_branch' => $links->contains(fn ($rows) => $rows->count() > 1),
             'joined' => Player::query()->whereBetween('join_year', [$from->year, $to->year])->count(),
             'left' => Player::query()->whereDate('left_at', '>=', $from->toDateString())->whereDate('left_at', '<=', $end)->count(),
             'coaches' => DB::table('team_coaches')

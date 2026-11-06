@@ -2,11 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Models\Branch;
 use App\Models\Category;
 use App\Models\Player;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\Player\AcademicResultsSheet;
+use App\Services\Player\RegistrationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -64,6 +66,25 @@ class AcademicResultsPrintTest extends TestCase
         $sections = AcademicResultsSheet::build(2025);
 
         $this->assertSame(['U13', 'U17', null], $sections->map(fn ($s) => $s['category']?->name)->all());
+    }
+
+    #[Test]
+    public function a_chosen_category_finds_a_student_through_any_registration(): void
+    {
+        $football = Branch::create(['name' => 'Football', 'code' => 'FB']);
+        $swimming = Branch::create(['name' => 'Swimming', 'code' => 'SW']);
+        $senior = Category::create(['name' => 'Senior']);
+        $u15 = Category::create(['name' => 'U15']);
+        $student = $this->student('Alpha', $senior, ['T1' => 12]);
+        $service = app(RegistrationService::class);
+        $service->register($student, ['branch_id' => $football->id, 'category_id' => $senior->id]);
+        $service->register($student, ['branch_id' => $swimming->id, 'category_id' => $u15->id]);
+
+        $sections = AcademicResultsSheet::build(2025, $u15->id);
+
+        $this->assertCount(1, $sections);
+        $this->assertSame('U15', $sections[0]['category']->name);
+        $this->assertSame('Alpha', $sections[0]['rows'][0]['player']->lastname);
     }
 
     #[Test]

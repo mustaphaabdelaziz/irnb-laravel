@@ -8,6 +8,7 @@ import SeasonSelect from '@/Components/Competitions/SeasonSelect.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { computed, ref } from 'vue';
+import { categoriesForBranch } from '@/lib/categoryPicker';
 
 const { t } = useI18n();
 
@@ -19,6 +20,7 @@ const props = defineProps({
 const creating = ref(false);
 const form = useForm({ branch_id: '', category_id: '', name: '', default_game_format_id: '' });
 const formatsOfBranch = computed(() => props.formats.filter((f) => f.branch_id === Number(form.branch_id)));
+const categoriesOfBranch = computed(() => (form.branch_id ? categoriesForBranch(props.categories, Number(form.branch_id)) : []));
 
 function reload(params) {
     router.get(route('teams.index'), { season: props.season, archived: props.showArchived ? 1 : 0, ...params }, { preserveState: true });
@@ -50,14 +52,15 @@ function create() {
         <div class="mx-auto max-w-6xl space-y-6">
             <form v-if="creating" @submit.prevent="create" class="grid gap-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 sm:grid-cols-5">
                 <label class="text-sm">{{ t('comp.sport') }}
-                    <select v-model="form.branch_id" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800" required @change="form.default_game_format_id = ''">
+                    <select v-model="form.branch_id" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800" required @change="form.default_game_format_id = ''; form.category_id = ''">
                         <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.localized_name || b.name }}</option>
                     </select>
                 </label>
                 <label class="text-sm">{{ t('category') }}
                     <select v-model="form.category_id" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800" required>
-                        <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.localized_name || c.name }}</option>
+                        <option v-for="c in categoriesOfBranch" :key="c.id" :value="c.id">{{ c.localized_name || c.name }}</option>
                     </select>
+                    <InputError :message="form.errors.category_id" class="mt-1" />
                 </label>
                 <label class="text-sm">{{ t('name') }}
                     <TextInput v-model="form.name" class="mt-1 w-full" :placeholder="t('comp.team_name_hint')" required />

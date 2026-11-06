@@ -10,6 +10,7 @@ use App\Services\Attendance\BranchChoice;
 use App\Services\Attendance\PlayerNames;
 use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
+use App\Support\CategoryOwnership;
 use App\Support\Season;
 use App\Support\UiLang;
 use Carbon\CarbonImmutable;
@@ -41,11 +42,12 @@ class AttendanceRankingController extends Controller
     public function index(Request $request): Response
     {
         $request->validate(['category_id' => ['nullable', 'integer', 'exists:categories,id']]);
-        $categories = Category::orderBy('id')->get()
+        $branchId = BranchChoice::fromRequest($request);
+        $categories = Category::forBranch($branchId)->orderBy('id')->get()
             ->map(fn (Category $category) => ['id' => $category->id, 'name' => $category->localized_name])
             ->values()->all();
-        $categoryId = $request->filled('category_id') ? (int) $request->query('category_id') : ($categories[0]['id'] ?? null);
-        $branchId = BranchChoice::fromRequest($request);
+        $asked = $request->filled('category_id') ? (int) $request->query('category_id') : null;
+        $categoryId = $asked !== null && ! CategoryOwnership::outside($asked, array_filter([$branchId])) ? $asked : ($categories[0]['id'] ?? null);
         $period = $this->period($request);
         ['rows' => $rows, 'unranked' => $unranked] = $categoryId === null
             ? ['rows' => [], 'unranked' => 0]

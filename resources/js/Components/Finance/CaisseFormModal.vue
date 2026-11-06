@@ -4,6 +4,7 @@ import { useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import Modal from '@/Components/Modal.vue';
 import InputError from '@/Components/InputError.vue';
+import { categoriesForBranch } from '@/lib/categoryPicker';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 
@@ -45,6 +46,13 @@ const takenCategoryIds = computed(() => new Set(
         .map((c) => c.category_id),
 ));
 
+// The chosen branch's categories, plus this caisse's own while it stays in its branch.
+const branchCategories = computed(() => categoriesForBranch(
+    props.categories,
+    form.branch_id,
+    String(props.account?.branch_id ?? '') === String(form.branch_id) ? [props.account?.category_id] : [],
+));
+
 // Switching a caisse off while it still holds money leaves that money out of reach.
 const holdsMoney = computed(() => Math.abs(Number(props.account?.current_balance || 0)) >= 0.005);
 
@@ -65,7 +73,9 @@ watch(() => props.show, (open) => {
     form.notes = a?.notes ?? '';
 });
 
-watch(() => form.branch_id, (branch) => { if (!branch) form.category_id = ''; });
+watch(() => form.branch_id, (branch) => {
+    if (!branch || !branchCategories.value.some((c) => c.id === form.category_id)) form.category_id = '';
+});
 
 function submit() {
     const options = { preserveScroll: true, onSuccess: () => emit('close') };
@@ -103,7 +113,7 @@ function submit() {
                     <span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('caisses.linked_category') }}</span>
                     <select v-model="form.category_id" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
                         <option value="">{{ t('caisses.no_category') }}</option>
-                        <option v-for="c in categories" :key="c.id" :value="c.id" :disabled="takenCategoryIds.has(c.id)">{{ takenCategoryIds.has(c.id) ? `${label(c)} ${t('caisses.category_taken_suffix')}` : label(c) }}</option>
+                        <option v-for="c in branchCategories" :key="c.id" :value="c.id" :disabled="takenCategoryIds.has(c.id)">{{ takenCategoryIds.has(c.id) ? `${label(c)} ${t('caisses.category_taken_suffix')}` : label(c) }}</option>
                     </select>
                     <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('caisses.linked_category_hint') }}</p>
                     <InputError :message="form.errors.category_id" class="mt-1" />

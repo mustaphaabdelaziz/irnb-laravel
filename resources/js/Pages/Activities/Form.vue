@@ -5,8 +5,11 @@ import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import ParticipantPicker from '@/Components/Activities/ParticipantPicker.vue';
+import { computed, watch } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
+import { categoriesForBranch } from '@/lib/categoryPicker';
+import { sportLabeller } from '@/lib/sportLabels';
 
 const { t } = useI18n();
 
@@ -37,6 +40,15 @@ const form = useForm({
     category_ids: a.category_ids ?? [],
     player_ids: a.player_ids ?? [],
     board_member_ids: a.board_member_ids ?? [],
+});
+
+// The chosen branch's categories, or all if none is chosen. Saved ones stay until changed.
+const savedCategoryIds = props.activity?.category_ids ?? [];
+const offeredCategories = computed(() => categoriesForBranch(props.categories, form.branch_id, savedCategoryIds));
+const categoryLabel = computed(() => sportLabeller(offeredCategories.value, (c) => c.localized_name || c.name));
+
+watch(() => form.branch_id, () => {
+    form.category_ids = form.category_ids.filter((id) => offeredCategories.value.some((c) => c.id === id));
 });
 
 function submit() {
@@ -110,10 +122,11 @@ const card = 'space-y-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200
                 <div>
                     <span :class="label">{{ t('activities.categories') }}</span>
                     <div class="mt-2 flex flex-wrap gap-3">
-                        <label v-for="c in categories" :key="c.id" class="flex items-center gap-1.5 text-sm text-slate-700 dark:text-slate-200">
-                            <input v-model="form.category_ids" type="checkbox" :value="c.id" class="rounded border-slate-300 dark:border-slate-700" /> {{ c.localized_name }}
+                        <label v-for="c in offeredCategories" :key="c.id" class="flex items-center gap-1.5 text-sm text-slate-700 dark:text-slate-200">
+                            <input v-model="form.category_ids" type="checkbox" :value="c.id" class="rounded border-slate-300 dark:border-slate-700" /> {{ categoryLabel(c) }}
                         </label>
                     </div>
+                    <InputError :message="form.errors.category_ids" class="mt-1" />
                 </div>
             </section>
 

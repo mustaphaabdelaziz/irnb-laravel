@@ -77,7 +77,7 @@ class AttendanceController extends Controller
             'reasons' => AbsenceReason::values(),
             'attendanceCodes' => $catalog->codes(),
             // Every category: the Edit dialog can turn an extra session into a pre-season one.
-            'allCategories' => Category::orderBy('id')->get()->map(fn (Category $c) => ['id' => $c->id, 'name' => $c->localized_name])->values(),
+            'allCategories' => Category::orderBy('id')->get()->map(fn (Category $c) => ['id' => $c->id, 'name' => $c->localized_name, 'branch_id' => $c->branch_id, 'is_active' => $c->is_active])->values(),
             'branches' => Branch::orderBy('id')->get()->map(fn (Branch $b) => ['id' => $b->id, 'name' => $b->localized_name])->values(),
             'playerStatuses' => PlayerStatus::options(),
         ]);

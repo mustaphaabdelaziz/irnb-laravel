@@ -8,6 +8,7 @@ import IconButton from '@/Components/IconButton.vue';
 import Modal from '@/Components/Modal.vue';
 import InputError from '@/Components/InputError.vue';
 import { useCan } from '@/Composables/useCan';
+import { categoriesForBranch } from '@/lib/categoryPicker';
 import { useAttendanceCodes } from '@/Composables/useAttendanceCodes';
 
 const props = defineProps({
@@ -112,6 +113,8 @@ const submitDelete = () => {
 const handAdded = computed(() => props.session.kind !== 'regular');
 const showEdit = ref(false);
 const editForm = useForm({ title: '', date: '', start_time: '', end_time: '', coach: '', notes: '', branch_id: null, roster_status_ids: [], kind: 'extra', category_ids: [] });
+// The session's own categories stay listed until they are changed.
+const editCategories = computed(() => categoriesForBranch(props.allCategories, editForm.branch_id, props.session.categories.map((c) => c.id)));
 const sortedKey = (ids) => [...ids].sort((a, b) => a - b).join(',');
 let prefilledStatusKey = '';
 function openEdit() {
@@ -314,7 +317,7 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                     <fieldset v-if="editForm.kind === 'preseason'" class="text-sm">
                         <legend class="mb-1">{{ t('att.categories') }}</legend>
                         <div class="flex flex-wrap gap-x-4 gap-y-1">
-                            <label v-for="c in allCategories" :key="c.id" class="inline-flex items-center gap-1.5">
+                            <label v-for="c in editCategories" :key="c.id" class="inline-flex items-center gap-1.5">
                                 <input v-model="editForm.category_ids" type="checkbox" :value="c.id" class="rounded border-slate-300 text-primary-600 dark:border-slate-700 dark:bg-slate-900" />
                                 {{ c.name }}
                             </label>

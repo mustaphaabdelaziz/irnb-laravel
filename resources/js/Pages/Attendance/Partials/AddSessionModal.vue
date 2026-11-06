@@ -4,6 +4,7 @@ import { useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import Modal from '@/Components/Modal.vue';
 import InputError from '@/Components/InputError.vue';
+import { categoriesForBranch } from '@/lib/categoryPicker';
 
 const props = defineProps({
     show: { type: Boolean, default: false },
@@ -20,13 +21,17 @@ const emit = defineEmits(['close']);
 const { t } = useI18n();
 
 const form = useForm({ branch_id: null, category_id: null, category_ids: [], kind: 'extra', date: '', start_time: '18:00', end_time: '19:30', title: '', roster_status_ids: [] });
+const offered = computed(() => categoriesForBranch(props.categories, form.branch_id));
+
 watch(() => props.show, (open) => {
     if (!open) return;
     form.reset();
     form.clearErrors();
+    const branchId = props.branchId ?? props.branches[0]?.id ?? null;
+    const own = categoriesForBranch(props.categories, branchId);
     Object.assign(form, {
-        branch_id: props.branchId ?? props.branches[0]?.id ?? null,
-        category_id: props.categoryId ?? props.categories[0]?.id ?? null,
+        branch_id: branchId,
+        category_id: own.some((c) => c.id === props.categoryId) ? props.categoryId : (own[0]?.id ?? null),
         category_ids: [],
         kind: props.kind,
         date: props.date,
@@ -34,8 +39,14 @@ watch(() => props.show, (open) => {
     });
 });
 
+// A different branch offers different categories: keep the choice only if it still fits.
+watch(() => form.branch_id, () => {
+    if (!offered.value.some((c) => c.id === form.category_id)) form.category_id = offered.value[0]?.id ?? null;
+    form.category_ids = form.category_ids.filter((id) => offered.value.some((c) => c.id === id));
+});
+
 // Only a pre-season session can be shared; the primary category is always part of it.
-const others = computed(() => props.categories.filter((c) => c.id !== form.category_id));
+const others = computed(() => offered.value.filter((c) => c.id !== form.category_id));
 function submit() {
     form
         .transform((d) => ({
@@ -66,8 +77,9 @@ const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg
             </label>
             <label class="block text-sm">{{ t('att.category') }}
                 <select v-model="form.category_id" :class="[input, 'mt-1 block w-full']">
-                    <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
+                    <option v-for="c in offered" :key="c.id" :value="c.id">{{ c.name }}</option>
                 </select>
+                <InputError :message="form.errors.category_id" class="mt-1" />
             </label>
             <fieldset v-if="form.kind === 'preseason' && others.length" class="text-sm">
                 <legend class="mb-1">{{ t('att.other_categories') }}</legend>
@@ -94,7 +106,7 @@ const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg
                 <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('att.roster_statuses_help') }}</p>
             </fieldset>
             <label class="block text-sm">{{ t('att.title_goal') }}<input v-model="form.title" type="text" maxlength="150" :placeholder="t('att.title_placeholder')" :class="[input, 'mt-1 block w-full']" /></label>
-            <InputError v-for="(e, k) in form.errors" :key="k" :message="tr(e)" />
+            <InputError v-for="(e, k) in form.errors" v-show="k !== 'category_id'" :key="k" :message="tr(e)" />
             <div class="flex justify-end gap-2">
                 <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700 dark:text-slate-400" @click="emit('close')">{{ t('att.close') }}</button>
                 <button type="submit" :disabled="form.processing || (playerStatuses.length > 0 && !form.roster_status_ids.length)" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('att.save') }}</button>

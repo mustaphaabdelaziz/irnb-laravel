@@ -12,6 +12,7 @@ use App\Services\Attendance\CalendarFeed;
 use App\Services\Attendance\PreseasonProgress;
 use App\Services\Attendance\SessionGenerator;
 use App\Support\AttendanceSettings;
+use App\Support\CategoryOwnership;
 use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Http\Request;
@@ -64,12 +65,16 @@ class AttendanceCalendarController extends Controller
             'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
         ]);
         $data['branch_id'] = BranchChoice::resolve($request, $data['branch_id'] ?? null);
+        // A category left in the URL from another branch would show an empty month.
+        if (CategoryOwnership::outside($data['category_id'] ?? null, array_filter([$data['branch_id']]))) {
+            unset($data['category_id']);
+        }
         $view = $data['view'] ?? 'month';
         // Lazy, so a partial reload while navigating a view skips them (see Index.vue).
         $list = null;
         $categories = function () use (&$list): Collection {
             return $list ??= Category::orderBy('id')->get()
-                ->map(fn (Category $c) => ['id' => $c->id, 'name' => $c->localized_name])->values();
+                ->map(fn (Category $c) => ['id' => $c->id, 'name' => $c->localized_name, 'branch_id' => $c->branch_id, 'is_active' => $c->is_active])->values();
         };
 
         // The view's props are computed together (generation first) on the
@@ -106,7 +111,7 @@ class AttendanceCalendarController extends Controller
     /** One category's month. Opening it generates its planned sessions. */
     private function month(array $data, Closure $categories): array
     {
-        $categoryId = isset($data['category_id']) ? (int) $data['category_id'] : data_get($categories()->first(), 'id');
+        $categoryId = isset($data['category_id']) ? (int) $data['category_id'] : $this->firstOfBranch($categories(), $data['branch_id']);
         $anchor = $this->monthAnchor($data);
         $props = ['categoryId' => $categoryId, 'month' => $anchor->format('Y-m'), 'sessions' => [], 'preseason' => null, 'hasSchedule' => false, 'branchId' => $data['branch_id']];
 
@@ -188,6 +193,13 @@ class AttendanceCalendarController extends Controller
             'events' => $this->feed->timeline($fromDate, $toDate, $categoryId, $kind, $data['branch_id']),
             'branchId' => $data['branch_id'],
         ];
+    }
+
+    /** The default: the branch's first active category. A club with no branches takes the first of all. */
+    private function firstOfBranch(Collection $categories, ?int $branchId): ?int
+    {
+        return $categories->first(fn (array $c) => $c['is_active']
+            && ($branchId === null || $c['branch_id'] === null || (int) $c['branch_id'] === $branchId))['id'] ?? null;
     }
 
     private function monthAnchor(array $data): CarbonImmutable

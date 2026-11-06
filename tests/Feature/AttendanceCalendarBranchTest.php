@@ -32,6 +32,7 @@ class AttendanceCalendarBranchTest extends TestCase
         $u15 = $this->category();
         $foot = Branch::create(['name' => 'Foot']);
         $swim = Branch::create(['name' => 'Swim']);
+        $u15->update(['branch_id' => null]);
         $f = $this->makeSession($u15->id, $foot->id);
         $s = $this->makeSession($u15->id, $swim->id);
         $admin = $this->admin();
@@ -98,6 +99,7 @@ class AttendanceCalendarBranchTest extends TestCase
         $u15 = $this->category();
         $foot = Branch::create(['name' => 'Foot']);
         $swim = Branch::create(['name' => 'Swim']);
+        $u15->update(['branch_id' => null]);
         PreseasonTarget::create(['branch_id' => $foot->id, 'category_id' => $u15->id, 'season_start_year' => 2026, 'target_count' => 10]);
         PreseasonTarget::create(['branch_id' => $swim->id, 'category_id' => $u15->id, 'season_start_year' => 2026, 'target_count' => 4]);
         $this->makeSession($u15->id, $foot->id, ['kind' => SessionKind::Preseason, 'state' => SessionState::Held, 'date' => '2026-09-07']);

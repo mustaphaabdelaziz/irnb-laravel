@@ -182,7 +182,7 @@ class ActivityController extends Controller
         return [
             'types' => ActivityType::orderBy('sort_order')->orderBy('name')->get(['id', 'name']),
             'branches' => Branch::orderBy('name')->get(),
-            'categories' => Category::orderBy('name')->get(),
+            'categories' => Category::with('branch:id,name,name_ar,name_fr,name_en')->orderBy('name')->get(),
             'players' => Player::query()
                 ->where(fn (Builder $q) => $q->where('archived', false)->orWhereIn('id', $linked))
                 ->orderBy('lastname')->orderBy('firstname')

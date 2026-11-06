@@ -7,6 +7,7 @@ import IconButton from '@/Components/IconButton.vue';
 import { computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { localToday } from '@/lib/localDate';
+import { categoriesForBranch } from '@/lib/categoryPicker';
 import { useCan } from '@/Composables/useCan';
 
 const { t } = useI18n();
@@ -35,6 +36,9 @@ const otherPositionsError = computed(() => {
 const selectClass = 'mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500';
 
 // A stored position from another branch stays selectable until it is changed.
+// Only this branch's categories, plus the stored one until it is changed.
+const branchCategories = computed(() => categoriesForBranch(props.categories, props.branch.id, [props.card.category_id]));
+
 const branchPositions = computed(() => props.positions.filter((position) => Number(position.branch_id) === Number(props.branch.id)
     || position.branch_id === null
     || Number(position.id) === Number(props.card.position_id)));
@@ -91,11 +95,11 @@ const dateRequired = computed(() => props.card.is_new || props.card.had_date);
                 </p>
                 <InputError :message="fieldError('join_date')" class="mt-1" />
             </div>
-            <div>
+            <div v-if="branchCategories.length">
                 <InputLabel :value="t('category')" />
                 <select v-model="card.category_id" :class="selectClass">
                     <option value="">{{ t('select_category') }}</option>
-                    <option v-for="category in categories" :key="category.id" :value="category.id">{{ category.localized_name || category.name }}</option>
+                    <option v-for="category in branchCategories" :key="category.id" :value="category.id">{{ category.localized_name || category.name }}</option>
                 </select>
                 <InputError :message="fieldError('category_id')" class="mt-1" />
             </div>

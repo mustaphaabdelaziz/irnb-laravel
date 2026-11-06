@@ -234,7 +234,7 @@ final class AttendanceStats
 
         $preseason = $this->preseason->forCategories($to, $branchId);
 
-        return Category::orderBy('id')->get()
+        return Category::forBranch($branchId)->orderBy('id')->get()
             ->map(fn (Category $category) => [
                 'category_id' => $category->id,
                 'name' => $category->localized_name,

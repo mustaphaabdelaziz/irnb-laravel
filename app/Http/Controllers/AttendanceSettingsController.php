@@ -33,7 +33,7 @@ class AttendanceSettingsController extends Controller
 
         return Inertia::render('Attendance/Settings', [
             'categories' => Category::orderBy('id')->get()
-                ->map(fn (Category $c) => ['id' => $c->id, 'name' => $c->localized_name])->values(),
+                ->map(fn (Category $c) => ['id' => $c->id, 'name' => $c->localized_name, 'branch_id' => $c->branch_id, 'is_active' => $c->is_active])->values(),
             'branches' => Branch::orderBy('id')->get()->map(fn (Branch $b) => ['id' => $b->id, 'name' => $b->localized_name])->values(),
             'schedules' => TrainingSchedule::orderBy('branch_id')->orderBy('category_id')->orderBy('weekday')->orderBy('start_time')
                 ->get(['id', 'branch_id', 'category_id', 'weekday', 'start_time', 'end_time', 'valid_from', 'valid_to']),

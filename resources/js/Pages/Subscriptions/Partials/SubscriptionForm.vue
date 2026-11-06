@@ -5,7 +5,9 @@ import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { Link, useForm } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
+import { categoriesForBranches } from '@/lib/categoryPicker';
+import { sportLabeller } from '@/lib/sportLabels';
 import TarificationCard from './TarificationCard.vue';
 import { useI18n } from 'vue-i18n';
 
@@ -51,6 +53,16 @@ const form = useForm({
 
 const isAnnual = computed(() => form.kind === 'annual');
 const chosenCategories = computed(() => props.categories.filter((c) => form.category_ids.includes(c.id)));
+
+// Those of the ticked branches, or all if none is ticked. Saved ones stay until changed.
+const savedCategoryIds = sub.categories?.map((c) => c.id) || [];
+const offeredCategories = computed(() => categoriesForBranches(props.categories, form.branch_ids, savedCategoryIds));
+const categoryLabel = computed(() => sportLabeller(offeredCategories.value, (c) => c.localized_name || c.name));
+
+// Unticking a branch takes back its categories: the server would refuse them anyway.
+watch(() => form.branch_ids, () => {
+    form.category_ids = form.category_ids.filter((id) => offeredCategories.value.some((c) => c.id === id));
+}, { deep: true });
 
 function submit() {
     // Send overrides only for the categories actually chosen.
@@ -135,10 +147,10 @@ const kinds = [
                     <InputLabel :value="t('categories')" />
                     <p class="mb-2 text-xs text-slate-500 dark:text-slate-400">{{ t('select_category') }} ({{ t('all') }})</p>
                     <div class="flex flex-wrap gap-3">
-                        <label v-for="cat in categories" :key="cat.id" class="flex items-center gap-2">
+                        <label v-for="cat in offeredCategories" :key="cat.id" class="flex items-center gap-2">
                             <input type="checkbox" :value="cat.id" v-model="form.category_ids"
                                 class="rounded border-gray-300 text-primary-600 shadow-sm focus:ring-primary-500" />
-                            <span class="text-sm">{{ cat.localized_name || cat.name }}</span>
+                            <span class="text-sm">{{ categoryLabel(cat) }}</span>
                         </label>
                     </div>
                     <InputError :message="form.errors.category_ids" class="mt-1" />
@@ -147,7 +159,7 @@ const kinds = [
                         <p class="bg-slate-50 px-3 py-2 text-xs text-slate-500 dark:bg-slate-950 dark:text-slate-400">{{ t('category_price_hint') }}</p>
                         <div class="divide-y divide-slate-100 dark:divide-slate-800">
                             <div v-for="cat in chosenCategories" :key="cat.id" class="grid items-center gap-2 px-3 py-2 sm:grid-cols-3">
-                                <span class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ cat.localized_name || cat.name }}</span>
+                                <span class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ categoryLabel(cat) }}</span>
                                 <label class="text-xs text-slate-500 dark:text-slate-400">
                                     {{ t('student_pricing') }}
                                     <TextInput v-model="form.category_prices[cat.id].amount_student" type="number" step="0.01" min="0"

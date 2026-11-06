@@ -7,6 +7,7 @@ import IconButton from '@/Components/IconButton.vue';
 import BranchSwitch from '@/Components/Attendance/BranchSwitch.vue';
 import { useCan } from '@/Composables/useCan';
 import { dateKey } from '@/lib/attendanceCalendar';
+import { categoriesForBranch } from '@/lib/categoryPicker';
 import AddSessionModal from './Partials/AddSessionModal.vue';
 import ViewSwitcher from './Partials/ViewSwitcher.vue';
 import MonthView from './Partials/MonthView.vue';
@@ -35,6 +36,10 @@ const props = defineProps({
 const { t } = useI18n();
 const { can } = useCan();
 const today = dateKey(new Date());
+
+// The views choose among the switched branch's categories. The add-session dialog
+// has its own branch field, so it gets them all and filters on that.
+const branchCategories = computed(() => categoriesForBranch(props.categories, props.branchId, [props.categoryId]));
 
 // The blank month sheet for the category, month and branch on screen (month view only).
 const sheetHref = computed(() => (props.categoryId ? route('attendance.sheets.month', clean({ category_id: props.categoryId, month: props.month, branch_id: props.branchId })) : null));
@@ -95,7 +100,7 @@ function openCreate(kind, date = today) {
             </div>
         </template>
 
-        <p v-if="!categories.length" class="text-sm text-slate-500 dark:text-slate-400">{{ t('att.no_category') }}</p>
+        <p v-if="!branchCategories.length" class="text-sm text-slate-500 dark:text-slate-400">{{ t('att.no_category') }}</p>
 
         <div v-else class="space-y-4">
             <div class="flex flex-wrap items-center justify-between gap-3 print:hidden">
@@ -109,10 +114,10 @@ function openCreate(kind, date = today) {
                 </div>
             </div>
 
-            <MonthView v-if="view === 'month'" :categories="categories" :category-id="categoryId" :month="month" :sessions="sessions" :preseason="preseason" :has-schedule="hasSchedule" :can-add="can('attendance', 'add')" @navigate="navigate" @add="(date) => openCreate('extra', date)" />
+            <MonthView v-if="view === 'month'" :categories="branchCategories" :category-id="categoryId" :month="month" :sessions="sessions" :preseason="preseason" :has-schedule="hasSchedule" :can-add="can('attendance', 'add')" @navigate="navigate" @add="(date) => openCreate('extra', date)" />
             <WeekView v-else-if="view === 'week'" :week="week" :sessions="sessions" :can-add="can('attendance', 'add')" @navigate="navigate" @add="(date) => openCreate('extra', date)" />
-            <AgendaView v-else-if="view === 'agenda'" :categories="categories" :category-id="categoryId" :month="month" :sessions="sessions" @navigate="navigate" />
-            <TimelineView v-else-if="view === 'timeline'" :categories="categories" :category-id="categoryId" :kind="kind" :from="from" :to="to" :events="events" @navigate="navigate" />
+            <AgendaView v-else-if="view === 'agenda'" :categories="branchCategories" :category-id="categoryId" :month="month" :sessions="sessions" @navigate="navigate" />
+            <TimelineView v-else-if="view === 'timeline'" :categories="branchCategories" :category-id="categoryId" :kind="kind" :from="from" :to="to" :events="events" @navigate="navigate" />
         </div>
 
         <AddSessionModal :show="showCreate" :kind="createKind" :categories="categories" :category-id="categoryId" :branches="branches" :branch-id="branchId" :date="createDate" :player-statuses="playerStatuses ?? []" :roster-status-ids="rosterStatusIds ?? []" @close="showCreate = false" />

@@ -240,7 +240,7 @@ const tabs = computed(() => ['roster', 'coaches', 'competitions', 'games', ...(c
                     </label>
                     <label class="text-sm">{{ t('category') }}
                         <select v-model="teamForm.category_id" :disabled="!canEditTeam" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
-                            <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.localized_name || c.name }}</option>
+                            <option v-for="c in categories.filter((x) => x.is_active !== false || x.id === team.category_id)" :key="c.id" :value="c.id">{{ c.localized_name || c.name }}</option>
                         </select>
                     </label>
                     <label class="text-sm">{{ t('comp.game_format') }}

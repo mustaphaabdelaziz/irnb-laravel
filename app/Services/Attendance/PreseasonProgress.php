@@ -70,7 +70,7 @@ final class PreseasonProgress
             ->pluck('target_count', 'category_id')
             ->mapWithKeys(fn ($count, $categoryId) => [(int) $categoryId => (int) $count]);
 
-        return Category::orderBy('id')->pluck('id')
+        return Category::forBranch($branchId)->orderBy('id')->pluck('id')
             ->mapWithKeys(fn ($id) => [(int) $id => [
                 'season' => $season->label(),
                 'done' => $done[(int) $id] ?? 0,
@@ -88,7 +88,7 @@ final class PreseasonProgress
      */
     public function milestones(string $from, string $to, ?int $categoryId = null, ?int $branchId = null): array
     {
-        $categories = Category::query()->when($categoryId !== null, fn ($q) => $q->whereKey($categoryId))->orderBy('id')->get();
+        $categories = Category::forBranch($branchId)->when($categoryId !== null, fn ($q) => $q->whereKey($categoryId))->orderBy('id')->get();
         // The window is at most 12 months, so it spans one or two seasons.
         $seasons = collect([Season::forDate($from), Season::forDate($to)])->unique(fn (Season $s) => $s->startYear);
         $events = [];

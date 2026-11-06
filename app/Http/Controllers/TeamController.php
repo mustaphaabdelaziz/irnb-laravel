@@ -130,7 +130,7 @@ class TeamController extends Controller
                 ]),
             'formats' => GameFormat::query()->where('branch_id', $team->branch_id)->where('active', true)->orderBy('name')
                 ->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
-            'categories' => Category::query()->orderBy('name')->get(),
+            'categories' => Category::forBranch($team->branch_id)->orWhere('id', $team->category_id)->orderBy('name')->get(),
             'canManage' => TeamAccess::canManage($request->user(), $team, $season),
             // Match statistics need games/view; without it the Stats tab is not shown.
             'stats' => $request->user()->hasPermission('games', 'view') ? [

@@ -9,6 +9,7 @@ use App\Models\Player;
 use App\Services\Activity\ActivityPeriod;
 use App\Services\Attendance\BranchChoice;
 use App\Services\Attendance\InjurySpells;
+use App\Support\CategoryOwnership;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -43,13 +44,17 @@ class AttendanceInjuryController extends Controller
         $validated = $request->validate(['category_id' => ['nullable', 'integer', 'exists:categories,id']]);
         $categoryId = isset($validated['category_id']) ? (int) $validated['category_id'] : null;
         $branchId = BranchChoice::fromRequest($request);
+        // A filter left over from another branch would show an empty report.
+        if (CategoryOwnership::outside($categoryId, array_filter([$branchId]))) {
+            $categoryId = null;
+        }
         $period = ActivityPeriod::fromRequestOrSeason($request);
         ['from' => $from, 'to' => $to] = $period->toArray();
 
         return Inertia::render('Attendance/Injuries', [
             'period' => $period->toArray(),
             'categoryId' => $categoryId,
-            'categories' => Category::orderBy('id')->get()
+            'categories' => Category::forBranch($branchId)->orderBy('id')->get()
                 ->map(fn (Category $category) => ['id' => $category->id, 'name' => $category->localized_name])
                 ->values()->all(),
             'branches' => BranchChoice::options(),

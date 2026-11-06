@@ -174,7 +174,7 @@ class SubscriptionController extends Controller
         return Inertia::render('Subscriptions/Show', [
             'subscription' => $subscription,
             'playerSubscriptions' => $rows,
-            'categories' => Category::orderBy('name')->get(),
+            'categories' => Category::with('branch:id,name,name_ar,name_fr,name_en')->orderBy('name')->get(),
             'availablePlayers' => $this->unassignedPlayers($subscription),
             // Active members of its branches it doesn't otherwise apply to (a footballer
             // of category A who also swims in B), loaded when the add dialog asks.
@@ -298,7 +298,7 @@ class SubscriptionController extends Controller
         return Inertia::render('Subscriptions/Create', [
             'seasons' => $this->seasonOptions(),
             'currentSeason' => Subscription::currentSeasonEndYear(),
-            'categories' => Category::orderBy('name')->get(),
+            'categories' => Category::with('branch:id,name,name_ar,name_fr,name_en')->orderBy('name')->get(),
             'branches' => Branch::orderBy('name')->get(),
             ...$this->tarificationProp($request),
         ]);
@@ -333,7 +333,7 @@ class SubscriptionController extends Controller
             'subscription' => $subscription,
             'seasons' => $this->seasonOptions([$subscription->year]),
             'currentSeason' => Subscription::currentSeasonEndYear(),
-            'categories' => Category::orderBy('name')->get(),
+            'categories' => Category::with('branch:id,name,name_ar,name_fr,name_en')->orderBy('name')->get(),
             'branches' => Branch::orderBy('name')->get(),
             ...$this->tarificationProp($request, $subscription),
         ]);

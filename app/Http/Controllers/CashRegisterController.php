@@ -74,7 +74,7 @@ class CashRegisterController extends Controller
                     ->count(),
             ],
             'branches' => $branches,
-            'categories' => Category::query()->orderBy('name')->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
+            'categories' => Category::query()->orderBy('name')->get(['id', 'name', 'name_ar', 'name_fr', 'name_en', 'branch_id', 'is_active']),
             'transfers' => FinanceTransfer::query()
                 ->with([
                     'fromAccount:id,name,branch_id,category_id,parent_account_id,is_treasury,is_opening_fund',

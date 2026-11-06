@@ -1,11 +1,12 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Icon from '@/Components/Icon.vue';
 import IconButton from '@/Components/IconButton.vue';
 import InputError from '@/Components/InputError.vue';
+import { categoriesForBranch } from '@/lib/categoryPicker';
 import { localToday } from '@/lib/localDate';
 
 const props = defineProps({
@@ -38,10 +39,17 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
 
 // ---- Weekly schedule ----
 const editingId = ref(null);
-const scheduleForm = useForm({ branch_id: props.branches[0]?.id ?? null, category_id: props.categories[0]?.id ?? null, weekday: 1, start_time: '18:00', end_time: '19:30', valid_from: today, valid_to: '' });
+const firstOf = (branchId) => categoriesForBranch(props.categories, branchId)[0]?.id ?? null;
+const scheduleForm = useForm({ branch_id: props.branches[0]?.id ?? null, category_id: firstOf(props.branches[0]?.id ?? null), weekday: 1, start_time: '18:00', end_time: '19:30', valid_from: today, valid_to: '' });
+const scheduleCategories = computed(() => categoriesForBranch(props.categories, scheduleForm.branch_id, [scheduleForm.category_id]));
+watch(() => scheduleForm.branch_id, (branchId) => {
+    if (!categoriesForBranch(props.categories, branchId).some((c) => c.id === scheduleForm.category_id)) scheduleForm.category_id = firstOf(branchId);
+});
 function editSchedule(s) {
     editingId.value = s.id;
     Object.assign(scheduleForm, { branch_id: s.branch_id, category_id: s.category_id, weekday: s.weekday, start_time: s.start_time, end_time: s.end_time, valid_from: s.valid_from, valid_to: s.valid_to ?? '' });
+    // The branch watch runs after both are set; keep a stored category selectable.
+    nextTick(() => { scheduleForm.category_id = s.category_id; });
 }
 function resetSchedule() {
     editingId.value = null;
@@ -62,7 +70,11 @@ const closureForm = useForm({ start_date: today, end_date: today, reason: '' });
 const submitClosure = () => closureForm.post(route('attendance.closures.store'), { preserveScroll: true, onSuccess: () => closureForm.reset() });
 
 // ---- Pre-season targets ----
-const targetForm = useForm({ branch_id: props.branches[0]?.id ?? null, category_id: props.categories[0]?.id ?? null, season_start_year: props.seasons[0]?.start_year, target_count: 0 });
+const targetForm = useForm({ branch_id: props.branches[0]?.id ?? null, category_id: firstOf(props.branches[0]?.id ?? null), season_start_year: props.seasons[0]?.start_year, target_count: 0 });
+const targetCategories = computed(() => categoriesForBranch(props.categories, targetForm.branch_id, [targetForm.category_id]));
+watch(() => targetForm.branch_id, (branchId) => {
+    if (!categoriesForBranch(props.categories, branchId).some((c) => c.id === targetForm.category_id)) targetForm.category_id = firstOf(branchId);
+});
 watch(() => [targetForm.branch_id, targetForm.category_id, targetForm.season_start_year], ([b, c, y]) => {
     targetForm.target_count = props.targets.find((x) => (x.branch_id ?? null) === b && x.category_id === c && x.season_start_year === y)?.target_count ?? 0;
 }, { immediate: true });
@@ -149,7 +161,7 @@ function destroyCustom(s) {
                         <select v-model="scheduleForm.branch_id" :class="[input, 'block']"><option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option></select>
                     </label>
                     <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.category') }}
-                        <select v-model="scheduleForm.category_id" :class="[input, 'block']"><option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option></select>
+                        <select v-model="scheduleForm.category_id" :class="[input, 'block']"><option v-for="c in scheduleCategories" :key="c.id" :value="c.id">{{ c.name }}</option></select>
                     </label>
                     <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.weekday') }}
                         <select v-model="scheduleForm.weekday" :class="[input, 'block']"><option v-for="n in 7" :key="n" :value="n">{{ weekdayName(n) }}</option></select>
@@ -204,7 +216,7 @@ function destroyCustom(s) {
                         <select v-model="targetForm.branch_id" :class="[input, 'block']"><option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option></select>
                     </label>
                     <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.category') }}
-                        <select v-model="targetForm.category_id" :class="[input, 'block']"><option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option></select>
+                        <select v-model="targetForm.category_id" :class="[input, 'block']"><option v-for="c in targetCategories" :key="c.id" :value="c.id">{{ c.name }}</option></select>
                     </label>
                     <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.season') }}
                         <select v-model="targetForm.season_start_year" :class="[input, 'block']"><option v-for="s in seasons" :key="s.start_year" :value="s.start_year">{{ s.label }}</option></select>

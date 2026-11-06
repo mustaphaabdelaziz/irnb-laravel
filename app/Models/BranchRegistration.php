@@ -95,10 +95,9 @@ class BranchRegistration extends Pivot
      */
     public static function constrainActive(mixed $query, string $column): mixed
     {
-        $left = Player::leftStatusId();
-
-        return $left === null ? $query : $query->where(
-            fn ($w) => $w->whereNull($column)->orWhere($column, '!=', $left)
+        // A subquery, so it costs no lookup; NOT IN keeps everyone active when no `left` status exists.
+        return $query->where(
+            fn ($w) => $w->whereNull($column)->orWhereNotIn($column, PlayerStatus::query()->where('code', 'left')->select('id'))
         );
     }
 

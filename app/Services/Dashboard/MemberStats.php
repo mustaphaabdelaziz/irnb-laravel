@@ -368,7 +368,7 @@ class MemberStats
             ->map(fn (object $row): array => [
                 'name' => $row->name ?: null,
                 'labelKey' => $row->name ? null : 'uncategorised',
-                'count' => $row->total,
+                'count' => (int) $row->total,
             ])
             ->values()
             ->all();

@@ -253,9 +253,7 @@ class DashboardPageTest extends TestCase
         // members: +2 for document completion (DocumentStats::breakdown): the
         // active required document types, and one query over the current
         // members grouped by category (the summary is the sum of its rows).
-        // members: +1 for the left status id the per-registration category chart reads
-        // (BranchRegistration::constrainActive) to leave left registrations out.
-        foreach (['members' => 36, 'operations' => 12] as $tab => $budget) {
+        foreach (['members' => 35, 'operations' => 12] as $tab => $budget) {
             $recorder = new \ArrayObject;
             DB::listen(function ($query) use ($recorder): void {
                 $recorder->append($query->sql);

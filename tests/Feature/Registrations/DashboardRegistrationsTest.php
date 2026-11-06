@@ -6,6 +6,7 @@ use App\Models\PlayerStatus;
 use App\Services\Dashboard\DashboardFilters;
 use App\Services\Dashboard\MemberStats;
 use App\Services\Dashboard\ModuleStats;
+use App\Services\Player\RegistrationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use PHPUnit\Framework\Attributes\Test;
@@ -120,5 +121,20 @@ class DashboardRegistrationsTest extends TestCase
         $tiles = collect(app(ModuleStats::class)->players())->keyBy('key');
 
         $this->assertSame(2, $tiles['players_active']['value']);
+    }
+
+    #[Test]
+    public function a_windowed_range_counts_only_the_branch_leavers_inside_it(): void
+    {
+        $inside = $this->bothActive('Inside');
+        $outside = $this->bothActive('Outside');
+        app(RegistrationService::class)->leave($inside, [$this->foot->id], '2026-05-10');
+        app(RegistrationService::class)->leave($outside, [$this->foot->id], '2026-03-15');
+
+        $data = $this->members(['range' => 'month', 'branch' => (string) $this->foot->id]);
+
+        $this->assertSame(1, $this->tile($data, 'left'));
+        $this->assertSame(['Senior' => 1], $this->bars($data['leftByCategory']));
+    
     }
 }

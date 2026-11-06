@@ -97,3 +97,14 @@ export function cardPayload(card, leftStatusId = null) {
         sporting_status_id: card.sporting_status_id || null,
     };
 }
+
+/**
+ * Saved cards take their ID from the fresh rows: a delete can give the next row
+ * its ID, and the form keeps its state, so its cards aren't rebuilt.
+ */
+export function withFreshIds(cards, registrations = []) {
+    return cards.map((card) => {
+        const fresh = registrations.find((registration) => registration.id === card.id);
+        return fresh ? { ...card, membership_id: fresh.membership_id || '' } : card;
+    });
+}

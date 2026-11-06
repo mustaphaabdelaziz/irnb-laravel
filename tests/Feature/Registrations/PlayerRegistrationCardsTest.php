@@ -144,7 +144,7 @@ class PlayerRegistrationCardsTest extends TestCase
     }
 
     #[Test]
-    public function removing_a_card_marks_the_registration_left_and_keeps_it(): void
+    public function a_saved_branch_with_no_card_is_not_marked_left(): void
     {
         $player = Player::create(['firstname' => 'Ali', 'lastname' => 'T', 'membership_id' => '201700003', 'join_year' => 2017]);
         $player->branches()->attach([$this->foot->id, $this->swim->id]);
@@ -156,7 +156,7 @@ class PlayerRegistrationCardsTest extends TestCase
 
         $this->assertSame(2, $player->registrations()->count());
         $left = PlayerStatus::where('code', 'left')->value('id');
-        $this->assertSame($left, $player->registrations()->where('branch_id', $this->swim->id)->value('status_id'));
+        $this->assertNotSame($left, $player->registrations()->where('branch_id', $this->swim->id)->value('status_id'));
     }
 
     #[Test]

@@ -619,14 +619,15 @@ class PlayerController extends Controller
         $value = $data['value'] ?? null;
 
         $registrations = app(RegistrationService::class);
+        $changed = 0;
 
-        DB::transaction(function () use ($ids, $field, $value, $data, $registrations) {
+        DB::transaction(function () use ($ids, $field, $value, $data, $registrations, &$changed) {
             $players = Player::whereIn('id', $ids)->get();
 
             if ($field !== 'branches') {
                 $branchId = isset($data['branch_id']) ? (int) $data['branch_id'] : null;
 
-                $players->each(function (Player $player) use ($registrations, $field, $value, $branchId) {
+                $players->each(function (Player $player) use ($registrations, $field, $value, $branchId, &$changed) {
                     // A status belongs to one branch: a player with registrations
                     // but none there is left alone.
                     if ($field === 'status_id' && $branchId !== null
@@ -635,7 +636,7 @@ class PlayerController extends Controller
                         return;
                     }
 
-                    $registrations->setField($player, $field, $value ?: null, $branchId);
+                    $changed += $registrations->setField($player, $field, $value ?: null, $branchId) ? 1 : 0;
                 });
 
                 return;
@@ -659,27 +660,30 @@ class PlayerController extends Controller
 
             // Branches are many-to-many, so "set" is ambiguous: replace the
             // whole set, add to it, or remove from it. Removing marks as left.
-            $players->each(function (Player $player) use ($branchIds, $mode, $data, $registrations) {
+            $players->each(function (Player $player) use ($branchIds, $mode, $data, $registrations, &$changed) {
                 $active = $player->registrations()->active()
                     ->pluck('branch_id')->map(fn ($id) => (int) $id)->all();
 
                 if ($mode === 'detach') {
+                    $changed += array_intersect($branchIds, $active) === [] ? 0 : 1;
                     $registrations->leave($player, $branchIds);
 
                     return;
                 }
-                foreach (array_diff($branchIds, $active) as $branchId) {
+                $joining = array_diff($branchIds, $active);
+                $leaving = $mode === 'replace' ? array_values(array_diff($active, $branchIds)) : [];
+                $changed += $joining === [] && $leaving === [] ? 0 : 1;
+
+                foreach ($joining as $branchId) {
                     $registrations->registerWithSharedDate($player, $branchId, $data['join_date'] ?? null);
                 }
-                if ($mode === 'replace') {
-                    $registrations->leave($player, array_values(array_diff($active, $branchIds)));
-                }
+                $registrations->leave($player, $leaving);
             });
         });
 
         return back()->with('success', [
             'key' => 'flash.players_updated',
-            'params' => ['count' => count($ids)],
+            'params' => ['count' => $changed],
         ]);
     }
 

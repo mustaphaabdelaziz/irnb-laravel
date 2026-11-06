@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\BranchRegistration;
 use App\Services\Activity\ActivityRecorder;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
@@ -62,6 +63,12 @@ class RecordRouteActivity
         }
         if (isset($entry['count']) && is_array($request->input($entry['count']))) {
             $properties['count'] = count($request->input($entry['count']));
+        }
+
+        // A registration is part of the player: name them, and say which branch.
+        if ($subject instanceof BranchRegistration) {
+            $properties['branch_id'] = $subject->branch_id;
+            $subject = $subject->player;
         }
 
         ActivityRecorder::record($request->user(), $entry[0], $subject, $properties);

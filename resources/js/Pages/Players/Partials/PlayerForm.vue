@@ -17,7 +17,7 @@ import { phoneDigits } from '@/lib/phone';
 import { positionLabeller } from '@/lib/positionLabels';
 import { useCan } from '@/Composables/useCan';
 import { localToday } from '@/lib/localDate';
-import { cardFromRegistration, cardPayload, newCard, withoutCard } from '@/lib/registrationCards';
+import { cardFromRegistration, cardPayload, newCard, withFreshIds, withoutCard } from '@/lib/registrationCards';
 
 const { t } = useI18n();
 const { can } = useCan();
@@ -115,7 +115,7 @@ function deleteCard() {
         preserveState: true,
         onSuccess: (page) => {
             if (!page.props.flash?.error) {
-                form.registrations = withoutCard(form.registrations, card.id, props.positions);
+                form.registrations = withFreshIds(withoutCard(form.registrations, card.id, props.positions), page.props.player?.registrations);
                 clearRegistrationErrors();
             }
         },

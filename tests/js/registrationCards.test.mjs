@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cardFromRegistration, cardPayload, newCard, withoutCard } from '../../resources/js/lib/registrationCards.js';
+import { cardFromRegistration, cardPayload, newCard, withFreshIds, withoutCard } from '../../resources/js/lib/registrationCards.js';
 
 test('an existing registration keeps its plain date and its branch\'s other positions', () => {
     const card = cardFromRegistration(
@@ -119,4 +119,16 @@ test('only a card whose status is the left status sends a leave date', () => {
 
 test('a left card with an empty date sends null, never a made-up day', () => {
     assert.equal(cardPayload({ branch_id: 1, status_id: 3, left_at: '' }, 3).left_at, null);
+});
+
+test('a card picks up the ID the server gave its registration after a delete', () => {
+    const cards = [
+        { id: 1, branch_id: 1, membership_id: '' },
+        { branch_id: 2, membership_id: '', is_new: true },
+        { id: 3, branch_id: 3, membership_id: 'OLD' },
+    ];
+    const fresh = withFreshIds(cards, [{ id: 1, membership_id: 'SW-2020-00001' }, { id: 3, membership_id: null }]);
+    assert.equal(fresh[0].membership_id, 'SW-2020-00001');
+    assert.equal(fresh[1].membership_id, '');
+    assert.equal(fresh[2].membership_id, '');
 });

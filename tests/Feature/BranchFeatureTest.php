@@ -97,7 +97,7 @@ class BranchFeatureTest extends TestCase
     }
 
     #[Test]
-    public function updating_a_player_marks_a_dropped_branch_left_instead_of_deleting_it(): void
+    public function updating_a_player_keeps_a_branch_with_no_card_as_it_was(): void
     {
         $swim = Branch::create(['name' => 'Swimming', 'code' => 'SW']);
         $foot = Branch::create(['name' => 'Football', 'code' => 'FB']);
@@ -111,9 +111,9 @@ class BranchFeatureTest extends TestCase
             ])
             ->assertRedirect();
 
-        // Both registrations remain; the dropped one is marked left.
+        // Both registrations remain, and the one with no card is untouched.
         $this->assertEqualsCanonicalizing([$swim->id, $foot->id], $player->registrations()->pluck('branch_id')->all());
-        $this->assertSame(Player::leftStatusId(), $player->registrations()->where('branch_id', $swim->id)->value('status_id'));
+        $this->assertNotSame(Player::leftStatusId(), $player->registrations()->where('branch_id', $swim->id)->value('status_id'));
         $this->assertNotSame(Player::leftStatusId(), $player->registrations()->where('branch_id', $foot->id)->value('status_id'));
     }
 

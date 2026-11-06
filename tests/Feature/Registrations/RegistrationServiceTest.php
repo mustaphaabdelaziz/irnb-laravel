@@ -120,7 +120,7 @@ class RegistrationServiceTest extends TestCase
     }
 
     #[Test]
-    public function a_card_left_out_of_sync_is_marked_left_not_deleted(): void
+    public function a_card_left_out_of_sync_changes_nothing(): void
     {
         $player = $this->player();
         $this->service->sync($player, [
@@ -131,7 +131,7 @@ class RegistrationServiceTest extends TestCase
         $this->service->sync($player, [['branch_id' => $this->foot->id]]);
 
         $swim = $player->registrations()->where('branch_id', $this->swim->id)->firstOrFail();
-        $this->assertSame($this->left()->id, $swim->status_id);
+        $this->assertNotSame($this->left()->id, $swim->status_id);
         $this->assertSame('2025-03-10', $swim->join_date->toDateString());
     }
 
@@ -415,7 +415,7 @@ class RegistrationServiceTest extends TestCase
         $player = $this->player();
         $this->twoRows($player);
         $swimId = $player->registrations()->where('branch_id', $this->swim->id)->value('id');
-        $this->service->sync($player, [['branch_id' => $this->foot->id]]);
+        $this->service->leave($player, [$this->swim->id]);
         $this->assertSame($this->left()->id, BranchRegistration::findOrFail($swimId)->status_id);
 
         $this->service->sync($player, [['branch_id' => $this->foot->id], ['branch_id' => $this->swim->id]]);

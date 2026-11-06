@@ -26,8 +26,8 @@ class RegistrationService
     private const DETAILS = ['category_id', 'position_id', 'licence_number', 'status_id', 'left_at', 'sporting_status_id'];
 
     /**
-     * Make the player's registrations match the cards. A branch with no card is
-     * marked as left, never deleted: it keeps its date, ID and history.
+     * Save the cards. A branch with no card is left alone: it may have been added
+     * after the form opened. Leaving is the left status on a card, or leave().
      *
      * @param  list<array<string, mixed>>  $cards
      */
@@ -35,6 +35,9 @@ class RegistrationService
     {
         DB::transaction(function () use ($player, $cards, $user) {
             $existing = $player->registrations()->get()->keyBy('branch_id');
+            // The position a player with no registration holds: a branch's card can't
+            // carry it unless it is the first one, so it must not vanish between them.
+            $held = $existing->isEmpty() ? $player->position_id : null;
 
             foreach ($this->mainCardFirst($cards) as $card) {
                 $registration = $existing[(int) $card['branch_id']] ?? null;
@@ -47,12 +50,22 @@ class RegistrationService
                 }
             }
 
-            $absent = $existing->keys()->diff(collect($cards)->pluck('branch_id')->map(fn ($id) => (int) $id));
-            $this->leave($player, $absent->all());
-
             $this->syncOtherPositions($player, $cards);
+            $this->keepHeldPosition($player, $held);
             $this->refreshMirror($player);
         });
+    }
+
+    /** A main position a branch owns and no card took waits among the other positions. */
+    private function keepHeldPosition(Player $player, mixed $positionId): void
+    {
+        if ($positionId === null
+            || Position::whereKey($positionId)->value('branch_id') === null
+            || $player->registrations()->where('position_id', $positionId)->exists()) {
+            return;
+        }
+
+        $player->otherPositions()->syncWithoutDetaching([$positionId]);
     }
 
     /**
@@ -105,13 +118,20 @@ class RegistrationService
             }
             $details['status_id'] ??= PlayerStatus::where('code', 'registered')->value('id');
 
-            $registration = $player->registrations()->create([
+            $attributes = [
                 'branch_id' => (int) $card['branch_id'],
                 'membership_id' => $id,
                 'join_date' => $joinDate,
                 'legacy_join_year' => $legacyYear,
                 ...$details,
-            ]);
+            ];
+            // Copied from the player, not a departure happening now: a left player whose
+            // day was never recorded stays undated, past the saving hook's "stamp today".
+            $copiesUndatedLeft = $first && ! array_key_exists('status_id', $card) && ! array_key_exists('left_at', $card)
+                && Player::isLeftStatus($player->status_id) && $player->left_at === null;
+            $registration = $copiesUndatedLeft
+                ? $player->registrations()->createQuietly($attributes)
+                : $player->registrations()->create($attributes);
 
             // A main position another branch owns is not lost: it waits among the other positions.
             if ($first && $player->position_id !== null && (int) ($card['position_id'] ?? 0) !== (int) $player->position_id) {
@@ -248,10 +268,12 @@ class RegistrationService
     /**
      * One field from bulk edit: status on the registration of $branchId only,
      * position on its branch's, category on the primary.
+     *
+     * @return bool whether anything was written: a position no registration of this player can hold writes nothing
      */
-    public function setField(Player $player, string $field, mixed $value, ?int $branchId = null): void
+    public function setField(Player $player, string $field, mixed $value, ?int $branchId = null): bool
     {
-        DB::transaction(function () use ($player, $field, $value, $branchId) {
+        return DB::transaction(function () use ($player, $field, $value, $branchId) {
             $registrations = $player->registrations()->get();
 
             if ($registrations->isEmpty()) {
@@ -262,7 +284,7 @@ class RegistrationService
                     $player->otherPositions()->detach($value);
                 }
 
-                return;
+                return true;
             }
             if ($field === 'status_id' && $branchId === null) {
                 throw new InvalidArgumentException('A status change needs the branch it applies to.');
@@ -283,6 +305,8 @@ class RegistrationService
                 $player->otherPositions()->detach($value);
             }
             $this->refreshMirror($player);
+
+            return $targets->isNotEmpty();
         });
     }
 

@@ -33,7 +33,7 @@ class ReportController extends Controller
             'photo' => $this->resolveMediaFile($player->picture_url),
         ])->render();
 
-        return $this->pdf->stream($html, "member-card-{$player->membership_id}.pdf");
+        return $this->pdf->stream($html, 'member-card-'.($player->membership_id ?: $player->id).'.pdf');
     }
 
     public function academicReport(Request $request, Player $player): Response
@@ -56,7 +56,7 @@ class ReportController extends Controller
             'scalePassMarks' => $scalePassMarks,
         ])->render();
 
-        return $this->pdf->stream($html, "academic-report-{$player->membership_id}.pdf");
+        return $this->pdf->stream($html, 'academic-report-'.($player->membership_id ?: $player->id).'.pdf');
     }
 
     public function financialSummary(Request $request): Response

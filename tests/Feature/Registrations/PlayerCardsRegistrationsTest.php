@@ -107,4 +107,18 @@ class PlayerCardsRegistrationsTest extends TestCase
         $this->get(route('players.show', $player))
             ->assertInertia(fn (Assert $page) => $page->where('mainBranchId', $this->swim->id));
     }
+
+    #[Test]
+    public function a_registration_with_no_id_downloads_under_the_player_id(): void
+    {
+        $player = $this->bothActive();
+        DB::table('branch_player')->where('player_id', $player->id)->where('branch_id', $this->swim->id)->update(['membership_id' => null]);
+
+        $this->get(route('players.card', ['player' => $player->id, 'branch' => $this->swim->id]))->assertOk();
+        $this->assertSame("member-card-{$player->id}.pdf", $this->filename);
+
+        $player->update(['is_student' => true]);
+        $this->get(route('players.academic-report', ['player' => $player->id, 'branch' => $this->swim->id]))->assertOk();
+        $this->assertSame("academic-report-{$player->id}.pdf", $this->filename);
+    }
 }

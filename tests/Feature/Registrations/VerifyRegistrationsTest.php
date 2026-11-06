@@ -230,7 +230,7 @@ class VerifyRegistrationsTest extends TestCase
         $subscription->categories()->attach($senior->id, ['amount_student' => 100, 'amount_worker' => 200]);
         $subscription->categories()->attach($swimSenior->id, ['amount_student' => 150, 'amount_worker' => 200]);
 
-        $this->artisan('registrations:verify')->expectsOutputToContain('warning: same-named categories priced differently')->assertExitCode(0);
+        $this->artisan('registrations:verify')->expectsOutputToContain('warning: same-named categories priced differently')->expectsOutputToContain('OK (with warnings)')->assertExitCode(0);
     }
 
     #[Test]
@@ -241,7 +241,7 @@ class VerifyRegistrationsTest extends TestCase
         $subscription->categories()->attach($senior->id, ['amount_student' => 100, 'amount_worker' => 200]);
         $subscription->branches()->attach([$foot->id, $swim->id]);
 
-        $this->artisan('registrations:verify')->expectsOutputToContain('warning: same-named category with no price row')->assertExitCode(0);
+        $this->artisan('registrations:verify')->expectsOutputToContain('warning: same-named category with no price row')->expectsOutputToContain('OK (with warnings)')->assertExitCode(0);
     }
 
     #[Test]
@@ -331,6 +331,35 @@ class VerifyRegistrationsTest extends TestCase
         $service = app(RegistrationService::class);
         $service->register($player, ['branch_id' => $foot->id, 'category_id' => $senior->id]);
         $service->register($player, ['branch_id' => $swim->id, 'category_id' => $swimSenior->id]);
+        $session = TrainingSession::create(['branch_id' => $swim->id, 'category_id' => $swimSenior->id, 'date' => '2026-03-02', 'start_time' => '18:00', 'end_time' => '19:00', 'kind' => 'preseason', 'state' => 'held']);
+        DB::table('attendances')->insert(['training_session_id' => $session->id, 'player_id' => $player->id, 'category_id' => $senior->id, 'status' => 'present']);
+
+        $this->artisan('registrations:verify')->expectsOutputToContain('attendance')->assertExitCode(1);
+    }
+
+    #[Test]
+    public function a_guest_mark_before_the_player_registered_in_that_branch_passes(): void
+    {
+        [$foot, $swim, $senior, $swimSenior] = $this->club();
+        $player = Player::create(['firstname' => 'L', 'membership_id' => '202000005', 'join_year' => 2020]);
+        $service = app(RegistrationService::class);
+        $service->register($player, ['branch_id' => $foot->id, 'category_id' => $senior->id]);
+        $session = TrainingSession::create(['branch_id' => $swim->id, 'category_id' => $swimSenior->id, 'date' => '2026-03-02', 'start_time' => '18:00', 'end_time' => '19:00', 'kind' => 'preseason', 'state' => 'held']);
+        app(MarkRecorder::class)->save($session, [['player_id' => $player->id, 'status' => 'present']], null);
+
+        $service->register($player, ['branch_id' => $swim->id, 'category_id' => $swimSenior->id, 'join_date' => '2026-04-01']);
+
+        $this->artisan('registrations:verify')->assertExitCode(0);
+    }
+
+    #[Test]
+    public function a_mark_on_or_after_the_join_date_with_a_foreign_category_still_fails(): void
+    {
+        [$foot, $swim, $senior, $swimSenior] = $this->club();
+        $player = Player::create(['firstname' => 'L', 'membership_id' => '202000006', 'join_year' => 2020]);
+        $service = app(RegistrationService::class);
+        $service->register($player, ['branch_id' => $foot->id, 'category_id' => $senior->id]);
+        $service->register($player, ['branch_id' => $swim->id, 'category_id' => $swimSenior->id, 'join_date' => '2026-03-02']);
         $session = TrainingSession::create(['branch_id' => $swim->id, 'category_id' => $swimSenior->id, 'date' => '2026-03-02', 'start_time' => '18:00', 'end_time' => '19:00', 'kind' => 'preseason', 'state' => 'held']);
         DB::table('attendances')->insert(['training_session_id' => $session->id, 'player_id' => $player->id, 'category_id' => $senior->id, 'status' => 'present']);
 

@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\DB;
 /** Read-only checks on real data, before and after a release. */
 class VerifyRegistrations extends Command
 {
+    private bool $warned = false;
+
     protected $signature = 'registrations:verify';
 
     protected $description = 'Check that registrations and the player copy agree';
@@ -95,7 +97,7 @@ class VerifyRegistrations extends Command
         $this->warning('same-named categories priced differently (expected once someone sets a price per branch)', $priced);
         $this->warning('same-named category with no price row (expected once someone removes one)', $unpriced);
 
-        $this->line($failures === 0 ? 'OK' : "FAILED: {$failures} check(s)");
+        $this->line($failures === 0 ? ($this->warned ? 'OK (with warnings)' : 'OK') : "FAILED: {$failures} check(s)");
 
         return $failures === 0 ? self::SUCCESS : self::FAILURE;
     }
@@ -144,13 +146,21 @@ class VerifyRegistrations extends Command
             'attendance' => DB::table('attendances')
                 ->join('training_sessions', 'training_sessions.id', '=', 'attendances.training_session_id')
                 ->join('categories', 'categories.id', '=', 'attendances.category_id')
+                // A guest (no registration in the session's branch) is marked with their main registration's category.
+                ->join('branch_player', fn ($j) => $j->on('branch_player.player_id', '=', 'attendances.player_id')
+                    ->on('branch_player.branch_id', '=', 'training_sessions.branch_id'))
                 ->whereNotNull('training_sessions.branch_id')->whereNotNull('categories.branch_id')
                 ->whereColumn('categories.branch_id', '!=', 'training_sessions.branch_id')
-                // A guest (no registration in the session's branch) is marked with their main registration's category.
-                ->whereExists(fn ($r) => $r->selectRaw('1')->from('branch_player')
-                    ->whereColumn('branch_player.player_id', 'attendances.player_id')
-                    ->whereColumn('branch_player.branch_id', 'training_sessions.branch_id'))
-                ->pluck('attendances.id'),
+                ->get(['attendances.id', 'training_sessions.date', 'branch_player.join_date', 'branch_player.legacy_join_year'])
+                // Marked as a guest before the player registered there: the registration began after the session.
+                ->reject(function ($row) {
+                    $day = substr((string) $row->date, 0, 10);
+
+                    return $row->join_date !== null
+                        ? substr((string) $row->join_date, 0, 10) > $day
+                        : ($row->legacy_join_year !== null && (int) $row->legacy_join_year > (int) substr($day, 0, 4));
+                })
+                ->pluck('id'),
         ];
         foreach ($linked as $label => $ids) {
             foreach ($ids as $id) {
@@ -202,6 +212,7 @@ class VerifyRegistrations extends Command
             return;
         }
 
+        $this->warned = true;
         $this->warn('warning: '.$label.': '.count($problems));
         foreach (array_slice($problems, 0, 20) as $problem) {
             $this->line('  '.$problem);

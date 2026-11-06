@@ -481,6 +481,10 @@ class RegistrationService
             'position_id' => $player->position_id !== null
                 && in_array(Position::whereKey($player->position_id)->value('branch_id'), [null, $branchId], false)
                 ? $player->position_id : null,
+            // The same rule for a category: a branch holds only its own (or an unowned one).
+            'category_id' => $player->category_id !== null
+                && in_array(Category::whereKey($player->category_id)->value('branch_id'), [null, $branchId], false)
+                ? $player->category_id : null,
             'left_at' => $player->left_at?->toDateString(),
             'sporting_status_id' => null,
             default => $player->{$field},

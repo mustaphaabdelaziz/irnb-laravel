@@ -2,6 +2,7 @@
 
 namespace App\Reports\Players;
 
+use App\Models\BranchRegistration;
 use App\Models\DocumentType;
 use App\Models\Player;
 use App\Reports\Column;
@@ -14,8 +15,9 @@ use App\Support\UiLang;
 use Illuminate\Support\Collection;
 
 /**
- * One line per document a player still owes: missing, expired or expiring
- * within 30 days. Every state comes from DocumentChecklist::evaluate(), the
+ * One line per document a registration still owes: missing, expired or expiring
+ * within 30 days. A left registration owes nothing; a player with no registration
+ * owes on their own. Every state comes from DocumentChecklist::evaluate(), the
  * rule set the player page and the players list already use.
  */
 class PlayerDocuments extends Report
@@ -66,6 +68,7 @@ class PlayerDocuments extends Report
             new Column('membership_id', 'col.membership_id'),
             new Column('name', 'col.full_name'),
             new Column('category', 'col.category'),
+            new Column('branch', 'branch'),
             new Column('phone', 'col.phone'),
             new Column('document', 'reports.col.document'),
             new Column('state', 'col.status'),
@@ -75,7 +78,7 @@ class PlayerDocuments extends Report
 
     public function sortable(): array
     {
-        return ['name' => 'name', 'document' => 'document', 'state' => 'state', 'valid_until' => 'valid_until', 'category' => 'category'];
+        return ['name' => 'name', 'document' => 'document', 'state' => 'state', 'valid_until' => 'valid_until', 'category' => 'category', 'branch' => 'branch'];
     }
 
     public function defaultSort(): array
@@ -118,32 +121,50 @@ class PlayerDocuments extends Report
             ->when($filters->filled('document_type_id'), fn ($q) => $q->whereIn('id', $filters->get('document_type_id')))
             ->get();
         $states = $filters->filled('state') ? $filters->get('state') : self::STATES;
+        $branches = $filters->filled('branch_id') ? array_map('intval', $filters->get('branch_id')) : null;
+        $categories = $filters->filled('category_id') ? array_map('intval', $filters->get('category_id')) : null;
+        $left = Player::leftStatusId();
 
-        $query = Player::query()->where('archived', false)->with(['category', 'documents.files']);
-        $this->applyCategoryBranch($query, $filters);
+        $query = Player::query()->where('archived', false)
+            ->with(['category', 'documents.files', 'registrations.branch', 'registrations.category'])
+            ->registeredWhere(branches: $branches, categories: $categories);
 
         $rows = collect();
         foreach ($query->lazy(200) as $player) {
-            $documents = $player->documents->keyBy('document_type_id');
-            foreach ($types as $type) {
-                $document = $documents->get($type->id);
-                $result = DocumentChecklist::evaluate($type, $document, $player);
-                // A missing document only counts when the club expects it (as on the player page).
-                $owed = $result['state'] === DocumentChecklist::MISSING ? $result['counts_missing'] : true;
-                if (! $owed || ! in_array($result['state'], $states, true)) {
-                    continue;
+            // Only the registrations the filters speak of, and none the player left.
+            $lines = $player->registrations->isEmpty()
+                ? collect([null])
+                : $player->registrations
+                    ->reject(fn (BranchRegistration $r) => $left !== null && (int) $r->status_id === $left)
+                    ->filter(fn (BranchRegistration $r) => ($branches === null || in_array((int) $r->branch_id, $branches, true))
+                        && ($categories === null || in_array((int) $r->category_id, $categories, true)))
+                    ->sortBy('id');
+
+            foreach ($lines as $registration) {
+                $documents = $player->documents
+                    ->where('branch_registration_id', $registration?->id)
+                    ->keyBy('document_type_id');
+                foreach ($types as $type) {
+                    $document = $documents->get($type->id);
+                    $result = DocumentChecklist::evaluate($type, $document, $player);
+                    // A missing document only counts when the club expects it (as on the player page).
+                    $owed = $result['state'] === DocumentChecklist::MISSING ? $result['counts_missing'] : true;
+                    if (! $owed || ! in_array($result['state'], $states, true)) {
+                        continue;
+                    }
+                    $rows->push([
+                        'player_id' => $player->id,
+                        'membership_id' => $registration === null ? $player->membership_id : $registration->membership_id,
+                        'name' => $player->fullname,
+                        'category' => ($registration === null ? $player->category : $registration->category)?->localized_name,
+                        'branch' => $registration?->branch?->localized_name,
+                        'phone' => collect($player->phones ?? [])->filter()->first(),
+                        'document' => $type->localized_name,
+                        'state' => UiLang::get('doc_state_'.$result['state']),
+                        'state_code' => $result['state'],
+                        'valid_until' => $document?->valid_until?->format('Y-m-d'),
+                    ]);
                 }
-                $rows->push([
-                    'player_id' => $player->id,
-                    'membership_id' => $player->membership_id,
-                    'name' => $player->fullname,
-                    'category' => $player->category?->localized_name,
-                    'phone' => collect($player->phones ?? [])->filter()->first(),
-                    'document' => $type->localized_name,
-                    'state' => UiLang::get('doc_state_'.$result['state']),
-                    'state_code' => $result['state'],
-                    'valid_until' => $document?->valid_until?->format('Y-m-d'),
-                ]);
             }
         }
 

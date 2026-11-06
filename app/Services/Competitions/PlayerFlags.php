@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\DB;
  * Warning badges shown when picking players. Warnings only — the coach always
  * decides. Phase 1 has "injured" (an injury spell still open today, from the
  * attendance marks); suspended, no licence, documents for matches and unpaid are in for().
+ * The documents flag reads the team's branch, so a paper owed on another sport's
+ * registration does not show on this team's badge.
  */
 final class PlayerFlags
 {
@@ -74,7 +76,7 @@ final class PlayerFlags
 
         $query = Player::query()->whereIn('id', $ids)->select(['id', 'licence_number'])->with('registrations');
         foreach ($types as $type) {
-            [$sql, $bindings] = DocumentChecklist::missingTypeSql($type);
+            [$sql, $bindings] = DocumentChecklist::missingTypeSql($type, null, $branchId);
             $query->selectRaw("{$sql} as doc_{$type->id}", $bindings);
         }
         $seeMoney = (bool) $viewer?->hasPermission('finance', 'view');

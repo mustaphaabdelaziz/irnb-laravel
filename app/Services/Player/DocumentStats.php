@@ -53,7 +53,7 @@ final class DocumentStats
      *
      * @return array{summary: array<string, mixed>, by_category: list<array<string, mixed>>}|null
      */
-    public function breakdown(EloquentBuilder|QueryBuilder $players, ?CarbonInterface $today = null, ?int $branchId = null): ?array
+    public function breakdown(EloquentBuilder|QueryBuilder $players, ?CarbonInterface $today = null, ?int $branchId = null, ?CategoryLabels $labels = null): ?array
     {
         $types = $this->types();
 
@@ -76,7 +76,7 @@ final class DocumentStats
             )
             ->get();
 
-        $labels = CategoryLabels::make();
+        $labels ??= CategoryLabels::make();
 
         $byCategory = $rows->map(fn (object $row): array => [
             'category_id' => $row->category_id === null ? null : (int) $row->category_id,

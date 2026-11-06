@@ -11,6 +11,7 @@ use App\Services\Dashboard\Support\DeltaCalculator;
 use App\Services\Dashboard\Support\MonthBucket;
 use App\Services\Player\DocumentStats;
 use App\Services\Player\RegistrationCounts;
+use App\Support\CategoryLabels;
 use App\Support\FiscalPeriod;
 use App\Support\Season;
 use Carbon\CarbonImmutable;
@@ -41,7 +42,15 @@ class MemberStats
 
     private const TOP_CITIES = 6;
 
+    /** One set of category names per request, shared by the category chart and the document rows. */
+    private ?CategoryLabels $categoryLabels = null;
+
     public function __construct(private readonly DocumentStats $documentStats) {}
+
+    private function categoryLabels(): CategoryLabels
+    {
+        return $this->categoryLabels ??= CategoryLabels::make();
+    }
 
     /**
      * @param  bool  $money  false leaves out the median debt tile and the
@@ -74,7 +83,7 @@ class MemberStats
      */
     public function documents(DashboardFilters $filters): ?array
     {
-        return $this->documentStats->breakdown($this->active($filters)->notLeft(), null, $filters->branchId);
+        return $this->documentStats->breakdown($this->active($filters)->notLeft(), null, $filters->branchId, $this->categoryLabels());
     }
 
     private function summary(DashboardFilters $filters): array
@@ -350,6 +359,7 @@ class MemberStats
         return $this->counted(RegistrationCounts::byCategory(
             $this->active($filters),
             $filters->branchId === null ? null : [$filters->branchId],
+            labels: $this->categoryLabels(),
         ));
     }
 

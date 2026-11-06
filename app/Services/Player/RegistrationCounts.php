@@ -35,9 +35,9 @@ final class RegistrationCounts
     }
 
     /** @return Collection<int, object{key: int|null, name: string|null, total: int}> */
-    public static function byCategory(EloquentBuilder|QueryBuilder $players, ?array $branches = null, bool $includeLeft = false, ?array $categories = null): Collection
+    public static function byCategory(EloquentBuilder|QueryBuilder $players, ?array $branches = null, bool $includeLeft = false, ?array $categories = null, ?CategoryLabels $labels = null): Collection
     {
-        $labels = CategoryLabels::make();
+        $labels ??= CategoryLabels::make();
 
         return self::grouped(self::rows($players, $branches, $includeLeft, $categories), 'categories', 'category_id')
             ->map(function (object $row) use ($labels) {

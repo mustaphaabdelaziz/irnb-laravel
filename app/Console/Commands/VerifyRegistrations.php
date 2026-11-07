@@ -90,6 +90,14 @@ class VerifyRegistrations extends Command
             ->map(fn ($row) => "player {$row->player_id}: type {$row->document_type_id}")->all();
         $failures += $this->report('document held twice', $doubledDocuments);
 
+        // Kept on purpose when a branch stops requiring a type (owner, 2026-11-07): a warning, never a failure.
+        $retiredDocuments = DB::table('player_documents as pd')
+            ->join('branch_player as r', 'r.id', '=', 'pd.branch_registration_id')
+            ->whereNotExists(fn ($q) => $q->selectRaw('1')->from('branch_document_type as bdt')
+                ->whereColumn('bdt.branch_id', 'r.branch_id')->whereColumn('bdt.document_type_id', 'pd.document_type_id'))
+            ->pluck('pd.id')->map(fn ($id) => "document {$id}")->all();
+        $this->warning('document of a type its branch no longer requires (kept, not counted)', $retiredDocuments);
+
         $failures += $this->report('category with no branch', $this->unownedCategories());
         $failures += $this->report('category of another branch', $this->misplacedCategories());
         [$priced, $unpriced] = $this->priceProblems();

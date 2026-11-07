@@ -12,12 +12,13 @@ use App\Services\Player\RegistrationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Support\DocumentBranchFixtures;
 use Tests\Support\RegistrationFixtures;
 use Tests\TestCase;
 
 class ReleaseOneLeftoversTest extends TestCase
 {
-    use RefreshDatabase, RegistrationFixtures;
+    use DocumentBranchFixtures, RefreshDatabase, RegistrationFixtures;
 
     private RegistrationService $service;
 
@@ -27,6 +28,7 @@ class ReleaseOneLeftoversTest extends TestCase
         $this->twoSportClub();
         $this->actingAs(User::factory()->admin()->create());
         $this->service = app(RegistrationService::class);
+        $this->requireDocumentsEverywhere();
     }
 
     private function left(): int

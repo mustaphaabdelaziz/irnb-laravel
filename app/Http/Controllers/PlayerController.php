@@ -190,10 +190,12 @@ class PlayerController extends Controller
                 ->get()
                 ->map(fn ($row) => ['name' => $row->lastname, 'count' => (int) $row->total])
                 ->values(),
-            // The "missing type X" options: only types that can be missing.
+            // The "missing type X" options: only types that can be missing, and
+            // with one branch selected, only those that branch requires.
             'documentTypes' => fn () => DocumentType::query()
                 ->where('is_active', true)
                 ->where('is_required', true)
+                ->when($this->selectedBranch($request), fn ($query, $branchId) => $query->whereHas('branches', fn ($branches) => $branches->whereKey($branchId)))
                 ->ordered()
                 ->get(['id', 'code', 'name', 'name_ar', 'name_fr', 'name_en']),
             'categoryStats' => $categoryStats,

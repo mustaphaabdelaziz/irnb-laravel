@@ -110,4 +110,41 @@ class BranchDocumentWritersTest extends TestCase
 
         $this->assertSame(3, $document->fresh()->copies_received);
     }
+
+    private function reportRows()
+    {
+        $report = app(\App\Reports\Players\PlayerDocuments::class);
+
+        return $report->rows(\App\Reports\ReportFilters::fromRequest(\Illuminate\Http\Request::create('/'), $report));
+    }
+
+    #[Test]
+    public function the_report_lists_a_type_only_where_its_branch_requires_it(): void
+    {
+        $mine = $this->reportRows()->where('player_id', $this->player->id)->where('document', 'Medical');
+
+        $this->assertSame(['Football'], $mine->pluck('branch')->values()->all());
+    }
+
+    #[Test]
+    public function the_report_shows_an_incomplete_record_with_its_copies(): void
+    {
+        $this->receive($this->foot, ['copies_received' => 2]);
+
+        $row = $this->reportRows()->where('player_id', $this->player->id)->where('document', 'Medical')->first();
+
+        $this->assertSame(\App\Services\Player\DocumentChecklist::INCOMPLETE, $row['state_code']);
+        $this->assertStringContainsString('2 / 3', $row['state']);
+    }
+
+    #[Test]
+    public function the_missing_type_options_follow_the_selected_branch(): void
+    {
+        $options = fn ($branch) => collect($this->actingAs($this->admin)
+            ->get(route('players.index', ['branch_id' => [$branch->id]]))
+            ->assertOk()->viewData('page')['props']['documentTypes']);
+
+        $this->assertFalse($options($this->swim)->contains('id', $this->medical->id));
+        $this->assertTrue($options($this->foot)->contains('id', $this->medical->id));
+    }
 }

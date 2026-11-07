@@ -1438,6 +1438,7 @@
     "doc_required": "Required",
     "doc_required_for_matches": "Required to play matches",
     "doc_state_expired": "Expired",
+    "doc_state_incomplete": "Incomplete",
     "doc_state_expires_soon": "Expires soon",
     "doc_state_missing": "Missing",
     "doc_state_not_required": "Not required",

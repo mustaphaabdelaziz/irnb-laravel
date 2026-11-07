@@ -1438,6 +1438,7 @@
     "doc_required": "إلزامي",
     "doc_required_for_matches": "مطلوب للمشاركة في المباريات",
     "doc_state_expired": "منتهي الصلاحية",
+    "doc_state_incomplete": "ناقص",
     "doc_state_expires_soon": "ينتهي قريباً",
     "doc_state_missing": "ناقص",
     "doc_state_not_required": "غير مطلوب",

@@ -24,7 +24,7 @@ class PlayerDocuments extends Report
 {
     use FiltersPlayers;
 
-    private const STATES = [DocumentChecklist::MISSING, DocumentChecklist::EXPIRED, DocumentChecklist::EXPIRES_SOON];
+    private const STATES = [DocumentChecklist::MISSING, DocumentChecklist::INCOMPLETE, DocumentChecklist::EXPIRED, DocumentChecklist::EXPIRES_SOON];
 
     /** @var array<string, Collection<int, array<string, mixed>>> per filter set, so summary/charts reuse one pass */
     private array $memo = [];
@@ -100,6 +100,7 @@ class PlayerDocuments extends Report
         return [
             ['label' => 'reports.kpi.players_concerned', 'value' => $rows->pluck('player_id')->unique()->count(), 'format' => 'number'],
             ['label' => 'doc_state_missing', 'value' => $rows->where('state_code', DocumentChecklist::MISSING)->count(), 'format' => 'number'],
+            ['label' => 'doc_state_incomplete', 'value' => $rows->where('state_code', DocumentChecklist::INCOMPLETE)->count(), 'format' => 'number'],
             ['label' => 'doc_state_expired', 'value' => $rows->where('state_code', DocumentChecklist::EXPIRED)->count(), 'format' => 'number'],
             ['label' => 'doc_state_expires_soon', 'value' => $rows->where('state_code', DocumentChecklist::EXPIRES_SOON)->count(), 'format' => 'number'],
         ];
@@ -125,6 +126,7 @@ class PlayerDocuments extends Report
         $categories = $filters->filled('category_id') ? array_map('intval', $filters->get('category_id')) : null;
         $left = Player::leftStatusId();
 
+        $ticked = DocumentType::idsByBranch();
         $query = Player::query()->where('archived', false)
             ->with(['category', 'documents.files', 'registrations.branch', 'registrations.category'])
             ->registeredWhere(branches: $branches, categories: $categories);
@@ -145,6 +147,10 @@ class PlayerDocuments extends Report
                     ->where('branch_registration_id', $registration?->id)
                     ->keyBy('document_type_id');
                 foreach ($types as $type) {
+                    // A branch owes only the types it ticks; a player with no registration owes them all.
+                    if ($registration !== null && ! in_array($type->id, $ticked[(int) $registration->branch_id] ?? [], true)) {
+                        continue;
+                    }
                     $document = $documents->get($type->id);
                     $result = DocumentChecklist::evaluate($type, $document, $player);
                     // A missing document only counts when the club expects it (as on the player page).
@@ -160,7 +166,8 @@ class PlayerDocuments extends Report
                         'branch' => $registration?->branch?->localized_name,
                         'phone' => collect($player->phones ?? [])->filter()->first(),
                         'document' => $type->localized_name,
-                        'state' => UiLang::get('doc_state_'.$result['state']),
+                        'state' => UiLang::get('doc_state_'.$result['state'])
+                            .($result['state'] === DocumentChecklist::INCOMPLETE ? " ({$document->copies_received} / {$type->copies})" : ''),
                         'state_code' => $result['state'],
                         'valid_until' => $document?->valid_until?->format('Y-m-d'),
                     ]);

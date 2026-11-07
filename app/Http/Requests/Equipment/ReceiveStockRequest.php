@@ -17,6 +17,8 @@ class ReceiveStockRequest extends FormRequest
             // A serial catalog gets one numbered row per unit, so a typo must
             // not create thousands of rows; a plain lot is a single row.
             'quantity' => ['required', 'integer', 'min:1', 'max:'.($this->receivesNumberedUnits() ? self::MAX_NUMBERED_UNITS : 100000)],
+            // Numbered "{designation} N" per unit when several are received.
+            'designation' => ['nullable', 'string', 'max:240'],
             'unit_price' => ['nullable', 'numeric', 'min:0'],
             'purchase_date' => ['required', 'date'],
             'condition' => ['required', 'in:New,Good,Fair,Poor,Damaged'],

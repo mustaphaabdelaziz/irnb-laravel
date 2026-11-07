@@ -228,14 +228,53 @@ class EquipmentStockService
             $numbered = (bool) EquipmentCatalog::whereKey($data['catalog_id'])->value('requires_serial');
             $rows = $numbered ? $quantity : 1;
 
+            $designation = trim((string) ($data['designation'] ?? ''));
+            $nextNumber = $rows > 1 && $designation !== ''
+                ? $this->highestDesignationNumber((int) $data['catalog_id'], $designation) + 1
+                : null;
+
             $first = null;
             for ($i = 0; $i < $rows; $i++) {
+                $data['designation'] = $designation === ''
+                    ? null
+                    : ($nextNumber === null ? $designation : $designation.' '.($nextNumber + $i));
+
                 $item = $this->receiveRow($data, $numbered ? 1 : $quantity, $unitPrice, $transactionId, $numbered, $userId, $actor);
                 $first ??= $item;
             }
 
             return $first;
         });
+    }
+
+    /**
+     * The highest N among this catalog's units named "{base} N", so a new
+     * batch continues the numbering (رقم 20 after رقم 19) instead of
+     * restarting at 1.
+     */
+    private function highestDesignationNumber(int $catalogId, string $base): int
+    {
+        $prefix = $base.' ';
+        $max = 0;
+
+        // LIKE only narrows the rows (a % or _ in the name just widens it);
+        // the exact, case-sensitive prefix check below decides.
+        $names = EquipmentItem::where('catalog_id', $catalogId)
+            ->where('designation', 'like', $prefix.'%')
+            ->pluck('designation');
+
+        foreach ($names as $name) {
+            $name = (string) $name;
+            if (! str_starts_with($name, $prefix)) {
+                continue;
+            }
+            $tail = substr($name, strlen($prefix));
+            if ($tail !== '' && ctype_digit($tail)) {
+                $max = max($max, (int) $tail);
+            }
+        }
+
+        return $max;
     }
 
     /** One received row: a lot of $quantity, or one numbered unit. */
@@ -250,6 +289,7 @@ class EquipmentStockService
     ): EquipmentItem {
         $item = new EquipmentItem([
             'catalog_id' => $data['catalog_id'],
+            'designation' => $data['designation'] ?? null,
             'quantity' => $quantity,
             'unit_price' => $unitPrice,
             'purchase_date' => $data['purchase_date'],

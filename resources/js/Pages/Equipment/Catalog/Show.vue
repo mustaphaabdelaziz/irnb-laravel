@@ -69,7 +69,6 @@ const {
     clear: clearItemSelection,
 } = useBulkSelection(deletableItems);
 
-const showAddItemModal = ref(false);
 const showRentModal = ref(false);
 const selectedItem = ref(null);
 const lostItemId = ref(null);
@@ -78,6 +77,7 @@ const repairItemId = ref(null);
 const fixedItemId = ref(null);
 const bulkDeleteItemsPending = ref(false);
 
+// The serial the first received unit will get (serial catalogs only).
 const serialPreview = ref('');
 
 async function fetchSerialPreview() {
@@ -85,7 +85,7 @@ async function fetchSerialPreview() {
     try {
         const params = new URLSearchParams({
             catalog_id: props.catalog.id,
-            purchase_date: addItemForm.purchase_date,
+            purchase_date: receiveForm.purchase_date,
         });
         const res = await fetch(`/equipment/items/preview-serial?${params.toString()}`, {
             headers: { Accept: 'application/json' },
@@ -95,21 +95,6 @@ async function fetchSerialPreview() {
         serialPreview.value = '';
     }
 }
-
-function openAddItem() {
-    showAddItemModal.value = true;
-    fetchSerialPreview();
-}
-
-const addItemForm = useForm({
-    catalog_id: props.catalog.id,
-    designation: '',
-    purchase_date: localToday(),
-    condition: 'New',
-    location: '',
-    purchase_price: props.catalog.purchase_price || '',
-    notes: '',
-});
 
 const rentForm = useForm({
     equipment_item_id: '',
@@ -138,8 +123,15 @@ const expectedReturnDate = computed(() => {
 
 const showReceiveModal = ref(false);
 
+function openReceive() {
+    showReceiveModal.value = true;
+    if (isSerialized.value) fetchSerialPreview();
+}
+
 const receiveForm = useForm({
     catalog_id: props.catalog.id,
+    // Serial catalogs: several units are named "{designation} N".
+    designation: '',
     quantity: 1,
     unit_price: props.catalog.purchase_price || '',
     purchase_date: localToday(),
@@ -162,7 +154,7 @@ function doReceive() {
         .post(route('equipment.stock.receive'), {
             onSuccess: () => {
                 showReceiveModal.value = false;
-                receiveForm.reset('notes', 'quantity');
+                receiveForm.reset('notes', 'quantity', 'designation');
             },
         });
 }
@@ -259,15 +251,6 @@ function bulkDeleteItems() {
     });
 }
 
-function addItem() {
-    addItemForm.post(route('equipment.items.store'), {
-        onSuccess: () => {
-            showAddItemModal.value = false;
-            addItemForm.reset('notes', 'designation');
-        },
-    });
-}
-
 function openRent(item) {
     selectedItem.value = item;
     rentForm.equipment_item_id = item.id;
@@ -321,8 +304,9 @@ function markAsFound(itemId) {
     });
 }
 
-watch(() => addItemForm.purchase_date, () => {
-    if (showAddItemModal.value) fetchSerialPreview();
+// The serial's year follows the purchase date.
+watch(() => receiveForm.purchase_date, () => {
+    if (showReceiveModal.value && isSerialized.value) fetchSerialPreview();
 });
 
 // Work equipment is only ever assigned to a player; the server enforces the
@@ -382,9 +366,8 @@ function submitImport() {
                     <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ catalog.name }}</h1>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                    <IconButton icon="plus" :label="t('equipment.receive_stock')" variant="primary" @click="showReceiveModal = true" />
-                    <!-- Serialized catalogs keep the one-unit-at-a-time flow, which generates a serial. -->
-                    <IconButton v-if="isSerialized" icon="plus" :label="t('add')" @click="openAddItem" />
+                    <!-- One way in for every catalog: on a serial catalog it numbers each unit. -->
+                    <IconButton icon="plus" :label="t('equipment.receive_stock')" variant="primary" @click="openReceive" />
                     <IconButton icon="upload" :label="t('import')" @click="showImport = true" />
                     <ExportMenu :href="route('equipment.items.export', catalog.id)" :label="t('export')" />
                     <IconButton :href="route('equipment.catalogs.edit', catalog.id)" icon="pencil" :label="t('edit')" />
@@ -537,58 +520,7 @@ function submitImport() {
             </div>
         </div>
 
-        <!-- Add Item Modal -->
         <Teleport to="body">
-            <div v-if="showAddItemModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" @click.self="showAddItemModal = false">
-                <div class="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
-                    <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('add') }} {{ t('items') }}</h3>
-                    <form @submit.prevent="addItem" class="mt-4 space-y-3">
-                        <div>
-                            <InputLabel :value="t('id_serial')" />
-                            <div class="mt-1 flex items-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2 font-mono text-sm text-slate-700 dark:text-slate-200">
-                                {{ serialPreview || '—' }}
-                            </div>
-                            <p class="mt-1 text-xs text-slate-400 dark:text-slate-400">{{ t('assigned_on_save') }}</p>
-                        </div>
-                        <div>
-                            <InputLabel :value="t('designation')" />
-                            <TextInput v-model="addItemForm.designation" class="mt-1 w-full" :placeholder="t('designation_example')" />
-                            <InputError :message="addItemForm.errors.designation" class="mt-1" />
-                        </div>
-                        <div class="grid gap-3 sm:grid-cols-2">
-                            <div>
-                                <InputLabel :value="t('purchase_date')" />
-                                <TextInput v-model="addItemForm.purchase_date" type="date" class="mt-1 w-full" />
-                            </div>
-                            <div>
-                                <InputLabel :value="t('condition')" />
-                                <select v-model="addItemForm.condition" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                                    <option v-for="c in ['New','Good','Fair','Poor','Damaged']" :key="c" :value="c">{{ stateLabel(c) }}</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div>
-                            <InputLabel :value="t('price')" />
-                            <TextInput v-model="addItemForm.purchase_price" type="number" step="0.01" min="0" class="mt-1 w-full" />
-                        </div>
-                        <div>
-                            <InputLabel :value="t('notes')" />
-                            <textarea v-model="addItemForm.notes" rows="2" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500" />
-                        </div>
-                        <div>
-                            <InputLabel :value="t('location')" />
-                            <select v-model="addItemForm.location" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                                <option value="">—</option>
-                                <option v-for="loc in storageLocations" :key="loc" :value="loc">{{ loc }}</option>
-                            </select>
-                        </div>
-                        <div class="flex justify-end gap-3 pt-2">
-                            <button type="button" @click="showAddItemModal = false" class="rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">{{ t('cancel') }}</button>
-                            <PrimaryButton :disabled="addItemForm.processing">{{ t('add') }}</PrimaryButton>
-                        </div>
-                    </form>
-                </div>
-            </div>
 
             <!-- Edit Item Modal -->
             <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" @click.self="showEditModal = false">
@@ -761,6 +693,21 @@ function submitImport() {
                 <div class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
                     <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('equipment.receive_stock') }} — {{ catalog.name }}</h3>
                     <form @submit.prevent="doReceive" class="mt-4 space-y-3">
+                        <template v-if="isSerialized">
+                            <div>
+                                <InputLabel :value="t('id_serial')" />
+                                <div class="mt-1 flex items-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2 font-mono text-sm text-slate-700 dark:text-slate-200">
+                                    {{ serialPreview || '—' }}
+                                </div>
+                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('assigned_on_save') }}</p>
+                            </div>
+                            <div>
+                                <InputLabel :value="t('designation')" />
+                                <TextInput v-model="receiveForm.designation" class="mt-1 w-full" :placeholder="t('designation_example')" />
+                                <p v-if="Number(receiveForm.quantity) > 1" class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('equipment.receive_designation_hint') }}</p>
+                                <InputError :message="receiveForm.errors.designation" class="mt-1" />
+                            </div>
+                        </template>
                         <div class="grid gap-3 sm:grid-cols-2">
                             <div>
                                 <InputLabel :value="t('equipment.quantity')" />

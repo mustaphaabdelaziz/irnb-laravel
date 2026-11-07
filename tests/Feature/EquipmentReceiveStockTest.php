@@ -267,6 +267,70 @@ class EquipmentReceiveStockTest extends TestCase
     }
 
     #[Test]
+    public function received_numbered_units_get_the_designation_followed_by_their_number(): void
+    {
+        $catalog = $this->serialCatalog();
+
+        $this->actingAs($this->user())->post(route('equipment.stock.receive'), [
+            'catalog_id' => $catalog->id,
+            'quantity' => 3,
+            'designation' => 'قميص و شورط رقم',
+            'purchase_date' => '2026-05-01',
+            'condition' => 'New',
+            'record_expense' => false,
+        ])->assertRedirect();
+
+        $this->assertSame(
+            ['قميص و شورط رقم 1', 'قميص و شورط رقم 2', 'قميص و شورط رقم 3'],
+            EquipmentItem::orderBy('id')->pluck('designation')->all(),
+        );
+    }
+
+    #[Test]
+    public function designation_numbers_continue_after_the_highest_one_in_the_catalog(): void
+    {
+        $catalog = $this->serialCatalog();
+        // Existing units, out of order, plus names that must not count:
+        // another catalog's unit and a different base name.
+        foreach (['Vest 2', 'Vest 7', 'Vest 3', 'Vest blue', 'Vestige 40'] as $name) {
+            EquipmentItem::create(['catalog_id' => $catalog->id, 'designation' => $name, 'purchase_date' => '2026-01-01']);
+        }
+        $other = EquipmentCatalog::create(['name' => 'Other', 'category' => 'Balls']);
+        EquipmentItem::create(['catalog_id' => $other->id, 'designation' => 'Vest 99', 'purchase_date' => '2026-01-01']);
+
+        $this->actingAs($this->user())->post(route('equipment.stock.receive'), [
+            'catalog_id' => $catalog->id,
+            'quantity' => 2,
+            'designation' => '  Vest ',
+            'purchase_date' => '2026-05-01',
+            'condition' => 'New',
+            'record_expense' => false,
+        ])->assertRedirect();
+
+        $this->assertSame(
+            ['Vest 8', 'Vest 9'],
+            EquipmentItem::where('catalog_id', $catalog->id)->orderByDesc('id')->limit(2)->pluck('designation')->reverse()->values()->all(),
+        );
+    }
+
+    #[Test]
+    public function a_single_received_unit_keeps_its_designation_as_typed(): void
+    {
+        $catalog = $this->serialCatalog();
+
+        $this->actingAs($this->user())->post(route('equipment.stock.receive'), [
+            'catalog_id' => $catalog->id,
+            'quantity' => 1,
+            'designation' => "Coach's vest",
+            'purchase_date' => '2026-05-01',
+            'condition' => 'New',
+            'record_expense' => false,
+        ])->assertRedirect();
+
+        $this->assertSame("Coach's vest", EquipmentItem::sole()->designation);
+    }
+
+    #[Test]
     public function a_plain_catalog_keeps_receiving_one_lot_without_a_serial(): void
     {
         $this->actingAs($this->user())->post(route('equipment.stock.receive'), [

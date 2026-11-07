@@ -1511,6 +1511,7 @@
     "equipment.outstanding": "Encore sorti",
     "equipment.past_items": "Rendu",
     "equipment.quantity": "Quantité",
+    "equipment.receive_designation_hint": "Chaque unité reçoit ce nom suivi de son numéro, à la suite du plus grand numéro déjà utilisé.",
     "equipment.receive_numbered_hint": "Chaque unité reçoit son propre numéro de série ({max} au maximum à la fois).",
     "equipment.receive_stock": "Réceptionner du stock",
     "equipment.received_via": "Provenance",

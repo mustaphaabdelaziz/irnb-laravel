@@ -16,7 +16,7 @@ import { useI18n } from 'vue-i18n';
 import { phoneDigits } from '@/lib/phone';
 import { sportLabeller } from '@/lib/sportLabels';
 import { useCan } from '@/Composables/useCan';
-import { localToday } from '@/lib/localDate';
+import { isMinor, localToday } from '@/lib/localDate';
 import { cardFromRegistration, cardPayload, newCard, withFreshIds, withoutCard } from '@/lib/registrationCards';
 
 const { t } = useI18n();
@@ -54,7 +54,8 @@ const form = useForm({
     wilaya_id: p.wilaya_id || '',
     // "Unknown" is how an empty city is stored (the column is NOT NULL).
     city: p.city && p.city !== 'Unknown' ? p.city : '',
-    // New players default to "worker"; edits keep the stored value.
+    // New players default to "worker" (Student once the birthdate says under 18,
+    // see below); edits keep the stored value.
     is_student: isEdit ? (p.is_student ?? true) : false,
     // New players default to "enrolled" (منخرط); edits keep the stored value.
     status_id: isEdit ? (p.status_id || null) : (props.playerStatuses[0]?.id ?? null),
@@ -176,6 +177,20 @@ const cityOptions = computed(() => {
 });
 // reset city when wilaya changes (fires only on change, not initial mount)
 watch(() => form.wilaya_id, () => { form.city = ''; });
+
+// --- Student follows age until picked by hand ---
+// Under 18 means Student. A new player follows the birthdate both ways; an edit
+// keeps its stored value and only turns Student when the new birthdate is a minor's.
+const studentPicked = ref(false);
+function pickStudent(value) {
+    studentPicked.value = true;
+    form.is_student = value === 'student';
+}
+watch(() => form.birthdate, (birthdate) => {
+    if (studentPicked.value) return;
+    if (isMinor(birthdate)) form.is_student = true;
+    else if (!isEdit) form.is_student = false;
+});
 
 // --- Job gated on worker ---
 watch(() => form.is_student, (student) => { if (student) form.member_job_id = ''; });
@@ -448,7 +463,7 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                 </div>
                 <div>
                     <InputLabel :value="t('status')" />
-                    <select :value="form.is_student ? 'student' : 'worker'" @change="form.is_student = $event.target.value === 'student'" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                    <select :value="form.is_student ? 'student' : 'worker'" @change="pickStudent($event.target.value)" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                         <option value="student">{{ t('student') }}</option>
                         <option value="worker">{{ t('worker') }}</option>
                     </select>

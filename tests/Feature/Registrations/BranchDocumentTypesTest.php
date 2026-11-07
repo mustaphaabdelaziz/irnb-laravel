@@ -128,4 +128,18 @@ class BranchDocumentTypesTest extends TestCase
         $this->assertSame([], $tabs[$this->foot->id]['retired']);
         $this->assertCount(1, $tabs[$this->swim->id]['retired']);
     }
+
+    #[Test]
+    public function an_inactive_type_with_a_record_stays_greyed_in_items_not_retired(): void
+    {
+        $player = $this->bothActive();
+        $this->received($player, $this->swim);
+        $this->medical->update(['is_active' => false]);
+
+        $swim = $this->checklist($player, $this->swim);
+        $this->assertSame([$this->medical->id], array_column(array_column($swim['items'], 'type'), 'id'));
+        $this->assertFalse($swim['items'][0]['type']['is_active']);
+        $this->assertSame([], $swim['retired']);
+        $this->assertSame(0, $swim['missing_count']);
+    }
 }

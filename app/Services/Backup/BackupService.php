@@ -4,10 +4,7 @@ namespace App\Services\Backup;
 
 use App\Support\ProductBrand;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Native\Desktop\DataObjects\QueueConfig;
-use Native\Desktop\Facades\QueueWorker;
 use RuntimeException;
 use ZipArchive;
 
@@ -28,7 +25,7 @@ class BackupService
     /**
      * How long to wait for another process to let go of the database's -wal/-shm.
      *
-     * Stopping the queue worker is asynchronous — see stopQueueWorker() — so the
+     * Stopping the queue worker is asynchronous — see LiveDatabase::stopQueueWorker() — so the
      * child is still being torn down when QueueWorker::down() returns, and Windows
      * holds its file handles until the process is fully reaped. Checking once,
      * immediately, would race the kill and abort a restore that was about to work.
@@ -636,259 +633,28 @@ class BackupService
     }
 
     /**
-     * Takes the live database out of every process's hands, and proves that it did —
-     * WITHOUT destroying anything to get there.
-     *
-     * Called BEFORE the swap, and throws rather than pressing on: at the point it runs
-     * nothing destructive has happened yet — the live database is whole, the incoming
-     * one is staged beside it, and the pre-restore snapshot is on disk — so aborting
-     * here is free. Pressing on is what corrupts the club's data.
-     *
-     * The -wal is the whole story here, and it used to be @unlink()ed.
-     *
-     * QueueWorker::down() KILLS the worker; a killed process never checkpoints. The -wal
-     * it leaves behind therefore holds transactions the club has already COMMITTED and
-     * which are not in the .sqlite yet — and in the packaged app that file is essentially
-     * never empty, because the worker holds a connection for the app's entire life, so
-     * the web process's per-request close is never the last connection and never triggers
-     * a checkpoint. Everything the user entered since SQLite's last automatic checkpoint
-     * (~1000 pages) lives ONLY in that file.
-     *
-     * Deleting it reverts the club to that last auto-checkpoint. And the deletion
-     * SUCCEEDS the moment the killed worker's handles are released — while the rename()
-     * that follows still fails if any non-SQLite reader (Defender, the search indexer, a
-     * respawned worker) so much as has the main file open for reading, because that is a
-     * share mode without FILE_SHARE_DELETE. The two do not fail under the same
-     * conditions, so the restore could destroy the WAL and then abort saying "Nothing was
-     * changed" over the top of it. Verified on Windows: both unlinks succeed, this method
-     * passes, the rename fails, and the row that was only in the WAL is gone.
-     *
-     * So the WAL is CHECKPOINTED, never deleted. That merges its pages INTO the database
-     * — the same thing SQLite does routinely on its own — and closing our connection is
-     * what removes the sidecars, which SQLite only does when nobody else is holding them.
-     * If someone still is, they stay, and this aborts. Non-destructively, either way.
+     * Takes the live database out of every process's hands, and proves that it did,
+     * without destroying anything: stops the queue worker, checkpoints the -wal, and
+     * throws while anyone still holds it. See LiveDatabase::release() for why the WAL
+     * is checkpointed and never deleted.
      */
     private function releaseDatabase(): void
     {
-        $this->stopQueueWorker();
-
-        // Our own connection. It cannot close anyone else's, which is what the queue
-        // worker above is for.
-        DB::disconnect();
-
-        // The wait is not defensive padding, and neither is checkpointing INSIDE it.
-        //
-        // Stopping the queue worker is asynchronous (see stopQueueWorker()): down() returns
-        // as soon as the Electron runtime has accepted the request, and the child is torn
-        // down after that. So a single checkpoint here would usually run while the worker is
-        // still alive — leaving our connection not the last one, the sidecars still on disk,
-        // and nothing to remove them afterwards, since a killed process never closes its
-        // connection cleanly. That would abort every restore in the packaged app. Retrying
-        // the checkpoint as we poll means that the moment the worker is actually reaped, the
-        // next attempt merges its orphaned WAL and its close clears both sidecars.
-        //
-        // Every iteration is a merge or a no-op. Nothing in this loop can lose a byte.
-        $deadline = microtime(true) + self::HANDLE_RELEASE_TIMEOUT_MS / 1000;
-
-        do {
-            if ($this->remainingSidecars() === []) {
-                return;
-            }
-
-            $this->checkpointWal();
-
-            if ($this->remainingSidecars() === []) {
-                return;
-            }
-
-            usleep(self::HANDLE_RELEASE_POLL_MS * 1000);
-        } while (microtime(true) < $deadline);
-
-        $remaining = $this->remainingSidecars();
-
-        if ($remaining === []) {
-            return;
-        }
-
-        // Someone still has the database open, so its WAL cannot be folded in and the swap
-        // cannot go ahead. Nothing has been destroyed to find that out: the sidecars are
-        // still there, holding whatever they held. The caller turns this into the user's
-        // "nothing was changed" message.
-        throw new RuntimeException(
-            'The database is still open in another program, so it could not be taken out of use: '
-            ."{$remaining[0]}."
-        );
+        $this->liveDatabase()->release();
     }
 
     /**
-     * Folds the write-ahead log into the database file itself.
-     *
-     * TRUNCATE rather than PASSIVE so the WAL is emptied rather than merely copied
-     * forward, and so a WAL orphaned by a killed worker cannot be replayed again later.
-     *
-     * Failure is not fatal and is not thrown: this is one attempt among many, and the
-     * "are the sidecars actually gone?" check in releaseDatabase() is the real gate. A
-     * checkpoint that comes back busy — someone else is still reading — simply leaves the
-     * sidecars in place, which is precisely what makes that check abort.
-     */
-    private function checkpointWal(): void
-    {
-        $pdo = null;
-
-        try {
-            $pdo = new \PDO('sqlite:'.$this->databasePath, null, null, [
-                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
-
-                // The busy timeout, and it is what makes HANDLE_RELEASE_TIMEOUT_MS an actual
-                // upper bound rather than a wish.
-                //
-                // pdo_sqlite installs a 60-SECOND busy timeout by default, and
-                // wal_checkpoint(TRUNCATE) does not come back busy under it — it WAITS. So a
-                // foreign process holding nothing more than an open read transaction (measured:
-                // a reader held for 30s blocked the checkpoint for the full 30s) can freeze one
-                // pass of the poll below, and with it the restore request and the Electron
-                // window, for up to a minute — while the deadline the poll is checking says 5
-                // seconds. Nothing is corrupted by that; it just makes the app look hung.
-                //
-                // 2s per attempt keeps the wait long enough to be useful (the point of waiting
-                // at all is that a checkpoint which blocks briefly on the dying worker then
-                // SUCCEEDS, which is what clears the sidecars and lets the restore go ahead)
-                // while keeping a single blocking pass inside the budget the poll is policing.
-                // A checkpoint that runs out of time simply leaves the sidecars where they are,
-                // and releaseDatabase()'s check aborts — non-destructively, as ever.
-                \PDO::ATTR_TIMEOUT => 2,
-            ]);
-
-            $pdo->query('PRAGMA wal_checkpoint(TRUNCATE)');
-        } catch (\Throwable) {
-            // Fall through: releaseDatabase()'s poll is still the gate.
-        } finally {
-            // Drop OUR handle whatever happened — in a finally, because if the checkpoint
-            // threw, this connection would otherwise stay open for the rest of the method
-            // and hold the -wal and the -shm itself, and the poll would then be looking at
-            // our own connection and abort a restore that was about to work.
-            //
-            // Closing it is also what REMOVES the sidecars: SQLite deletes them when the
-            // last connection closes. That is what makes this a merge rather than a
-            // deletion — the data goes into the database on the way out.
-            $pdo = null;
-        }
-    }
-
-    /**
-     * The -wal/-shm still sitting beside the live database, -wal first so it is the one
-     * an error message names.
-     *
-     * @return array<int, string>
-     */
-    private function remainingSidecars(): array
-    {
-        $remaining = [];
-
-        foreach (['-wal', '-shm'] as $suffix) {
-            $sidecar = $this->databasePath.$suffix;
-
-            clearstatcache(true, $sidecar);
-
-            if (file_exists($sidecar)) {
-                $remaining[] = $sidecar;
-            }
-        }
-
-        return $remaining;
-    }
-
-    /**
-     * Asks the NativePHP runtime to stop the queue worker — the OTHER process holding
-     * the live database open.
-     *
-     * NativeServiceProvider::configureApp() calls fireUpQueueWorkers() on every
-     * non-console boot (line 148), and QueueWorker::up() spawns `queue:work` as a
-     * *persistent* child process (QueueWorker.php:31-46) against
-     * config('nativephp-internal.database_path') — the exact file being restored. It
-     * keeps handles open on the .sqlite, the -wal and the -shm for the life of the app,
-     * and DB::disconnect() cannot reach into another process to close them.
-     *
-     * This is a REQUEST, not a guarantee, and the code downstream treats it as one.
-     * QueueWorker::down() posts to the Electron runtime's HTTP API and hands nothing
-     * back: ChildProcess::stop() (ChildProcess.php:132-137) discards the response and
-     * returns void. So it cannot tell us whether the child actually died, whether the
-     * runtime honoured the request for a process registered as persistent rather than
-     * respawning it, or — since the kill is asynchronous and Windows keeps a dead
-     * process's handles until it is reaped — whether it has died YET. A failure to
-     * reach the runtime at all is therefore logged, not thrown: it is not the evidence
-     * that matters.
-     *
-     * The evidence that matters is on the filesystem. releaseDatabase() will not continue
-     * until the -wal and -shm are provably gone — and it gets them gone by CHECKPOINTING
-     * the WAL into the database, which SQLite only lets the last connection finish (and
-     * which is the only safe move anyway: this kill leaves behind a WAL full of committed
-     * rows that a worker killed mid-life never wrote back). The rename() that follows can
-     * only succeed on Windows if nobody holds the database open at all. Between them, a
-     * worker that ignored this, respawned, or is merely slow to die produces a clean abort
-     * with the live data untouched — never a silent half-restore, and never a WAL deleted
-     * out from under the club's most recent work.
-     *
-     * Guarded on nativephp-internal.running: outside the packaged app — the web build,
-     * artisan, the test suite — there is no runtime to talk to and no worker to stop.
-     */
-    private function stopQueueWorker(): void
-    {
-        if (! config('nativephp-internal.running')) {
-            return;
-        }
-
-        // Every configured worker, not just 'default': they all run `queue:work` against
-        // this one database, so any of them left standing holds the swap up.
-        $aliases = array_keys((array) config('nativephp.queue_workers', []));
-
-        try {
-            foreach ($aliases ?: ['default'] as $alias) {
-                QueueWorker::down($alias);
-            }
-        } catch (\Throwable $e) {
-            Log::warning('The restore could not ask the queue worker to stop; continuing to the WAL check.', [
-                'exception' => $e->getMessage(),
-            ]);
-        }
-    }
-
-    /**
-     * Starts the queue worker back up after a restore that aborted BEFORE the swap.
-     *
-     * stopQueueWorker() kills the worker in step 4b, before anything destructive has run.
-     * When the restore then aborts — the sidecars never cleared, the rename() lost a race
-     * with an antivirus handle — the live data is provably untouched and the app carries
-     * on. But the worker it killed to get that far stays dead for the rest of the session:
-     * automatic backups (queued CreateBackup jobs) silently stop running, while the
-     * 30-minute heartbeat keeps enqueueing them. Nothing else restarts it.
-     *
-     * Rebuilt from config exactly as NativeServiceProvider::fireUpQueueWorkers() does, so
-     * the worker comes back with the queues, memory limit and timeout it was spawned with.
-     *
-     * Everything here is best-effort and non-throwing. This runs inside the catch block
-     * that is about to report why the restore aborted, and that reason — the WAL that is
-     * still open, the marker that has to be deleted by hand — is the only text the user
-     * ever sees. A failure to respawn a worker must not be allowed to replace it.
-     *
-     * Guarded on nativephp-internal.running for the same reason as stopQueueWorker():
-     * outside the packaged app there is no runtime to talk to and no worker to restart.
+     * Starts the queue worker back up after a restore that aborted BEFORE the swap —
+     * only ever after releaseDatabase() stopped it. See LiveDatabase::restartQueueWorker().
      */
     private function restartQueueWorker(): void
     {
-        if (! config('nativephp-internal.running')) {
-            return;
-        }
+        $this->liveDatabase()->restartQueueWorker();
+    }
 
-        try {
-            foreach (QueueConfig::fromConfigArray((array) config('nativephp.queue_workers', [])) as $queueConfig) {
-                QueueWorker::up($queueConfig);
-            }
-        } catch (\Throwable $e) {
-            Log::warning('The aborted restore could not restart the queue worker; automatic backups will not run until the app is restarted.', [
-                'exception' => $e->getMessage(),
-            ]);
-        }
+    private function liveDatabase(): LiveDatabase
+    {
+        return new LiveDatabase($this->databasePath, self::HANDLE_RELEASE_TIMEOUT_MS, self::HANDLE_RELEASE_POLL_MS);
     }
 
     /**

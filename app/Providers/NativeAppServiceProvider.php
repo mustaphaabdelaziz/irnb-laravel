@@ -2,12 +2,13 @@
 
 namespace App\Providers;
 
+use App\Services\Backup\LiveDatabase;
 use App\Support\ProductBrand;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Native\Desktop\Contracts\ProvidesPhpIni;
 use Native\Desktop\Facades\Window;
+use RuntimeException;
 
 class NativeAppServiceProvider implements ProvidesPhpIni
 {
@@ -23,11 +24,11 @@ class NativeAppServiceProvider implements ProvidesPhpIni
     }
 
     /**
-     * On the very first launch, populate the user's data directory from the
-     * bundle: copy the seed database over the empty one NativePHP creates, and
-     * copy the bundled public media (logos, uploads) into the user's storage so
-     * it can be served. A marker file ensures the copy runs once only, so later
-     * user changes are never overwritten on subsequent launches.
+     * On the very first launch, populate the user's data directory: the club's
+     * records from the app's pre-ASIREM folder, or else the seed database and
+     * the bundled public media (see populateDataFolder()). A marker file
+     * ensures this runs once only, so later user changes are never overwritten
+     * on subsequent launches.
      *
      * On EVERY launch we then run pending migrations against the runtime DB.
      * Migrations are idempotent (only unrun ones apply), so this is a no-op
@@ -46,31 +47,7 @@ class NativeAppServiceProvider implements ProvidesPhpIni
             return;
         }
 
-        $marker = dirname($dbPath).DIRECTORY_SEPARATOR.'.seeded';
-
-        if (! file_exists($marker) && $this->adoptLegacyData($dbPath)) {
-            // 0. The club ran this app before it was renamed to ASIREM: its
-            //    data now lives here, so the seed must not replace it.
-            @file_put_contents($marker, (string) time());
-        }
-
-        if (! file_exists($marker)) {
-            // 1. Seed the database. The seed ships inside the app bundle
-            //    (base_path), not the user's redirected storage_path.
-            $seed = base_path('storage/app/seed/database.sqlite');
-            if (file_exists($seed)) {
-                // Release the SQLite handle so the file can be replaced on Windows.
-                DB::disconnect();
-                @unlink($dbPath.'-wal');
-                @unlink($dbPath.'-shm');
-                @copy($seed, $dbPath);
-            }
-
-            // 2. Seed public media so logos/uploads are present and servable.
-            $this->copyDirectory(base_path('storage/app/public'), storage_path('app/public'));
-
-            @file_put_contents($marker, (string) time());
-        }
+        $this->populateDataFolderOnce($dbPath);
 
         // 3. Keep the runtime schema current across app updates — but only when
         //    the bundled migration set actually changed, so ordinary launches
@@ -100,14 +77,63 @@ class NativeAppServiceProvider implements ProvidesPhpIni
         }
     }
 
+    protected function populateDataFolderOnce(string $dbPath): void
+    {
+        $marker = dirname($dbPath).DIRECTORY_SEPARATOR.'.seeded';
+
+        if (file_exists($marker)) {
+            return;
+        }
+
+        try {
+            $this->populateDataFolder($dbPath);
+            @file_put_contents($marker, (string) time());
+        } catch (\Throwable $e) {
+            // Nothing was replaced: the swap is a single rename(), so the
+            // database is whole. No marker, so the next launch tries again —
+            // and the seed never lands on a club whose records are still in
+            // the old folder.
+            report($e);
+        }
+    }
+
+    /**
+     * First launch: fill the new data folder with the club's records from the
+     * app's pre-ASIREM folder, or, on a PC that never ran it, with the seed and
+     * the bundled public media (logos, uploads).
+     */
+    protected function populateDataFolder(string $dbPath): void
+    {
+        if ($this->adoptLegacyData($dbPath)) {
+            return;
+        }
+
+        // The seed ships inside the app bundle (base_path), not the user's
+        // redirected storage_path.
+        $seed = $this->seedDatabasePath();
+        if (file_exists($seed)) {
+            $this->replaceDatabase($dbPath, $seed);
+        }
+
+        $this->copyDirectory(base_path('storage/app/public'), storage_path('app/public'));
+    }
+
+    protected function seedDatabasePath(): string
+    {
+        return base_path('storage/app/seed/database.sqlite');
+    }
+
     /**
      * Copy the data of the app's pre-ASIREM name into this, its new data folder.
      *
      * Electron names the data folder after APP_NAME (%APPDATA%\sport-club
      * before, %APPDATA%\asirem now), so the renamed app starts on an empty
      * folder. Without this, an update would open on the seed instead of the
-     * club's own records. The old folder is left as it was: it is the only
-     * copy if anything here goes wrong.
+     * club's own records. The old folder is only read: it is the only copy if
+     * anything here goes wrong.
+     *
+     * False when there is no old folder; throws when there is one but its
+     * database could not be moved in, with the new database left whole.
      */
     protected function adoptLegacyData(string $dbPath): bool
     {
@@ -121,17 +147,7 @@ class NativeAppServiceProvider implements ProvidesPhpIni
                 continue;
             }
 
-            // Release the SQLite handle so the file can be replaced on Windows.
-            DB::disconnect();
-
-            // The database with its -wal and -shm, or the newest writes are lost.
-            foreach (['', '-wal', '-shm'] as $suffix) {
-                @unlink($dbPath.$suffix);
-
-                if (is_file($legacyDb.$suffix)) {
-                    @copy($legacyDb.$suffix, $dbPath.$suffix);
-                }
-            }
+            $this->replaceDatabase($dbPath, $legacyDb);
 
             // Media, player documents, minutes, receipts.
             $this->copyDirectory($legacy.DIRECTORY_SEPARATOR.'storage'.DIRECTORY_SEPARATOR.'app', storage_path('app'));
@@ -140,6 +156,97 @@ class NativeAppServiceProvider implements ProvidesPhpIni
         }
 
         return false;
+    }
+
+    /**
+     * Put a copy of $source in place of the live database.
+     *
+     * By the time this runs, the Electron shell has already migrated the live
+     * database and the queue worker holds it open. Deleting or copying over it
+     * (as 3.0.0 did) fails silently on Windows and leaves the worker's -wal
+     * beside the new bytes: the club's first launch opened on "database disk
+     * image is malformed". So, as the backup restore does: stage the copy beside
+     * the live file, take the live file out of every process's hands, then one
+     * rename(), which Windows only allows when nobody holds it. Any failure
+     * throws with the live database untouched.
+     */
+    protected function replaceDatabase(string $dbPath, string $source): void
+    {
+        $incoming = $dbPath.'.new';
+
+        $this->stageDatabase($source, $incoming);
+
+        $live = $this->liveDatabase($dbPath);
+
+        try {
+            $live->release();
+
+            if (! @rename($incoming, $dbPath)) {
+                throw new RuntimeException("The database is still in use, so it could not be replaced: {$dbPath}.");
+            }
+
+            // The marker belonged to the database just replaced: `migrate`
+            // must run on this one.
+            @unlink(dirname($dbPath).DIRECTORY_SEPARATOR.'.migrated');
+        } finally {
+            $this->removeStaged($incoming);
+
+            // release() stopped the worker; the app carries on, so it comes
+            // back, now on the new database.
+            $live->restartQueueWorker();
+        }
+    }
+
+    /**
+     * A self-contained, checked copy of $source at $target: its -wal (the
+     * newest writes) folded in, nothing beside it. $source is only read.
+     */
+    protected function stageDatabase(string $source, string $target): void
+    {
+        $this->removeStaged($target);
+        $pdo = null;
+
+        try {
+            if (! @copy($source, $target)) {
+                throw new RuntimeException("Could not copy the database: {$source}.");
+            }
+
+            // Not the -shm: SQLite rebuilds it from the -wal.
+            if (is_file($source.'-wal') && ! @copy($source.'-wal', $target.'-wal')) {
+                throw new RuntimeException("Could not copy the database's newest writes: {$source}-wal.");
+            }
+
+            $pdo = new \PDO('sqlite:'.$target, null, null, [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]);
+            $check = (string) $pdo->query('PRAGMA quick_check')->fetchColumn();
+
+            if ($check !== 'ok') {
+                throw new RuntimeException("The database to copy in is damaged ({$check}): {$source}.");
+            }
+
+            $pdo->query('PRAGMA wal_checkpoint(TRUNCATE)');
+            $pdo = null;
+
+            if ((new LiveDatabase($target))->sidecars() !== []) {
+                throw new RuntimeException("Could not fold the newest writes into the copy: {$target}.");
+            }
+        } catch (\Throwable $e) {
+            $pdo = null;
+            $this->removeStaged($target);
+
+            throw $e;
+        }
+    }
+
+    protected function liveDatabase(string $dbPath): LiveDatabase
+    {
+        return new LiveDatabase($dbPath);
+    }
+
+    private function removeStaged(string $target): void
+    {
+        foreach (['', '-wal', '-shm'] as $suffix) {
+            @unlink($target.$suffix);
+        }
     }
 
     /**

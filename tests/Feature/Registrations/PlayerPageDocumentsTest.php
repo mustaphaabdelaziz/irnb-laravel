@@ -75,4 +75,36 @@ class PlayerPageDocumentsTest extends TestCase
                 ->where('documents.tabs.1.left', true)
                 ->where('documents.missing_count', 0));
     }
+
+    #[Test]
+    public function the_page_sends_retired_records_and_copies(): void
+    {
+        $medical = DocumentType::where('code', 'med')->firstOrFail();
+        $medical->update(['copies' => 3]);
+        $medical->branches()->sync([$this->foot->id]);
+        $player = $this->bothActive();
+        foreach ([$this->foot, $this->swim] as $branch) {
+            \App\Models\PlayerDocument::create([
+                'player_id' => $player->id,
+                'branch_registration_id' => $player->registrationIn($branch->id)->id,
+                'document_type_id' => $medical->id,
+                'state' => 'received',
+                'received_at' => '2026-09-01',
+                'copies_received' => 2,
+            ]);
+        }
+
+        // Main first: Football (index 0), then Swimming (index 1).
+        $this->actingAs($this->admin)->get(route('players.show', $player))->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('documents.tabs.0.branch_name', 'Football')
+                ->where('documents.tabs.0.items.0.state', 'incomplete')
+                ->where('documents.tabs.0.items.0.document.copies_received', 2)
+                ->where('documents.tabs.0.missing_count', 1)
+                ->has('documents.tabs.0.retired', 0)
+                ->where('documents.tabs.1.branch_name', 'Swimming')
+                ->has('documents.tabs.1.items', 0)
+                ->where('documents.tabs.1.retired.0.type.id', $medical->id)
+                ->where('documents.tabs.1.missing_count', 0));
+    }
 }

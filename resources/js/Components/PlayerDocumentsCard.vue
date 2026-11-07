@@ -35,6 +35,7 @@ const STATE_COLORS = {
     received_paper: 'blue',
     expires_soon: 'amber',
     expired: 'rose',
+    incomplete: 'amber',
     missing: 'rose',
     not_required: 'slate',
 };
@@ -44,6 +45,7 @@ const stateLabels = computed(() => ({
     received_paper: t('doc_state_received_paper'),
     expires_soon: t('doc_state_expires_soon'),
     expired: t('doc_state_expired'),
+    incomplete: t('doc_state_incomplete'),
     missing: t('doc_state_missing'),
     not_required: t('doc_state_not_required'),
 }));
@@ -56,6 +58,8 @@ const reasonLabels = computed(() => ({
 }));
 
 const items = computed(() => props.checklist?.items ?? []);
+// Records of types this branch no longer requires: kept, shown greyed, never counted.
+const retired = computed(() => props.checklist?.retired ?? []);
 
 const fileInputClass = 'mt-1 block w-full text-xs text-slate-500 file:me-3 file:rounded-lg file:border-0 file:bg-primary-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-700 hover:file:bg-primary-100 dark:text-slate-400 dark:file:bg-primary-500/10 dark:file:text-primary-300 dark:hover:file:bg-primary-500/15';
 
@@ -93,7 +97,7 @@ const downloadUrl = (file) => route('players.documents.files.download', { player
 
 // --- Mark received / renew (same form) ---
 const receiving = ref(null);
-const receiveForm = useForm({ document_type_id: null, branch_registration_id: null, received_at: '', valid_until: '', notes: '', files: [] });
+const receiveForm = useForm({ document_type_id: null, branch_registration_id: null, received_at: '', valid_until: '', notes: '', copies_received: null, files: [] });
 
 function openReceive(item) {
     receiveForm.clearErrors();
@@ -103,6 +107,8 @@ function openReceive(item) {
     receiveForm.valid_until = '';
     receiveForm.notes = item.document?.notes ?? '';
     receiveForm.files = [];
+    // Prefilled with the full number: a normal receive stays one click.
+    receiveForm.copies_received = item.type.copies;
     receiving.value = item;
 }
 
@@ -209,6 +215,7 @@ function confirmRemoveFile() {
                             <span v-if="item.type.is_required" class="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-normal text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('doc_required') }}</span>
                             <span v-if="item.type.max_age" class="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-normal text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('doc_up_to_age', { age: item.type.max_age }) }}</span>
                             <span v-if="item.type.copies > 1" class="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-normal text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('doc_copies_count', { count: item.type.copies }) }}</span>
+                            <span v-if="item.state === 'incomplete'" class="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-800 dark:bg-amber-500/15 dark:text-amber-200">{{ t('doc_copies_of', { received: item.document.copies_received, total: item.type.copies }) }}</span>
                             <span v-if="!item.type.is_active" class="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-normal text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('doc_inactive_type') }}</span>
                         </p>
                         <p class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
@@ -245,6 +252,29 @@ function confirmRemoveFile() {
             </li>
         </ul>
 
+        <details v-if="retired.length" class="border-t border-slate-100 dark:border-slate-800">
+            <summary class="cursor-pointer px-5 py-3 text-sm font-medium text-slate-500 dark:text-slate-400">
+                {{ t('doc_retired_title') }} ({{ retired.length }})
+            </summary>
+            <ul class="divide-y divide-slate-100 opacity-60 dark:divide-slate-800">
+                <li v-for="item in retired" :key="`retired-${item.type.id}`" class="px-5 py-3">
+                    <p class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ item.type.name }}</p>
+                    <p class="mt-1 flex flex-wrap gap-x-3 text-xs text-slate-500 dark:text-slate-400">
+                        <span v-if="item.document?.state === 'exempt'">{{ t('doc_reason_exempt') }}</span>
+                        <span v-if="item.document?.received_at">{{ t('doc_received_on') }} {{ formatDate(item.document.received_at) }}</span>
+                        <span v-if="item.document?.valid_until">{{ t('doc_valid_until') }} {{ formatDate(item.document.valid_until) }}</span>
+                    </p>
+                    <ul v-if="item.document?.files?.length" class="mt-2 space-y-1">
+                        <li v-for="file in item.document.files" :key="file.id" class="flex flex-wrap items-center gap-2 text-xs">
+                            <Icon name="document" class="text-slate-400" />
+                            <a :href="fileUrl(file)" target="_blank" rel="noopener" class="min-w-0 max-w-xs truncate text-primary-600 hover:underline dark:text-primary-300">{{ file.original_name }}</a>
+                            <IconButton :href="downloadUrl(file)" external icon="download" :label="t('doc_download')" plain size="sm" />
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </details>
+
         <!-- Mark received / renew -->
         <Modal :show="!!receiving" max-width="md" @close="receiving = null">
             <form v-if="receiving" class="space-y-4 p-6" @submit.prevent="submitReceive">
@@ -262,6 +292,11 @@ function confirmRemoveFile() {
                     <InputError :message="receiveForm.errors.valid_until" class="mt-1" />
                 </div>
                 <p v-else-if="receiving.type.validity === 'season'" class="text-xs text-slate-500 dark:text-slate-400">{{ t('doc_validity_season_hint') }}</p>
+                <div v-if="receiving.type.copies > 1">
+                    <InputLabel :value="t('doc_copies_received')" />
+                    <input v-model.number="receiveForm.copies_received" type="number" min="1" :max="receiving.type.copies" required class="mt-1 w-full rounded-lg border-slate-300 text-slate-900 shadow-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/40 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" />
+                    <InputError :message="receiveForm.errors.copies_received" class="mt-1" />
+                </div>
                 <div>
                     <InputLabel :value="t('notes')" />
                     <TextInput v-model="receiveForm.notes" class="mt-1 w-full" />

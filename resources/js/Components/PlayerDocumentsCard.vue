@@ -103,8 +103,9 @@ function openReceive(item) {
     receiveForm.clearErrors();
     receiveForm.document_type_id = item.type.id;
     receiveForm.branch_registration_id = props.registrationId;
-    receiveForm.received_at = todayIso();
-    receiveForm.valid_until = '';
+    const keepDates = item.state === 'incomplete' && item.document;
+    receiveForm.received_at = keepDates ? item.document.received_at : todayIso();
+    receiveForm.valid_until = keepDates ? (item.document.valid_until ?? '') : '';
     receiveForm.notes = item.document?.notes ?? '';
     receiveForm.files = [];
     // Prefilled with the full number: a normal receive stays one click.
@@ -198,13 +199,15 @@ function confirmRemoveFile() {
             </h3>
             <div class="flex flex-wrap items-center gap-2">
                 <Badge v-if="checklist.left" :label="t('doc_reason_left')" color="slate" />
-                <Badge v-else-if="checklist.missing_count > 0" :label="t('doc_missing_count', { count: checklist.missing_count })" color="rose" />
-                <Badge v-else :label="t('doc_complete')" color="emerald" />
-                <Badge v-if="checklist.expiring_count > 0" :label="t('doc_expiring_count', { count: checklist.expiring_count })" color="amber" />
+                <template v-else-if="items.length">
+                    <Badge v-if="checklist.missing_count > 0" :label="t('doc_missing_count', { count: checklist.missing_count })" color="rose" />
+                    <Badge v-else :label="t('doc_complete')" color="emerald" />
+                    <Badge v-if="checklist.expiring_count > 0" :label="t('doc_expiring_count', { count: checklist.expiring_count })" color="amber" />
+                </template>
             </div>
         </div>
 
-        <div v-if="!items.length" class="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_data') }}</div>
+        <div v-if="!items.length" class="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ checklist.registration_id && !retired.length ? t('doc_branch_requires_none') : t('no_data') }}</div>
 
         <ul v-else class="divide-y divide-slate-100 dark:divide-slate-800">
             <li v-for="item in items" :key="item.type.id" class="px-5 py-4" :class="{ 'opacity-60': !item.type.is_active }">
@@ -258,7 +261,10 @@ function confirmRemoveFile() {
             </summary>
             <ul class="divide-y divide-slate-100 opacity-60 dark:divide-slate-800">
                 <li v-for="item in retired" :key="`retired-${item.type.id}`" class="px-5 py-3">
-                    <p class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ item.type.name }}</p>
+                    <p class="flex flex-wrap items-center gap-2 text-sm font-medium text-slate-900 dark:text-slate-100">
+                        {{ item.type.name }}
+                        <Badge :label="stateLabels[item.state]" color="slate" dot />
+                    </p>
                     <p class="mt-1 flex flex-wrap gap-x-3 text-xs text-slate-500 dark:text-slate-400">
                         <span v-if="item.document?.state === 'exempt'">{{ t('doc_reason_exempt') }}</span>
                         <span v-if="item.document?.received_at">{{ t('doc_received_on') }} {{ formatDate(item.document.received_at) }}</span>

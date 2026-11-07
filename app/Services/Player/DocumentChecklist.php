@@ -62,8 +62,10 @@ final class DocumentChecklist
 
     /**
      * One registration's checklist (the main one when none is named; the player
-     * alone when they have none): every active type, plus any inactive type it
-     * still has a record for (shown greyed, never counted).
+     * alone when they have none): the active types the registration's branch requires
+     * (every active type for a player with no registration), plus inactive types it
+     * still has a record for (greyed, never counted). Records of unticked active
+     * types go to `retired`.
      *
      * @return array{registration_id: ?int, left: bool, items: list<array<string, mixed>>, retired: list<array<string, mixed>>, missing_count: int, expiring_count: int}
      */

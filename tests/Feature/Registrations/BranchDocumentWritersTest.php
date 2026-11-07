@@ -147,4 +147,51 @@ class BranchDocumentWritersTest extends TestCase
         $this->assertFalse($options($this->swim)->contains('id', $this->medical->id));
         $this->assertTrue($options($this->foot)->contains('id', $this->medical->id));
     }
+
+    #[Test]
+    public function match_flags_ignore_a_type_the_teams_branch_does_not_require(): void
+    {
+        $this->medical->update(['required_for_matches' => true]);
+        $format = \App\Models\GameFormat::create(['branch_id' => $this->foot->id, 'sport' => 'football', 'name' => 'Test 11', 'players_on_field' => 11, 'max_bench' => 9, 'max_called_up' => 20, 'periods_count' => 2, 'period_minutes' => 45, 'period_label' => 'half', 'scoring' => 'goals', 'sanction_types' => []]);
+        $swimTeam = \App\Models\Team::create(['branch_id' => $this->swim->id, 'category_id' => $this->u15->id, 'name' => 'Swim A', 'default_game_format_id' => $format->id]);
+        $footTeam = \App\Models\Team::create(['branch_id' => $this->foot->id, 'category_id' => $this->senior->id, 'name' => 'Foot A', 'default_game_format_id' => $format->id]);
+        $flags = app(\App\Services\Competitions\PlayerFlags::class);
+
+        $this->assertFalse($flags->for([$this->player->id], null, null, null, $swimTeam)[$this->player->id]['documents_missing']);
+        $this->assertTrue($flags->for([$this->player->id], null, null, null, $footTeam)[$this->player->id]['documents_missing']);
+    }
+
+    #[Test]
+    public function the_players_list_missing_filter_ignores_a_type_the_branch_does_not_require(): void
+    {
+        $ids = fn ($branch) => collect($this->actingAs($this->admin)
+            ->get(route('players.index', ['branch_id' => [$branch->id], 'documents' => 'missing-'.$this->medical->id]))
+            ->assertOk()->viewData('page')['props']['players']['data'])->pluck('id');
+
+        $this->assertFalse($ids($this->swim)->contains($this->player->id));
+        $this->assertTrue($ids($this->foot)->contains($this->player->id));
+    }
+
+    #[Test]
+    public function the_stats_ignore_a_type_the_branch_does_not_require(): void
+    {
+        $row = fn ($branchId) => collect(app(\App\Services\Player\DocumentStats::class)
+            ->summary(Player::query()->whereKey($this->player->id), null, $branchId)['by_type'])
+            ->firstWhere('id', $this->medical->id);
+
+        $swim = $row($this->swim->id);
+        $this->assertSame(0, $swim['required']);
+        $this->assertSame(0, $swim['missing']);
+        $this->assertSame(1, $row($this->foot->id)['missing']);
+    }
+
+    #[Test]
+    public function verify_registrations_warns_about_a_retired_record_without_failing(): void
+    {
+        PlayerDocument::create(['player_id' => $this->player->id, 'branch_registration_id' => $this->registrationId($this->swim), 'document_type_id' => $this->medical->id, 'state' => 'received', 'received_at' => '2026-09-01', 'copies_received' => 3]);
+
+        $this->artisan('registrations:verify')
+            ->expectsOutputToContain('no longer requires')
+            ->assertSuccessful();
+    }
 }

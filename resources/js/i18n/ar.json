@@ -1448,6 +1448,7 @@
     "doc_copies_received": "النسخ المستلمة",
     "doc_copies_of": "{received} / {total} نسخ",
     "doc_retired_title": "لم تعد مطلوبة في هذا الفرع",
+    "doc_branch_requires_none": "هذا الفرع لا يشترط أي وثيقة.",
     "doc_state_expires_soon": "ينتهي قريباً",
     "doc_state_missing": "ناقص",
     "doc_state_not_required": "غير مطلوب",

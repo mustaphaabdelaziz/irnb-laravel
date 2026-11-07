@@ -1448,6 +1448,7 @@
     "doc_copies_received": "Copies reçues",
     "doc_copies_of": "{received} / {total} copies",
     "doc_retired_title": "N'est plus exigé dans cette branche",
+    "doc_branch_requires_none": "Cette branche n'exige aucun document.",
     "doc_state_expires_soon": "Expire bientôt",
     "doc_state_missing": "Manquant",
     "doc_state_not_required": "Non requis",

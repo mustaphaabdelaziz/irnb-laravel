@@ -9,7 +9,9 @@ use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 /**
  * A kind of document a player's file should hold (birth certificate, medical
@@ -65,6 +67,29 @@ class DocumentType extends Model
     public function playerDocuments(): HasMany
     {
         return $this->hasMany(PlayerDocument::class);
+    }
+
+    /** The branches that require this type. Explicit only: none ticked = required nowhere. */
+    public function branches(): BelongsToMany
+    {
+        return $this->belongsToMany(Branch::class, 'branch_document_type');
+    }
+
+    /**
+     * Branch id → the type ids that branch requires, in one query, for code that
+     * walks many registrations (the documents report). A branch with no ticked
+     * type has no key.
+     *
+     * @return array<int, list<int>>
+     */
+    public static function idsByBranch(): array
+    {
+        $map = [];
+        foreach (DB::table('branch_document_type')->get(['branch_id', 'document_type_id']) as $row) {
+            $map[(int) $row->branch_id][] = (int) $row->document_type_id;
+        }
+
+        return $map;
     }
 
     public function scopeOrdered(Builder $query): void

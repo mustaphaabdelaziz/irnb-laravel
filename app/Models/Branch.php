@@ -72,6 +72,12 @@ class Branch extends Model
         return $this->belongsToMany(Subscription::class, 'branch_subscription');
     }
 
+    /** The document types this branch requires (Settings → Document types). */
+    public function documentTypes(): BelongsToMany
+    {
+        return $this->belongsToMany(DocumentType::class, 'branch_document_type');
+    }
+
     public function financeAccounts(): HasMany
     {
         return $this->hasMany(FinanceAccount::class);

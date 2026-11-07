@@ -208,4 +208,60 @@ class DocumentTypeSettingsTest extends TestCase
         $this->actingAs($coach)->get(route('document-types.index'))->assertForbidden();
         $this->actingAs($coach)->post(route('document-types.store'), $this->payload())->assertForbidden();
     }
+
+    #[Test]
+    public function creating_a_type_ticks_the_chosen_branches(): void
+    {
+        $foot = \App\Models\Branch::create(['name' => 'Football', 'code' => 'FB']);
+        \App\Models\Branch::create(['name' => 'Swimming', 'code' => 'SW']);
+
+        $this->actingAs($this->admin())->post(route('document-types.store'), $this->payload(['branch_ids' => [$foot->id]]))
+            ->assertSessionHas('success');
+
+        $type = DocumentType::where('name', 'Licence fédérale')->firstOrFail();
+        $this->assertSame([$foot->id], $type->branches()->pluck('branches.id')->all());
+    }
+
+    #[Test]
+    public function updating_syncs_branches_and_leaving_them_out_keeps_them(): void
+    {
+        $foot = \App\Models\Branch::create(['name' => 'Football', 'code' => 'FB']);
+        $swim = \App\Models\Branch::create(['name' => 'Swimming', 'code' => 'SW']);
+        $type = $this->type('birth_certificate');
+        $type->branches()->sync([$foot->id, $swim->id]);
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->put(route('document-types.update', $type), $this->payload(['name' => $type->name, 'branch_ids' => [$swim->id]]));
+        $this->assertSame([$swim->id], $type->branches()->pluck('branches.id')->all());
+
+        $this->actingAs($admin)->put(route('document-types.update', $type), $this->payload(['name' => $type->name, 'is_active' => false]));
+        $this->assertSame([$swim->id], $type->branches()->pluck('branches.id')->all());
+
+        $this->actingAs($admin)->put(route('document-types.update', $type), $this->payload(['name' => $type->name, 'branch_ids' => []]));
+        $this->assertSame(0, $type->branches()->count());
+    }
+
+    #[Test]
+    public function an_unknown_branch_is_rejected(): void
+    {
+        $this->actingAs($this->admin())->post(route('document-types.store'), $this->payload(['branch_ids' => [99999]]))
+            ->assertSessionHasErrors('branch_ids.0');
+    }
+
+    #[Test]
+    public function the_page_sends_branches_ticks_and_record_counts_per_branch(): void
+    {
+        $foot = \App\Models\Branch::create(['name' => 'Football', 'code' => 'FB']);
+        $type = $this->type('birth_certificate');
+        $type->branches()->sync([$foot->id]);
+        $player = Player::create(['membership_id' => '202600602', 'firstname' => 'Sami', 'lastname' => 'Lounis']);
+        app(\App\Services\Player\RegistrationService::class)->register($player, ['branch_id' => $foot->id]);
+        PlayerDocument::create(['player_id' => $player->id, 'branch_registration_id' => $player->registrations()->value('id'), 'document_type_id' => $type->id, 'state' => 'received', 'received_at' => '2026-09-01']);
+
+        $this->actingAs($this->admin())->get(route('document-types.index'))
+            ->assertInertia(fn ($page) => $page
+                ->where('branches.0.id', $foot->id)
+                ->where('documentTypes', fn ($types) => collect($types)->firstWhere('id', $type->id)['branch_ids'] === [$foot->id])
+                ->where("recordsByBranch.{$type->id}.{$foot->id}", 1));
+    }
 }

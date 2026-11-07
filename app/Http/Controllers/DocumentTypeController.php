@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Branch;
 use App\Models\DocumentType;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -19,17 +22,40 @@ class DocumentTypeController extends Controller
 {
     public function index(): Response
     {
+        // withCount so the page can hide "delete" on a type in use.
+        $types = DocumentType::withCount('playerDocuments')->with('branches:id')->ordered()->get();
+        $types->each(fn (DocumentType $type) => $type
+            ->setAttribute('branch_ids', $type->branches->pluck('id')->map(fn ($id) => (int) $id)->values()->all())
+            ->unsetRelation('branches'));
+
+        // Records per type and branch, so unticking a branch can say how many
+        // records stop counting (they are kept).
+        $records = [];
+        foreach (DB::table('player_documents')
+            ->join('branch_player', 'branch_player.id', '=', 'player_documents.branch_registration_id')
+            ->groupBy('player_documents.document_type_id', 'branch_player.branch_id')
+            ->selectRaw('player_documents.document_type_id as type_id, branch_player.branch_id as branch_id, COUNT(*) as n')
+            ->get() as $row) {
+            $records[(int) $row->type_id][(int) $row->branch_id] = (int) $row->n;
+        }
+
         return Inertia::render('Settings/DocumentTypes', [
-            // withCount so the page can hide "delete" on a type in use.
-            'documentTypes' => DocumentType::withCount('playerDocuments')->ordered()->get(),
+            'documentTypes' => $types,
+            'branches' => Branch::query()->orderBy('name')->get()
+                ->map(fn (Branch $branch) => ['id' => $branch->id, 'name' => $branch->localized_name])->values(),
+            'recordsByBranch' => (object) $records,
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validated($request);
+        $branchIds = Arr::pull($data, 'branch_ids');
 
-        DocumentType::create([...$data, 'code' => $this->uniqueCode($data)]);
+        DB::transaction(function () use ($data, $branchIds) {
+            $type = DocumentType::create([...$data, 'code' => $this->uniqueCode($data)]);
+            $type->branches()->sync($branchIds ?? []);
+        });
 
         return back()->with('success', 'flash.document_type_created');
     }
@@ -39,7 +65,16 @@ class DocumentTypeController extends Controller
         // The code is deliberately not editable: it is how the app recognises a
         // type (the Photo rule keys off it). Records point at the id, so a
         // rename or a rule change never breaks them.
-        $documentType->update($this->validated($request, $documentType));
+        $data = $this->validated($request, $documentType);
+        $branchIds = Arr::pull($data, 'branch_ids');
+
+        DB::transaction(function () use ($documentType, $data, $branchIds) {
+            $documentType->update($data);
+            // Left out (the active toggle) = the ticks stay as they are.
+            if ($branchIds !== null) {
+                $documentType->branches()->sync($branchIds);
+            }
+        });
 
         return back()->with('success', 'flash.document_type_updated');
     }
@@ -70,6 +105,8 @@ class DocumentTypeController extends Controller
             'copies' => ['nullable', 'integer', 'min:1', 'max:99'],
             'is_active' => ['boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:65535'],
+            'branch_ids' => ['sometimes', 'array'],
+            'branch_ids.*' => ['integer', 'distinct', Rule::exists('branches', 'id')],
         ]);
 
         // An emptied age box means "every age", so it must be written as null
@@ -77,6 +114,9 @@ class DocumentTypeController extends Controller
         $data['max_age'] = $data['max_age'] ?? null;
         $data['sort_order'] = (int) ($data['sort_order'] ?? 0);
         $data['copies'] = (int) ($data['copies'] ?? 1);
+        if (array_key_exists('branch_ids', $data)) {
+            $data['branch_ids'] = array_map('intval', $data['branch_ids'] ?? []);
+        }
 
         return $data;
     }

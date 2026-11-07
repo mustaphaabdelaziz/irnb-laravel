@@ -142,4 +142,53 @@ class BranchDocumentTypesTest extends TestCase
         $this->assertSame([], $swim['retired']);
         $this->assertSame(0, $swim['missing_count']);
     }
+
+    #[Test]
+    public function fewer_copies_than_asked_is_incomplete_and_counts_missing(): void
+    {
+        $this->medical->update(['copies' => 3]);
+        $player = $this->bothActive();
+        $document = $this->received($player, $this->foot, ['copies_received' => 2, 'valid_until' => now()->addDays(10)->toDateString()]);
+
+        $foot = $this->checklist($player, $this->foot);
+        $this->assertSame(DocumentChecklist::INCOMPLETE, $foot['items'][0]['state']);
+        $this->assertTrue($foot['items'][0]['counts_missing']);
+        $this->assertSame(2, $foot['items'][0]['document']['copies_received']);
+        $this->assertSame(1, $foot['missing_count']);
+        $this->assertSame(0, $foot['expiring_count']);
+        $type = $this->medical->fresh();
+        $this->assertSame(1, $this->term($player, DocumentChecklist::missingCountSql(null, null, $this->foot->id)));
+        $this->assertSame(0, $this->term($player, DocumentChecklist::expiringTypeSql($type, null, $this->foot->id)));
+        $this->assertFalse($this->expiring($player, $this->foot));
+
+        $document->update(['copies_received' => 3]);
+
+        $foot = $this->checklist($player, $this->foot);
+        $this->assertSame(DocumentChecklist::EXPIRES_SOON, $foot['items'][0]['state']);
+        $this->assertSame(0, $foot['missing_count']);
+        $this->assertSame(0, $this->term($player, DocumentChecklist::missingCountSql(null, null, $this->foot->id)));
+        $this->assertSame(1, $this->term($player, DocumentChecklist::expiringTypeSql($type, null, $this->foot->id)));
+        $this->assertTrue($this->expiring($player, $this->foot));
+    }
+
+    #[Test]
+    public function an_expired_incomplete_record_reads_expired(): void
+    {
+        $this->medical->update(['copies' => 3]);
+        $player = $this->bothActive();
+        $this->received($player, $this->foot, ['copies_received' => 1, 'valid_until' => now()->subDay()->toDateString()]);
+
+        $this->assertSame(DocumentChecklist::EXPIRED, $this->checklist($player, $this->foot)['items'][0]['state']);
+    }
+
+    #[Test]
+    public function a_blank_copies_count_reads_complete(): void
+    {
+        $this->medical->update(['copies' => 3]);
+        $player = $this->bothActive();
+        $this->received($player, $this->foot, ['copies_received' => null]);
+
+        $this->assertSame(0, $this->checklist($player, $this->foot)['missing_count']);
+        $this->assertSame(0, $this->term($player, DocumentChecklist::missingCountSql(null, null, $this->foot->id)));
+    }
 }

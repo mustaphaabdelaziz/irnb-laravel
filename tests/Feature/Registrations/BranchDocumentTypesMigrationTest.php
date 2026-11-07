@@ -56,4 +56,23 @@ class BranchDocumentTypesMigrationTest extends TestCase
 
         $this->assertSame(0, DB::table('branch_document_type')->where('branch_id', $branch->id)->count());
     }
+
+    private const COPIES = 'migrations/2026_11_07_100002_add_copies_received_to_player_documents.php';
+
+    #[Test]
+    public function received_rows_get_their_types_copies_and_exempt_rows_stay_blank(): void
+    {
+        $type = DocumentType::create(['code' => 'cp', 'name' => 'Copies', 'validity' => 'none', 'copies' => 3]);
+        $player = \App\Models\Player::create(['membership_id' => 'CP-1', 'firstname' => 'A', 'lastname' => 'B']);
+        $received = DB::table('player_documents')->insertGetId(['player_id' => $player->id, 'document_type_id' => $type->id, 'state' => 'received', 'received_at' => '2026-09-01']);
+        $other = DocumentType::where('code', 'birth_certificate')->firstOrFail();
+        $exempt = DB::table('player_documents')->insertGetId(['player_id' => $player->id, 'document_type_id' => $other->id, 'state' => 'exempt']);
+
+        $migration = require database_path(self::COPIES);
+        $migration->up();
+        $migration->up();
+
+        $this->assertSame(3, (int) DB::table('player_documents')->where('id', $received)->value('copies_received'));
+        $this->assertNull(DB::table('player_documents')->where('id', $exempt)->value('copies_received'));
+    }
 }

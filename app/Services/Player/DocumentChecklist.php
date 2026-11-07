@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\DB;
  * player with no registration holds them alone. A left registration owes nothing.
  * Each registration owes only the types its branch ticks (branch_document_type);
  * a player with no registration owes every active type.
+ * Settled = exempt, or received, valid and with every copy in (copies_received >=
+ * type copies, blank = complete).
  *
  * Two forms of ONE rule set:
  *  - for() / evaluate(): the per-document states the player page shows;
@@ -45,6 +47,9 @@ final class DocumentChecklist
     public const EXPIRES_SOON = 'expires_soon';
 
     public const EXPIRED = 'expired';
+
+    /** Received, but fewer copies than the type asks for: still missing (owner, 2026-11-07). */
+    public const INCOMPLETE = 'incomplete';
 
     public const MISSING = 'missing';
 
@@ -181,6 +186,10 @@ final class DocumentChecklist
             return self::result(self::EXPIRED, null, $expected);
         }
 
+        if ($document->copies_received !== null && $document->copies_received < $type->copies) {
+            return self::result(self::INCOMPLETE, null, $expected);
+        }
+
         if ($validUntil !== null && $validUntil->lt($today->addDays(self::EXPIRES_SOON_DAYS + 1))) {
             return self::result(self::EXPIRES_SOON);
         }
@@ -254,9 +263,10 @@ final class DocumentChecklist
         $unsettled = 'NOT EXISTS (SELECT 1 FROM player_documents pd'
             .' WHERE {owner} AND pd.document_type_id = ?'
             ." AND (pd.state = 'exempt' OR (pd.state = 'received'"
-            .' AND (pd.valid_until IS NULL OR pd.valid_until >= ?))))';
+            .' AND (pd.valid_until IS NULL OR pd.valid_until >= ?)'
+            .' AND (pd.copies_received IS NULL OR pd.copies_received >= ?))))';
 
-        return self::whenPlayer($conditions, $bindings, self::rowsSql($unsettled, [$type->id, $today->toDateString()], $type->id, $branchId, $joinedRow));
+        return self::whenPlayer($conditions, $bindings, self::rowsSql($unsettled, [$type->id, $today->toDateString(), (int) $type->copies], $type->id, $branchId, $joinedRow));
     }
 
     /**
@@ -277,6 +287,7 @@ final class DocumentChecklist
                 // A profile picture settles the Photo, so its record cannot expire.
                 ." AND (dt.code <> ? OR players.picture_url IS NULL OR players.picture_url = '')"
                 ." AND pd.state = 'received' AND pd.valid_until >= ? AND pd.valid_until < ?"
+                .' AND (pd.copies_received IS NULL OR pd.copies_received >= dt.copies)'
                 .' AND ((pd.branch_registration_id IS NULL AND NOT EXISTS (SELECT 1 FROM branch_player r0 WHERE r0.player_id = players.id))'
                 .' OR pd.branch_registration_id IN (SELECT r.id FROM branch_player r'
                 .' WHERE r.player_id = players.id AND '.self::ACTIVE_ROW
@@ -343,12 +354,14 @@ final class DocumentChecklist
 
         $expiring = 'EXISTS (SELECT 1 FROM player_documents pd'
             .' WHERE {owner} AND pd.document_type_id = ?'
-            ." AND pd.state = 'received' AND pd.valid_until >= ? AND pd.valid_until < ?)";
+            ." AND pd.state = 'received' AND pd.valid_until >= ? AND pd.valid_until < ?"
+            .' AND (pd.copies_received IS NULL OR pd.copies_received >= ?))';
 
         return self::whenPlayer($conditions, $bindings, self::rowsSql($expiring, [
             $type->id,
             $today->toDateString(),
             $today->addDays(self::EXPIRES_SOON_DAYS + 1)->toDateString(),
+            (int) $type->copies,
         ], $type->id, $branchId, $joinedRow));
     }
 
@@ -433,6 +446,7 @@ final class DocumentChecklist
                 'state' => $document->state,
                 'received_at' => $document->received_at?->toDateString(),
                 'valid_until' => $document->valid_until?->toDateString(),
+                'copies_received' => $document->copies_received,
                 'exempt_reason' => $document->exempt_reason,
                 'notes' => $document->notes,
                 'recorded_by' => $document->recordedBy?->name,

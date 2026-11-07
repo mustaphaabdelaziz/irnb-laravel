@@ -32,6 +32,7 @@ class PlayerDocument extends Model
         'state',
         'received_at',
         'valid_until',
+        'copies_received',
         'exempt_reason',
         'notes',
         'recorded_by_user_id',
@@ -52,6 +53,7 @@ class PlayerDocument extends Model
         return [
             'received_at' => 'date',
             'valid_until' => 'date',
+            'copies_received' => 'integer',
         ];
     }
 

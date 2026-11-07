@@ -7,7 +7,7 @@ import ConfirmModal from '@/Components/ConfirmModal.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import InputLabel from '@/Components/InputLabel.vue';
-import TextInput from '@/Components/TextInput.vue';
+import PasswordInput from '@/Components/PasswordInput.vue';
 import InputError from '@/Components/InputError.vue';
 import { useI18n } from 'vue-i18n';
 import { computed, ref } from 'vue';
@@ -215,12 +215,12 @@ function initial(user) {
                     <form @submit.prevent="submitReset" class="mt-4 space-y-3">
                         <div>
                             <InputLabel :value="t('new_password')" />
-                            <TextInput v-model="pwForm.password" type="password" class="mt-1 w-full" autocomplete="new-password" required />
+                            <PasswordInput v-model="pwForm.password" class="mt-1 w-full" autocomplete="new-password" required />
                             <InputError :message="pwForm.errors.password" class="mt-1" />
                         </div>
                         <div>
                             <InputLabel :value="t('confirm_password')" />
-                            <TextInput v-model="pwForm.password_confirmation" type="password" class="mt-1 w-full" autocomplete="new-password" required />
+                            <PasswordInput v-model="pwForm.password_confirmation" class="mt-1 w-full" autocomplete="new-password" required />
                         </div>
                         <p class="rounded-lg bg-amber-50 dark:bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">{{ t('reset_password_hint') }}</p>
                         <div class="flex justify-end gap-3 pt-2">

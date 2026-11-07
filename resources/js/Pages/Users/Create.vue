@@ -2,6 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
+import PasswordInput from '@/Components/PasswordInput.vue';
 import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
@@ -75,12 +76,12 @@ function submit() {
                     </div>
                     <div>
                         <InputLabel for="password" :value="t('password')" required />
-                        <TextInput id="password" v-model="form.password" type="password" class="mt-1 w-full" required autocomplete="new-password" />
+                        <PasswordInput id="password" v-model="form.password" class="mt-1 w-full" required autocomplete="new-password" />
                         <InputError :message="form.errors.password" class="mt-1" />
                     </div>
                     <div>
                         <InputLabel for="password_confirmation" :value="t('confirm_password')" required />
-                        <TextInput id="password_confirmation" v-model="form.password_confirmation" type="password" class="mt-1 w-full" required autocomplete="new-password" />
+                        <PasswordInput id="password_confirmation" v-model="form.password_confirmation" class="mt-1 w-full" required autocomplete="new-password" />
                     </div>
                 </div>
             </div>

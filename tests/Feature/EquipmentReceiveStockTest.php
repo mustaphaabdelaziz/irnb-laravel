@@ -4,9 +4,12 @@ namespace Tests\Feature;
 
 use App\Models\Branch;
 use App\Models\EquipmentCatalog;
+use App\Models\EquipmentCategory;
+use App\Models\EquipmentHistory;
 use App\Models\EquipmentItem;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Models\WebsiteConfig;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -125,6 +128,158 @@ class EquipmentReceiveStockTest extends TestCase
             'item_id' => EquipmentItem::first()->id,
             'event_type' => 'Received',
         ]);
+    }
+
+    private function serialCatalog(): EquipmentCatalog
+    {
+        $config = WebsiteConfig::singleton();
+        $config->club_short_name = 'IRNB';
+        $config->save();
+
+        // The equipment_categories migration seeds defaults, so no plain create().
+        EquipmentCategory::updateOrCreate(['name' => 'Balls'], ['code' => 'BALL']);
+
+        return EquipmentCatalog::create([
+            'name' => 'GPS Vest',
+            'category' => 'Balls',
+            'requires_serial' => true,
+        ]);
+    }
+
+    #[Test]
+    public function receiving_stock_on_a_serial_catalog_creates_one_numbered_unit_per_quantity(): void
+    {
+        $catalog = $this->serialCatalog();
+        $branch = Branch::create(['name' => 'Football', 'name_en' => 'Football']);
+
+        $this->actingAs($this->user())->post(route('equipment.stock.receive'), [
+            'catalog_id' => $catalog->id,
+            'quantity' => 3,
+            'unit_price' => 12000,
+            'purchase_date' => '2026-05-01',
+            'condition' => 'New',
+            'location' => 'Store room',
+            'record_expense' => false,
+            'branch_ids' => [$branch->id],
+        ])->assertRedirect(route('equipment.catalogs.show', $catalog->id));
+
+        $items = EquipmentItem::orderBy('id')->get();
+        $this->assertCount(3, $items, 'one row per unit, not one lot of 3');
+
+        $prefix = sprintf('IRNB-2026-BALL-%03d-', $catalog->id);
+        $this->assertSame(
+            [$prefix.'00001', $prefix.'00002', $prefix.'00003'],
+            $items->pluck('unique_identifier')->all(),
+        );
+
+        foreach ($items as $item) {
+            $this->assertSame(1, $item->quantity);
+            $this->assertEquals(12000, $item->unit_price);
+            $this->assertSame('Store room', $item->location);
+            $this->assertSame([$branch->id], $item->branches->pluck('id')->all());
+        }
+
+        $this->assertSame(3, EquipmentHistory::where('event_type', 'Received')->count(), 'each unit has its own history');
+    }
+
+    #[Test]
+    public function the_serial_counter_continues_after_units_already_in_the_catalog(): void
+    {
+        $catalog = $this->serialCatalog();
+        $user = $this->user();
+
+        $this->actingAs($user)->post(route('equipment.items.store'), [
+            'catalog_id' => $catalog->id,
+            'purchase_date' => '2026-05-01',
+            'condition' => 'New',
+        ])->assertRedirect();
+
+        $this->actingAs($user)->post(route('equipment.stock.receive'), [
+            'catalog_id' => $catalog->id,
+            'quantity' => 2,
+            'purchase_date' => '2026-06-01',
+            'condition' => 'New',
+            'record_expense' => false,
+        ])->assertRedirect();
+
+        $this->assertSame(
+            ['00001', '00002', '00003'],
+            EquipmentItem::orderBy('id')->pluck('unique_identifier')->map(fn ($uid) => substr($uid, -5))->all(),
+        );
+    }
+
+    #[Test]
+    public function receiving_numbered_units_with_the_expense_box_ticked_records_one_expense_for_all(): void
+    {
+        $catalog = $this->serialCatalog();
+
+        $this->actingAs($this->user())->post(route('equipment.stock.receive'), [
+            'catalog_id' => $catalog->id,
+            'quantity' => 5,
+            'unit_price' => 12000,
+            'purchase_date' => '2026-05-01',
+            'condition' => 'New',
+            'record_expense' => true,
+        ])->assertRedirect();
+
+        $this->assertSame(1, Transaction::count(), 'one purchase, one expense');
+        $transaction = Transaction::first();
+        $this->assertEquals(60000, $transaction->amount);
+
+        $this->assertSame(5, EquipmentItem::where('purchase_transaction_id', $transaction->id)->count());
+    }
+
+    #[Test]
+    public function deleting_one_numbered_unit_keeps_the_shared_expense(): void
+    {
+        $catalog = $this->serialCatalog();
+        $user = $this->user();
+
+        $this->actingAs($user)->post(route('equipment.stock.receive'), [
+            'catalog_id' => $catalog->id,
+            'quantity' => 2,
+            'unit_price' => 100,
+            'purchase_date' => '2026-05-01',
+            'condition' => 'New',
+            'record_expense' => true,
+        ])->assertRedirect();
+
+        $this->actingAs($user)->delete(route('equipment.items.destroy', EquipmentItem::first()))->assertRedirect();
+
+        $this->assertSame(1, EquipmentItem::count());
+        $this->assertSame(1, Transaction::count(), 'the other unit still points at the expense');
+    }
+
+    #[Test]
+    public function a_serial_catalog_receives_at_most_two_hundred_units_at_once(): void
+    {
+        $catalog = $this->serialCatalog();
+
+        $this->actingAs($this->user())->post(route('equipment.stock.receive'), [
+            'catalog_id' => $catalog->id,
+            'quantity' => 201,
+            'purchase_date' => '2026-05-01',
+            'condition' => 'New',
+            'record_expense' => false,
+        ])->assertSessionHasErrors('quantity');
+
+        $this->assertSame(0, EquipmentItem::count());
+    }
+
+    #[Test]
+    public function a_plain_catalog_keeps_receiving_one_lot_without_a_serial(): void
+    {
+        $this->actingAs($this->user())->post(route('equipment.stock.receive'), [
+            'catalog_id' => $this->catalog()->id,
+            'quantity' => 500,
+            'purchase_date' => '2026-05-01',
+            'condition' => 'New',
+            'record_expense' => false,
+        ])->assertRedirect();
+
+        $lot = EquipmentItem::sole();
+        $this->assertSame(500, $lot->quantity);
+        $this->assertNull($lot->unique_identifier);
     }
 
     #[Test]

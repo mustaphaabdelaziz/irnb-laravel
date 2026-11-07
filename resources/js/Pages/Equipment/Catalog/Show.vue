@@ -37,6 +37,8 @@ const props = defineProps({
 // Count-tracked catalogs (dossards, balls) get the quantity-first workflow;
 // serialized ones keep the original one-row-per-unit screens.
 const isSerialized = computed(() => !!props.catalog.requires_serial);
+// Mirrors ReceiveStockRequest::MAX_NUMBERED_UNITS.
+const MAX_NUMBERED_UNITS = 200;
 
 // Rent dropdown: show full name + membership id (and birthdate) instead of a raw id.
 const playerOptions = computed(() => props.players.map((p) => ({
@@ -762,7 +764,9 @@ function submitImport() {
                         <div class="grid gap-3 sm:grid-cols-2">
                             <div>
                                 <InputLabel :value="t('equipment.quantity')" />
-                                <TextInput v-model="receiveForm.quantity" type="number" min="1" class="mt-1 w-full" required />
+                                <TextInput v-model="receiveForm.quantity" type="number" min="1" :max="isSerialized ? MAX_NUMBERED_UNITS : undefined" class="mt-1 w-full" required />
+                                <!-- A serial catalog gets one numbered row per unit, not one lot. -->
+                                <p v-if="isSerialized" class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('equipment.receive_numbered_hint', { max: MAX_NUMBERED_UNITS }) }}</p>
                                 <InputError :message="receiveForm.errors.quantity" class="mt-1" />
                             </div>
                             <div>

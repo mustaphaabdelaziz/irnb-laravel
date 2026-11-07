@@ -3,6 +3,7 @@
 namespace App\Services\Equipment;
 
 use App\Exceptions\Equipment\StockException;
+use App\Models\EquipmentCatalog;
 use App\Models\EquipmentHistory;
 use App\Models\EquipmentItem;
 use App\Models\Transaction;
@@ -180,7 +181,9 @@ class EquipmentStockService
     }
 
     /**
-     * Bring stock into the club as a new lot.
+     * Bring stock into the club as a new lot, or, for a catalog that
+     * requires serials, as one numbered unit per quantity. Returns the first
+     * row created.
      *
      * Spending money is opt-in via `record_expense`, not a side effect of
      * recording what the equipment is worth. Unticked covers donations,
@@ -219,43 +222,75 @@ class EquipmentStockService
                 }
             }
 
-            $item = EquipmentItem::create([
-                'catalog_id' => $data['catalog_id'],
+            // A serial catalog tracks each unit on its own row with its own
+            // serial, so N units become N numbered rows sharing the one
+            // expense; any other catalog gets a single lot of N.
+            $numbered = (bool) EquipmentCatalog::whereKey($data['catalog_id'])->value('requires_serial');
+            $rows = $numbered ? $quantity : 1;
+
+            $first = null;
+            for ($i = 0; $i < $rows; $i++) {
+                $item = $this->receiveRow($data, $numbered ? 1 : $quantity, $unitPrice, $transactionId, $numbered, $userId, $actor);
+                $first ??= $item;
+            }
+
+            return $first;
+        });
+    }
+
+    /** One received row: a lot of $quantity, or one numbered unit. */
+    private function receiveRow(
+        array $data,
+        int $quantity,
+        ?float $unitPrice,
+        ?int $transactionId,
+        bool $numbered,
+        ?int $userId,
+        ?User $actor,
+    ): EquipmentItem {
+        $item = new EquipmentItem([
+            'catalog_id' => $data['catalog_id'],
+            'quantity' => $quantity,
+            'unit_price' => $unitPrice,
+            'purchase_date' => $data['purchase_date'],
+            'condition' => $data['condition'],
+            'location' => $data['location'] ?? null,
+            'notes' => $data['notes'] ?? null,
+            'received_via' => $data['received_via'] ?? 'purchase',
+            'purchase_transaction_id' => $transactionId,
+            'status' => 'Available',
+        ]);
+
+        if ($numbered) {
+            // Assigns unique_identifier and saves.
+            app(SerialNumberService::class)->assign($item);
+        } else {
+            $item->save();
+        }
+
+        if (! empty($data['branch_ids'])) {
+            $item->branches()->sync($data['branch_ids']);
+        }
+
+        EquipmentHistory::create([
+            'item_id' => $item->id,
+            'user_id' => $userId,
+            'event_type' => 'Received',
+            'details' => [
                 'quantity' => $quantity,
                 'unit_price' => $unitPrice,
-                'purchase_date' => $purchaseDate,
-                'condition' => $data['condition'],
-                'location' => $data['location'] ?? null,
-                'notes' => $data['notes'] ?? null,
-                'received_via' => $data['received_via'] ?? 'purchase',
-                'purchase_transaction_id' => $transactionId,
-                'status' => 'Available',
+                'received_via' => $item->received_via,
+                'transaction_id' => $transactionId,
+            ],
+            'event_timestamp' => now(),
+        ]);
+
+        if ($actor) {
+            ActivityRecorder::record($actor, ActivityAction::STOCK_RECEIVED, $item, [
+                'quantity' => $quantity,
             ]);
+        }
 
-            if (! empty($data['branch_ids'])) {
-                $item->branches()->sync($data['branch_ids']);
-            }
-
-            EquipmentHistory::create([
-                'item_id' => $item->id,
-                'user_id' => $userId,
-                'event_type' => 'Received',
-                'details' => [
-                    'quantity' => $quantity,
-                    'unit_price' => $unitPrice,
-                    'received_via' => $item->received_via,
-                    'transaction_id' => $transactionId,
-                ],
-                'event_timestamp' => now(),
-            ]);
-
-            if ($actor) {
-                ActivityRecorder::record($actor, ActivityAction::STOCK_RECEIVED, $item, [
-                    'quantity' => $quantity,
-                ]);
-            }
-
-            return $item;
-        });
+        return $item;
     }
 }

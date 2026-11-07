@@ -23,7 +23,7 @@ class PlayerDocumentService
     public function __construct(private PrivateFileStorage $storage, private RegistrationService $registrations) {}
 
     /**
-     * @param  array{received_at: string, valid_until: ?string, notes: ?string}  $receipt
+     * @param  array{received_at: string, valid_until: ?string, notes: ?string, copies_received?: int}  $receipt
      * @param  list<UploadedFile>  $files
      * @param  BranchRegistration|null  $registration  null: the main one
      */
@@ -36,6 +36,7 @@ class PlayerDocumentService
             'state' => PlayerDocument::RECEIVED,
             'received_at' => $receipt['received_at'],
             'valid_until' => $type->validUntilFor($receipt['received_at'], $receipt['valid_until']),
+            'copies_received' => $receipt['copies_received'] ?? $type->copies,
             'notes' => $receipt['notes'],
             'recorded_by_user_id' => $by?->id,
         ]);
@@ -52,7 +53,7 @@ class PlayerDocumentService
      * Renewal moves the dates forward on the same row. Earlier files stay
      * attached, with their upload dates, as the document's history.
      *
-     * @param  array{received_at: string, valid_until: ?string, notes: ?string}  $receipt
+     * @param  array{received_at: string, valid_until: ?string, notes: ?string, copies_received?: int}  $receipt
      * @param  list<UploadedFile>  $files
      */
     public function renew(PlayerDocument $document, array $receipt, array $files, ?User $by): void
@@ -60,6 +61,7 @@ class PlayerDocumentService
         $document->update([
             'received_at' => $receipt['received_at'],
             'valid_until' => $document->type->validUntilFor($receipt['received_at'], $receipt['valid_until']),
+            'copies_received' => $receipt['copies_received'] ?? $document->type->copies,
             'notes' => $receipt['notes'],
             'recorded_by_user_id' => $by?->id,
         ]);

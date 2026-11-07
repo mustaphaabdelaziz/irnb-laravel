@@ -7,12 +7,13 @@ use App\Models\PlayerDocument;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Support\DocumentBranchFixtures;
 use Tests\Support\RegistrationFixtures;
 use Tests\TestCase;
 
 class DocumentWritersRegistrationTest extends TestCase
 {
-    use RefreshDatabase, RegistrationFixtures;
+    use DocumentBranchFixtures, RefreshDatabase, RegistrationFixtures;
 
     private User $admin;
 
@@ -24,6 +25,7 @@ class DocumentWritersRegistrationTest extends TestCase
         $this->twoSportClub();
         $this->admin = User::factory()->admin()->create(['email_verified_at' => now()]);
         $this->type = DocumentType::where('code', 'birth_certificate')->firstOrFail();
+        $this->requireDocumentsEverywhere();
     }
 
     private function receive($player, array $extra = [])

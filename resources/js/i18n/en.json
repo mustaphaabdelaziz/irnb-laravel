@@ -1686,6 +1686,7 @@
     "flash.configuration_updated": "Configuration updated successfully.",
     "flash.counts_saved": "Counts saved.",
     "flash.document_already_recorded": "This document is already recorded. Renew it instead.",
+    "flash.document_not_required_in_branch": "This branch does not require this document.",
     "flash.document_exempted": "Document marked as not required.",
     "flash.document_exemption_removed": "Exemption removed.",
     "flash.document_file_removed": "File removed.",

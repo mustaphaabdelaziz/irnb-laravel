@@ -34,6 +34,9 @@ class PlayerDocumentController extends Controller
     {
         $type = $this->activeType($request);
         $registration = $this->registration($request, $player);
+        if (! $this->requiredIn($registration, $type)) {
+            return back()->with('error', 'flash.document_not_required_in_branch');
+        }
 
         $held = $player->documents()
             ->where('branch_registration_id', $registration?->id)
@@ -56,6 +59,10 @@ class PlayerDocumentController extends Controller
             return back()->with('error', 'flash.document_not_received');
         }
 
+        if (! $this->requiredIn($document->registration, $document->type)) {
+            return back()->with('error', 'flash.document_not_required_in_branch');
+        }
+
         $this->documents->renew($document, $this->receipt($request, $document->type), $this->files($request), $request->user());
 
         return back()->with('success', 'flash.document_renewed');
@@ -65,6 +72,9 @@ class PlayerDocumentController extends Controller
     {
         $type = $this->activeType($request);
         $registration = $this->registration($request, $player);
+        if (! $this->requiredIn($registration, $type)) {
+            return back()->with('error', 'flash.document_not_required_in_branch');
+        }
         $data = $request->validate([
             'reason' => ['required', 'string', 'min:3', 'max:255'],
         ]);
@@ -138,6 +148,12 @@ class PlayerDocumentController extends Controller
         return $id === null ? app(RegistrationService::class)->primary($player) : BranchRegistration::findOrFail($id);
     }
 
+    /** A registration owes only the types its branch ticks; a player with none owes every active type. */
+    private function requiredIn(?BranchRegistration $registration, DocumentType $type): bool
+    {
+        return $registration === null || $type->branches()->whereKey($registration->branch_id)->exists();
+    }
+
     private function activeType(Request $request): DocumentType
     {
         $data = $request->validate([
@@ -147,7 +163,7 @@ class PlayerDocumentController extends Controller
         return DocumentType::findOrFail($data['document_type_id']);
     }
 
-    /** @return array{received_at: string, valid_until: ?string, notes: ?string} */
+    /** @return array{received_at: string, valid_until: ?string, notes: ?string, copies_received: int} */
     private function receipt(Request $request, DocumentType $type): array
     {
         $data = $request->validate([
@@ -159,6 +175,7 @@ class PlayerDocumentController extends Controller
                 'after_or_equal:received_at',
             ],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'copies_received' => ['nullable', 'integer', 'min:1', 'max:'.max(1, (int) $type->copies)],
             'files' => ['nullable', 'array', 'max:'.self::MAX_FILES],
             'files.*' => self::FILE_RULES,
         ]);
@@ -167,6 +184,8 @@ class PlayerDocumentController extends Controller
             'received_at' => $data['received_at'],
             'valid_until' => $data['valid_until'] ?? null,
             'notes' => $data['notes'] ?? null,
+            // Left out = every copy came in (the form always sends it).
+            'copies_received' => (int) ($data['copies_received'] ?? $type->copies),
         ];
     }
 

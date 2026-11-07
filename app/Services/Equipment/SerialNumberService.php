@@ -12,22 +12,37 @@ use Illuminate\Database\QueryException;
 class SerialNumberService
 {
     /**
-     * Build the serial for an item ({CLUB}-{YYYY}-{CODE}-{NNNNN}).
+     * Build the serial for an item ({CLUB}-{YYYY}-{CODE}-{CCC}-{NNNNN}).
      * Does not persist. The item must have catalog_id and purchase_date set.
      */
     public function generate(EquipmentItem $item): string
     {
-        $prefix = sprintf(
-            '%s-%s-%s-',
+        $prefix = $this->prefix($item);
+
+        return $this->format($prefix, $this->nextSequence($prefix));
+    }
+
+    /**
+     * The serial up to its counter: club, purchase year, category code and
+     * catalog id. The catalog is part of it so each catalog counts its own
+     * units 1, 2, 3…; with the category alone, catalogs of one category
+     * shared a counter and a catalog's units skipped numbers.
+     */
+    public function prefix(EquipmentItem $item): string
+    {
+        return sprintf(
+            '%s-%s-%s-%s-',
             $this->clubAbbreviation(),
             Carbon::parse($item->purchase_date)->format('Y'),
             $this->categoryCode($item),
+            str_pad((string) $item->catalog_id, 3, '0', STR_PAD_LEFT),
         );
+    }
 
-        $next = $this->nextSequence($prefix);
-        $width = max(5, strlen((string) $next));
-
-        return $prefix.str_pad((string) $next, $width, '0', STR_PAD_LEFT);
+    /** The serial with counter $n after $prefix (at least five digits). */
+    public function format(string $prefix, int $n): string
+    {
+        return $prefix.str_pad((string) $n, 5, '0', STR_PAD_LEFT);
     }
 
     /**

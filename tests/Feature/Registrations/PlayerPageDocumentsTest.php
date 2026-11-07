@@ -7,12 +7,13 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Support\DocumentBranchFixtures;
 use Tests\Support\RegistrationFixtures;
 use Tests\TestCase;
 
 class PlayerPageDocumentsTest extends TestCase
 {
-    use RefreshDatabase, RegistrationFixtures;
+    use DocumentBranchFixtures, RefreshDatabase, RegistrationFixtures;
 
     private User $admin;
 
@@ -23,6 +24,7 @@ class PlayerPageDocumentsTest extends TestCase
         $this->admin = User::factory()->admin()->create(['email_verified_at' => now()]);
         DocumentType::query()->update(['is_active' => false]);
         DocumentType::create(['code' => 'med', 'name' => 'Medical', 'validity' => 'none', 'is_required' => true, 'is_active' => true]);
+        $this->requireDocumentsEverywhere();
     }
 
     #[Test]

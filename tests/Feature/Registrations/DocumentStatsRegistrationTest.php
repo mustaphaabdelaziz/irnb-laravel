@@ -13,12 +13,13 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\CompetitionFixtures;
+use Tests\Support\DocumentBranchFixtures;
 use Tests\Support\RegistrationFixtures;
 use Tests\TestCase;
 
 class DocumentStatsRegistrationTest extends TestCase
 {
-    use CompetitionFixtures, RefreshDatabase, RegistrationFixtures;
+    use CompetitionFixtures, DocumentBranchFixtures, RefreshDatabase, RegistrationFixtures;
 
     private DocumentType $medical;
 
@@ -28,6 +29,7 @@ class DocumentStatsRegistrationTest extends TestCase
         $this->twoSportClub();
         DocumentType::query()->update(['is_active' => false]);
         $this->medical = DocumentType::create(['code' => 'med', 'name' => 'Medical', 'validity' => 'none', 'is_required' => true, 'is_active' => true]);
+        $this->requireDocumentsEverywhere();
     }
 
     private function received(Player $player, Branch $branch): void

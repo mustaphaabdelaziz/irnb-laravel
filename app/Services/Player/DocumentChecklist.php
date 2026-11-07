@@ -9,10 +9,13 @@ use App\Models\PlayerDocument;
 use App\Models\PlayerDocumentFile;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Which documents a player's registration has, lacks, or no longer needs. A
  * player with no registration holds them alone. A left registration owes nothing.
+ * Each registration owes only the types its branch ticks (branch_document_type);
+ * a player with no registration owes every active type.
  *
  * Two forms of ONE rule set:
  *  - for() / evaluate(): the per-document states the player page shows;
@@ -57,7 +60,7 @@ final class DocumentChecklist
      * alone when they have none): every active type, plus any inactive type it
      * still has a record for (shown greyed, never counted).
      *
-     * @return array{registration_id: ?int, left: bool, items: list<array<string, mixed>>, missing_count: int, expiring_count: int}
+     * @return array{registration_id: ?int, left: bool, items: list<array<string, mixed>>, retired: list<array<string, mixed>>, missing_count: int, expiring_count: int}
      */
     public static function for(Player $player, ?CarbonInterface $today = null, ?BranchRegistration $registration = null): array
     {
@@ -81,8 +84,25 @@ final class DocumentChecklist
             ->ordered()
             ->get();
 
-        $items = $types
+        // Explicit ticks (owner, 2026-11-07): a registration owes the active types
+        // its branch requires. A player with no registration has no branch and owes
+        // every active type. An active type its branch no longer requires is
+        // "retired": kept and shown when a record exists, never counted. Inactive
+        // types keep their old handling (greyed in items, never counted).
+        $ticked = $registration === null ? null
+            : DB::table('branch_document_type')->where('branch_id', $registration->branch_id)
+                ->pluck('document_type_id')->map(fn ($id) => (int) $id)->all();
+        $required = fn (DocumentType $type) => $ticked === null || ! $type->is_active || in_array($type->id, $ticked, true);
+
+        $items = $types->filter($required)
             ->map(fn (DocumentType $type) => self::item($type, $documents->get($type->id), $player, $today, $left))
+            ->values()
+            ->all();
+
+        $retired = $types->reject($required)
+            ->filter(fn (DocumentType $type) => $documents->has($type->id))
+            // As on a left registration: nothing is expected, so nothing counts.
+            ->map(fn (DocumentType $type) => self::item($type, $documents->get($type->id), $player, $today, true))
             ->values()
             ->all();
 
@@ -90,6 +110,7 @@ final class DocumentChecklist
             'registration_id' => $registration?->id,
             'left' => $left,
             'items' => $items,
+            'retired' => $retired,
             'missing_count' => count(array_filter($items, fn (array $item) => $item['counts_missing'])),
             'expiring_count' => $left ? 0 : count(array_filter(
                 $items,
@@ -235,7 +256,7 @@ final class DocumentChecklist
             ." AND (pd.state = 'exempt' OR (pd.state = 'received'"
             .' AND (pd.valid_until IS NULL OR pd.valid_until >= ?))))';
 
-        return self::whenPlayer($conditions, $bindings, self::rowsSql($unsettled, [$type->id, $today->toDateString()], $branchId, $joinedRow));
+        return self::whenPlayer($conditions, $bindings, self::rowsSql($unsettled, [$type->id, $today->toDateString()], $type->id, $branchId, $joinedRow));
     }
 
     /**
@@ -260,6 +281,7 @@ final class DocumentChecklist
                 .' OR pd.branch_registration_id IN (SELECT r.id FROM branch_player r'
                 .' WHERE r.player_id = players.id AND '.self::ACTIVE_ROW
                 .($branchId !== null ? ' AND r.branch_id = ?' : '')
+                .' AND EXISTS (SELECT 1 FROM branch_document_type bdt WHERE bdt.branch_id = r.branch_id AND bdt.document_type_id = pd.document_type_id)'
                 .')))',
             [
                 DocumentType::PHOTO,
@@ -294,7 +316,7 @@ final class DocumentChecklist
             ? "((players.picture_url IS NOT NULL AND players.picture_url <> '') OR {$notExempt})"
             : $notExempt;
 
-        return self::whenPlayer($conditions, $bindings, self::rowsSql($test, [$type->id], $branchId, $joinedRow));
+        return self::whenPlayer($conditions, $bindings, self::rowsSql($test, [$type->id], $type->id, $branchId, $joinedRow));
     }
 
     /**
@@ -327,7 +349,7 @@ final class DocumentChecklist
             $type->id,
             $today->toDateString(),
             $today->addDays(self::EXPIRES_SOON_DAYS + 1)->toDateString(),
-        ], $branchId, $joinedRow));
+        ], $type->id, $branchId, $joinedRow));
     }
 
     /**
@@ -340,18 +362,20 @@ final class DocumentChecklist
      * @param  list<mixed>  $bindings  the test's bindings
      * @return array{0: string, 1: array<int, mixed>}
      */
-    private static function rowsSql(string $test, array $bindings, ?int $branchId, bool $joinedRow): array
+    private static function rowsSql(string $test, array $bindings, int $typeId, ?int $branchId, bool $joinedRow): array
     {
         $registered = '(SELECT COUNT(*) FROM branch_player r WHERE r.player_id = players.id AND '.self::ACTIVE_ROW
             .($branchId !== null ? ' AND r.branch_id = ?' : '')
             .($joinedRow ? ' AND r.id = reg.id' : '')
+            // Only a branch that requires the type owes it (explicit ticks).
+            .' AND EXISTS (SELECT 1 FROM branch_document_type bdt WHERE bdt.branch_id = r.branch_id AND bdt.document_type_id = ?)'
             .' AND '.str_replace('{owner}', 'pd.branch_registration_id = r.id', $test).')';
 
         $alone = '(CASE WHEN NOT EXISTS (SELECT 1 FROM branch_player r0 WHERE r0.player_id = players.id) AND '
             .str_replace('{owner}', 'pd.player_id = players.id AND pd.branch_registration_id IS NULL', $test)
             .' THEN 1 ELSE 0 END)';
 
-        return ["({$registered} + {$alone})", [...($branchId !== null ? [$branchId] : []), ...$bindings, ...$bindings]];
+        return ["({$registered} + {$alone})", [...($branchId !== null ? [$branchId] : []), $typeId, ...$bindings, ...$bindings]];
     }
 
     /**

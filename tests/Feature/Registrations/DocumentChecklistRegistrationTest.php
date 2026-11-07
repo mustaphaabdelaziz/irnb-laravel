@@ -10,12 +10,13 @@ use App\Services\Player\DocumentChecklist;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Support\DocumentBranchFixtures;
 use Tests\Support\RegistrationFixtures;
 use Tests\TestCase;
 
 class DocumentChecklistRegistrationTest extends TestCase
 {
-    use RefreshDatabase, RegistrationFixtures;
+    use DocumentBranchFixtures, RefreshDatabase, RegistrationFixtures;
 
     private DocumentType $medical;
 
@@ -26,6 +27,7 @@ class DocumentChecklistRegistrationTest extends TestCase
         // One required type keeps the counts readable.
         DocumentType::query()->update(['is_active' => false]);
         $this->medical = DocumentType::create(['code' => 'med', 'name' => 'Medical', 'validity' => 'date', 'is_required' => true, 'is_active' => true]);
+        $this->requireDocumentsEverywhere();
     }
 
     private function received(Player $player, ?Branch $branch, ?string $validUntil = null, ?DocumentType $type = null): PlayerDocument

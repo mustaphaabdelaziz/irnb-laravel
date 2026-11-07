@@ -4,6 +4,7 @@ namespace Tests\Feature\Registrations;
 
 use App\Models\Branch;
 use App\Models\DocumentType;
+use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
@@ -63,7 +64,7 @@ class BranchDocumentTypesMigrationTest extends TestCase
     public function received_rows_get_their_types_copies_and_exempt_rows_stay_blank(): void
     {
         $type = DocumentType::create(['code' => 'cp', 'name' => 'Copies', 'validity' => 'none', 'copies' => 3]);
-        $player = \App\Models\Player::create(['membership_id' => 'CP-1', 'firstname' => 'A', 'lastname' => 'B']);
+        $player = Player::create(['membership_id' => 'CP-1', 'firstname' => 'A', 'lastname' => 'B']);
         $received = DB::table('player_documents')->insertGetId(['player_id' => $player->id, 'document_type_id' => $type->id, 'state' => 'received', 'received_at' => '2026-09-01']);
         $other = DocumentType::where('code', 'birth_certificate')->firstOrFail();
         $exempt = DB::table('player_documents')->insertGetId(['player_id' => $player->id, 'document_type_id' => $other->id, 'state' => 'exempt']);

@@ -9,6 +9,8 @@ use App\Models\Player;
 use App\Models\PlayerDocument;
 use App\Models\User;
 use App\Services\Player\DocumentStats;
+use App\Services\Player\RegistrationService;
+use App\Support\Season;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
@@ -170,7 +172,7 @@ class DocumentStatsRegistrationTest extends TestCase
         $player = $this->bothActive();
         $this->received($player, $this->foot);
         $team = $this->team($this->u15, ['branch_id' => $this->swim->id]);
-        $this->onRoster($team, \App\Support\Season::current()->startYear, [$player]);
+        $this->onRoster($team, Season::current()->startYear, [$player]);
 
         $this->actingAs($this->admin())->get(route('teams.show', $team))->assertOk()
             ->assertInertia(fn (Assert $page) => $page
@@ -245,9 +247,9 @@ class DocumentStatsRegistrationTest extends TestCase
     {
         $member = $this->bothActive();
         $guest = $this->bothActive('Guest');
-        app(\App\Services\Player\RegistrationService::class)->leave($guest, [$this->swim->id], $this->leaveDate);
+        app(RegistrationService::class)->leave($guest, [$this->swim->id], $this->leaveDate);
         $team = $this->team($this->u15, ['branch_id' => $this->swim->id]);
-        $this->onRoster($team, \App\Support\Season::current()->startYear, [$member, $guest]);
+        $this->onRoster($team, Season::current()->startYear, [$member, $guest]);
 
         $this->actingAs($this->admin())->get(route('teams.show', $team))->assertOk()
             ->assertInertia(fn (Assert $page) => $page

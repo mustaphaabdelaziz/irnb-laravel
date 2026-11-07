@@ -3,7 +3,9 @@
 namespace Tests\Feature\Registrations;
 
 use App\Models\DocumentType;
+use App\Models\PlayerDocument;
 use App\Models\User;
+use App\Services\Player\RegistrationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
@@ -49,7 +51,7 @@ class PlayerPageDocumentsTest extends TestCase
     public function a_one_branch_player_has_one_tab(): void
     {
         $player = $this->noRegistration();
-        app(\App\Services\Player\RegistrationService::class)->register($player, ['branch_id' => $this->foot->id]);
+        app(RegistrationService::class)->register($player, ['branch_id' => $this->foot->id]);
 
         $this->actingAs($this->admin)->get(route('players.show', $player))->assertOk()
             ->assertInertia(fn (Assert $page) => $page->has('documents.tabs', 1)->where('documents.missing_count', 1));
@@ -84,7 +86,7 @@ class PlayerPageDocumentsTest extends TestCase
         $medical->branches()->sync([$this->foot->id]);
         $player = $this->bothActive();
         foreach ([$this->foot, $this->swim] as $branch) {
-            \App\Models\PlayerDocument::create([
+            PlayerDocument::create([
                 'player_id' => $player->id,
                 'branch_registration_id' => $player->registrationIn($branch->id)->id,
                 'document_type_id' => $medical->id,

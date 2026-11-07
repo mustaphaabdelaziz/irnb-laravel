@@ -2,11 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Models\Branch;
 use App\Models\DocumentType;
 use App\Models\Player;
 use App\Models\PlayerDocument;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\Player\RegistrationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -212,8 +214,8 @@ class DocumentTypeSettingsTest extends TestCase
     #[Test]
     public function creating_a_type_ticks_the_chosen_branches(): void
     {
-        $foot = \App\Models\Branch::create(['name' => 'Football', 'code' => 'FB']);
-        \App\Models\Branch::create(['name' => 'Swimming', 'code' => 'SW']);
+        $foot = Branch::create(['name' => 'Football', 'code' => 'FB']);
+        Branch::create(['name' => 'Swimming', 'code' => 'SW']);
 
         $this->actingAs($this->admin())->post(route('document-types.store'), $this->payload(['branch_ids' => [$foot->id]]))
             ->assertSessionHas('success');
@@ -225,8 +227,8 @@ class DocumentTypeSettingsTest extends TestCase
     #[Test]
     public function updating_syncs_branches_and_leaving_them_out_keeps_them(): void
     {
-        $foot = \App\Models\Branch::create(['name' => 'Football', 'code' => 'FB']);
-        $swim = \App\Models\Branch::create(['name' => 'Swimming', 'code' => 'SW']);
+        $foot = Branch::create(['name' => 'Football', 'code' => 'FB']);
+        $swim = Branch::create(['name' => 'Swimming', 'code' => 'SW']);
         $type = $this->type('birth_certificate');
         $type->branches()->sync([$foot->id, $swim->id]);
         $admin = $this->admin();
@@ -251,11 +253,11 @@ class DocumentTypeSettingsTest extends TestCase
     #[Test]
     public function the_page_sends_branches_ticks_and_record_counts_per_branch(): void
     {
-        $foot = \App\Models\Branch::create(['name' => 'Football', 'code' => 'FB']);
+        $foot = Branch::create(['name' => 'Football', 'code' => 'FB']);
         $type = $this->type('birth_certificate');
         $type->branches()->sync([$foot->id]);
         $player = Player::create(['membership_id' => '202600602', 'firstname' => 'Sami', 'lastname' => 'Lounis']);
-        app(\App\Services\Player\RegistrationService::class)->register($player, ['branch_id' => $foot->id]);
+        app(RegistrationService::class)->register($player, ['branch_id' => $foot->id]);
         PlayerDocument::create(['player_id' => $player->id, 'branch_registration_id' => $player->registrations()->value('id'), 'document_type_id' => $type->id, 'state' => 'received', 'received_at' => '2026-09-01']);
 
         $this->actingAs($this->admin())->get(route('document-types.index'))

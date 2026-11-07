@@ -4,12 +4,14 @@ namespace Tests\Feature\Registrations;
 
 use App\Models\ActivityLog;
 use App\Models\Branch;
+use App\Models\DocumentType;
 use App\Models\Player;
 use App\Models\PlayerStatus;
 use App\Models\Position;
 use App\Models\User;
 use App\Services\Player\RegistrationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\DocumentBranchFixtures;
@@ -130,7 +132,6 @@ class ReleaseOneLeftoversTest extends TestCase
         $this->assertNull(DB::table('players')->where('id', $player->id)->value('left_at'));
     }
 
-
     #[Test]
     public function the_members_dialog_still_links_an_undated_left_players_documents(): void
     {
@@ -138,7 +139,7 @@ class ReleaseOneLeftoversTest extends TestCase
         $player->forceFill(['status_id' => $this->left(), 'left_at' => null])->saveQuietly();
         $documentId = DB::table('player_documents')->insertGetId([
             'player_id' => $player->id, 'branch_registration_id' => null,
-            'document_type_id' => \App\Models\DocumentType::where('code', 'birth_certificate')->value('id'),
+            'document_type_id' => DocumentType::where('code', 'birth_certificate')->value('id'),
             'state' => 'received', 'received_at' => '2026-09-01',
         ]);
 
@@ -148,9 +149,10 @@ class ReleaseOneLeftoversTest extends TestCase
         $registration = $player->registrations()->where('branch_id', $this->foot->id)->firstOrFail();
         $this->assertSame($registration->id, (int) DB::table('player_documents')->where('id', $documentId)->value('branch_registration_id'));
         $this->assertNull($registration->left_at);
-        \Illuminate\Support\Facades\Artisan::call('registrations:verify');
-        $this->assertStringNotContainsString("document {$documentId}", \Illuminate\Support\Facades\Artisan::output());
+        Artisan::call('registrations:verify');
+        $this->assertStringNotContainsString("document {$documentId}", Artisan::output());
     }
+
     #[Test]
     public function a_new_card_with_the_left_status_and_no_date_still_stamps_today(): void
     {

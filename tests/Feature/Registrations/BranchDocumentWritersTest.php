@@ -2,11 +2,20 @@
 
 namespace Tests\Feature\Registrations;
 
+use App\Models\Branch;
 use App\Models\DocumentType;
+use App\Models\GameFormat;
 use App\Models\Player;
 use App\Models\PlayerDocument;
+use App\Models\Team;
 use App\Models\User;
+use App\Reports\Players\PlayerDocuments;
+use App\Reports\ReportFilters;
+use App\Services\Competitions\PlayerFlags;
+use App\Services\Player\DocumentChecklist;
+use App\Services\Player\DocumentStats;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\RegistrationFixtures;
 use Tests\TestCase;
@@ -31,12 +40,12 @@ class BranchDocumentWritersTest extends TestCase
         $this->player = $this->bothActive();
     }
 
-    private function registrationId(\App\Models\Branch $branch): int
+    private function registrationId(Branch $branch): int
     {
         return $this->player->registrations()->where('branch_id', $branch->id)->value('id');
     }
 
-    private function receive(\App\Models\Branch $branch, array $extra = [])
+    private function receive(Branch $branch, array $extra = [])
     {
         return $this->actingAs($this->admin)->post(route('players.documents.store', $this->player), [
             'document_type_id' => $this->medical->id,
@@ -113,9 +122,9 @@ class BranchDocumentWritersTest extends TestCase
 
     private function reportRows()
     {
-        $report = app(\App\Reports\Players\PlayerDocuments::class);
+        $report = app(PlayerDocuments::class);
 
-        return $report->rows(\App\Reports\ReportFilters::fromRequest(\Illuminate\Http\Request::create('/'), $report));
+        return $report->rows(ReportFilters::fromRequest(Request::create('/'), $report));
     }
 
     #[Test]
@@ -133,7 +142,7 @@ class BranchDocumentWritersTest extends TestCase
 
         $row = $this->reportRows()->where('player_id', $this->player->id)->where('document', 'Medical')->first();
 
-        $this->assertSame(\App\Services\Player\DocumentChecklist::INCOMPLETE, $row['state_code']);
+        $this->assertSame(DocumentChecklist::INCOMPLETE, $row['state_code']);
         $this->assertStringContainsString('2 / 3', $row['state']);
     }
 
@@ -152,10 +161,10 @@ class BranchDocumentWritersTest extends TestCase
     public function match_flags_ignore_a_type_the_teams_branch_does_not_require(): void
     {
         $this->medical->update(['required_for_matches' => true]);
-        $format = \App\Models\GameFormat::create(['branch_id' => $this->foot->id, 'sport' => 'football', 'name' => 'Test 11', 'players_on_field' => 11, 'max_bench' => 9, 'max_called_up' => 20, 'periods_count' => 2, 'period_minutes' => 45, 'period_label' => 'half', 'scoring' => 'goals', 'sanction_types' => []]);
-        $swimTeam = \App\Models\Team::create(['branch_id' => $this->swim->id, 'category_id' => $this->u15->id, 'name' => 'Swim A', 'default_game_format_id' => $format->id]);
-        $footTeam = \App\Models\Team::create(['branch_id' => $this->foot->id, 'category_id' => $this->senior->id, 'name' => 'Foot A', 'default_game_format_id' => $format->id]);
-        $flags = app(\App\Services\Competitions\PlayerFlags::class);
+        $format = GameFormat::create(['branch_id' => $this->foot->id, 'sport' => 'football', 'name' => 'Test 11', 'players_on_field' => 11, 'max_bench' => 9, 'max_called_up' => 20, 'periods_count' => 2, 'period_minutes' => 45, 'period_label' => 'half', 'scoring' => 'goals', 'sanction_types' => []]);
+        $swimTeam = Team::create(['branch_id' => $this->swim->id, 'category_id' => $this->u15->id, 'name' => 'Swim A', 'default_game_format_id' => $format->id]);
+        $footTeam = Team::create(['branch_id' => $this->foot->id, 'category_id' => $this->senior->id, 'name' => 'Foot A', 'default_game_format_id' => $format->id]);
+        $flags = app(PlayerFlags::class);
 
         $this->assertFalse($flags->for([$this->player->id], null, null, null, $swimTeam)[$this->player->id]['documents_missing']);
         $this->assertTrue($flags->for([$this->player->id], null, null, null, $footTeam)[$this->player->id]['documents_missing']);
@@ -175,7 +184,7 @@ class BranchDocumentWritersTest extends TestCase
     #[Test]
     public function the_stats_ignore_a_type_the_branch_does_not_require(): void
     {
-        $row = fn ($branchId) => collect(app(\App\Services\Player\DocumentStats::class)
+        $row = fn ($branchId) => collect(app(DocumentStats::class)
             ->summary(Player::query()->whereKey($this->player->id), null, $branchId)['by_type'])
             ->firstWhere('id', $this->medical->id);
 

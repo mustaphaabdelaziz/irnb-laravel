@@ -40,6 +40,12 @@ class EquipmentSerialServiceTest extends TestCase
         return $item;
     }
 
+    /** The serial of a unit of $catalog: CLUB-YEAR-CODE-CCC-NNNNN. */
+    private function serial(string $club, string $year, string $code, EquipmentCatalog $catalog, int $n): string
+    {
+        return sprintf('%s-%s-%s-%03d-%05d', $club, $year, $code, $catalog->id, $n);
+    }
+
     #[Test]
     public function it_generates_a_serial_in_the_expected_format(): void
     {
@@ -48,11 +54,12 @@ class EquipmentSerialServiceTest extends TestCase
 
         $item = $this->makeItem($catalog, '2026-05-01');
 
-        $this->assertSame('IRNB-2026-BALL-00001', $item->unique_identifier);
+        $this->assertSame($this->serial('IRNB', '2026', 'BALL', $catalog, 1), $item->unique_identifier);
+        $this->assertMatchesRegularExpression('/^IRNB-2026-BALL-\d{3,}-00001$/', $item->unique_identifier);
     }
 
     #[Test]
-    public function it_increments_the_counter_within_the_same_year_and_category(): void
+    public function it_increments_the_counter_within_the_same_year_and_catalog(): void
     {
         $this->setClubShortName('IRNB');
         $catalog = $this->catalogFor('Balls', 'BALL');
@@ -60,8 +67,8 @@ class EquipmentSerialServiceTest extends TestCase
         $first = $this->makeItem($catalog, '2026-05-01');
         $second = $this->makeItem($catalog, '2026-09-15');
 
-        $this->assertSame('IRNB-2026-BALL-00001', $first->unique_identifier);
-        $this->assertSame('IRNB-2026-BALL-00002', $second->unique_identifier);
+        $this->assertSame($this->serial('IRNB', '2026', 'BALL', $catalog, 1), $first->unique_identifier);
+        $this->assertSame($this->serial('IRNB', '2026', 'BALL', $catalog, 2), $second->unique_identifier);
     }
 
     #[Test]
@@ -73,8 +80,8 @@ class EquipmentSerialServiceTest extends TestCase
         $y2026 = $this->makeItem($catalog, '2026-05-01');
         $y2027 = $this->makeItem($catalog, '2027-01-02');
 
-        $this->assertSame('IRNB-2026-BALL-00001', $y2026->unique_identifier);
-        $this->assertSame('IRNB-2027-BALL-00001', $y2027->unique_identifier);
+        $this->assertSame($this->serial('IRNB', '2026', 'BALL', $catalog, 1), $y2026->unique_identifier);
+        $this->assertSame($this->serial('IRNB', '2027', 'BALL', $catalog, 1), $y2027->unique_identifier);
     }
 
     #[Test]
@@ -87,8 +94,29 @@ class EquipmentSerialServiceTest extends TestCase
         $ball = $this->makeItem($balls, '2026-05-01');
         $goal = $this->makeItem($goals, '2026-05-01');
 
-        $this->assertSame('IRNB-2026-BALL-00001', $ball->unique_identifier);
-        $this->assertSame('IRNB-2026-GOAL-00001', $goal->unique_identifier);
+        $this->assertSame($this->serial('IRNB', '2026', 'BALL', $balls, 1), $ball->unique_identifier);
+        $this->assertSame($this->serial('IRNB', '2026', 'GOAL', $goals, 1), $goal->unique_identifier);
+    }
+
+    #[Test]
+    public function catalogs_of_the_same_category_and_year_each_count_from_one(): void
+    {
+        // The counter used to be shared by the whole category: a catalog's
+        // units went 00017, 00018, then 00055 once other catalogs of the
+        // category had taken the numbers between.
+        $this->setClubShortName('IRNB');
+        $shirts = $this->catalogFor('Balls', 'BALL');
+        $shorts = EquipmentCatalog::create(['name' => 'Shorts', 'category' => 'Balls']);
+
+        $shirt1 = $this->makeItem($shirts, '2026-05-01');
+        $short1 = $this->makeItem($shorts, '2026-05-01');
+        $short2 = $this->makeItem($shorts, '2026-05-01');
+        $shirt2 = $this->makeItem($shirts, '2026-05-01');
+
+        $this->assertSame($this->serial('IRNB', '2026', 'BALL', $shirts, 1), $shirt1->unique_identifier);
+        $this->assertSame($this->serial('IRNB', '2026', 'BALL', $shirts, 2), $shirt2->unique_identifier);
+        $this->assertSame($this->serial('IRNB', '2026', 'BALL', $shorts, 1), $short1->unique_identifier);
+        $this->assertSame($this->serial('IRNB', '2026', 'BALL', $shorts, 2), $short2->unique_identifier);
     }
 
     #[Test]
@@ -102,7 +130,7 @@ class EquipmentSerialServiceTest extends TestCase
 
         $item = $this->makeItem($catalog, '2026-05-01');
 
-        $this->assertSame('CLUB-2026-BALL-00001', $item->unique_identifier);
+        $this->assertSame($this->serial('CLUB', '2026', 'BALL', $catalog, 1), $item->unique_identifier);
     }
 
     #[Test]
@@ -115,7 +143,7 @@ class EquipmentSerialServiceTest extends TestCase
         $service = app(SerialNumberService::class);
         $preview = $service->previewNext($catalog->id, '2026-07-01');
 
-        $this->assertSame('IRNB-2026-BALL-00002', $preview);
+        $this->assertSame($this->serial('IRNB', '2026', 'BALL', $catalog, 2), $preview);
         $this->assertSame(1, EquipmentItem::count());
     }
 }

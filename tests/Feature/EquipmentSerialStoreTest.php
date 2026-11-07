@@ -45,7 +45,7 @@ class EquipmentSerialStoreTest extends TestCase
             ->assertRedirect();
 
         $item = EquipmentItem::sole();
-        $this->assertSame('IRNB-2026-BALL-00001', $item->unique_identifier);
+        $this->assertSame(sprintf('IRNB-2026-BALL-%03d-00001', $catalog->id), $item->unique_identifier);
     }
 
     #[Test]
@@ -63,7 +63,7 @@ class EquipmentSerialStoreTest extends TestCase
         }
 
         $this->assertSame(
-            ['IRNB-2026-BALL-00001', 'IRNB-2026-BALL-00002'],
+            [sprintf('IRNB-2026-BALL-%03d-00001', $catalog->id), sprintf('IRNB-2026-BALL-%03d-00002', $catalog->id)],
             EquipmentItem::orderBy('id')->pluck('unique_identifier')->all(),
         );
     }
@@ -80,6 +80,6 @@ class EquipmentSerialStoreTest extends TestCase
                 'purchase_date' => '2026-05-01',
             ]))
             ->assertOk()
-            ->assertJson(['serial' => 'IRNB-2026-BALL-00001']);
+            ->assertJson(['serial' => sprintf('IRNB-2026-BALL-%03d-00001', $catalog->id)]);
     }
 }

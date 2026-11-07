@@ -1522,6 +1522,8 @@
     "equipment.outstanding": "Still out",
     "equipment.past_items": "Returned",
     "equipment.quantity": "Quantity",
+    "equipment.receive_designation_hint": "Each unit gets this name followed by its number, continuing after the highest number already used.",
+    "equipment.receive_numbered_hint": "Each unit gets its own serial number (up to {max} at once).",
     "equipment.receive_stock": "Receive stock",
     "equipment.received_via": "Where it came from",
     "equipment.record_as_expense": "Record as an expense",

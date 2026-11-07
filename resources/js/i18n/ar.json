@@ -1522,6 +1522,8 @@
     "equipment.outstanding": "لم يُرجَع بعد",
     "equipment.past_items": "أُرجِع",
     "equipment.quantity": "الكمية",
+    "equipment.receive_designation_hint": "تحصل كل وحدة على هذا الاسم متبوعًا برقمها، بعد أكبر رقم مستعمل.",
+    "equipment.receive_numbered_hint": "تحصل كل وحدة على رقم تسلسلي خاص بها (حتى {max} دفعة واحدة).",
     "equipment.receive_stock": "استلام مخزون",
     "equipment.received_via": "مصدر الاستلام",
     "equipment.record_as_expense": "تسجيل كمصروف",

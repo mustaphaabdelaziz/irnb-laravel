@@ -3,6 +3,7 @@
 namespace App\Services\Equipment;
 
 use App\Exceptions\Equipment\StockException;
+use App\Models\EquipmentCatalog;
 use App\Models\EquipmentHistory;
 use App\Models\EquipmentItem;
 use App\Models\Transaction;
@@ -180,7 +181,9 @@ class EquipmentStockService
     }
 
     /**
-     * Bring stock into the club as a new lot.
+     * Bring stock into the club as a new lot, or, for a catalog that
+     * requires serials, as one numbered unit per quantity. Returns the first
+     * row created.
      *
      * Spending money is opt-in via `record_expense`, not a side effect of
      * recording what the equipment is worth. Unticked covers donations,
@@ -219,43 +222,115 @@ class EquipmentStockService
                 }
             }
 
-            $item = EquipmentItem::create([
-                'catalog_id' => $data['catalog_id'],
+            // A serial catalog tracks each unit on its own row with its own
+            // serial, so N units become N numbered rows sharing the one
+            // expense; any other catalog gets a single lot of N.
+            $numbered = (bool) EquipmentCatalog::whereKey($data['catalog_id'])->value('requires_serial');
+            $rows = $numbered ? $quantity : 1;
+
+            $designation = trim((string) ($data['designation'] ?? ''));
+            $nextNumber = $rows > 1 && $designation !== ''
+                ? $this->highestDesignationNumber((int) $data['catalog_id'], $designation) + 1
+                : null;
+
+            $first = null;
+            for ($i = 0; $i < $rows; $i++) {
+                $data['designation'] = $designation === ''
+                    ? null
+                    : ($nextNumber === null ? $designation : $designation.' '.($nextNumber + $i));
+
+                $item = $this->receiveRow($data, $numbered ? 1 : $quantity, $unitPrice, $transactionId, $numbered, $userId, $actor);
+                $first ??= $item;
+            }
+
+            return $first;
+        });
+    }
+
+    /**
+     * The highest N among this catalog's units named "{base} N", so a new
+     * batch continues the numbering (رقم 20 after رقم 19) instead of
+     * restarting at 1.
+     */
+    private function highestDesignationNumber(int $catalogId, string $base): int
+    {
+        $prefix = $base.' ';
+        $max = 0;
+
+        // LIKE only narrows the rows (a % or _ in the name just widens it);
+        // the exact, case-sensitive prefix check below decides.
+        $names = EquipmentItem::where('catalog_id', $catalogId)
+            ->where('designation', 'like', $prefix.'%')
+            ->pluck('designation');
+
+        foreach ($names as $name) {
+            $name = (string) $name;
+            if (! str_starts_with($name, $prefix)) {
+                continue;
+            }
+            $tail = substr($name, strlen($prefix));
+            if ($tail !== '' && ctype_digit($tail)) {
+                $max = max($max, (int) $tail);
+            }
+        }
+
+        return $max;
+    }
+
+    /** One received row: a lot of $quantity, or one numbered unit. */
+    private function receiveRow(
+        array $data,
+        int $quantity,
+        ?float $unitPrice,
+        ?int $transactionId,
+        bool $numbered,
+        ?int $userId,
+        ?User $actor,
+    ): EquipmentItem {
+        $item = new EquipmentItem([
+            'catalog_id' => $data['catalog_id'],
+            'designation' => $data['designation'] ?? null,
+            'quantity' => $quantity,
+            'unit_price' => $unitPrice,
+            'purchase_date' => $data['purchase_date'],
+            'condition' => $data['condition'],
+            'location' => $data['location'] ?? null,
+            'notes' => $data['notes'] ?? null,
+            'received_via' => $data['received_via'] ?? 'purchase',
+            'purchase_transaction_id' => $transactionId,
+            'status' => 'Available',
+        ]);
+
+        if ($numbered) {
+            // Assigns unique_identifier and saves.
+            app(SerialNumberService::class)->assign($item);
+        } else {
+            $item->save();
+        }
+
+        if (! empty($data['branch_ids'])) {
+            $item->branches()->sync($data['branch_ids']);
+        }
+
+        EquipmentHistory::create([
+            'item_id' => $item->id,
+            'user_id' => $userId,
+            'event_type' => 'Received',
+            'details' => [
                 'quantity' => $quantity,
                 'unit_price' => $unitPrice,
-                'purchase_date' => $purchaseDate,
-                'condition' => $data['condition'],
-                'location' => $data['location'] ?? null,
-                'notes' => $data['notes'] ?? null,
-                'received_via' => $data['received_via'] ?? 'purchase',
-                'purchase_transaction_id' => $transactionId,
-                'status' => 'Available',
+                'received_via' => $item->received_via,
+                'transaction_id' => $transactionId,
+            ],
+            'event_timestamp' => now(),
+        ]);
+
+        if ($actor) {
+            ActivityRecorder::record($actor, ActivityAction::STOCK_RECEIVED, $item, [
+                'quantity' => $quantity,
             ]);
+        }
 
-            if (! empty($data['branch_ids'])) {
-                $item->branches()->sync($data['branch_ids']);
-            }
-
-            EquipmentHistory::create([
-                'item_id' => $item->id,
-                'user_id' => $userId,
-                'event_type' => 'Received',
-                'details' => [
-                    'quantity' => $quantity,
-                    'unit_price' => $unitPrice,
-                    'received_via' => $item->received_via,
-                    'transaction_id' => $transactionId,
-                ],
-                'event_timestamp' => now(),
-            ]);
-
-            if ($actor) {
-                ActivityRecorder::record($actor, ActivityAction::STOCK_RECEIVED, $item, [
-                    'quantity' => $quantity,
-                ]);
-            }
-
-            return $item;
-        });
+        return $item;
     }
 }

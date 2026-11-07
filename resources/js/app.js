@@ -15,7 +15,7 @@ import { localizeNativeValidation } from './lib/nativeValidation';
 import { DEFAULT_CLUB_SHORT_NAME } from './Composables/useClubIdentity';
 import AppShell from './Layouts/AppShell.vue';
 import { usesAppShell } from './lib/layouts';
-import { rememberedFilterOptions } from './lib/playerListFilters';
+import { rememberedListsOptions, savedEquipmentFilters, savedPlayerFilters } from './lib/playerListFilters';
 import { pageTitle } from './lib/productBrand';
 
 // The tab title's suffix is the club's saved short name, then the product's,
@@ -43,8 +43,12 @@ router.on('finish', (event) => {
 
 createInertiaApp({
     defaults: {
-        // A bare visit to the player list brings its remembered filters along.
-        visitOptions: (href, options) => rememberedFilterOptions(href, options, route('players.index')),
+        // A bare visit to the player or equipment list brings its remembered
+        // filters along.
+        visitOptions: (href, options) => rememberedListsOptions(href, options, [
+            [route('players.index'), savedPlayerFilters],
+            [route('equipment.catalogs.index'), savedEquipmentFilters],
+        ]),
     },
     title: (title) => pageTitle(title, clubShortName),
     resolve: async (name) => {

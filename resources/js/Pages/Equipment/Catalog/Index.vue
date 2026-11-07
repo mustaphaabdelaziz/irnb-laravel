@@ -11,8 +11,9 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useBulkSelection } from '@/Composables/useBulkSelection';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { asList, useListFilters } from '@/Composables/useListFilters';
+import { EQUIPMENT_FILTERS_KEY, saveListFilters, savedEquipmentFilters } from '@/lib/playerListFilters';
 import MultiSelectFilter from '@/Components/MultiSelectFilter.vue';
 
 const { t } = useI18n();
@@ -34,6 +35,22 @@ const { params: filterParams, loading: filtering } = useListFilters('equipment.c
     search: search.value,
     category: categoryFilter.value,
 }), { only: ['catalogs', 'filters'] });
+
+// --- Remembered filters ---
+// The filters stick until the user clears them, even after leaving the page or
+// restarting the app. A visit with its own query string wins; a bare visit
+// (the sidebar link, a back link) restores the last filters. An Inertia visit
+// already asks for them (app.js); for a full page load, setting the refs here,
+// before the first render, lets useListFilters' watcher reload with them.
+if (!window.location.search) {
+    const saved = savedEquipmentFilters();
+    if (saved) {
+        if (typeof saved.search === 'string') search.value = saved.search;
+        if (saved.category !== undefined) categoryFilter.value = asList(saved.category);
+    }
+}
+
+watch(filterParams, (params) => saveListFilters(EQUIPMENT_FILTERS_KEY, params), { immediate: true });
 
 const catalogRows = computed(() => props.catalogs?.data ?? []);
 const {

@@ -22,7 +22,7 @@ related: [getting-started/find-your-way, getting-started/profile-password]
 :::
 
 :::step اكتب كلمة المرور
-اضغط داخل الخانة الثانية، ثم اكتب كلمة المرور. لرؤية ما كتبته اضغط على رمز العين 👁.
+اضغط داخل الخانة الثانية، ثم اكتب كلمة المرور. لرؤية ما كتبته اضغط على رمز العين.
 ::figure login ring=login-password
 :::
 

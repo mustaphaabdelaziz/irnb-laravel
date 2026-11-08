@@ -9,7 +9,7 @@ return [
         'getting-started' => ['icon' => 'home', 'module' => null, 'articles' => ['login', 'find-your-way', 'profile-password']],
         'players' => ['icon' => 'players', 'module' => 'players', 'articles' => ['add-player', 'find-player', 'player-page', 'edit-player', 'documents', 'branch-registrations']],
         'subscriptions' => ['icon' => 'subscriptions', 'module' => 'subscriptions', 'articles' => ['create-annual', 'create-exceptional', 'assign-players', 'take-payment', 'fix-payment', 'previous-debt', 'receipts']],
-        'attendance' => ['icon' => 'calendar', 'module' => 'attendance', 'articles' => ['take-attendance', 'add-session', 'month-grid', 'cancel-delete-session', 'timetable', 'codes-rules', 'follow-up']],
+        'attendance' => ['icon' => 'calendar', 'module' => 'attendance', 'articles' => ['take-attendance', 'add-session', 'month-grid', 'cancel-delete-session', 'timetable', 'codes-rules', 'stats-ranking', 'alerts-injuries']],
     ],
     'start_here' => [
         'getting-started/login',

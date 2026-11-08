@@ -70,7 +70,7 @@ class HelpDemoAttendanceSeederTest extends TestCase
         $this->assertSame(6, TrainingSession::where('category_id', 11)->where('state', SessionState::Held->value)->count());
         $this->assertSame(0, TrainingSession::where('date', '<', '2026-10-28')->count());
 
-        // Marks the follow-up article quotes (7 held U17 sessions, newest first).
+        // Marks the stats-ranking and alerts-injuries articles quote (7 held U17 sessions, newest first).
         $this->assertSame(['absent_unexcused', 'absent_unexcused', 'absent_unexcused', 'present', 'present', 'present', 'present'], $this->marks(7, 7));
         $this->assertSame(['not_training', 'not_training'], array_slice($this->marks(4, 7), 0, 2));
         $this->assertSame('late', $this->marks(3, 7)[1]);

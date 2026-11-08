@@ -63,7 +63,7 @@ const th = 'p-2 font-semibold';
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <h1 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('att.risk.title') }}</h1>
                 <div class="flex items-center gap-2 print:hidden">
-                    <IconButton :href="route('attendance.stats')" icon="dashboard" :label="t('att.statistics')" />
+                    <IconButton data-help="alerts-stats-link" :href="route('attendance.stats')" icon="dashboard" :label="t('att.statistics')" />
                     <ExportMenu :href="exportHref" :label="t('export')" :formats="['xlsx', 'csv']" />
                 </div>
             </div>

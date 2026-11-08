@@ -41,7 +41,10 @@ article's gate unless the topic's default applies.
 4. `cancel-delete-session` — cancel, erase marks, delete (irreversible warning).
 5. `timetable` — weekly timetable and club closures (Settings; needs edit).
 6. `codes-rules` — codes, colours, points, rules, alerts, custom codes.
-7. `follow-up` — stats, ranking + certificates, alerts + parent letter, injuries.
+7. `stats-ranking` — statistics, ranking + certificates.
+8. `alerts-injuries` — players at risk + parent letter, injuries + details.
+
+Items 7–8 were one `follow-up` article, split by owner decision 2026-11-08 (8 articles in 2b).
 
 ### 2c · topic `finance` (topic module `transactions`; articles override)
 1. `record-transaction` — income or expense (module `transactions`).

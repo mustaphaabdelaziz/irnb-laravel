@@ -603,13 +603,15 @@ export default [
             await centre(page, 'set-custom');
         },
     },
-    // The follow-up example. The calendar's «الإحصائيات» button carries no filter: the
+    // The stats-ranking and alerts-injuries examples. The calendar's «الإحصائيات» button carries no filter: the
     // statistics open on the remembered branch (football), «هذا الشهر», all categories,
     // so att-stats is taken in that state (only branch_id, the shared choice). Near a
     // month's start this month can hold no held session yet: regenerate later in the month.
     { name: 'att-stats', url: '/attendance/stats?branch_id=2', targets: ['stats-tiles', 'stats-ranking-link', 'stats-alerts-link', 'stats-injuries-link'] },
-    // The ranking after the reader picked «أقل من 17 سنة» and «موسم» (it opens on the
-    // branch's first category and on a month). Season: the 21-day window is complete.
+    // The ranking opens on the branch's first category and on a month. After the reader
+    // picks «أقل من 17 سنة» it still shows this month (often nobody has 5 sessions yet);
+    // after «موسم» the season, where the 21-day window is complete.
+    { name: 'att-ranking-month', url: `/attendance/ranking?${U17}`, targets: ['ranking-category', 'ranking-type'] },
     { name: 'att-ranking', url: `/attendance/ranking?${U17}&type=season`, targets: ['ranking-category', 'ranking-type', 'ranking-print-top3', 'ranking-certificate-first'] },
     // Alerts and injuries open from the statistics with no category and the current season.
     // عبد الرحمن is the only football player at risk, so his row is the first.
@@ -619,7 +621,7 @@ export default [
         // hidden past its left edge. The reader slides it to the end, as done here.
         name: 'att-alerts-letter',
         url: '/attendance/alerts?branch_id=2',
-        targets: ['alerts-letter-first'],
+        targets: ['alerts-letter-first', 'alerts-stats-link'],
         before: async (page) => {
             await page.locator('[data-help="alerts-letter-first"]').evaluate((el) => {
                 const box = el.closest('section');
@@ -627,7 +629,7 @@ export default [
             });
         },
     },
-    { name: 'att-injuries', url: '/attendance/injuries?branch_id=2', targets: ['injuries-current'] },
+    { name: 'att-injuries', url: '/attendance/injuries?branch_id=2', targets: ['injuries-current', 'injuries-current-name'] },
     {
         // رياض's page as his name on the injuries page opens it; the card loads after the page.
         name: 'att-injury-details',

@@ -88,9 +88,9 @@ const th = 'p-2 font-semibold';
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="row in section.rows" :key="`${row.player_id}-${row.start}`" class="border-t border-slate-100 dark:border-slate-800">
+                        <tr v-for="(row, i) in section.rows" :key="`${row.player_id}-${row.start}`" class="border-t border-slate-100 dark:border-slate-800">
                             <td class="whitespace-nowrap p-2 font-medium">
-                                <Link v-if="can('players', 'view')" :href="profileHref(row)" class="text-primary-700 hover:underline dark:text-primary-300">{{ row.name }}</Link>
+                                <Link v-if="can('players', 'view')" :data-help="section.key === 'current' && i === 0 ? 'injuries-current-name' : undefined" :href="profileHref(row)" class="text-primary-700 hover:underline dark:text-primary-300">{{ row.name }}</Link>
                                 <template v-else>{{ row.name }}</template>
                             </td>
                             <td class="whitespace-nowrap p-2 text-slate-500 dark:text-slate-400">{{ row.category ?? '—' }}</td>

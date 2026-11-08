@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useTheme } from '@/Composables/useTheme';
 import { bubbleSide, zoomStyle } from '@/lib/helpZoom';
@@ -16,6 +16,21 @@ const props = defineProps({
 const { t } = useI18n();
 const { isDark } = useTheme();
 const enlarged = ref(false);
+const dialog = ref(null);
+let opener = null;
+
+watch(enlarged, async (open) => {
+    if (open) {
+        opener = document.activeElement;
+        await nextTick();
+        dialog.value?.focus();
+    } else {
+        opener?.focus?.();
+        opener = null;
+    }
+});
+
+const label = computed(() => (props.alt ? `${props.alt} — ${t('help.zoom_hint')}` : t('help.zoom_hint')));
 
 const src = computed(() => (isDark.value ? props.figure.dark ?? props.figure.light : props.figure.light ?? props.figure.dark));
 const zoom = computed(() => (src.value && props.figure.zoomBox ? zoomStyle(props.figure.zoomBox, props.figure.aspect ?? 1.6) : null));
@@ -29,12 +44,12 @@ const place = (r) => ({ left: `${r.x}%`, top: `${r.y}%`, width: `${r.w}%`, heigh
         <div v-if="src" class="relative" :class="zoom ? 'pb-16 sm:pb-20' : ''">
             <button
                 type="button"
-                class="relative block w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:border-slate-700 dark:bg-slate-900"
-                :aria-label="t('help.zoom_hint')"
+                class="relative block w-full rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                :aria-label="label"
                 :title="t('help.zoom_hint')"
                 @click="enlarged = true"
             >
-                <img :src="src" :alt="alt" class="block h-auto w-full" loading="lazy" />
+                <img :src="src" :alt="alt" class="block h-auto w-full rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900" loading="lazy" />
                 <span
                     v-for="ring in figure.rings"
                     :key="ring.name"
@@ -66,8 +81,10 @@ const place = (r) => ({ left: `${r.x}%`, top: `${r.y}%`, width: `${r.w}%`, heigh
             <div
                 v-if="enlarged"
                 class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/85 p-3 print:hidden"
+                ref="dialog"
                 role="dialog"
                 aria-modal="true"
+                tabindex="-1"
                 @click="enlarged = false"
                 @keydown.esc="enlarged = false"
             >

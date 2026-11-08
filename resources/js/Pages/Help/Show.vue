@@ -63,8 +63,8 @@ function rate(value) {
             <section class="mt-8 flex flex-wrap items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 print:hidden">
                 <template v-if="feedback === null">
                     <span class="font-semibold text-slate-700 dark:text-slate-200">{{ t('help.helpful') }}</span>
-                    <button type="button" class="rounded-xl border border-slate-200 px-4 py-2 text-xl hover:border-primary-400 dark:border-slate-700" aria-label="👍" @click="rate('up')">👍</button>
-                    <button type="button" class="rounded-xl border border-slate-200 px-4 py-2 text-xl hover:border-primary-400 dark:border-slate-700" aria-label="👎" @click="rate('down')">👎</button>
+                    <button type="button" class="rounded-xl border border-slate-200 px-4 py-2 text-xl hover:border-primary-400 dark:border-slate-700" :aria-label="t('help.helpful_yes')" :title="t('help.helpful_yes')" @click="rate('up')">👍</button>
+                    <button type="button" class="rounded-xl border border-slate-200 px-4 py-2 text-xl hover:border-primary-400 dark:border-slate-700" :aria-label="t('help.helpful_no')" :title="t('help.helpful_no')" @click="rate('down')">👎</button>
                 </template>
                 <span v-else class="font-semibold text-primary-700 dark:text-primary-300">{{ t('help.thanks') }}</span>
             </section>

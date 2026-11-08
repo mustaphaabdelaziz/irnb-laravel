@@ -47,6 +47,7 @@ const results = computed(() => {
                         type="search"
                         data-help="help-search"
                         :placeholder="t('help.search_placeholder')"
+                        :aria-label="t('help.search_placeholder')"
                         class="w-full rounded-2xl border-2 border-primary-500 bg-white py-4 pe-4 ps-12 text-base shadow-sm focus:border-primary-600 focus:ring-primary-500 dark:border-primary-400 dark:bg-slate-900 dark:text-slate-100"
                     />
                 </label>

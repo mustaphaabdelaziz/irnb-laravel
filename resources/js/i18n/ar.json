@@ -784,6 +784,8 @@
     "help.close": "إغلاق",
     "help.example": "مثال",
     "help.helpful": "هل كان هذا مفيداً؟",
+    "help.helpful_yes": "نعم، كان مفيداً",
+    "help.helpful_no": "لا، لم يكن مفيداً",
     "help.login_help": "تحتاج مساعدة في الدخول؟",
     "help.minutes": "مدة القراءة: {n} د",
     "help.no_articles": "لا توجد مقالات لهذه الصفحة بعد.",

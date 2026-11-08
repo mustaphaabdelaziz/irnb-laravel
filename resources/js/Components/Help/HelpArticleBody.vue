@@ -26,6 +26,7 @@ defineProps({ blocks: { type: Array, required: true } });
 .help-prose li + li { margin-top: 0.25rem; }
 .help-prose strong { font-weight: 700; }
 .help-prose kbd, .help-prose code { border-radius: 0.375rem; border: 1px solid rgb(203 213 225); padding: 0 0.35rem; font-family: inherit; font-size: 0.9em; }
+.dark .help-prose kbd, .dark .help-prose code { border-color: rgb(71 85 105); }
 @media print {
     .help-step { break-inside: avoid; box-shadow: none; }
 }

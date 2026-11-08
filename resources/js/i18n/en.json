@@ -784,6 +784,8 @@
     "help.close": "Close",
     "help.example": "Example",
     "help.helpful": "Was this helpful?",
+    "help.helpful_yes": "Yes, helpful",
+    "help.helpful_no": "No, not helpful",
     "help.login_help": "Need help signing in?",
     "help.minutes": "{n} min read",
     "help.no_articles": "No articles for this page yet.",

@@ -784,6 +784,8 @@
     "help.close": "Fermer",
     "help.example": "Exemple",
     "help.helpful": "Cet article vous a-t-il aidé ?",
+    "help.helpful_yes": "Oui, utile",
+    "help.helpful_no": "Non, pas utile",
     "help.login_help": "Besoin d'aide pour vous connecter ?",
     "help.minutes": "{n} min de lecture",
     "help.no_articles": "Pas encore d'article pour cette page.",

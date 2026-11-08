@@ -10,8 +10,16 @@ export default [
         url: '/dashboard',
         targets: ['palette-input'],
         before: async (page) => {
-            await page.keyboard.press('Control+k');
-            await page.locator('[data-help="palette-input"]').fill('لاعب');
+            // Once, in a full run on a loaded machine, the palette was closed again before
+            // the typing (fill waited 30 s on a detached input). Ctrl+K toggles, so it is
+            // pressed only while the palette is shut, until it stays open.
+            const input = page.locator('[data-help="palette-input"]');
+            for (let i = 0; i < 3 && !(await input.isVisible()); i++) {
+                await page.keyboard.press('Control+k');
+                await input.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+                await page.waitForTimeout(300);
+            }
+            await input.fill('لاعب');
         },
     },
     {
@@ -318,7 +326,80 @@ export default [
         targets: ['payment-category', 'payment-subscriptions', 'payment-amount', 'payment-register', 'payment-save'],
         before: payDebt,
     },
+    // --- Receipts --- أحمد's «اشتراك سنوي» payment; the seeder printed its 80 mm ticket once (the original).
+    {
+        name: 'receipt-ticket-button',
+        url: '/players/1',
+        targets: ['player-history', 'player-history-ticket'],
+        before: async (page) => { await centre(page, 'player-history'); },
+    },
+    {
+        // «أحمد» typed in the transactions search leaves his one payment.
+        name: 'receipt-tx-index',
+        url: '/transactions',
+        targets: ['nav-transactions', 'tx-search', 'tx-row-first'],
+        before: async (page) => {
+            await page.locator('[data-help="tx-search"] input').fill('أحمد');
+            await page.waitForURL(/search=/);
+            await page.waitForLoadState('networkidle');
+            await blur(page);
+        },
+    },
+    {
+        name: 'receipt-tx-show',
+        url: '/players/1',
+        targets: ['tx-print-ticket', 'tx-print-a4', 'tx-prints'],
+        before: openAhmedTransaction,
+    },
+    // The page as it opens: the code field already has the focus.
+    { name: 'receipt-verify', url: '/receipts/verify', targets: ['nav-receipts-verify', 'receipt-code'] },
+    {
+        // The ticket's code, typed as the reader reads it from the paper (see ahmedReceiptCode).
+        name: 'receipt-verify-code',
+        url: '/players/1',
+        targets: ['receipt-code', 'receipt-check'],
+        before: async (page) => { await typeAhmedCode(page); },
+    },
+    {
+        // After «تحقق»: the app empties the field for the next receipt and shows the result.
+        name: 'receipt-verify-result',
+        url: '/players/1',
+        targets: ['receipt-result'],
+        before: async (page) => {
+            await typeAhmedCode(page);
+            await page.locator('[data-help="receipt-check"]').click();
+            await page.locator('[data-help="receipt-result"]').waitFor();
+            await page.waitForLoadState('networkidle');
+            await blur(page);
+        },
+    },
 ];
+
+/**
+ * Opens أحمد's payment page from his player page. The receipt code is random
+ * (ReceiptPrinter::newCode) and the transaction id depends on the seed order, so
+ * neither is hard-coded: the id comes from the history row's ticket link
+ * (/transactions/<id>/ticket). Only links are read: opening the ticket itself
+ * would print a new copy.
+ */
+async function openAhmedTransaction(page) {
+    const href = await page.locator('[data-help="player-history-ticket"]').getAttribute('href');
+    const id = href.match(/transactions\/(\d+)\/ticket/)[1];
+    await page.goto(new URL(`/transactions/${id}`, page.url()).href, { waitUntil: 'networkidle' });
+}
+
+/** The demo ticket's code, read in clear in «الوصولات المطبوعة» of أحمد's payment page ("1234 5678 9012"). */
+async function ahmedReceiptCode(page) {
+    await openAhmedTransaction(page);
+    return (await page.locator('[data-help="tx-prints"] li .font-mono').first().textContent()).trim();
+}
+
+/** Opens «التحقق من وصل» and types the demo ticket's code, as printed on the paper. */
+async function typeAhmedCode(page) {
+    const code = await ahmedReceiptCode(page);
+    await page.goto(new URL('/receipts/verify', page.url()).href, { waitUntil: 'networkidle' });
+    await page.locator('[data-help="receipt-code"]').fill(code);
+}
 
 /** The previous-debt example paid: أيوب ticks «دين موسم 2023/2024» only. */
 async function payDebt(page) {
@@ -355,9 +436,39 @@ async function debtCardHeader(page) {
     });
 }
 
-/** Scrolls a data-help element to the middle of the screen, at once (the app scrolls smoothly). */
+/**
+ * Scrolls a data-help element to the middle of the screen, at once. The app scrolls
+ * smoothly (html { scroll-behavior: smooth }), and the scroll a Playwright fill/select
+ * starts can land after an instant scroll and move the page again: on a busy machine
+ * player-edit-new-branch then ended with its card cut at the edge. So the page is let
+ * come to rest first, and the element is centred again if a late scroll moved it.
+ */
 async function centre(page, name) {
-    await page.locator(`[data-help="${name}"]`).first().evaluate((el) => el.scrollIntoView({ block: 'center', behavior: 'instant' }));
+    const el = page.locator(`[data-help="${name}"]`).first();
+    await settle(page);
+    for (let i = 0; i < 3; i++) {
+        const y = await el.evaluate((node) => {
+            node.scrollIntoView({ block: 'center', behavior: 'instant' });
+            return window.scrollY;
+        });
+        await settle(page);
+        if ((await page.evaluate(() => window.scrollY)) === y) return;
+    }
+}
+
+/** Waits until the page has not scrolled for 20 frames (about a third of a second). */
+async function settle(page) {
+    await page.evaluate(() => new Promise((resolve) => {
+        let last = window.scrollY;
+        let still = 0;
+        const tick = () => {
+            if (window.scrollY === last) still += 1;
+            else { still = 0; last = window.scrollY; }
+            if (still >= 20) resolve();
+            else requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+    }));
 }
 
 /** Types «أحمد» in the players search and waits for the list to reload. */

@@ -624,7 +624,7 @@ function formatPlainDate(val) {
                                 </td>
                                 <td class="px-4 py-3 text-end whitespace-nowrap">
                                     <div class="inline-flex items-center gap-1">
-                                        <IconButton v-if="tx.transaction_type === 'income' && can('transactions', 'view')" :href="route('transactions.ticket', tx.id)" external target="_blank" icon="print" :label="t('receipts.print_ticket')" plain size="sm" icon-only />
+                                        <IconButton v-if="tx.transaction_type === 'income' && can('transactions', 'view')" :href="route('transactions.ticket', tx.id)" external target="_blank" icon="print" :label="t('receipts.print_ticket')" plain size="sm" icon-only :data-help="txIndex === 0 ? 'player-history-ticket' : undefined" />
                                         <IconButton icon="pencil" :label="t('edit')" plain size="sm" :data-help="txIndex === 0 ? 'player-history-edit' : undefined" @click="openEdit(tx)" />
                                         <IconButton icon="trash" :label="t('remove')" variant="danger" plain size="sm" @click="askRemove(tx)" />
                                     </div>

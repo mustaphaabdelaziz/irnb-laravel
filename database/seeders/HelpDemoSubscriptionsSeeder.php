@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Services\Finance\CashRegisterProvisioner;
 use App\Services\Finance\PlayerPaymentRecorder;
 use App\Services\Finance\RecalculatePlayerDebtService;
+use App\Services\Finance\ReceiptData;
 use App\Services\Finance\ReceiptPrinter;
 use Illuminate\Database\Seeder;
 
@@ -91,7 +92,10 @@ class HelpDemoSubscriptionsSeeder extends Seeder
         $ahmed = $player(1);
         $ahmedAnnual = $annual->assignTo($ahmed);
         $created = $payments->subscription($ahmedAnnual, $ahmed, (float) $ahmedAnnual->remaining_amount, 'cash', null, $demo->id, $caisse->id);
-        app(ReceiptPrinter::class)->record($created[0], ReceiptPrint::FORMAT_THERMAL, $demo);
+        // As ReceiptController prints it: with the player and subscription loaded, so the
+        // paper (and «التحقق من وصل») shows his name and the subscription's title.
+        $lines = $created[0]->receiptLines(ReceiptData::RELATIONS);
+        app(ReceiptPrinter::class)->record($lines->first(), ReceiptPrint::FORMAT_THERMAL, $demo, $lines);
         $debts->forPlayer($ahmed);
 
         // 2 ياسين — annual + trip in one grouped payment.

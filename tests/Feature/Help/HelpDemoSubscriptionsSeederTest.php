@@ -43,6 +43,8 @@ class HelpDemoSubscriptionsSeederTest extends TestCase
         $this->assertEquals(0, $ahmed->remaining_amount);
         $paid = Transaction::where('player_subscription_id', $ahmed->id)->firstOrFail();
         $this->assertSame(1, ReceiptPrint::where('transaction_id', $paid->id)->count());
+        // Printed as the app prints it: the paper names him (the receipts article shows it).
+        $this->assertNotEmpty(ReceiptPrint::where('transaction_id', $paid->id)->first()->snapshot['player_name'] ?? null);
 
         // ياسين: one grouped payment covering two subscriptions.
         $this->assertEquals(4000, Transaction::where('related_entity_id', 2)->where('category', 'subscription')->sum('amount'));

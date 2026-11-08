@@ -70,13 +70,13 @@ function show(name, value) {
                 <label for="receipt-code" class="block text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('receipts.code_label') }}</label>
                 <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('receipts.verify_hint') }}</p>
                 <div class="mt-3 flex gap-2">
-                    <TextInput id="receipt-code" ref="field" v-model="code" dir="ltr" autocomplete="off" inputmode="numeric"
+                    <TextInput id="receipt-code" ref="field" data-help="receipt-code" v-model="code" dir="ltr" autocomplete="off" inputmode="numeric"
                         class="block w-full font-mono tracking-widest" :placeholder="t('receipts.code_placeholder')" />
-                    <PrimaryButton :disabled="!code.trim()">{{ t('receipts.check') }}</PrimaryButton>
+                    <PrimaryButton :disabled="!code.trim()" data-help="receipt-check">{{ t('receipts.check') }}</PrimaryButton>
                 </div>
             </form>
 
-            <div v-if="result" class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+            <div v-if="result" data-help="receipt-result" class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
                 <div class="flex flex-wrap items-center gap-3">
                     <Badge :label="t(`receipts.status.${status}`)" :color="COLORS[status]" />
                     <span v-if="result.code" class="font-mono text-sm text-slate-500 dark:text-slate-400" dir="ltr">{{ result.code }}</span>

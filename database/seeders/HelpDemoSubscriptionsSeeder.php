@@ -10,6 +10,7 @@ use App\Models\PlayerSubscription;
 use App\Models\ReceiptPrint;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Services\Finance\CashRegisterProvisioner;
 use App\Services\Finance\PlayerPaymentRecorder;
 use App\Services\Finance\RecalculatePlayerDebtService;
 use App\Services\Finance\ReceiptPrinter;

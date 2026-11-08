@@ -309,12 +309,12 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
         <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
             <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('basic_info') }}</h2>
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <div>
+                <div data-help="player-lastname">
                     <InputLabel :value="t('lastname') + ' *'" />
                     <TextInput v-model="form.lastname" class="mt-1 w-full" required />
                     <InputError :message="form.errors.lastname" class="mt-1" />
                 </div>
-                <div>
+                <div data-help="player-firstname">
                     <InputLabel :value="t('firstname') + ' *'" />
                     <TextInput v-model="form.firstname" class="mt-1 w-full" required />
                     <InputError :message="form.errors.firstname" class="mt-1" />
@@ -323,20 +323,20 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                     <InputLabel :value="t('nickname')" />
                     <TextInput v-model="form.nickname" class="mt-1 w-full" />
                 </div>
-                <div>
+                <div data-help="player-father">
                     <InputLabel :value="t('father')" />
                     <TextInput v-model="form.father" class="mt-1 w-full" />
                 </div>
-                <div>
+                <div data-help="player-grandfather">
                     <InputLabel :value="t('grandfather')" />
                     <TextInput v-model="form.grandfather" class="mt-1 w-full" />
                 </div>
-                <div>
+                <div data-help="player-birthdate">
                     <InputLabel :value="t('date_of_birth')" />
                     <TextInput v-model="form.birthdate" type="date" class="mt-1 w-full" />
                     <InputError :message="form.errors.birthdate" class="mt-1" />
                 </div>
-                <div>
+                <div data-help="player-gender">
                     <InputLabel :value="t('gender')" />
                     <select v-model="form.gender" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                         <option value="Male">{{ t('male') }}</option>
@@ -423,7 +423,7 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                 </div>
                 <div class="sm:col-span-2 lg:col-span-3">
                     <InputLabel :value="t('branches') + (branches.length ? ' *' : '')" />
-                    <SearchableSelect v-if="branchOptions.length" v-model="branchPick" :options="branchOptions" :placeholder="t('add_branch')" class="mt-1" @update:modelValue="addBranch" />
+                    <SearchableSelect v-if="branchOptions.length" v-model="branchPick" :options="branchOptions" :placeholder="t('add_branch')" class="mt-1" data-help="player-add-branch" @update:modelValue="addBranch" />
                     <InputError :message="form.errors.registrations" class="mt-1" />
                     <p v-if="!branches.length" class="mt-1 text-xs text-slate-400">
                         {{ t('no_branches_hint') }}
@@ -436,6 +436,7 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                         :key="card.branch_id"
                         :card="card"
                         :index="index"
+                        :data-help="['player-branch-card', 'player-branch-card-2'][index] ?? null"
                         :branch="branchesById[card.branch_id] || { id: card.branch_id, name: `#${card.branch_id}` }"
                         :categories="categories"
                         :positions="positions"
@@ -526,7 +527,7 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
 
         <div class="flex items-center justify-end gap-3">
             <Link :href="cancelHref"><SecondaryButton type="button">{{ t('cancel') }}</SecondaryButton></Link>
-            <PrimaryButton :disabled="form.processing">{{ isEdit ? t('save_changes') : t('save') }}</PrimaryButton>
+            <PrimaryButton :disabled="form.processing" data-help="player-save">{{ isEdit ? t('save_changes') : t('save') }}</PrimaryButton>
         </div>
     </form>
 

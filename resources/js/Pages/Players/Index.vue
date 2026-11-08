@@ -325,6 +325,7 @@ function runBulk() {
                             :key="action.key"
                             :href="action.href"
                             :type="action.href ? undefined : 'button'"
+                            :data-help="action.key === 'join-dates' ? 'join-dates-link' : null"
                             @click="action.onClick?.()"
                             class="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 dark:focus-visible:ring-offset-slate-900"
                         >
@@ -375,7 +376,7 @@ function runBulk() {
                     </Dropdown>
 
                     <!-- Primary action: always visible, icon-only on phones -->
-                    <IconButton :href="route('players.create')" icon="plus" :label="t('new_player')" variant="primary" />
+                    <IconButton :href="route('players.create')" icon="plus" :label="t('new_player')" variant="primary" data-help="add-player" />
                 </div>
             </div>
         </template>
@@ -404,9 +405,9 @@ function runBulk() {
             <!-- Filters + view toggle -->
             <div ref="filterBar" class="flex flex-wrap items-center gap-3">
                 <div class="w-full sm:w-64">
-                    <SearchInput v-model="search" :loading="filtering" :placeholder="t('search_for_member')" />
+                    <SearchInput v-model="search" :loading="filtering" :placeholder="t('search_for_member')" data-help="players-search" />
                 </div>
-                <MultiSelectFilter v-model="categoryFilter" :options="categoryOptions" :label="t('category')" :placeholder="t('all_categories')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
+                <MultiSelectFilter v-model="categoryFilter" data-help="players-category" :options="categoryOptions" :label="t('category')" :placeholder="t('all_categories')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
                 <MultiSelectFilter v-if="branches.length" v-model="branchFilter" :options="branchOptions" :label="t('branch')" :placeholder="t('all_branches')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
                 <MultiSelectFilter v-model="lastnameFilter" :options="familyOptions" :label="t('filter_by_lastname')" :placeholder="t('filter_by_lastname')" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
                 <MultiSelectFilter v-model="statusFilter" :options="statusOptions" :label="t('status')" :placeholder="statusPlaceholder" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
@@ -511,14 +512,14 @@ function runBulk() {
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                                <tr v-for="player in players.data" :key="player.id" class="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                <tr v-for="(player, index) in players.data" :key="player.id" class="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                                     :class="selected.includes(player.id) ? 'bg-primary-50/50 dark:bg-primary-900/10' : ''">
                                     <td class="px-4 py-3">
                                         <input type="checkbox" :checked="selected.includes(player.id)" @change="toggleOne(player.id)" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800" />
                                     </td>
                                     <td class="whitespace-nowrap px-4 py-3 text-sm font-mono text-slate-600 dark:text-slate-300">{{ player.membership_id }}</td>
                                     <td class="whitespace-nowrap px-4 py-3">
-                                        <Link :href="route('players.show', player.id)" class="flex items-center gap-3 text-sm font-medium text-slate-900 dark:text-slate-100 hover:text-primary-600 dark:hover:text-primary-300">
+                                        <Link :href="route('players.show', player.id)" :data-help="index === 0 ? 'player-row-first' : null" class="flex items-center gap-3 text-sm font-medium text-slate-900 dark:text-slate-100 hover:text-primary-600 dark:hover:text-primary-300">
                                             <img v-if="player.picture_url" :src="player.picture_url" :alt="player.firstname" loading="lazy" class="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700" />
                                             <span v-else class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-50 text-sm font-bold text-primary-600 ring-1 ring-primary-100 dark:bg-primary-500/10 dark:text-primary-300 dark:ring-primary-500/20">
                                                 {{ (player.lastname || player.firstname || '?').charAt(0).toUpperCase() }}

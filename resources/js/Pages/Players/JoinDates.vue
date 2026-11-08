@@ -75,7 +75,7 @@ function save(row) {
             </div>
 
             <ul class="divide-y divide-slate-100 rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:divide-slate-800 dark:bg-slate-900 dark:ring-slate-800">
-                <li v-for="row in registrations.data" :key="row.id" class="grid grid-cols-1 gap-2 p-4 sm:grid-cols-2 sm:items-center">
+                <li v-for="(row, index) in registrations.data" :key="row.id" :data-help="index === 0 ? 'join-dates-row' : null" class="grid grid-cols-1 gap-2 p-4 sm:grid-cols-2 sm:items-center">
                     <div class="min-w-0">
                         <Link :href="route('players.show', row.player_id)" class="block break-words font-medium text-slate-900 hover:text-primary-600 dark:text-slate-100 dark:hover:text-primary-300">{{ row.player_name }}</Link>
                         <p class="text-sm text-slate-500 dark:text-slate-400">

@@ -6,6 +6,11 @@
 // run right after seeding, so "today" here is the seed day. Session 1 is the next U17
 // session (Monday or Wednesday, today included), so the calendar opens on its month:
 // near a month's end it can be next month's, and "this month" would miss its chip.
+// Caveats: if the seed day falls in the first ~3 weeks of the season (September), the
+// season shots (att-alerts, att-ranking, att-injuries) and the 1/12 pre-season chip
+// change: regenerate outside that window. The seeder dates things with the app timezone
+// (CarbonImmutable::today()), this file with Node's local Date: if they differ, do not
+// run the shots near midnight.
 const ym = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 const pad = (n) => String(n).padStart(2, '0');
 const ymd = (d) => `${ym(d)}-${pad(d.getDate())}`;
@@ -19,8 +24,11 @@ const nextDay = (weekdays, from = new Date(), strict = false) => {
 const sessionMonth = ym(nextDay([1, 3]));
 const nextSaturday = ymd(nextDay([6], new Date(), true));
 const U17 = 'branch_id=2&category_id=7';
-// The month grid opens on the month of 7 days ago, so its columns hold the held
-// sessions (and the demo's saved codes) even at the start of a month.
+// The month grid first opens on the month of 7 days ago. That is only a first guess:
+// the held U17 sessions are 1-5 days before the seed day, and the one holding أمين's
+// «R15» (the 2nd newest) can already be in the seed day's month (seed Sun 6 Dec: Sat 5 /
+// Wed 2 Dec, guess 2026-11). amineR15Cell therefore also tries the seed day's month and
+// the one before it, whichever holds the cell.
 const gridMonth = ym(new Date(Date.now() - 7 * 86400000));
 // Swimming «أصاغر» (branch 1, category 11): its next sessions after the cancelled session 3.
 const cadetsGrid = (month) => `/attendance/grid?branch_id=1&category_id=11&month=${month}`;
@@ -641,10 +649,15 @@ export default [
 
 /** أمين قاسمي's grid cell holding the demo's «R15» (rows are found by last name). */
 async function amineR15Cell(page) {
-    const inputs = page.locator('tbody tr', { hasText: 'قاسمي' }).locator('input');
-    const i = (await inputs.evaluateAll((els) => els.map((el) => el.value))).indexOf('R15');
-    if (i === -1) throw new Error('Month grid: no «R15» cell for قاسمي — is the grid month the one of the held sessions?');
-    return inputs.nth(i);
+    const now = new Date();
+    const months = [...new Set([gridMonth, ym(now), ym(new Date(now.getFullYear(), now.getMonth() - 1, 1))])];
+    for (let k = 0; k < months.length; k++) {
+        if (k > 0) await page.goto(new URL(`/attendance/grid?${U17}&month=${months[k]}`, page.url()).href, { waitUntil: 'networkidle' });
+        const inputs = page.locator('tbody tr', { hasText: 'قاسمي' }).locator('input');
+        const i = (await inputs.evaluateAll((els) => els.map((el) => el.value))).indexOf('R15');
+        if (i !== -1) return inputs.nth(i);
+    }
+    throw new Error(`Month grid: no «R15» cell for قاسمي in ${months.join(', ')}`);
 }
 
 /**

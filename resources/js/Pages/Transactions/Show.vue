@@ -45,8 +45,8 @@ const categoryName = computed(() => props.transaction.finance_category?.localize
                     <h1 class="min-w-0 truncate text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('transaction') }} #{{ transaction.id }}</h1>
                 </div>
                 <div class="flex items-center gap-2">
-                    <IconButton :href="route('transactions.ticket', transaction.id)" external target="_blank" icon="print" :label="t('receipts.print_ticket')" variant="primary" />
-                    <IconButton :href="route('transactions.receipt', transaction.id)" external target="_blank" icon="document" :label="t('receipts.print_a4')" />
+                    <IconButton :href="route('transactions.ticket', transaction.id)" external target="_blank" icon="print" :label="t('receipts.print_ticket')" variant="primary" data-help="tx-print-ticket" />
+                    <IconButton :href="route('transactions.receipt', transaction.id)" external target="_blank" icon="document" :label="t('receipts.print_a4')" data-help="tx-print-a4" />
                     <IconButton v-if="can('transactions', 'edit')" :href="route('transactions.edit', transaction.id)" icon="pencil" :label="t('edit')" />
                 </div>
             </div>
@@ -116,7 +116,7 @@ const categoryName = computed(() => props.transaction.finance_category?.localize
             </div>
 
             <!-- Printed receipts: who printed which copy, and when -->
-            <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+            <div data-help="tx-prints" class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div class="mb-4 flex items-center justify-between gap-2">
                     <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('receipts.history') }}</h3>
                     <Link :href="route('receipts.verify')" class="text-sm text-primary-600 hover:underline dark:text-primary-300">{{ t('receipts.verify_title') }}</Link>

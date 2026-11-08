@@ -10,8 +10,16 @@ export default [
         url: '/dashboard',
         targets: ['palette-input'],
         before: async (page) => {
-            await page.keyboard.press('Control+k');
-            await page.locator('[data-help="palette-input"]').fill('لاعب');
+            // Once, in a full run on a loaded machine, the palette was closed again before
+            // the typing (fill waited 30 s on a detached input). Ctrl+K toggles, so it is
+            // pressed only while the palette is shut, until it stays open.
+            const input = page.locator('[data-help="palette-input"]');
+            for (let i = 0; i < 3 && !(await input.isVisible()); i++) {
+                await page.keyboard.press('Control+k');
+                await input.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+                await page.waitForTimeout(300);
+            }
+            await input.fill('لاعب');
         },
     },
     {
@@ -127,11 +135,342 @@ export default [
     },
     // The list is longer than the screen: the first row carries the ring.
     { name: 'join-dates', url: '/players/join-dates', targets: ['join-dates-row'] },
+    // --- Subscriptions --- (1 = «اشتراك سنوي», 2 = «رحلة صيفية»: HelpDemoSubscriptionsSeeder)
+    // Two subscriptions only: the list's first row («اشتراك سنوي») fits under the statistics.
+    { name: 'subscriptions-index', url: '/subscriptions', targets: ['nav-members', 'nav-subscriptions', 'subscriptions-new', 'sub-open'] },
+    { name: 'subscription-create', url: '/subscriptions/create', targets: ['sub-kind', 'sub-kind-annual', 'sub-name', 'sub-season', 'sub-prices'], before: fillAnnual },
+    {
+        // Both branches first (changing them later drops categories), then every
+        // category ticked, «أشبال» (first A→Z) cheaper: 2500 / 4000.
+        name: 'subscription-create-categories',
+        url: '/subscriptions/create',
+        targets: ['sub-categories', 'sub-category-price'],
+        before: async (page) => {
+            await fillAnnualScope(page);
+            await centre(page, 'sub-categories');
+        },
+    },
+    {
+        name: 'subscription-create-branches',
+        url: '/subscriptions/create',
+        targets: ['sub-branches'],
+        before: async (page) => {
+            await fillAnnual(page);
+            await tickAll(page, 'sub-branches');
+            await blur(page);
+            await centre(page, 'sub-branches');
+        },
+    },
+    {
+        // The annual example filled in full, as the reader has it before saving.
+        name: 'subscription-create-save',
+        url: '/subscriptions/create',
+        targets: ['sub-save'],
+        before: async (page) => {
+            await fillAnnualScope(page);
+            await centre(page, 'sub-save');
+        },
+    },
+    {
+        // The exceptional example: «رحلة صيفية», 1500, no season.
+        name: 'subscription-create-exceptional',
+        url: '/subscriptions/create',
+        targets: ['sub-kind-exceptional', 'sub-name', 'sub-prices', 'sub-debt-note'],
+        before: fillTrip,
+    },
+    {
+        // Football ticked first: the categories list keeps only its own.
+        name: 'subscription-create-exceptional-scope',
+        url: '/subscriptions/create',
+        targets: ['sub-categories', 'sub-branches'],
+        before: async (page) => {
+            await fillTrip(page);
+            await tripScope(page);
+            await centre(page, 'sub-categories');
+        },
+    },
+    {
+        // The trip filled in full, as the reader has it before saving.
+        name: 'subscription-create-exceptional-save',
+        url: '/subscriptions/create',
+        targets: ['sub-save'],
+        before: async (page) => {
+            await fillTrip(page);
+            await tripScope(page);
+            await centre(page, 'sub-save');
+        },
+    },
+    { name: 'subscription-show', url: '/subscriptions/1', targets: ['sub-stats', 'sub-assign', 'sub-add-player'] },
+    {
+        name: 'subscription-assign',
+        url: '/subscriptions/1',
+        targets: ['sub-assign-category', 'sub-assign-submit'],
+        before: async (page) => {
+            await page.locator('[data-help="sub-assign"]').click();
+            await page.locator('[data-help="sub-assign-category"] select').selectOption({ label: 'أقل من 14 سنة' });
+        },
+    },
+    {
+        // نور شعبان swims in «أشبال»: the window shows that category's 2500.
+        name: 'subscription-add-player',
+        url: '/subscriptions/1',
+        targets: ['sub-player-search', 'sub-picked-player', 'sub-amount-will-be', 'sub-add-confirm'],
+        before: async (page) => {
+            await page.locator('[data-help="sub-add-player"]').click();
+            await page.locator('[data-help="sub-player-search"]').fill('نور');
+            await page.locator('label', { hasText: 'شعبان' }).first().click();
+            await page.locator('[data-help="sub-amount-will-be"]').waitFor();
+        },
+    },
+    {
+        // «رحلة صيفية» is for «أقل من 14 سنة» only: the box adds the other football players.
+        name: 'subscription-outside',
+        url: '/subscriptions/2',
+        targets: ['sub-outside-category'],
+        before: async (page) => {
+            await page.locator('[data-help="sub-add-player"]').click();
+            await page.locator('[data-help="sub-outside-category"] input').check();
+            await page.waitForLoadState('networkidle');
+            await page.locator('text=فئة أخرى').first().waitFor();
+        },
+    },
+    // --- Payments from the player page --- (HelpDemoSubscriptionsSeeder: 3 أمين paid 1000 of 3000,
+    // 5 إسلام owes 3000, 6 أيوب owes «دين موسم 2023/2024» 2000, 8 زكرياء owes the trip 1500)
+    { name: 'payment-button', url: '/players/8', targets: ['player-debt', 'player-add-payment'] },
+    {
+        // The take-payment example as the reader has it: «اشتراك سنوي» ticked first (#1), then the trip (#2).
+        name: 'payment-modal',
+        url: '/players/8',
+        targets: ['payment-category', 'payment-subscriptions', 'payment-exempt', 'payment-amount', 'payment-method', 'payment-register'],
+        before: payBoth,
+    },
+    {
+        // The window is taller than the screen: «حفظ» comes after scrolling inside it.
+        name: 'payment-modal-bottom',
+        url: '/players/8',
+        targets: ['payment-register', 'payment-save'],
+        before: async (page) => {
+            await payBoth(page);
+            await page.locator('[data-help="payment-save"]').evaluate((el) => el.scrollIntoView({ block: 'end', behavior: 'instant' }));
+        },
+    },
+    {
+        name: 'fix-history',
+        url: '/players/3',
+        targets: ['player-history', 'player-history-edit'],
+        before: async (page) => { await centre(page, 'player-history'); },
+    },
+    {
+        // أمين's 1000 corrected to 1500.
+        name: 'fix-edit-modal',
+        url: '/players/3',
+        targets: ['payment-edit-amount', 'payment-edit-save'],
+        before: async (page) => {
+            await centre(page, 'player-history');
+            await page.locator('[data-help="player-history-edit"]').click();
+            await page.locator('[data-help="payment-edit-amount"] input').fill('1500');
+            await blur(page);
+        },
+    },
+    {
+        name: 'fix-sub-card',
+        url: '/players/5',
+        targets: ['player-subscriptions-card', 'player-sub-edit'],
+        before: async (page) => { await centre(page, 'player-subscriptions-card'); },
+    },
+    {
+        // إسلام's «اشتراك سنوي» with 10 %: 3000 − 300 = 2700.
+        name: 'fix-sub-modal',
+        url: '/players/5',
+        targets: ['sub-discount', 'sub-net-owed', 'sub-edit-save'],
+        before: async (page) => {
+            await centre(page, 'player-subscriptions-card');
+            await page.locator('[data-help="player-sub-edit"]').click();
+            await page.locator('[data-help="sub-discount"] select').selectOption('percent');
+            await page.locator('[data-help="sub-discount"] input').fill('10');
+            await blur(page);
+        },
+    },
+    {
+        // أيوب's debt is already seeded: the card's header sits at the bottom edge, its rows
+        // below it, as the reader sees the card before adding the debt.
+        name: 'debt-button',
+        url: '/players/6',
+        targets: ['player-add-previous-debt'],
+        before: debtCardHeader,
+    },
+    {
+        name: 'debt-modal',
+        url: '/players/6',
+        targets: ['debt-label', 'debt-amount', 'debt-year', 'debt-save'],
+        before: async (page) => {
+            await debtCardHeader(page);
+            await page.locator('[data-help="player-add-previous-debt"]').click();
+            await page.locator('[data-help="debt-label"] input').fill('دين موسم 2023/2024');
+            await page.locator('[data-help="debt-amount"] input').fill('2000');
+            await page.locator('[data-help="debt-year"] input').fill('2024');
+            await blur(page);
+        },
+    },
+    {
+        name: 'debt-card',
+        url: '/players/6',
+        targets: ['player-subscriptions-card'],
+        before: async (page) => { await centre(page, 'player-subscriptions-card'); },
+    },
+    { name: 'debt-pay-button', url: '/players/6', targets: ['player-debt', 'player-add-payment'] },
+    {
+        name: 'debt-pay-modal',
+        url: '/players/6',
+        // One line ticked: no exemption box, no total; the whole window fits, «حفظ» included.
+        targets: ['payment-category', 'payment-subscriptions', 'payment-amount', 'payment-register', 'payment-save'],
+        before: payDebt,
+    },
+    // --- Receipts --- أحمد's «اشتراك سنوي» payment; the seeder printed its 80 mm ticket once (the original).
+    {
+        name: 'receipt-ticket-button',
+        url: '/players/1',
+        targets: ['player-history', 'player-history-ticket'],
+        before: async (page) => { await centre(page, 'player-history'); },
+    },
+    {
+        // «أحمد» typed in the transactions search leaves his one payment.
+        name: 'receipt-tx-index',
+        url: '/transactions',
+        targets: ['nav-transactions', 'tx-search', 'tx-row-first'],
+        before: async (page) => {
+            await page.locator('[data-help="tx-search"] input').fill('أحمد');
+            await page.waitForURL(/search=/);
+            await page.waitForLoadState('networkidle');
+            await blur(page);
+        },
+    },
+    {
+        name: 'receipt-tx-show',
+        url: '/players/1',
+        targets: ['tx-print-ticket', 'tx-print-a4', 'tx-prints'],
+        before: openAhmedTransaction,
+    },
+    // The page as it opens: the code field already has the focus.
+    { name: 'receipt-verify', url: '/receipts/verify', targets: ['nav-receipts-verify', 'receipt-code'] },
+    {
+        // The ticket's code, typed as the reader reads it from the paper (see ahmedReceiptCode).
+        name: 'receipt-verify-code',
+        url: '/players/1',
+        targets: ['receipt-code', 'receipt-check'],
+        before: async (page) => { await typeAhmedCode(page); },
+    },
+    {
+        // After «تحقق»: the code stays in the field and the result shows under it.
+        name: 'receipt-verify-result',
+        url: '/players/1',
+        targets: ['receipt-result'],
+        before: async (page) => {
+            await typeAhmedCode(page);
+            await page.locator('[data-help="receipt-check"]').click();
+            await page.locator('[data-help="receipt-result"]').waitFor();
+            await page.waitForLoadState('networkidle');
+            await blur(page);
+        },
+    },
 ];
 
-/** Scrolls a data-help element to the middle of the screen, at once (the app scrolls smoothly). */
+/**
+ * Opens أحمد's payment page from his player page. The receipt code is random
+ * (ReceiptPrinter::newCode) and the transaction id depends on the seed order, so
+ * neither is hard-coded: the id comes from the history row's ticket link
+ * (/transactions/<id>/ticket). Only links are read: opening the ticket itself
+ * would print a new copy.
+ */
+async function openAhmedTransaction(page) {
+    const href = await page.locator('[data-help="player-history-ticket"]').getAttribute('href');
+    const id = href.match(/transactions\/(\d+)\/ticket/)[1];
+    await page.goto(new URL(`/transactions/${id}`, page.url()).href, { waitUntil: 'networkidle' });
+}
+
+/** The demo ticket's code, read in clear in «الوصولات المطبوعة» of أحمد's payment page ("1234 5678 9012"). */
+async function ahmedReceiptCode(page) {
+    await openAhmedTransaction(page);
+    return (await page.locator('[data-help="tx-prints"] li .font-mono').first().textContent()).trim();
+}
+
+/** Opens «التحقق من وصل» and types the demo ticket's code, as printed on the paper. */
+async function typeAhmedCode(page) {
+    const code = await ahmedReceiptCode(page);
+    await page.goto(new URL('/receipts/verify', page.url()).href, { waitUntil: 'networkidle' });
+    await page.locator('[data-help="receipt-code"]').fill(code);
+}
+
+/** The previous-debt example paid: أيوب ticks «دين موسم 2023/2024» only. */
+async function payDebt(page) {
+    await openPayment(page);
+    await tickPayable(page, 'دين موسم 2023/2024');
+    await blur(page);
+}
+
+/** Opens the «إضافة دفعة» window of the player page. */
+async function openPayment(page) {
+    await page.locator('[data-help="player-add-payment"]').click();
+    await page.locator('[data-help="payment-subscriptions"]').waitFor();
+}
+
+/** The take-payment example: زكرياء ticks «اشتراك سنوي» first (#1), then «رحلة صيفية» (#2). */
+async function payBoth(page) {
+    await openPayment(page);
+    await tickPayable(page, 'اشتراك سنوي');
+    await tickPayable(page, 'رحلة صيفية');
+    await blur(page);
+}
+
+/** Ticks one line of «الاشتراكات المراد دفعها»: the order of the ticks is the order of payment. */
+async function tickPayable(page, text) {
+    await page.locator('[data-help="payment-subscriptions"] label', { hasText: text }).locator('input').check();
+}
+
+/** Brings the subscriptions card's header (with «إضافة دين سابق») to the bottom edge of the screen. */
+async function debtCardHeader(page) {
+    await page.locator('[data-help="player-add-previous-debt"]').evaluate((el) => {
+        el.scrollIntoView({ block: 'end', behavior: 'instant' });
+        // A little room under the button for its ring; the first row stays below the edge.
+        window.scrollBy({ top: 24, behavior: 'instant' });
+    });
+}
+
+/**
+ * Scrolls a data-help element to the middle of the screen, at once. The app scrolls
+ * smoothly (html { scroll-behavior: smooth }), and the scroll a Playwright fill/select
+ * starts can land after an instant scroll and move the page again: on a busy machine
+ * player-edit-new-branch then ended with its card cut at the edge. So the page is let
+ * come to rest first, and the element is centred again if a late scroll moved it.
+ */
 async function centre(page, name) {
-    await page.locator(`[data-help="${name}"]`).first().evaluate((el) => el.scrollIntoView({ block: 'center', behavior: 'instant' }));
+    const el = page.locator(`[data-help="${name}"]`).first();
+    await settle(page);
+    for (let i = 0; i < 3; i++) {
+        const y = await el.evaluate((node) => {
+            node.scrollIntoView({ block: 'center', behavior: 'instant' });
+            return window.scrollY;
+        });
+        await settle(page);
+        if ((await page.evaluate(() => window.scrollY)) === y) return;
+    }
+}
+
+/** Waits until the page has not scrolled for 20 frames (about a third of a second), at most 300 frames. */
+async function settle(page) {
+    await page.evaluate(() => new Promise((resolve) => {
+        let last = window.scrollY;
+        let still = 0;
+        let frames = 0;
+        const tick = () => {
+            if (window.scrollY === last) still += 1;
+            else { still = 0; last = window.scrollY; }
+            frames += 1;
+            if (still >= 20 || frames >= 300) resolve();
+            else requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+    }));
 }
 
 /** Types «أحمد» in the players search and waits for the list to reload. */
@@ -161,4 +500,49 @@ async function addBranch(page, branch, card, category, date) {
     await added.locator('select').first().blur();
     await added.locator('input[type="date"]').blur();
     await centre(page, card);
+}
+
+/** The create-annual example: «اشتراك سنوي», this season (already chosen), 3000 / 5000. */
+async function fillAnnual(page) {
+    await page.locator('[data-help="sub-name"] input').fill('اشتراك سنوي');
+    await page.locator('[data-help="sub-prices"] input').nth(0).fill('3000');
+    await page.locator('[data-help="sub-prices"] input').nth(1).fill('5000');
+    await blur(page);
+}
+
+/** The create-annual example to its end: both branches, every category, «أشبال» at 2500 / 4000. */
+async function fillAnnualScope(page) {
+    await fillAnnual(page);
+    await tickAll(page, 'sub-branches');
+    await tickAll(page, 'sub-categories');
+    const row = page.locator('[data-help="sub-category-price"]');
+    await row.locator('input').nth(0).fill('2500');
+    await row.locator('input').nth(1).fill('4000');
+    await blur(page);
+}
+
+/** The create-exceptional example: «رحلة صيفية», 1500 for everyone. */
+async function fillTrip(page) {
+    await page.locator('[data-help="sub-kind-exceptional"]').click();
+    await page.locator('[data-help="sub-name"] input').fill('رحلة صيفية');
+    await page.locator('[data-help="sub-prices"] input').nth(0).fill('1500');
+    await page.locator('[data-help="sub-prices"] input').nth(1).fill('1500');
+    await blur(page);
+}
+
+/** The trip's scope: Football (which narrows the categories), then «أقل من 14 سنة». */
+async function tripScope(page) {
+    await page.locator('[data-help="sub-branches"] label', { hasText: 'كرة القدم' }).locator('input').check();
+    await page.locator('[data-help="sub-categories"] label', { hasText: 'أقل من 14 سنة' }).locator('input').check();
+    await blur(page);
+}
+
+/** Drops the focus ring of the last field typed in or ticked. */
+async function blur(page) {
+    await page.evaluate(() => document.activeElement?.blur());
+}
+
+/** Ticks every checkbox inside a data-help block. */
+async function tickAll(page, name) {
+    for (const box of await page.locator(`[data-help="${name}"] input[type="checkbox"]`).all()) await box.check();
 }

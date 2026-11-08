@@ -1,0 +1,18 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "player-history": {
+      "x": 2.5,
+      "y": 56.5,
+      "w": 75,
+      "h": 18.85
+    },
+    "player-history-edit": {
+      "x": 6.25,
+      "y": 70.25,
+      "w": 2.19,
+      "h": 3.5
+    }
+  }
+}

@@ -11,6 +11,7 @@ Topics, their order, icons, permission module and the "Start here" list are in
     title: كيف أضيف لاعباً جديداً        ← always "How do I…", a task
     summary: one line, what it's for
     module: players                     ← optional; defaults to the topic's module
+                                          (superadmin = visible to superadmins only)
     pages: [players.index]              ← route names whose ? panel lists it
     keywords: [تسجيل, لاعب جديد]        ← words people type in search
     related: [players/find-player]

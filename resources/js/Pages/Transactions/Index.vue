@@ -280,7 +280,7 @@ function bulkDestroy() {
 
             <!-- Filters -->
             <div ref="filterBar" class="flex flex-wrap items-center gap-3">
-                <div class="w-full sm:w-64">
+                <div data-help="tx-search" class="w-full sm:w-64">
                     <SearchInput v-model="search" :loading="filtering" :placeholder="t('search')" />
                 </div>
                 <MultiSelectFilter v-model="typeFilter" collapse-all :options="typeOptions" :label="t('type')" :placeholder="`${t('type')}: ${t('all')}`" class="min-w-0 flex-1 sm:w-40 sm:flex-none" />
@@ -375,7 +375,7 @@ function bulkDestroy() {
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                                <tr v-for="tx in transactions.data" :key="tx.id" class="group"
+                                <tr v-for="(tx, txIndex) in transactions.data" :key="tx.id" class="group"
                                     :class="selected.includes(tx.id) ? 'bg-primary-50/50 dark:bg-primary-900/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800'">
                                     <td v-if="canDelete" class="w-10 px-4 py-3">
                                         <input type="checkbox" :checked="selected.includes(tx.id)" :aria-label="t('select_row')" @change="toggleOne(tx.id)"
@@ -386,7 +386,7 @@ function bulkDestroy() {
                                         <Badge :label="typeLabel(tx)" :color="isIncome(tx) ? 'emerald' : 'rose'" />
                                     </td>
                                     <td class="max-w-xs px-4 py-3 text-sm">
-                                        <Link :href="route('transactions.show', tx.id)" class="block truncate font-medium text-slate-900 hover:text-primary-600 dark:text-slate-100 dark:hover:text-primary-300">{{ titleOf(tx) }}</Link>
+                                        <Link :href="route('transactions.show', tx.id)" :data-help="txIndex === 0 ? 'tx-row-first' : undefined" class="block truncate font-medium text-slate-900 hover:text-primary-600 dark:text-slate-100 dark:hover:text-primary-300">{{ titleOf(tx) }}</Link>
                                         <span v-if="tx.description" class="block truncate text-xs text-slate-500 dark:text-slate-400">{{ tx.description }}</span>
                                     </td>
                                     <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-700 dark:text-slate-200">

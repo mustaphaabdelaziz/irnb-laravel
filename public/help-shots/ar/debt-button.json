@@ -1,0 +1,12 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "player-add-previous-debt": {
+      "x": 4.06,
+      "y": 93.53,
+      "w": 2.19,
+      "h": 3.5
+    }
+  }
+}

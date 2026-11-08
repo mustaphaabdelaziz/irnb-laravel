@@ -67,7 +67,7 @@ function onToggle() {
                         :active="isActive(item, url)"
                         :icon="item.icon"
                         :badge="item.badge"
-                        :data-help="item.href === '/players' ? 'nav-players' : null"
+                        :data-help="{ '/players': 'nav-players', '/subscriptions': 'nav-subscriptions', '/transactions': 'nav-transactions', '/receipts/verify': 'nav-receipts-verify' }[item.href] ?? null"
                         compact
                     >{{ item.label }}</SidebarLink>
                 </div>

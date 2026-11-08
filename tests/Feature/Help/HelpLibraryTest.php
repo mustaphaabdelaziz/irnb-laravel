@@ -229,6 +229,29 @@ class HelpLibraryTest extends TestCase
     }
 
     #[Test]
+    public function superadmin_articles_are_visible_to_superadmins_only(): void
+    {
+        $dir = storage_path('framework/testing/help-'.uniqid());
+        File::copyDirectory(base_path('tests/Fixtures/help'), $dir);
+        File::put("{$dir}/ar/players/roles.md", "---\ntitle: الأدوار\nmodule: superadmin\n---\nنص\n");
+
+        try {
+            $lib = $this->library($dir);
+            $everything = collect(Role::MODULES)
+                ->mapWithKeys(fn (string $m) => [$m => ['view', 'add', 'edit', 'delete']])
+                ->all();
+
+            $this->assertArrayNotHasKey('players/roles', $lib->visibleFor($this->userWith($everything), 'ar'));
+            $this->assertArrayNotHasKey('players/roles', $lib->visibleFor(User::factory()->admin()->create(), 'ar'));
+
+            $super = User::factory()->create(['privileges' => ['superadmin']]);
+            $this->assertArrayHasKey('players/roles', $lib->visibleFor($super, 'ar'));
+        } finally {
+            File::deleteDirectory($dir);
+        }
+    }
+
+    #[Test]
     public function the_container_builds_the_library_on_the_real_content_folder(): void
     {
         $this->assertInstanceOf(HelpLibrary::class, app(HelpLibrary::class));

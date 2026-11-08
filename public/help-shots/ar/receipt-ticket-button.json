@@ -1,0 +1,18 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "player-history": {
+      "x": 2.5,
+      "y": 53.13,
+      "w": 75,
+      "h": 22.25
+    },
+    "player-history-ticket": {
+      "x": 8.75,
+      "y": 69.58,
+      "w": 2.19,
+      "h": 3.5
+    }
+  }
+}

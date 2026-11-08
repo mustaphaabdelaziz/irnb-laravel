@@ -6,9 +6,11 @@ use App\Models\BranchRegistration;
 use App\Models\Category;
 use App\Models\DocumentType;
 use App\Models\Player;
+use App\Models\Subscription;
 use App\Models\User;
 use App\Models\WebsiteConfig;
 use Database\Seeders\HelpDemoSeeder;
+use Database\Seeders\HelpDemoSubscriptionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -100,5 +102,20 @@ class HelpDemoSeederTest extends TestCase
 
         $this->expectException(\RuntimeException::class);
         app(HelpDemoSeeder::class)->run();
+    }
+
+    #[Test]
+    public function the_subscriptions_seeder_refuses_a_real_database_on_its_own(): void
+    {
+        $this->app['env'] = 'production';
+
+        try {
+            app(HelpDemoSubscriptionsSeeder::class)->run();
+            $this->fail('The subscriptions seeder ran in production.');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('throwaway database', $e->getMessage());
+        }
+
+        $this->assertSame(0, Subscription::count());
     }
 }

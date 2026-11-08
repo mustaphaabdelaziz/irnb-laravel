@@ -18,6 +18,11 @@ const nextDay = (weekdays, from = new Date(), strict = false) => {
 const sessionMonth = ym(nextDay([1, 3]));
 const nextSaturday = ymd(nextDay([6], new Date(), true));
 const U17 = 'branch_id=2&category_id=7';
+// The month grid opens on the month of 7 days ago, so its columns hold the held
+// sessions (and the demo's saved codes) even at the start of a month.
+const gridMonth = ym(new Date(Date.now() - 7 * 86400000));
+// Swimming «أصاغر» (branch 1, category 11): its next sessions after the cancelled session 3.
+const cadetsGrid = (month) => `/attendance/grid?branch_id=1&category_id=11&month=${month}`;
 export default [
     { name: 'login', url: '/login', guest: true, targets: ['login-username', 'login-password', 'login-submit', 'login-help'] },
     { name: 'help-center', url: '/help', targets: ['help-search', 'help-button'] },
@@ -396,7 +401,7 @@ export default [
     {
         name: 'att-calendar',
         url: `/attendance?view=month&${U17}&month=${sessionMonth}`,
-        targets: ['nav-members', 'nav-attendance', 'att-branch', 'att-category', 'att-session-next', 'att-add-extra', 'att-add-preseason', 'att-preseason-chip'],
+        targets: ['nav-members', 'nav-attendance', 'att-branch', 'att-category', 'att-session-next', 'att-add-extra', 'att-add-preseason', 'att-preseason-chip', 'att-grid-link'],
     },
     {
         name: 'att-session',
@@ -455,7 +460,102 @@ export default [
             await blur(page);
         },
     },
+    // The month-grid example: the coach's sheet has أمين «R15» in one column. The Vue page
+    // tags the first cell (row 1 = بلعيد, rows sort by last name), so grid-cell-first is
+    // moved onto أمين's cell in the column where the demo saved his «R15» (the
+    // 2nd-newest held U17 session; عبد الرحمن is «AN» in the same column).
+    {
+        name: 'att-grid',
+        url: `/attendance/grid?${U17}&month=${gridMonth}`,
+        targets: ['grid-legend', 'grid-help', 'grid-cell-first', 'grid-column-first', 'grid-save', 'grid-print'],
+        before: async (page) => { await tagIn(page, 'grid-cell-first', await amineR15Cell(page)); },
+    },
+    {
+        // Typing «R15» in that cell marks its column changed: the date turns blue and «حفظ»
+        // wakes up. Nothing is saved.
+        name: 'att-grid-typed',
+        url: `/attendance/grid?${U17}&month=${gridMonth}`,
+        targets: ['grid-cell-first', 'grid-save'],
+        before: async (page) => {
+            const cell = await amineR15Cell(page);
+            await tagIn(page, 'grid-cell-first', cell);
+            await cell.fill('R15');
+        },
+    },
+    {
+        // Then two ↑ presses climb from أمين (row 3) to عبد الرحمن (row 1) in the same
+        // column, where «AN» is typed: the ring follows the focused cell.
+        name: 'att-grid-moved',
+        url: `/attendance/grid?${U17}&month=${gridMonth}`,
+        targets: ['grid-cell-first', 'grid-save'],
+        before: async (page) => {
+            const cell = await amineR15Cell(page);
+            await cell.fill('R15');
+            await page.keyboard.press('ArrowUp');
+            await page.keyboard.press('ArrowUp');
+            const focused = page.locator(':focus');
+            await tagIn(page, 'grid-cell-first', focused);
+            await focused.fill('AN');
+        },
+    },
+    // The cancel example is a «أصاغر» session (the pool is closed). Session 3 is already
+    // cancelled, so the button and dialog shots open the next planned «أصاغر» session
+    // (found in the grid, see openPlannedCadets) instead of the brief's U17 session 1.
+    // The dialog is only filled in, never confirmed.
+    { name: 'att-session-actions', url: cadetsGrid(gridMonth), targets: ['att-state', 'att-cancel', 'att-delete'], before: openPlannedCadets },
+    {
+        name: 'att-cancel-modal',
+        url: cadetsGrid(gridMonth),
+        targets: ['att-cancel-reason', 'att-cancel-confirm'],
+        before: async (page) => {
+            await openPlannedCadets(page);
+            await page.click('[data-help="att-cancel"]');
+            await page.fill('[data-help="att-cancel-reason"]', 'المسبح مغلق للصيانة');
+        },
+    },
+    { name: 'att-cancelled', url: '/attendance/sessions/3', targets: ['att-cancelled-banner'] },
+    // The erase example: the held pre-season session 2, as opened (its header has the
+    // extra «طباعة مع الحضور المسجَّل» button, so the trash moves).
+    { name: 'att-session-held', url: '/attendance/sessions/2', targets: ['att-state', 'att-delete'] },
+    {
+        // A held session (the pre-season one) so both delete choices show. Only the
+        // «الإبقاء على الحصة ومسح الحضور فقط» choice is picked, never confirmed.
+        name: 'att-delete-modal',
+        url: '/attendance/sessions/2',
+        targets: ['att-delete-choices', 'att-delete-reset', 'att-delete-confirm'],
+        before: async (page) => {
+            await page.click('[data-help="att-delete"]');
+            await page.click('[data-help="att-delete-reset"]');
+        },
+    },
 ];
+
+/** أمين قاسمي's grid cell holding the demo's «R15» (rows are found by last name). */
+async function amineR15Cell(page) {
+    const inputs = page.locator('tbody tr', { hasText: 'قاسمي' }).locator('input');
+    const i = (await inputs.evaluateAll((els) => els.map((el) => el.value))).indexOf('R15');
+    if (i === -1) throw new Error('Month grid: no «R15» cell for قاسمي — is the grid month the one of the held sessions?');
+    return inputs.nth(i);
+}
+
+/**
+ * Opens the next planned «أصاغر» session: the first grid column marked · (planned; held
+ * columns show ✓ and cancelled sessions are left out of the grid). Looks in the grid
+ * month, then in the two months after it, since session 3 may close its month.
+ */
+async function openPlannedCadets(page) {
+    const start = new Date(Date.now() - 7 * 86400000);
+    for (let k = 0; k < 3; k++) {
+        const month = ym(new Date(start.getFullYear(), start.getMonth() + k, 1));
+        if (k > 0) await page.goto(new URL(cadetsGrid(month), page.url()).href, { waitUntil: 'networkidle' });
+        const planned = page.locator('thead th', { has: page.locator('div', { hasText: /^·$/ }) }).first();
+        if (await planned.count()) {
+            await page.goto(new URL(await planned.locator('a').getAttribute('href'), page.url()).href, { waitUntil: 'networkidle' });
+            return;
+        }
+    }
+    throw new Error('No planned «أصاغر» session in the three months from the grid month');
+}
 
 /** One row of the session page, found by the player's last name. */
 function attRow(page, lastname) {

@@ -29,6 +29,14 @@ const dirty = reactive(new Set());
 const sent = ref([]); // session ids in the order last posted, to map `columns.{i}` errors back
 
 const inRoster = (pid, sid) => values[pid] !== undefined && sid in values[pid];
+// The first cell that takes a code, as "row-column" (the Help Center screenshots ring it).
+const firstCell = computed(() => {
+    for (const [r, row] of props.rows.entries()) {
+        const c = props.sessions.findIndex((s) => inRoster(row.id, s.id));
+        if (c !== -1) return `${r}-${c}`;
+    }
+    return null;
+});
 const dayLabel = (s) => new Date(`${s.date}T00:00:00`).toLocaleDateString(lang.value, { weekday: 'short', day: 'numeric' });
 const monthLabel = computed(() => new Date(`${props.month}-01T00:00:00`).toLocaleDateString(lang.value, { month: 'long', year: 'numeric' }));
 
@@ -105,19 +113,19 @@ function save() {
                     <h1 class="text-lg font-bold capitalize text-slate-900 dark:text-slate-100">{{ t('att.grid') }}<template v-if="branch"> · {{ branch.name }}</template> · {{ category.name }} · {{ monthLabel }}</h1>
                 </div>
                 <div class="flex flex-wrap items-center gap-2 print:hidden">
-                    <IconButton :href="sheetHref" external target="_blank" :title="t('att.sheet.print_hint')" icon="print" :label="t('att.sheet.print')" />
+                    <IconButton data-help="grid-print" :href="sheetHref" external target="_blank" :title="t('att.sheet.print_hint')" icon="print" :label="t('att.sheet.print')" />
                     <IconButton :href="filledSheetHref" external target="_blank" icon="clipboard" :label="t('att.sheet.print_filled')" />
-                    <button v-if="editable" :disabled="!dirty.size" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50" @click="save">{{ t('att.save') }}</button>
+                    <button v-if="editable" data-help="grid-save" :disabled="!dirty.size" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50" @click="save">{{ t('att.save') }}</button>
                 </div>
             </div>
         </template>
 
-        <div class="mb-2 flex flex-wrap gap-2 text-xs">
+        <div data-help="grid-legend" class="mb-2 flex flex-wrap gap-2 text-xs">
             <span v-for="s in activeStatuses" :key="s" class="inline-flex items-center gap-1 rounded-full px-2 py-0.5" :style="chipStyle(s)">
                 <b class="font-mono" dir="ltr">{{ legendCode(s) }}</b>{{ label(s) }}
             </span>
         </div>
-        <p class="mb-3 text-xs text-slate-500 dark:text-slate-400">{{ t('att.grid_help_codes', { late: code('late') }) }}</p>
+        <p data-help="grid-help" class="mb-3 text-xs text-slate-500 dark:text-slate-400">{{ t('att.grid_help_codes', { late: code('late') }) }}</p>
         <InputError :message="tr(page.props.errors?.columns)" />
         <InputError v-for="(msg, idx) in columnMessages" :key="idx" :message="msg" />
 
@@ -127,7 +135,7 @@ function save() {
                 <thead>
                     <tr class="bg-slate-50 dark:bg-slate-800/50">
                         <th class="sticky start-0 z-10 bg-slate-50 p-2 text-start dark:bg-slate-800">{{ t('att.player') }}</th>
-                        <th v-for="s in sessions" :key="s.id" class="min-w-[3.5rem] p-1 text-center text-xs font-semibold" :class="columnError(s.id) ? 'text-rose-600 dark:text-rose-400' : dirty.has(s.id) ? 'text-primary-600 dark:text-primary-300' : 'text-slate-500 dark:text-slate-400'" :title="columnError(s.id) ?? ''">
+                        <th v-for="(s, c) in sessions" :key="s.id" :data-help="c === 0 ? 'grid-column-first' : null" class="min-w-[3.5rem] p-1 text-center text-xs font-semibold" :class="columnError(s.id) ? 'text-rose-600 dark:text-rose-400' : dirty.has(s.id) ? 'text-primary-600 dark:text-primary-300' : 'text-slate-500 dark:text-slate-400'" :title="columnError(s.id) ?? ''">
                             <Link :href="route('attendance.sessions.show', s.id)" class="hover:underline">{{ dayLabel(s) }}</Link>
                             <div class="font-normal" :class="s.state === 'held' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'">{{ s.state === 'held' ? '✓' : '·' }}</div>
                         </th>
@@ -140,6 +148,7 @@ function save() {
                             <template v-if="inRoster(row.id, s.id)">
                                 <input
                                     :data-cell="`${r}-${c}`"
+                                    :data-help="firstCell === `${r}-${c}` ? 'grid-cell-first' : null"
                                     :value="values[row.id][s.id]"
                                     :disabled="!editable"
                                     maxlength="12"

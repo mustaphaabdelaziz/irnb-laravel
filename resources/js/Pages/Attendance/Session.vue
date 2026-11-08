@@ -191,14 +191,14 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                     <IconButton v-if="!cancelled && saved" :href="filledSheetHref" external target="_blank" icon="clipboard" :label="t('att.sheet.print_filled')" />
                     <template v-if="editable">
                         <IconButton icon="pencil" :label="t('att.edit')" @click="openEdit" />
-                        <IconButton icon="xcircle" :label="t('att.cancel')" variant="danger" @click="showCancel = true" />
+                        <IconButton data-help="att-cancel" icon="xcircle" :label="t('att.cancel')" variant="danger" @click="showCancel = true" />
                     </template>
-                    <IconButton v-if="can('attendance', 'edit')" icon="trash" :label="t('att.delete_session')" variant="danger" @click="openDelete" />
+                    <IconButton v-if="can('attendance', 'edit')" data-help="att-delete" icon="trash" :label="t('att.delete_session')" variant="danger" @click="openDelete" />
                 </div>
             </div>
         </template>
 
-        <p v-if="cancelled" class="mb-4 rounded-lg bg-slate-100 p-3 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ t('att.cancelled_because', { reason: session.cancel_reason }) }}</p>
+        <p v-if="cancelled" data-help="att-cancelled-banner" class="mb-4 rounded-lg bg-slate-100 p-3 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ t('att.cancelled_because', { reason: session.cancel_reason }) }}</p>
         <p v-else-if="!saved" data-help="att-not-saved" class="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">{{ t('att.not_saved') }}</p>
         <InputError :message="tr(errors.session)" class="mb-2" />
 
@@ -263,11 +263,11 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
         <Modal :show="showCancel" max-width="md" @close="showCancel = false">
             <form class="space-y-3 p-5" @submit.prevent="submitCancel">
                 <h2 class="font-bold text-slate-900 dark:text-slate-100">{{ t('att.cancel') }}</h2>
-                <label class="block text-sm">{{ t('att.cancel_reason') }}<input v-model="cancelForm.reason" type="text" maxlength="255" :class="[input, 'mt-1 block w-full']" /></label>
+                <label class="block text-sm">{{ t('att.cancel_reason') }}<input v-model="cancelForm.reason" data-help="att-cancel-reason" type="text" maxlength="255" :class="[input, 'mt-1 block w-full']" /></label>
                 <InputError :message="tr(cancelForm.errors.reason)" />
                 <div class="flex justify-end gap-2">
                     <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700 dark:text-slate-400" @click="showCancel = false">{{ t('att.close') }}</button>
-                    <button type="submit" :disabled="cancelForm.processing" class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700">{{ t('att.cancel') }}</button>
+                    <button type="submit" data-help="att-cancel-confirm" :disabled="cancelForm.processing" class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700">{{ t('att.cancel') }}</button>
                 </div>
             </form>
         </Modal>
@@ -275,25 +275,27 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
         <Modal :show="showDelete" max-width="md" @close="showDelete = false">
             <form class="space-y-3 p-5" @submit.prevent="submitDelete">
                 <h2 class="font-bold text-slate-900 dark:text-slate-100">{{ t('att.delete_session') }}</h2>
-                <label class="flex gap-2 rounded-lg p-3 text-sm ring-1 ring-slate-200 dark:ring-slate-700">
-                    <input v-model="deleteMode" type="radio" value="delete" class="mt-0.5" />
-                    <span>
-                        <span class="block font-semibold text-slate-900 dark:text-slate-100">{{ t('att.delete_choice_delete') }}</span>
-                        <span class="block text-slate-500 dark:text-slate-400">{{ t('att.delete_choice_delete_hint') }}</span>
-                        <span v-if="session.kind === 'regular'" class="block text-slate-500 dark:text-slate-400">{{ t('att.delete_regular_hint') }}</span>
-                    </span>
-                </label>
-                <label v-if="canReset" class="flex gap-2 rounded-lg p-3 text-sm ring-1 ring-slate-200 dark:ring-slate-700">
-                    <input v-model="deleteMode" type="radio" value="reset" class="mt-0.5" />
-                    <span>
-                        <span class="block font-semibold text-slate-900 dark:text-slate-100">{{ t('att.delete_choice_reset') }}</span>
-                        <span class="block text-slate-500 dark:text-slate-400">{{ t('att.delete_choice_reset_hint') }}</span>
-                    </span>
-                </label>
+                <div data-help="att-delete-choices" class="space-y-3">
+                    <label class="flex gap-2 rounded-lg p-3 text-sm ring-1 ring-slate-200 dark:ring-slate-700">
+                        <input v-model="deleteMode" type="radio" value="delete" class="mt-0.5" />
+                        <span>
+                            <span class="block font-semibold text-slate-900 dark:text-slate-100">{{ t('att.delete_choice_delete') }}</span>
+                            <span class="block text-slate-500 dark:text-slate-400">{{ t('att.delete_choice_delete_hint') }}</span>
+                            <span v-if="session.kind === 'regular'" class="block text-slate-500 dark:text-slate-400">{{ t('att.delete_regular_hint') }}</span>
+                        </span>
+                    </label>
+                    <label v-if="canReset" data-help="att-delete-reset" class="flex gap-2 rounded-lg p-3 text-sm ring-1 ring-slate-200 dark:ring-slate-700">
+                        <input v-model="deleteMode" type="radio" value="reset" class="mt-0.5" />
+                        <span>
+                            <span class="block font-semibold text-slate-900 dark:text-slate-100">{{ t('att.delete_choice_reset') }}</span>
+                            <span class="block text-slate-500 dark:text-slate-400">{{ t('att.delete_choice_reset_hint') }}</span>
+                        </span>
+                    </label>
+                </div>
                 <p v-if="marksCount" class="rounded-lg bg-rose-50 p-3 text-sm font-semibold text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">{{ t('att.delete_marks_count', { count: marksCount }) }}</p>
                 <div class="flex justify-end gap-2">
                     <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700 dark:text-slate-400" @click="showDelete = false">{{ t('att.close') }}</button>
-                    <button type="submit" :disabled="deleting" class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-50">{{ deleteMode === 'reset' ? t('att.reset_confirm') : t('att.delete_confirm') }}</button>
+                    <button type="submit" data-help="att-delete-confirm" :disabled="deleting" class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-50">{{ deleteMode === 'reset' ? t('att.reset_confirm') : t('att.delete_confirm') }}</button>
                 </div>
             </form>
         </Modal>

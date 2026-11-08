@@ -1,0 +1,12 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "att-cancelled-banner": {
+      "x": 2.5,
+      "y": 12,
+      "w": 75,
+      "h": 5.5
+    }
+  }
+}

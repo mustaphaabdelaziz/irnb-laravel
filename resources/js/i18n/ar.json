@@ -66,6 +66,8 @@
     "activities.players": "اللاعبون المشاركون",
     "activities.report": "تقرير النشاط",
     "activities.report_hint": "يُطبع هذا النص في التقرير الأدبي",
+    "activities.report_photo": "صورة التقرير",
+    "activities.report_photo_hint": "صورة واحدة لكل نشاط تُطبع في ملحق صور التقرير الأدبي",
     "activities.responsible": "المسؤول",
     "activities.search_placeholder": "بحث في العنوان أو المكان أو الشركاء",
     "activities.selected_count": "{n} مختار",

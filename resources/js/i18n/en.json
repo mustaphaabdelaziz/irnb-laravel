@@ -66,6 +66,8 @@
     "activities.players": "Participating players",
     "activities.report": "Activity report",
     "activities.report_hint": "This text is printed in the literary report",
+    "activities.report_photo": "Report photo",
+    "activities.report_photo_hint": "One photo per activity, printed in the literary report's photo appendix",
     "activities.responsible": "Person in charge",
     "activities.search_placeholder": "Search title, location, partners",
     "activities.selected_count": "{n} selected",

@@ -176,7 +176,7 @@ class ActivityCrudTest extends TestCase
                 ->component('Activities/Show')
                 ->where('activity.title', 'Blood drive')
                 ->where('activity.players.0.name', Player::first()->fullname)
-                ->where('reportLimit', 4));
+                ->missing('reportLimit'));
     }
 
     #[Test]

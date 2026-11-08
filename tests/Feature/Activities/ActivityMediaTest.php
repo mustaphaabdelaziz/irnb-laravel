@@ -68,24 +68,22 @@ class ActivityMediaTest extends TestCase
     }
 
     #[Test]
-    public function at_most_four_photos_go_in_the_report(): void
+    public function marking_a_report_photo_moves_the_mark(): void
     {
         $this->actingAs($this->admin());
-        $this->uploadPhotos(5);
-        $photos = $this->activity->photos()->get();
+        $this->uploadPhotos(3);
+        [$first, $second] = $this->activity->photos()->get()->all();
 
-        foreach ($photos->take(4) as $photo) {
-            $this->put(route('activities.photos.update', [$this->activity, $photo]), ['in_report' => true, 'caption' => 'Day '.$photo->id])
-                ->assertSessionHas('success', 'flash.activity_photo_updated');
-        }
-        $this->put(route('activities.photos.update', [$this->activity, $photos[4]]), ['in_report' => true])
-            ->assertSessionHas('error', 'flash.activity_report_photos_limit');
-
-        $this->assertSame(4, $this->activity->photos()->where('in_report', true)->count());
-        // Re-saving a photo already in the report is not blocked by the cap.
-        $this->put(route('activities.photos.update', [$this->activity, $photos[0]]), ['in_report' => true, 'caption' => 'Opening'])
+        $this->put(route('activities.photos.update', [$this->activity, $first]), ['in_report' => true, 'caption' => 'Opening'])
             ->assertSessionHas('success', 'flash.activity_photo_updated');
-        $this->assertSame('Opening', $photos[0]->fresh()->caption);
+        $this->put(route('activities.photos.update', [$this->activity, $second]), ['in_report' => true])
+            ->assertSessionHas('success', 'flash.activity_photo_updated');
+
+        $this->assertSame([$second->id], $this->activity->photos()->where('in_report', true)->pluck('id')->all());
+        $this->assertSame('Opening', $first->fresh()->caption);
+
+        $this->put(route('activities.photos.update', [$this->activity, $second]), ['in_report' => false]);
+        $this->assertSame(0, $this->activity->photos()->where('in_report', true)->count());
     }
 
     #[Test]
@@ -184,23 +182,6 @@ class ActivityMediaTest extends TestCase
         $this->delete(route('activities.files.destroy', [$this->activity, $file]))->assertSessionHas('success');
 
         $this->assertSame(array_fill(0, 5, $subject), $this->updateLogs());
-    }
-
-    #[Test]
-    public function a_photo_refused_by_the_report_cap_is_not_logged(): void
-    {
-        $this->actingAs($this->admin());
-        $this->uploadPhotos(5);
-        $photos = $this->activity->photos()->get();
-        foreach ($photos->take(4) as $photo) {
-            $this->put(route('activities.photos.update', [$this->activity, $photo]), ['in_report' => true]);
-        }
-        $before = count($this->updateLogs());
-
-        $this->put(route('activities.photos.update', [$this->activity, $photos[4]]), ['in_report' => true])
-            ->assertSessionHas('error', 'flash.activity_report_photos_limit');
-
-        $this->assertCount($before, $this->updateLogs());
     }
 
     #[Test]

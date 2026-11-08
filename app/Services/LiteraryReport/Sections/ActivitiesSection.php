@@ -50,7 +50,7 @@ final class ActivitiesSection implements Section
                 'participants' => (int) $a->participants_count,
                 'report' => $a->report,
                 'photos' => $a->photos
-                    ->take(ActivityPhoto::REPORT_LIMIT)
+                    ->take(1)
                     ->map(fn (ActivityPhoto $p) => ['file' => Media::localFile($p->url), 'caption' => $p->caption])
                     ->filter(fn (array $p) => $p['file'] !== null)
                     ->values()->all(),

@@ -122,7 +122,7 @@ onUnmounted(() => {
             <li
                 v-for="(item, i) in results"
                 :id="`palette-option-${i}`"
-                :key="item.href"
+                :key="`${item.section ?? ''}|${item.href}`"
                 role="option"
                 :aria-selected="i === highlighted"
                 class="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm"

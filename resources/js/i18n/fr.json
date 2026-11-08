@@ -789,6 +789,7 @@
     "help.login_help": "Besoin d'aide pour vous connecter ?",
     "help.minutes": "{n} min de lecture",
     "help.no_articles": "Pas encore d'article pour cette page.",
+    "help.load_failed": "Impossible de charger l'aide. Réessayez.",
     "help.no_results": "Aucun résultat",
     "help.open_center": "Ouvrir le centre d'aide",
     "help.picture_missing": "Image pas encore disponible",

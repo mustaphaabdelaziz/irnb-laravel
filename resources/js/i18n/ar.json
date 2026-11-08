@@ -789,6 +789,7 @@
     "help.login_help": "تحتاج مساعدة في الدخول؟",
     "help.minutes": "مدة القراءة: {n} د",
     "help.no_articles": "لا توجد مقالات لهذه الصفحة بعد.",
+    "help.load_failed": "تعذّر تحميل المساعدة. حاول مرة أخرى.",
     "help.no_results": "لا توجد نتائج",
     "help.open_center": "افتح مركز المساعدة",
     "help.picture_missing": "الصورة غير متوفرة بعد",

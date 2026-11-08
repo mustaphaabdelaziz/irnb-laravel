@@ -789,6 +789,7 @@
     "help.login_help": "Need help signing in?",
     "help.minutes": "{n} min read",
     "help.no_articles": "No articles for this page yet.",
+    "help.load_failed": "Couldn't load help. Please try again.",
     "help.no_results": "No results",
     "help.open_center": "Open the Help Center",
     "help.picture_missing": "Picture not available yet",

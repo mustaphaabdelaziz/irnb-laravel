@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, onUnmounted, ref, watch } from 'vue';
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import Icon from '@/Components/Icon.vue';
@@ -12,23 +12,35 @@ const { t } = useI18n();
 const page = usePage();
 const articles = ref([]);
 const loading = ref(false);
+const error = ref(false);
+const closeBtn = ref(null);
 let loadedFor = null;
+let opener = null;
 
 function close() {
     emit('update:open', false);
 }
 
 watch(() => props.open, async (isOpen) => {
-    if (!isOpen) return;
+    if (!isOpen) {
+        opener?.focus?.();
+        opener = null;
+        return;
+    }
+    opener = document.activeElement;
+    nextTick(() => closeBtn.value?.focus());
     const name = page.props.routeName ?? '';
-    if (loadedFor === name) return;
+    const key = `${page.props.locale}:${page.props.auth?.user?.id ?? 'guest'}|${name}`;
+    if (loadedFor === key) return;
     loading.value = true;
+    error.value = false;
     try {
         const { data } = await window.axios.get(route('help.panel'), { params: { route: name } });
         articles.value = data.articles;
-        loadedFor = name;
+        loadedFor = key;
     } catch {
         articles.value = [];
+        error.value = true;
     } finally {
         loading.value = false;
     }
@@ -55,7 +67,7 @@ onUnmounted(() => {
                     <header class="flex items-center gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
                         <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-50 text-lg text-primary-600 dark:bg-primary-500/15 dark:text-primary-300"><Icon name="help" /></span>
                         <h2 class="flex-1 font-bold text-slate-900 dark:text-slate-100">{{ t('help.this_page') }}</h2>
-                        <button type="button" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" :aria-label="t('help.close')" @click="close"><Icon name="close" /></button>
+                        <button ref="closeBtn" type="button" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" :aria-label="t('help.close')" @click="close"><Icon name="close" /></button>
                     </header>
 
                     <div class="flex-1 space-y-2 overflow-y-auto p-4">
@@ -69,6 +81,7 @@ onUnmounted(() => {
                                 <p class="mt-1 text-xs text-slate-400">⏱ {{ t('help.minutes', { n: a.minutes }) }}</p>
                             </Link>
                         </template>
+                        <p v-else-if="error" class="py-8 text-center text-slate-500 dark:text-slate-400">{{ t('help.load_failed') }}</p>
                         <p v-else class="py-8 text-center text-slate-500 dark:text-slate-400">{{ t('help.no_articles') }}</p>
                     </div>
 

@@ -70,5 +70,10 @@ class HelpDemoSubscriptionsSeederTest extends TestCase
         $discounted = $this->obligation(7, Demo::ANNUAL);
         $this->assertSame('percent', $discounted->discount_type);
         $this->assertEquals(10, $discounted->discount_value);
+
+        // زكرياء owes the trip only (1500); the annual is still for the assign-players article to add.
+        $this->assertEquals(1500, $this->obligation(8, Demo::TRIP)->remaining_amount);
+        $this->assertFalse(PlayerSubscription::where('player_id', 8)->whereHas('subscription', fn ($q) => $q->where('name', Demo::ANNUAL))->exists());
+        $this->assertEquals(1500, Player::find(8)->outstanding_debt);
     }
 }

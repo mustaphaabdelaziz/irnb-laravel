@@ -139,5 +139,11 @@ class HelpDemoSubscriptionsSeeder extends Seeder
         $abderrahmane = $player(7);
         $annual->assignTo($abderrahmane)->update(['discount_type' => 'percent', 'discount_value' => 10]);
         $debts->forPlayer($abderrahmane);
+
+        // 8 زكرياء — owes the trip, unpaid. Not in the annual: the assign-players article adds him,
+        // and the take-payment article pays both from his page (the annual is offered, not owed yet).
+        $zakaria = $player(8);
+        $trip->assignTo($zakaria);
+        $debts->forPlayer($zakaria);
     }
 }

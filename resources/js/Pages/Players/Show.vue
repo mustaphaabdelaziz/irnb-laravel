@@ -501,13 +501,13 @@ function formatPlainDate(val) {
 
                 <!-- Debt summary -->
                 <div class="space-y-4">
-                    <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+                    <div data-help="player-debt" class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                         <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('outstanding_debt') }}</p>
                         <p class="mt-2 text-3xl font-bold" :class="totalDebt > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'">
                             {{ formatMoney(totalDebt) }} <span class="text-base font-normal text-slate-400 dark:text-slate-400">{{ currencyLabel }}</span>
                         </p>
                         <div class="mt-4">
-                            <IconButton icon="money" :label="t('add_payment')" variant="primary" @click="showPaymentModal = true" />
+                            <IconButton icon="money" :label="t('add_payment')" variant="primary" data-help="player-add-payment" @click="showPaymentModal = true" />
                         </div>
                     </div>
 
@@ -540,12 +540,12 @@ function formatPlainDate(val) {
             </div>
 
             <!-- Subscriptions -->
-            <div class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+            <div data-help="player-subscriptions-card" class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-5 py-4">
                     <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('subscriptions') }}</h3>
                     <div class="flex items-center gap-2">
                         <IconButton v-if="can('subscriptions', 'edit')" icon="money" :label="t('assign_subscription')" variant="primary" size="sm" @click="showAssignSubModal = true" />
-                        <IconButton icon="plus" :label="t('add_previous_debt')" size="sm" @click="showAddDebtModal = true" />
+                        <IconButton icon="plus" :label="t('add_previous_debt')" size="sm" data-help="player-add-previous-debt" @click="showAddDebtModal = true" />
                     </div>
                 </div>
                 <div v-if="!subscriptions.length" class="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_data') }}</div>
@@ -564,7 +564,7 @@ function formatPlainDate(val) {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                            <tr v-for="sub in subscriptions" :key="sub.id">
+                            <tr v-for="(sub, subIndex) in subscriptions" :key="sub.id">
                                 <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">
                                     {{ sub.subscription?.name || sub.label || '-' }}
                                     <span v-if="sub.is_legacy" class="ms-1 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium uppercase text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('previous_debt') }}</span>
@@ -584,7 +584,7 @@ function formatPlainDate(val) {
                                 </td>
                                 <td class="px-4 py-3 text-end whitespace-nowrap">
                                     <div class="inline-flex items-center gap-1">
-                                        <IconButton icon="pencil" :label="t('edit')" plain size="sm" @click="openSubEdit(sub)" />
+                                        <IconButton icon="pencil" :label="t('edit')" plain size="sm" :data-help="subIndex === 0 ? 'player-sub-edit' : undefined" @click="openSubEdit(sub)" />
                                         <IconButton icon="trash" :label="t('remove')" variant="danger" plain size="sm" @click="askRemoveSub(sub)" />
                                     </div>
                                 </td>
@@ -595,7 +595,7 @@ function formatPlainDate(val) {
             </div>
 
             <!-- Transaction history -->
-            <div class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+            <div data-help="player-history" class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div class="border-b border-slate-100 dark:border-slate-800 px-5 py-4">
                     <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('transaction_history') }}</h3>
                 </div>
@@ -613,7 +613,7 @@ function formatPlainDate(val) {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                            <tr v-for="tx in transactions" :key="tx.id">
+                            <tr v-for="(tx, txIndex) in transactions" :key="tx.id">
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ formatDate(tx.transaction_date) }}</td>
                                 <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">{{ tx.display_title }}</td>
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ statusLabel('payment_method', tx.payment_method) }}</td>
@@ -625,7 +625,7 @@ function formatPlainDate(val) {
                                 <td class="px-4 py-3 text-end whitespace-nowrap">
                                     <div class="inline-flex items-center gap-1">
                                         <IconButton v-if="tx.transaction_type === 'income' && can('transactions', 'view')" :href="route('transactions.ticket', tx.id)" external target="_blank" icon="print" :label="t('receipts.print_ticket')" plain size="sm" icon-only />
-                                        <IconButton icon="pencil" :label="t('edit')" plain size="sm" @click="openEdit(tx)" />
+                                        <IconButton icon="pencil" :label="t('edit')" plain size="sm" :data-help="txIndex === 0 ? 'player-history-edit' : undefined" @click="openEdit(tx)" />
                                         <IconButton icon="trash" :label="t('remove')" variant="danger" plain size="sm" @click="askRemove(tx)" />
                                     </div>
                                 </td>
@@ -681,7 +681,7 @@ function formatPlainDate(val) {
             <form @submit.prevent="submitPayment" class="p-6">
                 <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('add_payment') }}</h3>
                 <div class="mt-4 space-y-4">
-                    <div>
+                    <div data-help="payment-category">
                         <InputLabel :value="t('payment_category')" />
                         <select v-model="paymentForm.category" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                             <option value="subscription">{{ t('subscription') }}</option>
@@ -689,7 +689,7 @@ function formatPlainDate(val) {
                             <option value="debt_payment">{{ t('debt_payment') }}</option>
                         </select>
                     </div>
-                    <div v-if="paymentForm.category === 'subscription'">
+                    <div v-if="paymentForm.category === 'subscription'" data-help="payment-subscriptions">
                         <InputLabel :value="t('payment_subscriptions')" />
                         <p v-if="payableOptions.length > 1" class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('payment_order_hint') }}</p>
                         <ul class="mt-2 max-h-64 divide-y divide-slate-100 overflow-y-auto rounded-lg border border-slate-300 dark:divide-slate-800 dark:border-slate-700">
@@ -713,19 +713,19 @@ function formatPlainDate(val) {
                         </div>
                         <InputError :message="paymentForm.errors.subscription_id" class="mt-1" />
                     </div>
-                    <label v-if="canExempt" class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                    <label v-if="canExempt" data-help="payment-exempt" class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
                         <input type="checkbox" v-model="paymentForm.is_exempt" class="rounded border-slate-300 text-primary-600 shadow-sm focus:ring-primary-500" />
                         {{ t('exempt') }} — {{ t('exempt_hint') }}
                     </label>
-                    <div v-if="showAmountField">
+                    <div v-if="showAmountField" data-help="payment-amount">
                         <InputLabel :value="t('amount')" />
                         <TextInput v-model="paymentForm.amount" type="number" step="0.01" min="0" class="mt-1 w-full" :required="showAmountField" />
-                        <p v-if="paymentForm.category === 'subscription' && allocation.extra > 0" class="mt-1 text-xs text-amber-700 dark:text-amber-400">
+                        <p v-if="paymentForm.category === 'subscription' && allocation.extra > 0" data-help="payment-donation-warning" class="mt-1 text-xs text-amber-700 dark:text-amber-400">
                             {{ t('payment_extra_donation', { amount: formatMoney(allocation.extra) }) }}
                         </p>
                         <InputError :message="paymentForm.errors.amount" class="mt-1" />
                     </div>
-                    <div>
+                    <div data-help="payment-method">
                         <InputLabel :value="t('payment_method')" />
                         <select v-model="paymentForm.payment_method" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                             <option value="cash">{{ t('cash') }}</option>
@@ -733,7 +733,7 @@ function formatPlainDate(val) {
                             <option value="baridimob">{{ t('baridimob') }}</option>
                         </select>
                     </div>
-                    <div>
+                    <div data-help="payment-register">
                         <InputLabel :value="t('destination_register')" />
                         <select v-model="paymentForm.finance_account_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500" :required="showAmountField">
                             <option value="" disabled>{{ t('select_cash_register') }}</option>
@@ -750,7 +750,7 @@ function formatPlainDate(val) {
                 </div>
                 <div class="mt-6 flex justify-end gap-3">
                     <SecondaryButton type="button" @click="showPaymentModal = false">{{ t('cancel') }}</SecondaryButton>
-                    <PrimaryButton :disabled="paymentForm.processing">{{ t('save') }}</PrimaryButton>
+                    <PrimaryButton :disabled="paymentForm.processing" data-help="payment-save">{{ t('save') }}</PrimaryButton>
                 </div>
             </form>
         </Modal>
@@ -761,7 +761,7 @@ function formatPlainDate(val) {
                 <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('edit_payment') }}</h3>
                 <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('edit_payment_hint') }}</p>
                 <div class="mt-4 space-y-4">
-                    <div>
+                    <div data-help="payment-edit-amount">
                         <InputLabel :value="t('amount')" />
                         <TextInput v-model="editForm.amount" type="number" step="0.01" min="0" class="mt-1 w-full" required />
                         <InputError :message="editForm.errors.amount" class="mt-1" />
@@ -791,7 +791,7 @@ function formatPlainDate(val) {
                 </div>
                 <div class="mt-6 flex justify-end gap-3">
                     <SecondaryButton type="button" @click="showEditModal = false">{{ t('cancel') }}</SecondaryButton>
-                    <PrimaryButton :disabled="editForm.processing">{{ t('save') }}</PrimaryButton>
+                    <PrimaryButton :disabled="editForm.processing" data-help="payment-edit-save">{{ t('save') }}</PrimaryButton>
                 </div>
             </form>
         </Modal>
@@ -829,7 +829,7 @@ function formatPlainDate(val) {
                         <TextInput v-model="subForm.due_date" type="date" class="mt-1 w-full" />
                         <InputError :message="subForm.errors.due_date" class="mt-1" />
                     </div>
-                    <div class="grid gap-3 sm:grid-cols-2">
+                    <div class="grid gap-3 sm:grid-cols-2" data-help="sub-discount">
                         <div>
                             <InputLabel :value="t('discount')" />
                             <select v-model="subForm.discount_type" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-900 shadow-sm focus:border-primary-500 focus:ring-primary-500">
@@ -846,7 +846,7 @@ function formatPlainDate(val) {
                             <InputError :message="subForm.errors.discount_value" class="mt-1" />
                         </div>
                     </div>
-                    <p v-if="subEditDiscount > 0" class="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                    <p v-if="subEditDiscount > 0" data-help="sub-net-owed" class="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                         {{ t('discount') }}: −{{ formatMoney(subEditDiscount) }} · <span class="font-semibold">{{ t('net_owed') }}: {{ formatMoney(subEditNetOwed) }}</span>
                     </p>
                     <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
@@ -856,7 +856,7 @@ function formatPlainDate(val) {
                 </div>
                 <div class="mt-6 flex justify-end gap-3">
                     <SecondaryButton type="button" @click="showSubEditModal = false">{{ t('cancel') }}</SecondaryButton>
-                    <PrimaryButton :disabled="subForm.processing">{{ t('save') }}</PrimaryButton>
+                    <PrimaryButton :disabled="subForm.processing" data-help="sub-edit-save">{{ t('save') }}</PrimaryButton>
                 </div>
             </form>
         </Modal>
@@ -900,17 +900,17 @@ function formatPlainDate(val) {
                 <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('add_previous_debt') }}</h3>
                 <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('previous_debt_hint') }}</p>
                 <div class="mt-4 space-y-4">
-                    <div>
+                    <div data-help="debt-label">
                         <InputLabel :value="t('label')" />
                         <TextInput v-model="debtForm.label" type="text" class="mt-1 w-full" required />
                         <InputError :message="debtForm.errors.label" class="mt-1" />
                     </div>
-                    <div>
+                    <div data-help="debt-amount">
                         <InputLabel :value="t('amount_owed')" />
                         <TextInput v-model="debtForm.amount_owed" type="number" step="0.01" min="0.01" class="mt-1 w-full" required />
                         <InputError :message="debtForm.errors.amount_owed" class="mt-1" />
                     </div>
-                    <div>
+                    <div data-help="debt-year">
                         <InputLabel :value="t('year')" />
                         <TextInput v-model="debtForm.year" type="number" min="1900" max="2999" class="mt-1 w-full" required />
                         <InputError :message="debtForm.errors.year" class="mt-1" />
@@ -927,7 +927,7 @@ function formatPlainDate(val) {
                 </div>
                 <div class="mt-6 flex justify-end gap-3">
                     <SecondaryButton type="button" @click="showAddDebtModal = false">{{ t('cancel') }}</SecondaryButton>
-                    <PrimaryButton :disabled="debtForm.processing">{{ t('save') }}</PrimaryButton>
+                    <PrimaryButton :disabled="debtForm.processing" data-help="debt-save">{{ t('save') }}</PrimaryButton>
                 </div>
             </form>
         </Modal>

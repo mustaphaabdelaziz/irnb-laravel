@@ -226,7 +226,134 @@ export default [
             await page.locator('text=فئة أخرى').first().waitFor();
         },
     },
+    // --- Payments from the player page --- (HelpDemoSubscriptionsSeeder: 3 أمين paid 1000 of 3000,
+    // 5 إسلام owes 3000, 6 أيوب owes «دين موسم 2023/2024» 2000, 8 زكرياء owes the trip 1500)
+    { name: 'payment-button', url: '/players/8', targets: ['player-debt', 'player-add-payment'] },
+    {
+        // The take-payment example as the reader has it: «اشتراك سنوي» ticked first (#1), then the trip (#2).
+        name: 'payment-modal',
+        url: '/players/8',
+        targets: ['payment-category', 'payment-subscriptions', 'payment-exempt', 'payment-amount', 'payment-method', 'payment-register'],
+        before: payBoth,
+    },
+    {
+        // The window is taller than the screen: «حفظ» comes after scrolling inside it.
+        name: 'payment-modal-bottom',
+        url: '/players/8',
+        targets: ['payment-register', 'payment-save'],
+        before: async (page) => {
+            await payBoth(page);
+            await page.locator('[data-help="payment-save"]').evaluate((el) => el.scrollIntoView({ block: 'end', behavior: 'instant' }));
+        },
+    },
+    {
+        name: 'fix-history',
+        url: '/players/3',
+        targets: ['player-history', 'player-history-edit'],
+        before: async (page) => { await centre(page, 'player-history'); },
+    },
+    {
+        // أمين's 1000 corrected to 1500.
+        name: 'fix-edit-modal',
+        url: '/players/3',
+        targets: ['payment-edit-amount', 'payment-edit-save'],
+        before: async (page) => {
+            await centre(page, 'player-history');
+            await page.locator('[data-help="player-history-edit"]').click();
+            await page.locator('[data-help="payment-edit-amount"] input').fill('1500');
+            await blur(page);
+        },
+    },
+    {
+        name: 'fix-sub-card',
+        url: '/players/5',
+        targets: ['player-subscriptions-card', 'player-sub-edit'],
+        before: async (page) => { await centre(page, 'player-subscriptions-card'); },
+    },
+    {
+        // إسلام's «اشتراك سنوي» with 10 %: 3000 − 300 = 2700.
+        name: 'fix-sub-modal',
+        url: '/players/5',
+        targets: ['sub-discount', 'sub-net-owed', 'sub-edit-save'],
+        before: async (page) => {
+            await centre(page, 'player-subscriptions-card');
+            await page.locator('[data-help="player-sub-edit"]').click();
+            await page.locator('[data-help="sub-discount"] select').selectOption('percent');
+            await page.locator('[data-help="sub-discount"] input').fill('10');
+            await blur(page);
+        },
+    },
+    {
+        // أيوب's debt is already seeded: the card's header sits at the bottom edge, its rows
+        // below it, as the reader sees the card before adding the debt.
+        name: 'debt-button',
+        url: '/players/6',
+        targets: ['player-add-previous-debt'],
+        before: debtCardHeader,
+    },
+    {
+        name: 'debt-modal',
+        url: '/players/6',
+        targets: ['debt-label', 'debt-amount', 'debt-year', 'debt-save'],
+        before: async (page) => {
+            await debtCardHeader(page);
+            await page.locator('[data-help="player-add-previous-debt"]').click();
+            await page.locator('[data-help="debt-label"] input').fill('دين موسم 2023/2024');
+            await page.locator('[data-help="debt-amount"] input').fill('2000');
+            await page.locator('[data-help="debt-year"] input').fill('2024');
+            await blur(page);
+        },
+    },
+    {
+        name: 'debt-card',
+        url: '/players/6',
+        targets: ['player-subscriptions-card'],
+        before: async (page) => { await centre(page, 'player-subscriptions-card'); },
+    },
+    { name: 'debt-pay-button', url: '/players/6', targets: ['player-debt', 'player-add-payment'] },
+    {
+        name: 'debt-pay-modal',
+        url: '/players/6',
+        // One line ticked: no exemption box, no total; the whole window fits, «حفظ» included.
+        targets: ['payment-category', 'payment-subscriptions', 'payment-amount', 'payment-register', 'payment-save'],
+        before: payDebt,
+    },
 ];
+
+/** The previous-debt example paid: أيوب ticks «دين موسم 2023/2024» only. */
+async function payDebt(page) {
+    await openPayment(page);
+    await tickPayable(page, 'دين موسم 2023/2024');
+    await blur(page);
+}
+
+/** Opens the «إضافة دفعة» window of the player page. */
+async function openPayment(page) {
+    await page.locator('[data-help="player-add-payment"]').click();
+    await page.locator('[data-help="payment-subscriptions"]').waitFor();
+}
+
+/** The take-payment example: زكرياء ticks «اشتراك سنوي» first (#1), then «رحلة صيفية» (#2). */
+async function payBoth(page) {
+    await openPayment(page);
+    await tickPayable(page, 'اشتراك سنوي');
+    await tickPayable(page, 'رحلة صيفية');
+    await blur(page);
+}
+
+/** Ticks one line of «الاشتراكات المراد دفعها»: the order of the ticks is the order of payment. */
+async function tickPayable(page, text) {
+    await page.locator('[data-help="payment-subscriptions"] label', { hasText: text }).locator('input').check();
+}
+
+/** Brings the subscriptions card's header (with «إضافة دين سابق») to the bottom edge of the screen. */
+async function debtCardHeader(page) {
+    await page.locator('[data-help="player-add-previous-debt"]').evaluate((el) => {
+        el.scrollIntoView({ block: 'end', behavior: 'instant' });
+        // A little room under the button for its ring; the first row stays below the edge.
+        window.scrollBy({ top: 24, behavior: 'instant' });
+    });
+}
 
 /** Scrolls a data-help element to the middle of the screen, at once (the app scrolls smoothly). */
 async function centre(page, name) {

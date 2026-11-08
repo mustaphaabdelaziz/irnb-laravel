@@ -8,6 +8,7 @@ return [
     'topics' => [
         'getting-started' => ['icon' => 'home', 'module' => null, 'articles' => ['login', 'find-your-way', 'profile-password']],
         'players' => ['icon' => 'players', 'module' => 'players', 'articles' => ['add-player', 'find-player', 'player-page', 'edit-player', 'documents', 'branch-registrations']],
+        'subscriptions' => ['icon' => 'subscriptions', 'module' => 'subscriptions', 'articles' => ['create-annual', 'create-exceptional', 'assign-players', 'take-payment', 'fix-payment', 'previous-debt', 'receipts']],
     ],
     'start_here' => [
         'getting-started/login',

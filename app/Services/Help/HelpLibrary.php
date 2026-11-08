@@ -165,6 +165,10 @@ final class HelpLibrary
     {
         $module = $article->module ?? ($this->topics()[$article->topic]['module'] ?? null);
 
+        if ($module === 'superadmin') {
+            return $user->isSuperadmin();
+        }
+
         return $module === null || $user->hasPermission($module, 'view');
     }
 

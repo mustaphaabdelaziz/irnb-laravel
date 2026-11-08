@@ -127,6 +127,96 @@ export default [
     },
     // The list is longer than the screen: the first row carries the ring.
     { name: 'join-dates', url: '/players/join-dates', targets: ['join-dates-row'] },
+    // --- Subscriptions --- (1 = «اشتراك سنوي», 2 = «رحلة صيفية»: HelpDemoSubscriptionsSeeder)
+    // Two subscriptions only: the list's first row («اشتراك سنوي») fits under the statistics.
+    { name: 'subscriptions-index', url: '/subscriptions', targets: ['nav-members', 'nav-subscriptions', 'subscriptions-new', 'sub-open'] },
+    { name: 'subscription-create', url: '/subscriptions/create', targets: ['sub-kind', 'sub-kind-annual', 'sub-name', 'sub-season', 'sub-prices'], before: fillAnnual },
+    {
+        // Every category ticked, «أشبال» (first A→Z) cheaper: 2500 / 4000.
+        name: 'subscription-create-categories',
+        url: '/subscriptions/create',
+        targets: ['sub-categories', 'sub-category-price'],
+        before: async (page) => {
+            await fillAnnual(page);
+            await tickAll(page, 'sub-categories');
+            const row = page.locator('[data-help="sub-category-price"]');
+            await row.locator('input').nth(0).fill('2500');
+            await row.locator('input').nth(1).fill('4000');
+            await blur(page);
+            await centre(page, 'sub-categories');
+        },
+    },
+    {
+        name: 'subscription-create-branches',
+        url: '/subscriptions/create',
+        targets: ['sub-branches'],
+        before: async (page) => {
+            await fillAnnual(page);
+            await tickAll(page, 'sub-branches');
+            await blur(page);
+            await centre(page, 'sub-branches');
+        },
+    },
+    {
+        name: 'subscription-create-save',
+        url: '/subscriptions/create',
+        targets: ['sub-save'],
+        before: async (page) => { await centre(page, 'sub-save'); },
+    },
+    {
+        // The exceptional example: «رحلة صيفية», 1500, no season.
+        name: 'subscription-create-exceptional',
+        url: '/subscriptions/create',
+        targets: ['sub-kind-exceptional', 'sub-name', 'sub-prices', 'sub-debt-note'],
+        before: fillTrip,
+    },
+    {
+        // Football ticked first: the categories list keeps only its own.
+        name: 'subscription-create-exceptional-scope',
+        url: '/subscriptions/create',
+        targets: ['sub-categories', 'sub-branches'],
+        before: async (page) => {
+            await fillTrip(page);
+            await page.locator('[data-help="sub-branches"] label', { hasText: 'كرة القدم' }).locator('input').check();
+            await page.locator('[data-help="sub-categories"] label', { hasText: 'أقل من 14 سنة' }).locator('input').check();
+            await blur(page);
+            await centre(page, 'sub-categories');
+        },
+    },
+    { name: 'subscription-show', url: '/subscriptions/1', targets: ['sub-stats', 'sub-assign', 'sub-add-player'] },
+    {
+        name: 'subscription-assign',
+        url: '/subscriptions/1',
+        targets: ['sub-assign-category', 'sub-assign-submit'],
+        before: async (page) => {
+            await page.locator('[data-help="sub-assign"]').click();
+            await page.locator('[data-help="sub-assign-category"] select').selectOption({ label: 'أقل من 14 سنة' });
+        },
+    },
+    {
+        // نور شعبان swims in «أشبال»: the window shows that category's 2500.
+        name: 'subscription-add-player',
+        url: '/subscriptions/1',
+        targets: ['sub-player-search', 'sub-picked-player', 'sub-amount-will-be', 'sub-add-confirm'],
+        before: async (page) => {
+            await page.locator('[data-help="sub-add-player"]').click();
+            await page.locator('[data-help="sub-player-search"]').fill('نور');
+            await page.locator('label', { hasText: 'شعبان' }).first().click();
+            await page.locator('[data-help="sub-amount-will-be"]').waitFor();
+        },
+    },
+    {
+        // «رحلة صيفية» is for «أقل من 14 سنة» only: the box adds the other football players.
+        name: 'subscription-outside',
+        url: '/subscriptions/2',
+        targets: ['sub-outside-category'],
+        before: async (page) => {
+            await page.locator('[data-help="sub-add-player"]').click();
+            await page.locator('[data-help="sub-outside-category"] input').check();
+            await page.waitForLoadState('networkidle');
+            await page.locator('text=فئة أخرى').first().waitFor();
+        },
+    },
 ];
 
 /** Scrolls a data-help element to the middle of the screen, at once (the app scrolls smoothly). */
@@ -161,4 +251,31 @@ async function addBranch(page, branch, card, category, date) {
     await added.locator('select').first().blur();
     await added.locator('input[type="date"]').blur();
     await centre(page, card);
+}
+
+/** The create-annual example: «اشتراك سنوي», this season (already chosen), 3000 / 5000. */
+async function fillAnnual(page) {
+    await page.locator('[data-help="sub-name"] input').fill('اشتراك سنوي');
+    await page.locator('[data-help="sub-prices"] input').nth(0).fill('3000');
+    await page.locator('[data-help="sub-prices"] input').nth(1).fill('5000');
+    await blur(page);
+}
+
+/** The create-exceptional example: «رحلة صيفية», 1500 for everyone. */
+async function fillTrip(page) {
+    await page.locator('[data-help="sub-kind-exceptional"]').click();
+    await page.locator('[data-help="sub-name"] input').fill('رحلة صيفية');
+    await page.locator('[data-help="sub-prices"] input').nth(0).fill('1500');
+    await page.locator('[data-help="sub-prices"] input').nth(1).fill('1500');
+    await blur(page);
+}
+
+/** Drops the focus ring of the last field typed in or ticked. */
+async function blur(page) {
+    await page.evaluate(() => document.activeElement?.blur());
+}
+
+/** Ticks every checkbox inside a data-help block. */
+async function tickAll(page, name) {
+    for (const box of await page.locator(`[data-help="${name}"] input[type="checkbox"]`).all()) await box.check();
 }

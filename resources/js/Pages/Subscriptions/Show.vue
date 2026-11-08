@@ -181,9 +181,9 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
                 </div>
                 <div class="no-print flex flex-wrap gap-2">
                     <!-- Add single player -->
-                    <IconButton icon="plus" :label="t('add_player')" variant="success" @click="showAddPlayerModal = true" />
+                    <IconButton icon="plus" :label="t('add_player')" variant="success" data-help="sub-add-player" @click="showAddPlayerModal = true" />
                     <!-- Assign all -->
-                    <IconButton icon="players" :label="t('assign_subscription')" variant="primary" @click="showAssignModal = true" />
+                    <IconButton icon="players" :label="t('assign_subscription')" variant="primary" data-help="sub-assign" @click="showAssignModal = true" />
                     <!-- Export (current tab) -->
                     <ExportMenu :href="exportHref" :label="t('export')" />
                     <!-- Print -->
@@ -195,7 +195,7 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
 
         <div class="space-y-6">
             <!-- Stats cards -->
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <div data-help="sub-stats" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                 <StatTile :label="t('student_pricing')" :value="subscription.amount_student" format="money" icon="money" tone="neutral" />
                 <StatTile :label="t('worker_pricing')" :value="subscription.amount_worker" format="money" icon="money" tone="neutral" />
                 <StatTile :label="t('total_players')" :value="stats?.total ?? 0" icon="players" />
@@ -358,7 +358,7 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
                     <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('assign_subscription') }}</h3>
                     <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ subscription.name }} ({{ periodLabel }})</p>
                     <form @submit.prevent="assign" class="mt-4 space-y-4">
-                        <div>
+                        <div data-help="sub-assign-category">
                             <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('category') }}</label>
                             <select v-model="assignForm.category_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                                 <option value="">{{ t('all_categories') }}</option>
@@ -367,7 +367,7 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
                         </div>
                         <div class="flex justify-end gap-3">
                             <button type="button" @click="showAssignModal = false" class="rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">{{ t('cancel') }}</button>
-                            <PrimaryButton :disabled="assignForm.processing">{{ t('assign') }}</PrimaryButton>
+                            <PrimaryButton :disabled="assignForm.processing" data-help="sub-assign-submit">{{ t('assign') }}</PrimaryButton>
                         </div>
                     </form>
                 </div>
@@ -383,12 +383,12 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
 
                     <!-- Search -->
                     <div class="mt-4">
-                        <input v-model="playerSearch" type="text" :placeholder="t('search_name_or_id')"
+                        <input v-model="playerSearch" data-help="sub-player-search" type="text" :placeholder="t('search_name_or_id')"
                             class="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500" />
                     </div>
 
                     <!-- Players of its branches filed under another category -->
-                    <label v-if="subscription.categories?.length" class="mt-3 flex cursor-pointer items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                    <label v-if="subscription.categories?.length" data-help="sub-outside-category" class="mt-3 flex cursor-pointer items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                         <input v-model="showOutside" type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500" @change="toggleOutside" />
                         {{ t('subscription_show_outside_category') }}
                         <span v-if="loadingOutside" class="text-xs text-slate-400">…</span>
@@ -400,6 +400,7 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
                             {{ t('no_available_players') }}
                         </div>
                         <label v-for="player in filteredAvailable" :key="player.id"
+                            :data-help="addPlayerForm.player_id === player.id ? 'sub-picked-player' : null"
                             class="flex cursor-pointer items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800"
                             :class="addPlayerForm.player_id === player.id ? 'bg-primary-50 dark:bg-primary-500/10' : ''">
                             <input type="radio" :value="player.id" v-model="addPlayerForm.player_id" class="text-primary-600" />
@@ -417,7 +418,7 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
                         </label>
                     </div>
 
-                    <div v-if="addPlayerForm.player_id" class="mt-3 rounded-lg bg-slate-50 dark:bg-slate-950 px-4 py-2 text-sm text-slate-600 dark:text-slate-300">
+                    <div v-if="addPlayerForm.player_id" data-help="sub-amount-will-be" class="mt-3 rounded-lg bg-slate-50 dark:bg-slate-950 px-4 py-2 text-sm text-slate-600 dark:text-slate-300">
                         {{ t('amount_will_be') }}
                         <strong>{{ formatMoney(pickedPlayer?.price ?? 0) }}</strong>
                         ({{ pickedPlayer?.is_student ? t('student') : t('worker') }} {{ t('rate') }})
@@ -428,7 +429,7 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
                             class="rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">
                             {{ t('cancel') }}
                         </button>
-                        <PrimaryButton :disabled="!addPlayerForm.player_id || addPlayerForm.processing" @click="addSinglePlayer">
+                        <PrimaryButton :disabled="!addPlayerForm.player_id || addPlayerForm.processing" data-help="sub-add-confirm" @click="addSinglePlayer">
                             {{ t('add_to_subscription') }}
                         </PrimaryButton>
                     </div>

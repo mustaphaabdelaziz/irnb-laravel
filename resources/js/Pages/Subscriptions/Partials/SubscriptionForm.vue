@@ -89,11 +89,12 @@ const kinds = [
         <div class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
             <div class="space-y-5">
                 <!-- Kind -->
-                <fieldset>
+                <fieldset data-help="sub-kind">
                     <legend class="block text-sm font-medium text-slate-700 dark:text-slate-300">{{ t('subscription_kind') }}</legend>
                     <div class="mt-2 grid gap-3 sm:grid-cols-2">
                         <label
                             v-for="k in kinds" :key="k.value"
+                            :data-help="`sub-kind-${k.value}`"
                             class="flex cursor-pointer gap-3 rounded-xl p-3 ring-1 transition-colors"
                             :class="form.kind === k.value
                                 ? 'bg-primary-50 ring-primary-400 dark:bg-primary-900/20 dark:ring-primary-600'
@@ -109,13 +110,13 @@ const kinds = [
                     <InputError :message="form.errors.kind" class="mt-1" />
                 </fieldset>
 
-                <div>
+                <div data-help="sub-name">
                     <InputLabel :value="t('name')" />
                     <TextInput v-model="form.name" class="mt-1 w-full" required />
                     <InputError :message="form.errors.name" class="mt-1" />
                 </div>
 
-                <div v-if="isAnnual">
+                <div v-if="isAnnual" data-help="sub-season">
                     <InputLabel :value="t('season')" />
                     <select v-model.number="form.year" class="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-900" required>
                         <option v-for="s in seasons" :key="s.value" :value="s.value">{{ s.label }}</option>
@@ -123,7 +124,7 @@ const kinds = [
                     <InputError :message="form.errors.year" class="mt-1" />
                 </div>
 
-                <div class="grid gap-4 sm:grid-cols-2">
+                <div class="grid gap-4 sm:grid-cols-2" data-help="sub-prices">
                     <div>
                         <InputLabel :value="t('student_pricing')" />
                         <TextInput v-model="form.amount_student" type="number" step="0.01" min="0" class="mt-1 w-full" required />
@@ -140,13 +141,13 @@ const kinds = [
                     <input type="checkbox" v-model="form.is_mandatory" class="rounded border-gray-300 text-primary-600 shadow-sm focus:ring-primary-500" />
                     <span class="text-sm text-slate-700 dark:text-slate-200">{{ t('mandatory') }}</span>
                 </label>
-                <p v-else class="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('subscription_exceptional_debt_note') }}</p>
+                <p v-else data-help="sub-debt-note" class="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('subscription_exceptional_debt_note') }}</p>
 
                 <!-- Categories + their own prices -->
                 <div>
                     <InputLabel :value="t('categories')" />
                     <p class="mb-2 text-xs text-slate-500 dark:text-slate-400">{{ t('select_category') }} ({{ t('all') }})</p>
-                    <div class="flex flex-wrap gap-3">
+                    <div class="flex flex-wrap gap-3" data-help="sub-categories">
                         <label v-for="cat in offeredCategories" :key="cat.id" class="flex items-center gap-2">
                             <input type="checkbox" :value="cat.id" v-model="form.category_ids"
                                 class="rounded border-gray-300 text-primary-600 shadow-sm focus:ring-primary-500" />
@@ -158,7 +159,7 @@ const kinds = [
                     <div v-if="chosenCategories.length" class="mt-4 overflow-hidden rounded-xl ring-1 ring-slate-200 dark:ring-slate-800">
                         <p class="bg-slate-50 px-3 py-2 text-xs text-slate-500 dark:bg-slate-950 dark:text-slate-400">{{ t('category_price_hint') }}</p>
                         <div class="divide-y divide-slate-100 dark:divide-slate-800">
-                            <div v-for="cat in chosenCategories" :key="cat.id" class="grid items-center gap-2 px-3 py-2 sm:grid-cols-3">
+                            <div v-for="(cat, i) in chosenCategories" :key="cat.id" :data-help="i === 0 ? 'sub-category-price' : null" class="grid items-center gap-2 px-3 py-2 sm:grid-cols-3">
                                 <span class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ categoryLabel(cat) }}</span>
                                 <label class="text-xs text-slate-500 dark:text-slate-400">
                                     {{ t('student_pricing') }}
@@ -177,7 +178,7 @@ const kinds = [
                     </div>
                 </div>
 
-                <div v-if="branches.length">
+                <div v-if="branches.length" data-help="sub-branches">
                     <InputLabel :value="t('branches')" />
                     <p class="mb-2 text-xs text-slate-500 dark:text-slate-400">{{ t('subscription_branch_hint') }}</p>
                     <div class="flex flex-wrap gap-3">
@@ -198,7 +199,7 @@ const kinds = [
             <Link :href="route('subscriptions.index')">
                 <SecondaryButton type="button">{{ t('cancel') }}</SecondaryButton>
             </Link>
-            <PrimaryButton :disabled="form.processing">{{ submitLabel }}</PrimaryButton>
+            <PrimaryButton :disabled="form.processing" data-help="sub-save">{{ submitLabel }}</PrimaryButton>
         </div>
     </form>
 </template>

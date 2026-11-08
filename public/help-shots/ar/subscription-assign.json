@@ -1,0 +1,18 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "sub-assign-category": {
+      "x": 34.38,
+      "y": 46.3,
+      "w": 31.25,
+      "h": 9.15
+    },
+    "sub-assign-submit": {
+      "x": 34.38,
+      "y": 57.45,
+      "w": 5,
+      "h": 4.75
+    }
+  }
+}

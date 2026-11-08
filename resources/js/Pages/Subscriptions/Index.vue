@@ -68,7 +68,7 @@ function destroy() {
         <template #header>
             <div class="flex items-center justify-between">
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('subscriptions') }}</h1>
-                <IconButton :href="route('subscriptions.create')" icon="plus" :label="t('add_subscription')" variant="primary" />
+                <IconButton :href="route('subscriptions.create')" icon="plus" :label="t('add_subscription')" variant="primary" data-help="subscriptions-new" />
             </div>
         </template>
 
@@ -138,7 +138,7 @@ function destroy() {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                            <tr v-for="sub in subscriptions.data" :key="sub.id" class="hover:bg-slate-50 dark:hover:bg-slate-800">
+                            <tr v-for="(sub, i) in subscriptions.data" :key="sub.id" class="hover:bg-slate-50 dark:hover:bg-slate-800">
                                 <td class="px-4 py-3 text-sm font-medium text-slate-900 dark:text-slate-100">{{ sub.name }}</td>
                                 <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
                                     <Badge v-if="sub.kind === 'exceptional'" :label="t('subscription_kind_exceptional')" color="amber" />
@@ -160,7 +160,7 @@ function destroy() {
                                 </td>
                                 <td class="px-4 py-3 text-end">
                                     <div class="flex items-center justify-end gap-1">
-                                        <IconButton :href="route('subscriptions.show', sub.id)" icon="eye" :label="t('details')" variant="primary" plain size="sm" />
+                                        <IconButton :href="route('subscriptions.show', sub.id)" icon="eye" :label="t('details')" variant="primary" plain size="sm" :data-help="i === 0 ? 'sub-open' : null" />
                                         <IconButton :href="route('subscriptions.edit', sub.id)" icon="pencil" :label="t('edit')" plain size="sm" />
                                         <IconButton icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="confirmDelete(sub.id)" />
                                     </div>

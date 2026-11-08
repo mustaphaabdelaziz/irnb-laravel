@@ -1,6 +1,23 @@
 // Every screenshot the help articles use. `targets` are data-help names whose
 // boxes are saved for rings and magnifiers; `before` runs after the page loads
 // (open a menu, type a search). Player 1 is أحمد بن علي (HelpDemoSeeder).
+
+// Attendance data is dated relative to the seed day (HelpDemoAttendanceSeeder): shots
+// run right after seeding, so "today" here is the seed day. Session 1 is the next U17
+// session (Monday or Wednesday, today included), so the calendar opens on its month:
+// near a month's end it can be next month's, and "this month" would miss its chip.
+const ym = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+const pad = (n) => String(n).padStart(2, '0');
+const ymd = (d) => `${ym(d)}-${pad(d.getDate())}`;
+const nextDay = (weekdays, from = new Date(), strict = false) => {
+    const d = new Date(from);
+    if (strict) d.setDate(d.getDate() + 1);
+    while (!weekdays.includes(d.getDay())) d.setDate(d.getDate() + 1);
+    return d;
+};
+const sessionMonth = ym(nextDay([1, 3]));
+const nextSaturday = ymd(nextDay([6], new Date(), true));
+const U17 = 'branch_id=2&category_id=7';
 export default [
     { name: 'login', url: '/login', guest: true, targets: ['login-username', 'login-password', 'login-submit', 'login-help'] },
     { name: 'help-center', url: '/help', targets: ['help-search', 'help-button'] },
@@ -373,7 +390,112 @@ export default [
             await blur(page);
         },
     },
+
+    // --- Attendance --- (sessions 1–3 and players: HelpDemoAttendanceSeeder)
+    // Football U17 opens on its month; the next session's chip is ringed (att-session-next).
+    {
+        name: 'att-calendar',
+        url: `/attendance?view=month&${U17}&month=${sessionMonth}`,
+        targets: ['nav-members', 'nav-attendance', 'att-branch', 'att-category', 'att-session-next', 'att-add-extra', 'att-add-preseason', 'att-preseason-chip'],
+    },
+    {
+        name: 'att-session',
+        url: '/attendance/sessions/1',
+        targets: ['att-state', 'att-not-saved', 'att-roster', 'att-row-status', 'att-guest', 'att-coach', 'att-save'],
+    },
+    // The take-attendance example, one step per shot, each in the reader's state at that
+    // step. The roster is sorted by last name, so أمين قاسمي is the third row, not the
+    // first: rows are found by name and the ringed names moved onto them (tagIn).
+    { name: 'att-session-late', url: '/attendance/sessions/1', targets: ['att-row-late', 'att-minutes'], before: markLate },
+    {
+        name: 'att-session-excused',
+        url: '/attendance/sessions/1',
+        targets: ['att-row-excused', 'att-reason'],
+        before: async (page) => {
+            await markLate(page);
+            await markExcused(page);
+        },
+    },
+    {
+        name: 'att-session-guest',
+        url: '/attendance/sessions/1',
+        targets: ['att-guest', 'att-guest-result'],
+        before: async (page) => {
+            await markLate(page);
+            await markExcused(page);
+            await searchGuest(page);
+            // The result line opens under the search, at the screen's bottom edge.
+            await centre(page, 'att-guest-result');
+        },
+    },
+    {
+        name: 'att-session-save',
+        url: '/attendance/sessions/1',
+        targets: ['att-coach', 'att-save'],
+        before: async (page) => {
+            await markLate(page);
+            await markExcused(page);
+            await searchGuest(page);
+            await page.locator('[data-help="att-guest-result"] button').click();
+            await blur(page);
+        },
+    },
+    {
+        // The add-session example filled in: a pre-season run next Saturday, 09:00–10:30.
+        name: 'att-add-preseason-modal',
+        url: `/attendance?view=month&${U17}&month=${sessionMonth}`,
+        targets: ['add-kind', 'add-category', 'add-other-categories', 'add-date', 'add-times', 'add-title', 'add-save'],
+        before: async (page) => {
+            await page.locator('[data-help="att-add-preseason"]').click();
+            await page.locator('[data-help="add-title"]').waitFor();
+            await page.locator('[data-help="add-date"] input').fill(nextSaturday);
+            await page.locator('[data-help="add-times"] input').nth(0).fill('09:00');
+            await page.locator('[data-help="add-times"] input').nth(1).fill('10:30');
+            await page.locator('[data-help="add-title"] input').fill('جري 7.2 كم في 40 دقيقة');
+            await blur(page);
+        },
+    },
 ];
+
+/** One row of the session page, found by the player's last name. */
+function attRow(page, lastname) {
+    return page.locator('[data-help="att-roster"] > li', { hasText: lastname });
+}
+
+/**
+ * Puts a data-help name on one element, taking it off any other: the capture rings
+ * the first element that has it, and the Vue page tags the first row only.
+ */
+async function tagIn(page, name, locator) {
+    await page.evaluate((n) => document.querySelectorAll(`[data-help="${n}"]`).forEach((el) => el.removeAttribute('data-help')), name);
+    await locator.evaluate((el, n) => el.setAttribute('data-help', n), name);
+}
+
+/** أمين قاسمي came 10 minutes late: «متأخر», then 10 in «الدقائق». */
+async function markLate(page) {
+    const row = attRow(page, 'قاسمي');
+    const late = row.getByRole('button', { name: 'متأخر', exact: true });
+    await tagIn(page, 'att-row-late', late);
+    await late.click();
+    await row.locator('[data-help="att-minutes"]').fill('10');
+    await blur(page);
+}
+
+/** عبد الرحمن بلعيد is ill: «غائب بعذر» (the app presets «أخرى»), then «مرض» in «السبب». */
+async function markExcused(page) {
+    const row = attRow(page, 'بلعيد');
+    const excused = row.getByRole('button', { name: 'غائب بعذر', exact: true });
+    await tagIn(page, 'att-row-excused', excused);
+    await excused.click();
+    await row.locator('[data-help="att-reason"]').selectOption({ label: 'مرض' });
+    await blur(page);
+}
+
+/** Types «وليد» in the guest search and waits for his line in the results. */
+async function searchGuest(page) {
+    await page.locator('[data-help="att-guest"]').fill('وليد');
+    await page.locator('[data-help="att-guest-result"]').waitFor();
+}
 
 /**
  * Opens أحمد's payment page from his player page. The receipt code is random

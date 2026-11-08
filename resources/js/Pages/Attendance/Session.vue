@@ -182,7 +182,7 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                             <img v-if="session.branch?.logo_url" :src="session.branch.logo_url" alt="" class="h-6 w-6 rounded object-contain" />
                             <span>{{ [session.branch?.name, session.category].filter(Boolean).join(' · ') }} · {{ t(`att.kind.${session.kind}`) }}</span>
                         </h1>
-                        <p class="text-sm capitalize text-slate-500 dark:text-slate-400">{{ dateLabel }} · <span dir="ltr">{{ session.start_time }}–{{ session.end_time }}</span> · {{ t(`att.state.${session.state}`) }}</p>
+                        <p class="text-sm capitalize text-slate-500 dark:text-slate-400">{{ dateLabel }} · <span dir="ltr">{{ session.start_time }}–{{ session.end_time }}</span> · <span data-help="att-state">{{ t(`att.state.${session.state}`) }}</span></p>
                         <p v-if="session.moved_from" class="text-xs text-slate-400">{{ t('att.moved_from', { date: session.moved_from }) }}</p>
                     </div>
                 </div>
@@ -199,7 +199,7 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
         </template>
 
         <p v-if="cancelled" class="mb-4 rounded-lg bg-slate-100 p-3 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ t('att.cancelled_because', { reason: session.cancel_reason }) }}</p>
-        <p v-else-if="!saved" class="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">{{ t('att.not_saved') }}</p>
+        <p v-else-if="!saved" data-help="att-not-saved" class="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">{{ t('att.not_saved') }}</p>
         <InputError :message="tr(errors.session)" class="mb-2" />
 
         <div class="grid gap-4 lg:grid-cols-3">
@@ -210,8 +210,8 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                     </div>
                     <IconButton v-if="editable" icon="check" :label="t('att.all_present')" variant="success" size="sm" @click="allPresent" />
                 </div>
-                <ul>
-                    <li v-for="(row, i) in rows" :key="row.player_id" class="border-b border-slate-100 p-3 last:border-0 dark:border-slate-800">
+                <ul data-help="att-roster">
+                    <li v-for="(row, i) in rows" :key="row.player_id" :data-help="i === 0 ? 'att-row-status' : null" class="border-b border-slate-100 p-3 last:border-0 dark:border-slate-800">
                         <div class="flex flex-wrap items-center gap-2">
                             <img v-if="row.picture" :src="row.picture" :alt="row.name" loading="lazy" class="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700" />
                             <span v-else class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-50 text-sm font-bold text-primary-600 ring-1 ring-primary-100 dark:bg-primary-500/10 dark:text-primary-300 dark:ring-primary-500/20">{{ (row.name || '?').charAt(0).toUpperCase() }}</span>
@@ -219,15 +219,15 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                                 {{ row.name }}
                                 <span v-if="row.category" class="ms-1 text-xs font-normal text-slate-400">{{ row.category }}</span>
                             </span>
-                            <button v-for="s in statuses.filter((st) => offered(row, st))" :key="s" type="button" :disabled="!editable" class="rounded-lg px-2 py-1 text-xs font-semibold" :class="row.status === s ? '' : idleChip" :style="row.status === s ? chipStyle(s) : null" @click="setStatus(row, s)">{{ label(s) }}</button>
+                            <button v-for="s in statuses.filter((st) => offered(row, st))" :key="s" :data-help="i === 0 ? { late: 'att-row-late', absent_excused: 'att-row-excused' }[s] : null" type="button" :disabled="!editable" class="rounded-lg px-2 py-1 text-xs font-semibold" :class="row.status === s ? '' : idleChip" :style="row.status === s ? chipStyle(s) : null" @click="setStatus(row, s)">{{ label(s) }}</button>
                             <IconButton v-if="editable" icon="trash" :label="t('att.remove')" variant="danger" plain size="sm" @click="removeRow(row)" />
                         </div>
                         <div v-if="takesMinutes(row.status) || takesReason(row.status) || row.note" class="mt-2 flex flex-wrap items-center gap-2">
                             <label v-if="takesMinutes(row.status)" class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.minutes') }}
-                                <input v-model.number="row.minutes" type="number" min="1" max="600" :disabled="!editable" :class="[input, 'ms-1 w-20']" />
+                                <input v-model.number="row.minutes" data-help="att-minutes" type="number" min="1" max="600" :disabled="!editable" :class="[input, 'ms-1 w-20']" />
                             </label>
                             <label v-if="takesReason(row.status)" class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.reason') }}
-                                <select v-model="row.reason" :disabled="!editable" :class="[input, 'ms-1']">
+                                <select v-model="row.reason" data-help="att-reason" :disabled="!editable" :class="[input, 'ms-1']">
                                     <option :value="null">—</option>
                                     <option v-for="r in reasons" :key="r" :value="r">{{ t(`att.reason.${r}`) }}</option>
                                 </select>
@@ -238,9 +238,9 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                     </li>
                 </ul>
                 <div v-if="editable && candidates.length" class="border-t border-slate-100 p-3 dark:border-slate-800">
-                    <input v-model="query" type="search" :placeholder="t('att.add_player_search')" :aria-label="t('att.add_player')" :class="[input, 'w-full']" />
+                    <input v-model="query" data-help="att-guest" type="search" :placeholder="t('att.add_player_search')" :aria-label="t('att.add_player')" :class="[input, 'w-full']" />
                     <ul v-if="matches.length" class="mt-2 max-h-64 divide-y divide-slate-100 overflow-y-auto rounded-lg ring-1 ring-slate-200 dark:divide-slate-800 dark:ring-slate-700">
-                        <li v-for="c in matches" :key="c.id">
+                        <li v-for="(c, j) in matches" :key="c.id" :data-help="j === 0 ? 'att-guest-result' : null">
                             <button type="button" class="flex w-full flex-wrap items-center justify-between gap-x-3 px-3 py-1.5 text-start text-sm hover:bg-slate-50 dark:hover:bg-slate-800" @click="addPlayer(c)">
                                 <span class="font-medium text-slate-900 dark:text-slate-100">{{ c.name }}</span>
                                 <span class="text-xs text-slate-500 dark:text-slate-400">{{ [c.in_branch ? null : c.branches, c.category, c.status].filter(Boolean).join(' · ') }}</span>
@@ -252,11 +252,11 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
             </section>
 
             <section class="h-fit space-y-3 rounded-xl bg-white p-4 ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
-                <label class="block text-sm">{{ t('att.coach') }}<input v-model="log.coach" type="text" maxlength="100" :disabled="!editable" :class="[input, 'mt-1 block w-full']" /></label>
+                <label data-help="att-coach" class="block text-sm">{{ t('att.coach') }}<input v-model="log.coach" type="text" maxlength="100" :disabled="!editable" :class="[input, 'mt-1 block w-full']" /></label>
                 <label class="block text-sm">{{ t('att.title_goal') }}<input v-model="log.title" type="text" maxlength="150" :placeholder="t('att.title_placeholder')" :disabled="!editable" :class="[input, 'mt-1 block w-full']" /></label>
                 <label class="block text-sm">{{ t('att.notes') }}<textarea v-model="log.notes" rows="4" maxlength="2000" :disabled="!editable" :class="[input, 'mt-1 block w-full']"></textarea></label>
                 <InputError :message="tr(errors.marks)" />
-                <button v-if="editable" type="button" :disabled="saving || !rows.length" class="w-full rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50" @click="save">{{ t('att.save') }}</button>
+                <button v-if="editable" data-help="att-save" type="button" :disabled="saving || !rows.length" class="w-full rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50" @click="save">{{ t('att.save') }}</button>
             </section>
         </div>
 

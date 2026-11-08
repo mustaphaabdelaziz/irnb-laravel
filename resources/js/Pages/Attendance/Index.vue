@@ -92,10 +92,10 @@ function openCreate(kind, date = today) {
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <h1 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('attendance') }}</h1>
                 <div class="flex gap-2 print:hidden">
-                    <IconButton :href="route('attendance.stats')" icon="dashboard" :label="t('att.statistics')" />
-                    <IconButton v-if="categoryId" :href="route('attendance.grid', clean({ category_id: categoryId, month, branch_id: branchId }))" icon="menu" :label="t('att.grid')" />
+                    <IconButton data-help="att-stats-link" :href="route('attendance.stats')" icon="dashboard" :label="t('att.statistics')" />
+                    <IconButton v-if="categoryId" data-help="att-grid-link" :href="route('attendance.grid', clean({ category_id: categoryId, month, branch_id: branchId }))" icon="menu" :label="t('att.grid')" />
                     <IconButton v-if="categoryId && view === 'month'" :href="sheetHref" external target="_blank" :title="t('att.sheet.print_hint')" icon="print" :label="t('att.sheet.print')" />
-                    <IconButton v-if="can('attendance', 'edit')" :href="route('attendance.settings')" icon="settings" :label="t('att.settings')" />
+                    <IconButton v-if="can('attendance', 'edit')" data-help="att-settings" :href="route('attendance.settings')" icon="settings" :label="t('att.settings')" />
                 </div>
             </div>
         </template>
@@ -103,12 +103,12 @@ function openCreate(kind, date = today) {
         <div class="space-y-4">
             <div class="flex flex-wrap items-center justify-between gap-3 print:hidden">
                 <div class="flex flex-wrap items-center gap-2">
-                    <BranchSwitch :branches="branches" :branch-id="branchId" @switch="switchBranch" />
+                    <BranchSwitch data-help="att-branch" :branches="branches" :branch-id="branchId" @switch="switchBranch" />
                     <ViewSwitcher :view="view" @switch="switchView" />
                 </div>
                 <div v-if="can('attendance', 'add') && branchCategories.length" class="flex gap-2">
-                    <IconButton icon="plus" :label="t('att.add_extra')" variant="primary" @click="openCreate('extra')" />
-                    <IconButton icon="flag" :label="t('att.add_preseason')" @click="openCreate('preseason')" />
+                    <IconButton data-help="att-add-extra" icon="plus" :label="t('att.add_extra')" variant="primary" @click="openCreate('extra')" />
+                    <IconButton data-help="att-add-preseason" icon="flag" :label="t('att.add_preseason')" @click="openCreate('preseason')" />
                 </div>
             </div>
 

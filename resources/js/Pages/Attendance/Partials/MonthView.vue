@@ -54,17 +54,21 @@ const preseasonLabel = computed(() => {
     const { season, done, target } = props.preseason;
     return target === null ? t('att.preseason_no_target', { season, done }) : t('att.preseason_progress', { season, done, target });
 });
+// The session the take-attendance help article opens: the first planned one from today on.
+const nextPlannedId = computed(() => props.sessions
+    .filter((s) => s.state === 'planned' && s.date >= todayKey)
+    .reduce((best, s) => (!best || `${s.date} ${s.start_time}` < `${best.date} ${best.start_time}` ? s : best), null)?.id ?? null);
 const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900';
 </script>
 
 <template>
     <div class="space-y-4">
         <div class="flex flex-wrap items-center gap-2">
-            <select :value="categoryId" :class="input" :aria-label="t('att.category')" @change="go({ category_id: Number($event.target.value) })">
+            <select data-help="att-category" :value="categoryId" :class="input" :aria-label="t('att.category')" @change="go({ category_id: Number($event.target.value) })">
                 <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
             </select>
             <MonthNav :month="month" @change="(m) => go({ month: m })" />
-            <span v-if="preseason" class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">{{ preseasonLabel }}</span>
+            <span v-if="preseason" data-help="att-preseason-chip" class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">{{ preseasonLabel }}</span>
         </div>
 
         <p v-if="!hasSchedule" class="rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">{{ t('att.no_schedule') }}</p>
@@ -83,7 +87,7 @@ const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg
                     <span>{{ cell.day }}</span>
                     <span v-if="canAdd" class="hidden text-sm leading-none text-primary-600 group-hover:inline print:!hidden dark:text-primary-300" aria-hidden="true">+</span>
                 </div>
-                <Link v-for="s in cell.sessions" :key="s.id" :href="route('attendance.sessions.show', s.id)" class="mb-1 block rounded px-1.5 py-0.5 text-[11px] font-medium" :class="chip[s.state]" :title="chipTitle(s)" @click.stop>
+                <Link v-for="s in cell.sessions" :key="s.id" :data-help="s.id === nextPlannedId ? 'att-session-next' : null" :href="route('attendance.sessions.show', s.id)" class="mb-1 block rounded px-1.5 py-0.5 text-[11px] font-medium" :class="chip[s.state]" :title="chipTitle(s)" @click.stop>
                     <span class="flex items-center gap-1">
                         <span class="h-1.5 w-1.5 shrink-0 rounded-full" :class="KIND_DOT[s.kind]"></span>
                         <span dir="ltr">{{ s.start_time }}</span>

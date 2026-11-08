@@ -68,7 +68,7 @@ const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg
     <Modal :show="show" max-width="md" @close="emit('close')">
         <form class="space-y-3 p-5" @submit.prevent="submit">
             <h2 class="font-bold text-slate-900 dark:text-slate-100">{{ form.kind === 'preseason' ? t('att.add_preseason') : t('att.add_extra') }}</h2>
-            <div class="inline-flex rounded-lg p-0.5 ring-1 ring-slate-200 dark:ring-slate-700" role="radiogroup" :aria-label="t('att.col.kind')">
+            <div data-help="add-kind" class="inline-flex rounded-lg p-0.5 ring-1 ring-slate-200 dark:ring-slate-700" role="radiogroup" :aria-label="t('att.col.kind')">
                 <button v-for="k in ['extra', 'preseason']" :key="k" type="button" role="radio" :aria-checked="form.kind === k" class="rounded-md px-3 py-1 text-sm font-semibold" :class="form.kind === k ? (k === 'preseason' ? 'bg-amber-500 text-white' : 'bg-primary-600 text-white') : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 dark:text-slate-400'" @click="form.kind = k">{{ t(`att.kind.${k}`) }}</button>
             </div>
             <label v-if="branches.length" class="block text-sm">{{ t('branch') }}
@@ -76,13 +76,13 @@ const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg
                     <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
                 </select>
             </label>
-            <label class="block text-sm">{{ t('att.category') }}
+            <label data-help="add-category" class="block text-sm">{{ t('att.category') }}
                 <select v-model="form.category_id" :class="[input, 'mt-1 block w-full']">
                     <option v-for="c in offered" :key="c.id" :value="c.id">{{ c.name }}</option>
                 </select>
                 <InputError :message="form.errors.category_id" class="mt-1" />
             </label>
-            <fieldset v-if="form.kind === 'preseason' && others.length" class="text-sm">
+            <fieldset v-if="form.kind === 'preseason' && others.length" data-help="add-other-categories" class="text-sm">
                 <legend class="mb-1">{{ t('att.other_categories') }}</legend>
                 <div class="flex flex-wrap gap-x-4 gap-y-1">
                     <label v-for="c in others" :key="c.id" class="inline-flex items-center gap-1.5">
@@ -91,8 +91,8 @@ const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg
                     </label>
                 </div>
             </fieldset>
-            <label class="block text-sm">{{ t('att.date') }}<input v-model="form.date" type="date" :class="[input, 'mt-1 block w-full']" /></label>
-            <div class="flex gap-2">
+            <label data-help="add-date" class="block text-sm">{{ t('att.date') }}<input v-model="form.date" type="date" :class="[input, 'mt-1 block w-full']" /></label>
+            <div data-help="add-times" class="flex gap-2">
                 <label class="flex-1 text-sm">{{ t('att.start') }}<input v-model="form.start_time" type="time" :class="[input, 'mt-1 block w-full']" /></label>
                 <label class="flex-1 text-sm">{{ t('att.end') }}<input v-model="form.end_time" type="time" :class="[input, 'mt-1 block w-full']" /></label>
             </div>
@@ -106,11 +106,11 @@ const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg
                 </div>
                 <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('att.roster_statuses_help') }}</p>
             </fieldset>
-            <label class="block text-sm">{{ t('att.title_goal') }}<input v-model="form.title" type="text" maxlength="150" :placeholder="t('att.title_placeholder')" :class="[input, 'mt-1 block w-full']" /></label>
+            <label data-help="add-title" class="block text-sm">{{ t('att.title_goal') }}<input v-model="form.title" type="text" maxlength="150" :placeholder="t('att.title_placeholder')" :class="[input, 'mt-1 block w-full']" /></label>
             <InputError v-for="(e, k) in otherErrors" :key="k" :message="tr(e)" />
             <div class="flex justify-end gap-2">
                 <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700 dark:text-slate-400" @click="emit('close')">{{ t('att.close') }}</button>
-                <button type="submit" :disabled="form.processing || (playerStatuses.length > 0 && !form.roster_status_ids.length)" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('att.save') }}</button>
+                <button type="submit" data-help="add-save" :disabled="form.processing || (playerStatuses.length > 0 && !form.roster_status_ids.length)" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('att.save') }}</button>
             </div>
         </form>
     </Modal>

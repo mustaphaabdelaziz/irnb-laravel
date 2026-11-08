@@ -36,7 +36,7 @@
 @endif
 
 @foreach ($sections as $section)
-    @if (! $loop->first)
+    @if (! $loop->first && $section['key'] !== 'signatures')
         <pagebreak />
     @endif
     @include('pdf.literary.'.$section['key'], ['data' => $section['data']])

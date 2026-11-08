@@ -10,6 +10,7 @@ use App\Services\LiteraryReport\Sections\BoardSection;
 use App\Services\LiteraryReport\Sections\FinanceSection;
 use App\Services\LiteraryReport\Sections\MembersSection;
 use App\Services\LiteraryReport\Sections\PhotosSection;
+use App\Services\LiteraryReport\Sections\SignaturesSection;
 use App\Services\LiteraryReport\Sections\SportsSection;
 use Carbon\CarbonImmutable;
 
@@ -65,6 +66,7 @@ final class LiteraryReportBuilder
                     'note' => trim((string) $report->note),
                     'include_details' => (bool) $report->include_details,
                 ],
+                'signatures' => app(SignaturesSection::class)->build($report),
                 default => isset(self::DATA_SECTIONS[$key]) ? app(self::DATA_SECTIONS[$key])->build($from, $to) : null,
             };
 

@@ -58,7 +58,10 @@ function doDelete() {
 }
 
 const a = computed(() => props.activity);
-const dates = computed(() => (a.value.ends_on && a.value.ends_on !== a.value.starts_on ? `${a.value.starts_on} → ${a.value.ends_on}` : a.value.starts_on));
+const dates = computed(() => {
+    const base = a.value.ends_on && a.value.ends_on !== a.value.starts_on ? `${a.value.starts_on} → ${a.value.ends_on}` : a.value.starts_on;
+    return a.value.date_label ? `${a.value.date_label} (${base})` : base;
+});
 const size = (n) => (n > 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.ceil(n / 1024)} KB`);
 const card = 'rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800';
 </script>
@@ -86,6 +89,8 @@ const card = 'rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-s
                     <dl class="grid gap-3 text-sm sm:grid-cols-2">
                         <div><dt class="text-slate-500 dark:text-slate-400">{{ t('activities.type') }}</dt><dd class="font-medium">{{ a.type?.name }}</dd></div>
                         <div><dt class="text-slate-500 dark:text-slate-400">{{ t('activities.dates') }}</dt><dd class="font-medium">{{ dates }}</dd></div>
+                        <div v-if="a.organizer"><dt class="text-slate-500 dark:text-slate-400">{{ t('activities.organizer') }}</dt><dd class="font-medium">{{ a.organizer }}</dd></div>
+                        <div v-if="a.result"><dt class="text-slate-500 dark:text-slate-400">{{ t('activities.result') }}</dt><dd class="font-medium">{{ a.result }}</dd></div>
                         <div v-if="a.location"><dt class="text-slate-500 dark:text-slate-400">{{ t('activities.location') }}</dt><dd class="font-medium">{{ a.location }}</dd></div>
                         <div v-if="a.partners"><dt class="text-slate-500 dark:text-slate-400">{{ t('activities.partners') }}</dt><dd class="font-medium">{{ a.partners }}</dd></div>
                         <div v-if="a.branch"><dt class="text-slate-500 dark:text-slate-400">{{ t('activities.branch') }}</dt><dd class="font-medium">{{ a.branch.localized_name }}</dd></div>

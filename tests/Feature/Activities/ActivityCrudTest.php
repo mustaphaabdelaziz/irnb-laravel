@@ -277,4 +277,20 @@ class ActivityCrudTest extends TestCase
         $nobody = User::factory()->create(['role_id' => Role::factory()->create(['permissions' => []])->id]);
         $this->actingAs($nobody)->get(route('activities.index'))->assertForbidden();
     }
+
+    #[Test]
+    public function organizer_result_and_date_label_are_saved(): void
+    {
+        $this->actingAs($this->admin())->post(route('activities.store'), [
+            'title' => 'Wilaya championship', 'activity_type_id' => ActivityType::first()->id, 'starts_on' => '2025-09-15',
+            'organizer' => 'رابطة غرداية', 'result' => 'وصيف', 'date_label' => 'موسم 2025-2026',
+        ])->assertSessionHas('success', 'flash.activity_created');
+
+        $activity = Activity::where('title', 'Wilaya championship')->firstOrFail();
+        $this->assertSame(['رابطة غرداية', 'وصيف', 'موسم 2025-2026'], [$activity->organizer, $activity->result, $activity->date_label]);
+
+        $this->post(route('activities.store'), [
+            'title' => 'Too long', 'activity_type_id' => ActivityType::first()->id, 'starts_on' => '2025-09-15', 'date_label' => str_repeat('x', 101),
+        ])->assertSessionHasErrors('date_label');
+    }
 }

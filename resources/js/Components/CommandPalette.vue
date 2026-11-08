@@ -132,7 +132,7 @@ onUnmounted(() => {
                 @click="visit(item)"
             >
                 <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[1.05rem] text-slate-500 dark:bg-slate-800 dark:text-slate-400"><Icon :name="item.icon" /></span>
-                <span class="min-w-0 flex-1 truncate" dir="auto">{{ item.label }}</span>
+                <span class="min-w-0 flex-1 truncate" :dir="item.icon === 'help' ? 'auto' : null">{{ item.label }}</span>
                 <span v-if="item.section" class="max-w-[45%] shrink-0 truncate text-xs text-slate-400">{{ item.section }}</span>
             </li>
             <li v-if="results.length === 0" class="px-3 py-6 text-center text-sm text-slate-400">{{ t('nav.no_results') }}</li>

@@ -50,17 +50,20 @@ function rate(value) {
 
             <!-- The article keeps its own direction: Arabic stays right-to-left in a French/English UI. -->
             <div :dir="contentLocale === 'ar' ? 'rtl' : 'ltr'" :lang="contentLocale">
-                <header class="mb-6">
+                <header>
                     <h1 class="text-2xl font-bold leading-snug text-slate-900 dark:text-slate-100 sm:text-3xl">{{ article.title }}</h1>
                     <p class="mt-2 text-lg text-slate-600 dark:text-slate-300">{{ article.summary }}</p>
-                    <div class="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
-                        <span>⏱ {{ t('help.minutes', { n: article.minutes }) }}</span>
-                        <button type="button" class="inline-flex items-center gap-1 rounded-lg px-2 py-1 hover:bg-slate-100 dark:hover:bg-slate-800 print:hidden" @click="printPage">
-                            <Icon name="print" /> {{ t('help.print_page') }}
-                        </button>
-                    </div>
                 </header>
+            </div>
 
+            <div class="mt-3 mb-6 flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+                <span>⏱ {{ t('help.minutes', { n: article.minutes }) }}</span>
+                <button type="button" class="inline-flex items-center gap-1 rounded-lg px-2 py-1 hover:bg-slate-100 dark:hover:bg-slate-800 print:hidden" @click="printPage">
+                    <Icon name="print" /> {{ t('help.print_page') }}
+                </button>
+            </div>
+
+            <div :dir="contentLocale === 'ar' ? 'rtl' : 'ltr'" :lang="contentLocale">
                 <HelpArticleBody :blocks="article.blocks" />
             </div>
 

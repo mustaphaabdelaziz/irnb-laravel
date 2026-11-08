@@ -23,6 +23,37 @@ final class HelpArticle
         public readonly array $blocks,
     ) {}
 
+    /** Plain-array form, safe for cache stores that refuse to unserialize objects. */
+    public function toArray(): array
+    {
+        return [
+            'topic' => $this->topic,
+            'slug' => $this->slug,
+            'title' => $this->title,
+            'summary' => $this->summary,
+            'module' => $this->module,
+            'pages' => $this->pages,
+            'keywords' => $this->keywords,
+            'related' => $this->related,
+            'blocks' => $this->blocks,
+        ];
+    }
+
+    public static function fromArray(array $data): self
+    {
+        return new self(
+            $data['topic'],
+            $data['slug'],
+            $data['title'],
+            $data['summary'],
+            $data['module'],
+            $data['pages'],
+            $data['keywords'],
+            $data['related'],
+            $data['blocks'],
+        );
+    }
+
     public function key(): string
     {
         return $this->topic.'/'.$this->slug;

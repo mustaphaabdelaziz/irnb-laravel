@@ -4,9 +4,11 @@ namespace Tests\Feature\Help;
 
 use App\Models\Role;
 use App\Models\User;
+use App\Services\Help\HelpArticle;
 use App\Services\Help\HelpArticleParser;
 use App\Services\Help\HelpLibrary;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -120,6 +122,34 @@ class HelpLibraryTest extends TestCase
             $this->assertStringContainsString('players/add-player: related article "players/missing" does not exist', $problems);
         } finally {
             File::deleteDirectory($dir);
+        }
+    }
+
+    #[Test]
+    public function the_library_works_on_a_cache_store_that_refuses_objects(): void
+    {
+        $path = storage_path('framework/testing/cache-'.uniqid());
+        config([
+            'cache.default' => 'file',
+            'cache.serializable_classes' => false,
+            'cache.prefix' => 'helptest-'.uniqid(),
+            'cache.stores.file.path' => $path,
+        ]);
+        Cache::purge('file');
+
+        try {
+            $first = $this->library()->all('ar');
+            // A fresh instance has no memo, so this really reads back from the file store.
+            $second = $this->library()->all('ar');
+
+            $this->assertSame(array_keys($first), array_keys($second));
+            foreach ($second as $key => $article) {
+                $this->assertInstanceOf(HelpArticle::class, $article);
+                $this->assertSame($first[$key]->blocks, $article->blocks);
+            }
+        } finally {
+            Cache::purge('file');
+            File::deleteDirectory($path);
         }
     }
 

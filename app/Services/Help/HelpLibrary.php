@@ -17,6 +17,9 @@ final class HelpLibrary
 
     private ?array $config = null;
 
+    /** @var array<string, array<string, HelpArticle>> hydrated articles per "help:{locale}:{fingerprint}" */
+    private array $hydrated = [];
+
     public function __construct(
         private readonly HelpArticleParser $parser,
         private readonly string $contentPath,
@@ -51,11 +54,20 @@ final class HelpLibrary
     {
         $locale = $this->contentLocale($locale);
 
-        return Cache::remember(
-            "help:{$locale}:".$this->fingerprint($locale),
+        $key = "help:v2:{$locale}:".$this->fingerprint($locale);
+
+        if (isset($this->hydrated[$key])) {
+            return $this->hydrated[$key];
+        }
+
+        // v2 key: ignores object-format entries cached by the earlier release. Plain arrays only: the cache refuses to unserialize objects (serializable_classes => false).
+        $cached = Cache::remember(
+            $key,
             now()->addDay(),
-            fn (): array => $this->load($locale),
+            fn (): array => array_map(fn (HelpArticle $a): array => $a->toArray(), $this->load($locale)),
         );
+
+        return $this->hydrated[$key] = array_map(fn (array $a): HelpArticle => HelpArticle::fromArray($a), $cached);
     }
 
     /** @return array<string, HelpArticle> */

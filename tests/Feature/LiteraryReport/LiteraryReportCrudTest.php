@@ -3,6 +3,8 @@
 namespace Tests\Feature\LiteraryReport;
 
 use App\Models\ActivityLog;
+use App\Models\BoardMember;
+use App\Models\BoardTerm;
 use App\Models\LiteraryReport;
 use App\Models\Role;
 use App\Models\User;
@@ -214,5 +216,45 @@ class LiteraryReportCrudTest extends TestCase
         ])->assertRedirect();
 
         $this->assertSame(LiteraryReport::SECTIONS, LiteraryReport::first()->sections);
+    }
+
+    #[Test]
+    public function the_note_details_option_and_signers_are_saved_and_offered(): void
+    {
+        $old = BoardTerm::create(['name' => 'Old term', 'is_current' => false]);
+        BoardTerm::query()->whereKeyNot($old->id)->update(['is_current' => false]);
+        $current = BoardTerm::create(['name' => 'Current term', 'is_current' => true]);
+        $former = BoardMember::create(['name' => 'Former', 'role' => 'member', 'board_term_id' => $old->id, 'status' => 'former']);
+        $president = BoardMember::create(['name' => 'Président', 'role' => 'president', 'board_term_id' => $current->id, 'status' => 'active']);
+        $report = $this->report();
+
+        $this->actingAs($this->admin())->put(route('literary-reports.update', $report), [
+            'title' => $report->title, 'period_from' => '2025-09-01', 'period_to' => '2026-08-31',
+            'note' => 'Page officielle', 'include_details' => true,
+            'signer_1_board_member_id' => $president->id, 'signer_2_board_member_id' => null,
+        ])->assertSessionHas('success', 'flash.literary_report_updated');
+
+        $report->refresh();
+        $this->assertSame('Page officielle', $report->note);
+        $this->assertTrue($report->include_details);
+        $this->assertSame($president->id, $report->signer_1_board_member_id);
+        $this->assertNull($report->signer_2_board_member_id);
+
+        $this->get(route('literary-reports.edit', $report))->assertInertia(fn (Assert $page) => $page
+            ->where('report.note', 'Page officielle')
+            ->where('report.include_details', true)
+            ->where('report.signer_1_board_member_id', $president->id)
+            ->where('boardMembers.0.value', $president->id)
+            ->where('boardMembers.1.value', $former->id));
+    }
+
+    #[Test]
+    public function a_signer_must_be_a_board_member(): void
+    {
+        $report = $this->report();
+
+        $this->actingAs($this->admin())->put(route('literary-reports.update', $report), [
+            'title' => $report->title, 'period_from' => '2025-09-01', 'period_to' => '2026-08-31', 'signer_1_board_member_id' => 999999,
+        ])->assertSessionHasErrors('signer_1_board_member_id');
     }
 }

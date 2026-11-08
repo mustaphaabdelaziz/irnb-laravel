@@ -46,6 +46,7 @@ const submit = () => {
 
                 <TextInput
                     id="username"
+                    data-help="login-username"
                     class="mt-1 block w-full"
                     v-model="form.username"
                     required
@@ -64,6 +65,7 @@ const submit = () => {
                 <div class="relative">
                     <TextInput
                         id="password"
+                        data-help="login-password"
                         :type="showPassword ? 'text' : 'password'"
                         class="mt-1 block w-full pe-10"
                         v-model="form.password"
@@ -105,6 +107,7 @@ const submit = () => {
             <div class="mt-4 flex items-center justify-end">
                 <PrimaryButton
                     class="ms-4"
+                    data-help="login-submit"
                     :class="{ 'opacity-25': form.processing }"
                     :disabled="form.processing"
                 >

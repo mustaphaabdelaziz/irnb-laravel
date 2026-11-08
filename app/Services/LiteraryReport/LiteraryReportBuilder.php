@@ -55,6 +55,10 @@ final class LiteraryReportBuilder
                 'cover' => [],
                 'intro' => self::texts(['president_word' => $report->president_word, 'introduction' => $report->introduction]),
                 'conclusion' => self::texts(['conclusion' => $report->conclusion]),
+                'activities' => app(ActivitiesSection::class)->build($from, $to) + [
+                    'note' => trim((string) $report->note),
+                    'include_details' => (bool) $report->include_details,
+                ],
                 default => isset(self::DATA_SECTIONS[$key]) ? app(self::DATA_SECTIONS[$key])->build($from, $to) : null,
             };
 

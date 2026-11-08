@@ -3,58 +3,66 @@
 namespace App\Services\LiteraryReport\Sections;
 
 use App\Models\Activity;
-use App\Models\ActivityPhoto;
-use App\Support\Media;
+use App\Models\Category;
+use App\Services\LiteraryReport\ActivityChapters;
+use App\Support\HumanDate;
+use App\Support\UiLang;
 use Carbon\CarbonImmutable;
 
-/** Social activities that started in the period: a summary by type, then one block per activity. */
+/**
+ * Activities that started in the period, laid out as in the club's own report:
+ * one numbered table per activity type (No / activity / place / date). Also
+ * returns the counts per chapter and the report texts, for the optional details.
+ */
 final class ActivitiesSection implements Section
 {
     public function build(CarbonImmutable $from, CarbonImmutable $to): array
     {
-        $activities = Activity::query()
-            ->with([
-                'type:id,name',
-                'photos' => fn ($q) => $q->where('in_report', true),
-            ])
-            ->withCount(['players', 'boardMembers'])
-            ->whereBetween('starts_on', [$from->toDateString(), $to->toDateString()])
-            ->orderBy('starts_on')->orderBy('id')
-            ->get();
-
-        $byType = $activities->groupBy(fn (Activity $a) => $a->type?->name ?? '—')
-            ->map(fn ($group, $type) => [
-                'type' => (string) $type,
-                'count' => $group->count(),
-                'beneficiaries' => (int) $group->sum('beneficiaries_count'),
-                'participants' => (int) $group->sum('participants_count'),
-            ])
-            ->sortBy('type')->values()->all();
+        $locale = app()->getLocale();
+        $chapters = ActivityChapters::inPeriod($from, $to, ['categories']);
+        $all = $chapters->flatMap(fn (array $chapter) => $chapter['activities']);
 
         return [
-            'count' => $activities->count(),
-            'by_type' => $byType,
-            'totals' => [
-                'count' => $activities->count(),
-                'beneficiaries' => (int) $activities->sum('beneficiaries_count'),
-                'participants' => (int) $activities->sum('participants_count'),
-            ],
-            'activities' => $activities->map(fn (Activity $a) => [
-                'title' => $a->title,
-                'type' => $a->type?->name,
-                'starts_on' => $a->starts_on?->toDateString(),
-                'ends_on' => $a->ends_on?->toDateString(),
-                'location' => $a->location,
-                'partners' => $a->partners,
-                'beneficiaries' => (int) $a->beneficiaries_count,
-                'participants' => (int) $a->participants_count,
-                'report' => $a->report,
-                'photos' => $a->photos
-                    ->take(1)
-                    ->map(fn (ActivityPhoto $p) => ['file' => Media::localFile($p->url), 'caption' => $p->caption])
-                    ->filter(fn (array $p) => $p['file'] !== null)
-                    ->values()->all(),
+            'count' => $all->count(),
+            'chapters' => $chapters->map(fn (array $chapter) => [
+                'type' => $chapter['type'],
+                'rows' => $chapter['activities']->values()->map(fn (Activity $a, int $i) => [
+                    'number' => str_pad((string) ($i + 1), 2, '0', STR_PAD_LEFT),
+                    'title' => $a->title,
+                    'details' => self::details($a, $locale),
+                    'place' => $a->location,
+                    'date' => filled($a->date_label) ? trim($a->date_label) : HumanDate::range($a->starts_on, $a->ends_on, $locale),
+                    'report' => filled($a->report) ? $a->report : null,
+                ])->all(),
             ])->all(),
+            'summary' => $chapters->map(fn (array $chapter) => [
+                'type' => $chapter['type'],
+                'count' => $chapter['activities']->count(),
+                'beneficiaries' => (int) $chapter['activities']->sum('beneficiaries_count'),
+                'participants' => (int) $chapter['activities']->sum('participants_count'),
+            ])->all(),
+            'totals' => [
+                'count' => $all->count(),
+                'beneficiaries' => (int) $all->sum('beneficiaries_count'),
+                'participants' => (int) $all->sum('participants_count'),
+            ],
         ];
+    }
+
+    /** «من تنظيم …» · result · categories · «بالتنسيق مع …», whichever are filled. */
+    private static function details(Activity $a, string $locale): string
+    {
+        $fill = fn (string $key, string $value) => str_replace('{name}', trim($value), UiLang::get($key));
+        $categories = $a->categories
+            ->map(fn (Category $c) => $c->localized_name ?: $c->name)
+            ->filter()
+            ->implode($locale === 'ar' ? '، ' : ', ');
+
+        return collect([
+            filled($a->organizer) ? $fill('literary.pdf.organized_by', $a->organizer) : null,
+            filled($a->result) ? trim($a->result) : null,
+            $categories !== '' ? $categories : null,
+            filled($a->partners) ? $fill('literary.pdf.in_partnership', $a->partners) : null,
+        ])->filter()->implode(' · ');
     }
 }

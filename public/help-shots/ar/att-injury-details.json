@@ -1,0 +1,12 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "injury-add-details": {
+      "x": 5,
+      "y": 48.28,
+      "w": 2.19,
+      "h": 3.5
+    }
+  }
+}

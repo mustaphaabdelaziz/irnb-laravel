@@ -60,7 +60,7 @@ const th = 'p-2 font-semibold';
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <h1 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('att.ranking.title') }}</h1>
                 <div class="flex items-center gap-2 print:hidden">
-                    <IconButton v-if="rows.length" :href="podiumHref" external target="_blank" icon="print" :label="t('att.ranking.print_top3')" variant="primary" />
+                    <IconButton v-if="rows.length" data-help="ranking-print-top3" :href="podiumHref" external target="_blank" icon="print" :label="t('att.ranking.print_top3')" variant="primary" />
                     <IconButton :href="route('attendance.stats')" icon="dashboard" :label="t('att.statistics')" />
                 </div>
             </div>
@@ -69,10 +69,10 @@ const th = 'p-2 font-semibold';
         <div class="space-y-5">
             <div class="flex flex-wrap items-center gap-3 print:hidden">
                 <BranchSwitch :branches="branches" :branch-id="branchId" @switch="(id) => visit({ branch_id: id })" />
-                <select :value="categoryId ?? ''" :class="input" :aria-label="t('att.category')" @change="visit({ category_id: Number($event.target.value) })">
+                <select data-help="ranking-category" :value="categoryId ?? ''" :class="input" :aria-label="t('att.category')" @change="visit({ category_id: Number($event.target.value) })">
                     <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
                 </select>
-                <select :value="period.type" :class="input" :aria-label="t('activity.period_label')" @change="visit({ type: $event.target.value })">
+                <select data-help="ranking-type" :value="period.type" :class="input" :aria-label="t('activity.period_label')" @change="visit({ type: $event.target.value })">
                     <option value="month">{{ t('att.ranking.type.month') }}</option>
                     <option value="season">{{ t('att.ranking.type.season') }}</option>
                 </select>
@@ -99,7 +99,7 @@ const th = 'p-2 font-semibold';
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="row in rows" :key="row.player_id" class="border-t border-slate-100 dark:border-slate-800">
+                        <tr v-for="(row, i) in rows" :key="row.player_id" class="border-t border-slate-100 dark:border-slate-800">
                             <td class="p-2 text-center">
                                 <span v-if="MEDAL[row.rank]" class="inline-flex size-7 items-center justify-center rounded-full text-xs font-bold" :class="MEDAL[row.rank]">{{ row.rank }}</span>
                                 <span v-else class="tabular-nums text-slate-500 dark:text-slate-400">{{ row.rank }}</span>
@@ -112,7 +112,7 @@ const th = 'p-2 font-semibold';
                             <td class="p-2 text-end tabular-nums">{{ row.present }}</td>
                             <td class="p-2 text-end font-semibold tabular-nums"><bdi dir="ltr">{{ pct(row.score_pct) }}</bdi></td>
                             <td class="whitespace-nowrap p-2 text-end">
-                                <IconButton :href="certificateHref(row)" external target="_blank" icon="print" :label="t('att.ranking.certificate')" plain size="sm" />
+                                <IconButton :data-help="i === 0 ? 'ranking-certificate-first' : undefined" :href="certificateHref(row)" external target="_blank" icon="print" :label="t('att.ranking.certificate')" plain size="sm" />
                             </td>
                         </tr>
                     </tbody>

@@ -72,7 +72,7 @@ const th = 'p-2 font-semibold';
             </div>
             <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.injury.help') }}</p>
 
-            <section v-for="section in sections" :key="section.key" :class="[card, 'overflow-x-auto']">
+            <section v-for="section in sections" :key="section.key" :data-help="section.key === 'current' ? 'injuries-current' : undefined" :class="[card, 'overflow-x-auto']">
                 <h2 class="px-4 pt-4 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ section.title }}</h2>
                 <p v-if="!section.rows.length" class="p-6 text-center text-sm text-slate-500 dark:text-slate-400">{{ section.empty }}</p>
                 <table v-else class="mt-2 w-full min-w-[48rem] text-sm">

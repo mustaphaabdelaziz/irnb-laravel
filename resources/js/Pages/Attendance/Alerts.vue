@@ -79,7 +79,7 @@ const th = 'p-2 font-semibold';
                 </select>
             </div>
 
-            <ul class="space-y-0.5 text-sm text-slate-600 dark:text-slate-300">
+            <ul data-help="alerts-rules" class="space-y-0.5 text-sm text-slate-600 dark:text-slate-300">
                 <li v-for="(rule, i) in rules" :key="i" class="flex items-center gap-2"><Icon name="alert" class="size-4 text-slate-400" />{{ rule }}</li>
             </ul>
 
@@ -101,7 +101,7 @@ const th = 'p-2 font-semibold';
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="row in rows" :key="row.player_id" class="border-t border-slate-100 dark:border-slate-800">
+                        <tr v-for="(row, i) in rows" :key="row.player_id" class="border-t border-slate-100 dark:border-slate-800">
                             <td class="whitespace-nowrap p-2 font-medium">
                                 <Link v-if="can('players', 'view')" :href="profileHref(row)" class="text-primary-700 hover:underline dark:text-primary-300">{{ row.name }}</Link>
                                 <template v-else>{{ row.name }}</template>
@@ -121,7 +121,7 @@ const th = 'p-2 font-semibold';
                             </td>
                             <td class="whitespace-nowrap p-2 text-end">
                                 <span class="inline-flex gap-1">
-                                    <IconButton :href="letterHref(row)" external target="_blank" icon="mail" :label="t('att.letter.print')" plain size="sm" />
+                                    <IconButton :data-help="i === 0 ? 'alerts-letter-first' : undefined" :href="letterHref(row)" external target="_blank" icon="mail" :label="t('att.letter.print')" plain size="sm" />
                                     <IconButton v-if="can('players', 'view')" :href="profileHref(row)" icon="user" :label="t('att.risk.open_profile')" variant="primary" plain size="sm" />
                                 </span>
                             </td>

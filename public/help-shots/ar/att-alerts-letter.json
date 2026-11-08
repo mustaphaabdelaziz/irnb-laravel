@@ -1,0 +1,12 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "alerts-letter-first": {
+      "x": 5.63,
+      "y": 34.88,
+      "w": 2.19,
+      "h": 3.5
+    }
+  }
+}

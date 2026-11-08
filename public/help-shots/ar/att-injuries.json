@@ -1,0 +1,12 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "injuries-current": {
+      "x": 2.5,
+      "y": 23.5,
+      "w": 75,
+      "h": 14.12
+    }
+  }
+}

@@ -90,7 +90,7 @@ const input = 'mt-1 block w-full rounded-lg border-slate-300 text-sm dark:border
                     <span class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.injury.col.sessions') }}: {{ spell.sessions }}</span>
                     <span v-if="!spell.open && spell.returned_on" class="text-xs text-emerald-600 dark:text-emerald-400">{{ t('att.injury.returned_on', { date: day(spell.returned_on) }) }}</span>
                     <span v-else-if="spell.open && spell.returned_on" class="text-xs text-amber-600 dark:text-amber-400">{{ t('att.injury.expected_back', { date: day(spell.returned_on) }) }}</span>
-                    <IconButton v-if="canEdit" class="ms-auto" icon="pencil" :label="spell.note ? t('att.injury.edit_details') : t('att.injury.add_details')" variant="primary" plain size="sm" @click="open(spell.start, spell.note)" />
+                    <IconButton v-if="canEdit" :data-help="spell.open ? 'injury-add-details' : undefined" class="ms-auto" icon="pencil" :label="spell.note ? t('att.injury.edit_details') : t('att.injury.add_details')" variant="primary" plain size="sm" @click="open(spell.start, spell.note)" />
                 </div>
                 <div v-if="spell.note" class="mt-1 text-sm text-slate-600 dark:text-slate-300">
                     <p><b v-if="spell.note.body_part">{{ spell.note.body_part }}</b></p>

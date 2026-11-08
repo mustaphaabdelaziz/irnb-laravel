@@ -131,9 +131,9 @@ const card = 'rounded-xl bg-white ring-1 ring-slate-200 dark:bg-slate-900 dark:r
                 <h1 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('att.stats_title') }}</h1>
                 <div class="flex items-center gap-2 print:hidden">
                     <IconButton :href="route('attendance.index')" icon="calendar" :label="t('attendance')" />
-                    <IconButton :href="route('attendance.alerts')" icon="alert" :label="t('att.risk.title')" />
-                    <IconButton :href="route('attendance.ranking')" icon="flag" :label="t('att.ranking.title')" />
-                    <IconButton :href="route('attendance.injuries')" icon="drop" :label="t('att.injury.title')" />
+                    <IconButton data-help="stats-alerts-link" :href="route('attendance.alerts')" icon="alert" :label="t('att.risk.title')" />
+                    <IconButton data-help="stats-ranking-link" :href="route('attendance.ranking')" icon="flag" :label="t('att.ranking.title')" />
+                    <IconButton data-help="stats-injuries-link" :href="route('attendance.injuries')" icon="drop" :label="t('att.injury.title')" />
                     <ExportMenu :href="exportHref" :label="t('export')" :formats="['xlsx', 'csv', 'pdf']" />
                 </div>
             </div>
@@ -149,7 +149,7 @@ const card = 'rounded-xl bg-white ring-1 ring-slate-200 dark:bg-slate-900 dark:r
                 </select>
             </StatsToolbar>
 
-            <section class="grid gap-3 sm:grid-cols-3 xl:grid-cols-6">
+            <section data-help="stats-tiles" class="grid gap-3 sm:grid-cols-3 xl:grid-cols-6">
                 <StatTile :label="t('att.stats.held_sessions')" :value="totals.held" format="number" icon="calendar" tone="primary" :delta="deltas?.held" :period-label="vsPrevious" />
                 <StatTile :label="t('att.stats.cancelled_sessions')" :value="totals.cancelled" format="number" icon="close" tone="neutral" />
                 <StatTile :label="t('att.stats.marks')" :value="totals.expected" format="number" icon="check" tone="neutral" />

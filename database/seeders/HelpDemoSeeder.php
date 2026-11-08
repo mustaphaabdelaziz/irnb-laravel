@@ -96,14 +96,21 @@ class HelpDemoSeeder extends Seeder
             ]);
         }
 
-        foreach ([['PHOTO', 'صورة شمسية'], ['BIRTH', 'شهادة الميلاد'], ['MEDICAL', 'شهادة طبية']] as [$code, $name]) {
-            DocumentType::create(['code' => $code, 'name' => $name, 'name_ar' => $name, 'is_required' => true]);
+        // The migration seeds the document types but ticks them for no branch (the
+        // branches come later, from the seeder): tick the required ones for both,
+        // and ask four photos so the documents article can show copies.
+        $required = DocumentType::query()->where('is_required', true)->pluck('id');
+        foreach ($branches as $branch) {
+            $branch->documentTypes()->syncWithoutDetaching($required);
         }
+        DocumentType::query()->where('code', DocumentType::PHOTO)->update(['copies' => 4]);
 
         $registrations = app(RegistrationService::class);
         foreach (self::PLAYERS as $i => [$first, $last, $father, $grandfather, $gender, $birth, $branchKey, $categoryName]) {
+            // Numbered by row: a dated swimming card can take over a player's ID, so
+            // generateUnique() (which reads players only) would hand out one twice.
             $player = Player::create([
-                'membership_id' => MembershipNumber::generateUnique(2024),
+                'membership_id' => MembershipNumber::format(2024, $i + 1),
                 'firstname' => $first,
                 'lastname' => $last,
                 'father' => $father,
@@ -113,15 +120,18 @@ class HelpDemoSeeder extends Seeder
                 'join_year' => 2024,
                 'outstanding_debt' => 0,
             ]);
+            // Every third player keeps only the join year, so the join-dates queue has rows.
             $registrations->register($player, [
                 'branch_id' => $branches[$branchKey]->id,
                 'category_id' => $categories[$branchKey][$categoryName]->id,
+                'join_date' => $i % 3 === 2 ? null : sprintf('2024-09-%02d', $i + 1),
             ]);
             // Two players also swim, so the branch-registrations article has a real example.
             if (in_array($i, [1, 3], true)) {
                 $registrations->register($player, [
                     'branch_id' => $branches['swim']->id,
                     'category_id' => $categories['swim']['أشبال']->id,
+                    'join_date' => '2025-10-01',
                 ]);
             }
         }

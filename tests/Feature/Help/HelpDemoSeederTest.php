@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Help;
 
+use App\Models\BranchRegistration;
 use App\Models\Category;
 use App\Models\DocumentType;
 use App\Models\Player;
@@ -30,11 +31,19 @@ class HelpDemoSeederTest extends TestCase
         $this->assertSame('أحمد', $ahmed->firstname);
         $this->assertSame('بن علي', $ahmed->lastname);
         $this->assertSame(1, $ahmed->registrations()->count());
+        $this->assertNotNull($ahmed->registrations()->first()->join_date);
+        // Some registrations keep only the year: the join-dates queue has rows to show.
+        $this->assertTrue(BranchRegistration::whereNull('join_date')->exists());
 
         $this->assertGreaterThanOrEqual(20, Player::count());
         // The 2nd and 4th players (indices 1 and 3) also swim (branch-registrations article).
         $this->assertSame(2, Player::has('registrations', '>=', 2)->count());
         $this->assertGreaterThanOrEqual(3, DocumentType::count());
+        // Both branches tick the required types, or the documents card is empty (documents article).
+        $photo = DocumentType::where('code', DocumentType::PHOTO)->firstOrFail();
+        $this->assertSame(4, $photo->copies);
+        $this->assertSame(2, $photo->branches()->count());
+        $this->assertFalse(DocumentType::where('code', 'PHOTO')->exists());
         $this->assertFalse(Category::query()->where('name', 'Senior')->exists());
     }
 

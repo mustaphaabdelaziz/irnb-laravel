@@ -37,6 +37,7 @@ class HelpController extends Controller
                 $this->help->startHere(),
             ))),
             'fallback' => $this->help->isFallback($locale),
+            'contentLocale' => $this->help->contentLocale($locale),
         ]);
     }
 
@@ -56,6 +57,7 @@ class HelpController extends Controller
             ))),
             'topic' => ['slug' => $topic, 'icon' => $this->help->topics()[$topic]['icon'] ?? 'document'],
             'fallback' => $this->help->isFallback($locale),
+            'contentLocale' => $this->help->contentLocale($locale),
         ]);
     }
 
@@ -79,11 +81,13 @@ class HelpController extends Controller
     /** Before signing in nobody can open /help, so the login article has its own page. */
     public function login(): Response
     {
-        $article = $this->help->article('getting-started/login', app()->getLocale());
+        $locale = app()->getLocale();
+        $article = $this->help->article('getting-started/login', $locale);
         abort_if($article === null, 404);
 
         return Inertia::render('Auth/LoginHelp', [
             'article' => $article->summary() + ['blocks' => $article->blocks],
+            'contentLocale' => $this->help->contentLocale($locale),
         ]);
     }
 }

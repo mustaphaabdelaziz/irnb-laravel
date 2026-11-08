@@ -11,12 +11,15 @@ const props = defineProps({
     topics: { type: Array, required: true },
     startHere: { type: Array, required: true },
     fallback: { type: Boolean, default: false },
+    contentLocale: { type: String, default: 'ar' },
 });
 
 const { t } = useI18n();
 const query = ref('');
 const recent = readJson('help.recent', []);
 const topicLabel = (slug) => t(`help.topic.${slug.replaceAll('-', '_')}`);
+// Article text keeps its own direction (Arabic articles in a French/English UI).
+const contentDir = computed(() => (props.contentLocale === 'ar' ? 'rtl' : 'ltr'));
 
 const all = computed(() => props.topics.flatMap((topic) => topic.articles.map((a) => ({
     ...a,
@@ -55,8 +58,8 @@ const results = computed(() => {
 
             <div v-if="query.trim() !== ''" class="mb-8 space-y-2">
                 <Link v-for="a in results" :key="a.key" :href="a.href" class="block rounded-xl border border-slate-200 bg-white px-4 py-3 hover:border-primary-400 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-primary-500">
-                    <p class="font-semibold text-slate-900 dark:text-slate-100">{{ a.title }}</p>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">{{ a.summary }}</p>
+                    <p class="font-semibold text-slate-900 dark:text-slate-100" :dir="contentDir" :lang="contentLocale">{{ a.title }}</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400" :dir="contentDir" :lang="contentLocale">{{ a.summary }}</p>
                 </Link>
                 <p v-if="results.length === 0" class="py-6 text-center text-slate-500">{{ t('help.no_results') }}</p>
             </div>
@@ -69,7 +72,7 @@ const results = computed(() => {
                         <li v-for="(a, i) in startHere" :key="a.key">
                             <Link :href="a.href" class="flex items-center gap-3 rounded-xl bg-white/15 px-3 py-2.5 font-semibold hover:bg-white/25">
                                 <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-sm font-bold text-primary-700">{{ i + 1 }}</span>
-                                <span>{{ a.title }}</span>
+                                <span :dir="contentDir" :lang="contentLocale">{{ a.title }}</span>
                             </Link>
                         </li>
                     </ol>
@@ -78,7 +81,7 @@ const results = computed(() => {
                 <section v-if="recent.length" class="mb-8">
                     <h2 class="mb-2 text-sm font-bold text-slate-500 dark:text-slate-400">{{ t('help.recent') }}</h2>
                     <div class="flex flex-wrap gap-2">
-                        <Link v-for="r in recent" :key="r.key" :href="r.href" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700 hover:border-primary-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">{{ r.title }}</Link>
+                        <Link v-for="r in recent" :key="r.key" :href="r.href" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700 hover:border-primary-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300" dir="auto">{{ r.title }}</Link>
                     </div>
                 </section>
 
@@ -92,7 +95,7 @@ const results = computed(() => {
                             <li v-for="a in topic.articles" :key="a.key">
                                 <Link :href="a.href" class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-slate-700 hover:bg-slate-50 hover:text-primary-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-primary-300">
                                     <Icon name="document" class="shrink-0 text-slate-400" />
-                                    <span>{{ a.title }}</span>
+                                    <span :dir="contentDir" :lang="contentLocale">{{ a.title }}</span>
                                 </Link>
                             </li>
                         </ul>

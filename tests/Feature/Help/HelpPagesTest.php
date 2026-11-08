@@ -74,6 +74,47 @@ class HelpPagesTest extends TestCase
     }
 
     #[Test]
+    public function an_arabic_article_in_a_french_ui_says_its_content_is_arabic(): void
+    {
+        // SetLocale reads the lang cookie, then the user's preferred language.
+        $user = $this->userWith(['players' => ['view']]);
+        $user->update(['preferred_lng' => 'fr']);
+
+        $this->actingAs($user)
+            ->get('/help/players/add-player')
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('contentLocale', 'ar')
+                ->where('fallback', true));
+
+        $this->actingAs($user)
+            ->get('/help')
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('contentLocale', 'ar')
+                ->where('fallback', true));
+    }
+
+    #[Test]
+    public function an_arabic_article_in_an_arabic_ui_is_not_a_fallback(): void
+    {
+        $user = $this->userWith(['players' => ['view']]);
+        $user->update(['preferred_lng' => 'ar']);
+
+        $this->actingAs($user)
+            ->get('/help/players/add-player')
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('contentLocale', 'ar')
+                ->where('fallback', false));
+    }
+
+    #[Test]
+    public function the_login_article_says_its_content_locale(): void
+    {
+        $this->withUnencryptedCookie('lang', 'en')
+            ->get('/help/login')
+            ->assertInertia(fn (Assert $page) => $page->where('contentLocale', 'ar'));
+    }
+
+    #[Test]
     public function hidden_or_unknown_articles_are_404(): void
     {
         $user = $this->userWith([]);

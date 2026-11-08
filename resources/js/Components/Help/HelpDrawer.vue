@@ -76,8 +76,8 @@ onUnmounted(() => {
                         </template>
                         <template v-else-if="articles.length">
                             <Link v-for="a in articles" :key="a.key" :href="a.href" class="block rounded-xl border border-slate-200 p-3 hover:border-primary-400 hover:bg-primary-50/50 dark:border-slate-800 dark:hover:border-primary-500 dark:hover:bg-primary-500/10">
-                                <p class="font-semibold text-slate-900 dark:text-slate-100">{{ a.title }}</p>
-                                <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ a.summary }}</p>
+                                <p class="font-semibold text-slate-900 dark:text-slate-100" dir="auto">{{ a.title }}</p>
+                                <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400" dir="auto">{{ a.summary }}</p>
                                 <p class="mt-1 text-xs text-slate-400">⏱ {{ t('help.minutes', { n: a.minutes }) }}</p>
                             </Link>
                         </template>

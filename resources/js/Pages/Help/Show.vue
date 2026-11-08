@@ -12,6 +12,7 @@ const props = defineProps({
     related: { type: Array, required: true },
     topic: { type: Object, required: true },
     fallback: { type: Boolean, default: false },
+    contentLocale: { type: String, default: 'ar' },
 });
 
 const { t } = useI18n();
@@ -47,18 +48,21 @@ function rate(value) {
         <article class="mx-auto max-w-3xl">
             <p v-if="fallback" class="mb-4 rounded-lg bg-slate-100 px-4 py-2 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300 print:hidden">{{ t('help.arabic_only') }}</p>
 
-            <header class="mb-6">
-                <h1 class="text-2xl font-bold leading-snug text-slate-900 dark:text-slate-100 sm:text-3xl">{{ article.title }}</h1>
-                <p class="mt-2 text-lg text-slate-600 dark:text-slate-300">{{ article.summary }}</p>
-                <div class="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
-                    <span>⏱ {{ t('help.minutes', { n: article.minutes }) }}</span>
-                    <button type="button" class="inline-flex items-center gap-1 rounded-lg px-2 py-1 hover:bg-slate-100 dark:hover:bg-slate-800 print:hidden" @click="printPage">
-                        <Icon name="print" /> {{ t('help.print_page') }}
-                    </button>
-                </div>
-            </header>
+            <!-- The article keeps its own direction: Arabic stays right-to-left in a French/English UI. -->
+            <div :dir="contentLocale === 'ar' ? 'rtl' : 'ltr'" :lang="contentLocale">
+                <header class="mb-6">
+                    <h1 class="text-2xl font-bold leading-snug text-slate-900 dark:text-slate-100 sm:text-3xl">{{ article.title }}</h1>
+                    <p class="mt-2 text-lg text-slate-600 dark:text-slate-300">{{ article.summary }}</p>
+                    <div class="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+                        <span>⏱ {{ t('help.minutes', { n: article.minutes }) }}</span>
+                        <button type="button" class="inline-flex items-center gap-1 rounded-lg px-2 py-1 hover:bg-slate-100 dark:hover:bg-slate-800 print:hidden" @click="printPage">
+                            <Icon name="print" /> {{ t('help.print_page') }}
+                        </button>
+                    </div>
+                </header>
 
-            <HelpArticleBody :blocks="article.blocks" />
+                <HelpArticleBody :blocks="article.blocks" />
+            </div>
 
             <section class="mt-8 flex flex-wrap items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 print:hidden">
                 <template v-if="feedback === null">
@@ -73,8 +77,8 @@ function rate(value) {
                 <h2 class="mb-3 text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('help.related') }}</h2>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <Link v-for="r in related" :key="r.key" :href="r.href" class="rounded-xl border border-slate-200 bg-white p-4 hover:border-primary-400 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-primary-500">
-                        <p class="font-semibold text-slate-900 dark:text-slate-100">{{ r.title }}</p>
-                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ r.summary }}</p>
+                        <p class="font-semibold text-slate-900 dark:text-slate-100" dir="auto">{{ r.title }}</p>
+                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400" dir="auto">{{ r.summary }}</p>
                     </Link>
                 </div>
             </section>

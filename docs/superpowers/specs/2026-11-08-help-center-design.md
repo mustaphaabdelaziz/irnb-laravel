@@ -22,7 +22,8 @@ app), same theme as the app, Arabic first.
 | Visibility | Users only see articles for modules they can view. |
 | Storage | Markdown files in the repo, parsed by Laravel, rendered by Vue. |
 | Author | Claude drafts the Arabic text from the code; owner reviews. |
-| Theme | Always the app's own theme: same components, colours, fonts, light/dark; screenshots shown in the user's current mode. |
+| Theme | Always the app's own theme: same components, the club's chosen primary colour (Settings branding preset/custom), fonts, light/dark; screenshots shown in the user's current mode. |
+| Screenshot colour | Captured once in the default emerald preset, light + dark. A club on another colour sees emerald inside the pictures; everything around them follows the club colour. Markers stay amber (they sit on emerald shots). |
 
 ## 1. Content
 
@@ -118,8 +119,9 @@ related: [players/find-player, players/documents]
 ## 3. Screenshots
 
 - `Database\Seeders\HelpDemoSeeder` — demo club "نادي المثال", 2 branches,
-  ~25 players with realistic Arabic names, categories, subscriptions, a few
-  payments, and the worked-example player أحمد بن علي. Runs on a dedicated
+  ~22 players with realistic Arabic names, categories, document types, and the
+  worked-example player أحمد بن علي. Subscriptions/payments are added when
+  their articles are written (later part). Runs on a dedicated
   temporary SQLite file; never touches dev or production data.
 - Vue screens get `data-help="<name>"` attributes on elements articles point at.
   No behaviour change.
@@ -132,7 +134,8 @@ related: [players/find-player, players/documents]
      targets: [data-help names], viewport }`) capture light + dark WebP and write
      `<name>.json` with each target's box (x, y, w, h as % of the image);
   4. fail with article + target name when a `data-help` target is missing.
-- Fixed viewport (1280×800) and Arabic locale for consistency.
+- Fixed viewport (1280×800), Arabic locale, default emerald theme, for consistency.
+- Images converted to WebP with `sharp` (devDependency; Playwright only writes PNG/JPEG).
 
 ## 4. Client (Vue)
 
@@ -172,7 +175,8 @@ fonts; renders inside the normal AppShell.
 - Pest: front-matter + block parser (each block type, numbering, figure args,
   HTML stripped); `visibleFor` per role; `/help`, `/help/{topic}/{slug}`,
   `/help/panel` responses + 404s; guest login article.
-- `npm run help:check` (node): every article parses, every figure has light+dark
+- `php artisan help:check` (reuses the PHP parser — one parser, not two;
+  `npm run help:check` aliases it): every article parses, every figure has light+dark
   image and JSON, every ring/zoom name exists in the JSON, every `pages:` route
   name exists (from `php artisan route:list --json`), every `related` slug exists.
 - `npm run i18n:check` for new UI keys (insert-only, flat dotted keys; no key

@@ -3,10 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Player;
-use App\Models\PlayerSubscription;
 use App\Models\Transaction;
 use App\Models\User;
-use App\Services\Finance\RecalculatePlayerDebtService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -49,33 +47,6 @@ class PlayerLevelPaymentTest extends TestCase
         $this->assertSame('Player', $tx->related_entity_type);
         $this->assertSame($player->id, (int) $tx->related_entity_id);
         $this->assertSame(500.0, (float) $tx->amount);
-    }
-
-    #[Test]
-    public function a_debt_payment_is_recorded_player_level_and_does_not_touch_subscription_debt(): void
-    {
-        $player = $this->makePlayer();
-        $sub = PlayerSubscription::create([
-            'player_id' => $player->id, 'subscription_id' => null, 'transaction_id' => null,
-            'year' => (int) now()->year, 'status_at_time' => 'student',
-            'is_mandatory' => true, 'amount_owed' => 2000, 'amount_paid' => 0,
-        ]);
-        app(RecalculatePlayerDebtService::class)->forPlayer($player->fresh());
-
-        $this->actingAs($this->admin())
-            ->post(route('players.transactions.store', $player), [
-                'amount' => 700,
-                'category' => 'debt_payment',
-                'payment_method' => 'cash',
-            ])
-            ->assertRedirect();
-
-        $tx = Transaction::firstOrFail();
-        $this->assertSame('debt_payment', $tx->category);
-        $this->assertNull($tx->player_subscription_id);
-        // Legacy debt payment is flat income; the subscription balance is untouched.
-        $this->assertSame(0.0, (float) $sub->fresh()->amount_paid);
-        $this->assertSame(2000.0, (float) $player->fresh()->outstanding_debt);
     }
 
     #[Test]

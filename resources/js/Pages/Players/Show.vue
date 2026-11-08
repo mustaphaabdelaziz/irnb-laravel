@@ -178,17 +178,37 @@ const canExempt = computed(() =>
 // Hide the amount while Exempt is ticked — exemption records no payment.
 const showAmountField = computed(() => !(canExempt.value && paymentForm.is_exempt));
 
-// What each ticked line gets from the amount typed: each in full before the next;
+// «دفع دين»: what the amount settles, in the server's order — the player's own
+// unpaid obligations, oldest season first, then the order they were added.
+const debtLines = computed(() => subscriptions.value
+    .filter(s => parseFloat(s.remaining_amount ?? 0) > 0)
+    .slice()
+    .sort((a, b) => ((a.year ?? 0) - (b.year ?? 0)) || (a.id - b.id))
+    .map(s => ({
+        key: `debt-line:${s.id}`,
+        due: parseFloat(s.remaining_amount ?? 0),
+        text: `${s.subscription?.name || s.label || t('previous_debt')} (${s.subscription ? (s.subscription.year_label || t('subscription_kind_exceptional')) : s.year})`,
+    })));
+const debtTotal = computed(() => round2(debtLines.value.reduce((sum, o) => sum + o.due, 0)));
+
+// The lines the amount pays: the ticked ones, or the debts for «دفع دين».
+const allocatedLines = computed(() => {
+    if (paymentForm.category === 'debt_payment') return debtLines.value;
+
+    return paymentForm.category === 'subscription' ? selectedPayables.value : [];
+});
+
+// What each line gets from the amount typed: each in full before the next;
 // anything above the total becomes a donation (as the server records it).
 const allocation = computed(() => {
     let left = parseFloat(paymentForm.amount) || 0;
     const lines = {};
-    for (const o of selectedPayables.value) {
+    for (const o of allocatedLines.value) {
         lines[o.key] = round2(Math.min(left, o.due));
         left = round2(left - lines[o.key]);
     }
 
-    return { lines, extra: selectedPayables.value.length ? left : 0 };
+    return { lines, extra: allocatedLines.value.length ? left : 0 };
 });
 
 watch(() => paymentForm.category, (category) => {
@@ -197,11 +217,17 @@ watch(() => paymentForm.category, (category) => {
         paymentForm.is_exempt = false;
         paymentForm.finance_account_id = props.defaultFinanceAccountId || '';
     }
+    // Propose the whole debt; the user lowers it for a part payment.
+    if (category === 'debt_payment') {
+        paymentForm.amount = debtTotal.value > 0 ? String(debtTotal.value) : '';
+    }
 });
 
 // When the ticked set changes, propose its total and the register they all share
 // (the one assigned to the subscription's single branch/category pair), else the default.
 watch(selectedPayableKeys, () => {
+    // Clearing the ticks on leaving «الاشتراك» must not wipe the other type's amount.
+    if (paymentForm.category !== 'subscription') return;
     const picked = selectedPayables.value;
     const registers = [...new Set(picked.map(o => (o.kind === 'sub' ? o.default_finance_account_id : null) || ''))];
 
@@ -713,6 +739,23 @@ function formatPlainDate(val) {
                         </div>
                         <InputError :message="paymentForm.errors.subscription_id" class="mt-1" />
                     </div>
+                    <div v-if="paymentForm.category === 'debt_payment'">
+                        <InputLabel :value="t('payment_debt_lines')" />
+                        <p v-if="debtLines.length" class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('payment_debt_order_hint') }}</p>
+                        <ul class="mt-2 max-h-64 divide-y divide-slate-100 overflow-y-auto rounded-lg border border-slate-300 dark:divide-slate-800 dark:border-slate-700">
+                            <li v-for="line in debtLines" :key="line.key" class="px-3 py-2 text-sm text-slate-700 dark:text-slate-200">
+                                {{ line.text }} — {{ t('remaining') }}: {{ formatMoney(line.due) }}
+                                <span v-if="allocation.lines[line.key] > 0" class="block text-xs text-slate-500 dark:text-slate-400" dir="auto">
+                                    {{ t('payment_pays', { amount: formatMoney(allocation.lines[line.key]) }) }}
+                                </span>
+                            </li>
+                            <li v-if="!debtLines.length" class="px-3 py-2 text-sm text-slate-500 dark:text-slate-400">{{ t('payment_nothing_due') }}</li>
+                        </ul>
+                        <div v-if="debtLines.length > 1" class="mt-2 flex justify-between text-sm font-semibold text-slate-900 dark:text-slate-100">
+                            <span>{{ t('total') }}</span>
+                            <span class="tabular-nums">{{ formatMoney(debtTotal) }}</span>
+                        </div>
+                    </div>
                     <label v-if="canExempt" data-help="payment-exempt" class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
                         <input type="checkbox" v-model="paymentForm.is_exempt" class="rounded border-slate-300 text-primary-600 shadow-sm focus:ring-primary-500" />
                         {{ t('exempt') }} — {{ t('exempt_hint') }}
@@ -720,7 +763,7 @@ function formatPlainDate(val) {
                     <div v-if="showAmountField" data-help="payment-amount">
                         <InputLabel :value="t('amount')" />
                         <TextInput v-model="paymentForm.amount" type="number" step="0.01" min="0" class="mt-1 w-full" :required="showAmountField" />
-                        <p v-if="paymentForm.category === 'subscription' && allocation.extra > 0" data-help="payment-donation-warning" class="mt-1 text-xs text-amber-700 dark:text-amber-400">
+                        <p v-if="paymentForm.category !== 'donation' && allocation.extra > 0" data-help="payment-donation-warning" class="mt-1 text-xs text-amber-700 dark:text-amber-400">
                             {{ t('payment_extra_donation', { amount: formatMoney(allocation.extra) }) }}
                         </p>
                         <InputError :message="paymentForm.errors.amount" class="mt-1" />

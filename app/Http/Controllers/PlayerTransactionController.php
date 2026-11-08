@@ -76,6 +76,24 @@ class PlayerTransactionController extends Controller
             }
 
             app(RecalculatePlayerDebtService::class)->forPlayer($player);
+        } elseif ($validated['category'] === 'debt_payment') {
+            // Settles the player's debt oldest season first; nothing owed, nothing to settle.
+            if ($this->payments->unpaidOldestFirst($player)->isEmpty()) {
+                throw ValidationException::withMessages([
+                    'amount' => __('This player has no debt to pay.'),
+                ]);
+            }
+
+            $financeAccountId = $submittedFinanceAccountId ?? $this->defaultRegisterId($player);
+            $amount = (float) $validated['amount'];
+
+            DB::transaction(fn () => $this->recordPayment(
+                $request,
+                ActivityAction::PAYMENT_RECORDED,
+                $this->payments->debt($player, $amount, $method, $description, $userId, $financeAccountId),
+            ));
+
+            app(RecalculatePlayerDebtService::class)->forPlayer($player);
         } else {
             $financeAccountId = $submittedFinanceAccountId ?? $this->defaultRegisterId($player);
 
@@ -136,6 +154,9 @@ class PlayerTransactionController extends Controller
                     $sub->refresh();
                     $created = $this->payments->subscription($sub, $player, (float) $validated['amount'], $method, $description, $userId, $financeAccountId, $date);
                 }
+            } elseif ($transaction->category === 'debt_payment' && ! $transaction->player_subscription_id) {
+                // An old «دفع دين» recorded as flat income: corrected, it settles debt like a new one.
+                $created = $this->payments->debt($player, (float) $validated['amount'], $method, $description, $userId, $financeAccountId, $date);
             } else {
                 $created = [$this->payments->playerLevel($player, $transaction->category, (float) $validated['amount'], $method, $description, $userId, $financeAccountId, $date)];
             }

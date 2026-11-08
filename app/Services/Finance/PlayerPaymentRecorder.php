@@ -86,6 +86,7 @@ class PlayerPaymentRecorder
         ?string $description,
         ?int $userId,
         ?int $financeAccountId,
+        ?DateTimeInterface $date = null,
     ): array {
         $created = [];
         $left = $amount;
@@ -96,12 +97,12 @@ class PlayerPaymentRecorder
                 continue;
             }
 
-            array_push($created, ...$this->subscription($sub, $player, $portion, $method, $description, $userId, $financeAccountId));
+            array_push($created, ...$this->subscription($sub, $player, $portion, $method, $description, $userId, $financeAccountId, $date));
             $left = round($left - $portion, 2);
         }
 
         if ($left > 0) {
-            $created[] = $this->playerLevel($player, 'donation', $left, $method, $description, $userId, $financeAccountId);
+            $created[] = $this->playerLevel($player, 'donation', $left, $method, $description, $userId, $financeAccountId, $date);
         }
 
         if (count($created) > 1) {
@@ -110,6 +111,50 @@ class PlayerPaymentRecorder
         }
 
         return $created;
+    }
+
+    /**
+     * «دفع دين»: the amount settles the player's unpaid obligations oldest season
+     * first (see group); what is left over becomes a donation on the same receipt.
+     *
+     * @return list<Transaction>
+     */
+    public function debt(
+        Player $player,
+        float $amount,
+        ?string $method,
+        ?string $description,
+        ?int $userId,
+        ?int $financeAccountId,
+        ?DateTimeInterface $date = null,
+    ): array {
+        return DB::transaction(fn () => $this->group(
+            $this->unpaidOldestFirst($player),
+            $player,
+            $amount,
+            $method,
+            $description,
+            $userId,
+            $financeAccountId,
+            $date,
+        ));
+    }
+
+    /**
+     * The obligations a debt payment settles, in the order it settles them:
+     * oldest season first, then the order they were added. Exempt and settled
+     * ones are left out (their remaining amount is zero).
+     *
+     * @return Collection<int, PlayerSubscription>
+     */
+    public function unpaidOldestFirst(Player $player): Collection
+    {
+        return $player->playerSubscriptions()
+            ->orderBy('year')
+            ->orderBy('id')
+            ->get()
+            ->filter(fn (PlayerSubscription $sub) => (float) $sub->remaining_amount > 0)
+            ->values();
     }
 
     public function playerLevel(

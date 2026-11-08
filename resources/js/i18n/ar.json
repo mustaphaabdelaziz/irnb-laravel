@@ -2256,6 +2256,8 @@
     "password": "كلمة المرور",
     "payment": "الدفع",
     "payment_category": "نوع الدفع",
+    "payment_debt_lines": "الديون التي تُسدَّد",
+    "payment_debt_order_hint": "يُسدَّد الدين الأقدم أولًا، ثم الذي يليه. ما زاد على مجموع الدين يُسجَّل تبرعًا.",
     "payment_extra_donation": "ما زاد عن المجموع ({amount}) يُسجَّل تبرعًا.",
     "payment_method": "طريقة الدفع",
     "payment_nothing_due": "لا شيء متبقٍ للدفع.",

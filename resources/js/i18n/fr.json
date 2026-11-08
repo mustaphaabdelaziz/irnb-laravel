@@ -2256,6 +2256,8 @@
     "password": "Mot de passe",
     "payment": "Paiement",
     "payment_category": "Type de paiement",
+    "payment_debt_lines": "Dettes réglées",
+    "payment_debt_order_hint": "La dette la plus ancienne est réglée en premier, puis la suivante. Ce qui dépasse le total est enregistré comme don.",
     "payment_extra_donation": "{amount} au-delà du total est enregistré comme don.",
     "payment_method": "Mode de paiement",
     "payment_nothing_due": "Plus rien à payer.",

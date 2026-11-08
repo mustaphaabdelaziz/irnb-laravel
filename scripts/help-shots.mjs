@@ -15,6 +15,13 @@ import shots from '../resources/help/shots.js';
 
 const root = resolve(import.meta.dirname, '..');
 const locale = 'ar';
+// Chromium draws native controls (date fields, the file button) in the browser's
+// UI language, so it must match the articles: day/month/year, Western digits.
+// The context locale alone changes nothing there, so the full Chromium build is
+// launched with --lang (the headless shell keeps an English file button).
+// ar-DZ gives Arabic-Indic digits while the text says 14/03/2012, so fr-DZ:
+// 14/03/2012 and a French, not English, file button. The app itself stays Arabic.
+const browserLocale = 'fr-DZ';
 const port = 8765;
 const base = `http://127.0.0.1:${port}`;
 const viewport = { width: 1280, height: 800 };
@@ -110,9 +117,9 @@ async function capture(context, shot, theme) {
 let browser;
 try {
     await waitForServer();
-    browser = await chromium.launch();
+    browser = await chromium.launch({ channel: 'chromium', args: [`--lang=${browserLocale}`] });
 
-    const loginContext = await browser.newContext({ viewport, locale });
+    const loginContext = await browser.newContext({ viewport, locale: browserLocale });
     const loginPage = await loginContext.newPage();
     await loginPage.goto(`${base}/login`);
     await loginPage.fill('#username', 'demo');
@@ -130,7 +137,7 @@ try {
         for (const shot of list) {
             const context = await browser.newContext({
                 viewport,
-                locale,
+                locale: browserLocale,
                 colorScheme: theme,
                 storageState: shot.guest ? undefined : signedIn,
             });

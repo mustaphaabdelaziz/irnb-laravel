@@ -44,6 +44,10 @@ if (existsSync(join(root, 'public', 'hot'))) {
     console.warn('public/hot exists: pages will load assets from the Vite dev server, keep it running.');
 }
 
+// An old server still on the port would answer with the wrong database.
+const portTaken = await fetch(`${base}/login`).then(() => true, () => false);
+if (portTaken) throw new Error(`Port ${port} is already in use — stop the old server first.`);
+
 rmSync(db, { force: true });
 writeFileSync(db, '');
 execFileSync('php', ['artisan', 'migrate:fresh', '--force', '--seed', '--seeder=HelpDemoSeeder'], { cwd: root, env, stdio: 'inherit' });
@@ -82,12 +86,16 @@ async function capture(context, shot, theme) {
         if ((await el.count()) === 0) throw new Error(`Shot "${shot.name}": no element with data-help="${name}" on ${shot.url}`);
         const box = await el.boundingBox();
         if (!box) throw new Error(`Shot "${shot.name}": data-help="${name}" is hidden on ${shot.url}`);
-        targets[name] = {
+        const t = {
             x: pct((box.x / viewport.width) * 100),
             y: pct((box.y / viewport.height) * 100),
             w: pct((box.width / viewport.width) * 100),
             h: pct((box.height / viewport.height) * 100),
         };
+        if (box.width <= 0 || box.height <= 0 || t.x < -0.5 || t.y < -0.5 || t.x + t.w > 100.5 || t.y + t.h > 100.5) {
+            throw new Error(`Shot "${shot.name}": data-help="${name}" is outside the screenshot (scroll it into view in \`before\`)`);
+        }
+        targets[name] = t;
     }
 
     const png = await page.screenshot({ animations: 'disabled', caret: 'hide' });

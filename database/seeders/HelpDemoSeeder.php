@@ -63,6 +63,7 @@ class HelpDemoSeeder extends Seeder
 
         WebsiteConfig::singleton()->update([
             'club_name' => ['ar' => 'نادي المثال', 'fr' => 'Club Exemple', 'en' => 'Example Club'],
+            'club_short_name' => 'نادي المثال',
         ]);
 
         User::create([

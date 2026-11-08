@@ -5,7 +5,7 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -112,5 +112,8 @@ const submit = () => {
                 </PrimaryButton>
             </div>
         </form>
+        <p class="mt-6 text-center text-sm">
+            <Link :href="route('help.login')" data-help="login-help" class="font-semibold text-primary-700 hover:underline dark:text-primary-300">{{ t('help.login_help') }}</Link>
+        </p>
     </GuestLayout>
 </template>

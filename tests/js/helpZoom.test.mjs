@@ -26,10 +26,22 @@ test('tiny targets are not blown up past 8% of the width', () => {
     assert.equal(zoomStyle({ x: 50, y: 50, w: 1, h: 1 }, 1.6).backgroundSize, '1250% auto');
 });
 
-test('a huge target never asks for more than the whole picture', () => {
+test('a huge target is capped so the bubble stays square and filled', () => {
+    // regionW capped at 100 / 1.6 = 62.5 → image 160% of the bubble; regionH = 100.
     const s = zoomStyle({ x: 0, y: 0, w: 100, h: 100 }, 1.6);
-    assert.equal(s.backgroundSize, '100% auto');
-    assert.equal(s.backgroundPosition, '0% 0%');
+    assert.equal(s.backgroundSize, '160% auto');
+    assert.equal(s.backgroundPosition, '50% 0%');
+});
+
+test('a wide target is capped at the picture height', () => {
+    assert.equal(zoomStyle({ x: 30, y: 45, w: 40, h: 10 }, 1.6).backgroundSize, '160% auto');
+});
+
+test('a bad aspect falls back to 1.6', () => {
+    assert.deepEqual(
+        zoomStyle({ x: 45, y: 45, w: 10, h: 10 }, 0),
+        zoomStyle({ x: 45, y: 45, w: 10, h: 10 }, 1.6),
+    );
 });
 
 test('the bubble sits on the side away from the target', () => {

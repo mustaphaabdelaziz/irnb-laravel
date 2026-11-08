@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Services\Backup\BackupBeforeMigrating;
 use App\Services\Backup\BackupService;
 use App\Services\Backup\BackupSettings;
+use App\Services\Help\HelpArticleParser;
+use App\Services\Help\HelpLibrary;
 use App\Support\ClubTimezone;
 use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Support\Facades\Event;
@@ -31,6 +33,12 @@ class AppServiceProvider extends ServiceProvider
                 'receipts' => storage_path('app/private/receipts'),
                 'activities' => storage_path('app/private/activities'),
             ],
+        ));
+
+        $this->app->singleton(HelpLibrary::class, fn ($app) => new HelpLibrary(
+            $app->make(HelpArticleParser::class),
+            resource_path('help'),
+            public_path('help-shots'),
         ));
     }
 

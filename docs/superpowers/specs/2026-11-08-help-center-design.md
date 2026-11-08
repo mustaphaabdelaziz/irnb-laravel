@@ -44,8 +44,8 @@ resources/help/
     players/edit-player.md
     players/documents.md
     players/branch-registrations.md
-public/help/shots/ar/{light,dark}/<shot>.webp
-public/help/shots/ar/<shot>.json   element boxes per data-help name
+public/help-shots/ar/{light,dark}/<shot>.webp
+public/help-shots/ar/<shot>.json   element boxes per data-help name
 ```
 
 Topic titles are UI strings → normal i18n keys (`help.topics.players`), so the
@@ -117,6 +117,7 @@ related: [players/find-player, players/documents]
   rendering only the `getting-started/login` article.
 
 ## 3. Screenshots
+Shots live in `public/help-shots/`. Not under public/help: a real folder there would shadow the /help route (artisan serve and Apache's !-d rewrite).
 
 - `Database\Seeders\HelpDemoSeeder` — demo club "نادي المثال", 2 branches,
   ~22 players with realistic Arabic names, categories, document types, and the

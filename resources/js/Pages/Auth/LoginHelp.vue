@@ -1,0 +1,28 @@
+<script setup>
+import { Head, Link } from '@inertiajs/vue3';
+import { useI18n } from 'vue-i18n';
+import Icon from '@/Components/Icon.vue';
+import HelpArticleBody from '@/Components/Help/HelpArticleBody.vue';
+
+// The login article for people who can't sign in yet (no AppShell: Auth/ pages are outside it).
+defineProps({
+    article: { type: Object, required: true },
+    contentLocale: { type: String, default: 'ar' },
+});
+const { t } = useI18n();
+</script>
+
+<template>
+    <Head :title="article.title" />
+    <div class="min-h-screen bg-slate-50 px-4 py-8 dark:bg-slate-950">
+        <article class="mx-auto max-w-3xl">
+            <Link :href="route('login')" class="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-primary-700 hover:underline dark:text-primary-300"><Icon name="back" class="rtl:rotate-180" /> {{ t('help.back_to_login') }}</Link>
+            <!-- The article keeps its own direction: Arabic stays right-to-left in a French/English UI. -->
+            <div :dir="contentLocale === 'ar' ? 'rtl' : 'ltr'" :lang="contentLocale">
+                <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100 sm:text-3xl">{{ article.title }}</h1>
+                <p class="mb-6 mt-2 text-lg text-slate-600 dark:text-slate-300">{{ article.summary }}</p>
+                <HelpArticleBody :blocks="article.blocks" />
+            </div>
+        </article>
+    </div>
+</template>

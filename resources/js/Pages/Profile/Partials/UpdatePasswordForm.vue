@@ -37,7 +37,7 @@ const updatePassword = () => {
 </script>
 
 <template>
-    <section>
+    <section data-help="password-form">
         <header>
             <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
                 {{ t('update_password') }}
@@ -54,6 +54,7 @@ const updatePassword = () => {
 
                 <PasswordInput
                     id="current_password"
+                    data-help="password-current"
                     ref="currentPasswordInput"
                     v-model="form.current_password"
                     class="mt-1 block w-full"
@@ -71,6 +72,7 @@ const updatePassword = () => {
 
                 <PasswordInput
                     id="password"
+                    data-help="password-new"
                     ref="passwordInput"
                     v-model="form.password"
                     class="mt-1 block w-full"
@@ -88,6 +90,7 @@ const updatePassword = () => {
 
                 <PasswordInput
                     id="password_confirmation"
+                    data-help="password-confirm"
                     v-model="form.password_confirmation"
                     class="mt-1 block w-full"
                     autocomplete="new-password"
@@ -100,7 +103,7 @@ const updatePassword = () => {
             </div>
 
             <div class="flex items-center gap-4">
-                <PrimaryButton :disabled="form.processing">{{ t('save') }}</PrimaryButton>
+                <PrimaryButton data-help="password-save" :disabled="form.processing">{{ t('save') }}</PrimaryButton>
 
                 <Transition
                     enter-active-class="transition ease-in-out"

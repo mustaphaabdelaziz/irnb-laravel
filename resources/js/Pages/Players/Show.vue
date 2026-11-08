@@ -426,11 +426,11 @@ function formatPlainDate(val) {
                     <div class="flex items-start justify-between">
                         <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('basic_info') }}</h2>
                         <div class="flex flex-wrap items-center justify-end gap-2">
-                            <BranchSwitch :branches="registrationTabs" :branch-id="shownBranchId" @switch="documentBranchId = $event" />
+                            <BranchSwitch :branches="registrationTabs" :branch-id="shownBranchId" data-help="player-tabs" @switch="documentBranchId = $event" />
                             <IconButton :href="route('players.edit', player.id)" icon="pencil" :label="t('edit')" plain size="sm" />
                         </div>
                     </div>
-                    <div class="mt-4 flex items-center gap-4">
+                    <div class="mt-4 flex items-center gap-4" data-help="player-header">
                         <img v-if="player.picture_url" :src="player.picture_url" :alt="player.fullname || player.firstname" class="h-20 w-20 shrink-0 rounded-xl object-cover ring-1 ring-slate-200 dark:ring-slate-700" />
                         <div v-else class="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-2xl font-bold text-primary-600 ring-1 ring-primary-100 dark:bg-primary-500/10 dark:text-primary-300">
                             {{ (player.firstname || player.fullname || '?').charAt(0).toUpperCase() }}
@@ -478,7 +478,7 @@ function formatPlainDate(val) {
                             <span v-else>—</span>
                         </PlayerFieldRow>
                     </dl>
-                    <RegistrationsSection :registrations="player.registrations" :other-positions="player.other_positions || []" :format-date="formatPlainDate" />
+                    <RegistrationsSection data-help="player-registrations" :registrations="player.registrations" :other-positions="player.other_positions || []" :format-date="formatPlainDate" />
 
                     <div v-if="player.emergency_contacts?.length || player.health_medical_conditions" class="mt-5 border-t border-slate-100 pt-4 dark:border-slate-800">
                         <template v-if="player.emergency_contacts?.length">
@@ -511,8 +511,8 @@ function formatPlainDate(val) {
                         </div>
                     </div>
 
-                    <div class="flex flex-wrap items-center gap-2 rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
-                        <IconButton :href="route('players.edit', player.id)" icon="pencil" :label="t('edit_player')" />
+                    <div class="flex flex-wrap items-center gap-2 rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800" data-help="player-actions">
+                        <IconButton :href="route('players.edit', player.id)" icon="pencil" :label="t('edit_player')" data-help="player-edit" />
                         <IconButton v-if="cardRegistrations.length > 1" icon="idcard" :label="t('member_card')" @click="showCardPicker = true" />
                         <IconButton v-else :href="cardHref(cardRegistrations[0]?.branch_id)" external target="_blank" icon="idcard" :label="t('member_card')" />
                         <IconButton icon="trash" :label="t('delete')" variant="danger" @click="showDeleteModal = true" />

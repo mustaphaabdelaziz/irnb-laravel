@@ -19,7 +19,7 @@ Spec: `docs/superpowers/specs/2026-11-08-help-center-design.md`.
 - i18n: insert-only flat dotted keys in `resources/js/i18n/{ar,fr,en}.json`; no key segment named after a String method (`search`, `link`, `replace`, `split`, `match`…). Use `t()` directly, never `te()`.
 - Visibility: article module = front-matter `module`, else the topic's module from `topics.php`; null module = every signed-in user. Gate is `User::hasPermission($module, 'view')` (god admins pass).
 - No new Composer dependency. New npm devDependencies: `playwright`, `sharp` only.
-- Root-relative URLs for images (`/help/shots/...`) so web and desktop both load them.
+- Root-relative URLs for images (`/help-shots/...`) so web and desktop both load them.
 - Phone: no horizontal scroll at 320 px; bare grids need `grid-cols-1`.
 - Git: stage explicit files only (the working tree holds unrelated untracked files: `.claude/`, `ASIRAM.png`, `HANDOFF.md`, `brag-output/`). Never `git add -A`.
 - Run PHP tests with `php artisan test --filter=<Name>`; JS lib tests with `node --test tests/js/<file>.test.mjs`.
@@ -528,7 +528,7 @@ git commit -m "feat(help): article parser with step, callout and figure blocks"
 **Interfaces:**
 - Consumes: `HelpArticleParser::parse`, `HelpArticle` (Task 1).
 - Produces (`App\Services\Help\HelpLibrary`):
-  - `__construct(HelpArticleParser $parser, string $contentPath, string $shotsPath, string $shotsUrl = '/help/shots')`
+  - `__construct(HelpArticleParser $parser, string $contentPath, string $shotsPath, string $shotsUrl = '/help-shots')`
   - `contentLocale(string $locale): string` — `$locale` if it has articles, else `'ar'`.
   - `isFallback(string $locale): bool`
   - `topics(): array` — `topics.php` `topics` map: `slug => ['icon'=>string,'module'=>?string,'articles'=>list<string>]`.
@@ -539,7 +539,7 @@ git commit -m "feat(help): article parser with step, callout and figure blocks"
   - `article(string $key, string $locale): ?HelpArticle` — unfiltered (guest login article).
   - `forRoute(string $routeName, User $user, string $locale): list<HelpArticle>`
   - `problems(string $locale): list<string>` — parse errors, missing images/JSON, unknown ring/zoom names, unknown related keys, topics without config.
-  - Enriched figure: `['type'=>'figure','shot','ring','zoom','light'=>?string,'dark'=>?string,'aspect'=>float,'rings'=>list<['name','x','y','w','h']>,'zoomBox'=>?['x','y','w','h']]` (percent values; URL `"/help/shots/{locale}/{theme}/{shot}.webp?v={mtime}"`).
+  - Enriched figure: `['type'=>'figure','shot','ring','zoom','light'=>?string,'dark'=>?string,'aspect'=>float,'rings'=>list<['name','x','y','w','h']>,'zoomBox'=>?['x','y','w','h']]` (percent values; URL `"/help-shots/{locale}/{theme}/{shot}.webp?v={mtime}"`).
   - Shot JSON format (written by Task 8): `{"width":1280,"height":800,"targets":{"add-player":{"x":71.2,"y":9.5,"w":8.4,"h":4.6}}}`.
 
 - [ ] **Step 1: Create fixtures**
@@ -661,7 +661,7 @@ class HelpLibraryTest extends TestCase
     {
         $figure = $this->library()->all('ar')['players/add-player']->blocks[0]['figures'][0];
 
-        $this->assertMatchesRegularExpression('#^/help/shots/ar/light/players-index\.webp\?v=\d+$#', $figure['light']);
+        $this->assertMatchesRegularExpression('#^/help-shots/ar/light/players-index\.webp\?v=\d+$#', $figure['light']);
         $this->assertNull($figure['dark']);
         $this->assertSame(1.6, $figure['aspect']);
         // Unknown ring names are dropped at runtime (help:check reports them).
@@ -769,7 +769,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * The Help Center's articles: read from resources/help/{locale}/{topic}/{slug}.md,
  * cached (the key changes whenever an article or screenshot file changes), with
- * figures enriched from the screenshot script's output in public/help/shots.
+ * figures enriched from the screenshot script's output in public/help-shots.
  */
 final class HelpLibrary
 {
@@ -781,7 +781,7 @@ final class HelpLibrary
         private readonly HelpArticleParser $parser,
         private readonly string $contentPath,
         private readonly string $shotsPath,
-        private readonly string $shotsUrl = '/help/shots',
+        private readonly string $shotsUrl = '/help-shots',
     ) {}
 
     public function contentLocale(string $locale): string
@@ -1030,7 +1030,7 @@ final class HelpLibrary
         $this->app->singleton(HelpLibrary::class, fn ($app) => new HelpLibrary(
             $app->make(HelpArticleParser::class),
             resource_path('help'),
-            public_path('help/shots'),
+            public_path('help-shots'),
         ));
 ```
 
@@ -2530,7 +2530,7 @@ git commit -m "feat(help): demo club seeder for help screenshots"
 
 **Interfaces:**
 - Consumes: `HelpDemoSeeder::USERNAME/PASSWORD` (Task 7); `data-help` attributes (Tasks 5, 6, 9, 10).
-- Produces: `public/help/shots/ar/{light,dark}/<name>.webp`, `public/help/shots/ar/<name>.json` in the format Task 2 reads.
+- Produces: `public/help-shots/ar/{light,dark}/<name>.webp`, `public/help-shots/ar/<name>.json` in the format Task 2 reads.
 - `shots.js` entry shape: `{ name: string, url: string, guest?: boolean, targets: string[], before?: async (page) => void }`.
 
 - [ ] **Step 1: Install tools (dev machine only)**
@@ -2717,14 +2717,14 @@ The login page shot needs `data-help` on the login fields: in `resources/js/Page
 - [ ] **Step 4: Run it**
 
 Run: `npm run build && npm run help:shots`
-Expected: `✓ light login`, `✓ light help-center`, `✓ dark login`, `✓ dark help-center`; files `public/help/shots/ar/{light,dark}/{login,help-center}.webp` and `public/help/shots/ar/{login,help-center}.json` exist. Open two WebPs: Arabic RTL, demo club name, dark one dark. Check `git status` shows no `storage/help-demo.sqlite`.
+Expected: `✓ light login`, `✓ light help-center`, `✓ dark login`, `✓ dark help-center`; files `public/help-shots/ar/{light,dark}/{login,help-center}.webp` and `public/help-shots/ar/{login,help-center}.json` exist. Open two WebPs: Arabic RTL, demo club name, dark one dark. Check `git status` shows no `storage/help-demo.sqlite`.
 
 Break-test: temporarily add `'nope'` to the `login` targets, run `npm run help:shots -- login`, expect `✗ Shot "login": no element with data-help="nope" on /login` and exit code 1; revert.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add scripts/help-shots.mjs resources/help/shots.js package.json package-lock.json .gitignore resources/js/Pages/Auth/Login.vue public/help/shots/ar
+git add scripts/help-shots.mjs resources/help/shots.js package.json package-lock.json .gitignore resources/js/Pages/Auth/Login.vue public/help-shots/ar
 git commit -m "feat(help): screenshot script on a throwaway demo club"
 ```
 
@@ -2735,7 +2735,7 @@ git commit -m "feat(help): screenshot script on a throwaway demo club"
 **Files:**
 - Create: `resources/help/ar/getting-started/login.md`, `find-your-way.md`, `profile-password.md`
 - Modify: `resources/help/shots.js`; `data-help` attributes in `resources/js/Layouts/AppShell.vue`, `resources/js/Pages/Profile/Edit.vue` / its `Partials/*` (password form)
-- Generated: `public/help/shots/ar/...`
+- Generated: `public/help-shots/ar/...`
 
 **Writing rules (apply to every article in Tasks 9–10):**
 - Simple Modern Standard Arabic, singular imperative («اضغط»، «اكتب»، «اختر»). Short sentences (≤ 15 words). One action per step.
@@ -2824,7 +2824,7 @@ Check the real button text: `grep -n '"log_in"' resources/js/i18n/ar.json` and u
 - [ ] **Step 5: Commit**
 
 ```bash
-git add resources/help/ar/getting-started resources/help/shots.js public/help/shots/ar resources/js/Layouts/AppShell.vue resources/js/Components/CommandPalette.vue resources/js/Pages/Profile
+git add resources/help/ar/getting-started resources/help/shots.js public/help-shots/ar resources/js/Layouts/AppShell.vue resources/js/Components/CommandPalette.vue resources/js/Pages/Profile
 git commit -m "docs(help): getting-started articles with screenshots"
 ```
 
@@ -2835,7 +2835,7 @@ git commit -m "docs(help): getting-started articles with screenshots"
 **Files:**
 - Create: `resources/help/ar/players/add-player.md`, `find-player.md`, `player-page.md`, `edit-player.md`, `documents.md`, `branch-registrations.md`
 - Modify: `resources/help/shots.js`; `data-help` attributes in `resources/js/Pages/Players/Index.vue`, `Create.vue` (and its `Partials/*` form), `Show.vue`, `Edit.vue`, `JoinDates.vue`, `resources/js/Components/PlayerDocumentsCard.vue`
-- Generated: `public/help/shots/ar/...`
+- Generated: `public/help-shots/ar/...`
 
 Same writing rules as Task 9. Each step names the real label (grep `ar.json` for the key the Vue file uses).
 
@@ -2909,7 +2909,7 @@ Boxes are measured after `before` runs (scrolled position), so rings land correc
 - [ ] **Step 5: Commit**
 
 ```bash
-git add resources/help/ar/players resources/help/shots.js public/help/shots/ar resources/js/Pages/Players resources/js/Components/PlayerDocumentsCard.vue resources/js/Components/Sidebar/SidebarSection.vue
+git add resources/help/ar/players resources/help/shots.js public/help-shots/ar resources/js/Pages/Players resources/js/Components/PlayerDocumentsCard.vue resources/js/Components/Sidebar/SidebarSection.vue
 git commit -m "docs(help): players articles with screenshots"
 ```
 
@@ -2972,7 +2972,7 @@ Topics, their order, icons, permission module and the "Start here" list are in
 1. Put `data-help="<name>"` on the element in the Vue page (attribute only).
 2. Add or extend the shot in `resources/help/shots.js`.
 3. `npm run build && npm run help:shots` (or `npm run help:shots -- <shot>`).
-4. Commit `public/help/shots/ar/*`.
+4. Commit `public/help-shots/ar/*`.
 
 After any UI change, rerun `npm run help:shots`; it fails naming the shot and
 target if a marked element disappeared.

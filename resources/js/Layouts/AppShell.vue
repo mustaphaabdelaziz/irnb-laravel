@@ -17,6 +17,7 @@ import SidebarLink from '@/Components/SidebarLink.vue';
 import SidebarFlyout from '@/Components/Sidebar/SidebarFlyout.vue';
 import SidebarSection from '@/Components/Sidebar/SidebarSection.vue';
 import CommandPalette from '@/Components/CommandPalette.vue';
+import HelpDrawer from '@/Components/Help/HelpDrawer.vue';
 import { useNavigation } from '@/Composables/useNavigation.js';
 import { useSidebarState } from '@/Composables/useSidebarState.js';
 import { isActive } from '@/lib/navigation';
@@ -37,6 +38,7 @@ const { isOpen, toggleSection, compact, toggleNarrow } = useSidebarState();
 
 const mobileMenuOpen = ref(false);
 const paletteOpen = ref(false);
+const helpOpen = ref(false);
 const shortcutHint = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/i.test(navigator.platform) ? '⌘K' : 'Ctrl K';
 
 // The shell outlives each page, so its menus would stay open on the next one.
@@ -133,6 +135,7 @@ function switchLocale(code) {
     <div class="min-h-screen bg-slate-50 dark:bg-slate-950 print:bg-white">
         <FlashMessages />
         <CommandPalette v-model:open="paletteOpen" :sections="sections" />
+        <HelpDrawer v-model:open="helpOpen" />
 
         <!-- Mobile overlay -->
         <div
@@ -143,6 +146,7 @@ function switchLocale(code) {
 
         <!-- ===== SIDEBAR ===== -->
         <aside
+            data-help="sidebar"
             class="fixed inset-y-0 start-0 z-50 flex flex-col border-e border-slate-200 bg-white text-slate-700 transition-[width,transform] duration-200 ease-out motion-reduce:transition-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 print:hidden"
             :class="[
                 compact ? 'w-16' : 'w-64',
@@ -192,6 +196,7 @@ function switchLocale(code) {
                         </template>
                         <SidebarSection
                             v-else
+                            :data-help="section.key === 'members' ? 'nav-members' : null"
                             :section="section"
                             :url="url"
                             :user-open="isOpen(section.key)"
@@ -230,6 +235,7 @@ function switchLocale(code) {
             <!-- Footer: user + language -->
             <div class="shrink-0 space-y-3 border-t border-slate-200 p-3 dark:border-slate-800" :class="compact ? 'px-2' : ''">
                 <Link
+                    data-help="sidebar-profile"
                     :href="route('profile.edit')"
                     class="flex items-center rounded-xl p-2 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
                     :class="compact ? 'justify-center' : 'gap-3'"
@@ -242,7 +248,7 @@ function switchLocale(code) {
                     </span>
                 </Link>
                 <div class="flex items-center gap-2" :class="compact ? 'flex-col' : ''">
-                    <div class="flex flex-1 items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800" :class="compact ? 'w-full flex-col' : ''">
+                    <div data-help="language-switch" class="flex flex-1 items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800" :class="compact ? 'w-full flex-col' : ''">
                         <button
                             v-for="loc in locales"
                             :key="loc.code"
@@ -302,7 +308,18 @@ function switchLocale(code) {
                     class="min-w-0 flex-1 max-sm:has-[a,button,input,select]:order-last max-sm:has-[a,button,input,select]:basis-full max-sm:has-[a,button,input,select]:pb-1"
                 />
 
-                <ThemeToggle class="ms-auto sm:ms-0 print:hidden" />
+                <button
+                    type="button"
+                    data-help="help-button"
+                    class="ms-auto flex h-9 w-9 items-center justify-center rounded-lg text-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-primary-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-primary-300 sm:ms-0 print:hidden"
+                    :title="t('help.this_page')"
+                    :aria-label="t('help.this_page')"
+                    @click="helpOpen = true"
+                >
+                    <Icon name="help" />
+                </button>
+
+                <ThemeToggle data-help="theme-toggle" class="print:hidden" />
 
                 <a :href="route('home')" target="_blank" class="hidden rounded-lg p-2 text-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200 sm:block print:hidden" :title="t('home')">
                     <Icon name="external" />

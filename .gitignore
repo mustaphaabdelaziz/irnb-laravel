@@ -26,3 +26,5 @@ Thumbs.db
 
 /nativephp
 /build-id
+/storage/help-demo.sqlite
+/storage/framework/help-demo-config.php

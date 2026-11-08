@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n';
 import Modal from '@/Components/Modal.vue';
 import Icon from '@/Components/Icon.vue';
 import { flattenForSearch, searchItems } from '@/lib/navigation';
+import { useHelpIndex } from '@/Composables/useHelpIndex';
 
 const props = defineProps({
     open: { type: Boolean, default: false },
@@ -14,6 +15,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:open']);
 const { t } = useI18n();
+const { entries: helpEntries, load: loadHelp } = useHelpIndex();
 
 const query = ref('');
 const highlighted = ref(0);
@@ -22,12 +24,21 @@ let returnFocusTo = null;
 let prefetchTimer = null;
 
 const entries = computed(() => flattenForSearch(props.sections));
-const results = computed(() => searchItems(entries.value, query.value));
+// Help articles join only once something is typed, capped so pages stay on top.
+const results = computed(() => {
+    const pages = searchItems(entries.value, query.value);
+    if (query.value.trim() === '') return pages;
+    const help = searchItems(helpEntries.value, query.value)
+        .slice(0, 6)
+        .map((item) => ({ ...item, section: t('help.title') }));
+    return [...pages, ...help];
+});
 
 watch(query, () => { highlighted.value = 0; });
 
 watch(() => props.open, async (isOpen) => {
     if (isOpen) {
+        loadHelp();
         returnFocusTo = document.activeElement;
         query.value = '';
         highlighted.value = 0;
@@ -91,6 +102,7 @@ onUnmounted(() => {
             <Icon name="search" class="shrink-0 text-lg text-slate-400" />
             <input
                 ref="input"
+                data-help="palette-input"
                 v-model="query"
                 type="text"
                 role="combobox"
@@ -111,7 +123,7 @@ onUnmounted(() => {
             <li
                 v-for="(item, i) in results"
                 :id="`palette-option-${i}`"
-                :key="item.href"
+                :key="`${item.section ?? ''}|${item.href}`"
                 role="option"
                 :aria-selected="i === highlighted"
                 class="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm"
@@ -120,7 +132,7 @@ onUnmounted(() => {
                 @click="visit(item)"
             >
                 <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[1.05rem] text-slate-500 dark:bg-slate-800 dark:text-slate-400"><Icon :name="item.icon" /></span>
-                <span class="min-w-0 flex-1 truncate">{{ item.label }}</span>
+                <span class="min-w-0 flex-1 truncate" :dir="item.icon === 'help' ? 'auto' : null">{{ item.label }}</span>
                 <span v-if="item.section" class="max-w-[45%] shrink-0 truncate text-xs text-slate-400">{{ item.section }}</span>
             </li>
             <li v-if="results.length === 0" class="px-3 py-6 text-center text-sm text-slate-400">{{ t('nav.no_results') }}</li>

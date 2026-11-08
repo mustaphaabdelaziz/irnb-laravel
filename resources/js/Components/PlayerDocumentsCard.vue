@@ -192,7 +192,7 @@ function confirmRemoveFile() {
 </script>
 
 <template>
-    <div class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+    <div data-help="player-documents" class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-4 dark:border-slate-800">
             <h3 class="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-slate-100">
                 <Icon name="folder" class="text-slate-400" /> {{ t('documents') }}
@@ -210,7 +210,7 @@ function confirmRemoveFile() {
         <div v-if="!items.length" class="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ checklist.registration_id && !retired.length ? t('doc_branch_requires_none') : t('no_data') }}</div>
 
         <ul v-else class="divide-y divide-slate-100 dark:divide-slate-800">
-            <li v-for="item in items" :key="item.type.id" class="px-5 py-4" :class="{ 'opacity-60': !item.type.is_active }">
+            <li v-for="(item, i) in items" :key="item.type.id" class="px-5 py-4" :class="{ 'opacity-60': !item.type.is_active }">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div class="min-w-0">
                         <p class="flex flex-wrap items-center gap-2 text-sm font-medium text-slate-900 dark:text-slate-100">
@@ -246,7 +246,7 @@ function confirmRemoveFile() {
                 </ul>
 
                 <div class="mt-3 flex flex-wrap gap-2">
-                    <IconButton v-if="canReceive(item)" icon="check" :label="t('doc_mark_received')" variant="success" size="sm" @click="openReceive(item)" />
+                    <IconButton v-if="canReceive(item)" icon="check" :label="t('doc_mark_received')" variant="success" size="sm" :data-help="i === 0 ? 'document-toggle' : (item.type.is_photo ? 'document-photo' : null)" @click="openReceive(item)" />
                     <IconButton v-if="canRenew(item)" icon="refresh" :label="t('doc_renew')" size="sm" @click="openReceive(item)" />
                     <IconButton v-if="canUpload(item)" icon="upload" :label="t('doc_upload_files')" size="sm" @click="openUpload(item)" />
                     <IconButton v-if="canExempt(item)" icon="xcircle" :label="t('doc_exempt')" size="sm" @click="openExempt(item)" />
@@ -300,7 +300,7 @@ function confirmRemoveFile() {
                 <p v-else-if="receiving.type.validity === 'season'" class="text-xs text-slate-500 dark:text-slate-400">{{ t('doc_validity_season_hint') }}</p>
                 <div v-if="receiving.type.copies > 1">
                     <InputLabel :value="t('doc_copies_received')" />
-                    <input v-model.number="receiveForm.copies_received" type="number" min="1" :max="receiving.type.copies" required class="mt-1 w-full rounded-lg border-slate-300 text-slate-900 shadow-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/40 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" />
+                    <input v-model.number="receiveForm.copies_received" data-help="document-copies" type="number" min="1" :max="receiving.type.copies" required class="mt-1 w-full rounded-lg border-slate-300 text-slate-900 shadow-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/40 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" />
                     <InputError :message="receiveForm.errors.copies_received" class="mt-1" />
                 </div>
                 <div>
@@ -316,7 +316,7 @@ function confirmRemoveFile() {
                 </div>
                 <div class="flex justify-end gap-3">
                     <SecondaryButton type="button" @click="receiving = null">{{ t('cancel') }}</SecondaryButton>
-                    <PrimaryButton :disabled="receiveForm.processing">{{ t('save') }}</PrimaryButton>
+                    <PrimaryButton :disabled="receiveForm.processing" data-help="document-save">{{ t('save') }}</PrimaryButton>
                 </div>
             </form>
         </Modal>

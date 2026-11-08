@@ -10,6 +10,7 @@ return [
         'players' => ['icon' => 'players', 'module' => 'players', 'articles' => ['add-player', 'find-player', 'player-page', 'edit-player', 'documents', 'branch-registrations']],
         'subscriptions' => ['icon' => 'subscriptions', 'module' => 'subscriptions', 'articles' => ['create-annual', 'create-exceptional', 'assign-players', 'take-payment', 'fix-payment', 'previous-debt', 'receipts']],
         'attendance' => ['icon' => 'calendar', 'module' => 'attendance', 'articles' => ['take-attendance', 'add-session', 'month-grid', 'cancel-delete-session', 'timetable', 'codes-rules', 'stats-ranking', 'alerts-injuries']],
+        'finance' => ['icon' => 'money', 'module' => 'transactions', 'articles' => ['record-transaction', 'find-export-import', 'cancel-transaction', 'move-money', 'caisses', 'season', 'dashboard-report']],
     ],
     'start_here' => [
         'getting-started/login',

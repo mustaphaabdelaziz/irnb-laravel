@@ -154,9 +154,9 @@ function destroyCustom(s) {
 
         <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <!-- Weekly schedule -->
-            <section :class="[card, 'lg:col-span-2']">
+            <section data-help="set-schedules" :class="[card, 'lg:col-span-2']">
                 <h2 class="mb-3 font-bold text-slate-900 dark:text-slate-100">{{ t('att.schedules') }}</h2>
-                <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="submitSchedule">
+                <form data-help="set-schedule-form" class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="submitSchedule">
                     <label v-if="branches.length" class="text-xs text-slate-500 dark:text-slate-400">{{ t('branch') }}
                         <select v-model="scheduleForm.branch_id" :class="[input, 'block']"><option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option></select>
                     </label>
@@ -170,7 +170,7 @@ function destroyCustom(s) {
                     <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.end') }}<input v-model="scheduleForm.end_time" type="time" :class="[input, 'block']" /></label>
                     <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.valid_from') }}<input v-model="scheduleForm.valid_from" type="date" :class="[input, 'block']" /></label>
                     <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.valid_to') }}<input v-model="scheduleForm.valid_to" type="date" :class="[input, 'block']" /></label>
-                    <button type="submit" :disabled="scheduleForm.processing" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">{{ editingId ? t('att.save') : t('att.add') }}</button>
+                    <button data-help="set-schedule-add" type="submit" :disabled="scheduleForm.processing" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">{{ editingId ? t('att.save') : t('att.add') }}</button>
                     <button v-if="editingId" type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700 dark:text-slate-400" @click="resetSchedule">{{ t('att.close') }}</button>
                     <div class="w-full"><InputError v-for="(e, k) in scheduleForm.errors" :key="k" :message="e" /></div>
                 </form>
@@ -191,16 +191,16 @@ function destroyCustom(s) {
             </section>
 
             <!-- Closures -->
-            <section :class="card">
+            <section data-help="set-closures" :class="card">
                 <h2 class="mb-3 font-bold text-slate-900 dark:text-slate-100">{{ t('att.closures') }}</h2>
-                <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="submitClosure">
+                <form data-help="set-closure-form" class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="submitClosure">
                     <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.start_date') }}<input v-model="closureForm.start_date" type="date" :class="[input, 'block']" /></label>
                     <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.end_date') }}<input v-model="closureForm.end_date" type="date" :class="[input, 'block']" /></label>
                     <label class="flex-1 text-xs text-slate-500 dark:text-slate-400">{{ t('att.reason') }}<input v-model="closureForm.reason" type="text" maxlength="100" :class="[input, 'block w-full']" /></label>
-                    <button type="submit" :disabled="closureForm.processing" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">{{ t('att.add') }}</button>
+                    <button data-help="set-closure-add" type="submit" :disabled="closureForm.processing" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">{{ t('att.add') }}</button>
                     <div class="w-full"><InputError v-for="(e, k) in closureForm.errors" :key="k" :message="e" /></div>
                 </form>
-                <ul class="space-y-1 text-sm">
+                <ul data-help="set-closure-list" class="space-y-1 text-sm">
                     <li v-for="c in closures" :key="c.id" class="flex items-center justify-between border-t border-slate-100 pt-1 dark:border-slate-800">
                         <span><b>{{ c.reason }}</b> · {{ c.start_date }} → {{ c.end_date }}</span>
                         <IconButton icon="trash" :label="t('att.delete')" variant="danger" plain size="sm" @click="destroy('attendance.closures.destroy', c.id)" />
@@ -209,7 +209,7 @@ function destroyCustom(s) {
             </section>
 
             <!-- Pre-season targets -->
-            <section :class="card">
+            <section data-help="set-targets" :class="card">
                 <h2 class="mb-3 font-bold text-slate-900 dark:text-slate-100">{{ t('att.targets') }}</h2>
                 <form class="flex flex-wrap items-end gap-2" @submit.prevent="submitTarget">
                     <label v-if="branches.length" class="text-xs text-slate-500 dark:text-slate-400">{{ t('branch') }}
@@ -222,7 +222,7 @@ function destroyCustom(s) {
                         <select v-model="targetForm.season_start_year" :class="[input, 'block']"><option v-for="s in seasons" :key="s.start_year" :value="s.start_year">{{ s.label }}</option></select>
                     </label>
                     <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.target_count') }}<input v-model.number="targetForm.target_count" type="number" min="0" max="200" :class="[input, 'block w-24']" /></label>
-                    <button type="submit" :disabled="targetForm.processing" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">{{ t('att.save') }}</button>
+                    <button data-help="set-target-save" type="submit" :disabled="targetForm.processing" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">{{ t('att.save') }}</button>
                     <div class="w-full"><InputError v-for="(e, k) in targetForm.errors" :key="k" :message="e" /></div>
                 </form>
             </section>
@@ -254,7 +254,7 @@ function destroyCustom(s) {
 
             <!-- Codes and points, rules, alerts -->
             <form class="space-y-4 lg:col-span-2" @submit.prevent="submitSettings">
-                <section :class="card">
+                <section data-help="set-codes" :class="card">
                     <h2 class="mb-1 font-bold text-slate-900 dark:text-slate-100">{{ t('att.codes') }}</h2>
                     <p class="mb-3 text-xs text-slate-500 dark:text-slate-400">{{ t('att.codes_help') }}</p>
                     <div class="overflow-x-auto">
@@ -279,7 +279,7 @@ function destroyCustom(s) {
                                         <InputError :message="colorError(s)" />
                                     </td>
                                     <td class="py-2 pe-2">
-                                        <input v-model="settingsForm.codes[s].code" type="text" maxlength="3" dir="auto" :aria-label="`${t('att.col.code')} · ${t(`att.status.${s}`)}`" :class="[input, 'w-16 text-center font-mono uppercase']" />
+                                        <input v-model="settingsForm.codes[s].code" :data-help="s === 'late' ? 'set-code-late' : null" type="text" maxlength="3" dir="auto" :aria-label="`${t('att.col.code')} · ${t(`att.status.${s}`)}`" :class="[input, 'w-16 text-center font-mono uppercase']" />
                                     </td>
                                     <td class="py-2 pe-2">
                                         <input v-model="settingsForm.codes[s].color" type="color" :aria-label="`${t('att.col.color')} · ${t(`att.status.${s}`)}`" class="h-9 w-12 cursor-pointer rounded border border-slate-300 bg-transparent p-0.5 dark:border-slate-700" />
@@ -297,12 +297,12 @@ function destroyCustom(s) {
                 </section>
 
                 <section :class="[card, 'grid gap-4 md:grid-cols-2']">
-                    <div>
+                    <div data-help="set-rules">
                         <h2 class="mb-2 font-bold text-slate-900 dark:text-slate-100">{{ t('att.rules') }}</h2>
                         <label class="mb-2 block text-sm">{{ t('att.lates_per_unexcused') }}<input v-model.number="settingsForm.rules.lates_per_unexcused" type="number" min="0" max="20" :class="[input, 'mt-1 block w-24']" /></label>
                         <label class="block text-sm">{{ t('att.late_minutes_as_absent') }}<input v-model.number="settingsForm.rules.late_minutes_as_absent" type="number" min="0" max="240" :class="[input, 'mt-1 block w-24']" /></label>
                     </div>
-                    <div>
+                    <div data-help="set-alerts">
                         <h2 class="mb-2 font-bold text-slate-900 dark:text-slate-100">{{ t('att.alerts') }}</h2>
                         <label class="mb-2 block text-sm">{{ t('att.min_score_pct') }}<input v-model.number="settingsForm.alerts.min_score_pct" type="number" min="0" max="100" :class="[input, 'mt-1 block w-24']" /></label>
                         <label class="block text-sm">{{ t('att.unexcused_streak') }}<input v-model.number="settingsForm.alerts.unexcused_streak" type="number" min="0" max="20" :class="[input, 'mt-1 block w-24']" /></label>
@@ -322,15 +322,15 @@ function destroyCustom(s) {
 
                 <div>
                     <InputError v-for="(e, i) in otherErrors" :key="i" :message="e" />
-                    <button type="submit" :disabled="settingsForm.processing" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">{{ t('att.save') }}</button>
+                    <button data-help="set-save" type="submit" :disabled="settingsForm.processing" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">{{ t('att.save') }}</button>
                 </div>
             </form>
 
             <!-- Custom codes -->
-            <section :class="[card, 'lg:col-span-2']">
+            <section data-help="set-custom" :class="[card, 'lg:col-span-2']">
                 <h2 class="mb-1 font-bold text-slate-900 dark:text-slate-100">{{ t('att.custom.title') }}</h2>
                 <p class="mb-3 text-xs text-slate-500 dark:text-slate-400">{{ t('att.custom.help') }}</p>
-                <form class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="submitCustom">
+                <form data-help="set-custom-form" class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="submitCustom">
                     <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.col.code') }}
                         <input v-model="customForm.code" type="text" maxlength="3" dir="auto" :class="[input, 'block w-16 text-center font-mono uppercase']" />
                     </label>
@@ -345,7 +345,7 @@ function destroyCustom(s) {
                             <option v-for="b in behaviours" :key="b" :value="b">{{ t(`att.custom.behaviour.${b}`) }}</option>
                         </select>
                     </label>
-                    <button type="submit" :disabled="customForm.processing" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">{{ editingCustomId ? t('att.save') : t('att.custom.add') }}</button>
+                    <button data-help="set-custom-add" type="submit" :disabled="customForm.processing" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">{{ editingCustomId ? t('att.save') : t('att.custom.add') }}</button>
                     <button v-if="editingCustomId" type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700 dark:text-slate-400" @click="resetCustom">{{ t('att.close') }}</button>
                     <div class="w-full"><InputError v-for="(e, i) in customErrors" :key="i" :message="e" /></div>
                 </form>

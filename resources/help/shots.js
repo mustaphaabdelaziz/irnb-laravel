@@ -9,6 +9,7 @@
 const ym = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 const pad = (n) => String(n).padStart(2, '0');
 const ymd = (d) => `${ym(d)}-${pad(d.getDate())}`;
+const inDays = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d; };
 const nextDay = (weekdays, from = new Date(), strict = false) => {
     const d = new Date(from);
     if (strict) d.setDate(d.getDate() + 1);
@@ -401,7 +402,7 @@ export default [
     {
         name: 'att-calendar',
         url: `/attendance?view=month&${U17}&month=${sessionMonth}`,
-        targets: ['nav-members', 'nav-attendance', 'att-branch', 'att-category', 'att-session-next', 'att-add-extra', 'att-add-preseason', 'att-preseason-chip', 'att-grid-link'],
+        targets: ['nav-members', 'nav-attendance', 'att-branch', 'att-category', 'att-session-next', 'att-add-extra', 'att-add-preseason', 'att-preseason-chip', 'att-grid-link', 'att-settings'],
     },
     {
         name: 'att-session',
@@ -526,6 +527,92 @@ export default [
         before: async (page) => {
             await page.click('[data-help="att-delete"]');
             await page.click('[data-help="att-delete-reset"]');
+        },
+    },
+    // «إعدادات الحضور» (attendance/edit). The page takes no branch_id: the forms open on the
+    // first branch (Swimming), so each form shot picks «كرة القدم» itself. Forms are only
+    // filled, never sent: the light and dark passes share one database.
+    {
+        // The timetable example: a Friday U17 row, 18:00–19:30 (the form's default times),
+        // valid from today (the default «من»). Monday and Wednesday are already listed.
+        name: 'set-schedule',
+        url: '/attendance/settings',
+        targets: ['set-schedules', 'set-schedule-form', 'set-schedule-add'],
+        before: async (page) => {
+            const form = page.locator('[data-help="set-schedule-form"]');
+            await form.locator('select').nth(0).selectOption({ label: 'كرة القدم' });
+            await form.locator('select').nth(1).selectOption({ label: 'أقل من 17 سنة' });
+            await form.locator('select').nth(2).selectOption('5');
+            await blur(page);
+            await centre(page, 'set-schedules');
+        },
+    },
+    {
+        // The closure example typed in: «عطلة مدرسية», 20 → 22 days from today. The demo
+        // already holds that very closure, which would show in the list as if added: it is
+        // taken off the list (DOM only) so the shot is the reader's state before «إضافة».
+        name: 'set-closure-filled',
+        url: '/attendance/settings',
+        targets: ['set-closures', 'set-closure-form', 'set-closure-add'],
+        before: async (page) => {
+            const form = page.locator('[data-help="set-closure-form"]');
+            await form.locator('input[type="date"]').nth(0).fill(ymd(inDays(20)));
+            await form.locator('input[type="date"]').nth(1).fill(ymd(inDays(22)));
+            await form.locator('input[type="text"]').fill('عطلة مدرسية');
+            await page.locator('[data-help="set-closure-list"] li', { hasText: 'عطلة مدرسية' }).evaluate((li) => li.remove());
+            await blur(page);
+            await centre(page, 'set-closures');
+        },
+    },
+    // After «إضافة»: the form is reset and the closure is listed under it (the demo's own).
+    { name: 'set-closure', url: '/attendance/settings', targets: ['set-closures', 'set-closure-list'], before: (page) => centre(page, 'set-closures') },
+    {
+        // The pre-season target: Football, U17, this season (the default season); the
+        // form then shows the saved 12 by itself (Settings.vue's target watch).
+        name: 'set-targets',
+        url: '/attendance/settings',
+        targets: ['set-targets', 'set-target-save'],
+        before: async (page) => {
+            const card = page.locator('[data-help="set-targets"]');
+            await card.locator('select').nth(0).selectOption({ label: 'كرة القدم' });
+            await card.locator('select').nth(1).selectOption({ label: 'أقل من 17 سنة' });
+            await blur(page);
+            await centre(page, 'set-targets');
+        },
+    },
+    // The codes-rules example: «ت» instead of «R» for «متأخر», the unexcused-streak alert
+    // at 3 (the default, left as it is), then a custom code «س» «مسافر» = «غائب بعذر».
+    {
+        name: 'set-codes',
+        url: '/attendance/settings',
+        targets: ['set-codes', 'set-code-late'],
+        before: async (page) => {
+            await page.locator('[data-help="set-code-late"]').fill('ت');
+            await blur(page);
+            await centre(page, 'set-codes');
+        },
+    },
+    {
+        name: 'set-rules',
+        url: '/attendance/settings',
+        targets: ['set-rules', 'set-alerts', 'set-save'],
+        before: async (page) => {
+            await page.locator('[data-help="set-code-late"]').fill('ت');
+            await blur(page);
+            await centre(page, 'set-alerts');
+        },
+    },
+    {
+        name: 'set-custom',
+        url: '/attendance/settings',
+        targets: ['set-custom', 'set-custom-form', 'set-custom-add'],
+        before: async (page) => {
+            const form = page.locator('[data-help="set-custom-form"]');
+            await form.locator('input[type="text"]').nth(0).fill('س');
+            await form.locator('input[type="text"]').nth(1).fill('مسافر');
+            await form.locator('select').selectOption('absent_excused');
+            await blur(page);
+            await centre(page, 'set-custom');
         },
     },
 ];

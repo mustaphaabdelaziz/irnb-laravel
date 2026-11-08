@@ -105,4 +105,49 @@ class LiteraryReportRenderTest extends TestCase
         }
         $this->assertStringContainsString(e(trim(str_replace('{role}', '', UiLang::get('literary.pdf.signature')))), $html);
     }
+
+    private function renderHtml(LiteraryReport $report): string
+    {
+        return view('pdf.literary-report', [
+            'club' => ClubHeader::data(),
+            'report' => $report,
+            'sections' => app(LiteraryReportBuilder::class)->build($report, $this->admin()),
+            'rtl' => true,
+        ])->render();
+    }
+
+    #[Test]
+    public function the_details_option_toggles_the_per_type_report_texts(): void
+    {
+        Activity::create([
+            'title' => 'Detail Activity', 'activity_type_id' => ActivityType::where('name', 'تنظيمات النادي')->value('id'),
+            'starts_on' => '2026-05-05', 'report' => 'Render Report Text',
+        ]);
+        $base = ['title' => 'Details', 'period_from' => '2025-09-01', 'period_to' => '2026-08-31', 'sections' => ['activities']];
+
+        $off = $this->renderHtml(LiteraryReport::create($base + ['include_details' => false]));
+        $this->assertStringNotContainsString(e(UiLang::get('literary.pdf.by_type')), $off);
+        $this->assertStringNotContainsString('Render Report Text', $off);
+
+        $on = $this->renderHtml(LiteraryReport::create($base + ['include_details' => true]));
+        $this->assertStringContainsString(e(UiLang::get('literary.pdf.by_type')), $on);
+        $this->assertStringContainsString('Render Report Text', $on);
+    }
+
+    #[Test]
+    public function no_page_break_sits_directly_before_the_signatures(): void
+    {
+        $term = BoardTerm::create(['name' => 'Term Break', 'is_current' => true]);
+        $signer = BoardMember::create(['name' => 'Break Person', 'role' => 'member', 'board_term_id' => $term->id, 'status' => 'active']);
+        $html = $this->renderHtml(LiteraryReport::create([
+            'title' => 'Break', 'period_from' => '2025-09-01', 'period_to' => '2026-08-31',
+            'sections' => ['cover', 'intro', 'conclusion', 'signatures'], 'president_word' => 'Break word', 'conclusion' => 'Break outlook',
+            'signer_1_board_member_id' => $signer->id,
+        ]));
+
+        $this->assertStringContainsString('<pagebreak', $html, 'sections after the first are separated');
+        $afterWord = substr($html, strrpos($html, 'Break outlook'));
+        $this->assertStringNotContainsString('<pagebreak', $afterWord);
+        $this->assertStringContainsString('Break Person', $afterWord);
+    }
 }

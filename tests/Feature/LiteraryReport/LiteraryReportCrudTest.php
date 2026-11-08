@@ -257,4 +257,21 @@ class LiteraryReportCrudTest extends TestCase
             'title' => $report->title, 'period_from' => '2025-09-01', 'period_to' => '2026-08-31', 'signer_1_board_member_id' => 999999,
         ])->assertSessionHasErrors('signer_1_board_member_id');
     }
+
+    #[Test]
+    public function the_same_member_cannot_sign_in_both_slots_but_two_empty_slots_are_fine(): void
+    {
+        $term = BoardTerm::create(['name' => 'Term Dup', 'is_current' => true]);
+        $member = BoardMember::create(['name' => 'Dup', 'role' => 'member', 'board_term_id' => $term->id, 'status' => 'active']);
+        $report = $this->report();
+        $base = ['title' => $report->title, 'period_from' => '2025-09-01', 'period_to' => '2026-08-31'];
+
+        $this->actingAs($this->admin())->put(route('literary-reports.update', $report), $base + [
+            'signer_1_board_member_id' => $member->id, 'signer_2_board_member_id' => $member->id,
+        ])->assertSessionHasErrors('signer_2_board_member_id');
+
+        $this->put(route('literary-reports.update', $report), $base + [
+            'signer_1_board_member_id' => null, 'signer_2_board_member_id' => null,
+        ])->assertSessionHasNoErrors()->assertSessionHas('success');
+    }
 }

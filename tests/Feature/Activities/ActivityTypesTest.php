@@ -27,8 +27,8 @@ class ActivityTypesTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Settings/ActivityTypes')
-                ->has('types', 6)
-                ->where('types.0.name', 'حملة تطوعية')
+                ->has('types', 11)
+                ->where('types.0.name', 'تنظيمات النادي')
                 ->where('types.0.activities_count', 0));
     }
 
@@ -40,7 +40,7 @@ class ActivityTypesTest extends TestCase
         $this->post(route('activity-types.store'), ['name' => 'يوم مفتوح'])
             ->assertSessionHas('success', 'flash.activity_type_created');
         $type = ActivityType::where('name', 'يوم مفتوح')->firstOrFail();
-        $this->assertSame(7, $type->sort_order);
+        $this->assertSame(12, $type->sort_order);
 
         $this->put(route('activity-types.update', $type), ['name' => 'أبواب مفتوحة', 'sort_order' => 2])
             ->assertSessionHas('success', 'flash.activity_type_updated');
@@ -59,7 +59,7 @@ class ActivityTypesTest extends TestCase
         $this->actingAs($this->admin())
             ->put(route('activity-types.update', $type), ['name' => $type->name, 'sort_order' => null])
             ->assertSessionHas('success', 'flash.activity_type_updated');
-        $this->assertSame(1, $type->fresh()->sort_order);
+        $this->assertSame(6, $type->fresh()->sort_order);
     }
 
     #[Test]

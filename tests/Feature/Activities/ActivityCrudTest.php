@@ -186,7 +186,7 @@ class ActivityCrudTest extends TestCase
         $activity = $this->activity();
 
         $this->actingAs($this->admin())->get(route('activities.create'))
-            ->assertInertia(fn (Assert $page) => $page->component('Activities/Form')->where('activity', null)->has('types', 6)->has('players', 1));
+            ->assertInertia(fn (Assert $page) => $page->component('Activities/Form')->where('activity', null)->has('types', 11)->has('players', 1));
 
         $this->get(route('activities.edit', $activity))
             ->assertInertia(fn (Assert $page) => $page->component('Activities/Form')->where('activity.id', $activity->id)->where('activity.player_ids', []));

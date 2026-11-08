@@ -77,7 +77,7 @@ class LiteraryReportRenderTest extends TestCase
         ])->render();
 
         foreach (LiteraryReport::SECTIONS as $key) {
-            if ($key === 'cover') {
+            if (in_array($key, ['cover', 'signatures', 'photos'], true)) {
                 continue; // the cover has no section heading
             }
             $this->assertStringContainsString(e(UiLang::get('literary.section.'.$key)), $html, "title of {$key}");

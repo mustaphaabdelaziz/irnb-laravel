@@ -25,6 +25,10 @@ class LiteraryReportRequest extends FormRequest
             'president_word' => ['nullable', 'string', 'max:20000'],
             'introduction' => ['nullable', 'string', 'max:20000'],
             'conclusion' => ['nullable', 'string', 'max:20000'],
+            'note' => ['nullable', 'string', 'max:5000'],
+            'include_details' => ['sometimes', 'boolean'],
+            'signer_1_board_member_id' => ['nullable', 'integer', 'exists:board_members,id'],
+            'signer_2_board_member_id' => ['nullable', 'integer', 'exists:board_members,id'],
         ];
     }
 }

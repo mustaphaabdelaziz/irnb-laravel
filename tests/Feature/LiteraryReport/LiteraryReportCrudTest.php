@@ -131,6 +131,7 @@ class LiteraryReportCrudTest extends TestCase
                 ->where('sections', fn ($sections) => collect($sections)->pluck('allowed', 'key')->all() === [
                     'cover' => true, 'intro' => true, 'members' => true, 'board' => false, 'attendance' => false,
                     'sports' => false, 'activities' => false, 'finance' => false, 'conclusion' => true,
+                    'signatures' => true, 'photos' => true,
                 ]));
     }
 

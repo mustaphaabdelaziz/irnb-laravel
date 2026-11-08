@@ -1,7 +1,7 @@
 <?php
 
 // Help Center topics in display order. `module` gates the topic's articles
-// (null = every signed-in user); an article's own `module:` overrides it.
+// (null = every signed-in user; 'superadmin' = superadmins only); an article's own `module:` overrides it.
 // `articles` orders slugs inside the topic; unlisted ones follow A→Z.
 // Topic titles are UI strings: help.topic.<slug with _ for ->.
 return [

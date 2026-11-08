@@ -361,7 +361,7 @@ export default [
         before: async (page) => { await typeAhmedCode(page); },
     },
     {
-        // After «تحقق»: the app empties the field for the next receipt and shows the result.
+        // After «تحقق»: the code stays in the field and the result shows under it.
         name: 'receipt-verify-result',
         url: '/players/1',
         targets: ['receipt-result'],
@@ -456,15 +456,17 @@ async function centre(page, name) {
     }
 }
 
-/** Waits until the page has not scrolled for 20 frames (about a third of a second). */
+/** Waits until the page has not scrolled for 20 frames (about a third of a second), at most 300 frames. */
 async function settle(page) {
     await page.evaluate(() => new Promise((resolve) => {
         let last = window.scrollY;
         let still = 0;
+        let frames = 0;
         const tick = () => {
             if (window.scrollY === last) still += 1;
             else { still = 0; last = window.scrollY; }
-            if (still >= 20) resolve();
+            frames += 1;
+            if (still >= 20 || frames >= 300) resolve();
             else requestAnimationFrame(tick);
         };
         requestAnimationFrame(tick);

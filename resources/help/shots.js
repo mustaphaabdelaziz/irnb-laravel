@@ -788,6 +788,19 @@ export default [
             await page.waitForTimeout(400);
         },
     },
+    { name: 'fin-dashboard', url: '/finance', targets: ['nav-finance', 'fin-years', 'fin-banner', 'fin-tiles', 'fin-export'] },
+    {
+        name: 'fin-dashboard-budget',
+        url: '/finance',
+        targets: ['fin-budget-vs-actual'],
+        before: async (page) => { await centre(page, 'fin-budget-vs-actual'); },
+    },
+    {
+        name: 'fin-dashboard-years',
+        url: '/finance',
+        targets: ['fin-all-years'],
+        before: async (page) => { await centre(page, 'fin-all-years'); },
+    },
     {
         name: 'fin-tx-saved',
         url: '/transactions/create',

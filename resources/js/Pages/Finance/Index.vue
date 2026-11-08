@@ -168,7 +168,7 @@ const csvName = (title) => `${title} ${season.value}`;
 
         <div class="space-y-6">
             <StatsToolbar>
-                <div role="group" :aria-label="t('fiscal_year')" class="flex flex-wrap items-center gap-1.5">
+                <div data-help="fin-years" role="group" :aria-label="t('fiscal_year')" class="flex flex-wrap items-center gap-1.5">
                     <button
                         v-for="y in years"
                         :key="y.id"
@@ -184,7 +184,7 @@ const csvName = (title) => `${title} ${season.value}`;
                 </div>
                 <template #actions>
                     <IconButton :href="route('finance.registers.index')" icon="wallet" :label="t('cash_registers')" />
-                    <IconButton :href="route('reports.financial', { year: selectedYear })" external target="_blank" icon="print" :label="t('export')" />
+                    <IconButton data-help="fin-export" :href="route('reports.financial', { year: selectedYear })" external target="_blank" icon="print" :label="t('export')" />
                     <IconButton v-if="can('finance', 'edit')" data-help="fin-settings-link" :href="route('finance.settings')" icon="settings" :label="t('finance_settings')" />
                 </template>
             </StatsToolbar>
@@ -192,6 +192,7 @@ const csvName = (title) => `${title} ${season.value}`;
             <template v-if="detail">
                 <!-- Status banner -->
                 <div
+                    data-help="fin-banner"
                     class="flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4 ring-1"
                     :class="isClosed ? 'bg-slate-100 ring-slate-200 dark:bg-slate-800/50 dark:ring-slate-700' : 'bg-emerald-50 ring-emerald-200 dark:bg-emerald-500/10 dark:ring-emerald-500/25'"
                 >
@@ -210,7 +211,7 @@ const csvName = (title) => `${title} ${season.value}`;
                 </div>
 
                 <!-- KPIs -->
-                <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" :aria-label="t('finance')">
+                <section data-help="fin-tiles" class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" :aria-label="t('finance')">
                     <StatTile :label="t('finance.opening_balance')" :value="detail.opening_balance" format="money" icon="money" tone="neutral" />
                     <StatTile :label="t('total_income')" :value="detail.income" format="money" icon="arrow" tone="positive" :delta="detail.deltas?.income" :period-label="vsPrevious" />
                     <StatTile :label="t('total_expense')" :value="detail.expense" format="money" icon="transactions" tone="negative" :delta="detail.deltas?.expense" :period-label="vsPrevious" />
@@ -220,6 +221,7 @@ const csvName = (title) => `${title} ${season.value}`;
                 <!-- Trend + balances -->
                 <section class="grid gap-4 lg:grid-cols-3">
                     <ChartCard
+                        data-help="fin-trend"
                         class="lg:col-span-2"
                         :title="t('monthly_trend')"
                         :subtitle="season"
@@ -233,7 +235,7 @@ const csvName = (title) => `${title} ${season.value}`;
                         </template>
                     </ChartCard>
 
-                    <div class="card p-5">
+                    <div data-help="fin-current-balance" class="card p-5">
                         <p class="mb-3 text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('current_balance') }}</p>
                         <p class="figure text-3xl font-extrabold text-primary-700 dark:text-primary-300">{{ formatMoney(currentBalance) }}</p>
                         <ul class="mt-4 space-y-2">
@@ -281,6 +283,7 @@ const csvName = (title) => `${title} ${season.value}`;
                 <!-- Budget vs actual -->
                 <ChartCard
                     v-if="budgetRows.length"
+                    data-help="fin-budget-vs-actual"
                     :title="t('budget_vs_actual')"
                     :subtitle="season"
                     height="h-auto"
@@ -308,6 +311,7 @@ const csvName = (title) => `${title} ${season.value}`;
 
             <!-- All years overview -->
             <ChartCard
+                data-help="fin-all-years"
                 :title="t('all_years')"
                 :empty="!years.length"
                 height="h-auto"

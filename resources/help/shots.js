@@ -645,6 +645,56 @@ export default [
         targets: ['injury-add-details'],
         before: async (page) => { await centre(page, 'injury-add-details'); },
     },
+
+    // --- Finance --- (HelpDemoFinanceSeeder). Accounts: 1 club cash, 3 bank, 4 Swimming coffre,
+    // 5 Football coffre. fin-tx-saved WRITES (it saves a new entry): keep it the last finance
+    // shot, and run it in an invocation of its own (the dark pass would see the light pass's row).
+    { name: 'fin-tx-list', url: '/transactions', targets: ['nav-transactions', 'tx-add', 'tx-search', 'tx-filter-type', 'tx-filter-caisse', 'tx-filter-season', 'tx-more'] },
+    {
+        // The reader's state before «حفظ»: an expense typed in, caisse and method chosen.
+        name: 'fin-tx-form',
+        url: '/transactions/create',
+        targets: ['txf-type', 'txf-title', 'txf-category', 'txf-amount', 'txf-caisse', 'txf-method'],
+        before: async (page) => { await fillNets(page); },
+    },
+    {
+        name: 'fin-tx-form-bottom',
+        url: '/transactions/create',
+        targets: ['txf-player', 'txf-save'],
+        before: async (page) => {
+            await fillNets(page);
+            await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+            await settle(page);
+        },
+    },
+    {
+        name: 'fin-tx-search',
+        url: '/transactions?search=' + encodeURIComponent('كهرباء'),
+        targets: ['tx-search', 'tx-row-first'],
+    },
+    {
+        name: 'fin-tx-menu',
+        url: '/transactions',
+        targets: ['tx-more', 'tx-export', 'tx-template', 'tx-import'],
+        before: async (page) => {
+            await page.locator('[data-help="tx-more"]').click();
+            await page.locator('[data-help="tx-export"]').waitFor({ state: 'visible' });
+            await page.waitForTimeout(400);
+        },
+    },
+    {
+        name: 'fin-tx-saved',
+        url: '/transactions/create',
+        targets: ['tx-show-amount', 'tx-print-ticket', 'tx-print-a4'],
+        before: async (page) => {
+            await fillNets(page);
+            await Promise.all([
+                page.waitForURL(/\/transactions\/\d+$/),
+                page.locator('[data-help="txf-save"]').click(),
+            ]);
+            await page.waitForLoadState('networkidle');
+        },
+    },
 ];
 
 /** أمين قاسمي's grid cell holding the demo's «R15» (rows are found by last name). */
@@ -889,4 +939,14 @@ async function blur(page) {
 /** Ticks every checkbox inside a data-help block. */
 async function tickAll(page, name) {
     for (const box of await page.locator(`[data-help="${name}"] input[type="checkbox"]`).all()) await box.check();
+}
+
+/** The record-transaction example: goal nets, 15000 from Football's coffre, paid in cash. */
+async function fillNets(page) {
+    await page.locator('[data-help="txf-type"] select').selectOption('expense');
+    await page.locator('[data-help="txf-title"] input').fill('شراء شباك المرمى');
+    await page.locator('[data-help="txf-category"] select').selectOption({ label: 'معدات' });
+    await page.locator('[data-help="txf-amount"] input').fill('15000');
+    await page.locator('[data-help="txf-caisse"] select').selectOption('5');
+    await blur(page);
 }

@@ -1,7 +1,7 @@
 // Regenerates the Help Center screenshots on a throwaway demo club.
 //
 //   npm run build && npm run help:shots          all shots
-//   npm run help:shots -- players-index          one shot
+//   npm run help:shots -- players-index          one shot (several names: a few shots, in list order)
 //
 // Dev machine only (needs `npx playwright install chromium` once). Never touches
 // the real database: it migrates + seeds storage/help-demo.sqlite and serves it
@@ -27,7 +27,7 @@ const base = `http://127.0.0.1:${port}`;
 const viewport = { width: 1280, height: 800 };
 const db = join(root, 'storage', 'help-demo.sqlite');
 const out = join(root, 'public', 'help-shots', locale);
-const only = process.argv[2] ?? null;
+const only = process.argv.slice(2);
 
 // APP_CONFIG_CACHE points at a file that doesn't exist, so a cached config
 // can't override DB_DATABASE (see the db-swap gotchas).
@@ -42,9 +42,9 @@ const env = {
     CACHE_STORE: 'file',
 };
 
-const list = only ? shots.filter((s) => s.name === only) : shots;
-if (list.length === 0) {
-    console.error(`No shot named "${only}" in resources/help/shots.js`);
+const list = only.length ? shots.filter((s) => only.includes(s.name)) : shots;
+if (list.length === 0 || list.length !== (only.length || list.length)) {
+    console.error(`No shot named "${only.join(', ')}" in resources/help/shots.js`);
     process.exit(1);
 }
 if (existsSync(join(root, 'public', 'hot'))) {

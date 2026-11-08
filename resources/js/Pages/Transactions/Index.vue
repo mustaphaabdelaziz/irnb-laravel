@@ -232,23 +232,27 @@ function bulkDestroy() {
                 <div class="flex shrink-0 items-center gap-2">
                     <Dropdown align="right" width="48">
                         <template #trigger>
-                            <IconButton icon="more" :label="t('more_actions')" />
+                            <IconButton icon="more" :label="t('more_actions')" data-help="tx-more" />
                         </template>
                         <template #content>
                             <div class="py-1">
                                 <template v-if="can('transactions', 'add')">
-                                    <button type="button" :class="menuItem" @click="importInput?.click()">
+                                    <button type="button" :class="menuItem" data-help="tx-import" @click="importInput?.click()">
                                         <Icon name="upload" :class="menuIcon" /> {{ t('import') }}
                                     </button>
-                                    <p :class="menuHeading">{{ t('template') }}</p>
-                                    <a v-for="f in FORMATS" :key="`tpl-${f}`" :href="withFormat(route('transactions.import.template'), f)" download :class="menuItem">
-                                        <Icon name="document" :class="menuIcon" /> {{ t(`export.format.${f}`) }}
-                                    </a>
+                                    <div data-help="tx-template">
+                                        <p :class="menuHeading">{{ t('template') }}</p>
+                                        <a v-for="f in FORMATS" :key="`tpl-${f}`" :href="withFormat(route('transactions.import.template'), f)" download :class="menuItem">
+                                            <Icon name="document" :class="menuIcon" /> {{ t(`export.format.${f}`) }}
+                                        </a>
+                                    </div>
                                 </template>
-                                <p :class="menuHeading">{{ t('export') }}</p>
-                                <a v-for="f in FORMATS" :key="`exp-${f}`" :href="withFormat(exportUrl, f)" download :class="menuItem">
-                                    <Icon name="download" :class="menuIcon" /> {{ t(`export.format.${f}`) }}
-                                </a>
+                                <div data-help="tx-export">
+                                    <p :class="menuHeading">{{ t('export') }}</p>
+                                    <a v-for="f in FORMATS" :key="`exp-${f}`" :href="withFormat(exportUrl, f)" download :class="menuItem">
+                                        <Icon name="download" :class="menuIcon" /> {{ t(`export.format.${f}`) }}
+                                    </a>
+                                </div>
                                 <button v-if="can('finance', 'edit')" type="button" :class="[menuItem, 'mt-1 border-t border-slate-100 dark:border-slate-700']" @click="showCategories = true">
                                     <Icon name="categories" :class="menuIcon" /> {{ t('fincat.title') }}
                                 </button>
@@ -256,7 +260,7 @@ function bulkDestroy() {
                         </template>
                     </Dropdown>
                     <input ref="importInput" type="file" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="hidden" @change="onImport" />
-                    <IconButton v-if="can('transactions', 'add')" :href="route('transactions.create')" icon="plus" :label="t('add_transaction')" variant="primary" />
+                    <IconButton v-if="can('transactions', 'add')" :href="route('transactions.create')" icon="plus" :label="t('add_transaction')" variant="primary" data-help="tx-add" />
                 </div>
             </div>
         </template>
@@ -279,16 +283,16 @@ function bulkDestroy() {
             </section>
 
             <!-- Filters -->
-            <div ref="filterBar" class="flex flex-wrap items-center gap-3">
+            <div ref="filterBar" data-help="tx-filters" class="flex flex-wrap items-center gap-3">
                 <div data-help="tx-search" class="w-full sm:w-64">
                     <SearchInput v-model="search" :loading="filtering" :placeholder="t('search')" />
                 </div>
-                <MultiSelectFilter v-model="typeFilter" collapse-all :options="typeOptions" :label="t('type')" :placeholder="`${t('type')}: ${t('all')}`" class="min-w-0 flex-1 sm:w-40 sm:flex-none" />
+                <MultiSelectFilter v-model="typeFilter" data-help="tx-filter-type" collapse-all :options="typeOptions" :label="t('type')" :placeholder="`${t('type')}: ${t('all')}`" class="min-w-0 flex-1 sm:w-40 sm:flex-none" />
                 <MultiSelectFilter v-model="categoryFilter" :options="categoryOptions" :label="t('category')" :placeholder="t('all_categories')" class="min-w-0 flex-1 sm:w-52 sm:flex-none" />
-                <MultiSelectFilter v-model="accountFilter" :options="accountOptions" :label="t('cash_register')" :placeholder="t('all_cash_registers')" class="min-w-0 flex-1 sm:w-52 sm:flex-none" />
+                <MultiSelectFilter v-model="accountFilter" data-help="tx-filter-caisse" :options="accountOptions" :label="t('cash_register')" :placeholder="t('all_cash_registers')" class="min-w-0 flex-1 sm:w-52 sm:flex-none" />
                 <label class="min-w-0 flex-1 sm:w-48 sm:flex-none">
                     <span class="sr-only">{{ t('season') }}</span>
-                    <select v-model="seasonSelect" :class="fieldClass">
+                    <select v-model="seasonSelect" data-help="tx-filter-season" :class="fieldClass">
                         <option value="all">{{ t('tx.all_seasons') }}</option>
                         <option v-for="s in seasons" :key="s.value" :value="s.value">{{ t('tx.season_option', { season: s.label }) }}</option>
                     </select>

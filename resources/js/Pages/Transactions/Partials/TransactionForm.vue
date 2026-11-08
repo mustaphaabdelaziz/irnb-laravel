@@ -95,14 +95,14 @@ function submit() {
 <template>
     <form @submit.prevent="submit" class="mx-auto max-w-2xl space-y-6">
         <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 space-y-4">
-            <div>
+            <div data-help="txf-title">
                 <InputLabel :value="t('title')" />
                 <TextInput v-model="form.title" class="mt-1 w-full" maxlength="150" required :placeholder="t('transaction_title_placeholder')" />
                 <InputError :message="form.errors.title" class="mt-1" />
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2">
-                <div>
+                <div data-help="txf-type">
                     <InputLabel :value="t('type')" />
                     <select v-model="form.transaction_type" @change="onTypeChange" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm" required>
                         <option value="income">{{ t('income') }}</option>
@@ -110,7 +110,7 @@ function submit() {
                     </select>
                     <InputError :message="form.errors.transaction_type" class="mt-1" />
                 </div>
-                <div>
+                <div data-help="txf-category">
                     <InputLabel :value="t('category')" />
                     <select v-model="form.finance_category_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm" required>
                         <option value="" disabled>-</option>
@@ -121,12 +121,12 @@ function submit() {
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2">
-                <div>
+                <div data-help="txf-amount">
                     <InputLabel :value="t('amount')" />
                     <TextInput v-model="form.amount" type="number" step="0.01" min="0" class="mt-1 w-full" required />
                     <InputError :message="form.errors.amount" class="mt-1" />
                 </div>
-                <div>
+                <div data-help="txf-date">
                     <InputLabel :value="t('date')" />
                     <TextInput v-model="form.transaction_date" type="date" class="mt-1 w-full" required />
                     <InputError :message="form.errors.transaction_date" class="mt-1" />
@@ -134,7 +134,7 @@ function submit() {
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2">
-                <div>
+                <div data-help="txf-caisse">
                     <InputLabel :value="form.transaction_type === 'income' ? t('destination_register') : t('source_register')" />
                     <select v-model="form.finance_account_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm" required>
                         <option value="" disabled>{{ t('select_cash_register') }}</option>
@@ -149,7 +149,7 @@ function submit() {
                     </p>
                     <InputError :message="form.errors.finance_account_id" class="mt-1" />
                 </div>
-                <div>
+                <div data-help="txf-method">
                     <InputLabel :value="t('payment_method')" />
                     <select v-model="form.payment_method" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm">
                         <option value="cash">{{ t('cash') }}</option>
@@ -195,7 +195,7 @@ function submit() {
                 </div>
             </div>
 
-            <div v-if="players.length">
+            <div v-if="players.length" data-help="txf-player">
                 <InputLabel :value="t('player')" />
                 <SearchableSelect v-model="form.related_entity_id" :options="playerOptions" :placeholder="t('search_player')" />
                 <!-- Confirms the right person before saving: photo, IDs, category, debt. -->
@@ -239,7 +239,7 @@ function submit() {
 
         <div class="flex items-center justify-end gap-3">
             <Link :href="route('transactions.index')"><SecondaryButton type="button">{{ t('cancel') }}</SecondaryButton></Link>
-            <PrimaryButton :disabled="form.processing">{{ isEdit ? t('save_changes') : t('save') }}</PrimaryButton>
+            <PrimaryButton :disabled="form.processing" data-help="txf-save">{{ isEdit ? t('save_changes') : t('save') }}</PrimaryButton>
         </div>
     </form>
 </template>

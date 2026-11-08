@@ -712,6 +712,18 @@ export default [
             await page.waitForTimeout(300);
         },
     },
+    {
+        // The confirm dialog after «حذف المحدد»; never confirmed here. Stays before fin-tx-saved.
+        name: 'fin-tx-bulk-confirm',
+        url: '/transactions?search=' + encodeURIComponent('كهرباء'),
+        targets: ['confirm-panel', 'confirm-ok'],
+        before: async (page) => {
+            await page.locator('[data-help="tx-select-first"]').check();
+            await page.locator('[data-help="tx-bulk-delete"]').click();
+            await page.locator('[data-help="confirm-ok"]').waitFor({ state: 'visible' });
+            await page.waitForTimeout(400);
+        },
+    },
     { name: 'fin-registers', url: '/finance/registers', targets: ['nav-registers', 'reg-tiles', 'reg-move', 'reg-branch-football'] },
     {
         name: 'fin-registers-history',
@@ -1057,7 +1069,6 @@ async function tripScope(page) {
     await blur(page);
 }
 
-/** Drops the focus ring of the last field typed in or ticked. */
 /** Selects the first option of a <select> whose text matches the pattern. */
 async function pickOption(page, selector, pattern) {
     const value = await page.locator(selector).first().evaluate((el, src) => {
@@ -1069,6 +1080,7 @@ async function pickOption(page, selector, pattern) {
     await page.locator(selector).first().selectOption(value);
 }
 
+/** Drops the focus ring of the last field typed in or ticked. */
 async function blur(page) {
     await page.evaluate(() => document.activeElement?.blur());
 }

@@ -3,7 +3,7 @@ title: كيف أسجّل مدخولًا أو مصروفًا
 summary: سجّل مبلغًا دخل النادي أو خرج منه: العنوان والفئة والمبلغ والصندوق، ثم احفظ.
 pages: [transactions.index, transactions.create, transactions.show]
 keywords: [معاملة, مصروف, مدخول, إيراد, مصاريف, مداخيل, إضافة معاملة, تسجيل مصروف, صندوق, فئة, شراء]
-related: [subscriptions/take-payment, subscriptions/receipts]
+related: [finance/cancel-transaction, subscriptions/take-payment, subscriptions/receipts]
 ---
 
 سجّل كل مبلغ دخل النادي أو خرج منه في «المعاملات»: ماذا، وكم، ومن أي صندوق.

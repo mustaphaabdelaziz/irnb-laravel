@@ -44,7 +44,7 @@ const env = {
 
 const list = only.length ? shots.filter((s) => only.includes(s.name)) : shots;
 if (list.length === 0 || list.length !== (only.length || list.length)) {
-    console.error(`No shot named "${only.join(', ')}" in resources/help/shots.js`);
+    console.error(`No shot named "${only.filter((n) => !shots.some((s) => s.name === n)).join(', ')}" in resources/help/shots.js`);
     process.exit(1);
 }
 if (existsSync(join(root, 'public', 'hot'))) {

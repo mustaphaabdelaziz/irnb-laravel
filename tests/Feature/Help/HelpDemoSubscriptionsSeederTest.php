@@ -29,6 +29,7 @@ class HelpDemoSubscriptionsSeederTest extends TestCase
     public function the_demo_club_has_subscriptions_payments_and_debts(): void
     {
         $this->seed(HelpDemoSeeder::class);
+        // Player ids 1-7 follow HelpDemoSeeder::PLAYERS order; all seven are students.
 
         $annual = Subscription::where('name', Demo::ANNUAL)->firstOrFail();
         $this->assertSame(Subscription::KIND_ANNUAL, $annual->kind);
@@ -44,15 +45,25 @@ class HelpDemoSubscriptionsSeederTest extends TestCase
         $this->assertSame(1, ReceiptPrint::where('transaction_id', $paid->id)->count());
 
         // ياسين: one grouped payment covering two subscriptions.
+        $this->assertEquals(4000, Transaction::where('related_entity_id', 2)->where('category', 'subscription')->sum('amount'));
+        $this->assertSame(2, Transaction::where('related_entity_id', 2)->where('category', 'subscription')->count());
+        // Players 2 and 4 are priced 2500, not 3000: they also swim, and the club's main branch is
+        // Swimming (id 1), so pickPrimary prices them by swimming «أشبال» (override 2500). Designed behaviour.
+        $this->assertEquals(2500, $this->obligation(2, Demo::ANNUAL)->amount_owed);
+        $this->assertEquals(2500, $this->obligation(4, Demo::ANNUAL)->amount_owed);
         $groups = Transaction::where('related_entity_id', 2)->where('category', 'subscription')->pluck('payment_group')->unique();
         $this->assertCount(1, $groups);
         $this->assertNotNull($groups->first());
 
         // أمين: partial; رياض: a donation exists; إسلام: unpaid.
         $this->assertEquals(1000, $this->obligation(3, Demo::ANNUAL)->amount_paid);
-        $this->assertTrue(Transaction::where('related_entity_id', 4)->where('category', 'donation')->exists());
+        $this->assertEquals(500, Transaction::where('related_entity_id', 4)->where('category', 'donation')->sum('amount'));
+        $this->assertEquals(2000, Player::find(3)->outstanding_debt);
+        $this->assertEquals(0, Player::find(4)->outstanding_debt);
         $this->assertEquals(0, $this->obligation(5, Demo::ANNUAL)->amount_paid);
-        $this->assertGreaterThan(0, Player::find(5)->outstanding_debt);
+        $this->assertEquals(3000, Player::find(5)->outstanding_debt);
+        $this->assertEquals(2000, Player::find(6)->outstanding_debt);
+        $this->assertEquals(2700, Player::find(7)->outstanding_debt);
 
         // أيوب's previous debt; عبد الرحمن's 10 % discount.
         $this->assertTrue(PlayerSubscription::where('player_id', 6)->where('is_legacy', true)->where('amount_owed', 2000)->exists());

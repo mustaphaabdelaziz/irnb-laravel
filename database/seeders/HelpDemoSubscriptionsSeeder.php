@@ -60,6 +60,8 @@ class HelpDemoSubscriptionsSeeder extends Seeder
             'is_active' => true,
         ]);
         $annual->branches()->attach([$football->id, $swim->id]);
+        // Players 2 and 4 also swim: the club's main branch is Swimming (id 1, the default seed), so a
+        // two-branch player is priced by the swimming «أشبال» row (2500), not the football one (3000).
         $annual->categories()->attach(
             Category::whereIn('branch_id', [$football->id, $swim->id])->pluck('id')
                 ->mapWithKeys(fn (int $id) => [$id => $id === $cubs->id

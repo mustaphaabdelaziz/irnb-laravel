@@ -3,13 +3,15 @@
 namespace Tests\Feature\LiteraryReport;
 
 use App\Models\Activity;
-use App\Models\ActivityPhoto;
 use App\Models\ActivityType;
+use App\Models\Category;
+use App\Models\LiteraryReport;
 use App\Models\Player;
+use App\Models\User;
+use App\Services\LiteraryReport\LiteraryReportBuilder;
 use App\Services\LiteraryReport\Sections\ActivitiesSection;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\File;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -17,18 +19,10 @@ class ActivitiesSectionTest extends TestCase
 {
     use RefreshDatabase;
 
-    private string $dir;
-
     protected function setUp(): void
     {
         parent::setUp();
-        $this->dir = 'literary-test-'.uniqid();
-    }
-
-    protected function tearDown(): void
-    {
-        File::deleteDirectory(storage_path('app/public/'.$this->dir));
-        parent::tearDown();
+        app()->setLocale('ar');
     }
 
     private function build(): array
@@ -44,23 +38,68 @@ class ActivitiesSectionTest extends TestCase
     }
 
     #[Test]
-    public function an_activity_starting_on_the_last_day_is_included(): void
+    public function only_activities_starting_in_the_period_are_listed(): void
     {
         $this->activity('مخيم صيفي', '2026-08-31', ['title' => 'Last day']);
         $this->activity('مخيم صيفي', '2025-09-01', ['title' => 'First day']);
         $this->activity('مخيم صيفي', '2026-09-01', ['title' => 'After']);
 
-        $this->assertEqualsCanonicalizing(['Last day', 'First day'], array_column($this->build()['activities'], 'title'));
+        $this->assertSame(['First day', 'Last day'], array_column($this->build()['chapters'][0]['rows'], 'title'));
     }
 
     #[Test]
-    public function it_summarises_activities_of_the_period_by_type(): void
+    public function each_type_is_a_chapter_in_the_type_list_order_with_numbered_rows_by_date(): void
     {
-        $camp = $this->activity('مخيم صيفي', '2026-07-05', ['beneficiaries_count' => 40, 'external_volunteers_count' => 3]);
+        $this->activity('الحملات التطوعية', '2025-10-01', ['title' => 'Clean-up']);
+        $this->activity('تنظيمات النادي', '2026-03-28', ['title' => 'Iftar']);
+        $this->activity('تنظيمات النادي', '2025-11-01', ['title' => 'Gathering']);
+
+        $chapters = $this->build()['chapters'];
+
+        $this->assertSame(['تنظيمات النادي', 'الحملات التطوعية'], array_column($chapters, 'type'));
+        $this->assertSame(['Gathering', 'Iftar'], array_column($chapters[0]['rows'], 'title'));
+        $this->assertSame(['01', '02'], array_column($chapters[0]['rows'], 'number'));
+        $this->assertSame('01', $chapters[1]['rows'][0]['number']);
+    }
+
+    #[Test]
+    public function the_details_line_holds_organizer_result_categories_and_partners_when_filled(): void
+    {
+        $category = Category::create(['name' => 'U13']);
+        $a = $this->activity('المشاركات الرياضية', '2026-04-11', [
+            'title' => 'دورة التعارف', 'organizer' => 'نادي السلام', 'result' => 'وصيف', 'partners' => 'شباب الوحدة', 'location' => 'غرداية',
+        ]);
+        $a->categories()->attach($category->id);
+        $this->activity('المشاركات الرياضية', '2026-04-18', ['title' => 'Bare']);
+
+        $rows = $this->build()['chapters'][0]['rows'];
+
+        $label = $category->fresh()->localized_name ?: 'U13';
+        $this->assertSame("من تنظيم نادي السلام · وصيف · {$label} · بالتنسيق مع شباب الوحدة", $rows[0]['details']);
+        $this->assertSame('غرداية', $rows[0]['place']);
+        $this->assertSame('', $rows[1]['details']);
+        $this->assertNull($rows[1]['place']);
+    }
+
+    #[Test]
+    public function dates_print_in_words_unless_a_date_label_is_set(): void
+    {
+        $this->activity('تنظيمات النادي', '2025-10-09', ['title' => 'Trip', 'ends_on' => '2025-10-10']);
+        $this->activity('تنظيمات النادي', '2025-10-17', ['title' => 'Watch', 'date_label' => '17 من كل شهر']);
+
+        $rows = $this->build()['chapters'][0]['rows'];
+
+        $this->assertSame('من 09 إلى 10 أكتوبر', $rows[0]['date']);
+        $this->assertSame('17 من كل شهر', $rows[1]['date']);
+    }
+
+    #[Test]
+    public function it_counts_each_chapter_and_keeps_report_texts(): void
+    {
+        $camp = $this->activity('مخيم صيفي', '2026-07-05', ['beneficiaries_count' => 40, 'external_volunteers_count' => 3, 'report' => 'Went well']);
         $camp->players()->attach(Player::create(['membership_id' => 'A1', 'firstname' => 'Sami', 'lastname' => 'Z'])->id);
-        $this->activity('مخيم صيفي', '2026-08-10', ['beneficiaries_count' => 10]);
+        $this->activity('مخيم صيفي', '2026-08-10', ['beneficiaries_count' => 10, 'report' => '   ']);
         $this->activity('جلسة توعوية', '2025-10-01', ['beneficiaries_count' => 25, 'external_volunteers_count' => 1]);
-        $this->activity('جلسة توعوية', '2025-08-31', ['beneficiaries_count' => 99]); // before the period
 
         $data = $this->build();
 
@@ -68,31 +107,32 @@ class ActivitiesSectionTest extends TestCase
         $this->assertEquals([
             ['type' => 'جلسة توعوية', 'count' => 1, 'beneficiaries' => 25, 'participants' => 1],
             ['type' => 'مخيم صيفي', 'count' => 2, 'beneficiaries' => 50, 'participants' => 4],
-        ], $data['by_type']);
-        $this->assertSame(['totals' => ['count' => 3, 'beneficiaries' => 75, 'participants' => 5]], ['totals' => $data['totals']]);
-        $this->assertSame('2025-10-01', $data['activities'][0]['starts_on']); // chronological
+        ], $data['summary']);
+        $this->assertSame(['count' => 3, 'beneficiaries' => 75, 'participants' => 5], $data['totals']);
+        $this->assertSame(['Went well', null], array_column($data['chapters'][1]['rows'], 'report'));
     }
 
     #[Test]
-    public function only_report_photos_whose_file_exists_are_printed(): void
+    public function an_empty_period_gives_no_chapters(): void
     {
-        $activity = $this->activity('مخيم صيفي', '2026-07-05');
-        File::ensureDirectoryExists(storage_path('app/public/'.$this->dir));
-        File::put(storage_path("app/public/{$this->dir}/a.jpg"), 'jpeg-bytes');
-        ActivityPhoto::create(['activity_id' => $activity->id, 'path' => "{$this->dir}/a.jpg", 'thumb_path' => "{$this->dir}/a.jpg", 'in_report' => true, 'caption' => 'Opening']);
-        ActivityPhoto::create(['activity_id' => $activity->id, 'path' => "{$this->dir}/missing.jpg", 'thumb_path' => "{$this->dir}/missing.jpg", 'in_report' => true]);
-        ActivityPhoto::create(['activity_id' => $activity->id, 'path' => "{$this->dir}/a.jpg", 'thumb_path' => "{$this->dir}/a.jpg", 'in_report' => false]);
+        $data = $this->build();
 
-        $photos = $this->build()['activities'][0]['photos'];
-
-        $this->assertCount(1, $photos);
-        $this->assertSame('Opening', $photos[0]['caption']);
-        $this->assertFileExists($photos[0]['file']);
+        $this->assertSame(0, $data['count']);
+        $this->assertSame([], $data['chapters']);
     }
 
     #[Test]
-    public function an_empty_period_gives_zero_counts(): void
+    public function the_builder_adds_the_note_and_the_details_option(): void
     {
-        $this->assertSame(0, $this->build()['count']);
+        $report = LiteraryReport::create([
+            'title' => 'R', 'period_from' => '2025-09-01', 'period_to' => '2026-08-31', 'sections' => ['activities'],
+            'note' => "  يمكن التأكد عبر الصفحة الرسمية  ", 'include_details' => true,
+        ]);
+
+        $sections = app(LiteraryReportBuilder::class)->build($report, User::factory()->admin()->create());
+
+        $this->assertSame('activities', $sections[0]['key']);
+        $this->assertSame('يمكن التأكد عبر الصفحة الرسمية', $sections[0]['data']['note']);
+        $this->assertTrue($sections[0]['data']['include_details']);
     }
 }

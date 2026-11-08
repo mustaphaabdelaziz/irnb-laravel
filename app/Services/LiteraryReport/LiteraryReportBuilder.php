@@ -9,6 +9,8 @@ use App\Services\LiteraryReport\Sections\AttendanceSection;
 use App\Services\LiteraryReport\Sections\BoardSection;
 use App\Services\LiteraryReport\Sections\FinanceSection;
 use App\Services\LiteraryReport\Sections\MembersSection;
+use App\Services\LiteraryReport\Sections\PhotosSection;
+use App\Services\LiteraryReport\Sections\SignaturesSection;
 use App\Services\LiteraryReport\Sections\SportsSection;
 use Carbon\CarbonImmutable;
 
@@ -22,6 +24,7 @@ final class LiteraryReportBuilder
         'sports' => 'games',
         'activities' => 'activities',
         'finance' => 'finance',
+        'photos' => 'activities',
     ];
 
     /** Computed sections by key. */
@@ -32,7 +35,11 @@ final class LiteraryReportBuilder
         'sports' => SportsSection::class,
         'activities' => ActivitiesSection::class,
         'finance' => FinanceSection::class,
+        'photos' => PhotosSection::class,
     ];
+
+    /** Sections left out when they have nothing to print; the other computed ones always print. */
+    private const SKIPPED_WHEN_EMPTY = ['intro', 'conclusion', 'photos', 'signatures'];
 
     public static function allows(string $key, User $user): bool
     {
@@ -55,11 +62,16 @@ final class LiteraryReportBuilder
                 'cover' => [],
                 'intro' => self::texts(['president_word' => $report->president_word, 'introduction' => $report->introduction]),
                 'conclusion' => self::texts(['conclusion' => $report->conclusion]),
+                'activities' => app(ActivitiesSection::class)->build($from, $to) + [
+                    'note' => trim((string) $report->note),
+                    'include_details' => (bool) $report->include_details,
+                ],
+                'signatures' => app(SignaturesSection::class)->build($report),
                 default => isset(self::DATA_SECTIONS[$key]) ? app(self::DATA_SECTIONS[$key])->build($from, $to) : null,
             };
 
-            // Editorial chapters with no text are left out; computed ones always print.
-            if ($data === null || (in_array($key, ['intro', 'conclusion'], true) && $data === [])) {
+            // Editorial chapters, the appendix and the signatures are left out when empty; computed chapters always print.
+            if ($data === null || (in_array($key, self::SKIPPED_WHEN_EMPTY, true) && $data === [])) {
                 continue;
             }
 

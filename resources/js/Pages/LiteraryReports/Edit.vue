@@ -9,7 +9,7 @@ import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 
-const props = defineProps({ report: Object, sections: Array });
+const props = defineProps({ report: Object, sections: Array, boardMembers: Array });
 
 const form = useForm({
     title: props.report.title,
@@ -19,15 +19,20 @@ const form = useForm({
     president_word: props.report.president_word ?? '',
     introduction: props.report.introduction ?? '',
     conclusion: props.report.conclusion ?? '',
+    note: props.report.note ?? '',
+    include_details: Boolean(props.report.include_details),
+    signer_1_board_member_id: props.report.signer_1_board_member_id ?? '',
+    signer_2_board_member_id: props.report.signer_2_board_member_id ?? '',
 });
 
 const texts = ['president_word', 'introduction', 'conclusion'];
 
 function save() {
-    form.put(route('literary-reports.update', props.report.id), {
-        preserveScroll: true,
-        onSuccess: () => form.defaults(),
-    });
+    form.transform((d) => ({ ...d, signer_1_board_member_id: d.signer_1_board_member_id || null, signer_2_board_member_id: d.signer_2_board_member_id || null }))
+        .put(route('literary-reports.update', props.report.id), {
+            preserveScroll: true,
+            onSuccess: () => form.defaults(),
+        });
 }
 </script>
 
@@ -81,6 +86,32 @@ function save() {
                     </li>
                 </ul>
                 <InputError :message="form.errors.sections" class="mt-2" />
+            </section>
+
+            <section class="space-y-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+                <label class="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-200">
+                    <input v-model="form.include_details" type="checkbox" class="mt-0.5 rounded border-slate-300 text-primary-600" />
+                    <span>{{ t('literary.include_details') }}</span>
+                </label>
+                <div>
+                    <label for="note" class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('literary.note') }}</label>
+                    <textarea id="note" v-model="form.note" rows="3" class="mt-1 w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"></textarea>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('literary.note_hint') }}</p>
+                    <InputError :message="form.errors.note" class="mt-1" />
+                </div>
+                <div>
+                    <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ t('literary.signers') }}</h2>
+                    <div class="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div v-for="slot in ['signer_1_board_member_id', 'signer_2_board_member_id']" :key="slot">
+                            <label :for="slot" class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t(slot === 'signer_1_board_member_id' ? 'literary.signer_1' : 'literary.signer_2') }}</label>
+                            <select :id="slot" v-model="form[slot]" class="mt-1 w-full rounded-xl border-slate-300 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                                <option value="">{{ t('literary.no_signer') }}</option>
+                                <option v-for="m in boardMembers" :key="m.value" :value="m.value">{{ m.label }}</option>
+                            </select>
+                            <InputError :message="form.errors[slot]" class="mt-1" />
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <section class="space-y-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">

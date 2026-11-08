@@ -12,9 +12,6 @@ class ActivityPhoto extends Model
 {
     use SerializesClubDates;
 
-    /** Photos per activity printed in the literary report. */
-    public const REPORT_LIMIT = 4;
-
     protected $fillable = ['activity_id', 'path', 'thumb_path', 'caption', 'in_report', 'sort_order'];
 
     protected $appends = ['url', 'thumb_url'];

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\LiteraryReportRequest;
+use App\Models\BoardMember;
 use App\Models\LiteraryReport;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
@@ -51,12 +52,28 @@ class LiteraryReportController extends Controller
         return Inertia::render('LiteraryReports/Edit', [
             'report' => Arr::only($literaryReport->toArray(), [
                 'id', 'title', 'period_from', 'period_to', 'sections', 'president_word', 'introduction', 'conclusion',
+                'note', 'include_details', 'signer_1_board_member_id', 'signer_2_board_member_id',
             ]),
             'sections' => array_map(fn (string $key) => [
                 'key' => $key,
                 'allowed' => LiteraryReportBuilder::allows($key, $request->user()),
             ], LiteraryReport::SECTIONS),
+            'boardMembers' => self::signerOptions(),
         ]);
+    }
+
+    /**
+     * Board members for the signer pickers: active members of the current term
+     * first, then everyone else.
+     *
+     * @return list<array{value: int, label: string}>
+     */
+    private static function signerOptions(): array
+    {
+        return BoardMember::withPlayer()->with('term:id,name,is_current')->get()
+            ->sortBy(fn (BoardMember $m) => [$m->term?->is_current ? 0 : 1, $m->status === 'active' ? 0 : 1, $m->sort_order, $m->id])
+            ->map(fn (BoardMember $m) => ['value' => $m->id, 'label' => $m->term ? $m->name.' — '.$m->term->name : (string) $m->name])
+            ->values()->all();
     }
 
     public function update(LiteraryReportRequest $request, LiteraryReport $literaryReport): RedirectResponse

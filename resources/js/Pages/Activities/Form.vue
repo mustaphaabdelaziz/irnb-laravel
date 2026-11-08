@@ -30,6 +30,9 @@ const form = useForm({
     ends_on: a.ends_on ?? '',
     location: a.location ?? '',
     partners: a.partners ?? '',
+    organizer: a.organizer ?? '',
+    result: a.result ?? '',
+    date_label: a.date_label ?? '',
     branch_id: a.branch_id ?? '',
     responsible_board_member_id: a.responsible_board_member_id ?? '',
     cost: a.cost ?? '',
@@ -97,6 +100,12 @@ const card = 'space-y-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200
                         <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('activities.single_day_hint') }}</p>
                         <InputError :message="form.errors.ends_on" class="mt-1" />
                     </div>
+                    <div>
+                        <label :class="label">{{ t('activities.date_label') }}</label>
+                        <TextInput v-model="form.date_label" class="mt-1 w-full" maxlength="100" />
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('activities.date_label_hint') }}</p>
+                        <InputError :message="form.errors.date_label" class="mt-1" />
+                    </div>
                 </div>
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
@@ -106,6 +115,16 @@ const card = 'space-y-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200
                     <div>
                         <label :class="label">{{ t('activities.partners') }}</label>
                         <TextInput v-model="form.partners" class="mt-1 w-full" />
+                    </div>
+                    <div>
+                        <label :class="label">{{ t('activities.organizer') }}</label>
+                        <TextInput v-model="form.organizer" class="mt-1 w-full" maxlength="150" />
+                        <InputError :message="form.errors.organizer" class="mt-1" />
+                    </div>
+                    <div>
+                        <label :class="label">{{ t('activities.result') }}</label>
+                        <TextInput v-model="form.result" class="mt-1 w-full" maxlength="150" :placeholder="t('activities.result_hint')" />
+                        <InputError :message="form.errors.result" class="mt-1" />
                     </div>
                     <div>
                         <label :class="label">{{ t('activities.branch') }}</label>

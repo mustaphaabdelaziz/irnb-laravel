@@ -9,6 +9,7 @@ use App\Services\Activity\ActivityRecorder;
 use App\Services\Storage\FileStorageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ActivityPhotoController extends Controller
 {
@@ -46,15 +47,19 @@ class ActivityPhotoController extends Controller
         ]);
 
         $inReport = $request->has('in_report') ? $request->boolean('in_report') : $photo->in_report;
-        if ($inReport && ! $photo->in_report
-            && $activity->photos()->where('in_report', true)->count() >= ActivityPhoto::REPORT_LIMIT) {
-            return back()->with('error', 'flash.activity_report_photos_limit');
-        }
 
-        $photo->update([
-            'caption' => array_key_exists('caption', $data) ? $data['caption'] : $photo->caption,
-            'in_report' => $inReport,
-        ]);
+        DB::transaction(function () use ($activity, $photo, $data, $inReport) {
+            // One report photo per activity: marking this one moves the mark.
+            if ($inReport) {
+                ActivityPhoto::query()->where('activity_id', $activity->id)->whereKeyNot($photo->id)
+                    ->where('in_report', true)->update(['in_report' => false]);
+            }
+
+            $photo->update([
+                'caption' => array_key_exists('caption', $data) ? $data['caption'] : $photo->caption,
+                'in_report' => $inReport,
+            ]);
+        });
 
         ActivityRecorder::record($request->user(), ActivityAction::ACTIVITY_UPDATED, $activity);
 

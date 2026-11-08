@@ -39,7 +39,10 @@ watch(state, () => {
     }, 300);
 });
 
-const dates = (a) => (a.ends_on && a.ends_on !== a.starts_on ? `${a.starts_on} → ${a.ends_on}` : a.starts_on);
+const dates = (a) => {
+    const base = a.ends_on && a.ends_on !== a.starts_on ? `${a.starts_on} → ${a.ends_on}` : a.starts_on;
+    return a.date_label ? `${a.date_label} (${base})` : base;
+};
 </script>
 
 <template>

@@ -23,7 +23,7 @@ class Activity extends Model
     use SerializesClubDates;
 
     protected $fillable = [
-        'title', 'activity_type_id', 'starts_on', 'ends_on', 'location', 'partners',
+        'title', 'activity_type_id', 'starts_on', 'ends_on', 'date_label', 'location', 'partners', 'organizer', 'result',
         'branch_id', 'responsible_board_member_id', 'cost', 'beneficiaries_count',
         'external_volunteers_count', 'description', 'report', 'created_by_user_id',
     ];

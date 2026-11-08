@@ -18,7 +18,8 @@ class ActivitySchemaTest extends TestCase
     public function default_activity_types_are_seeded(): void
     {
         $this->assertSame(
-            ['حملة تطوعية', 'جلسة توعوية', 'مخيم صيفي', 'نشاط خيري', 'زيارة', 'احتفال / مناسبة'],
+            ['تنظيمات النادي', 'المشاركات الرياضية', 'الحملات التطوعية', 'التكوينات', 'إعلانات النادي',
+                'حملة تطوعية', 'جلسة توعوية', 'مخيم صيفي', 'نشاط خيري', 'زيارة', 'احتفال / مناسبة'],
             ActivityType::orderBy('sort_order')->pluck('name')->all(),
         );
     }

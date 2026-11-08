@@ -13,10 +13,9 @@ import { computed, ref } from 'vue';
 const { t } = useI18n();
 const { can } = useCan();
 
-const props = defineProps({ activity: Object, reportLimit: Number });
+const props = defineProps({ activity: Object });
 
 const canEdit = computed(() => can('activities', 'edit'));
-const inReportCount = computed(() => props.activity.photos.filter((p) => p.in_report).length);
 const confirm = ref(null); // { kind: 'activity' | 'photo' | 'file', id }
 const lightbox = ref(null);
 const captionEdit = ref(null);
@@ -38,8 +37,7 @@ function uploadFile(event) {
 function toggleReport(photo, event) {
     router.put(route('activities.photos.update', [props.activity.id, photo.id]), { in_report: !photo.in_report }, {
         preserveScroll: true,
-        // A refused toggle (report cap) leaves the props unchanged, so Vue would not
-        // re-patch the box: put it back to whatever the server now says.
+        // Put the box back to what the server says (another photo may have taken the mark).
         onFinish: () => {
             const current = props.activity.photos.find((p) => p.id === photo.id);
             event.target.checked = Boolean(current?.in_report);
@@ -60,7 +58,10 @@ function doDelete() {
 }
 
 const a = computed(() => props.activity);
-const dates = computed(() => (a.value.ends_on && a.value.ends_on !== a.value.starts_on ? `${a.value.starts_on} → ${a.value.ends_on}` : a.value.starts_on));
+const dates = computed(() => {
+    const base = a.value.ends_on && a.value.ends_on !== a.value.starts_on ? `${a.value.starts_on} → ${a.value.ends_on}` : a.value.starts_on;
+    return a.value.date_label ? `${a.value.date_label} (${base})` : base;
+});
 const size = (n) => (n > 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.ceil(n / 1024)} KB`);
 const card = 'rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800';
 </script>
@@ -88,6 +89,8 @@ const card = 'rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-s
                     <dl class="grid gap-3 text-sm sm:grid-cols-2">
                         <div><dt class="text-slate-500 dark:text-slate-400">{{ t('activities.type') }}</dt><dd class="font-medium">{{ a.type?.name }}</dd></div>
                         <div><dt class="text-slate-500 dark:text-slate-400">{{ t('activities.dates') }}</dt><dd class="font-medium">{{ dates }}</dd></div>
+                        <div v-if="a.organizer"><dt class="text-slate-500 dark:text-slate-400">{{ t('activities.organizer') }}</dt><dd class="font-medium">{{ a.organizer }}</dd></div>
+                        <div v-if="a.result"><dt class="text-slate-500 dark:text-slate-400">{{ t('activities.result') }}</dt><dd class="font-medium">{{ a.result }}</dd></div>
                         <div v-if="a.location"><dt class="text-slate-500 dark:text-slate-400">{{ t('activities.location') }}</dt><dd class="font-medium">{{ a.location }}</dd></div>
                         <div v-if="a.partners"><dt class="text-slate-500 dark:text-slate-400">{{ t('activities.partners') }}</dt><dd class="font-medium">{{ a.partners }}</dd></div>
                         <div v-if="a.branch"><dt class="text-slate-500 dark:text-slate-400">{{ t('activities.branch') }}</dt><dd class="font-medium">{{ a.branch.localized_name }}</dd></div>
@@ -106,7 +109,7 @@ const card = 'rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-s
 
                 <section :class="card">
                     <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-                        <h2 class="font-semibold">{{ t('activities.photos') }} <span class="text-sm font-normal text-slate-500 dark:text-slate-400">· {{ t('activities.in_report_count', { n: inReportCount, max: reportLimit }) }}</span></h2>
+                        <h2 class="font-semibold">{{ t('activities.photos') }}</h2>
                         <label v-if="canEdit" class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-primary-700">
                             <Icon name="upload" class="h-4 w-4" /> {{ t('activities.add_photos') }}
                             <input type="file" accept="image/jpeg,image/png,image/webp" multiple class="hidden" :disabled="photoForm.processing" @change="uploadPhotos" />
@@ -123,9 +126,9 @@ const card = 'rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-s
                                 </div>
                                 <p v-else class="truncate text-slate-600 dark:text-slate-300">{{ p.caption || '—' }}</p>
                                 <div v-if="canEdit" class="flex items-center justify-between">
-                                    <label class="flex items-center gap-1" :title="t('activities.in_report_hint', { max: reportLimit })">
-                                        <input type="checkbox" :checked="p.in_report" :disabled="!p.in_report && inReportCount >= reportLimit" class="rounded border-slate-300" @change="toggleReport(p, $event)" />
-                                        {{ t('activities.in_report') }}
+                                    <label class="flex items-center gap-1" :title="t('activities.report_photo_hint')">
+                                        <input type="checkbox" :checked="p.in_report" class="rounded border-slate-300" @change="toggleReport(p, $event)" />
+                                        {{ t('activities.report_photo') }}
                                     </label>
                                     <span class="flex">
                                         <IconButton icon="pencil" :label="t('activities.caption')" plain size="sm" @click="captionEdit = p.id; captionText = p.caption || ''" />

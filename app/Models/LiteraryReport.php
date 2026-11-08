@@ -16,11 +16,12 @@ class LiteraryReport extends Model
     use SerializesClubDates;
 
     /** Every section, in the fixed print order. */
-    public const SECTIONS = ['cover', 'intro', 'members', 'board', 'attendance', 'sports', 'activities', 'finance', 'conclusion'];
+    public const SECTIONS = ['cover', 'intro', 'members', 'board', 'attendance', 'sports', 'activities', 'finance', 'conclusion', 'signatures', 'photos'];
 
     protected $fillable = [
         'title', 'period_from', 'period_to', 'sections',
-        'president_word', 'introduction', 'conclusion', 'created_by_user_id',
+        'president_word', 'introduction', 'conclusion', 'note', 'include_details',
+        'signer_1_board_member_id', 'signer_2_board_member_id', 'created_by_user_id',
     ];
 
     protected function casts(): array
@@ -29,6 +30,9 @@ class LiteraryReport extends Model
             'period_from' => 'date:Y-m-d',
             'period_to' => 'date:Y-m-d',
             'sections' => 'array',
+            'include_details' => 'boolean',
+            'signer_1_board_member_id' => 'integer',
+            'signer_2_board_member_id' => 'integer',
         ];
     }
 

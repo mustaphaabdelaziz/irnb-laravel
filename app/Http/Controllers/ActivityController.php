@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ActivityRequest;
 use App\Models\Activity;
-use App\Models\ActivityPhoto;
 use App\Models\ActivityType;
 use App\Models\BoardMember;
 use App\Models\Branch;
@@ -126,7 +125,6 @@ class ActivityController extends Controller
 
         return Inertia::render('Activities/Show', [
             'activity' => $data,
-            'reportLimit' => ActivityPhoto::REPORT_LIMIT,
         ]);
     }
 

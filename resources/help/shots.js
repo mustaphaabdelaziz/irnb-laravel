@@ -566,20 +566,8 @@ export default [
     },
     // After «إضافة»: the form is reset and the closure is listed under it (the demo's own).
     { name: 'set-closure', url: '/attendance/settings', targets: ['set-closures', 'set-closure-list'], before: (page) => centre(page, 'set-closures') },
-    {
-        // The pre-season target: Football, U17, this season (the default season); the
-        // form then shows the saved 12 by itself (Settings.vue's target watch).
-        name: 'set-targets',
-        url: '/attendance/settings',
-        targets: ['set-targets', 'set-target-save'],
-        before: async (page) => {
-            const card = page.locator('[data-help="set-targets"]');
-            await card.locator('select').nth(0).selectOption({ label: 'كرة القدم' });
-            await card.locator('select').nth(1).selectOption({ label: 'أقل من 17 سنة' });
-            await blur(page);
-            await centre(page, 'set-targets');
-        },
-    },
+    // No set-targets shot: after review the timetable article describes the «أهداف التحضير
+    // البدني» card in one sentence instead of a step (7-step cap), so nothing rings it.
     // The codes-rules example: «ت» instead of «R» for «متأخر», the unexcused-streak alert
     // at 3 (the default, left as it is), then a custom code «س» «مسافر» = «غائب بعذر».
     {

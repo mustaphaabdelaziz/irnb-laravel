@@ -196,7 +196,7 @@ function destroyCustom(s) {
                 <form data-help="set-closure-form" class="mb-4 flex flex-wrap items-end gap-2" @submit.prevent="submitClosure">
                     <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.start_date') }}<input v-model="closureForm.start_date" type="date" :class="[input, 'block']" /></label>
                     <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.end_date') }}<input v-model="closureForm.end_date" type="date" :class="[input, 'block']" /></label>
-                    <label class="flex-1 text-xs text-slate-500 dark:text-slate-400">{{ t('att.reason') }}<input v-model="closureForm.reason" type="text" maxlength="100" :class="[input, 'block w-full']" /></label>
+                    <label class="min-w-[10rem] flex-1 text-xs text-slate-500 dark:text-slate-400">{{ t('att.reason') }}<input v-model="closureForm.reason" type="text" maxlength="100" :class="[input, 'block w-full']" /></label>
                     <button data-help="set-closure-add" type="submit" :disabled="closureForm.processing" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">{{ t('att.add') }}</button>
                     <div class="w-full"><InputError v-for="(e, k) in closureForm.errors" :key="k" :message="e" /></div>
                 </form>

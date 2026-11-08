@@ -30,6 +30,10 @@ function saveOpening(y) {
     router.put(route('finance.years.update', y.id), { opening_balance: openingEdits[y.id] ?? y.opening_balance, label: y.label }, { preserveScroll: true });
 }
 
+// The newest open season and the newest closed one, marked for the Help Center screenshots.
+const currentOpenKey = computed(() => props.years.find((y) => y.status === 'open')?.year);
+const previousClosedKey = computed(() => props.years.find((y) => y.status === 'closed')?.year);
+
 /* ----- Confirmation (one modal for every destructive action on this page) ----- */
 // pending = { action: 'close' | 'reopen' | 'delete-year', item }
 const pending = ref(null);
@@ -102,7 +106,7 @@ function resetFinance() {
 
         <div class="space-y-6">
             <!-- Fiscal years -->
-            <section class="card overflow-hidden">
+            <section data-help="fy-table" class="card overflow-hidden">
                 <p class="border-b border-slate-100 px-5 py-3 text-sm font-bold text-slate-700 dark:border-slate-800 dark:text-slate-200">{{ t('fiscal_year') }}</p>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
@@ -134,8 +138,8 @@ function resetFinance() {
                                 </td>
                                 <td class="px-5 py-2.5 text-end">
                                     <div class="flex items-center justify-end gap-1">
-                                        <IconButton v-if="y.status !== 'closed'" icon="archive" :label="t('close_year')" plain size="sm" @click="askClose(y)" />
-                                        <IconButton v-else icon="refresh" :label="t('reopen_year')" variant="primary" plain size="sm" @click="askReopen(y)" />
+                                        <IconButton v-if="y.status !== 'closed'" icon="archive" :label="t('close_year')" plain size="sm" :data-help="y.year === currentOpenKey ? 'fy-close-current' : undefined" @click="askClose(y)" />
+                                        <IconButton v-else icon="refresh" :label="t('reopen_year')" variant="primary" plain size="sm" :data-help="y.year === previousClosedKey ? 'fy-reopen-previous' : undefined" @click="askReopen(y)" />
                                         <!-- Only an open year with no active transaction can go. -->
                                         <IconButton v-if="y.can_delete" icon="trash" :label="t('delete_year')" variant="danger" plain size="sm" @click="askDeleteYear(y)" />
                                     </div>
@@ -144,7 +148,7 @@ function resetFinance() {
                         </tbody>
                     </table>
                 </div>
-                <form @submit.prevent="addYear" class="flex flex-wrap items-end gap-3 border-t border-slate-100 px-5 py-4 dark:border-slate-800">
+                <form @submit.prevent="addYear" data-help="fy-add-form" class="flex flex-wrap items-end gap-3 border-t border-slate-100 px-5 py-4 dark:border-slate-800">
                     <label class="text-sm"><span class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('fiscal_year') }}</span>
                         <select v-model="yearForm.year" class="w-36 rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800">
                             <option v-for="s in seasonOptions" :key="s.value" :value="s.value">{{ s.label }}</option>
@@ -156,14 +160,14 @@ function resetFinance() {
             </section>
 
             <!-- Budgets -->
-            <section class="card p-5">
+            <section data-help="budget-card" class="card p-5">
                 <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
                     <p class="text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('budget') }}</p>
                     <div class="flex items-center gap-2">
-                        <select v-model="budgetYearId" class="rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800">
+                        <select v-model="budgetYearId" data-help="budget-season" class="rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800">
                             <option v-for="y in years" :key="y.id" :value="y.id">{{ y.season_label }}</option>
                         </select>
-                        <button @click="saveBudget" class="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-sm font-bold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900">{{ t('save_budget') }}</button>
+                        <button @click="saveBudget" data-help="budget-save" class="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-sm font-bold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900">{{ t('save_budget') }}</button>
                     </div>
                 </div>
                 <div class="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2">
@@ -175,6 +179,7 @@ function resetFinance() {
                         </span>
                         <input
                             type="number" step="0.01" min="0"
+                            :data-help="c.code === 'EQP' ? 'budget-line-eqp' : undefined"
                             :value="plannedFor(c.id)" @input="budgetDraft[c.id] = $event.target.value"
                             class="w-28 rounded-lg border-slate-200 bg-slate-50 py-1 text-end text-sm dark:border-slate-700 dark:bg-slate-800"
                         />

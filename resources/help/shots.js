@@ -738,6 +738,56 @@ export default [
             await page.waitForTimeout(400);
         },
     },
+    { name: 'fin-caisse-add-button', url: '/finance/registers', targets: ['reg-add'] },
+    {
+        // The reader's state before «حفظ»: new caisse named, put in Football's coffre, linked to «أقل من 17 سنة».
+        name: 'fin-caisse-add',
+        url: '/finance/registers',
+        targets: ['caisse-name', 'caisse-place', 'caisse-category', 'caisse-save'],
+        before: async (page) => {
+            await page.locator('[data-help="reg-add"]').click();
+            await page.locator('[data-help="caisse-name"]').waitFor({ state: 'visible' });
+            await page.locator('[data-help="caisse-name"] input').fill('صندوق أقل من 17 سنة');
+            await pickOption(page, '[data-help="caisse-place"] select', /Football|كرة القدم/);
+            await page.locator('[data-help="caisse-category"]').waitFor({ state: 'visible' });
+            await pickOption(page, '[data-help="caisse-category"] select', /أقل من 17 سنة/);
+            await blur(page);
+            await page.waitForTimeout(400);
+        },
+    },
+    { name: 'fin-caisse-edit-button', url: '/finance/registers', targets: ['reg-edit-caisse-first'] },
+    {
+        // Football's only caisse (U14, 1000 inside) opened; «نشط» unticked, the money warning shown. Not saved.
+        name: 'fin-caisse-deactivate',
+        url: '/finance/registers',
+        targets: ['caisse-active', 'caisse-save'],
+        before: async (page) => {
+            await page.locator('[data-help="reg-edit-caisse-first"]').click();
+            await page.locator('[data-help="caisse-active"]').waitFor({ state: 'visible' });
+            await page.locator('[data-help="caisse-active"] input').uncheck();
+            await blur(page);
+            await page.waitForTimeout(400);
+        },
+    },
+    { name: 'fin-dashboard-settings-link', url: '/finance', targets: ['nav-finance', 'fin-settings-link'] },
+    { name: 'fin-seasons', url: '/finance/settings', targets: ['fy-table', 'fy-close-current', 'fy-reopen-previous'] },
+    {
+        name: 'fin-budget',
+        url: '/finance/settings',
+        targets: ['budget-season', 'budget-line-eqp', 'budget-save'],
+        before: async (page) => { await centre(page, 'budget-card'); },
+    },
+    {
+        // The confirm the reader sees after «إقفال السنة» on the current season; never confirmed here.
+        name: 'fin-close-confirm',
+        url: '/finance/settings',
+        targets: ['confirm-panel', 'confirm-ok'],
+        before: async (page) => {
+            await page.locator('[data-help="fy-close-current"]').click();
+            await page.locator('[data-help="confirm-ok"]').waitFor({ state: 'visible' });
+            await page.waitForTimeout(400);
+        },
+    },
     {
         name: 'fin-tx-saved',
         url: '/transactions/create',
@@ -995,6 +1045,17 @@ async function tripScope(page) {
 }
 
 /** Drops the focus ring of the last field typed in or ticked. */
+/** Selects the first option of a <select> whose text matches the pattern. */
+async function pickOption(page, selector, pattern) {
+    const value = await page.locator(selector).first().evaluate((el, src) => {
+        const re = new RegExp(src);
+        const o = [...el.options].find((x) => !x.disabled && re.test(x.textContent));
+        return o ? o.value : null;
+    }, pattern.source);
+    if (value === null) throw new Error(`No option matching ${pattern} in ${selector}`);
+    await page.locator(selector).first().selectOption(value);
+}
+
 async function blur(page) {
     await page.evaluate(() => document.activeElement?.blur());
 }

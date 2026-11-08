@@ -1,0 +1,12 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "reg-edit-caisse-first": {
+      "x": 4.06,
+      "y": 45.79,
+      "w": 2.19,
+      "h": 3.5
+    }
+  }
+}

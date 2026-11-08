@@ -185,7 +185,7 @@ const csvName = (title) => `${title} ${season.value}`;
                 <template #actions>
                     <IconButton :href="route('finance.registers.index')" icon="wallet" :label="t('cash_registers')" />
                     <IconButton :href="route('reports.financial', { year: selectedYear })" external target="_blank" icon="print" :label="t('export')" />
-                    <IconButton v-if="can('finance', 'edit')" :href="route('finance.settings')" icon="settings" :label="t('finance_settings')" />
+                    <IconButton v-if="can('finance', 'edit')" data-help="fin-settings-link" :href="route('finance.settings')" icon="settings" :label="t('finance_settings')" />
                 </template>
             </StatsToolbar>
 

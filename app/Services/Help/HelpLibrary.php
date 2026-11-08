@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * The Help Center's articles: read from resources/help/{locale}/{topic}/{slug}.md,
  * cached (the key changes whenever an article or screenshot file changes), with
- * figures enriched from the screenshot script's output in public/help/shots.
+ * figures enriched from the screenshot script's output in public/help-shots.
  */
 final class HelpLibrary
 {
@@ -21,7 +21,7 @@ final class HelpLibrary
         private readonly HelpArticleParser $parser,
         private readonly string $contentPath,
         private readonly string $shotsPath,
-        private readonly string $shotsUrl = '/help/shots',
+        private readonly string $shotsUrl = '/help-shots',
     ) {}
 
     public function contentLocale(string $locale): string

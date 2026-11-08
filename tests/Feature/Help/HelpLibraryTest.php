@@ -45,7 +45,7 @@ class HelpLibraryTest extends TestCase
     {
         $figure = $this->library()->all('ar')['players/add-player']->blocks[0]['figures'][0];
 
-        $this->assertMatchesRegularExpression('#^/help/shots/ar/light/players-index\.webp\?v=\d+$#', $figure['light']);
+        $this->assertMatchesRegularExpression('#^/help-shots/ar/light/players-index\.webp\?v=\d+$#', $figure['light']);
         $this->assertNull($figure['dark']);
         $this->assertSame(1.6, $figure['aspect']);
         // Unknown ring names are dropped at runtime (help:check reports them).

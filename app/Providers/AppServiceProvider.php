@@ -38,7 +38,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(HelpLibrary::class, fn ($app) => new HelpLibrary(
             $app->make(HelpArticleParser::class),
             resource_path('help'),
-            public_path('help/shots'),
+            public_path('help-shots'),
         ));
     }
 

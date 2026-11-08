@@ -11,7 +11,7 @@ defineProps({ step: { type: Object, required: true } });
             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-600 text-base font-bold text-white shadow-sm">{{ step.number }}</span>
             <span class="pt-1">{{ step.heading }}</span>
         </h2>
-        <div v-if="step.html" class="help-prose mt-2 ps-12 text-base leading-relaxed text-slate-700 dark:text-slate-300" v-html="step.html" />
+        <div v-if="step.html" class="help-prose mt-2 text-base sm:ps-12 leading-relaxed text-slate-700 dark:text-slate-300" v-html="step.html" />
         <HelpFigure v-for="(figure, i) in step.figures" :key="i" :figure="figure" :number="step.number" :alt="step.heading" />
     </section>
 </template>

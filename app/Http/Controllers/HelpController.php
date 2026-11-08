@@ -22,7 +22,7 @@ class HelpController extends Controller
         $topics = [];
         foreach ($this->help->topics() as $slug => $topic) {
             $articles = array_values(array_map(
-                fn (HelpArticle $a): array => $a->summary(),
+                fn (HelpArticle $a): array => $a->summary() + ['keywords' => $a->keywords, 'headings' => $a->headings()],
                 array_filter($visible, fn (HelpArticle $a): bool => $a->topic === $slug),
             ));
             if ($articles !== []) {

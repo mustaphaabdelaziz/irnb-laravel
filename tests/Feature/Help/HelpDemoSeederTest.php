@@ -43,7 +43,8 @@ class HelpDemoSeederTest extends TestCase
         $photo = DocumentType::where('code', DocumentType::PHOTO)->firstOrFail();
         $this->assertSame(4, $photo->copies);
         $this->assertSame(2, $photo->branches()->count());
-        $this->assertFalse(DocumentType::where('code', 'PHOTO')->exists());
+        // Case-exact in PHP: a case-insensitive collation would match 'PHOTO' against any spelling.
+        $this->assertNotContains('PHOTO', DocumentType::pluck('code')->all());
         $this->assertFalse(Category::query()->where('name', 'Senior')->exists());
     }
 
@@ -77,6 +78,19 @@ class HelpDemoSeederTest extends TestCase
         }
 
         $this->assertFalse(User::where('username', HelpDemoSeeder::USERNAME)->exists());
+    }
+
+    #[Test]
+    public function it_runs_only_on_the_screenshot_scripts_sqlite_file(): void
+    {
+        $this->assertTrue(HelpDemoSeeder::canRunOn('sqlite', 'D:\\irnb\\storage\\help-demo.sqlite'));
+        $this->assertTrue(HelpDemoSeeder::canRunOn('sqlite', '/srv/app/storage/help-demo.sqlite'));
+
+        $this->assertFalse(HelpDemoSeeder::canRunOn('sqlite', '/srv/app/database/database.sqlite'));
+        $this->assertFalse(HelpDemoSeeder::canRunOn('sqlite', '/srv/app/storage/help-demo.sqlite.bak'));
+        $this->assertFalse(HelpDemoSeeder::canRunOn('sqlite', null));
+        $this->assertFalse(HelpDemoSeeder::canRunOn('mysql', 'help-demo.sqlite'));
+        $this->assertFalse(HelpDemoSeeder::canRunOn('pgsql', 'irnb'));
     }
 
     #[Test]

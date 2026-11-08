@@ -16,15 +16,21 @@ const props = defineProps({
 
 const { t } = useI18n();
 const query = ref('');
-const recent = readJson('help.recent', []);
+const stored = readJson('help.recent', []);
 const topicLabel = (slug) => t(`help.topic.${slug.replaceAll('-', '_')}`);
 // Article text keeps its own direction (Arabic articles in a French/English UI).
 const contentDir = computed(() => (props.contentLocale === 'ar' ? 'rtl' : 'ltr'));
 
 const all = computed(() => props.topics.flatMap((topic) => topic.articles.map((a) => ({
     ...a,
-    haystack: normalize(`${a.title} ${a.summary} ${topicLabel(topic.slug)}`),
+    haystack: normalize([a.title, a.summary, topicLabel(topic.slug), ...(a.keywords ?? []), ...(a.headings ?? [])].join(' ')),
 }))));
+// Recently read is per browser, not per user: list only articles this user can see
+// (a shared desktop must not show another user's hidden articles).
+const recent = computed(() => {
+    const visible = new Map(all.value.map((a) => [a.key, a]));
+    return (Array.isArray(stored) ? stored : []).filter((r) => visible.has(r?.key)).map((r) => visible.get(r.key));
+});
 const results = computed(() => {
     const q = normalize(query.value);
     return q === '' ? [] : all.value.filter((a) => a.haystack.includes(q));

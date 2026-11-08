@@ -46,6 +46,10 @@ The `←` notes explain each line; they are not part of the file.
 
 ## Screenshots
 
+One-time setup on a new machine (the script drives the full Chromium build):
+
+    npx playwright install chromium
+
 1. Put `data-help="<name>"` on the element in the Vue page (attribute only).
 2. Add or extend the shot in `resources/help/shots.js`.
 3. `npm run build && npm run help:shots` (or `npm run help:shots -- <shot>`).

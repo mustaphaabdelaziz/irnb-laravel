@@ -15,10 +15,28 @@ final class HelpLibrary
 {
     public const FALLBACK_LOCALE = 'ar';
 
+    /**
+     * Part of the cache key. Bump it when the parser or enrich output shape changes,
+     * so entries written by an older release are ignored instead of hydrated.
+     * (2: plain arrays instead of serialized objects.)
+     */
+    private const CACHE_VERSION = 2;
+
     private ?array $config = null;
 
-    /** @var array<string, array<string, HelpArticle>> hydrated articles per "help:{locale}:{fingerprint}" */
+    /** @var array<string, array<string, HelpArticle>> hydrated articles per cache key */
     private array $hydrated = [];
+
+    /**
+     * Per-instance memos: the container keeps one library per request, so a request
+     * globs and stats the files once per locale; the next request sees file changes.
+     *
+     * @var array<string, string>
+     */
+    private array $contentLocales = [];
+
+    /** @var array<string, string> */
+    private array $fingerprints = [];
 
     public function __construct(
         private readonly HelpArticleParser $parser,
@@ -29,7 +47,7 @@ final class HelpLibrary
 
     public function contentLocale(string $locale): string
     {
-        return $this->files($locale) !== [] ? $locale : self::FALLBACK_LOCALE;
+        return $this->contentLocales[$locale] ??= $this->files($locale) !== [] ? $locale : self::FALLBACK_LOCALE;
     }
 
     public function isFallback(string $locale): bool
@@ -54,13 +72,13 @@ final class HelpLibrary
     {
         $locale = $this->contentLocale($locale);
 
-        $key = "help:v2:{$locale}:".$this->fingerprint($locale);
+        $key = 'help:v'.self::CACHE_VERSION.":{$locale}:".$this->fingerprint($locale);
 
         if (isset($this->hydrated[$key])) {
             return $this->hydrated[$key];
         }
 
-        // v2 key: ignores object-format entries cached by the earlier release. Plain arrays only: the cache refuses to unserialize objects (serializable_classes => false).
+        // Plain arrays only: the cache refuses to unserialize objects (serializable_classes => false).
         $cached = Cache::remember(
             $key,
             now()->addDay(),
@@ -119,9 +137,16 @@ final class HelpLibrary
                         $problems[] = "{$where} has no {$theme} screenshot";
                     }
                 }
-                $targets = $this->shot($locale, $figure['shot'])['targets'] ?? [];
+                $shot = $this->shot($locale, $figure['shot']);
+                if (! $shot['valid']) {
+                    $problems[] = "{$where} has invalid screenshot JSON";
+                }
+                foreach ($shot['malformed'] as $name) {
+                    $problems[] = "{$where} target \"{$name}\" is malformed";
+                }
                 foreach (array_filter([...$figure['ring'], $figure['zoom']]) as $name) {
-                    if (! isset($targets[$name])) {
+                    // A malformed target is reported above, not again as unknown.
+                    if (! isset($shot['targets'][$name]) && ! in_array($name, $shot['malformed'], true)) {
                         $problems[] = "{$where} rings unknown target \"{$name}\"";
                     }
                 }
@@ -200,13 +225,13 @@ final class HelpLibrary
     private function enrichFigure(array $figure, string $locale): array
     {
         $shot = $this->shot($locale, $figure['shot']);
-        $targets = $shot['targets'] ?? [];
+        $targets = $shot['targets'];
         $box = fn (array $t): array => ['x' => (float) $t['x'], 'y' => (float) $t['y'], 'w' => (float) $t['w'], 'h' => (float) $t['h']];
 
         return $figure + [
             'light' => $this->imageUrl($locale, 'light', $figure['shot']),
             'dark' => $this->imageUrl($locale, 'dark', $figure['shot']),
-            'aspect' => isset($shot['width'], $shot['height']) && $shot['height'] > 0
+            'aspect' => $shot['width'] !== null && $shot['height'] !== null && $shot['height'] > 0
                 ? round($shot['width'] / $shot['height'], 4)
                 : 1.6,
             'rings' => array_values(array_map(
@@ -224,11 +249,42 @@ final class HelpLibrary
         return is_file($path) ? "{$this->shotsUrl}/{$locale}/{$theme}/{$shot}.webp?v=".filemtime($path) : null;
     }
 
+    /**
+     * The screenshot script's JSON for one shot, defensively read: a hand-edited or
+     * truncated file must never 500 a help page. Bad JSON counts as no data; targets
+     * that are not {x, y, w, h} numbers are dropped and named in `malformed`.
+     *
+     * @return array{valid: bool, width: ?float, height: ?float, targets: array<string, array{x: float|int, y: float|int, w: float|int, h: float|int}>, malformed: list<string>}
+     */
     private function shot(string $locale, string $shot): array
     {
+        $result = ['valid' => true, 'width' => null, 'height' => null, 'targets' => [], 'malformed' => []];
         $path = "{$this->shotsPath}/{$locale}/{$shot}.json";
+        if (! is_file($path)) {
+            return $result;
+        }
 
-        return is_file($path) ? (json_decode((string) file_get_contents($path), true) ?: []) : [];
+        $data = json_decode((string) file_get_contents($path), true);
+        if (! is_array($data) || (isset($data['targets']) && ! is_array($data['targets']))) {
+            return ['valid' => false] + $result;
+        }
+
+        foreach (['width', 'height'] as $side) {
+            $result[$side] = isset($data[$side]) && is_numeric($data[$side]) ? (float) $data[$side] : null;
+        }
+        foreach ($data['targets'] ?? [] as $name => $target) {
+            $isBox = is_array($target);
+            foreach (['x', 'y', 'w', 'h'] as $k) {
+                $isBox = $isBox && isset($target[$k]) && is_numeric($target[$k]);
+            }
+            if ($isBox) {
+                $result['targets'][(string) $name] = $target;
+            } else {
+                $result['malformed'][] = (string) $name;
+            }
+        }
+
+        return $result;
     }
 
     /** @return list<array<string, mixed>> */
@@ -256,6 +312,11 @@ final class HelpLibrary
     }
 
     private function fingerprint(string $locale): string
+    {
+        return $this->fingerprints[$locale] ??= $this->computeFingerprint($locale);
+    }
+
+    private function computeFingerprint(string $locale): string
     {
         $paths = [
             ...$this->files($locale),

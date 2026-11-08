@@ -50,9 +50,24 @@ class HelpDemoSeeder extends Seeder
         ['شيماء', 'مزياني', 'رضا', 'عبد الله', 'Female', '2011-08-16', 'swim', 'أصاغر'],
     ];
 
+    /** The screenshot script's throwaway file (storage/help-demo.sqlite), nothing else. */
+    public static function canRunOn(string $driver, ?string $database): bool
+    {
+        return $driver === 'sqlite'
+            && $database !== null
+            && str_ends_with(str_replace('\\', '/', $database), '/help-demo.sqlite');
+    }
+
     public function run(): void
     {
-        if (app()->isProduction() || Player::query()->exists()) {
+        $connection = config('database.default');
+        $onDemoFile = self::canRunOn(
+            (string) config("database.connections.{$connection}.driver"),
+            config("database.connections.{$connection}.database"),
+        );
+
+        // The test suite runs on its own in-memory database, so it is allowed too.
+        if (app()->isProduction() || Player::query()->exists() || (! $onDemoFile && ! app()->runningUnitTests())) {
             throw new \RuntimeException('HelpDemoSeeder only runs on an empty throwaway database (scripts/help-shots.mjs).');
         }
 

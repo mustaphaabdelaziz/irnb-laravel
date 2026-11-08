@@ -54,6 +54,9 @@ class HelpPagesTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->has('topics', 2)
                 ->where('topics.1.articles.0.key', 'players/find-player')
+                // The page's own search also matches keywords and step headings.
+                ->where('topics.1.articles.1.keywords', ['تسجيل'])
+                ->where('topics.1.articles.1.headings', ['اضغط «إضافة لاعب»'])
                 ->has('startHere', 2));
     }
 

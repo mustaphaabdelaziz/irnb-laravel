@@ -125,6 +125,81 @@ class HelpLibraryTest extends TestCase
         }
     }
 
+    /** A copy of the fixture shots with players-index.json replaced by $json. */
+    private function withShotJson(string $json, callable $test): void
+    {
+        $shots = storage_path('framework/testing/help-shots-'.uniqid());
+        File::copyDirectory(base_path('tests/Fixtures/help-shots'), $shots);
+        File::put("{$shots}/ar/players-index.json", $json);
+
+        try {
+            $test(new HelpLibrary(new HelpArticleParser, base_path('tests/Fixtures/help'), $shots));
+        } finally {
+            File::deleteDirectory($shots);
+        }
+    }
+
+    #[Test]
+    public function unreadable_or_non_object_shot_json_never_breaks_a_page(): void
+    {
+        foreach (['{not json', '"just a string"', '42', '{"width":1280,"height":800,"targets":"nope"}'] as $json) {
+            $this->withShotJson($json, function (HelpLibrary $lib) use ($json): void {
+                $figure = $lib->all('ar')['players/add-player']->blocks[0]['figures'][0];
+
+                $this->assertSame([], $figure['rings'], $json);
+                $this->assertNull($figure['zoomBox'], $json);
+                $this->assertStringContainsString(
+                    'players/add-player: figure "players-index" has invalid screenshot JSON',
+                    implode("\n", $lib->problems('ar')),
+                    $json,
+                );
+            });
+        }
+    }
+
+    #[Test]
+    public function malformed_targets_are_skipped_and_reported(): void
+    {
+        $json = json_encode(['width' => 1280, 'height' => 800, 'targets' => [
+            'add-player' => ['x' => 'left', 'y' => 9.5, 'w' => 8.4],
+            'ghost' => 'not a box',
+        ]]);
+
+        $this->withShotJson($json, function (HelpLibrary $lib): void {
+            $figure = $lib->all('ar')['players/add-player']->blocks[0]['figures'][0];
+
+            $this->assertSame([], $figure['rings']);
+            $this->assertNull($figure['zoomBox']);
+            $problems = implode("\n", $lib->problems('ar'));
+            $this->assertStringContainsString('players/add-player: figure "players-index" target "add-player" is malformed', $problems);
+            $this->assertStringContainsString('players/add-player: figure "players-index" target "ghost" is malformed', $problems);
+            $this->assertStringNotContainsString('has invalid screenshot JSON', $problems);
+        });
+    }
+
+    #[Test]
+    public function an_edited_article_shows_up_on_the_next_request(): void
+    {
+        $dir = storage_path('framework/testing/help-'.uniqid());
+        File::copyDirectory(base_path('tests/Fixtures/help'), $dir);
+
+        try {
+            $first = $this->library($dir);
+            $this->assertSame('كيف أضيف لاعباً جديداً', $first->all('ar')['players/add-player']->title);
+
+            $file = "{$dir}/ar/players/add-player.md";
+            File::put($file, str_replace('title: كيف أضيف لاعباً جديداً', 'title: عنوان جديد', File::get($file)));
+            touch($file, time() + 60);
+            clearstatcache();
+
+            // One instance per request: the same request keeps its memo, the next one re-reads.
+            $this->assertSame('كيف أضيف لاعباً جديداً', $first->all('ar')['players/add-player']->title);
+            $this->assertSame('عنوان جديد', $this->library($dir)->all('ar')['players/add-player']->title);
+        } finally {
+            File::deleteDirectory($dir);
+        }
+    }
+
     #[Test]
     public function the_library_works_on_a_cache_store_that_refuses_objects(): void
     {

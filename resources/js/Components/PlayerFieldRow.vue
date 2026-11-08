@@ -4,10 +4,11 @@ import Icon from '@/Components/Icon.vue';
 /**
  * One line of a member's record: an icon to find it by, the label that says
  * what it is, and the value. The icon never replaces the label — it is there
- * to make the page scannable, not to be decoded.
+ * to make the page scannable, not to be decoded. The `icon` slot swaps in a
+ * live icon (e.g. a WhatsApp link) in place of the plain one.
  */
 defineProps({
-    icon: { type: String, required: true },
+    icon: { type: String, default: '' },
     label: { type: String, required: true },
     value: { type: [String, Number], default: '' },
     mono: { type: Boolean, default: false },
@@ -16,7 +17,7 @@ defineProps({
 
 <template>
     <div class="flex items-start gap-2.5">
-        <span class="mt-0.5 text-slate-400 dark:text-slate-400"><Icon :name="icon" /></span>
+        <span class="mt-0.5 text-slate-400 dark:text-slate-400"><slot name="icon"><Icon :name="icon" /></slot></span>
         <div class="min-w-0">
             <dt class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ label }}</dt>
             <dd class="text-sm text-slate-900 dark:text-slate-100" :class="mono ? 'font-mono' : ''">

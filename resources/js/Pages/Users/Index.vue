@@ -14,6 +14,7 @@ import { computed, ref } from 'vue';
 import { asList, useListFilters } from '@/Composables/useListFilters';
 import MultiSelectFilter from '@/Components/MultiSelectFilter.vue';
 import IconButton from '@/Components/IconButton.vue';
+import WhatsAppLink from '@/Components/WhatsAppLink.vue';
 import { useCan } from '@/Composables/useCan';
 
 const { t, locale } = useI18n();
@@ -155,7 +156,10 @@ function initial(user) {
                                         </div>
                                     </div>
                                 </td>
-                                <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ user.phones?.[0] || '-' }}</td>
+                                <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
+                                    <span v-if="user.phones?.[0]" class="inline-flex items-center gap-1.5"><WhatsAppLink :phone="user.phones[0]" /><span dir="ltr">{{ user.phones[0] }}</span></span>
+                                    <template v-else>-</template>
+                                </td>
                                 <td class="whitespace-nowrap px-4 py-3">
                                     <div class="flex flex-wrap gap-1">
                                         <Badge v-if="user.is_superadmin" :label="t('super_admin')" color="primary" />

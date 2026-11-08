@@ -9,6 +9,7 @@ import IconButton from '@/Components/IconButton.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import OrgNode from '@/Components/Board/OrgNode.vue';
 import { formatPhone } from '@/lib/phone';
+import WhatsAppLink from '@/Components/WhatsAppLink.vue';
 import { useCan } from '@/Composables/useCan';
 
 const props = defineProps({
@@ -367,7 +368,7 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                         <div class="min-w-0 flex-1">
                             <p class="truncate text-base font-bold text-slate-900 dark:text-slate-100">{{ selected.member.name }}</p>
                             <p class="text-xs font-semibold text-primary-600 dark:text-primary-300">{{ roleLabel(selected.member.role) }}<span v-if="selected.member.status !== 'active'"> · {{ t(selected.member.status) }}</span></p>
-                            <p v-if="selected.member.phone" dir="ltr" class="mt-0.5 truncate text-start font-mono text-xs text-slate-500 dark:text-slate-400">{{ formatPhone(selected.member.phone) }}</p>
+                            <p v-if="selected.member.phone" class="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400"><WhatsAppLink :phone="selected.member.phone" /><span dir="ltr" class="truncate font-mono">{{ formatPhone(selected.member.phone) }}</span></p>
                             <p v-if="selected.member.email" class="truncate text-xs text-slate-500 dark:text-slate-400">{{ selected.member.email }}</p>
                         </div>
                         <button type="button" @click="selected = null" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><Icon name="xcircle" /></button>

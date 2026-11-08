@@ -10,6 +10,7 @@ import SearchInput from '@/Components/SearchInput.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import WhatsAppLink from '@/Components/WhatsAppLink.vue';
 import { useCan } from '@/Composables/useCan';
 import { useListFilters } from '@/Composables/useListFilters';
 
@@ -80,7 +81,7 @@ const returning = ref(null);
                                         <span v-else class="font-medium text-slate-800 dark:text-slate-200">{{ r.recipient_name || '—' }}</span>
                                     </div>
                                     <span v-if="r.membership_id" class="font-mono text-xs text-slate-400">{{ r.membership_id }}</span>
-                                    <span v-else-if="r.external_phone" class="text-xs text-slate-400">{{ r.external_phone }}</span>
+                                    <span v-else-if="r.external_phone" class="inline-flex items-center gap-1 text-xs text-slate-400"><WhatsAppLink :phone="r.external_phone" /><span dir="ltr">{{ r.external_phone }}</span></span>
                                 </td>
                                 <td class="px-4 py-3 text-sm">
                                     <Link v-if="r.catalog" :href="route('equipment.catalogs.show', r.catalog.id)" class="text-slate-800 hover:text-primary-600 dark:text-slate-200 dark:hover:text-primary-300">{{ r.catalog.name }}</Link>

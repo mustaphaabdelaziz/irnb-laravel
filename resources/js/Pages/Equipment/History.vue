@@ -6,6 +6,7 @@ import RentalTypeBadge from '@/Components/RentalTypeBadge.vue';
 import StatTile from '@/Components/Dashboard/StatTile.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import WhatsAppLink from '@/Components/WhatsAppLink.vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
@@ -146,7 +147,7 @@ const eventLabel = (type) => {
                     </Link>
                     <span v-else class="ms-1 text-amber-900 dark:text-amber-200">
                         {{ item.rented_to.name }}
-                        <span v-if="item.rented_to.phone" class="text-amber-700 dark:text-amber-300">({{ item.rented_to.phone }})</span>
+                        <span v-if="item.rented_to.phone" class="inline-flex items-center gap-1 align-middle text-amber-700 dark:text-amber-300"><WhatsAppLink :phone="item.rented_to.phone" /><span dir="ltr">{{ item.rented_to.phone }}</span></span>
                     </span>
                     <span v-if="item.due_date" class="ms-2 text-amber-700 dark:text-amber-300"> — {{ t('return_date') }}: {{ item.due_date }}</span>
                 </div>

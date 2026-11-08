@@ -57,6 +57,7 @@ use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\LiteraryReportController;
 use App\Http\Controllers\MemberJobController;
 use App\Http\Controllers\MembershipIdController;
+use App\Http\Controllers\OpenWhatsAppController;
 use App\Http\Controllers\OpponentController;
 use App\Http\Controllers\PlayerAcademicRecordController;
 use App\Http\Controllers\PlayerAcademicYearController;
@@ -172,6 +173,12 @@ Route::middleware(['auth', 'approved'])->group(function () {
         ->where(['topic' => '[a-z0-9-]+', 'slug' => '[a-z0-9-]+'])
         ->name('help.show');
 });
+
+// Desktop app: open a WhatsApp chat in the OS browser (see OpenWhatsAppController).
+// No `permission` middleware — it only opens wa.me for a number already on screen.
+Route::middleware(['auth', 'approved', 'desktop'])
+    ->post('/desktop/whatsapp', OpenWhatsAppController::class)
+    ->name('desktop.whatsapp');
 
 // Authenticated routes — require an approved, active account.
 // The `permission` middleware enforces per-module (view/add/edit/delete) access

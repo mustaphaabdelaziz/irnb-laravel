@@ -150,5 +150,7 @@ class HelpDemoSeeder extends Seeder
                 ]);
             }
         }
+
+        $this->call(HelpDemoSubscriptionsSeeder::class);
     }
 }

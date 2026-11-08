@@ -102,6 +102,7 @@ onUnmounted(() => {
             <Icon name="search" class="shrink-0 text-lg text-slate-400" />
             <input
                 ref="input"
+                data-help="palette-input"
                 v-model="query"
                 type="text"
                 role="combobox"

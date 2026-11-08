@@ -146,6 +146,7 @@ function switchLocale(code) {
 
         <!-- ===== SIDEBAR ===== -->
         <aside
+            data-help="sidebar"
             class="fixed inset-y-0 start-0 z-50 flex flex-col border-e border-slate-200 bg-white text-slate-700 transition-[width,transform] duration-200 ease-out motion-reduce:transition-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 print:hidden"
             :class="[
                 compact ? 'w-16' : 'w-64',
@@ -195,6 +196,7 @@ function switchLocale(code) {
                         </template>
                         <SidebarSection
                             v-else
+                            :data-help="section.key === 'members' ? 'nav-members' : null"
                             :section="section"
                             :url="url"
                             :user-open="isOpen(section.key)"
@@ -233,6 +235,7 @@ function switchLocale(code) {
             <!-- Footer: user + language -->
             <div class="shrink-0 space-y-3 border-t border-slate-200 p-3 dark:border-slate-800" :class="compact ? 'px-2' : ''">
                 <Link
+                    data-help="sidebar-profile"
                     :href="route('profile.edit')"
                     class="flex items-center rounded-xl p-2 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
                     :class="compact ? 'justify-center' : 'gap-3'"
@@ -245,7 +248,7 @@ function switchLocale(code) {
                     </span>
                 </Link>
                 <div class="flex items-center gap-2" :class="compact ? 'flex-col' : ''">
-                    <div class="flex flex-1 items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800" :class="compact ? 'w-full flex-col' : ''">
+                    <div data-help="language-switch" class="flex flex-1 items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800" :class="compact ? 'w-full flex-col' : ''">
                         <button
                             v-for="loc in locales"
                             :key="loc.code"
@@ -316,7 +319,7 @@ function switchLocale(code) {
                     <Icon name="help" />
                 </button>
 
-                <ThemeToggle class="print:hidden" />
+                <ThemeToggle data-help="theme-toggle" class="print:hidden" />
 
                 <a :href="route('home')" target="_blank" class="hidden rounded-lg p-2 text-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200 sm:block print:hidden" :title="t('home')">
                     <Icon name="external" />

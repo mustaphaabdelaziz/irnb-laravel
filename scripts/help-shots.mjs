@@ -111,6 +111,7 @@ async function capture(context, shot, theme) {
     if (theme === 'light') {
         writeFileSync(join(out, `${shot.name}.json`), JSON.stringify({ ...viewport, targets }, null, 2) + '\n');
     }
+    if (shot.after) await shot.after(page);
     await page.close();
 }
 

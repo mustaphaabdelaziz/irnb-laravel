@@ -1,6 +1,8 @@
 // Every screenshot the help articles use. `targets` are data-help names whose
 // boxes are saved for rings and magnifiers; `before` runs after the page loads
-// (open a menu, type a search). Player 1 is أحمد بن علي (HelpDemoSeeder).
+// (open a menu, type a search); the optional `after` runs once the screenshot and boxes
+// are saved, to undo what the shot wrote (the light and dark passes share one seeded
+// database). Player 1 is أحمد بن علي (HelpDemoSeeder).
 
 // Attendance data is dated relative to the seed day (HelpDemoAttendanceSeeder): shots
 // run right after seeding, so "today" here is the seed day. Session 1 is the next U17
@@ -648,7 +650,7 @@ export default [
 
     // --- Finance --- (HelpDemoFinanceSeeder). Accounts: 1 club cash, 3 bank, 4 Swimming coffre,
     // 5 Football coffre. fin-tx-saved WRITES (it saves a new entry): keep it the last finance
-    // shot, and run it in an invocation of its own (the dark pass would see the light pass's row).
+    // shot. Its `after` hook deletes the entry again, so later shots and the dark pass see the seeded data.
     { name: 'fin-tx-list', url: '/transactions', targets: ['nav-transactions', 'tx-add', 'tx-search', 'tx-filter-type', 'tx-filter-caisse', 'tx-filter-season', 'tx-more'] },
     {
         // The reader's state before «حفظ»: an expense typed in, caisse and method chosen.
@@ -693,6 +695,13 @@ export default [
                 page.locator('[data-help="txf-save"]').click(),
             ]);
             await page.waitForLoadState('networkidle');
+        },
+        // Archive the entry just saved (the only row with this title) through the list's «حذف».
+        after: async (page) => {
+            await page.goto(new URL('/transactions?search=' + encodeURIComponent('شباك المرمى'), page.url()).href, { waitUntil: 'networkidle' });
+            await page.locator('tbody tr', { hasText: 'شباك المرمى' }).first().locator('button').last().click();
+            await page.getByRole('button', { name: 'حذف', exact: true }).last().click();
+            await page.getByText('تمت أرشفة المعاملة بنجاح.').waitFor({ state: 'visible', timeout: 10000 });
         },
     },
 ];

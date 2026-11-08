@@ -43,3 +43,22 @@ export function formatPhone(value) {
     // Mobile (05/06/07) and anything else: pairs.
     return pairs(clean);
 }
+
+/**
+ * The number as WhatsApp wants it: full international digits, no "+", or null
+ * when there is none. A national Algerian number (mobile 0X XX XX XX XX or
+ * landline 0XX XX XX XX) gets 213 in place of its leading 0.
+ */
+export function whatsAppDigits(value) {
+    const clean = phoneDigits(value);
+    if (!clean) return null;
+    if (clean.startsWith('+')) return clean.slice(1) || null;
+    if (/^0\d{8,9}$/.test(clean)) return `213${clean.slice(1)}`;
+    return clean;
+}
+
+/** wa.me chat link for a number, or null when there is none. */
+export function whatsAppUrl(value) {
+    const digits = whatsAppDigits(value);
+    return digits ? `https://wa.me/${digits}` : null;
+}

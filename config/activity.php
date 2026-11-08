@@ -45,6 +45,7 @@ $routes = [
     // players
     'players.update' => ActivityAction::PLAYER_UPDATED,
     'players.join-dates.update' => ActivityAction::PLAYER_UPDATED,
+    'players.join-dates.bulk-update' => [ActivityAction::PLAYER_UPDATED, 'count' => 'dates'],
     'players.registrations.destroy' => ActivityAction::PLAYER_UPDATED,
     'players.bulkUpdate' => [ActivityAction::PLAYER_UPDATED, 'count' => 'ids'],
     'branches.players.sync' => ActivityAction::PLAYER_UPDATED,

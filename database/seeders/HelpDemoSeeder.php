@@ -52,7 +52,14 @@ class HelpDemoSeeder extends Seeder
 
     public function run(): void
     {
+        if (app()->isProduction() || Player::query()->exists()) {
+            throw new \RuntimeException('HelpDemoSeeder only runs on an empty throwaway database (scripts/help-shots.mjs).');
+        }
+
         $this->call(DatabaseSeeder::class);
+
+        // Drop the default English categories so only the Arabic demo ones show in screenshots.
+        Category::query()->whereIn('name', ['Senior', 'Junior', 'Cadet', 'Minime', 'Ecole'])->delete();
 
         WebsiteConfig::singleton()->update([
             'club_name' => ['ar' => 'نادي المثال', 'fr' => 'Club Exemple', 'en' => 'Example Club'],

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Help;
 
+use App\Models\Category;
 use App\Models\DocumentType;
 use App\Models\Player;
 use App\Models\User;
@@ -31,9 +32,10 @@ class HelpDemoSeederTest extends TestCase
         $this->assertSame(1, $ahmed->registrations()->count());
 
         $this->assertGreaterThanOrEqual(20, Player::count());
-        // Players 2 and 4 also swim (branch-registrations article).
+        // The 2nd and 4th players (indices 1 and 3) also swim (branch-registrations article).
         $this->assertSame(2, Player::has('registrations', '>=', 2)->count());
         $this->assertGreaterThanOrEqual(3, DocumentType::count());
+        $this->assertFalse(Category::query()->where('name', 'Senior')->exists());
     }
 
     #[Test]
@@ -44,5 +46,36 @@ class HelpDemoSeederTest extends TestCase
         $this->post('/login', ['username' => HelpDemoSeeder::USERNAME, 'password' => HelpDemoSeeder::PASSWORD])
             ->assertRedirect();
         $this->assertAuthenticated();
+    }
+
+    #[Test]
+    public function it_refuses_a_database_that_already_has_players(): void
+    {
+        $category = Category::create(['name' => 'X']);
+        Player::create([
+            'membership_id' => 'X-1',
+            'firstname' => 'A',
+            'lastname' => 'B',
+            'category_id' => $category->id,
+            'outstanding_debt' => 0,
+        ]);
+
+        try {
+            $this->seed(HelpDemoSeeder::class);
+            $this->fail('Seeder should have refused a database with players.');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('empty throwaway database', $e->getMessage());
+        }
+
+        $this->assertFalse(User::where('username', HelpDemoSeeder::USERNAME)->exists());
+    }
+
+    #[Test]
+    public function it_refuses_production(): void
+    {
+        $this->app['env'] = 'production';
+
+        $this->expectException(\RuntimeException::class);
+        app(HelpDemoSeeder::class)->run();
     }
 }

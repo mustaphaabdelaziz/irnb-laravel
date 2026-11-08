@@ -712,7 +712,7 @@ export default [
             await page.waitForTimeout(300);
         },
     },
-    { name: 'fin-registers', url: '/finance/registers', targets: ['reg-tiles', 'reg-move', 'reg-branch-football'] },
+    { name: 'fin-registers', url: '/finance/registers', targets: ['nav-registers', 'reg-tiles', 'reg-move', 'reg-branch-football'] },
     {
         name: 'fin-registers-history',
         url: '/finance/registers',

@@ -12,6 +12,7 @@ use App\Services\Player\MembershipNumber;
 use App\Services\Player\RegistrationService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use RuntimeException;
 
 /**
  * The fake club the Help Center screenshots are taken on (scripts/help-shots.mjs).
@@ -58,7 +59,10 @@ class HelpDemoSeeder extends Seeder
             && str_ends_with(str_replace('\\', '/', $database), '/help-demo.sqlite');
     }
 
-    public function run(): void
+    private const REFUSAL = 'HelpDemoSeeder only runs on an empty throwaway database (scripts/help-shots.mjs).';
+
+    /** Shared by the sub-seeders: refuses production and any database but the script's own file. */
+    public static function assertThrowawayDatabase(): void
     {
         $connection = config('database.default');
         $onDemoFile = self::canRunOn(
@@ -67,8 +71,17 @@ class HelpDemoSeeder extends Seeder
         );
 
         // The test suite runs on its own in-memory database, so it is allowed too.
-        if (app()->isProduction() || Player::query()->exists() || (! $onDemoFile && ! app()->runningUnitTests())) {
-            throw new \RuntimeException('HelpDemoSeeder only runs on an empty throwaway database (scripts/help-shots.mjs).');
+        if (app()->isProduction() || (! $onDemoFile && ! app()->runningUnitTests())) {
+            throw new RuntimeException(self::REFUSAL);
+        }
+    }
+
+    public function run(): void
+    {
+        self::assertThrowawayDatabase();
+
+        if (Player::query()->exists()) {
+            throw new RuntimeException(self::REFUSAL);
         }
 
         $this->call(DatabaseSeeder::class);

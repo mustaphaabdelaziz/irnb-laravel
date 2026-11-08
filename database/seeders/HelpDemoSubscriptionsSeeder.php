@@ -32,6 +32,8 @@ class HelpDemoSubscriptionsSeeder extends Seeder
 
     public function run(): void
     {
+        HelpDemoSeeder::assertThrowawayDatabase();
+
         $demo = User::where('username', HelpDemoSeeder::USERNAME)->firstOrFail();
         $football = Branch::where('name', 'Football')->firstOrFail();
         $swim = Branch::where('name', 'Swimming')->firstOrFail();
@@ -86,10 +88,11 @@ class HelpDemoSubscriptionsSeeder extends Seeder
 
         $payments = app(PlayerPaymentRecorder::class);
         $debts = app(RecalculatePlayerDebtService::class);
-        $player = fn (int $id): Player => Player::findOrFail($id);
+        // By position in creation order (HelpDemoSeeder::PLAYERS), not by id: ids need not start at 1.
+        $players = Player::orderBy('id')->get()->values();
 
         // 1 أحمد — annual paid in full into the U14 caisse; receipt printed once.
-        $ahmed = $player(1);
+        $ahmed = $players[0];
         $ahmedAnnual = $annual->assignTo($ahmed);
         $created = $payments->subscription($ahmedAnnual, $ahmed, (float) $ahmedAnnual->remaining_amount, 'cash', null, $demo->id, $caisse->id);
         // As ReceiptController prints it: with the player and subscription loaded, so the
@@ -99,7 +102,7 @@ class HelpDemoSubscriptionsSeeder extends Seeder
         $debts->forPlayer($ahmed);
 
         // 2 ياسين — annual + trip in one grouped payment.
-        $yassine = $player(2);
+        $yassine = $players[1];
         $yAnnual = $annual->assignTo($yassine);
         $yTrip = $trip->assignTo($yassine);
         $payments->group(collect([$yAnnual, $yTrip]), $yassine,
@@ -107,23 +110,23 @@ class HelpDemoSubscriptionsSeeder extends Seeder
         $debts->forPlayer($yassine);
 
         // 3 أمين — partial payment.
-        $amine = $player(3);
+        $amine = $players[2];
         $payments->subscription($annual->assignTo($amine), $amine, 1000, 'baridimob', null, $demo->id, null);
         $debts->forPlayer($amine);
 
         // 4 رياض — pays 500 more than owed: the excess becomes a donation.
-        $riad = $player(4);
+        $riad = $players[3];
         $riadAnnual = $annual->assignTo($riad);
         $payments->subscription($riadAnnual, $riad, (float) $riadAnnual->remaining_amount + 500, 'cash', null, $demo->id, null);
         $debts->forPlayer($riad);
 
         // 5 إسلام — assigned, unpaid.
-        $islam = $player(5);
+        $islam = $players[4];
         $annual->assignTo($islam);
         $debts->forPlayer($islam);
 
         // 6 أيوب — a debt from before the app.
-        $ayoub = $player(6);
+        $ayoub = $players[5];
         PlayerSubscription::create([
             'player_id' => $ayoub->id,
             'subscription_id' => null,
@@ -140,13 +143,13 @@ class HelpDemoSubscriptionsSeeder extends Seeder
         $debts->forPlayer($ayoub);
 
         // 7 عبد الرحمن — 10 % discount, unpaid.
-        $abderrahmane = $player(7);
+        $abderrahmane = $players[6];
         $annual->assignTo($abderrahmane)->update(['discount_type' => 'percent', 'discount_value' => 10]);
         $debts->forPlayer($abderrahmane);
 
         // 8 زكرياء — owes the trip, unpaid. Not in the annual: the assign-players article adds him,
         // and the take-payment article pays both from his page (the annual is offered, not owed yet).
-        $zakaria = $player(8);
+        $zakaria = $players[7];
         $trip->assignTo($zakaria);
         $debts->forPlayer($zakaria);
     }

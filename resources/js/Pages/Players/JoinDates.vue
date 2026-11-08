@@ -2,7 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { localToday } from '@/lib/localDate';
 import { sportLabeller } from '@/lib/sportLabels';
@@ -36,6 +36,32 @@ function applyFilter() {
 
 function clearError(row) {
     delete errors[row.id];
+}
+
+// 1 September of the year, offered by the server for football and single-branch rows.
+// Only rows never touched get it, so a field the admin emptied stays empty.
+watch(() => props.registrations.data, (rows) => {
+    const ids = new Set(rows.map((row) => String(row.id)));
+    Object.keys(dates).forEach((id) => { if (!ids.has(id)) delete dates[id]; });
+    rows.forEach((row) => { if (dates[row.id] === undefined && row.suggestion) dates[row.id] = row.suggestion; });
+}, { immediate: true });
+
+const filledIds = computed(() => props.registrations.data.filter((row) => dates[row.id]).map((row) => row.id));
+const savingAll = ref(false);
+
+function saveAll() {
+    if (!filledIds.value.length) return;
+    router.put(route('players.join-dates.bulk-update'), { dates: Object.fromEntries(filledIds.value.map((id) => [id, dates[id]])) }, {
+        preserveScroll: true,
+        onStart: () => { savingAll.value = true; },
+        onFinish: () => { savingAll.value = false; },
+        onError: (e) => {
+            Object.entries(e).forEach(([key, message]) => {
+                const id = key.startsWith('dates.') ? key.slice(6) : null;
+                if (id) errors[id] = message;
+            });
+        },
+    });
 }
 
 function save(row) {
@@ -72,6 +98,9 @@ function save(row) {
                     <option value="">{{ t('join_year') }}</option>
                     <option v-for="year in years" :key="year" :value="year">{{ year }}</option>
                 </select>
+                <button type="button" class="ms-auto rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50" :disabled="!filledIds.length || savingAll" @click="saveAll">
+                    {{ t('join_dates_save_all', { count: filledIds.length }) }}
+                </button>
             </div>
 
             <ul class="divide-y divide-slate-100 rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:divide-slate-800 dark:bg-slate-900 dark:ring-slate-800">

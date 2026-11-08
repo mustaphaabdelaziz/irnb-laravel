@@ -99,6 +99,60 @@ class JoinDateQueueTest extends TestCase
     }
 
     #[Test]
+    public function the_first_of_september_is_suggested_for_football_and_single_branch_rows_only(): void
+    {
+        \App\Models\WebsiteConfig::singleton()->update(['main_branch_id' => $this->foot->id]);
+        $this->member('Double', 2015, [$this->foot->id, $this->swim->id]);
+        $this->member('SwimOnly', 2018, [$this->swim->id]);
+
+        $rows = collect($this->get(route('players.join-dates.index'))->viewData('page')['props']['registrations']['data']);
+        $suggestion = fn (string $name, string $branch) => $rows
+            ->first(fn ($row) => str_contains($row['player_name'], $name) && $row['branch'] === $branch)['suggestion'];
+
+        $this->assertSame('2015-09-01', $suggestion('Double', 'Football'));
+        $this->assertNull($suggestion('Double', 'Swimming'));
+        $this->assertSame('2018-09-01', $suggestion('SwimOnly', 'Swimming'));
+    }
+
+    #[Test]
+    public function no_suggestion_lands_before_birth_or_after_today(): void
+    {
+        $this->member('Born', 2015, [$this->foot->id])->update(['birthdate' => '2015-10-01']);
+        $this->member('Now', (int) now()->year, [$this->foot->id]);
+        $future = now()->setDate((int) now()->year, 9, 1)->isFuture();
+
+        $rows = collect($this->get(route('players.join-dates.index'))->viewData('page')['props']['registrations']['data']);
+        $this->assertNull($rows->first(fn ($row) => str_contains($row['player_name'], 'Born'))['suggestion']);
+        $this->assertSame($future ? null : now()->year.'-09-01', $rows->first(fn ($row) => str_contains($row['player_name'], 'Now'))['suggestion']);
+    }
+
+    #[Test]
+    public function saving_all_keeps_the_good_dates_and_reports_the_bad_ones(): void
+    {
+        $good = $this->member('Good', 2015, [$this->foot->id])->registrations()->firstOrFail();
+        $bad = $this->member('Bad', 2015, [$this->foot->id]);
+        $bad->update(['birthdate' => '2016-01-01']);
+        $badRow = $bad->registrations()->firstOrFail();
+
+        $this->put(route('players.join-dates.bulk-update'), ['dates' => [$good->id => '2015-09-01', $badRow->id => '2015-09-01']])
+            ->assertSessionHasErrors('dates.'.$badRow->id);
+
+        $this->assertSame('2015-09-01', $good->fresh()->join_date->toDateString());
+        $this->assertNull($badRow->fresh()->join_date);
+    }
+
+    #[Test]
+    public function saving_all_never_overwrites_an_exact_date(): void
+    {
+        $registration = $this->member('Exact', 2015, [$this->foot->id])->registrations()->firstOrFail();
+        $registration->update(['join_date' => '2015-03-03']);
+
+        $this->put(route('players.join-dates.bulk-update'), ['dates' => [$registration->id => '2015-09-01']]);
+
+        $this->assertSame('2015-03-03', $registration->fresh()->join_date->toDateString());
+    }
+
+    #[Test]
     public function it_needs_player_rights(): void
     {
         $viewer = User::factory()->create(['privileges' => [], 'is_active' => true, 'email_verified_at' => now()]);
@@ -106,6 +160,7 @@ class JoinDateQueueTest extends TestCase
 
         $this->actingAs($viewer)->get(route('players.join-dates.index'))->assertForbidden();
         $this->actingAs($viewer)->put(route('players.join-dates.update', $registration), ['join_date' => '2017-03-12'])->assertForbidden();
+        $this->actingAs($viewer)->put(route('players.join-dates.bulk-update'), ['dates' => [$registration->id => '2017-03-12']])->assertForbidden();
     }
 
     #[Test]

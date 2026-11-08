@@ -209,6 +209,7 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
 
     // Join date correction queue (before the resource so the static path wins)
     Route::get('/players/join-dates', [JoinDateController::class, 'index'])->name('players.join-dates.index');
+    Route::put('/players/join-dates', [JoinDateController::class, 'bulkUpdate'])->name('players.join-dates.bulk-update');
     Route::put('/players/join-dates/{registration}', [JoinDateController::class, 'update'])->name('players.join-dates.update');
 
     // Players

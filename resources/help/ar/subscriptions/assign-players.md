@@ -38,12 +38,12 @@ related: [subscriptions/create-annual, subscriptions/create-exceptional]
 :::
 
 :::step اختر نور شعبان
-اكتب «نور» في خانة البحث، ثم اضغط على اسمها. يظهر تحت القائمة «سيكون المبلغ: 2.500,00»، لأن لفئة «أشبال» سعرًا خاصًا.
-::figure subscription-add-player ring=sub-player-search,sub-picked-player zoom=sub-amount-will-be
+اضغط على اسم نور شعبان. لتجدها بسرعة، اكتب «نور» في خانة البحث أولًا. يظهر تحت القائمة «سيكون المبلغ: 2.500,00»، لأن لفئة «أشبال» سعرًا خاصًا.
+::figure subscription-add-player ring=sub-picked-player,sub-player-search zoom=sub-amount-will-be
 :::
 
 :::step اضغط «إضافة إلى الاشتراك»
-تُغلق النافذة، وتظهر عبارة «تمت إضافة» مع اسم نور. صار اسمها في قائمة الاشتراك.
+تُغلق النافذة، وتظهر عبارة «تمت إضافة شعبان نور بنت لطفي بن إبراهيم إلى الاشتراك.». صار اسمها في قائمة الاشتراك.
 ::figure subscription-add-player ring=sub-add-confirm zoom=sub-add-confirm
 :::
 

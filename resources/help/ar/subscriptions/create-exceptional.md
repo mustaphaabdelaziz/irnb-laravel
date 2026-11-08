@@ -12,9 +12,14 @@ related: [subscriptions/create-annual, subscriptions/assign-players]
 ننشئ **رحلة صيفية** بـ 1500 د.ج، لفئة «أقل من 14 سنة» في فرع **كرة القدم**.
 :::
 
+:::step افتح صفحة «الاشتراكات»
+في الهاتف، افتح القائمة أولًا بزر ☰. في القائمة، اضغط على «الاشتراكات» تحت «إدارة اللاعبين». لا تراها؟ اضغط على «إدارة اللاعبين» لتظهر.
+::figure subscriptions-index ring=nav-members,nav-subscriptions
+:::
+
 :::step اضغط زر «إضافة اشتراك»
-افتح صفحة «الاشتراكات» من القائمة، تحت «إدارة اللاعبين». في أعلى الصفحة، اضغط على الزر الأخضر الذي عليه علامة +. عندما تضع الفأرة عليه يظهر اسمه «إضافة اشتراك».
-::figure subscriptions-index ring=nav-subscriptions,subscriptions-new zoom=subscriptions-new
+في أعلى الصفحة، اضغط على الزر الأخضر الذي عليه علامة +. عندما تضع الفأرة عليه يظهر اسمه «إضافة اشتراك». تُفتح صفحة «إضافة اشتراك».
+::figure subscriptions-index ring=subscriptions-new zoom=subscriptions-new
 :::
 
 :::step اختر «استثنائي»
@@ -39,7 +44,7 @@ related: [subscriptions/create-annual, subscriptions/assign-players]
 
 :::step اضغط «حفظ»
 الزر في آخر الصفحة. انزل إليه بالطريقة نفسها، ثم اضغط «حفظ». تظهر صفحة المبلغ وعبارة «تم إنشاء الاشتراك بنجاح.».
-::figure subscription-create-save ring=sub-save zoom=sub-save
+::figure subscription-create-exceptional-save ring=sub-save zoom=sub-save
 :::
 
 بعد الحفظ، لا يدين أي لاعب بهذا المبلغ بعد. أضف إليه اللاعبين من صفحته، كما تفعل مع الاشتراك السنوي.

@@ -132,17 +132,13 @@ export default [
     { name: 'subscriptions-index', url: '/subscriptions', targets: ['nav-members', 'nav-subscriptions', 'subscriptions-new', 'sub-open'] },
     { name: 'subscription-create', url: '/subscriptions/create', targets: ['sub-kind', 'sub-kind-annual', 'sub-name', 'sub-season', 'sub-prices'], before: fillAnnual },
     {
-        // Every category ticked, «أشبال» (first A→Z) cheaper: 2500 / 4000.
+        // Both branches first (changing them later drops categories), then every
+        // category ticked, «أشبال» (first A→Z) cheaper: 2500 / 4000.
         name: 'subscription-create-categories',
         url: '/subscriptions/create',
         targets: ['sub-categories', 'sub-category-price'],
         before: async (page) => {
-            await fillAnnual(page);
-            await tickAll(page, 'sub-categories');
-            const row = page.locator('[data-help="sub-category-price"]');
-            await row.locator('input').nth(0).fill('2500');
-            await row.locator('input').nth(1).fill('4000');
-            await blur(page);
+            await fillAnnualScope(page);
             await centre(page, 'sub-categories');
         },
     },
@@ -158,10 +154,14 @@ export default [
         },
     },
     {
+        // The annual example filled in full, as the reader has it before saving.
         name: 'subscription-create-save',
         url: '/subscriptions/create',
         targets: ['sub-save'],
-        before: async (page) => { await centre(page, 'sub-save'); },
+        before: async (page) => {
+            await fillAnnualScope(page);
+            await centre(page, 'sub-save');
+        },
     },
     {
         // The exceptional example: «رحلة صيفية», 1500, no season.
@@ -177,10 +177,19 @@ export default [
         targets: ['sub-categories', 'sub-branches'],
         before: async (page) => {
             await fillTrip(page);
-            await page.locator('[data-help="sub-branches"] label', { hasText: 'كرة القدم' }).locator('input').check();
-            await page.locator('[data-help="sub-categories"] label', { hasText: 'أقل من 14 سنة' }).locator('input').check();
-            await blur(page);
+            await tripScope(page);
             await centre(page, 'sub-categories');
+        },
+    },
+    {
+        // The trip filled in full, as the reader has it before saving.
+        name: 'subscription-create-exceptional-save',
+        url: '/subscriptions/create',
+        targets: ['sub-save'],
+        before: async (page) => {
+            await fillTrip(page);
+            await tripScope(page);
+            await centre(page, 'sub-save');
         },
     },
     { name: 'subscription-show', url: '/subscriptions/1', targets: ['sub-stats', 'sub-assign', 'sub-add-player'] },
@@ -261,12 +270,30 @@ async function fillAnnual(page) {
     await blur(page);
 }
 
+/** The create-annual example to its end: both branches, every category, «أشبال» at 2500 / 4000. */
+async function fillAnnualScope(page) {
+    await fillAnnual(page);
+    await tickAll(page, 'sub-branches');
+    await tickAll(page, 'sub-categories');
+    const row = page.locator('[data-help="sub-category-price"]');
+    await row.locator('input').nth(0).fill('2500');
+    await row.locator('input').nth(1).fill('4000');
+    await blur(page);
+}
+
 /** The create-exceptional example: «رحلة صيفية», 1500 for everyone. */
 async function fillTrip(page) {
     await page.locator('[data-help="sub-kind-exceptional"]').click();
     await page.locator('[data-help="sub-name"] input').fill('رحلة صيفية');
     await page.locator('[data-help="sub-prices"] input').nth(0).fill('1500');
     await page.locator('[data-help="sub-prices"] input').nth(1).fill('1500');
+    await blur(page);
+}
+
+/** The trip's scope: Football (which narrows the categories), then «أقل من 14 سنة». */
+async function tripScope(page) {
+    await page.locator('[data-help="sub-branches"] label', { hasText: 'كرة القدم' }).locator('input').check();
+    await page.locator('[data-help="sub-categories"] label', { hasText: 'أقل من 14 سنة' }).locator('input').check();
     await blur(page);
 }
 

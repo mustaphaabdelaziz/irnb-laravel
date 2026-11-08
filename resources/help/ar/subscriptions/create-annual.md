@@ -22,24 +22,24 @@ related: [subscriptions/assign-players, subscriptions/create-exceptional]
 ::figure subscriptions-index ring=subscriptions-new zoom=subscriptions-new
 :::
 
-:::step اكتب الاسم
-تحت «النوع»، «اشتراك سنوي» مختار من قبل. اكتب في خانة «الاسم»: اشتراك سنوي. في خانة «الموسم» الموسم الحالي 2026/2027، فاتركه.
-::figure subscription-create ring=sub-kind-annual,sub-name,sub-season
-:::
-
-:::step اكتب السعرين
-اكتب 3000 في خانة «تسعير الطلاب»، و5000 في خانة «تسعير العمال». يدفع الطالب السعر الأول، والعامل السعر الثاني.
-::figure subscription-create ring=sub-prices
-:::
-
-:::step اختر الفئات وسعر «أشبال»
-تحت «الفئات»، ضع علامة على كل فئة. يظهر تحتها سطر لكل فئة. في سطر «أشبال»، اكتب 2500 للطلاب و4000 للعمال. اترك السطور الأخرى فارغة، فتأخذ السعرين العاديين.
-::figure subscription-create-categories ring=sub-categories,sub-category-price zoom=sub-category-price
+:::step اكتب الاسم والسعرين
+تحت «النوع»، «اشتراك سنوي» مختار من قبل. اكتب «اشتراك سنوي» في خانة «الاسم». اترك «الموسم» كما هو: 2026/2027. اكتب 3000 في «تسعير الطلاب»، و5000 في «تسعير العمال».
+::figure subscription-create ring=sub-name,sub-season,sub-prices
 :::
 
 :::step اختر الفرعين
-انزل قليلًا: أدر عجلة الفأرة نحوك، أو اسحب بإصبعين على لوحة اللمس. في الهاتف، اسحب الشاشة بإصبعك إلى الأعلى. تحت «الفروع»، ضع علامة على «كرة القدم» و«السباحة».
+انزل قليلًا: أدر عجلة الفأرة نحوك، أو اسحب بإصبعين على لوحة اللمس. في الهاتف، اسحب الشاشة بإصبعك إلى الأعلى. تحت «الفروع»، ضع علامة على «كرة القدم» و«السباحة». اختر الفروع قبل الفئات: إن غيّرتها بعد ذلك، قد تُمحى علامات بعض الفئات.
 ::figure subscription-create-branches ring=sub-branches
+:::
+
+:::step اختر الفئات
+ارجع قليلًا إلى «الفئات»، فوق «الفروع». ضع علامة على كل فئة. يظهر تحتها جدول فيه سطر لكل فئة.
+::figure subscription-create-categories ring=sub-categories
+:::
+
+:::step اكتب سعر «أشبال»
+في سطر «أشبال»، اكتب 2500 تحت «تسعير الطلاب» و4000 تحت «تسعير العمال». اترك السطور الأخرى فارغة، فتأخذ السعرين العاديين.
+::figure subscription-create-categories ring=sub-category-price zoom=sub-category-price
 :::
 
 :::step اضغط «حفظ»

@@ -4,7 +4,7 @@ summary: سجّل ما دفعه اللاعب، لاشتراك واحد أو لع
 module: players
 pages: [players.show]
 keywords: [دفعة, دفع, إضافة دفعة, تسديد, استلام المال, وصل, صندوق, اشتراك, دين]
-related: [players/find-player, subscriptions/fix-payment, subscriptions/previous-debt]
+related: [players/find-player, subscriptions/fix-payment, subscriptions/previous-debt, subscriptions/receipts]
 ---
 
 سجّل الدفعة من صفحة اللاعب: لاشتراك واحد، أو لعدة اشتراكات معًا في وصل واحد.
@@ -14,7 +14,7 @@ related: [players/find-player, subscriptions/fix-payment, subscriptions/previous
 :::
 
 :::step افتح صفحة زكرياء
-في صفحة «اللاعبون»، اضغط على اسم زكرياء. لتجده بسرعة، اكتب اسمه في خانة البحث. في أعلى صفحته، تحت «الدين المستحق»: 1.500,00.
+في الهاتف، افتح القائمة أولًا بزر ☰. في القائمة، اضغط على «اللاعبون»، ثم على اسم زكرياء. لتجده بسرعة، اكتب اسمه في خانة البحث. في أعلى صفحته، تحت «الدين المستحق»: 1.500,00.
 ::figure payment-button ring=player-debt
 :::
 

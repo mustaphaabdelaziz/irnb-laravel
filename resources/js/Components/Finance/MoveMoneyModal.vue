@@ -61,7 +61,7 @@ function submit() {
 
             <label class="block text-sm">
                 <span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('caisses.from') }}</span>
-                <select v-model="form.from_account_id" required class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
+                <select v-model="form.from_account_id" data-help="move-from" required class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
                     <option value="" disabled>—</option>
                     <option v-for="a in accounts" :key="a.id" :value="a.id">{{ a.label }} · {{ formatMoney(a.balance) }}</option>
                 </select>
@@ -70,7 +70,7 @@ function submit() {
 
             <label class="block text-sm">
                 <span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('caisses.to') }}</span>
-                <select v-model="form.to_account_id" required class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
+                <select v-model="form.to_account_id" data-help="move-to" required class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
                     <option value="" disabled>—</option>
                     <option v-for="a in destinations" :key="a.id" :value="a.id">{{ a.label }} · {{ formatMoney(a.balance) }}</option>
                 </select>
@@ -80,7 +80,7 @@ function submit() {
             <div class="grid gap-4 sm:grid-cols-2">
                 <label class="block text-sm">
                     <span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('amount') }}</span>
-                    <input v-model="form.amount" type="number" min="0.01" step="0.01" required class="w-full rounded-lg border-slate-200 bg-white text-sm tabular-nums dark:border-slate-700 dark:bg-slate-800" />
+                    <input v-model="form.amount" data-help="move-amount" type="number" min="0.01" step="0.01" required class="w-full rounded-lg border-slate-200 bg-white text-sm tabular-nums dark:border-slate-700 dark:bg-slate-800" />
                     <p v-if="tooMuch" role="alert" class="mt-1 text-xs text-rose-600 dark:text-rose-400">{{ t('caisses.not_enough') }}</p>
                     <InputError :message="form.errors.amount" class="mt-1" />
                 </label>
@@ -93,10 +93,10 @@ function submit() {
 
             <label class="block text-sm">
                 <span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('notes') }}</span>
-                <input v-model="form.notes" type="text" maxlength="1000" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
+                <input v-model="form.notes" data-help="move-notes" type="text" maxlength="1000" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
             </label>
 
-            <div v-if="from && to && amount > 0" class="rounded-xl bg-slate-50 p-3 text-sm dark:bg-slate-800/60">
+            <div v-if="from && to && amount > 0" data-help="move-after" class="rounded-xl bg-slate-50 p-3 text-sm dark:bg-slate-800/60">
                 <p class="mb-1 text-xs font-semibold text-slate-500 dark:text-slate-400">{{ t('caisses.after_move') }}</p>
                 <p class="tabular-nums">{{ from.label }}: {{ formatMoney(from.balance) }} <Icon name="arrow" class="mx-1 align-middle text-slate-400 rtl:rotate-180" /> <strong>{{ formatMoney(Number(from.balance) - amount) }}</strong></p>
                 <p class="tabular-nums">{{ to.label }}: {{ formatMoney(to.balance) }} <Icon name="arrow" class="mx-1 align-middle text-slate-400 rtl:rotate-180" /> <strong>{{ formatMoney(Number(to.balance) + amount) }}</strong></p>
@@ -104,7 +104,7 @@ function submit() {
 
             <div class="flex justify-end gap-2">
                 <button type="button" class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800" @click="emit('close')">{{ t('cancel') }}</button>
-                <button type="submit" :disabled="form.processing || tooMuch" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('caisses.move_money') }}</button>
+                <button type="submit" data-help="move-save" :disabled="form.processing || tooMuch" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('caisses.move_money') }}</button>
             </div>
         </form>
     </Modal>

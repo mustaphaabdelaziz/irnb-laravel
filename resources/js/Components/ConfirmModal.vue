@@ -46,7 +46,7 @@ watch(
 
 <template>
     <Modal :show="show" @close="emit('cancel')" max-width="md">
-        <div class="p-6">
+        <div class="p-6" data-help="confirm-panel">
             <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
                 {{ copy.title || t('confirm_action') }}
             </h3>
@@ -57,8 +57,8 @@ watch(
             <slot />
             <div class="mt-6 flex flex-wrap justify-end gap-3">
                 <SecondaryButton type="button" @click="emit('cancel')">{{ copy.cancelLabel || t('cancel') }}</SecondaryButton>
-                <PrimaryButton v-if="copy.variant === 'primary'" type="button" :disabled="busy" @click="emit('confirm')">{{ copy.confirmLabel || t('confirm') }}</PrimaryButton>
-                <DangerButton v-else type="button" :disabled="busy" @click="emit('confirm')">{{ copy.confirmLabel || t('delete') }}</DangerButton>
+                <PrimaryButton v-if="copy.variant === 'primary'" type="button" data-help="confirm-ok" :disabled="busy" @click="emit('confirm')">{{ copy.confirmLabel || t('confirm') }}</PrimaryButton>
+                <DangerButton v-else type="button" data-help="confirm-ok" :disabled="busy" @click="emit('confirm')">{{ copy.confirmLabel || t('delete') }}</DangerButton>
             </div>
         </div>
     </Modal>

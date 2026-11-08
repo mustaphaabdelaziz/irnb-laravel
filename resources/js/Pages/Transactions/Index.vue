@@ -321,11 +321,11 @@ function bulkDestroy() {
 
             <!-- Results. With a filter on they keep at least a screen of height so a short result does not drag the scroll up. -->
             <div class="space-y-4" :class="{ 'min-h-screen': hasActiveFilters }">
-                <div v-if="selected.length" class="flex flex-wrap items-center gap-3 rounded-xl bg-primary-50 px-4 py-2.5 ring-1 ring-primary-200 dark:bg-primary-900/20 dark:ring-primary-800">
+                <div v-if="selected.length" data-help="tx-bulk-bar" class="flex flex-wrap items-center gap-3 rounded-xl bg-primary-50 px-4 py-2.5 ring-1 ring-primary-200 dark:bg-primary-900/20 dark:ring-primary-800">
                     <span class="text-sm font-medium text-primary-800 dark:text-primary-200">{{ t('selected_count', { count: selected.length }) }}</span>
                     <div class="ms-auto flex flex-wrap items-center gap-2">
                         <IconButton icon="close" :label="t('cancel')" variant="ghost" @click="clearSelection" />
-                        <IconButton icon="trash" :label="t('delete_selected')" variant="danger" @click="bulkDeletePending = true" />
+                        <IconButton icon="trash" :label="t('delete_selected')" variant="danger" data-help="tx-bulk-delete" @click="bulkDeletePending = true" />
                     </div>
                 </div>
 
@@ -382,7 +382,7 @@ function bulkDestroy() {
                                 <tr v-for="(tx, txIndex) in transactions.data" :key="tx.id" class="group"
                                     :class="selected.includes(tx.id) ? 'bg-primary-50/50 dark:bg-primary-900/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800'">
                                     <td v-if="canDelete" class="w-10 px-4 py-3">
-                                        <input type="checkbox" :checked="selected.includes(tx.id)" :aria-label="t('select_row')" @change="toggleOne(tx.id)"
+                                        <input type="checkbox" :checked="selected.includes(tx.id)" :aria-label="t('select_row')" :data-help="txIndex === 0 ? 'tx-select-first' : undefined" @change="toggleOne(tx.id)"
                                             class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800" />
                                     </td>
                                     <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ formatDate(tx.transaction_date) }}</td>
@@ -414,7 +414,7 @@ function bulkDestroy() {
                                         <div class="flex items-center justify-end gap-1">
                                             <IconButton :href="route('transactions.show', tx.id)" icon="eye" :label="t('details')" variant="primary" plain size="sm" />
                                             <IconButton v-if="canEdit" :href="route('transactions.edit', tx.id)" icon="pencil" :label="t('edit')" plain size="sm" />
-                                            <IconButton v-if="canDelete" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteId = tx.id" />
+                                            <IconButton v-if="canDelete" icon="trash" :label="t('delete')" variant="danger" plain size="sm" :data-help="txIndex === 0 ? 'tx-delete-first' : undefined" @click="deleteId = tx.id" />
                                         </div>
                                     </td>
                                 </tr>

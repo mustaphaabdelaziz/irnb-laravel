@@ -685,6 +685,60 @@ export default [
         },
     },
     {
+        // Search «كهرباء»: the duplicate (entered second, so the newest) is the first row.
+        name: 'fin-tx-duplicate',
+        url: '/transactions?search=' + encodeURIComponent('كهرباء'),
+        targets: ['tx-delete-first'],
+    },
+    {
+        // The confirm dialog the reader sees after the row's «حذف»; never confirmed here.
+        name: 'fin-tx-delete-confirm',
+        url: '/transactions?search=' + encodeURIComponent('كهرباء'),
+        targets: ['confirm-panel', 'confirm-ok'],
+        before: async (page) => {
+            await page.locator('[data-help="tx-delete-first"]').click();
+            await page.locator('[data-help="confirm-ok"]').waitFor({ state: 'visible' });
+            await page.waitForTimeout(400);
+        },
+    },
+    {
+        // One row ticked: the bar shows «1 محدد» with «إلغاء» and «حذف المحدد».
+        name: 'fin-tx-bulk',
+        url: '/transactions?search=' + encodeURIComponent('كهرباء'),
+        targets: ['tx-select-first', 'tx-bulk-bar', 'tx-bulk-delete'],
+        before: async (page) => {
+            await page.locator('[data-help="tx-select-first"]').check();
+            await page.locator('[data-help="tx-bulk-bar"]').waitFor({ state: 'visible' });
+            await page.waitForTimeout(300);
+        },
+    },
+    { name: 'fin-registers', url: '/finance/registers', targets: ['reg-tiles', 'reg-move', 'reg-branch-football'] },
+    {
+        name: 'fin-registers-history',
+        url: '/finance/registers',
+        targets: ['reg-history'],
+        before: async (page) => {
+            await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+            await settle(page);
+        },
+    },
+    {
+        // The reader's state before the last press: U14 caisse to the Football coffre, 1000, a note.
+        name: 'fin-move-modal',
+        url: '/finance/registers',
+        targets: ['move-from', 'move-to', 'move-amount', 'move-notes', 'move-after', 'move-save'],
+        before: async (page) => {
+            await page.locator('[data-help="reg-move"]').click();
+            await page.locator('[data-help="move-from"]').waitFor({ state: 'visible' });
+            await page.locator('[data-help="move-from"]').selectOption('6');
+            await page.locator('[data-help="move-to"]').selectOption('5');
+            await page.locator('[data-help="move-amount"]').fill('1000');
+            await page.locator('[data-help="move-notes"]').fill('تسليم مداخيل الاشتراكات');
+            await blur(page);
+            await page.waitForTimeout(400);
+        },
+    },
+    {
         name: 'fin-tx-saved',
         url: '/transactions/create',
         targets: ['tx-show-amount', 'tx-print-ticket', 'tx-print-a4'],

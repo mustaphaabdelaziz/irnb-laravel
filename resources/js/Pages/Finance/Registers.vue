@@ -81,15 +81,15 @@ const formatDate = (value) => (value ? new Date(`${value}T00:00:00`).toLocaleDat
                     </div>
                 </div>
                 <div class="flex shrink-0 items-center gap-2">
-                    <IconButton v-if="can('finance', 'add') && movable.length > 1" icon="arrow" icon-class="rtl:rotate-180" :label="t('caisses.move_money')" @click="moveMoney()" />
-                    <IconButton v-if="can('finance', 'add')" icon="plus" :label="t('caisses.add')" variant="primary" @click="addCaisse()" />
+                    <IconButton v-if="can('finance', 'add') && movable.length > 1" data-help="reg-move" icon="arrow" icon-class="rtl:rotate-180" :label="t('caisses.move_money')" @click="moveMoney()" />
+                    <IconButton v-if="can('finance', 'add')" data-help="reg-add" icon="plus" :label="t('caisses.add')" variant="primary" @click="addCaisse()" />
                 </div>
             </div>
         </template>
 
         <div class="space-y-6">
             <!-- Totals -->
-            <section class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <section data-help="reg-tiles" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <StatTile :label="t('total_cash')" :value="totals.cash" format="money" icon="wallet" flag-negative />
                 <StatTile :label="t('active_registers')" :value="totals.active" icon="money" tone="neutral" />
             </section>
@@ -103,7 +103,7 @@ const formatDate = (value) => (value ? new Date(`${value}T00:00:00`).toLocaleDat
             </section>
 
             <!-- One card per branch: its coffre and the caisses inside it -->
-            <article v-for="g in coffres" :key="g.branch.id" class="card overflow-hidden">
+            <article v-for="g in coffres" :key="g.branch.id" :data-help="g.branch.name === 'Football' ? 'reg-branch-football' : undefined" class="card overflow-hidden">
                 <div class="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 bg-slate-50/70 px-5 py-4 dark:border-slate-800 dark:bg-slate-950/40">
                     <div class="flex min-w-0 items-center gap-3">
                         <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-100 text-xl text-primary-700 dark:bg-primary-500/15 dark:text-primary-300">
@@ -129,7 +129,7 @@ const formatDate = (value) => (value ? new Date(`${value}T00:00:00`).toLocaleDat
                 </div>
 
                 <ul v-if="g.caisses.length" class="divide-y divide-slate-100 dark:divide-slate-800">
-                    <li v-for="c in g.caisses" :key="c.id" class="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3">
+                    <li v-for="(c, ci) in g.caisses" :key="c.id" :data-help="g.branch.name === 'Football' && ci === 0 ? 'reg-caisse-first' : undefined" class="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3">
                         <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-2">
                                 <p class="break-words text-sm font-bold text-slate-800 dark:text-slate-100">{{ caisseName(c) }}</p>
@@ -141,7 +141,7 @@ const formatDate = (value) => (value ? new Date(`${value}T00:00:00`).toLocaleDat
                         <p class="ms-auto break-words text-end text-base font-extrabold tabular-nums" :class="balanceClass(c.current_balance)">{{ formatMoney(c.current_balance) }}</p>
                         <div class="flex items-center gap-1">
                             <IconButton v-if="c.is_active && can('finance', 'add')" icon="arrow" icon-class="rtl:rotate-180" :label="t('caisses.move_money')" plain size="sm" @click="moveMoney(c.id)" />
-                            <IconButton v-if="can('finance', 'edit')" icon="pencil" :label="t('caisses.edit')" plain size="sm" @click="editAccount(c)" />
+                            <IconButton v-if="can('finance', 'edit')" icon="pencil" :label="t('caisses.edit')" plain size="sm" :data-help="g.branch.name === 'Football' && ci === 0 ? 'reg-edit-caisse-first' : undefined" @click="editAccount(c)" />
                             <IconButton v-if="deletable(c) && can('finance', 'delete')" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleting = c" />
                         </div>
                     </li>
@@ -176,7 +176,7 @@ const formatDate = (value) => (value ? new Date(`${value}T00:00:00`).toLocaleDat
             </section>
 
             <!-- Money moves between caisses -->
-            <section class="card overflow-hidden">
+            <section data-help="reg-history" class="card overflow-hidden">
                 <div class="border-b border-slate-100 px-5 py-4 dark:border-slate-800">
                     <h2 class="text-base font-extrabold text-slate-900 dark:text-slate-100">{{ t('caisses.history') }}</h2>
                 </div>

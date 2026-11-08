@@ -50,6 +50,7 @@ use App\Http\Controllers\GamePlayerStatsController;
 use App\Http\Controllers\GameReportController;
 use App\Http\Controllers\GameSheetController;
 use App\Http\Controllers\GameStatsController;
+use App\Http\Controllers\HelpController;
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LanguageController;
@@ -158,6 +159,19 @@ Route::middleware('auth')->get('/account/pending', fn () => Inertia::render('Aut
 // user's approval or permissions are.
 Route::middleware('auth')->post('/impersonate/leave', [ImpersonationController::class, 'destroy'])
     ->name('impersonate.leave');
+
+// The manual: open to every signed-in user (no `permission` middleware);
+// HelpLibrary filters articles by module. /help/login is for people who
+// can't sign in yet.
+Route::get('/help/login', [HelpController::class, 'login'])->name('help.login');
+Route::middleware(['auth', 'approved'])->group(function () {
+    Route::get('/help', [HelpController::class, 'index'])->name('help.index');
+    Route::get('/help/panel', [HelpController::class, 'panel'])->name('help.panel');
+    Route::get('/help/search-index', [HelpController::class, 'searchIndex'])->name('help.search-index');
+    Route::get('/help/{topic}/{slug}', [HelpController::class, 'show'])
+        ->where(['topic' => '[a-z0-9-]+', 'slug' => '[a-z0-9-]+'])
+        ->name('help.show');
+});
 
 // Authenticated routes — require an approved, active account.
 // The `permission` middleware enforces per-module (view/add/edit/delete) access

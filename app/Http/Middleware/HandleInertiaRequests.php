@@ -44,6 +44,8 @@ class HandleInertiaRequests extends Middleware
                 'canImpersonate' => $user !== null && Impersonation::allowedFor($user) && ! Impersonation::active(),
             ],
             'locale' => app()->getLocale(),
+            // Which page this is, so the `?` help panel can ask for its articles.
+            'routeName' => fn () => $request->route()?->getName(),
             // The Settings currency; useCurrency.js turns it into the label
             // shown after amounts. `symbol` is the custom one, or null.
             'currency' => fn () => ['code' => ClubCurrency::code(), 'symbol' => ClubCurrency::symbol()],

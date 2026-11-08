@@ -4,6 +4,7 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
+        "help:check": "php artisan help:check",
         "dev": "vite",
         "i18n:check": "node scripts/i18n-check.mjs && node scripts/i18n-compile-check.mjs",
         "test:js": "node --test tests/js/*.mjs"

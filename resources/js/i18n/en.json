@@ -1570,6 +1570,7 @@
     "equipment.received_via": "Where it came from",
     "equipment.record_as_expense": "Record as an expense",
     "equipment.record_as_expense_hint": "Creates a linked expense transaction. Untick for donations, found items or an opening inventory.",
+    "equipment.import_expense_hint": "Each row with a purchase price becomes a paid expense from the chosen caisse.",
     "equipment.rental": "Rental",
     "equipment.rentals_tab": "Rentals",
     "equipment.returned_of": "returned",

@@ -1570,6 +1570,7 @@
     "equipment.received_via": "مصدر الاستلام",
     "equipment.record_as_expense": "تسجيل كمصروف",
     "equipment.record_as_expense_hint": "ينشئ معاملة مصروف مرتبطة. ألغِ التحديد للتبرعات أو الأصناف الموجودة أو الجرد الافتتاحي.",
+    "equipment.import_expense_hint": "كل سطر فيه سعر شراء يُسجَّل مصروفًا مدفوعًا من الصندوق المختار.",
     "equipment.rental": "إعارة",
     "equipment.rentals_tab": "الإعارات",
     "equipment.returned_of": "أُرجعت",

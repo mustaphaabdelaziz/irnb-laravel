@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\EquipmentCatalog;
 use App\Models\EquipmentItem;
+use App\Models\FinanceAccount;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -66,7 +67,7 @@ class EquipmentImportExportTest extends TestCase
         ]);
 
         $this->actingAs($this->user())
-            ->post(route('equipment.items.import', $catalog), ['file' => $file])
+            ->post(route('equipment.items.import', $catalog), ['file' => $file, 'record_expense' => true])
             ->assertRedirect()
             ->assertSessionHas('success');
 
@@ -77,6 +78,44 @@ class EquipmentImportExportTest extends TestCase
         $this->assertNotNull($first->unique_identifier);
         // purchase_price populated -> an equipment expense transaction exists
         $this->assertDatabaseHas('transactions', ['category' => 'equipment', 'amount' => 1500]);
+    }
+
+    /** @param array<string,mixed> $extra */
+    private function importUnits(EquipmentCatalog $catalog, array $extra): void
+    {
+        $file = $this->makeCsv([['Shirt 10', '2026-05-01', 'New', 'Locker A', '1500', '']]);
+
+        $this->actingAs($this->user())
+            ->post(route('equipment.items.import', $catalog), ['file' => $file] + $extra)
+            ->assertRedirect()
+            ->assertSessionHas('success');
+    }
+
+    #[Test]
+    public function importing_units_with_prices_records_no_expense_unless_asked(): void
+    {
+        $catalog = $this->catalog();
+
+        $this->importUnits($catalog, ['record_expense' => false]);
+
+        $this->assertSame(1, EquipmentItem::where('catalog_id', $catalog->id)->count());
+        $this->assertSame(0, Transaction::count());
+        $this->assertNull(EquipmentItem::first()->purchase_transaction_id);
+    }
+
+    #[Test]
+    public function importing_units_with_the_box_ticked_records_one_expense_per_priced_row_in_the_chosen_caisse(): void
+    {
+        $catalog = $this->catalog();
+        $account = FinanceAccount::create(['name' => 'Caisse', 'type' => 'cash', 'is_active' => true, 'currency' => 'DZD']);
+
+        $this->importUnits($catalog, ['record_expense' => true, 'finance_account_id' => $account->id]);
+
+        $this->assertSame(1, Transaction::count());
+        $transaction = Transaction::first();
+        $this->assertSame($account->id, $transaction->finance_account_id);
+        $this->assertEquals(1500, $transaction->amount);
+        $this->assertSame($transaction->id, EquipmentItem::first()->purchase_transaction_id);
     }
 
     #[Test]

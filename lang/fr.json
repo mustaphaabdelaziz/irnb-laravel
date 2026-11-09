@@ -114,5 +114,6 @@
     "Quarterly": "Trimestriel",
     "Yearly": "Annuel",
     "Ad Hoc": "Ponctuel",
-    "Equipment purchase: :count unit(s)": "Achat de matériel : :count unité(s)"
+    "Equipment purchase: :count unit(s)": "Achat de matériel : :count unité(s)",
+    "Equipment purchase: :identifier": "Achat de matériel : :identifier"
 }

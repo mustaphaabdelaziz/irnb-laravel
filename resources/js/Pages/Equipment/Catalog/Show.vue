@@ -338,7 +338,7 @@ const stateLabel = (v) => {
 
 // --- Item import (.xlsx or .csv, read on the server) ---
 const showImport = ref(false);
-const importForm = useForm({ file: null });
+const importForm = useForm({ file: null, record_expense: false, finance_account_id: props.financeAccounts[0]?.id || '' });
 
 function onImportFile(e) {
     importForm.clearErrors();
@@ -673,6 +673,26 @@ function submitImport() {
                             class="w-full text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 hover:file:bg-primary-100 dark:file:bg-primary-500/10 dark:file:text-primary-300 dark:hover:file:bg-primary-500/15"
                         />
                         <p v-if="importForm.errors.file" class="text-sm text-rose-600 dark:text-rose-400">{{ importForm.errors.file }}</p>
+
+                        <label class="flex items-start gap-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 p-3">
+                            <input type="checkbox" v-model="importForm.record_expense"
+                                class="mt-0.5 rounded border-slate-300 dark:border-slate-600 text-primary-600 focus:ring-primary-500" />
+                            <span>
+                                <span class="block text-sm font-medium text-slate-900 dark:text-slate-100">{{ t('equipment.record_as_expense') }}</span>
+                                <span class="block text-xs text-slate-500 dark:text-slate-400">{{ t('equipment.import_expense_hint') }}</span>
+                            </span>
+                        </label>
+
+                        <div v-if="importForm.record_expense">
+                            <InputLabel :value="t('source_register')" />
+                            <select v-model="importForm.finance_account_id" required class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                                <option value="" disabled>{{ t('select_cash_register') }}</option>
+                                <option v-for="account in financeAccounts" :key="account.id" :value="account.id">
+                                    {{ accountLabel(account) }}
+                                </option>
+                            </select>
+                            <InputError :message="importForm.errors.finance_account_id" class="mt-1" />
+                        </div>
                         <div class="flex items-center justify-between gap-3 pt-2">
                             <ExportMenu :href="route('equipment.items.import.template')" :label="t('download_template')" align="left" />
                             <div class="flex gap-2">

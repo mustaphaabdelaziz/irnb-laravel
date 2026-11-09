@@ -26,6 +26,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
@@ -494,7 +495,13 @@ class EquipmentItemController extends Controller
 
     public function import(Request $request, EquipmentCatalog $catalog): RedirectResponse
     {
-        $request->validate(['file' => ['required', 'file', 'mimes:csv,txt,xlsx', 'max:10240']]);
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:csv,txt,xlsx', 'max:10240'],
+            'record_expense' => ['boolean'],
+            'finance_account_id' => ['nullable', 'integer', Rule::exists('finance_accounts', 'id')->where('is_active', true)],
+        ]);
+        $recordExpense = $request->boolean('record_expense');
+        $accountId = $request->integer('finance_account_id') ?: null;
 
         try {
             $rows = Spreadsheet::readRows($request->file('file')->getRealPath());
@@ -519,7 +526,7 @@ class EquipmentItemController extends Controller
             }
 
             try {
-                DB::transaction(function () use ($data, $catalog, $request) {
+                DB::transaction(function () use ($data, $catalog, $request, $recordExpense, $accountId) {
                     $item = new EquipmentItem([
                         'catalog_id' => $catalog->id,
                         'designation' => $data['designation'] ?: null,
@@ -531,14 +538,15 @@ class EquipmentItemController extends Controller
 
                     $this->serials->assign($item);
 
-                    if (is_numeric($data['purchase_price']) && (float) $data['purchase_price'] > 0) {
+                    if ($recordExpense && is_numeric($data['purchase_price']) && (float) $data['purchase_price'] > 0) {
                         $transaction = Transaction::create([
                             'amount' => (float) $data['purchase_price'],
                             'transaction_date' => $item->purchase_date,
                             'transaction_type' => 'expense',
                             'category' => 'equipment',
-                            'description' => 'Equipment purchase: '.$item->unique_identifier,
+                            'description' => __('Equipment purchase: :identifier', ['identifier' => $item->unique_identifier]),
                             'recorded_by_user_id' => $request->user()?->id,
+                            'finance_account_id' => $accountId,
                             'status' => 'Paid',
                         ]);
                         $item->purchase_transaction_id = $transaction->id;

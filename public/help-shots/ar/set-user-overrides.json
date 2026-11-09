@@ -1,0 +1,12 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "perm-row-subscriptions": {
+      "x": 40.63,
+      "y": 47.71,
+      "w": 27.5,
+      "h": 4.56
+    }
+  }
+}

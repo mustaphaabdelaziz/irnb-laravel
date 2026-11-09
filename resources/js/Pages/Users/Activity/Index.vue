@@ -51,7 +51,7 @@ const cellLink = 'rounded px-1 tabular-nums hover:bg-primary-50 hover:text-prima
 
             <ActivityCharts v-if="charts" :charts="charts" :users="ranked" />
 
-            <div class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+            <div class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800" data-help="activity-table">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
                         <thead class="bg-slate-50 dark:bg-slate-950">
@@ -65,7 +65,7 @@ const cellLink = 'rounded px-1 tabular-nums hover:bg-primary-50 hover:text-prima
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                             <tr v-for="row in rows" :key="row.user.id" class="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800">
                                 <td class="whitespace-nowrap px-4 py-3 text-sm font-medium text-slate-900 dark:text-slate-100">
-                                    <Link :href="detailUrl(row.user.id)" class="hover:text-primary-700 dark:hover:text-primary-300">{{ row.user.name }}</Link>
+                                    <Link :href="detailUrl(row.user.id)" :data-help="'activity-row-' + row.user.id" class="hover:text-primary-700 dark:hover:text-primary-300">{{ row.user.name }}</Link>
                                 </td>
                                 <td v-for="area in areas" :key="area" class="whitespace-nowrap px-4 py-3 text-end text-sm"
                                     :class="row.areas[area] ? 'text-slate-700 dark:text-slate-200' : 'text-slate-300 dark:text-slate-600'">

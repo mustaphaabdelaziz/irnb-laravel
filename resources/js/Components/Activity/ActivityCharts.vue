@@ -169,7 +169,7 @@ const userTotals = computed(() => columnTotals(userColumns.value, topUsers.value
 <template>
     <div class="space-y-4">
         <!-- Key figures -->
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-4" data-help="activity-tiles">
             <StatTile :label="t('activity.total')" :value="total" format="number" icon="chart" tone="primary" />
             <StatTile :label="charts.unit === 'week' ? t('activity.active_weeks') : t('activity.active_days')" :value="activeDays" format="number" :meta="`\u2066/ ${charts.buckets.length}\u2069`" icon="calendar" tone="neutral" />
             <StatTile :label="t('activity.average_per_active')" :value="activeDays ? total / activeDays : 0" format="number" icon="task" tone="neutral" />

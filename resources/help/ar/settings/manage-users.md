@@ -4,7 +4,7 @@ summary: عطّل حساب من غادر النادي، وأعد كلمة مرو
 module: users
 pages: [users.index, users.edit]
 keywords: [تعطيل حساب, تفعيل حساب, حذف مستخدم, نسيت كلمة المرور, إعادة تعيين كلمة المرور, غير نشط, قيد الانتظار, موافقة, المستخدمون]
-related: [settings/create-user, getting-started/login]
+related: [settings/create-user, getting-started/login, settings/roles-rights, settings/log-in-as-activity]
 ---
 
 يعرض الجدول كل الحسابات، 25 في الصفحة. من سطر الحساب تعطّله، أو تعيد كلمة مروره، أو تحذفه. الحساب القديم الذي ينتظر الموافقة يحمل «قيد الانتظار» وزر «موافقة».

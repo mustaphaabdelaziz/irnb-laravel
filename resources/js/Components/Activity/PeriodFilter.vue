@@ -60,7 +60,7 @@ const inputClass = 'h-9 rounded-lg border-slate-300 text-sm shadow-sm focus:bord
 
 <template>
     <div class="flex flex-wrap items-center gap-2">
-        <div class="flex items-center gap-1.5">
+        <div class="flex items-center gap-1.5" data-help="activity-period">
             <Icon name="calendar" class="size-4 text-slate-400" />
             <select
                 :class="inputClass"

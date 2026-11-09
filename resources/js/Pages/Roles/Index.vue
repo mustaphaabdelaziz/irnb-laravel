@@ -54,12 +54,12 @@ function roleName(role) {
         <template #header>
             <div class="flex items-center justify-between">
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('roles') }}</h1>
-                <IconButton icon="plus" :label="t('add')" variant="primary" @click="openCreate" />
+                <IconButton icon="plus" :label="t('add')" variant="primary" data-help="roles-add" @click="openCreate" />
             </div>
         </template>
 
         <div class="space-y-3">
-            <div v-for="role in roles" :key="role.id"
+            <div v-for="role in roles" :key="role.id" :data-help="'roles-card-' + role.key"
                 class="flex items-center justify-between rounded-2xl bg-white dark:bg-slate-900 p-4 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div>
                     <p class="font-semibold text-slate-900 dark:text-slate-100">
@@ -69,7 +69,7 @@ function roleName(role) {
                     <p class="text-xs text-slate-400">{{ role.users_count }} {{ t('users') }}</p>
                 </div>
                 <div class="flex gap-1">
-                    <IconButton icon="pencil" :label="t('edit')" plain size="sm" @click="openEdit(role)" />
+                    <IconButton icon="pencil" :label="t('edit')" plain size="sm" :data-help="'roles-edit-' + role.key" @click="openEdit(role)" />
                     <IconButton v-if="!role.is_system" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="destroy(role)" />
                 </div>
             </div>
@@ -80,19 +80,19 @@ function roleName(role) {
              (the name fields) under the sticky header. -->
         <Teleport to="body">
         <div v-if="editing" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="editing = null">
-            <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
+            <div data-help="role-modal" class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
                 <h2 class="mb-4 text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('role') }}</h2>
                 <InputLabel :value="t('name')" required />
                 <div class="mt-1 grid gap-3 sm:grid-cols-3">
                     <input v-model="form.name.en" placeholder="English" class="rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800" />
                     <input v-model="form.name.fr" placeholder="Français" class="rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800" />
-                    <input v-model="form.name.ar" placeholder="العربية" dir="rtl" class="rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800" />
+                    <input v-model="form.name.ar" placeholder="العربية" dir="rtl" data-help="role-name-ar" class="rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800" />
                 </div>
                 <InputError :message="form.errors.name || form.errors['name.en'] || form.errors['name.fr'] || form.errors['name.ar']" class="mt-1" />
                 <InputError :message="form.errors.permissions" class="mt-1" />
 
-                <PermissionGrid v-model="form.permissions" :groups="moduleGroups" :actions="actions" class="mt-4" />
-                <label v-if="!editing?.is_system" class="mt-4 flex items-start gap-2 text-sm text-slate-700 dark:text-slate-200">
+                <PermissionGrid v-model="form.permissions" data-help="role-grid" :groups="moduleGroups" :actions="actions" class="mt-4" />
+                <label v-if="!editing?.is_system" data-help="role-own-teams" class="mt-4 flex items-start gap-2 text-sm text-slate-700 dark:text-slate-200">
                     <input v-model="form.own_teams_only" type="checkbox" class="mt-0.5 rounded border-slate-300 dark:border-slate-700" />
                     <span>
                         <span class="font-medium">{{ t('comp.own_teams_only') }}</span>
@@ -102,7 +102,7 @@ function roleName(role) {
 
                 <div class="mt-4 flex justify-end gap-2">
                     <SecondaryButton @click="editing = null">{{ t('cancel') }}</SecondaryButton>
-                    <PrimaryButton :disabled="form.processing" @click="save">{{ t('save_changes') }}</PrimaryButton>
+                    <PrimaryButton :disabled="form.processing" data-help="role-save" @click="save">{{ t('save_changes') }}</PrimaryButton>
                 </div>
             </div>
         </div>

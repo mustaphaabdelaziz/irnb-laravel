@@ -1,0 +1,12 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "activity-tiles": {
+      "x": 2.5,
+      "y": 18.5,
+      "w": 75,
+      "h": 17
+    }
+  }
+}

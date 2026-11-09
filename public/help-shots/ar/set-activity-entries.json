@@ -1,0 +1,12 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "activity-entries": {
+      "x": 2.5,
+      "y": 69.63,
+      "w": 75,
+      "h": 22.38
+    }
+  }
+}

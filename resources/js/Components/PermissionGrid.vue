@@ -57,7 +57,7 @@ function toggle(module, action) {
                         {{ t(SECTION_LABELS[section] ?? section) }}
                     </th>
                 </tr>
-                <tr v-for="m in modules" :key="m" class="border-t border-slate-100 dark:border-slate-800">
+                <tr v-for="m in modules" :key="m" :data-help="'perm-row-' + m" class="border-t border-slate-100 dark:border-slate-800">
                     <td class="p-2 ps-4 font-medium">{{ t(m) }}</td>
                     <td v-for="a in actions" :key="a" class="p-2 text-center">
                         <input type="checkbox" :checked="has(m, a)" :aria-label="`${t(m)} — ${t(a)}`" @change="toggle(m, a)"

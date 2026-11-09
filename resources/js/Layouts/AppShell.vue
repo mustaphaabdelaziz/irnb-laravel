@@ -285,9 +285,9 @@ function switchLocale(code) {
         <!-- ===== MAIN ===== -->
         <div class="transition-[margin] duration-200 ease-out motion-reduce:transition-none print:ms-0" :class="compact ? 'lg:ms-16' : 'lg:ms-64'">
             <!-- "Log in as": always visible, with the way back to the admin's own account. -->
-            <div v-if="impersonator" class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-amber-500 px-4 py-2 text-sm font-medium text-amber-950 print:hidden" role="status">
+            <div v-if="impersonator" data-help="impersonate-banner" class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-amber-500 px-4 py-2 text-sm font-medium text-amber-950 print:hidden" role="status">
                 <span>{{ t('impersonate.banner', { user: user?.name, admin: impersonator.name }) }}</span>
-                <Link :href="route('impersonate.leave')" method="post" as="button" class="rounded-md bg-amber-950/90 px-3 py-1 text-xs font-semibold text-amber-50 hover:bg-amber-950">
+                <Link :href="route('impersonate.leave')" method="post" as="button" data-help="impersonate-leave" class="rounded-md bg-amber-950/90 px-3 py-1 text-xs font-semibold text-amber-50 hover:bg-amber-950">
                     {{ t('impersonate.leave') }}
                 </Link>
             </div>

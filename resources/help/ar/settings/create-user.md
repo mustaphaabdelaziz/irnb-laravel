@@ -4,7 +4,7 @@ summary: أنشئ حسابًا لمدرب أو محاسب باسم مستخدم 
 module: users
 pages: [users.index, users.create]
 keywords: [مستخدم جديد, حساب, إنشاء حساب, اسم المستخدم, كلمة المرور, الدور, مدرب, محاسب, طاقم, المستخدمون]
-related: [getting-started/login, getting-started/profile-password, settings/manage-users]
+related: [getting-started/login, getting-started/profile-password, settings/manage-users, settings/roles-rights]
 ---
 
 لا يستطيع أحد أن يسجّل حسابًا بنفسه. يُنشئ مسؤول النادي حساب كل عضو في الطاقم من صفحة «المستخدمون». الحساب يعمل فور إنشائه، ولا ينتظر موافقة.

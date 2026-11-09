@@ -999,6 +999,131 @@ export default [
             await blur(page);
         },
     },
+    // Roles and extra rights (RoleController, Users/Edit). The role form and the extra-rights grid are only filled, never saved.
+    {
+        name: 'set-roles',
+        url: '/roles',
+        targets: ['nav-roles', 'roles-add', 'roles-card-coach'],
+        // «الأدوار» is the last item of «النظام», below the sidebar's visible part.
+        before: async (page) => { await navIntoView(page, 'nav-roles'); },
+    },
+    {
+        // The reader's state before the ticks: the form just opened, the Arabic name typed.
+        name: 'set-role-name',
+        url: '/roles',
+        targets: ['role-name-ar'],
+        before: async (page) => { await openRoleForm(page); },
+    },
+    {
+        // Equipment and inventory: «عرض / إضافة / تعديل» ticked, «حذف» left empty.
+        name: 'set-role-rows',
+        url: '/roles',
+        targets: ['perm-row-equipment', 'perm-row-inventory'],
+        before: async (page) => {
+            await openRoleForm(page);
+            await tickRoleRows(page);
+            await centre(page, 'perm-row-equipment');
+        },
+    },
+    {
+        // The reader's state before «حفظ التغييرات» (never pressed): the end of the form.
+        name: 'set-role-save',
+        url: '/roles',
+        targets: ['role-own-teams', 'role-save'],
+        before: async (page) => {
+            await openRoleForm(page);
+            await tickRoleRows(page);
+            await centre(page, 'role-save');
+        },
+    },
+    { name: 'set-user-edit-button', url: '/users', targets: ['users-edit-samir'] },
+    {
+        name: 'set-user-advanced',
+        url: '/users/3/edit',
+        targets: ['ue-role', 'ue-overrides-toggle'],
+        before: async (page) => { await centre(page, 'ue-overrides-toggle'); },
+    },
+    {
+        // «تجاوزات متقدمة» open, «عرض» ticked on «الاشتراكات». Never saved.
+        name: 'set-user-overrides',
+        url: '/users/3/edit',
+        targets: ['perm-row-subscriptions'],
+        before: async (page) => {
+            await page.locator('[data-help="ue-overrides-toggle"]').click();
+            await page.locator('[data-help="ue-overrides-grid"]').waitFor({ state: 'visible' });
+            await page.locator('[data-help="perm-row-subscriptions"] input').first().check();
+            await blur(page);
+            await centre(page, 'perm-row-subscriptions');
+        },
+    },
+    {
+        name: 'set-user-overrides-save',
+        url: '/users/3/edit',
+        targets: ['ue-save'],
+        before: async (page) => {
+            await page.locator('[data-help="ue-overrides-toggle"]').click();
+            await page.locator('[data-help="ue-overrides-grid"]').waitFor({ state: 'visible' });
+            await page.locator('[data-help="perm-row-subscriptions"] input').first().check();
+            await blur(page);
+            await centre(page, 'ue-save');
+        },
+    },
+    // Activity (before the log-in-as shots, which write their own entries). Users: samir 3, nadia 4.
+    {
+        name: 'set-activity-nav',
+        url: '/users/activity',
+        targets: ['nav-activity'],
+        before: async (page) => { await navIntoView(page, 'nav-activity'); },
+    },
+    { name: 'set-activity', url: '/users/activity?period=season', targets: ['activity-period', 'activity-tiles'] },
+    {
+        // The comparison table sits below the charts; samir's name is the link to his page.
+        name: 'set-activity-table',
+        url: '/users/activity?period=season',
+        targets: ['activity-table', 'activity-row-3'],
+        before: async (page) => { await centre(page, 'activity-row-3'); },
+    },
+    {
+        name: 'set-activity-user',
+        url: '/users/3/activity?period=season',
+        targets: ['activity-tiles'],
+    },
+    {
+        // The summary cards sit below the charts; the first count opens that action's entries.
+        name: 'set-activity-user-count',
+        url: '/users/3/activity?period=season',
+        targets: ['activity-count-first'],
+        before: async (page) => { await centre(page, 'activity-count-first'); },
+    },
+    {
+        name: 'set-activity-entries',
+        url: '/users/4/activity?period=season&action=transaction_recorded',
+        targets: ['activity-entries'],
+        before: async (page) => { await centre(page, 'activity-entries'); },
+    },
+    { name: 'set-impersonate-button', url: '/users', targets: ['users-impersonate-samir'] },
+    {
+        // Own session: «الدخول بحسابه» replaces the logged-in user. Leaves through the banner afterwards.
+        name: 'set-impersonating',
+        url: '/users',
+        ownLogin: true,
+        targets: ['impersonate-banner', 'impersonate-leave'],
+        before: async (page) => {
+            await Promise.all([
+                page.waitForURL(/\/dashboard/),
+                page.locator('[data-help="users-impersonate-samir"]').click(),
+            ]);
+            await page.waitForLoadState('networkidle');
+            // The «أنت الآن داخل…» toast covers the banner for two seconds.
+            await page.getByText('أنت الآن داخل بحساب هذا المستخدم.').waitFor({ state: 'hidden', timeout: 10000 });
+        },
+        after: async (page) => {
+            await Promise.all([
+                page.waitForURL(/\/users/),
+                page.locator('[data-help="impersonate-leave"]').click(),
+            ]);
+        },
+    },
     {
         name: 'fin-tx-saved',
         url: '/transactions/create',
@@ -1289,6 +1414,22 @@ async function fillUserNames(page) {
 /** Drops the focus ring of the last field typed in or ticked. */
 async function blur(page) {
     await page.evaluate(() => document.activeElement?.blur());
+}
+
+/** Role form: opens «إضافة» and types the Arabic name. Nothing is saved. */
+async function openRoleForm(page) {
+    await page.locator('[data-help="roles-add"]').click();
+    await page.locator('[data-help="role-name-ar"]').waitFor({ state: 'visible' });
+    await page.fill('[data-help="role-name-ar"]', 'أمين المخزن');
+    await blur(page);
+}
+
+/** Role form: «عرض / إضافة / تعديل» on equipment and inventory (the first three boxes of each row). */
+async function tickRoleRows(page) {
+    for (const row of ['perm-row-equipment', 'perm-row-inventory']) {
+        for (let i = 0; i < 3; i++) await page.locator(`[data-help="${row}"] input`).nth(i).check();
+    }
+    await blur(page);
 }
 
 /** Ticks every checkbox inside a data-help block. */

@@ -99,14 +99,14 @@ const cardClass = 'rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-
             <!-- Summary, one card per area -->
             <div v-if="groups.length" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 <section
-                    v-for="group in groups"
+                    v-for="(group, gi) in groups"
                     :key="group.area"
                     :class="[cardClass, group.area === area ? '!ring-2 !ring-primary-500' : '']"
                     class="p-4"
                 >
                     <h2 class="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ t(`activity.area.${group.area}`) }}</h2>
                     <ul class="divide-y divide-slate-100 dark:divide-slate-800">
-                        <li v-for="item in group.items" :key="item.action" class="flex items-start justify-between gap-3 py-2">
+                        <li v-for="(item, index) in group.items" :key="item.action" class="flex items-start justify-between gap-3 py-2">
                             <div class="min-w-0">
                                 <p class="text-sm text-slate-700 dark:text-slate-200">{{ t(`activity.action.${item.action}`) }}</p>
                                 <p v-if="item.amount !== null" class="text-xs text-slate-500 dark:text-slate-400">{{ formatMoney(item.amount) }}</p>
@@ -116,6 +116,7 @@ const cardClass = 'rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-
                             </div>
                             <Link
                                 :href="actionUrl(item)"
+                                :data-help="index === 0 && gi === 0 ? 'activity-count-first' : null"
                                 preserve-scroll
                                 class="shrink-0 rounded-lg px-2.5 py-1 text-sm font-semibold tabular-nums transition-colors"
                                 :class="item.action === action
@@ -130,7 +131,7 @@ const cardClass = 'rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-
             <div v-else :class="cardClass" class="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('activity.no_activity') }}</div>
 
             <!-- Entries of the chosen action -->
-            <section v-if="entries" :class="cardClass" class="overflow-hidden">
+            <section v-if="entries" :class="cardClass" class="overflow-hidden" data-help="activity-entries">
                 <h2 class="border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900 dark:border-slate-800 dark:text-slate-100">
                     {{ t(`activity.action.${action}`) }}
                     <span class="ms-1 font-normal text-slate-500 dark:text-slate-400">({{ entries.total }})</span>

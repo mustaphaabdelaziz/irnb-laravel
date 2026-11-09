@@ -1,0 +1,12 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "activity-count-first": {
+      "x": 54.58,
+      "y": 81,
+      "w": 2.27,
+      "h": 3.5
+    }
+  }
+}

@@ -126,15 +126,15 @@ const attStyle = {
                 <Link :href="route('board.meetings')" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"><Icon name="back" /></Link>
                 <h1 class="truncate text-lg font-bold text-slate-900 dark:text-slate-100" :class="isCancelled ? 'line-through decoration-slate-400' : ''">{{ meeting.title }}</h1>
                 <div class="ms-auto flex items-center gap-2">
-                    <IconButton v-if="canCancel" icon="xcircle" :label="t('cancel_meeting')" variant="danger" @click="openCancel" />
-                    <IconButton v-if="can('board', 'delete')" icon="trash" :label="t('delete_meeting')" variant="danger" @click="showDelete = true" />
-                    <IconButton :href="route('board.meetings.minutes', meeting.id)" external target="_blank" icon="print" :label="t('minutes')" />
+                    <IconButton v-if="canCancel" data-help="meet-cancel" icon="xcircle" :label="t('cancel_meeting')" variant="danger" @click="openCancel" />
+                    <IconButton v-if="can('board', 'delete')" data-help="meet-delete" icon="trash" :label="t('delete_meeting')" variant="danger" @click="showDelete = true" />
+                    <IconButton :href="route('board.meetings.minutes', meeting.id)" data-help="meet-print" external target="_blank" icon="print" :label="t('minutes')" />
                 </div>
             </div>
         </template>
 
         <!-- Cancelled: the record stays, with who/when/why, and is read-only. -->
-        <div v-if="isCancelled" class="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-800/60">
+        <div v-if="isCancelled" data-help="meet-cancelled-banner" class="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-800/60">
             <p class="flex items-center gap-2 font-bold text-slate-700 dark:text-slate-200"><Icon name="xcircle" /> {{ t('cancelled') }}</p>
             <p v-if="meeting.cancelled_at" class="mt-1 text-slate-500 dark:text-slate-400">
                 {{ t('meeting_cancelled_banner', { date: fmtDateTime(meeting.cancelled_at), name: meeting.cancelled_by?.name || '—' }) }}
@@ -147,7 +147,7 @@ const attStyle = {
             <!-- Left: details + minutes. A disabled fieldset locks every control at once. -->
             <fieldset :disabled="isCancelled || !can('board', 'edit')" class="min-w-0 space-y-6 lg:col-span-2">
                 <!-- Core fields -->
-                <section class="card space-y-4 p-5">
+                <section class="card space-y-4 p-5" data-help="meet-fields">
                     <div class="grid gap-4 sm:grid-cols-2">
                         <label class="block text-sm sm:col-span-2"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('title') }}</span>
                             <input v-model="form.title" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
@@ -156,7 +156,7 @@ const attStyle = {
                                 <option value="ordinary">{{ t('ordinary') }}</option><option value="extraordinary">{{ t('extraordinary') }}</option><option value="general_assembly">{{ t('general_assembly') }}</option>
                             </select></label>
                         <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('status') }}</span>
-                            <select v-model="form.status" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
+                            <select v-model="form.status" data-help="meet-status" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
                                 <option value="scheduled">{{ t('scheduled') }}</option><option value="held">{{ t('held') }}</option>
                             </select>
                             <span v-if="form.errors.status" class="mt-1 block text-xs text-rose-500 dark:text-rose-400">{{ form.errors.status }}</span></label>
@@ -182,11 +182,11 @@ const attStyle = {
                 <section class="card space-y-4 p-5">
                     <div>
                         <span class="mb-1 block text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('minutes') }}</span>
-                        <textarea v-model="form.minutes" rows="6" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800"></textarea>
+                        <textarea v-model="form.minutes" data-help="meet-minutes" rows="6" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800"></textarea>
                     </div>
 
                     <!-- Minutes file (PDF / Word / photo) -->
-                    <div>
+                    <div data-help="meet-file">
                         <span class="mb-1 block text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('minutes_file') }}</span>
                         <div v-if="meeting.attachment_url" class="mb-2 flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/50">
                             <Icon name="document" class="text-primary-500 dark:text-primary-300" />
@@ -194,30 +194,30 @@ const attStyle = {
                             <IconButton v-if="!isCancelled && can('board', 'delete')" icon="trash" :label="t('remove')" variant="danger" plain size="sm" @click="confirmRemoveAttachment = true" />
                         </div>
                         <div v-if="!isCancelled && can('board', 'edit')" class="flex flex-wrap items-center gap-2">
-                            <input type="file" accept=".pdf,.doc,.docx,image/*" @change="fileForm.attachment = $event.target.files[0]"
+                            <input type="file" data-help="meet-file-input" accept=".pdf,.doc,.docx,image/*" @change="fileForm.attachment = $event.target.files[0]"
                                 class="block w-full max-w-xs text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-primary-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-700 hover:file:bg-primary-100 dark:text-slate-400 dark:file:bg-primary-500/10 dark:file:text-primary-300 dark:hover:file:bg-primary-500/15" />
-                            <IconButton icon="upload" :label="t('upload')" :disabled="!fileForm.attachment || fileForm.processing" @click="uploadAttachment" />
+                            <IconButton data-help="meet-file-upload" icon="upload" :label="t('upload')" :disabled="!fileForm.attachment || fileForm.processing" @click="uploadAttachment" />
                         </div>
                         <p v-if="fileForm.errors.attachment" class="mt-1 text-xs text-rose-500 dark:text-rose-400">{{ fileForm.errors.attachment }}</p>
                     </div>
                     <div>
                         <span class="mb-1 block text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('decisions') }}</span>
-                        <div class="space-y-2">
+                        <div class="space-y-2" data-help="meet-decisions">
                             <div v-for="(d, i) in form.decisions" :key="i" class="flex items-center gap-2">
                                 <Icon name="check" class="text-emerald-500 dark:text-emerald-400" />
                                 <input v-model="form.decisions[i]" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
                                 <button type="button" @click="form.decisions.splice(i, 1)" class="text-slate-300 hover:text-rose-500 dark:hover:text-rose-400"><Icon name="xcircle" /></button>
                             </div>
                         </div>
-                        <button type="button" @click="form.decisions.push('')" class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary-600 dark:text-primary-300"><Icon name="plus" /> {{ t('add_item') }}</button>
+                        <button type="button" data-help="meet-decisions-add" @click="form.decisions.push('')" class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary-600 dark:text-primary-300"><Icon name="plus" /> {{ t('add_item') }}</button>
                     </div>
                     <div v-if="!isCancelled && can('board', 'edit')" class="flex justify-end">
-                        <button @click="saveMeeting" :disabled="form.processing" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('save_minutes') }}</button>
+                        <button data-help="meet-save-minutes" @click="saveMeeting" :disabled="form.processing" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('save_minutes') }}</button>
                     </div>
                 </section>
 
                 <!-- Tasks from this meeting -->
-                <section class="card p-5">
+                <section class="card p-5" data-help="meet-tasks">
                     <p class="mb-3 text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('action_items') }}</p>
                     <ul class="space-y-2">
                         <li v-for="tk in meeting.tasks" :key="tk.id" class="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/50">
@@ -230,20 +230,20 @@ const attStyle = {
                         </li>
                     </ul>
                     <form v-if="!isCancelled && can('board', 'add')" @submit.prevent="addTask" class="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
-                        <input v-model="taskForm.title" :placeholder="t('task_title')" required class="flex-1 rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
-                        <select v-model="taskForm.board_member_id" class="rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
+                        <input v-model="taskForm.title" data-help="meet-task-title" :placeholder="t('task_title')" required class="flex-1 rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
+                        <select v-model="taskForm.board_member_id" data-help="meet-task-member" class="rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
                             <option :value="null">{{ t('unassigned') }}</option>
                             <option v-for="m in allMembers" :key="m.id" :value="m.id">{{ m.name }}</option>
                         </select>
-                        <input v-model="taskForm.due_date" type="date" class="rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
-                        <IconButton type="submit" icon="plus" :label="t('add_task')" variant="primary" />
+                        <input v-model="taskForm.due_date" data-help="meet-task-due" type="date" class="rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
+                        <IconButton type="submit" data-help="meet-task-add" icon="plus" :label="t('add_task')" variant="primary" />
                     </form>
                 </section>
             </fieldset>
 
             <!-- Right: attendance -->
             <fieldset :disabled="isCancelled || !can('board', 'edit')" class="min-w-0 space-y-6">
-                <section class="card p-5">
+                <section class="card p-5" data-help="meet-attendance">
                     <div class="mb-3 flex items-center justify-between">
                         <p class="text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('attendance') }}</p>
                         <span class="text-xs font-semibold text-slate-400">{{ presentCount }}</span>
@@ -252,7 +252,7 @@ const attStyle = {
                         <li v-for="m in members" :key="m.id" class="flex items-center justify-between gap-2">
                             <span class="min-w-0 truncate text-sm text-slate-700 dark:text-slate-200">{{ m.name }} <span class="text-xs text-slate-400">{{ t(m.role) }}</span></span>
                             <div class="flex shrink-0 gap-1">
-                                <button v-for="s in ['present', 'absent', 'excused']" :key="s" @click="attendance[m.id] = s"
+                                <button v-for="s in ['present', 'absent', 'excused']" :key="s" :data-help="`meet-att-${m.id}-${s}`" @click="attendance[m.id] = s"
                                     class="rounded-md px-2 py-0.5 text-xs font-bold transition-colors"
                                     :class="attendance[m.id] === s ? attStyle[s] : 'bg-slate-100 text-slate-400 dark:bg-slate-800'">{{ t(s).charAt(0) }}</button>
                             </div>
@@ -268,7 +268,7 @@ const attStyle = {
                         </ul>
                     </div>
                     <p v-if="!members.length" class="py-4 text-center text-xs text-slate-400">{{ t('no_data') }}</p>
-                    <button v-if="members.length && !isCancelled && can('board', 'edit')" @click="saveAttendance" class="mt-3 w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900">{{ t('save_attendance') }}</button>
+                    <button v-if="members.length && !isCancelled && can('board', 'edit')" data-help="meet-att-save" @click="saveAttendance" class="mt-3 w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900">{{ t('save_attendance') }}</button>
                 </section>
             </fieldset>
         </div>
@@ -278,7 +278,7 @@ const attStyle = {
             @confirm="confirmCancel" @cancel="showCancel = false">
             <label class="mt-4 block text-sm">
                 <span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('cancel_reason') }}</span>
-                <textarea v-model="cancelForm.reason" rows="3" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800"></textarea>
+                <textarea v-model="cancelForm.reason" data-help="meet-cancel-reason" rows="3" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800"></textarea>
             </label>
             <p v-if="cancelForm.errors.reason" class="mt-1 text-xs text-rose-500 dark:text-rose-400">{{ cancelForm.errors.reason }}</p>
         </ConfirmModal>

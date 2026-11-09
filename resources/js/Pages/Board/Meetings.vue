@@ -67,47 +67,47 @@ const filterOptions = ['', 'scheduled', 'held', 'cancelled'];
 
         <div class="space-y-5">
             <div class="flex flex-wrap items-center justify-between gap-3">
-                <div class="flex flex-wrap gap-1.5">
+                <div class="flex flex-wrap gap-1.5" data-help="meet-filter">
                     <button v-for="s in filterOptions" :key="s || 'all'" type="button" @click="statusFilter = s"
                         class="rounded-full px-3 py-1 text-xs font-bold transition-colors"
                         :class="statusFilter === s ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' : 'bg-white text-slate-500 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-400 dark:ring-slate-800 dark:hover:bg-slate-800'">
                         {{ s ? t(s) : t('all') }}
                     </button>
                 </div>
-                <IconButton v-if="can('board', 'add')" icon="plus" :label="t('add_meeting')" variant="primary" @click="showForm = !showForm" />
+                <IconButton v-if="can('board', 'add')" data-help="meet-add" icon="plus" :label="t('add_meeting')" variant="primary" @click="showForm = !showForm" />
             </div>
 
             <form v-if="showForm && can('board', 'add')" @submit.prevent="submit" class="card space-y-4 p-5">
                 <div class="grid gap-4 sm:grid-cols-2">
                     <label class="block text-sm sm:col-span-2"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('title') }}</span>
-                        <input v-model="form.title" required class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
+                        <input v-model="form.title" data-help="meet-form-title" required class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
                     <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('meeting_type') }}</span>
-                        <select v-model="form.type" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
+                        <select v-model="form.type" data-help="meet-form-type" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
                             <option value="ordinary">{{ t('ordinary') }}</option><option value="extraordinary">{{ t('extraordinary') }}</option><option value="general_assembly">{{ t('general_assembly') }}</option>
                         </select></label>
                     <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('date') }}</span>
-                        <input v-model="form.meeting_date" type="datetime-local" required class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
+                        <input v-model="form.meeting_date" data-help="meet-form-date" type="datetime-local" required class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
                     <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('location') }}</span>
-                        <input v-model="form.location" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
+                        <input v-model="form.location" data-help="meet-form-location" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
                 </div>
                 <div>
                     <span class="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">{{ t('agenda') }}</span>
-                    <div class="space-y-2">
+                    <div class="space-y-2" data-help="meet-form-agenda">
                         <div v-for="(item, i) in form.agenda" :key="i" class="flex items-center gap-2">
                             <input v-model="form.agenda[i]" :placeholder="`${i + 1}.`" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
                             <button type="button" @click="removeAgenda(i)" class="text-slate-300 hover:text-rose-500 dark:hover:text-rose-400"><Icon name="xcircle" /></button>
                         </div>
                     </div>
-                    <button type="button" @click="addAgenda" class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-300 dark:hover:text-primary-200"><Icon name="plus" /> {{ t('add_item') }}</button>
+                    <button type="button" data-help="meet-form-agenda-add" @click="addAgenda" class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-300 dark:hover:text-primary-200"><Icon name="plus" /> {{ t('add_item') }}</button>
                 </div>
                 <div class="flex justify-end gap-2">
                     <button type="button" @click="showForm = false" class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-400">{{ t('cancel') }}</button>
-                    <button :disabled="form.processing" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('create') }}</button>
+                    <button :disabled="form.processing" data-help="meet-form-create" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('create') }}</button>
                 </div>
             </form>
 
             <div class="space-y-3">
-                <Link v-for="mt in meetings" :key="mt.id" :href="route('board.meetings.show', mt.id)"
+                <Link v-for="mt in meetings" :key="mt.id" :href="route('board.meetings.show', mt.id)" :data-help="`meet-row-${mt.id}`"
                     class="card flex items-center justify-between gap-4 p-4 transition-shadow hover:shadow-md"
                     :class="mt.status === 'cancelled' ? 'opacity-70' : ''">
                     <div class="flex min-w-0 items-center gap-3">
@@ -121,7 +121,7 @@ const filterOptions = ['', 'scheduled', 'held', 'cancelled'];
                         <span v-if="mt.present_count" class="hidden items-center gap-1 text-slate-400 sm:inline-flex"><Icon name="board" /> {{ mt.present_count }}</span>
                         <span v-if="mt.tasks_count" class="hidden items-center gap-1 text-slate-400 sm:inline-flex"><Icon name="task" /> {{ mt.tasks_count }}</span>
                         <span class="inline-flex rounded-full px-2.5 py-0.5 font-bold" :class="statusChip[mt.status]">{{ t(mt.status) }}</span>
-                        <IconButton v-if="can('board', 'delete')" icon="trash" :label="t('delete_meeting')" variant="danger" plain size="sm" icon-only @click.prevent.stop="deleteTarget = mt" />
+                        <IconButton v-if="can('board', 'delete')" :data-help="`meet-row-delete-${mt.id}`" icon="trash" :label="t('delete_meeting')" variant="danger" plain size="sm" icon-only @click.prevent.stop="deleteTarget = mt" />
                     </div>
                 </Link>
                 <p v-if="!meetings.length" class="py-10 text-center text-sm text-slate-400">{{ t('no_meetings') }}</p>

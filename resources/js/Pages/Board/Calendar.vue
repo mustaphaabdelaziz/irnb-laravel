@@ -117,13 +117,13 @@ function submit() {
                 </div>
                 <div class="grid grid-cols-7">
                     <div
-                        v-for="cell in cells" :key="cell.key"
+                        v-for="cell in cells" :key="cell.key" :data-help="`meet-cal-day-${cell.key}`"
                         class="group relative min-h-[6.5rem] border-b border-e border-slate-100 p-1.5 dark:border-slate-800"
                         :class="[cell.inMonth ? 'bg-white dark:bg-slate-900' : 'bg-slate-50/60 dark:bg-slate-900/40', cell.key === todayKey ? 'ring-1 ring-inset ring-primary-400' : '']"
                     >
                         <div class="mb-1 flex items-center justify-between">
                             <span class="text-xs font-semibold" :class="cell.inMonth ? 'text-slate-500 dark:text-slate-300' : 'text-slate-300 dark:text-slate-600'">{{ cell.date.getDate() }}</span>
-                            <button v-if="can('board', 'add')" @click="openCreate(cell)" :title="t('add_meeting')" class="rounded p-0.5 text-slate-300 opacity-0 transition-opacity hover:bg-primary-50 hover:text-primary-600 group-hover:opacity-100 dark:hover:bg-primary-500/10 dark:hover:text-primary-300"><Icon name="plus" class="h-3.5 w-3.5" /></button>
+                            <button v-if="can('board', 'add')" :data-help="`meet-cal-add-${cell.key}`" @click="openCreate(cell)" :title="t('add_meeting')" class="rounded p-0.5 text-slate-300 opacity-0 transition-opacity hover:bg-primary-50 hover:text-primary-600 group-hover:opacity-100 dark:hover:bg-primary-500/10 dark:hover:text-primary-300"><Icon name="plus" class="h-3.5 w-3.5" /></button>
                         </div>
                         <div class="space-y-1">
                             <template v-for="e in (eventsByDate[cell.key] || [])" :key="e.kind + e.id">
@@ -147,7 +147,7 @@ function submit() {
         <!-- Create meeting modal (teleported so the layout header/sidebar can't overlap it) -->
         <Teleport to="body">
         <div v-if="showForm" class="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-slate-900/60 p-4 backdrop-blur-sm sm:items-center" @click.self="showForm = false">
-            <form @submit.prevent="submit" class="card my-auto w-full max-w-lg space-y-4 p-5">
+            <form @submit.prevent="submit" data-help="meet-cal-form" class="card my-auto w-full max-w-lg space-y-4 p-5">
                 <div class="flex items-center justify-between">
                     <h2 class="text-base font-bold text-slate-900 dark:text-slate-100">{{ t('add_meeting') }}</h2>
                     <button type="button" @click="showForm = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><Icon name="xcircle" /></button>
@@ -160,13 +160,13 @@ function submit() {
                             <option value="ordinary">{{ t('ordinary') }}</option><option value="extraordinary">{{ t('extraordinary') }}</option><option value="general_assembly">{{ t('general_assembly') }}</option>
                         </select></label>
                     <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('date') }}</span>
-                        <input v-model="form.meeting_date" type="datetime-local" required class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
+                        <input v-model="form.meeting_date" data-help="meet-cal-form-date" type="datetime-local" required class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
                     <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('location') }}</span>
                         <input v-model="form.location" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
                 </div>
                 <div class="flex justify-end gap-2">
                     <button type="button" @click="showForm = false" class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-400">{{ t('cancel') }}</button>
-                    <button :disabled="form.processing" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('create') }}</button>
+                    <button :disabled="form.processing" data-help="meet-cal-form-create" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('create') }}</button>
                 </div>
             </form>
         </div>

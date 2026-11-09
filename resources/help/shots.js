@@ -28,6 +28,8 @@ const nextDay = (weekdays, from = new Date(), strict = false) => {
 };
 const sessionMonth = ym(nextDay([1, 3]));
 const nextSaturday = ymd(nextDay([6], new Date(), true));
+// The schedule-meeting example: «اجتماع تحضير الموسم» next Tuesday (after today) at 18:00.
+const nextTuesday = nextDay([2], new Date(), true);
 const U17 = 'branch_id=2&category_id=7';
 // The month grid first opens on the month of 7 days ago. That is only a first guess:
 // the held U17 sessions are 1-5 days before the seed day, and the one holding أمين's
@@ -1698,6 +1700,120 @@ export default [
             await page.locator('[data-help="confirm-ok"]').waitFor({ state: 'visible' });
         },
     },
+    // Meetings (ids: 1 the previous term's, 2 «اجتماع المكتب العادي» held, 3 «اجتماع تحضير
+    // الجمعية العامة» scheduled, 4 «لقاء مع الممولين» cancelled). Nothing here saves: forms are
+    // typed, «إنشاء» / «حفظ المحضر» / «حفظ الحضور» / «رفع» / «إضافة مهمة» only ringed, the
+    // cancel and delete confirms opened and not confirmed.
+    {
+        name: 'board-schedule-meeting-list',
+        url: '/board/meetings',
+        targets: ['nav-board-meetings', 'meet-filter', 'meet-add', 'meet-row-2', 'meet-row-3', 'meet-row-4'],
+        before: async (page) => { await navIntoView(page, 'nav-board-meetings'); },
+    },
+    {
+        // «إضافة اجتماع» opened: «اجتماع تحضير الموسم», «عادي», next Tuesday 18:00, «مقر النادي».
+        name: 'board-schedule-meeting-form',
+        url: '/board/meetings',
+        targets: ['meet-form-title', 'meet-form-type', 'meet-form-date', 'meet-form-location'],
+        before: async (page) => { await fillSeasonMeeting(page); },
+    },
+    {
+        // The same form with two agenda items (the second row added by «إضافة»). Not created.
+        name: 'board-schedule-meeting-agenda',
+        url: '/board/meetings',
+        targets: ['meet-form-agenda', 'meet-form-agenda-add', 'meet-form-create'],
+        before: async (page) => {
+            await fillSeasonMeeting(page);
+            await page.locator('[data-help="meet-form-agenda"] input').nth(0).fill('تقييم الموسم الماضي');
+            await page.locator('[data-help="meet-form-agenda-add"]').click();
+            await page.locator('[data-help="meet-form-agenda"] input').nth(1).fill('ميزانية الموسم الجديد');
+            await blur(page);
+            await centre(page, 'meet-form-agenda');
+        },
+    },
+    {
+        // The calendar on next Tuesday's month, the mouse on its cell: the + shows only on hover.
+        name: 'board-schedule-meeting-calendar',
+        url: `/board/calendar?month=${ym(nextTuesday)}`,
+        targets: ['nav-board-calendar', 'meet-cal-day', 'meet-cal-add'],
+        before: async (page) => {
+            await tagTuesday(page);
+            await navIntoView(page, 'nav-board-calendar');
+            await centre(page, 'meet-cal-day');
+            await page.locator('[data-help="meet-cal-day"]').hover();
+            await page.waitForTimeout(300);
+        },
+    },
+    {
+        // Its + pressed: «إضافة اجتماع» with the date filled (18:00); title and place typed. Not created.
+        name: 'board-schedule-meeting-calendar-form',
+        url: `/board/calendar?month=${ym(nextTuesday)}`,
+        targets: ['meet-cal-form', 'meet-cal-form-date', 'meet-cal-form-create'],
+        before: async (page) => {
+            await tagTuesday(page);
+            await page.locator('[data-help="meet-cal-add"]').click();
+            await page.locator('[data-help="meet-cal-form"] input').first().fill('اجتماع تحضير الموسم');
+            await page.locator('[data-help="meet-cal-form"] input').nth(2).fill('مقر النادي');
+            await blur(page);
+        },
+    },
+    // Meeting 2, held: fields, attendance (رشيد مقران, member 12, excused) and the print button.
+    { name: 'board-meeting-minutes-page', url: '/board/meetings/2', targets: ['meet-status', 'meet-fields', 'meet-attendance', 'meet-att-12-excused', 'meet-att-save', 'meet-print'] },
+    {
+        name: 'board-meeting-minutes-minutes',
+        url: '/board/meetings/2',
+        targets: ['meet-minutes', 'meet-decisions', 'meet-decisions-add', 'meet-save-minutes'],
+        before: async (page) => { await centre(page, 'meet-decisions'); },
+    },
+    {
+        // A PDF chosen in «ملف المحضر» (so «رفع» is enabled), not uploaded.
+        name: 'board-meeting-minutes-file',
+        url: '/board/meetings/2',
+        targets: ['meet-file', 'meet-file-input', 'meet-file-upload'],
+        before: async (page) => {
+            await page.locator('[data-help="meet-file-input"]').setInputFiles({ name: 'محضر-الاجتماع.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n%%EOF\n') });
+            await blur(page);
+            await centre(page, 'meet-file');
+        },
+    },
+    {
+        // A task typed under «بنود العمل»: «حجز قاعة الجمعية العامة», فاطمة الزهراء بن صالح (member 10), in 5 days. Not added.
+        name: 'board-meeting-minutes-task',
+        url: '/board/meetings/2',
+        targets: ['meet-tasks', 'meet-task-title', 'meet-task-member', 'meet-task-due', 'meet-task-add'],
+        before: async (page) => {
+            await page.fill('input[data-help="meet-task-title"]', 'حجز قاعة الجمعية العامة');
+            await page.selectOption('select[data-help="meet-task-member"]', '10');
+            await page.fill('input[data-help="meet-task-due"]', ymd(inDays(5)));
+            await blur(page);
+            await centre(page, 'meet-tasks');
+        },
+    },
+    // Meeting 3, scheduled: «إلغاء الاجتماع», «حذف الاجتماع», print.
+    { name: 'board-cancel-delete-meeting-page', url: '/board/meetings/3', targets: ['meet-cancel', 'meet-delete', 'meet-print'] },
+    {
+        // «إلغاء الاجتماع» opened, a reason typed. Not confirmed.
+        name: 'board-cancel-delete-meeting-cancel',
+        url: '/board/meetings/3',
+        targets: ['confirm-panel', 'meet-cancel-reason', 'confirm-ok'],
+        before: async (page) => {
+            await page.locator('[data-help="meet-cancel"]').click();
+            await page.locator('[data-help="meet-cancel-reason"]').fill('تأجيل الجمعية العامة إلى موعد لاحق');
+            await blur(page);
+        },
+    },
+    // Meeting 4, cancelled by the demo user: the banner, the locked fields, the struck title.
+    { name: 'board-cancel-delete-meeting-cancelled', url: '/board/meetings/4', targets: ['meet-cancelled-banner', 'meet-fields'] },
+    {
+        // «حذف الاجتماع» opened on meeting 3. Not confirmed.
+        name: 'board-cancel-delete-meeting-delete',
+        url: '/board/meetings/3',
+        targets: ['confirm-panel', 'confirm-ok'],
+        before: async (page) => {
+            await page.locator('[data-help="meet-delete"]').click();
+            await page.locator('[data-help="confirm-ok"]').waitFor({ state: 'visible' });
+        },
+    },
     {
         // Writes: «ساعة توقيت 3» (item 9) is marked lost through the UI so its «استعادة» shows;
         // `after` restores it through the UI, back to the seeded state.
@@ -1985,6 +2101,23 @@ async function pickOption(page, selector, pattern) {
     }, pattern.source);
     if (value === null) throw new Error(`No option matching ${pattern} in ${selector}`);
     await page.locator(selector).first().selectOption(value);
+}
+
+/** Meetings list: opens «إضافة اجتماع» and types the schedule-meeting example. Never created. */
+async function fillSeasonMeeting(page) {
+    await page.locator('[data-help="meet-add"]').click();
+    await page.fill('input[data-help="meet-form-title"]', 'اجتماع تحضير الموسم');
+    await page.selectOption('select[data-help="meet-form-type"]', 'ordinary');
+    await page.fill('input[data-help="meet-form-date"]', `${ymd(nextTuesday)}T18:00`);
+    await page.fill('input[data-help="meet-form-location"]', 'مقر النادي');
+    await blur(page);
+}
+
+/** Board calendar: names next Tuesday's cell `meet-cal-day` and its + `meet-cal-add`. */
+async function tagTuesday(page) {
+    const key = ymd(nextTuesday);
+    await tagIn(page, 'meet-cal-add', page.locator(`[data-help="meet-cal-add-${key}"]`));
+    await tagIn(page, 'meet-cal-day', page.locator(`[data-help="meet-cal-day-${key}"]`));
 }
 
 /** Scrolls the sidebar so a nav item is inside its visible part. */

@@ -62,11 +62,11 @@ function destroy() {
 <template>
     <div class="space-y-6">
         <!-- Add form -->
-        <form v-if="can('categories', 'add')" @submit.prevent="addCategory" class="space-y-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+        <form v-if="can('categories', 'add')" @submit.prevent="addCategory" data-help="cat-add-form" class="space-y-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('name') }} <span class="text-xs text-slate-400">({{ t('default') }})</span></label>
-                    <TextInput v-model="form.name" class="mt-1 w-full" :placeholder="t('name')" required />
+                    <TextInput v-model="form.name" data-help="cat-name" class="mt-1 w-full" :placeholder="t('name')" required />
                     <InputError :message="form.errors.name" class="mt-1" />
                 </div>
                 <div>
@@ -87,7 +87,7 @@ function destroy() {
                 </div>
             </div>
             <div class="flex justify-end">
-                <PrimaryButton :disabled="form.processing">{{ t('add') }}</PrimaryButton>
+                <PrimaryButton data-help="cat-add" :disabled="form.processing">{{ t('add') }}</PrimaryButton>
             </div>
         </form>
 
@@ -103,7 +103,7 @@ function destroy() {
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                    <tr v-for="cat in categories" :key="cat.id">
+                    <tr v-for="(cat, index) in categories" :key="cat.id" :data-help="index === 0 ? 'cat-row-first' : null">
                         <td class="px-4 py-3">
                             <div v-if="editingId === cat.id" class="space-y-1.5">
                                 <TextInput v-model="editForm.name" class="w-full" :placeholder="t('name')" />
@@ -128,8 +128,8 @@ function destroy() {
                                 <button @click="editingId = null" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">{{ t('cancel') }}</button>
                             </div>
                             <div v-else class="flex justify-end gap-2">
-                                <IconButton v-if="can('categories', 'edit')" :icon="cat.is_active === false ? 'check' : 'close'" :label="cat.is_active === false ? t('category_tab.activate') : t('category_tab.deactivate')" plain size="sm" @click="toggle(cat)" />
-                                <IconButton v-if="can('categories', 'edit')" icon="pencil" :label="t('edit')" plain size="sm" @click="startEdit(cat)" />
+                                <IconButton v-if="can('categories', 'edit')" :data-help="index === 0 ? 'cat-toggle-first' : null" :icon="cat.is_active === false ? 'check' : 'close'" :label="cat.is_active === false ? t('category_tab.activate') : t('category_tab.deactivate')" plain size="sm" @click="toggle(cat)" />
+                                <IconButton v-if="can('categories', 'edit')" :data-help="index === 0 ? 'cat-edit-first' : null" icon="pencil" :label="t('edit')" plain size="sm" @click="startEdit(cat)" />
                                 <IconButton v-if="can('categories', 'delete')" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteId = cat.id" />
                             </div>
                         </td>

@@ -859,6 +859,71 @@ export default [
     },
     { name: 'set-branch-rows', url: '/branches', targets: ['branch-row-football', 'branch-set-main', 'branch-members', 'branch-edit'] },
     { name: 'set-branch-detail', url: '/branches/2', targets: ['branch-tab-general', 'branch-tab-categories'] },
+    // Football's categories tab (branch 2); «الفئات» in the sidebar opens the main branch (Swimming).
+    {
+        name: 'set-categories',
+        url: '/branches/2/categories',
+        targets: ['nav-categories', 'cat-name', 'cat-add', 'cat-toggle-first'],
+        before: async (page) => { await navIntoView(page, 'nav-categories'); },
+    },
+    {
+        // The reader's state before «إضافة»: the new name typed.
+        name: 'set-category-typed',
+        url: '/branches/2/categories',
+        targets: ['cat-name', 'cat-add'],
+        before: async (page) => {
+            await page.fill('input[data-help="cat-name"]', 'أقل من 19 سنة');
+            await blur(page);
+        },
+    },
+    {
+        name: 'set-doc-types',
+        url: '/document-types',
+        targets: ['nav-document-types', 'doc-add', 'doc-row-photo'],
+        before: async (page) => { await navIntoView(page, 'nav-document-types'); },
+    },
+    {
+        // Steps «الاسم» + «الصلاحية» and «الفروع»: name typed, one season chosen, both branches still ticked. Nothing saved.
+        name: 'set-doc-type-name',
+        url: '/document-types',
+        targets: ['doc-name', 'doc-validity', 'doc-branch-1'],
+        before: async (page) => {
+            await page.locator('[data-help="doc-add"]').click();
+            await page.locator('input[data-help="doc-name"]').waitFor({ state: 'visible' });
+            await page.fill('input[data-help="doc-name"]', 'رخصة الاتحاد');
+            await page.selectOption('select[data-help="doc-validity"]', 'season');
+            await blur(page);
+        },
+    },
+    {
+        // Step «إلزامي»: Swimming unticked, only Football left ticked.
+        name: 'set-doc-type-branches',
+        url: '/document-types',
+        targets: ['doc-required'],
+        before: async (page) => {
+            await page.locator('[data-help="doc-add"]').click();
+            await page.locator('input[data-help="doc-name"]').waitFor({ state: 'visible' });
+            await page.fill('input[data-help="doc-name"]', 'رخصة الاتحاد');
+            await page.selectOption('select[data-help="doc-validity"]', 'season');
+            await page.locator('[data-help="doc-branch-1"]').uncheck();
+            await blur(page);
+        },
+    },
+    {
+        // The reader's state before «حفظ»: name, one season, Swimming unticked, required ticked.
+        name: 'set-doc-type-form',
+        url: '/document-types',
+        targets: ['doc-required', 'doc-save'],
+        before: async (page) => {
+            await page.locator('[data-help="doc-add"]').click();
+            await page.locator('input[data-help="doc-name"]').waitFor({ state: 'visible' });
+            await page.fill('input[data-help="doc-name"]', 'رخصة الاتحاد');
+            await page.selectOption('select[data-help="doc-validity"]', 'season');
+            await page.locator('[data-help="doc-branch-1"]').uncheck();
+            await page.locator('[data-help="doc-required"]').check();
+            await blur(page);
+        },
+    },
     {
         name: 'fin-tx-saved',
         url: '/transactions/create',

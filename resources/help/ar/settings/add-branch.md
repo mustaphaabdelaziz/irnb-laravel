@@ -4,7 +4,7 @@ summary: أنشئ فرعًا جديدًا برمزه، ثم أضف فئاته و
 module: branches
 pages: [branches.index, branches.show]
 keywords: [فرع, إضافة فرع, رمز الفرع, فرع رئيسي, كرة اليد, تعيينه فرعا رئيسيا, أعضاء الفرع, حذف فرع, تعديل فرع, الفروع]
-related: [finance/caisses, players/branch-registrations]
+related: [finance/caisses, players/branch-registrations, settings/add-category]
 ---
 
 لكل فرع رياضي رمز واسم وفئاته وخزينته. ويأخذ كل لاعب رقم انخراط يبدأ برمز فرعه.

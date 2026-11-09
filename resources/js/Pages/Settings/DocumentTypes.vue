@@ -133,7 +133,7 @@ function destroy() {
         <template #header>
             <div class="flex items-center justify-between gap-3">
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('document_types') }}</h1>
-                <IconButton icon="plus" :label="t('doc_add_type')" variant="primary" @click="openCreate" />
+                <IconButton data-help="doc-add" icon="plus" :label="t('doc_add_type')" variant="primary" @click="openCreate" />
             </div>
         </template>
 
@@ -156,7 +156,7 @@ function destroy() {
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                        <tr v-for="type in documentTypes" :key="type.id" :class="{ 'opacity-60': !type.is_active }">
+                        <tr v-for="type in documentTypes" :key="type.id" :data-help="type.code === 'photo' ? 'doc-row-photo' : null" :class="{ 'opacity-60': !type.is_active }">
                             <td class="px-4 py-3">
                                 <p class="text-sm font-medium text-slate-900 dark:text-slate-100">
                                     {{ type.localized_name || type.name }}
@@ -206,13 +206,13 @@ function destroy() {
         </div>
 
         <Modal :show="editing !== null" max-width="lg" @close="editing = null">
-            <form class="space-y-4 p-6" @submit.prevent="save()">
+            <form class="space-y-4 p-6" data-help="doc-modal" @submit.prevent="save()">
                 <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ editing ? t('doc_edit_type') : t('doc_add_type') }}</h3>
 
                 <div class="grid gap-3 sm:grid-cols-2">
                     <div class="sm:col-span-2">
                         <InputLabel :value="t('name')" />
-                        <TextInput v-model="form.name" class="mt-1 w-full" required />
+                        <TextInput v-model="form.name" data-help="doc-name" class="mt-1 w-full" required />
                         <InputError :message="form.errors.name" class="mt-1" />
                     </div>
                     <div>
@@ -229,7 +229,7 @@ function destroy() {
                     </div>
                     <div>
                         <InputLabel :value="t('doc_validity')" />
-                        <select v-model="form.validity" :class="inputClass">
+                        <select v-model="form.validity" data-help="doc-validity" :class="inputClass">
                             <option v-for="(label, value) in validityLabels" :key="value" :value="value">{{ label }}</option>
                         </select>
                         <InputError :message="form.errors.validity" class="mt-1" />
@@ -241,7 +241,7 @@ function destroy() {
                     </div>
                     <div>
                         <InputLabel :value="t('doc_copies')" />
-                        <input v-model="form.copies" type="number" min="1" max="99" :class="inputClass" />
+                        <input v-model="form.copies" data-help="doc-copies" type="number" min="1" max="99" :class="inputClass" />
                         <InputError :message="form.errors.copies" class="mt-1" />
                         <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('doc_copies_raise_hint') }}</p>
                     </div>
@@ -251,19 +251,19 @@ function destroy() {
                         <InputError :message="form.errors.sort_order" class="mt-1" />
                     </div>
                     <p class="text-xs text-slate-500 dark:text-slate-400 sm:col-span-2">{{ t('doc_max_age_hint') }}</p>
-                    <fieldset v-if="branches.length" class="sm:col-span-2">
+                    <fieldset v-if="branches.length" data-help="doc-branches" class="sm:col-span-2">
                         <legend class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('doc_branches') }}</legend>
                         <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('doc_branches_hint') }}</p>
                         <div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
                             <label v-for="branch in branches" :key="branch.id" class="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
-                                <input v-model="form.branch_ids" :value="branch.id" type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800" />
+                                <input v-model="form.branch_ids" :value="branch.id" :data-help="'doc-branch-' + branch.id" type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800" />
                                 {{ branch.name }}
                             </label>
                         </div>
                         <InputError :message="form.errors.branch_ids" class="mt-1" />
                     </fieldset>
                     <label class="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
-                        <input v-model="form.is_required" type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800" />
+                        <input v-model="form.is_required" data-help="doc-required" type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800" />
                         {{ t('doc_required') }}
                     </label>
                     <label class="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
@@ -278,7 +278,7 @@ function destroy() {
 
                 <div class="flex justify-end gap-3">
                     <SecondaryButton type="button" @click="editing = null">{{ t('cancel') }}</SecondaryButton>
-                    <PrimaryButton :disabled="form.processing">{{ t('save') }}</PrimaryButton>
+                    <PrimaryButton data-help="doc-save" :disabled="form.processing">{{ t('save') }}</PrimaryButton>
                 </div>
             </form>
         </Modal>

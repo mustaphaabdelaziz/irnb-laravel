@@ -513,7 +513,7 @@ function saveSettings() {
                             >
                                 <span class="h-9 w-9 rounded-full shadow-inner ring-1 ring-black/10"
                                     :style="{ background: `linear-gradient(135deg, ${preset.scale[400]}, ${preset.scale[600]})` }"></span>
-                                <span class="text-xs font-medium text-slate-600 dark:text-slate-300">{{ preset.name }}</span>
+                                <span class="text-xs font-medium text-slate-600 dark:text-slate-300">{{ t(`theme_preset.${preset.key}`) }}</span>
                                 <span v-if="selectedTheme === preset.key"
                                     class="absolute end-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full text-white"
                                     :style="{ background: preset.scale[600] }">

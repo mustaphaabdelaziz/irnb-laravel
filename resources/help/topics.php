@@ -11,6 +11,7 @@ return [
         'subscriptions' => ['icon' => 'subscriptions', 'module' => 'subscriptions', 'articles' => ['create-annual', 'create-exceptional', 'assign-players', 'take-payment', 'fix-payment', 'previous-debt', 'receipts']],
         'attendance' => ['icon' => 'calendar', 'module' => 'attendance', 'articles' => ['take-attendance', 'add-session', 'month-grid', 'cancel-delete-session', 'timetable', 'codes-rules', 'stats-ranking', 'alerts-injuries']],
         'finance' => ['icon' => 'money', 'module' => 'transactions', 'articles' => ['record-transaction', 'find-export-import', 'cancel-transaction', 'move-money', 'caisses', 'season', 'dashboard-report']],
+        'settings' => ['icon' => 'settings', 'module' => null, 'articles' => ['club-identity', 'add-branch', 'add-category', 'branch-documents', 'create-user', 'roles-rights', 'manage-users', 'log-in-as-activity']],
     ],
     'start_here' => [
         'getting-started/login',

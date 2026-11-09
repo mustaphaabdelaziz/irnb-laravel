@@ -839,6 +839,13 @@ export default [
         },
     },
     {
+        // Step 1 of add-branch: the list as the reader finds it, before typing.
+        name: 'set-branch-list',
+        url: '/branches',
+        targets: ['nav-branches'],
+        before: async (page) => { await navIntoView(page, 'nav-branches'); },
+    },
+    {
         // The reader's state before «إضافة»: name and code typed.
         name: 'set-branch-add',
         url: '/branches',

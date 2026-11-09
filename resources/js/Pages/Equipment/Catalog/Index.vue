@@ -130,7 +130,7 @@ function submitImport() {
                 <span class="text-sm font-medium text-primary-800 dark:text-primary-200">
                     {{ t('selected_count', { count: selected.length }) }}
                 </span>
-                <IconButton v-if="can('equipment', 'edit')" icon="trash" :label="t('delete_selected')" variant="danger" @click="bulkDeletePending = true" />
+                <IconButton v-if="can('equipment', 'delete')" icon="trash" :label="t('delete_selected')" variant="danger" @click="bulkDeletePending = true" />
             </div>
 
             <!-- Catalog table -->

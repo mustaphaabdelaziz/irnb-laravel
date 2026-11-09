@@ -2,33 +2,34 @@
 
 namespace App\Support\Import;
 
-use DomainException;
+use App\Exceptions\ClosedFiscalYearException;
+use App\Exceptions\Equipment\StockException;
+use App\Exceptions\Import\ImportRowException;
+use App\Support\UiLang;
 use Illuminate\Validation\ValidationException;
-use InvalidArgumentException;
-use PDOException;
-use RuntimeException;
 use Throwable;
 
 /**
  * The text an import shows for a row that failed. The app's own refusals
- * (a closed season, a birth date after the join date, a validation error)
- * are already sentences in the reader's language and are shown as they are.
- * Anything else — a database error above all — is logged, and the reader
- * gets one translated sentence instead of English SQL.
+ * (a closed season, a birth date after the join date, a validation error,
+ * a stock limit) are sentences in the reader's language and are shown.
+ * Anything else — a database or framework error — is logged, and the reader
+ * gets one translated sentence instead of English internals.
  */
 final class ImportRowError
 {
     public static function message(Throwable $e): string
     {
-        // QueryException is a PDOException, which is a RuntimeException: test it first.
-        $domain = ! $e instanceof PDOException && (
-            $e instanceof ValidationException
-            || $e instanceof RuntimeException
-            || $e instanceof InvalidArgumentException
-            || $e instanceof DomainException
-        );
+        if ($e instanceof StockException) {
+            // Its message is English; its key is the UI's translated sentence.
+            return strtr(UiLang::get($e->key, $e->getMessage()), collect($e->params)
+                ->mapWithKeys(fn ($value, $name) => ['{'.$name.'}' => (string) $value])
+                ->all());
+        }
 
-        if ($domain) {
+        if ($e instanceof ValidationException
+            || $e instanceof ClosedFiscalYearException
+            || $e instanceof ImportRowException) {
             return $e->getMessage();
         }
 

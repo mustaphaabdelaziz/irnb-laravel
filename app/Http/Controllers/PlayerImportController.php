@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\Import\ImportRowException;
 use App\Models\Branch;
 use App\Models\Category;
 use App\Models\MemberJob;
@@ -21,7 +22,6 @@ use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use RuntimeException;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Throwable;
 
@@ -169,7 +169,7 @@ class PlayerImportController extends Controller
 
                 $join = $this->joinFields($data['join_year']);
                 if ($join['join_date'] && $attributes['birthdate'] && $join['join_date'] < $attributes['birthdate']) {
-                    throw new RuntimeException(__('validation.join_date_before_birth'));
+                    throw new ImportRowException(__('validation.join_date_before_birth'));
                 }
 
                 $cards = [];
@@ -248,7 +248,7 @@ class PlayerImportController extends Controller
      *
      * @param  array<int, array<string, int>>  $categories  branch id (0: no owner) => name => category id
      *
-     * @throws RuntimeException when the branch has no such category
+     * @throws ImportRowException when the branch has no such category
      */
     private function resolveCategory(array $categories, ?string $cell, ?int $branchId): ?int
     {
@@ -259,7 +259,7 @@ class PlayerImportController extends Controller
 
         $id = ($branchId === null ? null : ($categories[$branchId][$name] ?? null)) ?? ($categories[0][$name] ?? null);
         if ($id === null && $branchId !== null) {
-            throw new RuntimeException(__('validation.category_not_in_branch', ['name' => trim((string) $cell)]));
+            throw new ImportRowException(__('validation.category_not_in_branch', ['name' => trim((string) $cell)]));
         }
 
         return $id;
@@ -272,7 +272,7 @@ class PlayerImportController extends Controller
      * another branch is refused, as the player form refuses it; one tied to no
      * branch is allowed. With no branches, see PositionMatcher.
      *
-     * @throws RuntimeException when the only match belongs to another branch
+     * @throws ImportRowException when the only match belongs to another branch
      */
     private function resolvePosition($positions, ?string $value, ?int $branchId = null): ?int
     {
@@ -281,7 +281,7 @@ class PlayerImportController extends Controller
         if ($id !== null && $branchId !== null) {
             $branch = $positions->firstWhere('id', $id)->branch_id;
             if ($branch !== null && (int) $branch !== $branchId) {
-                throw new RuntimeException(__('validation.position_other_branch'));
+                throw new ImportRowException(__('validation.position_other_branch'));
             }
         }
 
@@ -300,7 +300,7 @@ class PlayerImportController extends Controller
 
         if (preg_match('/^\d{4}$/', $cell)) {
             if ((int) $cell < 1900 || (int) $cell > now()->year) {
-                throw new RuntimeException(__('validation.join_date_needed'));
+                throw new ImportRowException(__('validation.join_date_needed'));
             }
 
             return ['join_date' => null, 'legacy_join_year' => (int) $cell];
@@ -308,7 +308,7 @@ class PlayerImportController extends Controller
 
         $date = $this->parseJoinDate($cell);
         if ($date === null) {
-            throw new RuntimeException(__('validation.join_date_needed'));
+            throw new ImportRowException(__('validation.join_date_needed'));
         }
 
         return ['join_date' => $date, 'legacy_join_year' => null];
@@ -361,7 +361,7 @@ class PlayerImportController extends Controller
             )), true))?->id;
         }
 
-        return $id ?? throw new RuntimeException(__('validation.branch_required'));
+        return $id ?? throw new ImportRowException(__('validation.branch_required'));
     }
 
     private function parseDate(?string $value): ?string

@@ -20,6 +20,7 @@ use App\Services\Equipment\EquipmentStockService;
 use App\Services\Equipment\SerialNumberService;
 use App\Support\Export;
 use App\Support\Import\ImportColumns;
+use App\Support\Import\ImportRowError;
 use App\Support\Spreadsheet;
 use App\Support\UiLang;
 use Carbon\Carbon;
@@ -565,11 +566,9 @@ class EquipmentItemController extends Controller
 
                 $imported++;
             } catch (Throwable $e) {
-                // Nothing in a row is user-fixable here (bad dates/conditions get
-                // defaults), so the failure is a database one: log it, and give the
-                // reader a sentence in their language instead of English SQL.
-                report($e);
-                $errors[] = __('Row :line: :message', ['line' => $line, 'message' => __('This row could not be saved.')]);
+                // A closed season keeps its own sentence; a database error is
+                // logged and the reader gets a sentence instead of English SQL.
+                $errors[] = __('Row :line: :message', ['line' => $line, 'message' => ImportRowError::message($e)]);
             }
         }
 

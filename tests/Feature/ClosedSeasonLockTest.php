@@ -220,6 +220,27 @@ class ClosedSeasonLockTest extends TestCase
     }
 
     #[Test]
+    public function an_imported_unit_with_its_expense_dated_in_a_closed_season_shows_the_closed_season_sentence(): void
+    {
+        $this->tx('2026-10-01');
+        $this->close(2027);
+        $admin = User::factory()->admin()->create(['email_verified_at' => now(), 'preferred_lng' => 'ar']);
+        $catalog = EquipmentCatalog::create(['name' => 'Dossards', 'category' => 'Apparel']);
+        $path = tempnam(sys_get_temp_dir(), 'lock').'.csv';
+        file_put_contents($path, "\xEF\xBB\xBFheader,header,header,header,header,header\r\n"
+            ."Dossard 1,2026-10-10,New,,1500,\r\n");
+
+        $this->actingAs($admin)->post(route('equipment.items.import', $catalog), [
+            'file' => new UploadedFile($path, 'items.csv', 'text/csv', null, true),
+            'record_expense' => true,
+        ])
+            ->assertSessionHas('error', 'السطر 2: الموسم 2026/2027 مغلق. أعد فتحه لتعديل معاملاته.');
+
+        $this->assertSame(0, EquipmentItem::count());
+        $this->assertSame(1, Transaction::count());
+    }
+
+    #[Test]
     public function an_equipment_purchase_dated_in_a_closed_season_is_refused(): void
     {
         $this->tx('2026-10-01');

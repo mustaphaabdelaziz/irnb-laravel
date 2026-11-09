@@ -10,9 +10,9 @@ use App\Services\Player\RegisterPlayerService;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Validation\ValidationException;
 use PDOException;
 use PHPUnit\Framework\Attributes\Test;
-use RuntimeException;
 use Tests\TestCase;
 
 class PlayerImportTest extends TestCase
@@ -98,7 +98,7 @@ class PlayerImportTest extends TestCase
         $this->mock(RegisterPlayerService::class)
             ->shouldReceive('handle')
             ->andThrowExceptions([
-                new RuntimeException('تاريخ الانضمام قبل تاريخ الميلاد.'),
+                ValidationException::withMessages(['join_date' => 'تاريخ الانضمام قبل تاريخ الميلاد.']),
                 new QueryException('sqlite', 'insert into "players"', [], new PDOException('SQLSTATE[23000]: Integrity constraint violation')),
             ]);
 

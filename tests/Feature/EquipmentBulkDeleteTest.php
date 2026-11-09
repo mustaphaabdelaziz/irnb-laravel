@@ -6,6 +6,7 @@ use App\Models\EquipmentCatalog;
 use App\Models\EquipmentHistory;
 use App\Models\EquipmentItem;
 use App\Models\EquipmentRental;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -108,5 +109,26 @@ class EquipmentBulkDeleteTest extends TestCase
 
         $this->assertDatabaseHas('equipment_items', ['id' => $available->id]);
         $this->assertDatabaseHas('equipment_items', ['id' => $rented->id]);
+    }
+
+    #[Test]
+    public function deleting_several_at_once_needs_the_delete_right_not_only_edit(): void
+    {
+        $catalog = EquipmentCatalog::create(['name' => 'Cones', 'category' => 'Training']);
+        $item = $this->item($catalog, 'CONE-001');
+        $editor = User::factory()->create([
+            'privileges' => ['user'],
+            'role_id' => Role::factory()->create(['permissions' => ['equipment' => ['view', 'add', 'edit']]])->id,
+        ]);
+
+        $this->actingAs($editor)
+            ->post(route('equipment.catalogs.bulk-destroy'), ['ids' => [$catalog->id]])
+            ->assertForbidden();
+        $this->actingAs($editor)
+            ->post(route('equipment.items.bulk-destroy'), ['ids' => [$item->id]])
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('equipment_catalogs', ['id' => $catalog->id]);
+        $this->assertDatabaseHas('equipment_items', ['id' => $item->id]);
     }
 }

@@ -144,7 +144,7 @@ const eventLabel = (type) => {
                         {{ item.rented_to.name }}
                         <span v-if="item.rented_to.phone" class="inline-flex items-center gap-1 align-middle text-amber-700 dark:text-amber-300"><WhatsAppLink :phone="item.rented_to.phone" /><span dir="ltr">{{ item.rented_to.phone }}</span></span>
                     </span>
-                    <span v-if="item.due_date" class="ms-2 text-amber-700 dark:text-amber-300"> — {{ t('return_date') }}: {{ item.due_date }}</span>
+                    <span v-if="item.due_date" class="ms-2 text-amber-700 dark:text-amber-300"> — {{ t('due_date') }}: {{ item.due_date }}</span>
                 </div>
             </div>
 

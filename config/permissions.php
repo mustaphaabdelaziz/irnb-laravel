@@ -119,6 +119,10 @@ return [
         'inventory.report' => ['inventory', 'view'],
         // "out" is not a view verb, so without this the list would need edit rights.
         'equipment.out' => ['equipment', 'view'],
+        // Deleting several at once is still deleting: without these, "bulk-destroy"
+        // falls through deriveAction()'s default and is only gated as 'edit'.
+        'equipment.catalogs.bulk-destroy' => ['equipment', 'delete'],
+        'equipment.items.bulk-destroy' => ['equipment', 'delete'],
         'board.meetings.minutes' => ['board', 'view'],
         // The tasks board and its stats are reading; changing a task keeps its own add/edit/delete guard.
         'board.tasks' => ['board', 'view'],

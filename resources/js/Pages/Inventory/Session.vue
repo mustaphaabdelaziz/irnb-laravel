@@ -111,7 +111,7 @@ function saveCounts() {
     router.put(route('inventory.counts', props.session.id), { items }, { preserveScroll: true });
 }
 function complete() {
-    if (!window.confirm(t('complete_inventory') + '?')) return;
+    if (!window.confirm(t('complete_inventory_confirm'))) return;
     saveCountsThen(() => router.post(route('inventory.complete', props.session.id), {}, { preserveScroll: true }));
 }
 function saveCountsThen(cb) {

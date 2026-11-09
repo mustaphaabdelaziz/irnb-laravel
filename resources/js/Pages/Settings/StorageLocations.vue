@@ -48,7 +48,7 @@ function destroy() {
             <form v-if="can('storage_locations', 'add')" @submit.prevent="addLocation" class="flex items-end gap-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div class="flex-1">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('name') }}</label>
-                    <TextInput v-model="form.name" data-help="loc-name" class="mt-1 w-full" placeholder="Storage 01" required />
+                    <TextInput v-model="form.name" data-help="loc-name" class="mt-1 w-full" :placeholder="t('storage_location_example')" required />
                     <InputError :message="form.errors.name" class="mt-1" />
                 </div>
                 <PrimaryButton data-help="loc-add" :disabled="form.processing">{{ t('add') }}</PrimaryButton>

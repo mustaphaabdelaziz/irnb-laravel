@@ -422,6 +422,6 @@ class EquipmentReceiveStockTest extends TestCase
             'record_expense' => true,
         ])->assertRedirect();
 
-        $this->assertSame('شراء معدات: 4 وحدة', Transaction::first()->description);
+        $this->assertSame('شراء معدات (العدد: 4)', Transaction::first()->description);
     }
 }

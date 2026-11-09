@@ -176,6 +176,18 @@ class EquipmentInventoryReportTest extends TestCase
     }
 
     #[Test]
+    public function branch_rows_show_the_branch_name_in_the_readers_language(): void
+    {
+        $branch = Branch::create(['name' => 'Football', 'name_ar' => 'كرة القدم', 'name_en' => 'Football']);
+        $this->lot(20, ['unit_price' => 100])->branches()->sync([$branch->id]);
+
+        $user = User::factory()->admin()->create(['email_verified_at' => now(), 'preferred_lng' => 'ar']);
+        $props = $this->actingAs($user)->get(route('equipment.inventory'))->viewData('page')['props'];
+
+        $this->assertSame('كرة القدم', $props['valueByBranch'][0]['branch']);
+    }
+
+    #[Test]
     public function an_assignment_never_appears_as_overdue(): void
     {
         $lot = $this->lot(5);

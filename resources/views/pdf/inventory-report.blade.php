@@ -70,8 +70,8 @@
                 <tr>
                     <td>{{ $l->item?->unique_identifier }} <span style="color:#94a3b8;">{{ $l->item?->catalog?->name }}</span></td>
                     <td class="{{ $l->found ? 'found' : 'missing' }}">{{ $l->found ? __('Found') : __('Missing') }}</td>
-                    <td>{{ $l->expected_condition }}@if ($l->expected_location) · {{ $l->expected_location }}@endif</td>
-                    <td>{{ $l->actual_condition }}@if ($l->actual_location) · {{ $l->actual_location }}@endif</td>
+                    <td>{{ \App\Models\EquipmentItem::stateLabel($l->expected_condition) }}@if ($l->expected_location) · {{ $l->expected_location }}@endif</td>
+                    <td>{{ \App\Models\EquipmentItem::stateLabel($l->actual_condition) }}@if ($l->actual_location) · {{ $l->actual_location }}@endif</td>
                     <td>{{ $l->note }}</td>
                 </tr>
             @empty

@@ -6,6 +6,7 @@ use App\Exceptions\Equipment\StockException;
 use App\Http\Requests\Equipment\ReceiveStockRequest;
 use App\Http\Requests\Equipment\RentEquipmentRequest;
 use App\Http\Requests\Equipment\SplitLotRequest;
+use App\Models\Branch;
 use App\Models\EquipmentCatalog;
 use App\Models\EquipmentHistory;
 use App\Models\EquipmentItem;
@@ -349,17 +350,21 @@ class EquipmentItemController extends Controller
             ->join('equipment_catalogs', 'equipment_catalogs.id', '=', 'equipment_items.catalog_id')
             ->whereNotIn('equipment_items.status', ['Lost', 'Retired'])
             ->groupBy('branches.id', 'branches.name')
-            ->selectRaw('branches.name as branch,
+            ->selectRaw('branches.id as branch_id,
                 SUM(equipment_items.quantity) as units,
                 SUM(equipment_items.quantity *
                     COALESCE(equipment_items.unit_price, equipment_catalogs.purchase_price, 0)) as value')
-            ->orderBy('branches.name')
-            ->get()
+            ->get();
+        // The name in the reader's language, as the other pages show a branch.
+        $branchNames = Branch::whereIn('id', $valueByBranch->pluck('branch_id'))->get()
+            ->mapWithKeys(fn (Branch $branch) => [$branch->id => $branch->localized_name]);
+        $valueByBranch = $valueByBranch
             ->map(fn ($row) => [
-                'branch' => $row->branch,
+                'branch' => $branchNames[$row->branch_id] ?? '',
                 'units' => (int) $row->units,
                 'value' => (float) $row->value,
             ])
+            ->sortBy('branch', SORT_NATURAL | SORT_FLAG_CASE)
             ->values();
 
         $clubWide = DB::table('equipment_items')

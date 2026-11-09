@@ -12,6 +12,7 @@ return [
         'attendance' => ['icon' => 'calendar', 'module' => 'attendance', 'articles' => ['take-attendance', 'add-session', 'month-grid', 'cancel-delete-session', 'timetable', 'codes-rules', 'stats-ranking', 'alerts-injuries']],
         'finance' => ['icon' => 'money', 'module' => 'transactions', 'articles' => ['record-transaction', 'find-export-import', 'cancel-transaction', 'move-money', 'caisses', 'season', 'dashboard-report']],
         'settings' => ['icon' => 'settings', 'module' => null, 'articles' => ['club-identity', 'add-branch', 'add-category', 'branch-documents', 'create-user', 'roles-rights', 'manage-users', 'log-in-as-activity']],
+        'equipment' => ['icon' => 'equipment', 'module' => 'equipment', 'articles' => ['equipment-lists', 'add-catalog', 'receive-stock', 'lend-assign', 'return-equipment', 'damage-repair-lost', 'import-export', 'stock-take', 'inventory-report']],
     ],
     'start_here' => [
         'getting-started/login',

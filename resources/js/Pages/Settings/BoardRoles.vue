@@ -32,10 +32,20 @@ function addRole() {
 }
 function startEdit(r) {
     editingId.value = r.id;
-    editForm.name = r.name; editForm.label = r.label || ''; editForm.level = r.level || 'member'; editForm.sort_order = r.sort_order || 0;
+    editForm.name = r.name;
+    // Edit the name people read; the stored key stays, so members keep their role.
+    editForm.label = display(r);
+    editForm.level = r.level || 'member';
+    editForm.sort_order = r.sort_order || 0;
 }
-function saveEdit(id) {
-    editForm.put(route('board-roles.update', id), { onSuccess: () => { editingId.value = null; } });
+function saveEdit(r) {
+    editForm
+        .transform((d) => {
+            const label = (d.label || '').trim();
+            // Typing back the built-in translation means "no custom name".
+            return { ...d, name: r.name, label: label && label !== t(r.name) ? label : null };
+        })
+        .put(route('board-roles.update', r.id), { onSuccess: () => { editingId.value = null; } });
 }
 function destroy() {
     router.delete(route('board-roles.destroy', deleteId.value), { onSuccess: () => { deleteId.value = null; } });
@@ -85,7 +95,8 @@ function destroy() {
                         <tr v-for="r in roles" :key="r.id">
                             <td class="px-4 py-3">
                                 <div v-if="editingId === r.id" class="flex gap-2">
-                                    <TextInput v-model="editForm.name" class="w-full" :placeholder="t('name')" />
+                                    <TextInput v-model="editForm.label" class="w-full" :placeholder="t('name')" />
+                                    <InputError :message="editForm.errors.label || editForm.errors.name" />
                                 </div>
                                 <span v-else class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ display(r) }}</span>
                             </td>
@@ -104,7 +115,7 @@ function destroy() {
                             </td>
                             <td class="px-4 py-3 text-end">
                                 <div v-if="editingId === r.id" class="flex justify-end gap-2">
-                                    <button @click="saveEdit(r.id)" class="text-sm text-primary-600 hover:text-primary-800 dark:text-primary-300 dark:hover:text-primary-200">{{ t('save') }}</button>
+                                    <button @click="saveEdit(r)" class="text-sm text-primary-600 hover:text-primary-800 dark:text-primary-300 dark:hover:text-primary-200">{{ t('save') }}</button>
                                     <button @click="editingId = null" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">{{ t('cancel') }}</button>
                                 </div>
                                 <div v-else class="flex justify-end gap-2">

@@ -19,7 +19,13 @@ class BoardMemberController extends Controller
         // (e.g. seated on a committee) for a role slot changes their role.
         $member = empty($data['board_term_id']) ? null : BoardMember::where('player_id', $data['player_id'])
             ->where('board_term_id', $data['board_term_id'])->first();
-        $member ? $member->update($data) : BoardMember::create($data);
+        if ($member) {
+            $member->update($data);
+
+            return back()->with('success', 'flash.board_member_updated');
+        }
+
+        BoardMember::create($data);
 
         return back()->with('success', 'flash.board_member_added');
     }

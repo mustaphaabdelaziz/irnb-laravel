@@ -664,6 +664,7 @@
     "board.error.seat_taken": "هذا المنصب مشغول: رئيس واحد ونائبان لكل لجنة.",
     "board.former_members": "الأعضاء السابقون",
     "board.leave_committee": "إزالة من اللجنة",
+    "board.leave_committee_confirm": "سيُزال {name} من «{committee}» ويبقى عضوًا في المكتب.",
     "board.level_label": "المستوى في الهيكل",
     "board.level.bureau": "المكتب",
     "board.level.member": "عضو",

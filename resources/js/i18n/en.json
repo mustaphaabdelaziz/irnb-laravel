@@ -664,6 +664,7 @@
     "board.error.seat_taken": "This seat is full: one head and two deputies per committee.",
     "board.former_members": "Former members",
     "board.leave_committee": "Remove from committee",
+    "board.leave_committee_confirm": "{name} will leave “{committee}” and stays on the board.",
     "board.level_label": "Organigram row",
     "board.level.bureau": "Bureau",
     "board.level.member": "Member",

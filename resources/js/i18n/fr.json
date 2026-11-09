@@ -664,6 +664,7 @@
     "board.error.seat_taken": "Poste complet : un président et deux vice-présidents par commission.",
     "board.former_members": "Anciens membres",
     "board.leave_committee": "Retirer de la commission",
+    "board.leave_committee_confirm": "{name} quittera « {committee} » et reste membre du bureau.",
     "board.level_label": "Niveau (organigramme)",
     "board.level.bureau": "Bureau",
     "board.level.member": "Membre",

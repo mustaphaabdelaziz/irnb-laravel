@@ -145,8 +145,10 @@ function changePosition(position) {
     const { member, committee } = selected.value;
     router.put(route('board.committees.members.update', [committee.id, member.id]), { position }, seatOpts);
 }
+const leaveTarget = ref(null); // { member, committee }
 function leaveCommittee() {
-    const { member, committee } = selected.value;
+    const { member, committee } = leaveTarget.value;
+    leaveTarget.value = null;
     router.delete(route('board.committees.members.destroy', [committee.id, member.id]), seatOpts);
 }
 const committeeName = (id) => props.committees.find((c) => c.id === id)?.name || '';
@@ -394,7 +396,7 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                     </div>
 
                     <div class="flex flex-wrap justify-end gap-2">
-                        <IconButton v-if="selected.committee && can('board', 'delete')" icon="logout" :label="t('board.leave_committee')" variant="danger" @click="leaveCommittee" />
+                        <IconButton v-if="selected.committee && can('board', 'delete')" icon="logout" :label="t('board.leave_committee')" variant="danger" @click="leaveTarget = { member: selected.member, committee: selected.committee }" />
                         <IconButton v-if="can('board', 'edit')" icon="pencil" :label="t('edit')" @click="openEdit(selected.member)" />
                         <IconButton v-if="can('board', 'delete')" icon="trash" :label="t('board.remove_from_board')" variant="danger" @click="removeTarget = selected.member" />
                     </div>
@@ -456,6 +458,9 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
 
         <ConfirmModal :show="!!removeTarget" :title="t('board.remove_from_board')" :message="removeTarget ? `${removeTarget.name} — ${t('confirm_delete')}` : ''"
             @confirm="remove" @cancel="removeTarget = null" />
+        <ConfirmModal :show="!!leaveTarget" :title="t('board.leave_committee')"
+            :message="leaveTarget ? t('board.leave_committee_confirm', { name: leaveTarget.member.name, committee: leaveTarget.committee.name }) : ''"
+            :confirm-label="t('board.leave_committee')" @confirm="leaveCommittee" @cancel="leaveTarget = null" />
 
         <!-- Term modal -->
         <Teleport to="body">

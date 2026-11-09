@@ -1,0 +1,30 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\BoardMember;
+use App\Models\BoardRole;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
+
+class BoardRoleRenameTest extends TestCase
+{
+    use RefreshDatabase;
+
+    #[Test]
+    public function giving_a_default_role_a_readable_name_keeps_its_members(): void
+    {
+        $admin = User::factory()->create(['privileges' => ['admin'], 'approved' => true, 'email_verified_at' => now()]);
+        $role = BoardRole::firstOrCreate(['name' => 'president'], ['sort_order' => 1]);
+        $member = BoardMember::create(['name' => 'X', 'role' => 'president', 'status' => 'active']);
+
+        $this->actingAs($admin)->put(route('board-roles.update', $role), [
+            'name' => 'president', 'label' => 'رئيس النادي', 'level' => 'top', 'sort_order' => 1,
+        ])->assertSessionHas('success', 'flash.role_updated');
+
+        $this->assertSame('رئيس النادي', $role->fresh()->label);
+        $this->assertSame('president', $member->fresh()->role);
+    }
+}

@@ -103,6 +103,32 @@ class BoardMemberTest extends TestCase
     }
 
     #[Test]
+    public function picking_someone_already_on_the_term_changes_their_role_and_says_updated(): void
+    {
+        $term = BoardTerm::create(['name' => '2024–2028', 'is_current' => true]);
+        $player = Player::create(['membership_id' => 'M5', 'firstname' => 'Sami', 'lastname' => 'Zidane']);
+        BoardMember::create(['player_id' => $player->id, 'board_term_id' => $term->id, 'name' => 'Zidane Sami', 'role' => 'member', 'status' => 'active']);
+
+        $this->actingAs($this->admin())->post(route('board.members.store'), [
+            'player_id' => $player->id, 'board_term_id' => $term->id, 'role' => 'treasurer', 'status' => 'active',
+        ])->assertSessionHas('success', 'flash.board_member_updated');
+
+        $this->assertSame(1, BoardMember::where('player_id', $player->id)->where('board_term_id', $term->id)->count());
+        $this->assertSame('treasurer', BoardMember::where('player_id', $player->id)->value('role'));
+    }
+
+    #[Test]
+    public function a_new_person_is_added_with_the_added_message(): void
+    {
+        $term = BoardTerm::create(['name' => '2024–2028', 'is_current' => true]);
+        $player = Player::create(['membership_id' => 'M6', 'firstname' => 'Sami', 'lastname' => 'Zidane']);
+
+        $this->actingAs($this->admin())->post(route('board.members.store'), [
+            'player_id' => $player->id, 'board_term_id' => $term->id, 'role' => 'treasurer', 'status' => 'active',
+        ])->assertSessionHas('success', 'flash.board_member_added');
+    }
+
+    #[Test]
     public function renaming_a_role_cascades_to_members(): void
     {
         $role = BoardRole::create(['name' => 'coordinator', 'sort_order' => 9]);

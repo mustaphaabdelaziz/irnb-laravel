@@ -11,11 +11,13 @@ use App\Models\InventorySession;
 use App\Models\Player;
 use App\Models\StorageLocation;
 use App\Models\Transaction;
+use App\Models\User;
 use App\Services\FinanceService;
 use App\Support\FiscalPeriod;
 use Database\Seeders\HelpDemoEquipmentSeeder as Demo;
 use Database\Seeders\HelpDemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -35,7 +37,7 @@ class HelpDemoEquipmentSeederTest extends TestCase
         return EquipmentCatalog::where('name', $name)->firstOrFail();
     }
 
-    /** @return \Illuminate\Support\Collection<int, EquipmentRental> */
+    /** @return Collection<int, EquipmentRental> */
     private function rentals(EquipmentCatalog $catalog)
     {
         return EquipmentRental::with('rentable')
@@ -161,13 +163,18 @@ class HelpDemoEquipmentSeederTest extends TestCase
             ->get()->map(fn ($h) => substr((string) $h->event_timestamp, 0, 10))->unique()->values()->all();
 
         $this->assertSame(['2026-08-20'], $events(Demo::GOAL, 'Received'));
+        // The day of the finance seeder's «شراء كرات وأقماع» (D−44).
+        $paid = substr((string) Transaction::where('title', Demo::BALLS_AND_CONES_EXPENSE)->value('transaction_date'), 0, 10);
+        $this->assertSame('2026-10-05', $paid);
+        $this->assertSame([$paid], $events(Demo::BALL, 'Received'));
+        $this->assertSame([$paid], $events(Demo::CONE, 'Received'));
         $this->assertSame(['2026-11-16'], $events(Demo::GOAL, 'Checkout'));
         $this->assertSame(['2026-11-08'], $events(Demo::BALL, 'Checkout'));
         $this->assertSame(['2026-11-05'], $events(Demo::CONE, 'Return'));
         $this->assertSame(['2026-11-13'], $events(Demo::STOPWATCH, 'Repair'));
         $this->assertSame(['2026-11-03'], $events(Demo::BIB, 'Split Out'));
 
-        $demo = \App\Models\User::where('username', HelpDemoSeeder::USERNAME)->value('id');
+        $demo = User::where('username', HelpDemoSeeder::USERNAME)->value('id');
         $this->assertSame(0, EquipmentHistory::where('user_id', '!=', $demo)->orWhereNull('user_id')->count());
     }
 
@@ -190,9 +197,13 @@ class HelpDemoEquipmentSeederTest extends TestCase
         $done = InventorySession::where('status', 'completed')->sole();
         $this->assertSame('yearly', $done->type);
         $this->assertSame('INV-2026-01', $done->reference);
+        $this->assertSame('2026-10-14', $done->session_date->toDateString());
         $this->assertSame(0, (int) $done->total_missing);
-        $this->assertGreaterThan(0, (int) $done->total_expected);
+        // On D−35: 2 goals + the balls, cones, bibs (not yet split) and goggles lots; no stopwatches yet.
+        $this->assertSame(6, $done->items()->count());
+        $this->assertSame(117, (int) $done->total_expected);
         $this->assertSame((int) $done->total_expected, (int) $done->total_found);
+        $this->assertSame(0, $done->items()->where('counted', false)->count());
         $this->assertSame(0, $done->items()->where('found', false)->count());
 
         $open = InventorySession::where('status', 'in_progress')->sole();

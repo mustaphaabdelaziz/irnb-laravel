@@ -10,14 +10,15 @@ use App\Models\InventorySession;
 use App\Models\InventorySessionItem;
 use App\Models\Player;
 use App\Models\StorageLocation;
+use App\Models\Transaction;
 use App\Models\User;
 use App\Services\Equipment\EquipmentLifecycleService;
 use App\Services\Equipment\EquipmentStockService;
-use App\Support\Season;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Database\Seeder;
+use RuntimeException;
 
 /**
  * The demo store room for the Help Center equipment articles. Called only from
@@ -51,6 +52,12 @@ class HelpDemoEquipmentSeeder extends Seeder
     public const OUTSIDER_PHONE = '0550123456';
 
     public const STOCKTAKE_NOTES = 'جرد شهري';
+
+    /** The completed stock-take's day, D−35. */
+    public const COMPLETED_STOCKTAKE_DAYS_AGO = 35;
+
+    /** HelpDemoFinanceSeeder's expense that paid for the balls and cones. */
+    public const BALLS_AND_CONES_EXPENSE = 'شراء كرات وأقماع';
 
     /** The migration's English categories => [Arabic name, code]. */
     private const CATEGORIES = [
@@ -103,14 +110,16 @@ class HelpDemoEquipmentSeeder extends Seeder
         $goal = $this->catalog(self::GOAL, 'مرامي وشباك', 18000, true);
         $goggles = $this->catalog(self::GOGGLES, 'معدات الحماية', 800, false);
 
+        $bought = $this->ballsAndConesDay();
+
         $goals = $this->receive($goal, 2, 90, 'Good', self::MAIN_STORE, [$football], 'opening_balance', 'مرمى');
-        $balls = $this->receive($ball, 20, 60, 'New', self::MAIN_STORE, [$football], 'purchase');
-        $cones = $this->receive($cone, 40, 60, 'New', self::MAIN_STORE, [], 'purchase');
+        $balls = $this->receive($ball, 20, $bought, 'New', self::MAIN_STORE, [$football], 'purchase');
+        $cones = $this->receive($cone, 40, $bought, 'New', self::MAIN_STORE, [], 'purchase');
         $bibs = $this->receive($bib, 30, 45, 'Good', self::CHANGING_ROOM, [$football], 'donation');
         $gogglesLot = $this->receive($goggles, 25, 40, 'New', self::POOL_STORE, [$swimming], 'donation');
         $this->receive($stopwatch, 3, 30, 'New', self::MAIN_STORE, [], 'opening_balance', 'ساعة توقيت');
 
-        // Last season's closing count, before anything below was lent or split.
+        // A count on D−35 (09:00), before anything below was lent (from D−35 17:00) or split.
         $this->completedStockTake();
 
         $ahmed = $this->player('أحمد', 'بن علي');
@@ -159,10 +168,26 @@ class HelpDemoEquipmentSeeder extends Seeder
         ]);
     }
 
-    /** Receives on day D−$daysAgo, no expense; returns the first row (the lot, or unit 1). */
-    private function receive(EquipmentCatalog $catalog, int $quantity, int $daysAgo, string $condition, string $location, array $branchIds, string $via, ?string $designation = null): EquipmentItem
+    /**
+     * The day of HelpDemoFinanceSeeder's «شراء كرات وأقماع» (D−44, or the season
+     * start on an early-season seed day), so stock and expense agree. Never later
+     * than D−21: the first loan from these lots is on D−20, so very early in a
+     * season the units arrive a little before the (clamped) expense date.
+     */
+    private function ballsAndConesDay(): CarbonImmutable
     {
-        return $this->on($daysAgo, '09:00', fn ($at) => $this->stock->receive([
+        $paid = Transaction::where('title', self::BALLS_AND_CONES_EXPENSE)->value('transaction_date');
+        if ($paid === null) {
+            throw new RuntimeException('HelpDemoEquipmentSeeder needs the «'.self::BALLS_AND_CONES_EXPENSE.'» expense of HelpDemoFinanceSeeder.');
+        }
+
+        return CarbonImmutable::parse($paid)->startOfDay()->min($this->today->subDays(21));
+    }
+
+    /** Receives on $day (or D−$day), no expense; returns the first row (the lot, or unit 1). */
+    private function receive(EquipmentCatalog $catalog, int $quantity, int|CarbonImmutable $day, string $condition, string $location, array $branchIds, string $via, ?string $designation = null): EquipmentItem
+    {
+        return $this->on($day, '09:00', fn ($at) => $this->stock->receive([
             'catalog_id' => $catalog->id,
             'quantity' => $quantity,
             'unit_price' => (float) $catalog->purchase_price,
@@ -177,16 +202,15 @@ class HelpDemoEquipmentSeeder extends Seeder
     }
 
     /**
-     * Yearly count on D−100 or the season start, whichever is later, as
+     * Yearly count on D−35 (it may fall in the previous season), as
      * InventoryController::store + counts + complete with every unit found.
      * Only what had been received by then is on the sheet.
      */
     private function completedStockTake(): void
     {
-        $day = $this->today->subDays(100)->max(Season::current()->start());
-        $daysAgo = (int) $day->diffInDays($this->today);
+        $day = $this->today->subDays(self::COMPLETED_STOCKTAKE_DAYS_AGO);
 
-        $this->on($daysAgo, '09:00', function () use ($day) {
+        $this->on($day, '09:00', function () use ($day) {
             $session = InventorySession::create([
                 'reference' => $this->nextReference(),
                 'type' => 'yearly',
@@ -194,25 +218,8 @@ class HelpDemoEquipmentSeeder extends Seeder
                 'status' => 'in_progress',
                 'conducted_by_user_id' => $this->demo->id,
             ]);
-            $items = EquipmentItem::where('status', '!=', 'Retired')
-                ->whereDate('purchase_date', '<=', $day->toDateString())
-                ->get(['id', 'status', 'condition', 'location', 'quantity']);
-            foreach ($items as $it) {
-                InventorySessionItem::create([
-                    'inventory_session_id' => $session->id,
-                    'equipment_item_id' => $it->id,
-                    'expected_status' => $it->status,
-                    'expected_condition' => $it->condition,
-                    'expected_location' => $it->location,
-                    'expected_quantity' => $it->quantity,
-                    'counted' => true,
-                    'found' => true,
-                    'found_quantity' => $it->quantity,
-                ]);
-            }
-            $total = (int) $items->sum('quantity');
+            $total = $this->snapshot($session, $day, found: true);
             $session->update([
-                'total_expected' => $total,
                 'status' => 'completed',
                 'completed_at' => $day->setTime(12, 0),
                 'total_found' => $total,
@@ -232,8 +239,24 @@ class HelpDemoEquipmentSeeder extends Seeder
             'conducted_by_user_id' => $this->demo->id,
             'notes' => self::STOCKTAKE_NOTES,
         ]);
+        $this->snapshot($session, $this->today, found: false);
+        $session->participants()->create([
+            'participant_type' => Player::class,
+            'participant_id' => $participant->id,
+        ]);
+    }
+
+    /**
+     * InventoryController::store's count sheet: one line per non-retired lot
+     * received by $day, and total_expected in units. With $found every line is
+     * counted and found in full. Returns the units expected.
+     */
+    private function snapshot(InventorySession $session, CarbonImmutable $day, bool $found): int
+    {
         $items = EquipmentItem::where('status', '!=', 'Retired')
+            ->whereDate('purchase_date', '<=', $day->toDateString())
             ->get(['id', 'status', 'condition', 'location', 'quantity']);
+
         foreach ($items as $it) {
             InventorySessionItem::create([
                 'inventory_session_id' => $session->id,
@@ -242,13 +265,13 @@ class HelpDemoEquipmentSeeder extends Seeder
                 'expected_condition' => $it->condition,
                 'expected_location' => $it->location,
                 'expected_quantity' => $it->quantity,
-            ]);
+            ] + ($found ? ['counted' => true, 'found' => true, 'found_quantity' => $it->quantity] : []));
         }
-        $session->update(['total_expected' => (int) $items->sum('quantity')]);
-        $session->participants()->create([
-            'participant_type' => Player::class,
-            'participant_id' => $participant->id,
-        ]);
+
+        $total = (int) $items->sum('quantity');
+        $session->update(['total_expected' => $total]);
+
+        return $total;
     }
 
     /** InventoryController::store's numbering: INV-<year>-NN after the highest used this year. */
@@ -270,14 +293,15 @@ class HelpDemoEquipmentSeeder extends Seeder
     }
 
     /**
-     * Runs $step with the clock set to D−$daysAgo at $time, so every created_at
-     * and history event_timestamp the services write falls on that day; then
-     * puts the clock back the way it was (frozen in tests, live otherwise).
+     * Runs $step with the clock set to $day (or D−$day) at $time, so every
+     * created_at and history event_timestamp the services write falls on that
+     * day; then puts the clock back the way it was (frozen in tests, live otherwise).
      */
-    private function on(int $daysAgo, string $time, Closure $step): mixed
+    private function on(int|CarbonImmutable $day, string $time, Closure $step): mixed
     {
         $was = Carbon::hasTestNow() ? Carbon::getTestNow() : null;
-        $at = $this->today->subDays($daysAgo)->setTimeFromTimeString($time)->min(CarbonImmutable::now());
+        $day = is_int($day) ? $this->today->subDays($day) : $day;
+        $at = $day->setTimeFromTimeString($time)->min(CarbonImmutable::now());
 
         Carbon::setTestNow($at);
         CarbonImmutable::setTestNow($at);

@@ -15,7 +15,7 @@ final class BoardSection implements Section
 {
     public function build(CarbonImmutable $from, CarbonImmutable $to): array
     {
-        $term = BoardTerm::query()->where('is_current', true)->first() ?? BoardTerm::query()->latest('id')->first();
+        $term = BoardTerm::current();
         $roles = BoardRole::query()->get(['name', 'label', 'level', 'sort_order'])->keyBy('name');
         $levels = array_flip(BoardRole::LEVELS);
 

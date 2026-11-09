@@ -29,6 +29,13 @@ class BoardMember extends Model
      */
     protected $hidden = ['player'];
 
+    /** Members of the current term; every member while the club has no term. */
+    public function scopeInCurrentTerm(Builder $query): void
+    {
+        $termId = BoardTerm::current()?->id;
+        $query->when($termId, fn ($q) => $q->where('board_term_id', $termId));
+    }
+
     /** Load the linked player so name, contact and photo come from it, live. */
     public function scopeWithPlayer(Builder $query): void
     {

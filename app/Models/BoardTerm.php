@@ -23,6 +23,12 @@ class BoardTerm extends Model
         ];
     }
 
+    /** The term marked current, else the newest; null when the club has none. */
+    public static function current(): ?self
+    {
+        return self::where('is_current', true)->first() ?? self::latest('id')->first();
+    }
+
     public function members(): HasMany
     {
         return $this->hasMany(BoardMember::class);

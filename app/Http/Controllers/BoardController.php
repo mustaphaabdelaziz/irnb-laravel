@@ -25,7 +25,7 @@ class BoardController extends Controller
     public function index(): Response
     {
         $tasks = BoardTask::query();
-        $currentTerm = BoardTerm::where('is_current', true)->first() ?? BoardTerm::latest('id')->first();
+        $currentTerm = BoardTerm::current();
 
         // Meetings/tasks scoped to the current term's date window when it has one.
         $termMeetings = BoardMeeting::query();
@@ -38,7 +38,7 @@ class BoardController extends Controller
 
         return Inertia::render('Board/Index', [
             'stats' => [
-                'members' => BoardMember::where('status', 'active')->count(),
+                'members' => BoardMember::inCurrentTerm()->where('status', 'active')->count(),
                 'meetings_held' => BoardMeeting::where('status', 'held')->count(),
                 // A cancelled meeting never took place, so it is not part of the term's total.
                 'meetings_total' => (clone $termMeetings)->where('status', '!=', 'cancelled')->count(),
@@ -55,7 +55,7 @@ class BoardController extends Controller
             'recentTasks' => BoardTask::with('member:id,name')
                 ->whereIn('status', ['not_started', 'in_progress'])
                 ->orderByRaw('due_date is null, due_date asc')->limit(6)->get(),
-            'membersByRole' => BoardMember::where('status', 'active')
+            'membersByRole' => BoardMember::inCurrentTerm()->where('status', 'active')
                 ->withPlayer()
                 ->with('roleModel:id,name,sort_order')
                 ->get()
@@ -177,15 +177,18 @@ class BoardController extends Controller
     {
         $meeting->load(['attendances.member', 'tasks.member', 'createdBy:id,name', 'cancelledBy:id,name']);
         $present = $meeting->attendances->whereNotNull('board_member_id')->keyBy('board_member_id');
+        $recorded = $meeting->attendances->pluck('board_member_id')->filter()->all();
+        $assigned = $meeting->tasks->pluck('board_member_id')->filter()->all();
+        $current = fn ($q) => $q->inCurrentTerm()->where('status', 'active');
 
         return Inertia::render('Board/Meeting', [
             'meeting' => $meeting,
-            'members' => BoardMember::where('status', 'active')->orderBy('sort_order')->get()
+            'members' => BoardMember::where($current)->orWhereIn('id', $recorded)->orderBy('sort_order')->get()
                 ->map(fn (BoardMember $m) => [
                     'id' => $m->id, 'name' => $m->name, 'role' => $m->role,
                     'attendance' => $present[$m->id]->status ?? null,
                 ]),
-            'allMembers' => BoardMember::orderBy('sort_order')->get(['id', 'name', 'role']),
+            'allMembers' => BoardMember::where($current)->orWhereIn('id', $assigned)->orderBy('sort_order')->get(['id', 'name', 'role']),
             'removedAttendances' => $meeting->attendances->whereNull('board_member_id')->values()
                 ->map(fn (MeetingAttendance $a) => ['id' => $a->id, 'name' => $a->member_name, 'role' => $a->member_role, 'status' => $a->status]),
         ]);
@@ -199,7 +202,9 @@ class BoardController extends Controller
 
         return Inertia::render('Board/Tasks', [
             'columns' => collect($columns)->mapWithKeys(fn ($c) => [$c => $all->where('status', $c)->values()]),
-            'members' => BoardMember::where('status', 'active')->orderBy('sort_order')->get(['id', 'name', 'role']),
+            'members' => BoardMember::where(fn ($q) => $q->inCurrentTerm()->where('status', 'active'))
+                ->orWhereIn('id', $all->pluck('board_member_id')->filter()->unique())
+                ->orderBy('sort_order')->get(['id', 'name', 'role']),
             'meetings' => BoardMeeting::orderByDesc('meeting_date')->limit(50)->get(['id', 'title', 'meeting_date']),
             'stats' => $this->taskStats($all),
         ]);

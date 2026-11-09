@@ -1757,6 +1757,7 @@
     "flash.document_type_updated": "Type de document mis à jour.",
     "flash.equipment_catalog_created": "Catalogue de matériel créé avec succès.",
     "flash.equipment_catalog_deleted": "Catalogue de matériel supprimé avec succès.",
+    "flash.equipment_catalog_units_out": "Suppression impossible : des unités sont encore sorties. Faites-les d'abord revenir.",
     "flash.equipment_catalog_updated": "Catalogue de matériel mis à jour avec succès.",
     "flash.equipment_catalogs_deleted": "{count} matériels supprimés.",
     "flash.equipment_found": "Matériel remis en service.",

@@ -1757,6 +1757,7 @@
     "flash.document_type_updated": "Document type updated.",
     "flash.equipment_catalog_created": "Equipment catalog created successfully.",
     "flash.equipment_catalog_deleted": "Equipment catalog deleted successfully.",
+    "flash.equipment_catalog_units_out": "Cannot delete: some units are still out. Take them back first.",
     "flash.equipment_catalog_updated": "Equipment catalog updated successfully.",
     "flash.equipment_catalogs_deleted": "{count} materials deleted.",
     "flash.equipment_found": "Equipment restored to available.",

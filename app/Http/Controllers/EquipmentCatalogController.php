@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\EquipmentCatalog;
 use App\Models\EquipmentCategory;
 use App\Models\EquipmentItem;
+use App\Models\EquipmentRental;
 use App\Models\FinanceAccount;
 use App\Models\Player;
 use App\Models\StorageLocation;
@@ -159,8 +160,21 @@ class EquipmentCatalogController extends Controller
             ->with('success', 'flash.equipment_catalog_updated');
     }
 
+    /** Units still out with someone: deleting would erase who holds them. */
+    private function hasUnitsOut(array $catalogIds): bool
+    {
+        return EquipmentRental::query()
+            ->whereNull('return_date')
+            ->whereHas('equipmentItem', fn ($q) => $q->whereIn('catalog_id', $catalogIds))
+            ->exists();
+    }
+
     public function destroy(EquipmentCatalog $catalog): RedirectResponse
     {
+        if ($this->hasUnitsOut([$catalog->id])) {
+            return back()->with('error', 'flash.equipment_catalog_units_out');
+        }
+
         $catalog->delete();
 
         return redirect()->route('equipment.catalogs.index')
@@ -176,6 +190,10 @@ class EquipmentCatalogController extends Controller
         ]);
 
         $catalogs = EquipmentCatalog::whereIn('id', $validated['ids'])->get();
+
+        if ($this->hasUnitsOut($catalogs->pluck('id')->all())) {
+            return back()->with('error', 'flash.equipment_catalog_units_out');
+        }
 
         DB::transaction(function () use ($catalogs) {
             $catalogs->each->delete();

@@ -46,7 +46,14 @@ class InventoryController extends Controller
 
         $session = DB::transaction(function () use ($data, $request) {
             $year = now()->format('Y');
-            $seq = InventorySession::whereYear('created_at', $year)->count() + 1;
+            // From the highest number used this year: a count would reuse a
+            // deleted session's successor and collide with the unique reference.
+            $prefix = 'INV-'.$year.'-';
+            $seq = InventorySession::query()
+                ->where('reference', 'like', $prefix.'%')
+                ->pluck('reference')
+                ->map(fn (string $ref) => (int) substr($ref, strlen($prefix)))
+                ->max() + 1;
 
             $session = InventorySession::create([
                 'reference' => 'INV-'.$year.'-'.str_pad((string) $seq, 2, '0', STR_PAD_LEFT),

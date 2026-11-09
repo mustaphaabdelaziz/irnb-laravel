@@ -1757,6 +1757,7 @@
     "flash.document_type_updated": "تم تحديث نوع الوثيقة.",
     "flash.equipment_catalog_created": "تم إنشاء كتالوج المعدات بنجاح.",
     "flash.equipment_catalog_deleted": "تم حذف كتالوج المعدات بنجاح.",
+    "flash.equipment_catalog_units_out": "لا يمكن الحذف: بعض وحدات هذه المعدات ما زالت خارج المخزن. أرجعها أولًا.",
     "flash.equipment_catalog_updated": "تم تحديث كتالوج المعدات بنجاح.",
     "flash.equipment_catalogs_deleted": "تم حذف {count} معدات.",
     "flash.equipment_found": "تمت إعادة المعدات إلى الخدمة.",

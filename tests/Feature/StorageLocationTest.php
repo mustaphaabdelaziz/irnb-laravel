@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\EquipmentCatalog;
+use App\Models\EquipmentItem;
 use App\Models\StorageLocation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -65,5 +67,22 @@ class StorageLocationTest extends TestCase
             ->assertForbidden();
 
         $this->assertDatabaseMissing('storage_locations', ['name' => 'Storage 01']);
+    }
+
+    #[Test]
+    public function renaming_a_storage_place_renames_it_on_its_units(): void
+    {
+        $loc = StorageLocation::create(['name' => 'Magasin']);
+        $catalog = EquipmentCatalog::create(['name' => 'Ballons', 'category' => 'Balls']);
+        $mk = fn (string $where) => EquipmentItem::create(['catalog_id' => $catalog->id, 'quantity' => 1, 'condition' => 'New', 'status' => 'Available', 'location' => $where, 'purchase_date' => '2026-01-10']);
+        $a = $mk('Magasin');
+        $b = $mk('Vestiaire');
+
+        $this->actingAs($this->admin())
+            ->put(route('storage-locations.update', $loc), ['name' => 'Magasin central'])
+            ->assertRedirect();
+
+        $this->assertSame('Magasin central', $a->fresh()->location);
+        $this->assertSame('Vestiaire', $b->fresh()->location);
     }
 }

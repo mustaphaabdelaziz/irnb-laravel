@@ -1,8 +1,11 @@
 // Every screenshot the help articles use. `targets` are data-help names whose
 // boxes are saved for rings and magnifiers; `before` runs after the page loads
 // (open a menu, type a search); the optional `after` runs once the screenshot and boxes
-// are saved, to undo what the shot wrote (the light and dark passes share one seeded
-// database). Player 1 is أحمد بن علي (HelpDemoSeeder).
+// are saved, to undo what the shot wrote. Each shot is taken light, then dark, before the
+// next one, on one seeded database (so a shot's own writes show in its dark pass: undo
+// them in `after`). `ownLogin: true` gives the shot its own fresh login as `demo` instead
+// of the shared session (for «الدخول بحساب», which replaces the session's user).
+// Player 1 is أحمد بن علي (HelpDemoSeeder).
 
 // Attendance data is dated relative to the seed day (HelpDemoAttendanceSeeder): shots
 // run right after seeding, so "today" here is the seed day. Session 1 is the next U17
@@ -541,7 +544,7 @@ export default [
     },
     // «إعدادات الحضور» (attendance/edit). The page takes no branch_id: the forms open on the
     // first branch (Swimming), so each form shot picks «كرة القدم» itself. Forms are only
-    // filled, never sent: the light and dark passes share one database.
+    // filled, never sent.
     {
         // The timetable example: a Friday U17 row, 18:00–19:30 (the form's default times),
         // valid from today (the default «من»). Monday and Wednesday are already listed.

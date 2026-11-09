@@ -115,34 +115,42 @@ async function capture(context, shot, theme) {
     await page.close();
 }
 
+async function signIn(context) {
+    const page = await context.newPage();
+    await page.goto(`${base}/login`);
+    await page.fill('#username', 'demo');
+    await page.fill('#password', 'demo-help-2026');
+    // Enter submits the form (PrimaryButton may not carry type="submit").
+    await Promise.all([
+        page.waitForURL((url) => !url.pathname.startsWith('/login')),
+        page.press('#password', 'Enter'),
+    ]);
+    await page.goto(`${base}/lang/${locale}`);
+    await page.close();
+}
+
 let browser;
 try {
     await waitForServer();
     browser = await chromium.launch({ channel: 'chromium', args: [`--lang=${browserLocale}`] });
 
     const loginContext = await browser.newContext({ viewport, locale: browserLocale });
-    const loginPage = await loginContext.newPage();
-    await loginPage.goto(`${base}/login`);
-    await loginPage.fill('#username', 'demo');
-    await loginPage.fill('#password', 'demo-help-2026');
-    // Enter submits the form (PrimaryButton may not carry type="submit").
-    await Promise.all([
-        loginPage.waitForURL((url) => !url.pathname.startsWith('/login')),
-        loginPage.press('#password', 'Enter'),
-    ]);
-    await loginPage.goto(`${base}/lang/${locale}`);
+    await signIn(loginContext);
     const signedIn = await loginContext.storageState();
     await loginContext.close();
 
-    for (const theme of ['light', 'dark']) {
-        for (const shot of list) {
+    // Each shot is taken light, then dark, before the next one: a shot that writes
+    // (log in as, a login) cannot make the dark pass of a later shot differ from its light pass.
+    for (const shot of list) {
+        for (const theme of ['light', 'dark']) {
             const context = await browser.newContext({
                 viewport,
                 locale: browserLocale,
                 colorScheme: theme,
-                storageState: shot.guest ? undefined : signedIn,
+                storageState: shot.guest || shot.ownLogin ? undefined : signedIn,
             });
             await context.addInitScript((t) => localStorage.setItem('theme', t), theme);
+            if (shot.ownLogin) await signIn(context);
             await capture(context, shot, theme);
             await context.close();
             console.log(`✓ ${theme} ${shot.name}`);

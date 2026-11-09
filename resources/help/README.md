@@ -56,6 +56,8 @@ One-time setup on a new machine (the script drives the full Chromium build):
 3. `npm run build && npm run help:shots` (or `npm run help:shots -- <shot>`).
 4. Commit `public/help-shots/ar/*`.
 
+Each shot is taken light, then dark, before the next. A shot with `ownLogin: true` signs in on its own (for «الدخول بحساب», which would otherwise break the shared session).
+
 Shots live in `public/help-shots`, not `public/help`: a real `public/help`
 folder would be served instead of the `/help` page.
 

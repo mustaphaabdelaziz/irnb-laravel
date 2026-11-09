@@ -6,8 +6,10 @@ use App\Models\FinanceAccount;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Support\Import\XlsxReader;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use PDOException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -148,6 +150,20 @@ class TransactionImportRoundTripTest extends TestCase
 
         $this->actingAs($this->admin('ar'))->post(route('transactions.import.store'), ['file' => $file()])
             ->assertSessionHas('error', fn ($e) => str_contains($e, 'السطر 2') && str_contains($e, 'someday') && str_contains($e, 'السطر 3') && str_contains($e, 'abc') && ! str_contains($e, 'Row'));
+    }
+
+    #[Test]
+    public function a_database_error_on_a_row_shows_a_translated_sentence_not_sql(): void
+    {
+        Transaction::creating(function () {
+            throw new QueryException('sqlite', 'insert into "transactions"', [], new PDOException('SQLSTATE[23000]: Integrity constraint violation'));
+        });
+
+        $file = $this->csv("\xEF\xBB\xBFDate,Title,Type,Category,Amount,Status,Payment method,Cash register,Description\r\n"
+            ."2026-02-03,X,income,other,100,Paid,cash,,\r\n");
+
+        $this->actingAs($this->admin('ar'))->post(route('transactions.import.store'), ['file' => $file])
+            ->assertSessionHas('error', 'السطر 2: تعذّر حفظ هذا السطر.');
     }
 
     #[Test]

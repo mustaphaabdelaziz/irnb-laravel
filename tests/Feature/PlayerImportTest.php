@@ -6,9 +6,13 @@ use App\Models\Category;
 use App\Models\Player;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Services\Player\RegisterPlayerService;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use PDOException;
 use PHPUnit\Framework\Attributes\Test;
+use RuntimeException;
 use Tests\TestCase;
 
 class PlayerImportTest extends TestCase
@@ -86,6 +90,24 @@ class PlayerImportTest extends TestCase
         $this->assertSame('منخرط', $player->status->name);
         // Owner decision: registration (import included) attaches no subscription.
         $this->assertDatabaseCount('player_subscriptions', 0);
+    }
+
+    #[Test]
+    public function a_row_error_keeps_the_apps_own_sentence_but_hides_database_errors(): void
+    {
+        $this->mock(RegisterPlayerService::class)
+            ->shouldReceive('handle')
+            ->andThrowExceptions([
+                new RuntimeException('تاريخ الانضمام قبل تاريخ الميلاد.'),
+                new QueryException('sqlite', 'insert into "players"', [], new PDOException('SQLSTATE[23000]: Integrity constraint violation')),
+            ]);
+
+        $row = fn (string $first) => [$first, 'Brahimi', '', '', '', '2008-05-20', 'Male', '', '', '', '', '', '', '', 'student', '', '', '', (string) now()->year];
+        $admin = User::factory()->create(['privileges' => ['admin'], 'email_verified_at' => now(), 'preferred_lng' => 'ar']);
+
+        $this->actingAs($admin)
+            ->post(route('players.import.store'), ['file' => $this->makeCsv([$row('Ali'), $row('Omar')])])
+            ->assertSessionHas('error', "السطر 2: تاريخ الانضمام قبل تاريخ الميلاد.\nالسطر 3: تعذّر حفظ هذا السطر.");
     }
 
     #[Test]

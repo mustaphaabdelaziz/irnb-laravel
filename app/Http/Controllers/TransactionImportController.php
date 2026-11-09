@@ -9,6 +9,7 @@ use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
 use App\Support\Export;
 use App\Support\Import\ImportColumns;
+use App\Support\Import\ImportRowError;
 use App\Support\NameNormalizer;
 use App\Support\Spreadsheet;
 use App\Support\UiLang;
@@ -137,7 +138,7 @@ class TransactionImportController extends Controller
                     $errors[] = __('Row :line: cash register ":name" not found, the default register was used.', ['line' => $line, 'name' => $registerName]);
                 }
             } catch (Throwable $e) {
-                $errors[] = __('Row :line: :message', ['line' => $line, 'message' => $e->getMessage()]);
+                $errors[] = __('Row :line: :message', ['line' => $line, 'message' => ImportRowError::message($e)]);
             }
         }
 

@@ -83,7 +83,8 @@ class EquipmentLoanRepairFixesTest extends TestCase
         $this->actingAs($user)
             ->get(route('equipment.items.history', $item))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('history.0.details.return_date', fn ($date) => in_array($date, ['2026-03-05', '2026-03-09'], true)));
+                ->where('history', fn ($history) => collect($history)->pluck('details.return_date')->filter()->sort()->values()->all()
+                    === ['2026-03-05', '2026-03-09']));
     }
 
     #[Test]

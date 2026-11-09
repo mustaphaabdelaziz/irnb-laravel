@@ -11,6 +11,7 @@ use App\Services\Activity\ActivityRecorder;
 use App\Services\Player\RegisterPlayerService;
 use App\Support\Export;
 use App\Support\Import\ImportColumns;
+use App\Support\Import\ImportRowError;
 use App\Support\Import\PositionMatcher;
 use App\Support\NameNormalizer;
 use App\Support\Spreadsheet;
@@ -204,7 +205,7 @@ class PlayerImportController extends Controller
 
                 $imported++;
             } catch (Throwable $e) {
-                $errors[] = __('Row :line: :message', ['line' => $line, 'message' => $e->getMessage()]);
+                $errors[] = __('Row :line: :message', ['line' => $line, 'message' => ImportRowError::message($e)]);
             }
         }
 

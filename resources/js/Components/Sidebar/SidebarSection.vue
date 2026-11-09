@@ -67,7 +67,7 @@ function onToggle() {
                         :active="isActive(item, url)"
                         :icon="item.icon"
                         :badge="item.badge"
-                        :data-help="{ '/players': 'nav-players', '/subscriptions': 'nav-subscriptions', '/attendance': 'nav-attendance', '/transactions': 'nav-transactions', '/finance': 'nav-finance', '/finance/registers': 'nav-registers', '/receipts/verify': 'nav-receipts-verify' }[item.href] ?? null"
+                        :data-help="{ '/players': 'nav-players', '/subscriptions': 'nav-subscriptions', '/attendance': 'nav-attendance', '/transactions': 'nav-transactions', '/finance': 'nav-finance', '/finance/registers': 'nav-registers', '/receipts/verify': 'nav-receipts-verify', '/settings': 'nav-settings', '/branches': 'nav-branches', '/categories': 'nav-categories', '/document-types': 'nav-document-types', '/users': 'nav-users', '/users/activity': 'nav-activity', '/roles': 'nav-roles' }[item.href] ?? null"
                         compact
                     >{{ item.label }}</SidebarLink>
                 </div>

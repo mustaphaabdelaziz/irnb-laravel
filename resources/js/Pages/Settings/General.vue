@@ -353,6 +353,7 @@ function saveSettings() {
                     <button
                         v-for="tab in tabs" :key="tab.key"
                         @click="activeTab = tab.key"
+                        :data-help="tab.key === 'basic' ? 'settings-tab-basic' : tab.key === 'branding' ? 'settings-tab-branding' : null"
                         :class="[activeTab === tab.key ? 'bg-primary-50 text-primary-700 font-semibold dark:bg-primary-500/15 dark:text-primary-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800']"
                         class="whitespace-nowrap rounded-lg px-4 py-2 text-start text-sm transition-colors">
                         {{ t(tab.label) }}
@@ -367,7 +368,7 @@ function saveSettings() {
                     <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                         <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('basic_info') }}</h2>
                         <div class="space-y-4">
-                            <div class="grid gap-4 sm:grid-cols-3">
+                            <div class="grid gap-4 sm:grid-cols-3" data-help="settings-club-names">
                                 <div>
                                     <InputLabel value="🇩🇿 اسم النادي (عربي)" />
                                     <TextInput v-model="basicForm.club_name_ar" class="mt-1 w-full" dir="rtl" />
@@ -383,7 +384,7 @@ function saveSettings() {
                             </div>
                             <div>
                                 <InputLabel :value="t('abbreviation')" />
-                                <TextInput v-model="basicForm.club_short_name" class="mt-1 w-48" placeholder="e.g. FCB" />
+                                <TextInput v-model="basicForm.club_short_name" data-help="settings-short-name" class="mt-1 w-48" placeholder="e.g. FCB" />
                             </div>
                             <div>
                                 <InputLabel :value="t('tagline')" />
@@ -405,7 +406,7 @@ function saveSettings() {
                             </div>
                         </div>
                     </div>
-                    <div class="flex justify-end"><PrimaryButton :disabled="basicForm.processing">{{ t('save') }}</PrimaryButton></div>
+                    <div class="flex justify-end"><PrimaryButton data-help="settings-save" :disabled="basicForm.processing">{{ t('save') }}</PrimaryButton></div>
                 </form>
 
                 <!-- Contact Info -->
@@ -504,10 +505,11 @@ function saveSettings() {
                         <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('club_color') }}</h2>
                         <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ t('club_color_hint') }}</p>
 
-                        <div class="mt-5 grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+                        <div class="mt-5 grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6" data-help="settings-colors">
                             <button
                                 v-for="preset in themePresets" :key="preset.key" type="button"
                                 @click="selectPreset(preset.key)"
+                                :data-help="preset.key === 'blue' ? 'settings-color-blue' : null"
                                 class="group relative flex flex-col items-center gap-2 rounded-xl border p-3 transition-all"
                                 :class="selectedTheme === preset.key ? 'border-slate-900/20 bg-slate-50 ring-2 ring-slate-900/10 dark:border-slate-100/20 dark:bg-slate-950 dark:ring-slate-100/15' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'"
                             >
@@ -544,7 +546,7 @@ function saveSettings() {
                     <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                         <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('branding') }}</h2>
                         <div class="space-y-4">
-                            <div>
+                            <div data-help="settings-logo">
                                 <InputLabel :value="t('logo')" />
                                 <div v-if="config?.branding?.logo" class="mb-2">
                                     <img :src="config.branding.logo" alt="Logo" class="h-16 w-16 rounded-lg object-contain" />
@@ -559,7 +561,7 @@ function saveSettings() {
                             </div>
                         </div>
                     </div>
-                    <div class="flex justify-end"><PrimaryButton :disabled="brandingForm.processing">{{ t('save') }}</PrimaryButton></div>
+                    <div class="flex justify-end"><PrimaryButton data-help="settings-branding-save" :disabled="brandingForm.processing">{{ t('save') }}</PrimaryButton></div>
                 </form>
 
                 <!-- Settings -->

@@ -813,6 +813,45 @@ export default [
         targets: ['fin-all-years'],
         before: async (page) => { await centre(page, 'fin-all-years'); },
     },
+    // --- Settings & users --- (HelpDemoUsersSeeder). Football = branch 2. Nothing here saves.
+    {
+        name: 'set-identity-basic',
+        url: '/settings',
+        targets: ['nav-settings', 'settings-tab-basic', 'settings-club-names', 'settings-short-name', 'settings-save'],
+        // «الإعدادات» is the last item of «النظام»: it sits below the sidebar's visible part.
+        before: async (page) => { await navIntoView(page, 'nav-settings'); },
+    },
+    {
+        // Never click a swatch: it saves the theme for every later shot.
+        name: 'set-identity-branding',
+        url: '/settings',
+        targets: ['settings-tab-branding', 'settings-colors', 'settings-color-blue'],
+        before: async (page) => { await page.locator('[data-help="settings-tab-branding"]').click(); },
+    },
+    {
+        // The logo field and «حفظ» sit below the colour card; the field stays empty (no demo logo).
+        name: 'set-identity-logo',
+        url: '/settings',
+        targets: ['settings-logo', 'settings-branding-save'],
+        before: async (page) => {
+            await page.locator('[data-help="settings-tab-branding"]').click();
+            await centre(page, 'settings-logo');
+        },
+    },
+    {
+        // The reader's state before «إضافة»: name and code typed.
+        name: 'set-branch-add',
+        url: '/branches',
+        targets: ['nav-branches', 'branch-name', 'branch-code', 'branch-add'],
+        before: async (page) => {
+            await navIntoView(page, 'nav-branches');
+            await page.fill('input[data-help="branch-name"]', 'كرة اليد');
+            await page.fill('input[data-help="branch-code"]', 'HB');
+            await blur(page);
+        },
+    },
+    { name: 'set-branch-rows', url: '/branches', targets: ['branch-row-football', 'branch-set-main', 'branch-members', 'branch-edit'] },
+    { name: 'set-branch-detail', url: '/branches/2', targets: ['branch-tab-general', 'branch-tab-categories'] },
     {
         name: 'fin-tx-saved',
         url: '/transactions/create',
@@ -1078,6 +1117,12 @@ async function pickOption(page, selector, pattern) {
     }, pattern.source);
     if (value === null) throw new Error(`No option matching ${pattern} in ${selector}`);
     await page.locator(selector).first().selectOption(value);
+}
+
+/** Scrolls the sidebar so a nav item is inside its visible part. */
+async function navIntoView(page, name) {
+    await page.locator(`[data-help="${name}"]`).first().evaluate((el) => el.scrollIntoView({ block: 'center', behavior: 'instant' }));
+    await page.waitForTimeout(150);
 }
 
 /** Drops the focus ring of the last field typed in or ticked. */

@@ -45,6 +45,7 @@ const name = computed(() => props.branch.localized_name || props.branch.name);
                     :key="item.key"
                     :href="item.href"
                     role="tab"
+                    :data-help="'branch-tab-' + item.key"
                     :aria-selected="tab === item.key"
                     class="rounded-md px-3 py-1 text-sm font-semibold"
                     :class="tab === item.key ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'"

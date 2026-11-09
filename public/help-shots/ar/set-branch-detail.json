@@ -1,0 +1,18 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "branch-tab-general": {
+      "x": 54.55,
+      "y": 15.25,
+      "w": 3.55,
+      "h": 3.5
+    },
+    "branch-tab-categories": {
+      "x": 49.64,
+      "y": 15.25,
+      "w": 4.75,
+      "h": 3.5
+    }
+  }
+}

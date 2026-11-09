@@ -24,6 +24,10 @@ const playersById = computed(() => Object.fromEntries(props.players.map((p) => [
 
 const deleteId = ref(null);
 
+// Help Center markers (by stored name, not position): the Football row and its buttons.
+const rowHelp = (branch) => ({ Football: 'branch-row-football', Swimming: 'branch-row-swimming' }[branch.name] ?? null);
+const rowButton = (branch, name) => (branch.name === 'Football' ? name : null);
+
 const form = useForm({ name: '', code: '', name_ar: '', name_fr: '', name_en: '', description: '', logo: null });
 const addLogoInput = ref(null);
 
@@ -105,16 +109,16 @@ function saveMembers() {
 
         <div class="mx-auto max-w-2xl space-y-6">
             <!-- Add form -->
-            <form @submit.prevent="addBranch" class="space-y-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+            <form @submit.prevent="addBranch" data-help="branch-add-form" class="space-y-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div class="grid gap-3 sm:grid-cols-2">
                     <div>
                         <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('name') }} <span class="text-xs text-slate-400">({{ t('default') }})</span></label>
-                        <TextInput v-model="form.name" class="mt-1 w-full" :placeholder="t('name')" required />
+                        <TextInput v-model="form.name" data-help="branch-name" class="mt-1 w-full" :placeholder="t('name')" required />
                         <InputError :message="form.errors.name" class="mt-1" />
                     </div>
                     <div>
                         <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('branch_code') }}</label>
-                        <TextInput v-model="form.code" class="mt-1 w-full uppercase" maxlength="6" dir="ltr" />
+                        <TextInput v-model="form.code" data-help="branch-code" class="mt-1 w-full uppercase" maxlength="6" dir="ltr" />
                         <InputError :message="form.errors.code" class="mt-1" />
                     </div>
                     <div>
@@ -140,7 +144,7 @@ function saveMembers() {
                     </div>
                 </div>
                 <div class="flex justify-end">
-                    <PrimaryButton :disabled="form.processing">{{ t('add') }}</PrimaryButton>
+                    <PrimaryButton data-help="branch-add" :disabled="form.processing">{{ t('add') }}</PrimaryButton>
                 </div>
             </form>
 
@@ -155,7 +159,7 @@ function saveMembers() {
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                        <tr v-for="branch in branches" :key="branch.id">
+                        <tr v-for="branch in branches" :key="branch.id" :data-help="rowHelp(branch)">
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-2">
                                     <img v-if="branch.logo_url" :src="branch.logo_url" alt="" class="h-8 w-8 shrink-0 rounded object-contain" />
@@ -168,9 +172,9 @@ function saveMembers() {
                             <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ branch.players_count }}</td>
                             <td class="px-4 py-3 text-end">
                                 <div class="flex justify-end gap-2">
-                                    <IconButton v-if="branch.id !== mainBranchId" icon="flag" :label="t('set_main_branch')" plain size="sm" @click="router.post(route('branches.main', branch.id), {}, { preserveScroll: true })" />
-                                    <IconButton icon="players" :label="t('members')" variant="primary" plain size="sm" @click="openMembers(branch)" />
-                                    <IconButton icon="pencil" :label="t('edit')" plain size="sm" :href="route('branches.show', branch.id)" />
+                                    <IconButton v-if="branch.id !== mainBranchId" :data-help="rowButton(branch, 'branch-set-main')" icon="flag" :label="t('set_main_branch')" plain size="sm" @click="router.post(route('branches.main', branch.id), {}, { preserveScroll: true })" />
+                                    <IconButton :data-help="rowButton(branch, 'branch-members')" icon="players" :label="t('members')" variant="primary" plain size="sm" @click="openMembers(branch)" />
+                                    <IconButton :data-help="rowButton(branch, 'branch-edit')" icon="pencil" :label="t('edit')" plain size="sm" :href="route('branches.show', branch.id)" />
                                     <IconButton icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteId = branch.id" />
                                 </div>
                             </td>

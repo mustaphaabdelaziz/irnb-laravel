@@ -8,8 +8,10 @@ import IconButton from '@/Components/IconButton.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref } from 'vue';
+import { useCan } from '@/Composables/useCan';
 
 const { t } = useI18n();
+const { can } = useCan();
 
 defineProps({ roles: Array });
 
@@ -49,7 +51,7 @@ function destroy() {
         </template>
 
         <div class="mx-auto max-w-2xl space-y-6">
-            <form @submit.prevent="addRole" class="flex flex-wrap items-end gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+            <form v-if="can('board_roles', 'add')" @submit.prevent="addRole" class="flex flex-wrap items-end gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
                 <div class="flex-1">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('name') }}</label>
                     <TextInput v-model="form.name" class="mt-1 w-full" :placeholder="t('name')" required />
@@ -106,8 +108,8 @@ function destroy() {
                                     <button @click="editingId = null" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">{{ t('cancel') }}</button>
                                 </div>
                                 <div v-else class="flex justify-end gap-2">
-                                    <IconButton icon="pencil" :label="t('edit')" plain size="sm" @click="startEdit(r)" />
-                                    <IconButton icon="trash" :label="r.members_count > 0 ? t('role_in_use') : t('delete')" variant="danger" plain size="sm" :disabled="r.members_count > 0" @click="deleteId = r.id" />
+                                    <IconButton v-if="can('board_roles', 'edit')" icon="pencil" :label="t('edit')" plain size="sm" @click="startEdit(r)" />
+                                    <IconButton v-if="can('board_roles', 'delete')" icon="trash" :label="r.members_count > 0 ? t('role_in_use') : t('delete')" variant="danger" plain size="sm" :disabled="r.members_count > 0" @click="deleteId = r.id" />
                                 </div>
                             </td>
                         </tr>

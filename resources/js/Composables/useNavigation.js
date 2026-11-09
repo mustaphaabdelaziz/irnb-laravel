@@ -47,6 +47,7 @@ export function useNavigation() {
             ] },
             { key: 'board', label: t('nav.board_of_directors'), icon: 'board', items: [
                 { label: t('nav.board_overview'), href: '/board', icon: 'board', prefix: '/board', exact: true, module: 'board' },
+                { label: t('board_members'), href: '/board/members', icon: 'members', prefix: '/board/members', module: 'board' },
                 { label: t('calendar'), href: '/board/calendar', icon: 'calendar', prefix: '/board/calendar', module: 'board' },
                 { label: t('meetings'), href: '/board/meetings', icon: 'clipboard', prefix: '/board/meetings', module: 'board' },
                 { label: t('tasks'), href: '/board/tasks', icon: 'task', prefix: '/board/tasks', module: 'board' },

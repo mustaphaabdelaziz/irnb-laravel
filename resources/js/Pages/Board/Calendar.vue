@@ -4,6 +4,7 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Icon from '@/Components/Icon.vue';
+import { useCan } from '@/Composables/useCan';
 import { localDateKey, localToday } from '@/lib/localDate';
 
 const props = defineProps({
@@ -11,6 +12,7 @@ const props = defineProps({
     events: { type: Array, default: () => [] },
 });
 const { t, locale } = useI18n();
+const { can } = useCan();
 
 const anchor = computed(() => new Date(`${props.month}-01T00:00:00`));
 const todayKey = localToday();
@@ -121,7 +123,7 @@ function submit() {
                     >
                         <div class="mb-1 flex items-center justify-between">
                             <span class="text-xs font-semibold" :class="cell.inMonth ? 'text-slate-500 dark:text-slate-300' : 'text-slate-300 dark:text-slate-600'">{{ cell.date.getDate() }}</span>
-                            <button @click="openCreate(cell)" :title="t('add_meeting')" class="rounded p-0.5 text-slate-300 opacity-0 transition-opacity hover:bg-primary-50 hover:text-primary-600 group-hover:opacity-100 dark:hover:bg-primary-500/10 dark:hover:text-primary-300"><Icon name="plus" class="h-3.5 w-3.5" /></button>
+                            <button v-if="can('board', 'add')" @click="openCreate(cell)" :title="t('add_meeting')" class="rounded p-0.5 text-slate-300 opacity-0 transition-opacity hover:bg-primary-50 hover:text-primary-600 group-hover:opacity-100 dark:hover:bg-primary-500/10 dark:hover:text-primary-300"><Icon name="plus" class="h-3.5 w-3.5" /></button>
                         </div>
                         <div class="space-y-1">
                             <template v-for="e in (eventsByDate[cell.key] || [])" :key="e.kind + e.id">

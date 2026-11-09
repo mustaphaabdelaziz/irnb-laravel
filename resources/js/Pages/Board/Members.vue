@@ -231,8 +231,8 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                     {{ fmt(currentTerm.start_date) || '…' }} → {{ fmt(currentTerm.end_date) || '…' }}
                 </span>
                 <div class="ms-auto flex gap-2">
-                    <IconButton v-if="currentTerm" icon="pencil" :label="t('edit_term')" @click="openTermEdit(currentTerm)" />
-                    <IconButton icon="plus" :label="t('new_term')" @click="openTermCreate" />
+                    <IconButton v-if="currentTerm && can('board', 'edit')" icon="pencil" :label="t('edit_term')" @click="openTermEdit(currentTerm)" />
+                    <IconButton v-if="can('board', 'add')" icon="plus" :label="t('new_term')" @click="openTermCreate" />
                 </div>
             </div>
 

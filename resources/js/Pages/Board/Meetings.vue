@@ -74,10 +74,10 @@ const filterOptions = ['', 'scheduled', 'held', 'cancelled'];
                         {{ s ? t(s) : t('all') }}
                     </button>
                 </div>
-                <IconButton icon="plus" :label="t('add_meeting')" variant="primary" @click="showForm = !showForm" />
+                <IconButton v-if="can('board', 'add')" icon="plus" :label="t('add_meeting')" variant="primary" @click="showForm = !showForm" />
             </div>
 
-            <form v-if="showForm" @submit.prevent="submit" class="card space-y-4 p-5">
+            <form v-if="showForm && can('board', 'add')" @submit.prevent="submit" class="card space-y-4 p-5">
                 <div class="grid gap-4 sm:grid-cols-2">
                     <label class="block text-sm sm:col-span-2"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('title') }}</span>
                         <input v-model="form.title" required class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>

@@ -124,6 +124,10 @@ return [
         'equipment.catalogs.bulk-destroy' => ['equipment', 'delete'],
         'equipment.items.bulk-destroy' => ['equipment', 'delete'],
         'board.meetings.minutes' => ['board', 'view'],
+        // "members" / "meetings" are not view verbs: without these, reading the
+        // organigram or the meetings list would need edit rights.
+        'board.members' => ['board', 'view'],
+        'board.meetings' => ['board', 'view'],
         // The tasks board and its stats are reading; changing a task keeps its own add/edit/delete guard.
         'board.tasks' => ['board', 'view'],
         // "download" is not a view verb: without this, fetching a file the user

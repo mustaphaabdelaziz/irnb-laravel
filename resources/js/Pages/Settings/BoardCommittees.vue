@@ -8,8 +8,10 @@ import IconButton from '@/Components/IconButton.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref } from 'vue';
+import { useCan } from '@/Composables/useCan';
 
 const { t } = useI18n();
+const { can } = useCan();
 
 defineProps({ committees: Array });
 
@@ -44,7 +46,7 @@ function destroy() {
         </template>
 
         <div class="mx-auto max-w-2xl space-y-6">
-            <form @submit.prevent="addCommittee" class="flex items-end gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+            <form v-if="can('board_committees', 'add')" @submit.prevent="addCommittee" class="flex items-end gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
                 <div class="flex-1">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('name') }}</label>
                     <TextInput v-model="form.name" class="mt-1 w-full" :placeholder="t('board.committee_name_placeholder')" required />
@@ -89,8 +91,8 @@ function destroy() {
                                     <button @click="editingId = null" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">{{ t('cancel') }}</button>
                                 </div>
                                 <div v-else class="flex justify-end gap-2">
-                                    <IconButton icon="pencil" :label="t('edit')" plain size="sm" @click="startEdit(c)" />
-                                    <IconButton icon="trash" :label="c.members_count > 0 ? t('board.committee_in_use') : t('delete')" variant="danger" plain size="sm" :disabled="c.members_count > 0" @click="deleteId = c.id" />
+                                    <IconButton v-if="can('board_committees', 'edit')" icon="pencil" :label="t('edit')" plain size="sm" @click="startEdit(c)" />
+                                    <IconButton v-if="can('board_committees', 'delete')" icon="trash" :label="c.members_count > 0 ? t('board.committee_in_use') : t('delete')" variant="danger" plain size="sm" :disabled="c.members_count > 0" @click="deleteId = c.id" />
                                 </div>
                             </td>
                         </tr>

@@ -43,8 +43,8 @@ related: [equipment/stock-take, equipment/return-equipment, equipment/damage-rep
 :::
 
 :::step افتح تقارير «العتاد» في «التقارير»
-في الهاتف، افتح القائمة أولًا بزر ☰. في القائمة، اضغط على «العتاد» تحت «التقارير». لا تراها؟ اضغط على «التقارير» لتظهر. في الصفحة بطاقات: «قائمة المخزون» و«العتاد خارج المخزن» و«الوضعية والقيمة» و«حركات العتاد» و«خسائر الجرد». اضغط على بطاقة لتفتح تقريرها. في أعلى كل تقرير زر السهم النازل، واسمه «تصدير». منه تنزّل التقرير بصيغة Excel أو CSV أو PDF. وبطاقة «حالة المخزون» تفتح هذه الصفحة نفسها.
-::figure eq-inventory-report-centre ring=nav-reports-equipment,report-card-equipment-inventory,report-card-equipment-out,report-card-equipment-valuation,report-card-equipment-lifecycle,report-card-equipment-stocktake
+في الهاتف، افتح القائمة أولًا بزر ☰. في القائمة، اضغط على «العتاد» تحت «التقارير». لا تراها؟ اضغط على «التقارير» لتظهر. في الصفحة بطاقات: «قائمة المخزون» و«العتاد خارج المخزن» و«الوضعية والقيمة» و«حركات العتاد» و«خسائر الجرد». كل بطاقة تفتح تقريرها. في أعلى كل تقرير زر السهم النازل، واسمه «تصدير». منه تنزّل التقرير بصيغة Excel أو CSV أو PDF. وبطاقة «حالة المخزون» تفتح هذه الصفحة نفسها.
+::figure eq-inventory-report-centre ring=nav-reports-equipment
 :::
 
 :::tip

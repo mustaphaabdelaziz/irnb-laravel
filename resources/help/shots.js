@@ -1465,7 +1465,7 @@ export default [
     {
         name: 'eq-inventory-report-centre',
         url: '/reports/equipment',
-        targets: ['nav-reports-equipment', 'report-card-equipment-inventory', 'report-card-equipment-out', 'report-card-equipment-valuation', 'report-card-equipment-lifecycle', 'report-card-equipment-stocktake'],
+        targets: ['nav-reports-equipment', 'report-card-report-equipment-inventory', 'report-card-report-equipment-out', 'report-card-report-equipment-valuation', 'report-card-report-equipment-lifecycle', 'report-card-report-equipment-stocktake', 'report-card-link-equipment-stocktake'],
         before: async (page) => { await navIntoView(page, 'nav-reports-equipment'); },
     },
     {

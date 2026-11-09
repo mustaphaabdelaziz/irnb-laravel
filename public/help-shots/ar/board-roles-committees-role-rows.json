@@ -1,0 +1,12 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "brole-edit-secretary": {
+      "x": 17.81,
+      "y": 49.02,
+      "w": 2.19,
+      "h": 3.5
+    }
+  }
+}

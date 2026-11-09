@@ -236,15 +236,15 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                     <Icon name="calendar" class="text-slate-400" />
                     <span class="text-xs font-bold uppercase tracking-wide text-slate-400">{{ t('term') }}</span>
                 </div>
-                <select :value="selectedTermId" @change="switchTerm($event.target.value)" class="rounded-xl border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
+                <select :value="selectedTermId" data-help="board-term-select" @change="switchTerm($event.target.value)" class="rounded-xl border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
                     <option v-for="tm in terms" :key="tm.id" :value="tm.id">{{ tm.name }}{{ tm.is_current ? ' ★' : '' }}</option>
                 </select>
-                <span v-if="currentTerm && (currentTerm.start_date || currentTerm.end_date)" class="text-sm text-slate-500 dark:text-slate-400">
+                <span v-if="currentTerm && (currentTerm.start_date || currentTerm.end_date)" data-help="board-term-dates" class="text-sm text-slate-500 dark:text-slate-400">
                     {{ fmt(currentTerm.start_date) || '…' }} → {{ fmt(currentTerm.end_date) || '…' }}
                 </span>
                 <div class="ms-auto flex gap-2">
-                    <IconButton v-if="currentTerm && can('board', 'edit')" icon="pencil" :label="t('edit_term')" @click="openTermEdit(currentTerm)" />
-                    <IconButton v-if="can('board', 'add')" icon="plus" :label="t('new_term')" @click="openTermCreate" />
+                    <IconButton v-if="currentTerm && can('board', 'edit')" icon="pencil" :label="t('edit_term')" data-help="board-term-edit" @click="openTermEdit(currentTerm)" />
+                    <IconButton v-if="can('board', 'add')" icon="plus" :label="t('new_term')" data-help="board-term-new" @click="openTermCreate" />
                 </div>
             </div>
 
@@ -253,7 +253,7 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                 <div class="flex gap-2">
                     <ExportMenu :href="route('board.members.export')" :label="t('export')" />
                     <IconButton v-if="previousTerm && can('board', 'add')" icon="copy" :label="t('board.copy_previous')" data-help="board-copy-previous" @click="showCopy = true" />
-                    <IconButton v-if="selectedTermId && can('board', 'add')" icon="plus" :label="t('add_member')" variant="primary" @click="openCreate" />
+                    <IconButton v-if="selectedTermId && can('board', 'add')" icon="plus" :label="t('add_member')" variant="primary" data-help="board-add-member" @click="openCreate" />
                 </div>
             </div>
 
@@ -263,7 +263,7 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                     <!-- Top row -->
                     <div class="flex w-full flex-wrap justify-center gap-3">
                         <div v-for="n in topRow" :key="n.key" class="w-full max-w-[16rem]">
-                            <OrgNode :member="n.member" :label="roleLabel(n.role.name)" size="lg" :disabled="!n.member && !can('board', 'add')"
+                            <OrgNode :member="n.member" :label="roleLabel(n.role.name)" size="lg" :data-help="`board-box-${n.role.name}`" :disabled="!n.member && !can('board', 'add')"
                                 @select="n.member ? openSeat(n.member) : fillRole(n.role)" />
                         </div>
                     </div>
@@ -276,7 +276,7 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                             <div class="flex flex-wrap justify-center gap-3">
                                 <div v-for="n in bureauRow" :key="n.key" class="relative w-full max-w-[15rem]">
                                     <span class="absolute -top-4 start-1/2 hidden h-4 w-px bg-slate-300 sm:block dark:bg-slate-700"></span>
-                                    <OrgNode :member="n.member" :label="roleLabel(n.role.name)" :disabled="!n.member && !can('board', 'add')"
+                                    <OrgNode :member="n.member" :label="roleLabel(n.role.name)" :data-help="`board-box-${n.role.name}`" :disabled="!n.member && !can('board', 'add')"
                                         @select="n.member ? openSeat(n.member) : fillRole(n.role)" />
                                 </div>
                             </div>
@@ -292,20 +292,20 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                                     <span class="absolute -top-4 start-1/2 hidden h-4 w-px bg-slate-300 sm:block dark:bg-slate-700"></span>
                                     <p class="mb-2 text-center text-sm font-bold text-slate-800 dark:text-slate-100">{{ box.committee.name }}</p>
                                     <div class="space-y-2">
-                                        <OrgNode v-for="(m, i) in box.head" :key="`h${i}`" :member="m" :label="t('board.position.head')"
+                                        <OrgNode v-for="(m, i) in box.head" :key="`h${i}`" :member="m" :label="t('board.position.head')" :data-help="`board-seat-${box.committee.id}-head-${i + 1}`"
                                             :disabled="!m && !can('board', 'add')"
                                             @select="m ? openSeat(m, box.committee, 'head') : fillSeat(box.committee, 'head')" />
                                         <div class="grid grid-cols-2 gap-2">
-                                            <OrgNode v-for="(m, i) in box.deputies" :key="`d${i}`" :member="m" :label="t('board.position.deputy')" size="sm"
+                                            <OrgNode v-for="(m, i) in box.deputies" :key="`d${i}`" :member="m" :label="t('board.position.deputy')" size="sm" :data-help="`board-seat-${box.committee.id}-deputy-${i + 1}`"
                                                 :disabled="!m && !can('board', 'add')"
                                                 @select="m ? openSeat(m, box.committee, 'deputy') : fillSeat(box.committee, 'deputy')" />
                                         </div>
                                         <div class="border-t border-slate-200 pt-2 dark:border-slate-700">
                                             <p class="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">{{ t('board.position.members') }}</p>
                                             <div class="space-y-1.5">
-                                                <OrgNode v-for="m in box.members" :key="m.id" :member="m" :label="t('board.position.member')" size="sm"
+                                                <OrgNode v-for="(m, i) in box.members" :key="m.id" :member="m" :label="t('board.position.member')" size="sm" :data-help="`board-seat-${box.committee.id}-member-${i + 1}`"
                                                     @select="openSeat(m, box.committee, 'member')" />
-                                                <OrgNode v-if="can('board', 'add')" :label="t('board.add_committee_member')" size="sm" @select="fillSeat(box.committee, 'member')" />
+                                                <OrgNode v-if="can('board', 'add')" :label="t('board.add_committee_member')" size="sm" :data-help="`board-seat-${box.committee.id}-member-add`" @select="fillSeat(box.committee, 'member')" />
                                             </div>
                                         </div>
                                     </div>
@@ -381,7 +381,7 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                         <div class="min-w-0 flex-1">
                             <p class="truncate text-base font-bold text-slate-900 dark:text-slate-100">{{ selected.member.name }}</p>
                             <p class="text-xs font-semibold text-primary-600 dark:text-primary-300">{{ roleLabel(selected.member.role) }}<span v-if="selected.member.status !== 'active'"> · {{ t(selected.member.status) }}</span></p>
-                            <p v-if="selected.member.phone" class="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400"><WhatsAppLink :phone="selected.member.phone" /><span dir="ltr" class="truncate font-mono">{{ formatPhone(selected.member.phone) }}</span></p>
+                            <p v-if="selected.member.phone" class="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400"><WhatsAppLink :phone="selected.member.phone" data-help="board-seat-whatsapp" /><span dir="ltr" class="truncate font-mono">{{ formatPhone(selected.member.phone) }}</span></p>
                             <p v-if="selected.member.email" class="truncate text-xs text-slate-500 dark:text-slate-400">{{ selected.member.email }}</p>
                         </div>
                         <button type="button" @click="selected = null" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><Icon name="xcircle" /></button>
@@ -429,11 +429,11 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                             <span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('player') }}</span>
                             <div class="flex items-center gap-2">
                                 <div class="relative flex-1">
-                                    <input v-model="playerSearch" @focus="showPlayerList = true" @input="showPlayerList = true; form.player_id = null"
+                                    <input v-model="playerSearch" data-help="board-form-player" @focus="showPlayerList = true" @input="showPlayerList = true; form.player_id = null"
                                         :placeholder="t('search_for_member')" autocomplete="off"
                                         class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
                                     <ul v-if="showPlayerList && filteredPlayers.length" class="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-800">
-                                        <li v-for="p in filteredPlayers" :key="p.id" @click="pickPlayer(p)"
+                                        <li v-for="p in filteredPlayers" :key="p.id" :data-help="`board-form-player-${p.id}`" @click="pickPlayer(p)"
                                             class="cursor-pointer px-3 py-1.5 text-sm hover:bg-primary-50 dark:hover:bg-primary-500/10">
                                             <span class="font-medium text-slate-800 dark:text-slate-100">{{ p.name }}</span>
                                             <span class="ms-2 font-mono text-xs text-slate-400">{{ p.membership_id }}</span>
@@ -447,21 +447,21 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                         </div>
 
                         <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('role') }}</span>
-                            <select v-model="form.role" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
+                            <select v-model="form.role" data-help="board-form-role" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
                                 <option v-for="r in roles" :key="r.id" :value="r.name">{{ r.label || t(r.name) }}</option>
                             </select></label>
                         <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('term') }}</span>
-                            <select v-model="form.board_term_id" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
+                            <select v-model="form.board_term_id" data-help="board-form-term" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
                                 <option v-for="tm in terms" :key="tm.id" :value="tm.id">{{ tm.name }}</option>
                             </select></label>
                         <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('status') }}</span>
-                            <select v-model="form.status" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
+                            <select v-model="form.status" data-help="board-form-status" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
                                 <option value="active">{{ t('active') }}</option><option value="former">{{ t('former') }}</option>
                             </select></label>
                     </div>
                     <div class="flex justify-end gap-2">
                         <button type="button" @click="showForm = false" class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-400">{{ t('cancel') }}</button>
-                        <button :disabled="form.processing || !form.player_id" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('save') }}</button>
+                        <button :disabled="form.processing || !form.player_id" data-help="board-form-save" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('save') }}</button>
                     </div>
                 </form>
             </div>
@@ -485,23 +485,23 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                         <button type="button" @click="showTermForm = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><Icon name="xcircle" /></button>
                     </div>
                     <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('name') }}</span>
-                        <input v-model="termForm.name" required :placeholder="'2024–2028'" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
+                        <input v-model="termForm.name" data-help="board-term-name" required :placeholder="'2024–2028'" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
                         <span v-if="termForm.errors.name" class="mt-1 block text-xs text-rose-500 dark:text-rose-400">{{ termForm.errors.name }}</span></label>
                     <div class="grid grid-cols-2 gap-3">
                         <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('term_start') }}</span>
-                            <input v-model="termForm.start_date" type="date" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
+                            <input v-model="termForm.start_date" type="date" data-help="board-term-start" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
                             <span v-if="termForm.errors.start_date" class="mt-1 block text-xs text-rose-500 dark:text-rose-400">{{ termForm.errors.start_date }}</span></label>
                         <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('term_end') }}</span>
-                            <input v-model="termForm.end_date" type="date" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
+                            <input v-model="termForm.end_date" type="date" data-help="board-term-end" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
                             <span v-if="termForm.errors.end_date" class="mt-1 block text-xs text-rose-500 dark:text-rose-400">{{ termForm.errors.end_date }}</span></label>
                     </div>
-                    <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                    <label data-help="board-term-current" class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                         <input v-model="termForm.is_current" type="checkbox" class="rounded border-slate-300 text-primary-600 focus:ring-primary-500" />
                         {{ t('set_as_current_term') }}
                     </label>
                     <div class="flex justify-end gap-2">
                         <button type="button" @click="showTermForm = false" class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-400">{{ t('cancel') }}</button>
-                        <button :disabled="termForm.processing" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('save') }}</button>
+                        <button :disabled="termForm.processing" data-help="board-term-save" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('save') }}</button>
                     </div>
                 </form>
             </div>

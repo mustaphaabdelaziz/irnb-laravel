@@ -64,20 +64,20 @@ function destroy() {
             <form v-if="can('board_roles', 'add')" @submit.prevent="addRole" class="flex flex-wrap items-end gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
                 <div class="flex-1">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('name') }}</label>
-                    <TextInput v-model="form.name" class="mt-1 w-full" :placeholder="t('name')" required />
+                    <TextInput v-model="form.name" class="mt-1 w-full" :placeholder="t('name')" required data-help="brole-name" />
                     <InputError :message="form.errors.name" class="mt-1" />
                 </div>
                 <div class="w-32">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('board.level_label') }}</label>
-                    <select v-model="form.level" class="mt-1 w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                    <select v-model="form.level" data-help="brole-level" class="mt-1 w-full rounded-md border-gray-300 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-800">
                         <option v-for="l in LEVELS" :key="l" :value="l">{{ t(`board.level.${l}`) }}</option>
                     </select>
                 </div>
                 <div class="w-20">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('order') }}</label>
-                    <TextInput v-model="form.sort_order" type="number" min="0" class="mt-1 w-full" />
+                    <TextInput v-model="form.sort_order" type="number" min="0" class="mt-1 w-full" data-help="brole-order" />
                 </div>
-                <PrimaryButton :disabled="form.processing">{{ t('add') }}</PrimaryButton>
+                <PrimaryButton :disabled="form.processing" data-help="brole-add">{{ t('add') }}</PrimaryButton>
             </form>
 
             <div class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
@@ -95,7 +95,7 @@ function destroy() {
                         <tr v-for="r in roles" :key="r.id">
                             <td class="px-4 py-3">
                                 <div v-if="editingId === r.id" class="flex gap-2">
-                                    <TextInput v-model="editForm.label" class="w-full" :placeholder="t('name')" />
+                                    <TextInput v-model="editForm.label" class="w-full" :placeholder="t('name')" data-help="brole-edit-name" />
                                     <InputError :message="editForm.errors.label || editForm.errors.name" />
                                 </div>
                                 <span v-else class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ display(r) }}</span>
@@ -115,11 +115,11 @@ function destroy() {
                             </td>
                             <td class="px-4 py-3 text-end">
                                 <div v-if="editingId === r.id" class="flex justify-end gap-2">
-                                    <button @click="saveEdit(r)" class="text-sm text-primary-600 hover:text-primary-800 dark:text-primary-300 dark:hover:text-primary-200">{{ t('save') }}</button>
+                                    <button data-help="brole-edit-save" @click="saveEdit(r)" class="text-sm text-primary-600 hover:text-primary-800 dark:text-primary-300 dark:hover:text-primary-200">{{ t('save') }}</button>
                                     <button @click="editingId = null" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">{{ t('cancel') }}</button>
                                 </div>
                                 <div v-else class="flex justify-end gap-2">
-                                    <IconButton v-if="can('board_roles', 'edit')" icon="pencil" :label="t('edit')" plain size="sm" @click="startEdit(r)" />
+                                    <IconButton v-if="can('board_roles', 'edit')" icon="pencil" :label="t('edit')" plain size="sm" :data-help="`brole-edit-${r.name}`" @click="startEdit(r)" />
                                     <IconButton v-if="can('board_roles', 'delete')" icon="trash" :label="r.members_count > 0 ? t('role_in_use') : t('delete')" variant="danger" plain size="sm" :disabled="r.members_count > 0" @click="deleteId = r.id" />
                                 </div>
                             </td>

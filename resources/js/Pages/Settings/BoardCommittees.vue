@@ -49,14 +49,14 @@ function destroy() {
             <form v-if="can('board_committees', 'add')" @submit.prevent="addCommittee" class="flex items-end gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
                 <div class="flex-1">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('name') }}</label>
-                    <TextInput v-model="form.name" class="mt-1 w-full" :placeholder="t('board.committee_name_placeholder')" required />
+                    <TextInput v-model="form.name" class="mt-1 w-full" :placeholder="t('board.committee_name_placeholder')" required data-help="bcom-name" />
                     <InputError :message="form.errors.name" class="mt-1" />
                 </div>
                 <div class="w-20">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('order') }}</label>
-                    <TextInput v-model="form.sort_order" type="number" min="0" class="mt-1 w-full" />
+                    <TextInput v-model="form.sort_order" type="number" min="0" class="mt-1 w-full" data-help="bcom-order" />
                 </div>
-                <PrimaryButton :disabled="form.processing">{{ t('add') }}</PrimaryButton>
+                <PrimaryButton :disabled="form.processing" data-help="bcom-add">{{ t('add') }}</PrimaryButton>
             </form>
 
             <div class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">

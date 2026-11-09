@@ -1468,6 +1468,147 @@ export default [
         targets: ['nav-reports-equipment', 'report-card-report-equipment-inventory', 'report-card-report-equipment-out', 'report-card-report-equipment-valuation', 'report-card-report-equipment-lifecycle', 'report-card-report-equipment-stocktake', 'report-card-link-equipment-stocktake'],
         before: async (page) => { await navIntoView(page, 'nav-reports-equipment'); },
     },
+    // --- Board --- (HelpDemoBoardSeeder). Terms: 1 current, 2 previous, 3 next and empty
+    // (its «نسخ أعضاء العهدة السابقة» shows). Committee 3 is «لجنة الإعلام», all seats empty.
+    // Player 10 is هشام بوعلام (HelpDemoSeeder). Nothing here saves: the organigram picker
+    // saves on a click, so its names are never clicked; forms are filled, «حفظ» only ringed.
+    {
+        name: 'board-roles-committees-roles',
+        url: '/board-roles',
+        targets: ['nav-board-roles'],
+        before: async (page) => { await navIntoView(page, 'nav-board-roles'); },
+    },
+    {
+        // The reader's state before «إضافة»: «مستشار» at the bureau level, order 5.
+        name: 'board-roles-committees-role-typed',
+        url: '/board-roles',
+        targets: ['brole-name', 'brole-level', 'brole-order', 'brole-add'],
+        before: async (page) => {
+            await page.fill('input[data-help="brole-name"]', 'مستشار');
+            await page.selectOption('select[data-help="brole-level"]', 'bureau');
+            await page.fill('input[data-help="brole-order"]', '5');
+            await blur(page);
+        },
+    },
+    { name: 'board-roles-committees-role-rows', url: '/board-roles', targets: ['brole-edit-secretary'] },
+    {
+        // The pencil opened on «الأمين العام»: the field shows the name people read. Not saved.
+        name: 'board-roles-committees-role-edit',
+        url: '/board-roles',
+        targets: ['brole-edit-name', 'brole-edit-save'],
+        before: async (page) => {
+            await page.locator('[data-help="brole-edit-secretary"]').click();
+            await page.locator('input[data-help="brole-edit-name"]').waitFor({ state: 'visible' });
+            await blur(page);
+        },
+    },
+    {
+        name: 'board-roles-committees-committees',
+        url: '/board-committees',
+        targets: ['nav-board-committees'],
+        before: async (page) => { await navIntoView(page, 'nav-board-committees'); },
+    },
+    {
+        // The reader's state before «إضافة»: «لجنة الشباب», order 4.
+        name: 'board-roles-committees-committee-typed',
+        url: '/board-committees',
+        targets: ['bcom-name', 'bcom-order', 'bcom-add'],
+        before: async (page) => {
+            await page.fill('input[data-help="bcom-name"]', 'لجنة الشباب');
+            await page.fill('input[data-help="bcom-order"]', '4');
+            await blur(page);
+        },
+    },
+    {
+        name: 'board-terms-page',
+        url: '/board/members',
+        targets: ['nav-board-members', 'board-term-select', 'board-term-dates', 'board-term-new'],
+        before: async (page) => { await navIntoView(page, 'nav-board-members'); },
+    },
+    {
+        // «عهدة جديدة» filled like the demo's next term; «تعيين كعهدة حالية» left empty. Not saved.
+        name: 'board-terms-new-form',
+        url: '/board/members',
+        targets: ['board-term-name', 'board-term-start', 'board-term-end', 'board-term-current', 'board-term-save'],
+        before: async (page) => {
+            await page.locator('[data-help="board-term-new"]').click();
+            await page.locator('input[data-help="board-term-name"]').waitFor({ state: 'visible' });
+            const next = await page.locator('select[data-help="board-term-select"] option[value="3"]').evaluate((o) => o.textContent.trim());
+            await page.fill('input[data-help="board-term-name"]', next);
+            const y = Number(next.match(/\d{4}/)[0]);
+            await page.fill('input[data-help="board-term-start"]', `${y}-03-01`);
+            await page.fill('input[data-help="board-term-end"]', `${y + 4}-02-28`);
+            await blur(page);
+        },
+    },
+    { name: 'board-terms-next', url: '/board/members?term=3', targets: ['board-term-select', 'board-copy-previous', 'board-term-edit'] },
+    {
+        // The copy confirm, open and not confirmed.
+        name: 'board-terms-copy-confirm',
+        url: '/board/members?term=3',
+        targets: ['confirm-panel', 'confirm-ok'],
+        before: async (page) => {
+            await page.locator('[data-help="board-copy-previous"]').click();
+            await page.locator('[data-help="confirm-ok"]').waitFor({ state: 'visible' });
+        },
+    },
+    {
+        // «تعديل العهدة» on the next term, «تعيين كعهدة حالية» ticked. Not saved.
+        name: 'board-terms-edit-form',
+        url: '/board/members?term=3',
+        targets: ['board-term-start', 'board-term-end', 'board-term-current', 'board-term-save'],
+        before: async (page) => {
+            await page.locator('[data-help="board-term-edit"]').click();
+            await page.locator('[data-help="board-term-current"] input').check();
+            await blur(page);
+        },
+    },
+    {
+        name: 'board-add-member-page',
+        url: '/board/members',
+        targets: ['nav-board-members', 'board-add-member', 'board-box-president'],
+        before: async (page) => { await navIntoView(page, 'nav-board-members'); },
+    },
+    {
+        // «لجنة الإعلام» (committee 3) has no one: its head box is an empty seat.
+        name: 'board-add-member-empty',
+        url: '/board/members',
+        targets: ['board-seat-3-head-1'],
+        before: async (page) => { await centre(page, 'board-seat-3-head-1'); },
+    },
+    {
+        // «بوعلام» typed in «لاعب»: the list shows هشام بوعلام (player 10). Not clicked here.
+        name: 'board-add-member-player',
+        url: '/board/members',
+        targets: ['board-form-player', 'board-form-player-10'],
+        before: async (page) => {
+            await page.locator('[data-help="board-add-member"]').click();
+            await page.locator('input[data-help="board-form-player"]').fill('بوعلام');
+            await page.locator('[data-help="board-form-player-10"]').waitFor({ state: 'visible' });
+        },
+    },
+    {
+        // هشام picked (the form list only fills the form), defaults kept. «حفظ» not pressed.
+        name: 'board-add-member-form',
+        url: '/board/members',
+        targets: ['board-form-player', 'board-form-role', 'board-form-term', 'board-form-status', 'board-form-save'],
+        before: async (page) => {
+            await page.locator('[data-help="board-add-member"]').click();
+            await page.locator('input[data-help="board-form-player"]').fill('بوعلام');
+            await page.locator('[data-help="board-form-player-10"]').click();
+            await blur(page);
+        },
+    },
+    {
+        // The seat menu of the president's box.
+        name: 'board-add-member-seat',
+        url: '/board/members',
+        targets: ['board-seat-whatsapp'],
+        before: async (page) => {
+            await page.locator('[data-help="board-box-president"]').click();
+            await page.locator('[data-help="board-seat-whatsapp"]').waitFor({ state: 'visible' });
+        },
+    },
     {
         // Writes: «ساعة توقيت 3» (item 9) is marked lost through the UI so its «استعادة» shows;
         // `after` restores it through the UI, back to the seeded state.

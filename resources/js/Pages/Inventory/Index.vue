@@ -7,12 +7,14 @@ import StatTile from '@/Components/Dashboard/StatTile.vue';
 import Icon from '@/Components/Icon.vue';
 import IconButton from '@/Components/IconButton.vue';
 import { localToday } from '@/lib/localDate';
+import { useCan } from '@/Composables/useCan';
 
 const props = defineProps({
     sessions: { type: Array, default: () => [] },
     itemCount: { type: Number, default: 0 },
 });
 const { t, locale } = useI18n();
+const { can } = useCan();
 
 const fType = ref('');
 const fStatus = ref('');
@@ -54,11 +56,11 @@ const lastDate = props.sessions[0]?.session_date;
                 <StatTile :label="t('inventory')" :value="sessions.length" icon="check" tone="positive" />
             </div>
 
-            <div class="flex justify-end">
+            <div v-if="can('inventory', 'add')" class="flex justify-end">
                 <IconButton icon="plus" :label="t('start_inventory')" variant="primary" @click="showForm = !showForm" />
             </div>
 
-            <form v-if="showForm" @submit.prevent="start" class="card flex flex-wrap items-end gap-3 p-5">
+            <form v-if="showForm && can('inventory', 'add')" @submit.prevent="start" class="card flex flex-wrap items-end gap-3 p-5">
                 <label class="text-sm"><span class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('type') }}</span>
                     <select v-model="form.type" class="rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800">
                         <option value="monthly">{{ t('monthly') }}</option><option value="quarterly">{{ t('quarterly') }}</option>
@@ -98,7 +100,7 @@ const lastDate = props.sessions[0]?.session_date;
                             <span v-if="s.total_missing" class="font-bold text-rose-500 dark:text-rose-400">{{ s.total_missing }} {{ t('missing') }}</span>
                         </template>
                         <span class="inline-flex rounded-full px-2.5 py-0.5 font-bold" :class="statusChip[s.status]">{{ t(s.status) }}</span>
-                        <IconButton icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="remove(s)" />
+                        <IconButton v-if="can('inventory', 'delete')" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="remove(s)" />
                     </div>
                 </div>
                 <p v-if="!sessions.length" class="py-10 text-center text-sm text-slate-400">{{ t('no_sessions') }}</p>

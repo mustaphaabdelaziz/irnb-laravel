@@ -11,12 +11,14 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useBulkSelection } from '@/Composables/useBulkSelection';
+import { useCan } from '@/Composables/useCan';
 import { computed, ref, watch } from 'vue';
 import { asList, useListFilters } from '@/Composables/useListFilters';
 import { EQUIPMENT_FILTERS_KEY, saveListFilters, savedEquipmentFilters } from '@/lib/playerListFilters';
 import MultiSelectFilter from '@/Components/MultiSelectFilter.vue';
 
 const { t } = useI18n();
+const { can } = useCan();
 const { formatMoney } = useFormatMoney();
 
 const props = defineProps({
@@ -105,8 +107,8 @@ function submitImport() {
             <div class="flex items-center justify-between">
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('equipments') }}</h1>
                 <div class="flex flex-wrap gap-2">
-                    <IconButton :href="route('equipment.catalogs.create')" icon="plus" :label="t('add_equipment')" variant="primary" />
-                    <IconButton icon="upload" :label="t('import')" @click="showImport = true" />
+                    <IconButton v-if="can('equipment', 'add')" :href="route('equipment.catalogs.create')" icon="plus" :label="t('add_equipment')" variant="primary" />
+                    <IconButton v-if="can('equipment', 'edit')" icon="upload" :label="t('import')" @click="showImport = true" />
                     <ExportMenu :href="route('equipment.catalogs.export')" :label="t('export')" />
                     <IconButton :href="route('equipment.inventory')" icon="clipboard" :label="t('inventory_report')" />
                 </div>
@@ -128,7 +130,7 @@ function submitImport() {
                 <span class="text-sm font-medium text-primary-800 dark:text-primary-200">
                     {{ t('selected_count', { count: selected.length }) }}
                 </span>
-                <IconButton icon="trash" :label="t('delete_selected')" variant="danger" @click="bulkDeletePending = true" />
+                <IconButton v-if="can('equipment', 'edit')" icon="trash" :label="t('delete_selected')" variant="danger" @click="bulkDeletePending = true" />
             </div>
 
             <!-- Catalog table -->
@@ -187,8 +189,8 @@ function submitImport() {
                                 <td class="px-4 py-3 text-end">
                                     <div class="flex items-center justify-end gap-1">
                                         <IconButton :href="route('equipment.catalogs.show', cat.id)" icon="eye" :label="t('details')" variant="primary" plain size="sm" />
-                                        <IconButton :href="route('equipment.catalogs.edit', cat.id)" icon="pencil" :label="t('edit')" plain size="sm" />
-                                        <IconButton icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteId = cat.id" />
+                                        <IconButton v-if="can('equipment', 'edit')" :href="route('equipment.catalogs.edit', cat.id)" icon="pencil" :label="t('edit')" plain size="sm" />
+                                        <IconButton v-if="can('equipment', 'delete')" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteId = cat.id" />
                                     </div>
                                 </td>
                             </tr>

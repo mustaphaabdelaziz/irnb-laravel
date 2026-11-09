@@ -9,6 +9,7 @@ import ExportMenu from '@/Components/ExportMenu.vue';
 import IconButton from '@/Components/IconButton.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import { stateLabel as stateLabelOf } from '@/lib/stateLabel';
+import { useCan } from '@/Composables/useCan';
 
 const props = defineProps({
     session: { type: Object, required: true },
@@ -17,9 +18,12 @@ const props = defineProps({
     players: { type: Array, default: () => [] },
 });
 const { t, locale } = useI18n();
+const { can } = useCan();
 const stateLabel = (v) => stateLabelOf(t, v);
 
 const isOpen = computed(() => props.session.status === 'in_progress');
+// Counting and participants need the inventory edit right as well as an open session.
+const canCount = computed(() => isOpen.value && can('inventory', 'edit'));
 
 // Editable state per line.
 const state = reactive({});
@@ -151,11 +155,11 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
                 <div class="flex flex-wrap gap-2">
                     <span v-for="(p, idx) in participants" :key="p.type + p.id" class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700 dark:bg-slate-800 dark:text-slate-200">
                         {{ p.label }}
-                        <button v-if="isOpen" @click="removeParticipant(idx)" class="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400">×</button>
+                        <button v-if="canCount" @click="removeParticipant(idx)" class="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400">×</button>
                     </span>
                     <span v-if="!participants.length" class="text-sm text-slate-400">{{ t('no_results') }}</span>
                 </div>
-                <div v-if="isOpen" class="mt-4 flex flex-wrap items-end gap-2">
+                <div v-if="canCount" class="mt-4 flex flex-wrap items-end gap-2">
                     <div class="min-w-[12rem] flex-1">
                         <SearchableSelect v-model="participantPick" :options="participantOptions" :placeholder="t('add_participant')" />
                     </div>
@@ -176,9 +180,9 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
                 <div class="flex flex-wrap items-center justify-between gap-2">
                     <p class="text-sm text-slate-500 dark:text-slate-400">{{ fmtDate(session.session_date) }} · {{ t(session.type) }}</p>
                     <div class="flex gap-2">
-                        <IconButton icon="check" :label="t('mark_all_found')" variant="success" @click="markAllFound" />
-                        <button @click="saveCounts" class="rounded-xl bg-slate-900 px-3.5 py-2 text-sm font-bold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900">{{ t('save_counts') }}</button>
-                        <button @click="complete" class="rounded-xl bg-emerald-600 px-3.5 py-2 text-sm font-bold text-white hover:bg-emerald-700">{{ t('complete_inventory') }}</button>
+                        <IconButton v-if="canCount" icon="check" :label="t('mark_all_found')" variant="success" @click="markAllFound" />
+                        <button v-if="canCount" @click="saveCounts" class="rounded-xl bg-slate-900 px-3.5 py-2 text-sm font-bold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900">{{ t('save_counts') }}</button>
+                        <button v-if="canCount" @click="complete" class="rounded-xl bg-emerald-600 px-3.5 py-2 text-sm font-bold text-white hover:bg-emerald-700">{{ t('complete_inventory') }}</button>
                     </div>
                 </div>
 
@@ -193,13 +197,13 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
                                 <p class="text-xs text-slate-400">{{ line.item?.catalog?.name }} · {{ t('expected') }}: {{ stateLabel(line.expected_condition) }}<span v-if="line.expected_location"> · {{ line.expected_location }}</span></p>
                             </div>
                             <div class="flex gap-1">
-                                <button @click="state[line.id].found = true" class="rounded-lg px-2.5 py-1 text-xs font-bold" :class="state[line.id].found ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'">{{ t('found') }}</button>
-                                <button @click="state[line.id].found = false" class="rounded-lg px-2.5 py-1 text-xs font-bold" :class="!state[line.id].found ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'">{{ t('missing') }}</button>
+                                <button :disabled="!canCount" @click="state[line.id].found = true" class="rounded-lg px-2.5 py-1 text-xs font-bold" :class="state[line.id].found ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'">{{ t('found') }}</button>
+                                <button :disabled="!canCount" @click="state[line.id].found = false" class="rounded-lg px-2.5 py-1 text-xs font-bold" :class="!state[line.id].found ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'">{{ t('missing') }}</button>
                             </div>
-                            <select v-model="state[line.id].actual_condition" :disabled="!state[line.id].found" class="rounded-lg border-slate-200 bg-white py-1 text-xs disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800">
+                            <select v-model="state[line.id].actual_condition" :disabled="!canCount || !state[line.id].found" class="rounded-lg border-slate-200 bg-white py-1 text-xs disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800">
                                 <option v-for="c in conditions" :key="c" :value="c">{{ stateLabel(c) }}</option>
                             </select>
-                            <select v-model="state[line.id].actual_location" :disabled="!state[line.id].found" class="w-32 rounded-lg border-slate-200 bg-white py-1 text-xs disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800">
+                            <select v-model="state[line.id].actual_location" :disabled="!canCount || !state[line.id].found" class="w-32 rounded-lg border-slate-200 bg-white py-1 text-xs disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800">
                                 <option value="">{{ t('location') }}</option>
                                 <option v-for="loc in storageLocations" :key="loc" :value="loc">{{ loc }}</option>
                             </select>

@@ -15,12 +15,14 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useBulkSelection } from '@/Composables/useBulkSelection';
+import { useCan } from '@/Composables/useCan';
 import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 import { ref, watch, computed } from 'vue';
 import { localDateKey, localToday } from '@/lib/localDate';
 import { stateLabel as stateLabelOf } from '@/lib/stateLabel';
 
 const { t } = useI18n();
+const { can } = useCan();
 const { formatMoney } = useFormatMoney();
 
 const { accountLabel } = useFinanceAccountLabel();
@@ -361,10 +363,10 @@ function submitImport() {
                 </div>
                 <div class="flex flex-wrap gap-2">
                     <!-- One way in for every catalog: on a serial catalog it numbers each unit. -->
-                    <IconButton icon="plus" :label="t('equipment.receive_stock')" variant="primary" @click="openReceive" />
-                    <IconButton icon="upload" :label="t('import')" @click="showImport = true" />
+                    <IconButton v-if="can('equipment', 'edit')" icon="plus" :label="t('equipment.receive_stock')" variant="primary" @click="openReceive" />
+                    <IconButton v-if="can('equipment', 'edit')" icon="upload" :label="t('import')" @click="showImport = true" />
                     <ExportMenu :href="route('equipment.items.export', catalog.id)" :label="t('export')" />
-                    <IconButton :href="route('equipment.catalogs.edit', catalog.id)" icon="pencil" :label="t('edit')" />
+                    <IconButton v-if="can('equipment', 'edit')" :href="route('equipment.catalogs.edit', catalog.id)" icon="pencil" :label="t('edit')" />
                 </div>
             </div>
         </template>
@@ -419,7 +421,7 @@ function submitImport() {
                         <span class="text-sm font-medium text-primary-700 dark:text-primary-300">
                             {{ t('selected_count', { count: selectedItems.length }) }}
                         </span>
-                        <IconButton icon="trash" :label="t('delete_selected')" variant="danger" @click="bulkDeleteItemsPending = true" />
+                        <IconButton v-if="can('equipment', 'edit')" icon="trash" :label="t('delete_selected')" variant="danger" @click="bulkDeleteItemsPending = true" />
                     </div>
                 </div>
                 <div v-if="!catalog.items?.length" class="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</div>
@@ -488,7 +490,7 @@ function submitImport() {
                                             <RentalTypeBadge :type="r.type" />
                                             <span>{{ r.recipient_name || '—' }}</span>
                                             <span v-if="(r.quantity ?? 1) > 1" class="text-xs text-slate-400">({{ r.quantity - (r.returned_quantity ?? 0) }})</span>
-                                            <IconButton icon="back" :label="t('return')" variant="success" plain size="sm" @click="openReturn(item, r)" />
+                                            <IconButton v-if="can('equipment', 'edit')" icon="back" :label="t('return')" variant="success" plain size="sm" @click="openReturn(item, r)" />
                                         </li>
                                     </ul>
                                     <span v-else>-</span>
@@ -496,15 +498,15 @@ function submitImport() {
                                 <td class="px-4 py-3 text-end">
                                     <div class="flex items-center justify-end gap-1">
                                         <!-- Driven by available units, not status: a lot of 20 with 10 out is still lendable. -->
-                                        <IconButton v-if="(item.available_quantity ?? 0) > 0" icon="send" :label="t('rent')" variant="primary" plain size="sm" @click="openRent(item)" />
-                                        <IconButton v-if="(item.quantity ?? 1) > 1 && (item.available_quantity ?? 0) > 0" icon="alert" :label="t('equipment.mark_damaged')" plain size="sm" @click="openSplit(item)" />
-                                        <IconButton v-if="item.status === 'Available'" icon="wrench" :label="t('send_to_repair')" plain size="sm" @click="repairItemId = item.id" />
-                                        <IconButton v-if="item.status === 'Under Repair'" icon="check" :label="t('mark_fixed')" variant="success" plain size="sm" @click="fixedItemId = item.id" />
-                                        <IconButton v-if="['Available','Rented'].includes(item.status)" icon="xcircle" :label="t('lost')" variant="danger" plain size="sm" @click="lostItemId = item.id" />
-                                        <IconButton v-if="item.status === 'Lost'" icon="restore" :label="t('restore')" variant="success" plain size="sm" @click="foundItemId = item.id" />
+                                        <IconButton v-if="(item.available_quantity ?? 0) > 0 && can('equipment', 'edit')" icon="send" :label="t('rent')" variant="primary" plain size="sm" @click="openRent(item)" />
+                                        <IconButton v-if="(item.quantity ?? 1) > 1 && (item.available_quantity ?? 0) > 0 && can('equipment', 'edit')" icon="alert" :label="t('equipment.mark_damaged')" plain size="sm" @click="openSplit(item)" />
+                                        <IconButton v-if="item.status === 'Available' && can('equipment', 'edit')" icon="wrench" :label="t('send_to_repair')" plain size="sm" @click="repairItemId = item.id" />
+                                        <IconButton v-if="item.status === 'Under Repair' && can('equipment', 'edit')" icon="check" :label="t('mark_fixed')" variant="success" plain size="sm" @click="fixedItemId = item.id" />
+                                        <IconButton v-if="['Available','Rented'].includes(item.status) && can('equipment', 'edit')" icon="xcircle" :label="t('lost')" variant="danger" plain size="sm" @click="lostItemId = item.id" />
+                                        <IconButton v-if="item.status === 'Lost' && can('equipment', 'edit')" icon="restore" :label="t('restore')" variant="success" plain size="sm" @click="foundItemId = item.id" />
                                         <IconButton :href="route('equipment.items.history', item.id)" icon="calendar" :label="t('history')" plain size="sm" />
-                                        <IconButton icon="pencil" :label="t('edit')" plain size="sm" @click="openEdit(item)" />
-                                        <IconButton v-if="!item.open_rentals?.length" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteItemId = item.id" />
+                                        <IconButton v-if="can('equipment', 'edit')" icon="pencil" :label="t('edit')" plain size="sm" @click="openEdit(item)" />
+                                        <IconButton v-if="!item.open_rentals?.length && can('equipment', 'delete')" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteItemId = item.id" />
                                     </div>
                                 </td>
                             </tr>

@@ -702,8 +702,8 @@ function submitImport() {
             </div>
         </Teleport>
 
-        <ConfirmModal :show="!!repairItemId" :message="t('send_to_repair') + '?'" @confirm="sendToRepair(repairItemId)" @cancel="repairItemId = null" />
-        <ConfirmModal :show="!!fixedItemId" :message="t('mark_fixed_confirm')" @confirm="completeRepair(fixedItemId)" @cancel="fixedItemId = null" />
+        <ConfirmModal :show="!!repairItemId" variant="primary" :confirm-label="t('confirm')" :message="t('send_to_repair') + '?'" @confirm="sendToRepair(repairItemId)" @cancel="repairItemId = null" />
+        <ConfirmModal :show="!!fixedItemId" variant="primary" :confirm-label="t('confirm')" :message="t('mark_fixed_confirm')" @confirm="completeRepair(fixedItemId)" @cancel="fixedItemId = null" />
         <!-- Receive stock: the only path that can spend money, and only if asked to. -->
         <Teleport to="body">
             <div v-if="showReceiveModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" @click.self="showReceiveModal = false">
@@ -857,8 +857,8 @@ function submitImport() {
             </div>
         </Teleport>
 
-        <ConfirmModal :show="!!lostItemId" :message="t('mark_as_lost') + '?'" @confirm="markAsLost(lostItemId)" @cancel="lostItemId = null" />
-        <ConfirmModal :show="!!foundItemId" :message="t('restore_item') + '?'" @confirm="markAsFound(foundItemId)" @cancel="foundItemId = null" />
+        <ConfirmModal :show="!!lostItemId" variant="primary" :confirm-label="t('confirm')" :message="t('mark_as_lost') + '?'" @confirm="markAsLost(lostItemId)" @cancel="lostItemId = null" />
+        <ConfirmModal :show="!!foundItemId" variant="primary" :confirm-label="t('confirm')" :message="t('restore_item') + '?'" @confirm="markAsFound(foundItemId)" @cancel="foundItemId = null" />
         <ConfirmModal :show="!!deleteItemId" :message="t('are_you_sure')" @confirm="deleteItem" @cancel="deleteItemId = null" />
         <ConfirmModal
             :show="bulkDeleteItemsPending"

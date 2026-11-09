@@ -970,7 +970,7 @@ export default [
             await fillUserLogin(page);
             await fillUserNames(page);
             await page.locator('[data-help="uc-role"] button').first().click();
-            await page.locator('[data-help="uc-role"] li').filter({ hasText: /^s*مدربs*$/ }).first().click();
+            await page.locator('[data-help="uc-role"] li').filter({ hasText: /^\s*مدرب\s*$/ }).first().click();
             await blur(page);
             await centre(page, 'uc-create');
         },
@@ -1004,7 +1004,7 @@ export default [
         name: 'set-roles',
         url: '/roles',
         targets: ['nav-roles', 'roles-add', 'roles-card-coach'],
-        // «الأدوار» is the last item of «النظام», below the sidebar's visible part.
+        // «الأدوار» is the third item of «النظام», below the sidebar's visible part.
         before: async (page) => { await navIntoView(page, 'nav-roles'); },
     },
     {

@@ -16,6 +16,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use RuntimeException;
 
 /**
  * Staff accounts, a custom role and some activity for the Help Center demo club.

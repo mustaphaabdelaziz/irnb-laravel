@@ -4,7 +4,7 @@ summary: أنشئ دورًا جديدًا بصلاحيات محددة، وامن
 module: superadmin
 pages: [roles.index, users.edit]
 keywords: [دور, أدوار, صلاحيات, حقوق, تجاوزات متقدمة, مدرب, محاسب, أمين المخزن, الفرق التي يدرّبها فقط]
-related: [settings/create-user, settings/manage-users]
+related: [settings/create-user, settings/manage-users, settings/log-in-as-activity]
 ---
 
 الدور مجموعة صلاحيات. لكل مستخدم دور واحد. تختاره من حقل «الدور» في صفحة تعديل المستخدم. صفحة «الأدوار» للمدير العام وحده، ولا يراها غيره.
@@ -18,8 +18,8 @@ related: [settings/create-user, settings/manage-users]
 ::figure set-roles ring=nav-roles
 :::
 
-:::step اضغط زر + لدور جديد
-في أعلى الصفحة، اضغط على الزر الأخضر الذي عليه علامة +. عندما تضع الفأرة عليه يظهر اسمه «إضافة». تظهر نافذة «الدور».
+:::step اضغط زر «إضافة»
+في أعلى الصفحة، اضغط على الزر الأخضر الذي عليه علامة زائد. عندما تضع الفأرة عليه يظهر اسمه «إضافة». تظهر نافذة «الدور».
 ::figure set-roles ring=roles-add zoom=roles-add
 :::
 

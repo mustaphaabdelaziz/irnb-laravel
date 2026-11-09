@@ -34,7 +34,7 @@ related: [finance/caisses, players/branch-registrations, settings/add-category]
 :::
 
 :::step افتح تبويب «الفئات»
-اضغط على «الفئات» بجانب «عام». فيه تضيف فئات الفرع. تجد الشرح في مقال «كيف أضيف فئة».
+اضغط على «الفئات» بجانب «عام». فيه تضيف فئات الفرع. تجد الشرح في مقال «كيف أضيف فئة داخل فرع».
 ::figure set-branch-detail ring=branch-tab-categories zoom=branch-tab-categories
 :::
 

@@ -18,7 +18,7 @@ related: [players/documents, settings/add-branch]
 ::figure set-doc-types ring=nav-document-types
 :::
 
-:::step اضغط زر علامة +
+:::step اضغط زر «نوع وثيقة جديد»
 في أعلى الصفحة، اضغط على الزر الأخضر الذي عليه علامة +. عندما تضع الفأرة عليه يظهر اسمه «نوع وثيقة جديد». تظهر نافذة. تحتاج إلى صلاحية «إضافة» في «أنواع الوثائق».
 ::figure set-doc-types ring=doc-add zoom=doc-add
 :::

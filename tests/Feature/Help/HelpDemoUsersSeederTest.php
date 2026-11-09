@@ -52,6 +52,23 @@ class HelpDemoUsersSeederTest extends TestCase
     }
 
     #[Test]
+    public function user_ids_and_list_order_match_what_the_shots_hard_code(): void
+    {
+        // shots.js points at users-row-3 (samir), users-row-4 (nadia), and so on.
+        $this->assertSame(2, $this->user(HelpDemoSeeder::USERNAME)->id);
+        $this->assertSame(3, $this->user(Demo::COACH)->id);
+        $this->assertSame(4, $this->user(Demo::ACCOUNTANT)->id);
+        $this->assertSame(5, $this->user(Demo::SECRETARY)->id);
+        $this->assertSame(6, $this->user(Demo::DISABLED)->id);
+
+        // The users list is newest first: samir, nadia, hanane, layla, demo.
+        $this->assertSame(
+            [Demo::COACH, Demo::ACCOUNTANT, Demo::SECRETARY, Demo::DISABLED, HelpDemoSeeder::USERNAME],
+            User::orderByDesc('created_at')->pluck('username')->all(),
+        );
+    }
+
+    #[Test]
     public function the_custom_role_and_the_extra_right_exist(): void
     {
         $role = Role::where('key', Demo::ROLE_KEY)->firstOrFail();

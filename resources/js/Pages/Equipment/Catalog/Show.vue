@@ -503,7 +503,7 @@ function submitImport() {
                                         <IconButton v-if="item.status === 'Available' && can('equipment', 'edit')" icon="wrench" :label="t('send_to_repair')" plain size="sm" :data-help="'eq-repair-' + item.id" @click="repairItemId = item.id" />
                                         <IconButton v-if="item.status === 'Under Repair' && can('equipment', 'edit')" icon="check" :label="t('mark_fixed')" variant="success" plain size="sm" :data-help="'eq-fixed-' + item.id" @click="fixedItemId = item.id" />
                                         <IconButton v-if="['Available','Rented'].includes(item.status) && can('equipment', 'edit')" icon="xcircle" :label="t('lost')" variant="danger" plain size="sm" :data-help="'eq-lost-' + item.id" @click="lostItemId = item.id" />
-                                        <IconButton v-if="item.status === 'Lost' && can('equipment', 'edit')" icon="restore" :label="t('restore')" variant="success" plain size="sm" @click="foundItemId = item.id" />
+                                        <IconButton v-if="item.status === 'Lost' && can('equipment', 'edit')" icon="restore" :label="t('restore')" variant="success" plain size="sm" :data-help="'eq-restore-' + item.id" @click="foundItemId = item.id" />
                                         <IconButton :href="route('equipment.items.history', item.id)" icon="calendar" :label="t('history')" plain size="sm" :data-help="'eq-history-' + item.id" />
                                         <IconButton v-if="can('equipment', 'edit')" icon="pencil" :label="t('edit')" plain size="sm" @click="openEdit(item)" />
                                         <IconButton v-if="!item.open_rentals?.length && can('equipment', 'delete')" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteItemId = item.id" />
@@ -576,7 +576,7 @@ function submitImport() {
                                 :class="rentForm.type === 'assignment' ? 'bg-primary-100 dark:bg-primary-500/25 border-primary-500 text-primary-800 dark:text-primary-100' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'"
                                 class="rounded-lg border px-3 py-2 text-sm font-medium transition-colors">{{ t('equipment.assignment') }}</button>
                         </div>
-                        <p v-if="rentForm.type === 'assignment'" data-help="eq-rent-assignment-hint" class="text-xs text-slate-500 dark:text-slate-400">{{ t('equipment.assignment_hint') }}</p>
+                        <p v-if="rentForm.type === 'assignment'" class="text-xs text-slate-500 dark:text-slate-400">{{ t('equipment.assignment_hint') }}</p>
 
                         <!-- Recipient: a team player, or a free-text person from outside the club. -->
                         <div class="grid gap-2" :class="rentForm.type === 'rental' ? 'grid-cols-2' : 'grid-cols-1'">

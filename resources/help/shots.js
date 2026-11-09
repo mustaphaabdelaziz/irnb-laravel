@@ -1306,14 +1306,7 @@ export default [
         name: 'eq-return-search',
         url: '/equipment/out',
         targets: ['eq-out-search', 'eq-out-overdue-3', 'eq-out-return-3'],
-        before: async (page) => {
-            await Promise.all([
-                page.waitForResponse((r) => r.url().includes('/equipment/out') && r.url().includes('search=')),
-                page.locator('[data-help="eq-out-search"] input').fill('بن علي'),
-            ]);
-            await page.waitForLoadState('networkidle');
-            await blur(page);
-        },
+        before: async (page) => { await searchBenAli(page); },
     },
     {
         // The return window: 2 still out, today, «الحالة» on the lot's «جديد», a note typed.
@@ -1321,6 +1314,7 @@ export default [
         url: '/equipment/out',
         targets: ['eq-ret-quantity', 'eq-ret-date', 'eq-ret-condition', 'eq-ret-notes', 'eq-ret-save'],
         before: async (page) => {
+            await searchBenAli(page);
             await page.locator('[data-help="eq-out-return-3"]').click();
             await page.locator('[data-help="eq-ret-notes"] textarea').fill('رجعت الكرتان سليمتين');
             await blur(page);
@@ -1358,6 +1352,28 @@ export default [
         },
     },
     { name: 'eq-damage-history', url: '/equipment/items/8/history', targets: [] },
+    {
+        // Writes: «ساعة توقيت 3» (item 9) is marked lost through the UI so its «استعادة» shows;
+        // `after` restores it through the UI, back to the seeded state.
+        name: 'eq-damage-restore',
+        url: '/equipment/catalogs/4',
+        targets: ['eq-restore-9'],
+        before: async (page) => {
+            await page.locator('[data-help="eq-lost-9"]').click();
+            await page.locator('[data-help="confirm-ok"]').waitFor({ state: 'visible' });
+            await page.locator('[data-help="confirm-ok"]').click();
+            await page.locator('[data-help="eq-restore-9"]').waitFor({ state: 'visible' });
+            // Reload so the «تم تسجيل المعدات كمفقودة.» toast is not in the picture.
+            await page.reload({ waitUntil: 'networkidle' });
+            await page.locator('[data-help="eq-restore-9"]').waitFor({ state: 'visible' });
+        },
+        after: async (page) => {
+            await page.locator('[data-help="eq-restore-9"]').click();
+            await page.locator('[data-help="confirm-ok"]').waitFor({ state: 'visible' });
+            await page.locator('[data-help="confirm-ok"]').click();
+            await page.locator('[data-help="eq-lost-9"]').waitFor({ state: 'visible', timeout: 10000 });
+        },
+    },
     {
         name: 'fin-tx-saved',
         url: '/transactions/create',
@@ -1691,6 +1707,16 @@ async function openReceive(page) {
 async function openRent(page, itemId) {
     await page.locator(`[data-help="eq-rent-${itemId}"]`).click();
     await page.locator('[data-help="eq-rent-rental"]').waitFor({ state: 'visible' });
+}
+
+/** «المعدات المُخرَجة»: types «بن علي» in the search and waits for the filtered list. */
+async function searchBenAli(page) {
+    await Promise.all([
+        page.waitForResponse((r) => r.url().includes('/equipment/out') && r.url().includes('search=')),
+        page.locator('[data-help="eq-out-search"] input').fill('بن علي'),
+    ]);
+    await page.waitForLoadState('networkidle');
+    await blur(page);
 }
 
 /** Rent window: picks أمين قاسمي in the «لاعب» list (typed, then the first match). */

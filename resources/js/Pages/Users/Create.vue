@@ -70,18 +70,18 @@ function submit() {
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div class="sm:col-span-2">
                         <InputLabel for="username" :value="t('username')" required />
-                        <TextInput id="username" v-model="form.username" class="mt-1 w-full" required autofocus autocomplete="off" autocapitalize="none" spellcheck="false" />
+                        <TextInput id="username" data-help="uc-username" v-model="form.username" class="mt-1 w-full" required autofocus autocomplete="off" autocapitalize="none" spellcheck="false" />
                         <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('username_hint') }}</p>
                         <InputError :message="form.errors.username" class="mt-1" />
                     </div>
                     <div>
                         <InputLabel for="password" :value="t('password')" required />
-                        <PasswordInput id="password" v-model="form.password" class="mt-1 w-full" required autocomplete="new-password" />
+                        <PasswordInput id="password" data-help="uc-password" v-model="form.password" class="mt-1 w-full" required autocomplete="new-password" />
                         <InputError :message="form.errors.password" class="mt-1" />
                     </div>
                     <div>
                         <InputLabel for="password_confirmation" :value="t('confirm_password')" required />
-                        <PasswordInput id="password_confirmation" v-model="form.password_confirmation" class="mt-1 w-full" required autocomplete="new-password" />
+                        <PasswordInput id="password_confirmation" data-help="uc-password-confirm" v-model="form.password_confirmation" class="mt-1 w-full" required autocomplete="new-password" />
                     </div>
                 </div>
             </div>
@@ -92,12 +92,12 @@ function submit() {
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
                         <InputLabel for="firstname" :value="t('firstname')" required />
-                        <TextInput id="firstname" v-model="form.firstname" class="mt-1 w-full" required />
+                        <TextInput id="firstname" data-help="uc-firstname" v-model="form.firstname" class="mt-1 w-full" required />
                         <InputError :message="form.errors.firstname" class="mt-1" />
                     </div>
                     <div>
                         <InputLabel for="lastname" :value="t('lastname')" required />
-                        <TextInput id="lastname" v-model="form.lastname" class="mt-1 w-full" required />
+                        <TextInput id="lastname" data-help="uc-lastname" v-model="form.lastname" class="mt-1 w-full" required />
                         <InputError :message="form.errors.lastname" class="mt-1" />
                     </div>
                     <div>
@@ -107,7 +107,7 @@ function submit() {
                     </div>
                     <div>
                         <InputLabel :value="t('phone')" />
-                        <TextInput v-model="form.phone" type="tel" class="mt-1 w-full" />
+                        <TextInput v-model="form.phone" data-help="uc-phone" type="tel" class="mt-1 w-full" />
                         <InputError :message="form.errors['phones.0']" class="mt-1" />
                     </div>
                     <div>
@@ -126,7 +126,7 @@ function submit() {
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div v-if="canManageAccess">
                         <InputLabel :value="t('role')" />
-                        <SearchableSelect v-model="form.role_id" :options="roleOptions" :placeholder="t('no_role')" class="mt-1" />
+                        <SearchableSelect v-model="form.role_id" data-help="uc-role" :options="roleOptions" :placeholder="t('no_role')" class="mt-1" />
                         <InputError :message="form.errors.role_id" class="mt-1" />
                     </div>
                     <div>
@@ -144,7 +144,7 @@ function submit() {
                 <Link :href="route('users.index')">
                     <SecondaryButton type="button">{{ t('cancel') }}</SecondaryButton>
                 </Link>
-                <PrimaryButton :disabled="form.processing">{{ t('create') }}</PrimaryButton>
+                <PrimaryButton :disabled="form.processing" data-help="uc-create">{{ t('create') }}</PrimaryButton>
             </div>
         </form>
     </AuthenticatedLayout>

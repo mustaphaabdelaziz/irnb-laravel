@@ -925,6 +925,78 @@ export default [
         },
     },
     {
+        // «المستخدمون» is the last-but-one item of «النظام», below the sidebar's visible part.
+        name: 'set-users',
+        url: '/users',
+        targets: ['nav-users', 'users-new', 'users-search', 'users-filters', 'users-filter-activity'],
+        before: async (page) => { await navIntoView(page, 'nav-users'); },
+    },
+    // The new-user form in four states (nothing is ever submitted): empty, login typed, names typed, role chosen.
+    {
+        name: 'set-user-create-login',
+        url: '/users/create',
+        targets: ['uc-username', 'uc-password', 'uc-password-confirm'],
+    },
+    {
+        name: 'set-user-create-name',
+        url: '/users/create',
+        targets: ['uc-firstname', 'uc-lastname', 'uc-phone'],
+        before: async (page) => {
+            await fillUserLogin(page);
+            await blur(page);
+            await centre(page, 'uc-firstname');
+        },
+    },
+    {
+        name: 'set-user-create-role',
+        url: '/users/create',
+        targets: ['uc-role'],
+        before: async (page) => {
+            await fillUserLogin(page);
+            await fillUserNames(page);
+            await blur(page);
+            await centre(page, 'uc-role');
+        },
+    },
+    {
+        // The reader's state before «إنشاء» (never pressed).
+        name: 'set-user-create',
+        url: '/users/create',
+        targets: ['uc-create'],
+        before: async (page) => {
+            await fillUserLogin(page);
+            await fillUserNames(page);
+            await page.locator('[data-help="uc-role"] button').first().click();
+            await page.locator('[data-help="uc-role"] li').filter({ hasText: /^s*مدربs*$/ }).first().click();
+            await blur(page);
+            await centre(page, 'uc-create');
+        },
+    },
+    { name: 'set-users-rows', url: '/users', targets: ['users-row-layla', 'users-toggle-samir', 'users-toggle-layla', 'users-reset-nadia', 'users-delete-layla'] },
+    {
+        // The reset window as it opens: both fields empty.
+        name: 'set-user-reset-open',
+        url: '/users',
+        targets: ['users-reset-new', 'users-reset-confirm'],
+        before: async (page) => {
+            await page.locator('[data-help="users-reset-nadia"]').click();
+            await page.locator('[data-help="users-reset-new"]').waitFor({ state: 'visible' });
+        },
+    },
+    {
+        // The reader's state before «حفظ»: the new password typed twice. Never saved.
+        name: 'set-user-reset',
+        url: '/users',
+        targets: ['users-reset-modal', 'users-reset-new', 'users-reset-confirm', 'users-reset-save'],
+        before: async (page) => {
+            await page.locator('[data-help="users-reset-nadia"]').click();
+            await page.locator('[data-help="users-reset-new"]').waitFor({ state: 'visible' });
+            await page.fill('input[data-help="users-reset-new"]', 'Nadia#2027');
+            await page.fill('input[data-help="users-reset-confirm"]', 'Nadia#2027');
+            await blur(page);
+        },
+    },
+    {
         name: 'fin-tx-saved',
         url: '/transactions/create',
         targets: ['tx-show-amount', 'tx-print-ticket', 'tx-print-a4'],
@@ -1195,6 +1267,20 @@ async function pickOption(page, selector, pattern) {
 async function navIntoView(page, name) {
     await page.locator(`[data-help="${name}"]`).first().evaluate((el) => el.scrollIntoView({ block: 'center', behavior: 'instant' }));
     await page.waitForTimeout(150);
+}
+
+/** New-user form: the login block (username and the password twice). Typing only; never submitted. */
+async function fillUserLogin(page) {
+    await page.fill('input[data-help="uc-username"]', 'mourad');
+    await page.fill('input[data-help="uc-password"]', 'Mourad#2027');
+    await page.fill('input[data-help="uc-password-confirm"]', 'Mourad#2027');
+}
+
+/** New-user form: the name block (مراد زيتوني and a phone). */
+async function fillUserNames(page) {
+    await page.fill('input[data-help="uc-firstname"]', 'مراد');
+    await page.fill('input[data-help="uc-lastname"]', 'زيتوني');
+    await page.fill('input[data-help="uc-phone"]', '0550123456');
 }
 
 /** Drops the focus ring of the last field typed in or ticked. */

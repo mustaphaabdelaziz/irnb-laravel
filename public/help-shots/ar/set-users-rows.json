@@ -1,0 +1,36 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "users-row-layla": {
+      "x": 2.5,
+      "y": 23.81,
+      "w": 75,
+      "h": 8.63
+    },
+    "users-toggle-samir": {
+      "x": 6.25,
+      "y": 35,
+      "w": 2.19,
+      "h": 3.5
+    },
+    "users-toggle-layla": {
+      "x": 6.25,
+      "y": 26.38,
+      "w": 2.19,
+      "h": 3.5
+    },
+    "users-reset-nadia": {
+      "x": 8.75,
+      "y": 43.63,
+      "w": 2.19,
+      "h": 3.5
+    },
+    "users-delete-layla": {
+      "x": 3.75,
+      "y": 26.38,
+      "w": 2.19,
+      "h": 3.5
+    }
+  }
+}

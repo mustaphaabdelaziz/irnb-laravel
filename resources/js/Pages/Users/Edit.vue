@@ -136,15 +136,15 @@ const hasErrors = computed(() => Object.keys(form.errors).length > 0);
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div v-if="canManageAccess">
                         <InputLabel :value="t('role')" />
-                        <SearchableSelect v-model="form.role_id" :options="roleOptions" :placeholder="t('no_role')" class="mt-1" />
+                        <SearchableSelect v-model="form.role_id" data-help="ue-role" :options="roleOptions" :placeholder="t('no_role')" class="mt-1" />
                         <InputError :message="form.errors.role_id" class="mt-1" />
                         <p v-if="user.is_superadmin" class="mt-1 rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">{{ t('user_role_ignored') }}</p>
-                        <button type="button" class="mt-2 text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-300 dark:hover:text-primary-200" @click="showAdvanced = !showAdvanced">
+                        <button type="button" data-help="ue-overrides-toggle" class="mt-2 text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-300 dark:hover:text-primary-200" @click="showAdvanced = !showAdvanced">
                             {{ showAdvanced ? t('hide_advanced') : t('advanced_overrides') }}
                         </button>
 
                         <div v-if="showAdvanced" class="mt-3">
-                            <PermissionGrid v-model="form.permission_overrides.grant" :groups="moduleGroups" :actions="actions" />
+                            <PermissionGrid v-model="form.permission_overrides.grant" data-help="ue-overrides-grid" :groups="moduleGroups" :actions="actions" />
                             <p class="p-2 text-xs text-slate-400">{{ t('overrides_hint') }}</p>
                         </div>
                     </div>
@@ -185,7 +185,7 @@ const hasErrors = computed(() => Object.keys(form.errors).length > 0);
                 <Link :href="route('users.index')">
                     <SecondaryButton type="button">{{ t('cancel') }}</SecondaryButton>
                 </Link>
-                <PrimaryButton :disabled="form.processing">{{ t('save_changes') }}</PrimaryButton>
+                <PrimaryButton :disabled="form.processing" data-help="ue-save">{{ t('save_changes') }}</PrimaryButton>
             </div>
         </form>
     </AuthenticatedLayout>

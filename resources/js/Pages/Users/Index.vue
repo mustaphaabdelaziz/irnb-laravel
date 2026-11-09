@@ -115,19 +115,19 @@ function initial(user) {
                 <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <Badge v-if="pendingCount" :label="`${pendingCount} ${t('pending_approval')}`" color="amber" />
                     <Link :href="route('users.activity.index')" class="text-sm font-medium text-primary-700 hover:underline dark:text-primary-300">{{ t('activity.title') }}</Link>
-                    <IconButton v-if="can('users', 'add')" :href="route('users.create')" icon="plus" :label="t('new_user')" variant="primary" />
+                    <IconButton v-if="can('users', 'add')" :href="route('users.create')" icon="plus" :label="t('new_user')" variant="primary" data-help="users-new" />
                 </div>
             </div>
         </template>
 
         <div class="space-y-4">
             <!-- Filters -->
-            <div class="flex flex-wrap items-center gap-3">
+            <div class="flex flex-wrap items-center gap-3" data-help="users-filters">
                 <div class="w-full sm:w-64">
-                    <SearchInput v-model="search" :loading="filtering" :placeholder="t('search')" />
+                    <SearchInput v-model="search" data-help="users-search" :loading="filtering" :placeholder="t('search')" />
                 </div>
                 <MultiSelectFilter v-model="approvalFilter" collapse-all :options="approvalOptions" :label="t('filter.approval')" :placeholder="`${t('filter.approval')}: ${t('all')}`" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
-                <MultiSelectFilter v-model="activityFilter" collapse-all :options="activityOptions" :label="t('filter.activity')" :placeholder="`${t('filter.activity')}: ${t('all')}`" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
+                <MultiSelectFilter v-model="activityFilter" data-help="users-filter-activity" collapse-all :options="activityOptions" :label="t('filter.activity')" :placeholder="`${t('filter.activity')}: ${t('all')}`" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
                 <MultiSelectFilter v-model="roleFilter" :options="roleOptions" :label="t('role')" :placeholder="`${t('role')}: ${t('all')}`" class="min-w-0 flex-1 sm:w-48 sm:flex-none" />
             </div>
 
@@ -145,7 +145,7 @@ function initial(user) {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                            <tr v-for="user in users.data" :key="user.id" class="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                            <tr v-for="user in users.data" :key="user.id" :data-help="'users-row-' + user.username" class="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                                 <td class="whitespace-nowrap px-4 py-3">
                                     <div class="flex items-center gap-3">
                                         <img v-if="user.picture_url" :src="user.picture_url" :alt="user.name" class="h-9 w-9 rounded-full object-cover" />
@@ -183,16 +183,16 @@ function initial(user) {
                                         <IconButton v-if="!user.approved" icon="check" :label="t('approve')" variant="success" plain size="sm" @click="approve(user.id)" />
                                         <!-- Log in as: admins only, never a superadmin, yourself or a blocked account. -->
                                         <IconButton v-if="canImpersonate && !user.is_superadmin && user.id !== currentUserId && user.approved && user.is_active"
-                                            icon="login" :label="t('impersonate.action')" variant="primary" plain size="sm" @click="impersonate(user.id)" />
-                                        <IconButton :href="route('users.edit', user.id)" icon="pencil" :label="t('edit')" plain size="sm" />
+                                            icon="login" :label="t('impersonate.action')" variant="primary" plain size="sm" :data-help="'users-impersonate-' + user.username" @click="impersonate(user.id)" />
+                                        <IconButton :href="route('users.edit', user.id)" icon="pencil" :label="t('edit')" plain size="sm" :data-help="'users-edit-' + user.username" />
                                         <!-- Reset password: superadmin only, never on yourself (use your profile). -->
-                                        <IconButton v-if="canManageAccess && user.id !== currentUserId" icon="key" :label="t('reset_password')" plain size="sm" @click="openReset(user)" />
+                                        <IconButton v-if="canManageAccess && user.id !== currentUserId" icon="key" :label="t('reset_password')" plain size="sm" :data-help="'users-reset-' + user.username" @click="openReset(user)" />
                                         <!-- Disable / enable sign-in. -->
                                         <IconButton v-if="user.id !== currentUserId"
                                             :icon="user.is_active ? 'xcircle' : 'check'" :label="user.is_active ? t('disable') : t('enable')"
-                                            :variant="user.is_active ? 'neutral' : 'success'" plain size="sm" @click="toggleActive(user.id)" />
+                                            :variant="user.is_active ? 'neutral' : 'success'" plain size="sm" :data-help="'users-toggle-' + user.username" @click="toggleActive(user.id)" />
                                         <!-- Delete: the backend refuses the last superadmin and self. -->
-                                        <IconButton v-if="user.id !== currentUserId" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteId = user.id" />
+                                        <IconButton v-if="user.id !== currentUserId" icon="trash" :label="t('delete')" variant="danger" plain size="sm" :data-help="'users-delete-' + user.username" @click="deleteId = user.id" />
                                     </div>
                                 </td>
                             </tr>
@@ -213,23 +213,23 @@ function initial(user) {
         <!-- Reset password -->
         <Teleport to="body">
             <div v-if="pwUser" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" @click.self="pwUser = null">
-                <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
+                <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl" data-help="users-reset-modal">
                     <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('reset_password') }}</h3>
                     <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ pwUser.fullname || pwUser.name }} — {{ pwUser.username }}</p>
                     <form @submit.prevent="submitReset" class="mt-4 space-y-3">
                         <div>
                             <InputLabel :value="t('new_password')" />
-                            <PasswordInput v-model="pwForm.password" class="mt-1 w-full" autocomplete="new-password" required />
+                            <PasswordInput v-model="pwForm.password" data-help="users-reset-new" class="mt-1 w-full" autocomplete="new-password" required />
                             <InputError :message="pwForm.errors.password" class="mt-1" />
                         </div>
                         <div>
                             <InputLabel :value="t('confirm_password')" />
-                            <PasswordInput v-model="pwForm.password_confirmation" class="mt-1 w-full" autocomplete="new-password" required />
+                            <PasswordInput v-model="pwForm.password_confirmation" data-help="users-reset-confirm" class="mt-1 w-full" autocomplete="new-password" required />
                         </div>
                         <p class="rounded-lg bg-amber-50 dark:bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">{{ t('reset_password_hint') }}</p>
                         <div class="flex justify-end gap-3 pt-2">
                             <button type="button" @click="pwUser = null" class="rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">{{ t('cancel') }}</button>
-                            <PrimaryButton :disabled="pwForm.processing">{{ t('save') }}</PrimaryButton>
+                            <PrimaryButton :disabled="pwForm.processing" data-help="users-reset-save">{{ t('save') }}</PrimaryButton>
                         </div>
                     </form>
                 </div>

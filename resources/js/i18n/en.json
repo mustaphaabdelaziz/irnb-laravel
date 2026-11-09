@@ -2297,7 +2297,7 @@
     "postal_code": "Postal code",
     "present": "Present",
     "president": "President",
-    "preview_live_hint": "Preview updates instantly. Click Save to apply it for everyone.",
+    "preview_live_hint": "Preview updates instantly; the color is saved for everyone automatically a moment later.",
     "previous": "Previous",
     "previous_debt": "Previous debt",
     "previous_debt_hint": "Record a debt carried over from before the app. Enter only what is still owed — it starts unpaid and is paid down through Add Payment.",

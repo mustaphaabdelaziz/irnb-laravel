@@ -30,11 +30,34 @@ class AccountApprovalTest extends TestCase
     }
 
     #[Test]
-    public function deactivated_users_are_redirected_to_the_pending_page(): void
+    public function a_user_disabled_while_signed_in_is_signed_out_to_the_login_page(): void
     {
         $user = User::factory()->create(['is_active' => false]);
 
-        $this->actingAs($user)->get(route('dashboard'))->assertRedirect(route('account.pending'));
+        $this->actingAs($user)->get(route('dashboard'))
+            ->assertRedirect(route('login'))
+            ->assertSessionHasErrors(['username' => __('auth.disabled')]);
+        $this->assertGuest();
+    }
+
+    #[Test]
+    public function a_disabled_user_cannot_sign_in(): void
+    {
+        User::factory()->create(['username' => 'layla', 'password' => 'secret-pass-1', 'is_active' => false]);
+
+        $this->post(route('login'), ['username' => 'layla', 'password' => 'secret-pass-1'])
+            ->assertSessionHasErrors(['username' => __('auth.disabled')]);
+        $this->assertGuest();
+    }
+
+    #[Test]
+    public function a_wrong_password_on_a_disabled_account_does_not_reveal_it_is_disabled(): void
+    {
+        User::factory()->create(['username' => 'layla', 'password' => 'secret-pass-1', 'is_active' => false]);
+
+        $this->post(route('login'), ['username' => 'layla', 'password' => 'wrong'])
+            ->assertSessionHasErrors(['username' => __('auth.failed')]);
+        $this->assertGuest();
     }
 
     #[Test]

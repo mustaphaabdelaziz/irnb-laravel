@@ -54,6 +54,23 @@ class MembershipNumberTest extends TestCase
     }
 
     #[Test]
+    public function the_form_asks_for_a_code_when_no_name_has_latin_letters(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)->post(route('branches.store'), ['name' => 'كرة اليد'])
+            ->assertSessionHasErrors(['code' => __('validation.branch_code_needs_latin')]);
+        $this->assertSame(0, Branch::count());
+
+        // A French name gives the letters; a typed code needs none.
+        $this->actingAs($admin)->post(route('branches.store'), ['name' => 'كرة اليد', 'name_fr' => 'Handball'])
+            ->assertSessionHasNoErrors();
+        $this->actingAs($admin)->post(route('branches.store'), ['name' => 'السباحة', 'code' => 'sw'])
+            ->assertSessionHasNoErrors();
+        $this->assertSame(['HA', 'SW'], Branch::orderBy('id')->pluck('code')->all());
+    }
+
+    #[Test]
     public function a_code_locks_once_an_id_uses_it(): void
     {
         $admin = User::factory()->create(['privileges' => ['admin'], 'is_active' => true, 'email_verified_at' => now()]);

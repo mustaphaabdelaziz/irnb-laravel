@@ -21,8 +21,8 @@
             // the desktop app's data folder — not the club.
             $appTitle = \App\Support\ClubIdentity::shortName($websiteConfig);
             $branding = $websiteConfig->branding ?? [];
-            // A club that never uploaded a logo shows the product's icon.
-            $iconUrl = ($branding['logo'] ?? null) ?: \App\Support\ProductBrand::FAVICON;
+            // Tab icon: the uploaded site icon, else the club logo, else the product's icon.
+            $iconUrl = ($branding['favicon'] ?? null) ?: (($branding['logo'] ?? null) ?: \App\Support\ProductBrand::FAVICON);
             $primaryVars = \App\Support\Theme::cssVars($branding);
             $themeColor = \App\Support\Theme::themeColor($branding);
         @endphp

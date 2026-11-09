@@ -18,7 +18,7 @@ related: [players/find-player, players/player-page, players/branch-registrations
 :::
 
 :::step اضغط زر «لاعب جديد»
-في أعلى الصفحة، اضغط على الزر الأخضر الذي عليه علامة +. عندما تضع الفأرة عليه يظهر اسمه «لاعب جديد». تُفتح صفحة «لاعب جديد».
+في أعلى الصفحة، اضغط على الزر الذي عليه علامة +. عندما تضع الفأرة عليه يظهر اسمه «لاعب جديد». تُفتح صفحة «لاعب جديد».
 ::figure players-index ring=add-player zoom=add-player
 :::
 

@@ -173,6 +173,7 @@ return [
     'attributes' => ValidationAttributes::for('fr'),
 
     'branch_code_locked' => "Ce code ne peut plus changer : des numéros d'adhérent l'utilisent.",
+    'branch_code_needs_latin' => "Saisissez le code de la section en lettres latines (ex. HB) : le nom n'en contient aucune.",
 
     'join_date_before_birth' => "La date d'adhésion précède la date de naissance.",
     'position_other_branch' => 'Ce poste appartient à une autre section.',

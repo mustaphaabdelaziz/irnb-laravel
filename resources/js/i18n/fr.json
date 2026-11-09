@@ -2297,7 +2297,7 @@
     "postal_code": "Code postal",
     "present": "Présent",
     "president": "Président",
-    "preview_live_hint": "L'aperçu est instantané. Cliquez sur Enregistrer pour l'appliquer.",
+    "preview_live_hint": "L'aperçu est instantané ; la couleur est enregistrée pour tous automatiquement après un instant.",
     "previous": "Précédent",
     "previous_debt": "Dette antérieure",
     "previous_debt_hint": "Enregistrez une dette reportée d'avant l'application. Saisissez uniquement le montant restant dû — elle commence impayée et se règle via Ajouter un paiement.",

@@ -19,7 +19,7 @@ related: [players/find-player, subscriptions/fix-payment, subscriptions/previous
 :::
 
 :::step اضغط زر «إضافة دفعة»
-تحت المبلغ، اضغط على الزر الأخضر الذي عليه علامة $ في دائرة. عندما تضع الفأرة عليه يظهر اسمه «إضافة دفعة». تظهر نافذة «إضافة دفعة».
+تحت المبلغ، اضغط على الزر الذي عليه علامة $ في دائرة. عندما تضع الفأرة عليه يظهر اسمه «إضافة دفعة». تظهر نافذة «إضافة دفعة».
 ::figure payment-button ring=player-add-payment zoom=player-add-payment
 :::
 

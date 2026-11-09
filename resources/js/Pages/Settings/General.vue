@@ -320,7 +320,16 @@ function saveLeadership() {
 }
 
 function saveBranding() {
-    brandingForm.post(route('settings.update'), { forceFormData: true });
+    brandingForm.post(route('settings.update'), {
+        forceFormData: true,
+        // The tab icon is drawn once by app.blade.php; show a new upload without a reload.
+        onSuccess: () => {
+            const branding = props.config?.branding ?? {};
+            const icon = branding.favicon || branding.logo;
+            if (!icon) return;
+            document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]').forEach((link) => { link.href = icon; });
+        },
+    });
 }
 
 function saveSettings() {
@@ -556,6 +565,9 @@ function saveSettings() {
                             </div>
                             <div>
                                 <InputLabel :value="t('favicon')" />
+                                <div v-if="config?.branding?.favicon" class="mb-2">
+                                    <img :src="config.branding.favicon" alt="" class="h-8 w-8 rounded object-contain" />
+                                </div>
                                 <input type="file" accept="image/*" @change="brandingForm.favicon = $event.target.files[0]"
                                     class="w-full text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 dark:file:bg-primary-500/10 dark:file:text-primary-300" />
                             </div>

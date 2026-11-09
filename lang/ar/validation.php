@@ -173,6 +173,7 @@ return [
     'attributes' => ValidationAttributes::for('ar'),
 
     'branch_code_locked' => 'لا يمكن تغيير الرمز بعد استخدامه في أرقام الانخراط.',
+    'branch_code_needs_latin' => 'اكتب رمز الفرع بحروف لاتينية (مثل HB)، فالاسم ليس فيه حروف لاتينية.',
 
     'join_date_before_birth' => 'تاريخ الانضمام يسبق تاريخ الميلاد.',
     'position_other_branch' => 'هذا المركز تابع لفرع آخر.',

@@ -18,7 +18,7 @@ related: [subscriptions/create-annual, subscriptions/assign-players]
 :::
 
 :::step اضغط زر «إضافة اشتراك»
-في أعلى الصفحة، اضغط على الزر الأخضر الذي عليه علامة +. عندما تضع الفأرة عليه يظهر اسمه «إضافة اشتراك». تُفتح صفحة «إضافة اشتراك».
+في أعلى الصفحة، اضغط على الزر الذي عليه علامة +. عندما تضع الفأرة عليه يظهر اسمه «إضافة اشتراك». تُفتح صفحة «إضافة اشتراك».
 ::figure subscriptions-index ring=subscriptions-new zoom=subscriptions-new
 :::
 

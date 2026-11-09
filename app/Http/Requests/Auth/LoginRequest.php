@@ -54,6 +54,16 @@ class LoginRequest extends FormRequest
         }
 
         RateLimiter::clear($this->throttleKey());
+
+        // Checked only after the password matched, so a wrong guess never learns
+        // that the account exists and is disabled.
+        if (! Auth::user()->is_active) {
+            Auth::guard('web')->logout();
+
+            throw ValidationException::withMessages([
+                'username' => trans('auth.disabled'),
+            ]);
+        }
     }
 
     /**

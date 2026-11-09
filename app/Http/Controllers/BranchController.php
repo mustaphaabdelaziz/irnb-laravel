@@ -213,6 +213,10 @@ class BranchController extends Controller
         unset($data['logo'], $data['remove_logo']);
 
         if (empty($data['code'])) {
+            // A new branch named only in Arabic would get a meaningless BRA code in every membership ID.
+            if ($ignoreId === null && BranchCode::letters($data['name_en'] ?? null, $data['name_fr'] ?? null, $data['name']) === '') {
+                throw ValidationException::withMessages(['code' => __('validation.branch_code_needs_latin')]);
+            }
             unset($data['code']);
         } elseif ($ignoreId !== null) {
             $branch = Branch::findOrFail($ignoreId);

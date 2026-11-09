@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Models\WebsiteConfig;
 use App\Support\ClubIdentity;
+use App\Support\ProductBrand;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Inertia\Testing\AssertableInertia;
@@ -115,6 +116,21 @@ class ClubIdentityTest extends TestCase
 
         $this->assertStringContainsString('<title', $html);
         $this->assertStringNotContainsString('SPORT_CLUB', $html);
+    }
+
+    #[Test]
+    public function the_browser_tab_icon_is_the_site_icon_then_the_logo_then_the_product_icon(): void
+    {
+        $config = WebsiteConfig::singleton();
+        $iconOf = fn () => preg_match('/<link rel="icon"[^>]*href="([^"]+)"/', $this->get('/login')->getContent(), $m) ? $m[1] : null;
+
+        $this->assertSame(ProductBrand::FAVICON, $iconOf());
+
+        $config->update(['branding' => ['logo' => '/media/branding/logo.png']]);
+        $this->assertSame('/media/branding/logo.png', $iconOf());
+
+        $config->update(['branding' => ['logo' => '/media/branding/logo.png', 'favicon' => '/media/branding/icon.png']]);
+        $this->assertSame('/media/branding/icon.png', $iconOf());
     }
 
     #[Test]

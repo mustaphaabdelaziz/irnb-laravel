@@ -73,6 +73,13 @@ class HelpDemoUsersSeeder extends Seeder
 
         $demo = User::where('username', HelpDemoSeeder::USERNAME)->firstOrFail();
 
+        // The users list sorts newest first on created_at, and these rows are created within one
+        // second: without fixed dates the order flips between runs and moves every users shot.
+        // Order: samir, nadia, hanane, layla, demo.
+        foreach ([HelpDemoSeeder::USERNAME => 60, self::DISABLED => 4, self::SECRETARY => 3, self::ACCOUNTANT => 2, self::COACH => 1] as $username => $minutes) {
+            User::where('username', $username)->update(['created_at' => now()->subMinutes($minutes)]);
+        }
+
         $this->attendance($demo, $samir);
         $this->finance($demo, $nadia);
     }

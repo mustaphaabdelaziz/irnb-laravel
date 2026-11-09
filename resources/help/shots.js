@@ -972,7 +972,7 @@ export default [
             await centre(page, 'uc-create');
         },
     },
-    { name: 'set-users-rows', url: '/users', targets: ['users-row-layla', 'users-toggle-samir', 'users-toggle-layla', 'users-reset-nadia', 'users-delete-layla'] },
+    { name: 'set-users-rows', url: '/users', targets: ['users-row-layla', 'users-toggle-samir', 'users-reset-nadia', 'users-delete-layla'] },
     {
         // The reset window as it opens: both fields empty.
         name: 'set-user-reset-open',

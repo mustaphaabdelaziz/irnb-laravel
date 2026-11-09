@@ -171,6 +171,19 @@ class JoinDateQueueTest extends TestCase
     }
 
     #[Test]
+    public function the_one_time_migration_fills_the_same_rows_on_update(): void
+    {
+        WebsiteConfig::singleton()->update(['main_branch_id' => $this->foot->id]);
+        $double = $this->member('Double', 2015, [$this->foot->id, $this->swim->id]);
+        $this->member('SwimOnly', 2018, [$this->swim->id]);
+
+        (include database_path('migrations/2026_11_09_100001_fill_join_dates_with_first_of_september.php'))->up();
+
+        $this->assertSame(1, BranchRegistration::needsJoinDate()->count());
+        $this->assertNull($double->registrations()->where('branch_id', $this->swim->id)->first()->join_date);
+    }
+
+    #[Test]
     public function it_needs_player_rights(): void
     {
         $viewer = User::factory()->create(['privileges' => [], 'is_active' => true, 'email_verified_at' => now()]);

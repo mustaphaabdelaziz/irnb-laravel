@@ -2,6 +2,7 @@
 
 namespace App\Services\Player;
 
+use App\Models\Branch;
 use App\Models\BranchRegistration;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,41 @@ class JoinDateSuggestion
         return $query->addSelect(['two_branches' => DB::table('branch_player as other')
             ->selectRaw('COUNT(*) > 1')
             ->whereColumn('other.player_id', 'branch_player.player_id')]);
+    }
+
+    /**
+     * Dates every queued registration (not archived) that has a suggestion.
+     * With $save false it only counts. Used by players:fill-join-dates and the
+     * one-time migration that reaches desktop installs and the server.
+     *
+     * @return array{filled: int, left: int}
+     */
+    public static function fillAll(RegistrationService $registrations, bool $save = true): array
+    {
+        $mainBranchId = Branch::mainId();
+        $rows = self::withTwoBranches(BranchRegistration::query()->needsJoinDate()->select('branch_player.*'))
+            ->whereHas('player', fn ($q) => $q->where('archived', false))
+            ->with('player:id,birthdate')
+            ->orderBy('player_id')
+            ->orderBy('branch_id')
+            ->get();
+
+        $filled = 0;
+        $left = 0;
+        foreach ($rows as $registration) {
+            $date = self::for($registration, $mainBranchId);
+            if ($date === null) {
+                $left++;
+
+                continue;
+            }
+            if ($save) {
+                $registrations->setJoinDate($registration, $date);
+            }
+            $filled++;
+        }
+
+        return ['filled' => $filled, 'left' => $left];
     }
 
     /** Needs the registration's `two_branches` and its player's birthdate loaded. */

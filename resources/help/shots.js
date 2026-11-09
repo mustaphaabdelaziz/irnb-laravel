@@ -1124,6 +1124,126 @@ export default [
             ]);
         },
     },
+    // --- Equipment --- (HelpDemoEquipmentSeeder). Catalogs: 2 «قمع تدريب» (150), 4 «ساعة توقيت» (tracked,
+    // units «ساعة توقيت 1..3»). Nothing here saves: forms are filled, «إضافة» / «حفظ» only ringed.
+    {
+        name: 'eq-equipment-lists-categories',
+        url: '/equipment-categories',
+        targets: ['nav-equipment-categories'],
+        // «فئات المعدات» sits low in «تهيئة التطبيق», below the sidebar's visible part.
+        before: async (page) => { await navIntoView(page, 'nav-equipment-categories'); },
+    },
+    {
+        // The reader's state before «إضافة»: «حقائب», code BAG, a description.
+        name: 'eq-equipment-lists-category-typed',
+        url: '/equipment-categories',
+        targets: ['eqcat-name', 'eqcat-code', 'eqcat-description', 'eqcat-add'],
+        before: async (page) => {
+            await page.fill('input[data-help="eqcat-name"]', 'حقائب');
+            await page.fill('input[data-help="eqcat-code"]', 'BAG');
+            await page.fill('input[data-help="eqcat-description"]', 'حقائب الفرق');
+            await blur(page);
+        },
+    },
+    {
+        name: 'eq-equipment-lists-places',
+        url: '/storage-locations',
+        targets: ['nav-storage-locations'],
+        before: async (page) => { await navIntoView(page, 'nav-storage-locations'); },
+    },
+    {
+        // The reader's state before «إضافة»: the new place typed.
+        name: 'eq-equipment-lists-place-typed',
+        url: '/storage-locations',
+        targets: ['loc-name', 'loc-add'],
+        before: async (page) => {
+            await page.fill('input[data-help="loc-name"]', 'مخزن القاعة');
+            await blur(page);
+        },
+    },
+    {
+        name: 'eq-add-catalog-list',
+        url: '/equipment/catalogs',
+        targets: ['nav-equipment', 'eq-add-catalog'],
+        before: async (page) => { await navIntoView(page, 'nav-equipment'); },
+    },
+    {
+        // The add-catalog example before «حفظ»: «حبل قفز», «معدات التدريب», 400, not tracked.
+        name: 'eq-add-catalog-form',
+        url: '/equipment/catalogs/create',
+        targets: ['eq-name', 'eq-category', 'eq-brand', 'eq-price', 'eq-track', 'eq-save'],
+        before: async (page) => {
+            await page.fill('input[data-help="eq-name"]', 'حبل قفز');
+            await page.selectOption('select[data-help="eq-category"]', { label: 'معدات التدريب' });
+            await page.fill('input[data-help="eq-price"]', '400');
+            await blur(page);
+        },
+    },
+    {
+        // The similar-name hint: «كره قدم مقاس 5» is the demo's «كرة قدم مقاس 5» spelled with ه (nameKey). It never blocks.
+        name: 'eq-add-catalog-similar',
+        url: '/equipment/catalogs/create',
+        targets: ['eq-name', 'eq-similar'],
+        before: async (page) => {
+            await page.fill('input[data-help="eq-name"]', 'كره قدم مقاس 5');
+            await page.locator('[data-help="eq-similar"]').waitFor({ state: 'visible' });
+            await blur(page);
+        },
+    },
+    {
+        name: 'eq-receive-stock-list',
+        url: '/equipment/catalogs',
+        targets: ['nav-equipment', 'eq-catalog-link-2'],
+        before: async (page) => { await navIntoView(page, 'nav-equipment'); },
+    },
+    { name: 'eq-receive-stock-button', url: '/equipment/catalogs/2', targets: ['eq-receive'] },
+    {
+        // The form card filled: 10 typed, 150 from the catalog, today, «جديد», «المخزن الرئيسي», no branch.
+        name: 'eq-receive-stock-fields',
+        url: '/equipment/catalogs/2',
+        targets: ['eq-rcv-quantity', 'eq-rcv-price', 'eq-rcv-date', 'eq-rcv-condition', 'eq-rcv-location', 'eq-rcv-branches'],
+        before: async (page) => {
+            await fillCones(page);
+            await centre(page, 'eq-rcv-branches');
+        },
+    },
+    {
+        // «تسجيل كمصروف» ticked: the caisse list appears on its first caisse. The reader's state before «حفظ».
+        name: 'eq-receive-stock-expense',
+        url: '/equipment/catalogs/2',
+        targets: ['eq-rcv-expense', 'eq-rcv-caisse', 'eq-rcv-save'],
+        before: async (page) => {
+            await fillCones(page);
+            await page.locator('[data-help="eq-rcv-expense"] input').check();
+            await blur(page);
+            await centre(page, 'eq-rcv-save');
+        },
+    },
+    {
+        // The other path: box left empty, «مصدر الاستلام» set to «تبرع».
+        name: 'eq-receive-stock-source',
+        url: '/equipment/catalogs/2',
+        targets: ['eq-rcv-expense', 'eq-rcv-source'],
+        before: async (page) => {
+            await fillCones(page);
+            await page.locator('[data-help="eq-rcv-source"] select').selectOption('donation');
+            await blur(page);
+            await centre(page, 'eq-rcv-source');
+        },
+    },
+    {
+        // A tracked catalog: the next serial, 2 units named «ساعة توقيت» (they become «ساعة توقيت 4» and 5).
+        name: 'eq-receive-stock-serial',
+        url: '/equipment/catalogs/4',
+        targets: ['eq-rcv-serial', 'eq-rcv-designation', 'eq-rcv-quantity'],
+        before: async (page) => {
+            await openReceive(page);
+            await page.locator('[data-help="eq-rcv-quantity"] input').fill('2');
+            await page.locator('[data-help="eq-rcv-designation"] input').fill('ساعة توقيت');
+            await page.waitForFunction(() => /\d{5}/.test(document.querySelector('[data-help="eq-rcv-serial"]')?.textContent ?? ''));
+            await blur(page);
+        },
+    },
     {
         name: 'fin-tx-saved',
         url: '/transactions/create',
@@ -1444,5 +1564,19 @@ async function fillNets(page) {
     await page.locator('[data-help="txf-category"] select').selectOption({ label: 'معدات' });
     await page.locator('[data-help="txf-amount"] input').fill('15000');
     await page.locator('[data-help="txf-caisse"] select').selectOption('5');
+    await blur(page);
+}
+
+/** Catalog page: opens «استلام مخزون» and waits for its window. */
+async function openReceive(page) {
+    await page.locator('[data-help="eq-receive"]').click();
+    await page.locator('[data-help="eq-rcv-quantity"]').waitFor({ state: 'visible' });
+}
+
+/** The receive-stock example: 10 «قمع تدريب» (150 from the catalog), into «المخزن الرئيسي», shared (no branch). */
+async function fillCones(page) {
+    await openReceive(page);
+    await page.locator('[data-help="eq-rcv-quantity"] input').fill('10');
+    await page.locator('[data-help="eq-rcv-location"] select').selectOption('المخزن الرئيسي');
     await blur(page);
 }

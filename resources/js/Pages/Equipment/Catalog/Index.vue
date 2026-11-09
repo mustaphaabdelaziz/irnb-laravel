@@ -107,7 +107,7 @@ function submitImport() {
             <div class="flex items-center justify-between">
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('equipments') }}</h1>
                 <div class="flex flex-wrap gap-2">
-                    <IconButton v-if="can('equipment', 'add')" :href="route('equipment.catalogs.create')" icon="plus" :label="t('add_equipment')" variant="primary" />
+                    <IconButton v-if="can('equipment', 'add')" :href="route('equipment.catalogs.create')" icon="plus" :label="t('add_equipment')" variant="primary" data-help="eq-add-catalog" />
                     <IconButton v-if="can('equipment', 'edit')" icon="upload" :label="t('import')" @click="showImport = true" />
                     <ExportMenu :href="route('equipment.catalogs.export')" :label="t('export')" />
                     <IconButton :href="route('equipment.inventory')" icon="clipboard" :label="t('inventory_report')" />
@@ -173,7 +173,7 @@ function submitImport() {
                                     />
                                 </td>
                                 <td class="px-4 py-3">
-                                    <Link :href="route('equipment.catalogs.show', cat.id)" class="text-sm font-medium text-primary-600 hover:text-primary-800 dark:text-primary-300 dark:hover:text-primary-200">{{ cat.name }}</Link>
+                                    <Link :href="route('equipment.catalogs.show', cat.id)" :data-help="'eq-catalog-link-' + cat.id" class="text-sm font-medium text-primary-600 hover:text-primary-800 dark:text-primary-300 dark:hover:text-primary-200">{{ cat.name }}</Link>
                                 </td>
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ cat.category }}</td>
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ cat.brand || '-' }}</td>

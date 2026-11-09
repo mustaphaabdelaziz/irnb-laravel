@@ -57,13 +57,13 @@ function submit() {
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div>
                             <InputLabel :value="t('name')" />
-                            <TextInput v-model="form.name" class="mt-1 w-full" required />
-                            <p v-if="similar" class="mt-1 text-xs text-amber-600 dark:text-amber-400">{{ t('equipment.similar_name_exists', { name: similar }) }}</p>
+                            <TextInput v-model="form.name" data-help="eq-name" class="mt-1 w-full" required />
+                            <p v-if="similar" data-help="eq-similar" class="mt-1 text-xs text-amber-600 dark:text-amber-400">{{ t('equipment.similar_name_exists', { name: similar }) }}</p>
                             <InputError :message="form.errors.name" class="mt-1" />
                         </div>
                         <div>
                             <InputLabel :value="t('category')" />
-                            <select v-model="form.category" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500" required>
+                            <select v-model="form.category" data-help="eq-category" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500" required>
                                 <option value="">{{ t('select_category') }}</option>
                                 <option v-for="cat in equipmentCategories" :key="cat" :value="cat">{{ cat }}</option>
                             </select>
@@ -73,15 +73,15 @@ function submit() {
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div>
                             <InputLabel :value="t('brand')" />
-                            <TextInput v-model="form.brand" class="mt-1 w-full" />
+                            <TextInput v-model="form.brand" data-help="eq-brand" class="mt-1 w-full" />
                         </div>
                         <div>
                             <InputLabel :value="t('price')" />
-                            <TextInput v-model="form.purchase_price" type="number" step="0.01" min="0" class="mt-1 w-full" />
+                            <TextInput v-model="form.purchase_price" data-help="eq-price" type="number" step="0.01" min="0" class="mt-1 w-full" />
                             <InputError :message="form.errors.purchase_price" class="mt-1" />
                         </div>
                     </div>
-                    <label class="flex items-start gap-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 p-3">
+                    <label data-help="eq-track" class="flex items-start gap-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 p-3">
                         <input type="checkbox" v-model="form.requires_serial"
                             class="mt-0.5 rounded border-slate-300 dark:border-slate-600 text-primary-600 focus:ring-primary-500" />
                         <span>
@@ -104,7 +104,7 @@ function submit() {
                 <Link :href="route('equipment.catalogs.index')">
                     <SecondaryButton type="button">{{ t('cancel') }}</SecondaryButton>
                 </Link>
-                <PrimaryButton :disabled="form.processing">{{ t('save') }}</PrimaryButton>
+                <PrimaryButton data-help="eq-save" :disabled="form.processing">{{ t('save') }}</PrimaryButton>
             </div>
         </form>
     </AuthenticatedLayout>

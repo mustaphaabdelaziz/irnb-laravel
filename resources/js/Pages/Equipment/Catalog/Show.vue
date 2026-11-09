@@ -363,7 +363,7 @@ function submitImport() {
                 </div>
                 <div class="flex flex-wrap gap-2">
                     <!-- One way in for every catalog: on a serial catalog it numbers each unit. -->
-                    <IconButton v-if="can('equipment', 'edit')" icon="plus" :label="t('equipment.receive_stock')" variant="primary" @click="openReceive" />
+                    <IconButton v-if="can('equipment', 'edit')" icon="plus" :label="t('equipment.receive_stock')" variant="primary" data-help="eq-receive" @click="openReceive" />
                     <IconButton v-if="can('equipment', 'edit')" icon="upload" :label="t('import')" @click="showImport = true" />
                     <ExportMenu :href="route('equipment.items.export', catalog.id)" :label="t('export')" />
                     <IconButton v-if="can('equipment', 'edit')" :href="route('equipment.catalogs.edit', catalog.id)" icon="pencil" :label="t('edit')" />
@@ -710,14 +710,14 @@ function submitImport() {
                     <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('equipment.receive_stock') }} — {{ catalog.name }}</h3>
                     <form @submit.prevent="doReceive" class="mt-4 space-y-3">
                         <template v-if="isSerialized">
-                            <div>
+                            <div data-help="eq-rcv-serial">
                                 <InputLabel :value="t('id_serial')" />
                                 <div class="mt-1 flex items-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2 font-mono text-sm text-slate-700 dark:text-slate-200">
                                     {{ serialPreview || '—' }}
                                 </div>
                                 <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('assigned_on_save') }}</p>
                             </div>
-                            <div>
+                            <div data-help="eq-rcv-designation">
                                 <InputLabel :value="t('designation')" />
                                 <TextInput v-model="receiveForm.designation" class="mt-1 w-full" :placeholder="t('designation_example')" />
                                 <p v-if="Number(receiveForm.quantity) > 1" class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('equipment.receive_designation_hint') }}</p>
@@ -725,14 +725,14 @@ function submitImport() {
                             </div>
                         </template>
                         <div class="grid gap-3 sm:grid-cols-2">
-                            <div>
+                            <div data-help="eq-rcv-quantity">
                                 <InputLabel :value="t('equipment.quantity')" />
                                 <TextInput v-model="receiveForm.quantity" type="number" min="1" :max="isSerialized ? MAX_NUMBERED_UNITS : undefined" class="mt-1 w-full" required />
                                 <!-- A serial catalog gets one numbered row per unit, not one lot. -->
                                 <p v-if="isSerialized" class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('equipment.receive_numbered_hint', { max: MAX_NUMBERED_UNITS }) }}</p>
                                 <InputError :message="receiveForm.errors.quantity" class="mt-1" />
                             </div>
-                            <div>
+                            <div data-help="eq-rcv-price">
                                 <InputLabel :value="t('equipment.unit_price')" />
                                 <TextInput v-model="receiveForm.unit_price" type="number" step="0.01" min="0" class="mt-1 w-full" />
                                 <InputError :message="receiveForm.errors.unit_price" class="mt-1" />
@@ -740,11 +740,11 @@ function submitImport() {
                         </div>
 
                         <div class="grid gap-3 sm:grid-cols-2">
-                            <div>
+                            <div data-help="eq-rcv-date">
                                 <InputLabel :value="t('date')" />
                                 <TextInput v-model="receiveForm.purchase_date" type="date" class="mt-1 w-full" required />
                             </div>
-                            <div>
+                            <div data-help="eq-rcv-condition">
                                 <InputLabel :value="t('condition')" />
                                 <select v-model="receiveForm.condition" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                                     <option v-for="c in ['New','Good','Fair','Poor','Damaged']" :key="c" :value="c">{{ stateLabel(c) }}</option>
@@ -752,7 +752,7 @@ function submitImport() {
                             </div>
                         </div>
 
-                        <div>
+                        <div data-help="eq-rcv-location">
                             <InputLabel :value="t('location')" />
                             <select v-model="receiveForm.location" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                                 <option value="">—</option>
@@ -760,7 +760,7 @@ function submitImport() {
                             </select>
                         </div>
 
-                        <div v-if="branches.length">
+                        <div v-if="branches.length" data-help="eq-rcv-branches">
                             <InputLabel :value="t('branch')" />
                             <div class="mt-2 flex flex-wrap gap-2">
                                 <label v-for="b in branches" :key="b.id"
@@ -775,7 +775,7 @@ function submitImport() {
                             <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('equipment.branch_hint') }}</p>
                         </div>
 
-                        <label class="flex items-start gap-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 p-3">
+                        <label data-help="eq-rcv-expense" class="flex items-start gap-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 p-3">
                             <input type="checkbox" v-model="receiveForm.record_expense"
                                 class="mt-0.5 rounded border-slate-300 dark:border-slate-600 text-primary-600 focus:ring-primary-500" />
                             <span>
@@ -784,7 +784,7 @@ function submitImport() {
                             </span>
                         </label>
 
-                        <div v-if="receiveForm.record_expense">
+                        <div v-if="receiveForm.record_expense" data-help="eq-rcv-caisse">
                             <InputLabel :value="t('source_register')" />
                             <select v-model="receiveForm.finance_account_id" required class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                                 <option value="" disabled>{{ t('select_cash_register') }}</option>
@@ -797,7 +797,7 @@ function submitImport() {
                         </div>
 
                         <!-- Only asked when no money changed hands, so the reason is captured. -->
-                        <div v-if="!receiveForm.record_expense">
+                        <div v-if="!receiveForm.record_expense" data-help="eq-rcv-source">
                             <InputLabel :value="t('equipment.received_via')" />
                             <select v-model="receiveForm.received_via" required class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                                 <option value="" disabled>{{ t('equipment.choose_source') }}</option>
@@ -815,7 +815,7 @@ function submitImport() {
 
                         <div class="flex justify-end gap-3 pt-2">
                             <button type="button" @click="showReceiveModal = false" class="rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">{{ t('cancel') }}</button>
-                            <PrimaryButton :disabled="receiveForm.processing">{{ t('save') }}</PrimaryButton>
+                            <PrimaryButton data-help="eq-rcv-save" :disabled="receiveForm.processing">{{ t('save') }}</PrimaryButton>
                         </div>
                     </form>
                 </div>

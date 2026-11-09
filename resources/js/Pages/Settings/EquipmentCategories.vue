@@ -62,19 +62,19 @@ function destroy() {
             <form v-if="can('equipment_categories', 'add')" @submit.prevent="addCategory" class="flex items-end gap-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div class="flex-1">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('name') }}</label>
-                    <TextInput v-model="form.name" class="mt-1 w-full" :placeholder="t('name')" required />
+                    <TextInput v-model="form.name" data-help="eqcat-name" class="mt-1 w-full" :placeholder="t('name')" required />
                     <InputError :message="form.errors.name" class="mt-1" />
                 </div>
                 <div class="w-28">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('code') }}</label>
-                    <TextInput v-model="form.code" class="mt-1 w-full uppercase" placeholder="BALL" />
+                    <TextInput v-model="form.code" data-help="eqcat-code" class="mt-1 w-full uppercase" placeholder="BALL" />
                     <InputError :message="form.errors.code" class="mt-1" />
                 </div>
                 <div class="flex-1">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('description') }}</label>
-                    <TextInput v-model="form.description" class="mt-1 w-full" :placeholder="t('description')" />
+                    <TextInput v-model="form.description" data-help="eqcat-description" class="mt-1 w-full" :placeholder="t('description')" />
                 </div>
-                <PrimaryButton :disabled="form.processing">{{ t('add') }}</PrimaryButton>
+                <PrimaryButton data-help="eqcat-add" :disabled="form.processing">{{ t('add') }}</PrimaryButton>
             </form>
 
             <!-- List -->

@@ -73,43 +73,91 @@ class HelpDemoUsersSeeder extends Seeder
 
         $demo = User::where('username', HelpDemoSeeder::USERNAME)->firstOrFail();
 
-        foreach ([1, 3, 6, 8] as $days) {
-            $this->log($samir, ActivityAction::USER_LOGGED_IN, null, $days, 17);
-        }
-        // Held U17 sessions, newest first (HelpDemoAttendanceSeeder).
+        $this->attendance($demo, $samir);
+        $this->finance($demo, $nadia);
+    }
+
+    /**
+     * MarkRecorder already logged every mark as demo, at seed time. Hand the U17 ones to
+     * the coach, then redate all of them to their session (end time, 19:30 if none).
+     * One login per day he marked.
+     */
+    private function attendance(User $demo, User $samir): void
+    {
         $u17 = Category::where('name', HelpDemoAttendanceSeeder::FOOT_CATEGORY)->firstOrFail();
-        $sessions = TrainingSession::query()
-            ->where('category_id', $u17->id)
-            ->where('state', SessionState::Held->value)
-            ->orderByDesc('date')->orderByDesc('start_time')
-            ->limit(4)->get()->values();
-        foreach ([1, 3, 6, 8] as $i => $days) {
-            // MarkRecorder's property: how many players were marked (the U17 demo roster is 4).
-            $this->log($samir, ActivityAction::ATTENDANCE_MARKED, $sessions[$i] ?? null, $days, 19, ['count' => 4]);
+        $marks = ActivityLog::query()
+            ->where('action', ActivityAction::ATTENDANCE_MARKED)
+            ->where('subject_type', (new TrainingSession)->getMorphClass())
+            ->get();
+        if ($marks->isEmpty()) {
+            throw new RuntimeException('HelpDemoUsersSeeder needs the attendance marks of HelpDemoAttendanceSeeder.');
         }
 
-        foreach ([0, 2, 5, 7] as $days) {
-            $this->log($nadia, ActivityAction::USER_LOGGED_IN, null, $days, 8);
+        $sessions = TrainingSession::whereIn('id', $marks->pluck('subject_id'))->get()->keyBy('id');
+        $days = [];
+        foreach ($marks as $mark) {
+            $session = $sessions[$mark->subject_id];
+            $day = substr((string) $session->getRawOriginal('date'), 0, 10);
+            $end = CarbonImmutable::parse($day.' '.($session->end_time ?: '19:30'));
+            $mine = (int) $session->category_id === (int) $u17->id;
+            $mark->update([
+                'user_id' => $mine ? $samir->id : $mark->user_id,
+                'occurred_at' => $this->clamp($end),
+            ]);
+            if ($mine) {
+                $days[$end->toDateString()] = true;
+            }
         }
-        // Hand entries of the current season (not tied to a subscription), oldest ids first.
+        if ($days === []) {
+            throw new RuntimeException('HelpDemoUsersSeeder found no marked U17 session for the coach.');
+        }
+        foreach (array_keys($days) as $day) {
+            $this->log($samir, ActivityAction::USER_LOGGED_IN, null, CarbonImmutable::parse($day)->setTime(17, 5));
+        }
+    }
+
+    /** Nadia's three newest hand entries, the logins on those days and today, one impersonated day. */
+    private function finance(User $demo, User $nadia): void
+    {
         $entries = Transaction::query()
             ->whereNull('player_subscription_id')
             ->where('archived', false)
             ->where('transaction_date', '>=', $this->seasonStart->toDateString())
-            ->orderBy('id')->limit(3)->get()->values();
-        $this->log($demo, ActivityAction::USER_IMPERSONATED, $nadia, 2, 9);
-        foreach ([2, 5, 7] as $i => $days) {
-            $entry = $entries[$i] ?? null;
+            ->where('transaction_date', '<=', $this->today->toDateString())
+            ->orderByDesc('transaction_date')->orderByDesc('id')
+            ->limit(3)->get()->values();
+        if ($entries->count() < 3) {
+            throw new RuntimeException('HelpDemoUsersSeeder needs three current-season hand transactions.');
+        }
+
+        Transaction::whereKey($entries->pluck('id'))->update(['recorded_by_user_id' => $nadia->id]);
+
+        $loginDays = $entries->map(fn ($e) => CarbonImmutable::parse($e->transaction_date)->toDateString())
+            ->push($this->today->toDateString())->unique();
+        foreach ($loginDays as $day) {
+            $this->log($nadia, ActivityAction::USER_LOGGED_IN, null, CarbonImmutable::parse($day)->setTime(8, 5));
+        }
+
+        $middle = CarbonImmutable::parse($entries[1]->transaction_date);
+        $this->log($demo, ActivityAction::USER_IMPERSONATED, $nadia, $middle->setTime(9, 5));
+        foreach ($entries as $i => $entry) {
             // The same small properties TransactionController::store records.
-            $log = $this->log($nadia, ActivityAction::TRANSACTION_RECORDED, $entry, $days, 10, [
-                'amount' => $entry ? (float) $entry->amount : null,
-                'type' => $entry?->transaction_type,
-            ]);
-            if ($days === 2) {
+            $log = $this->log($nadia, ActivityAction::TRANSACTION_RECORDED, $entry,
+                CarbonImmutable::parse($entry->transaction_date)->setTime(10, 5), [
+                    'amount' => (float) $entry->amount,
+                    'type' => $entry->transaction_type,
+                ]);
+            if ($i === 1) {
                 // Done while the admin was logged in as her: the «بواسطة …» badge.
                 $log->update(['impersonator_id' => $demo->id]);
             }
         }
+    }
+
+    /** Inside the season and never in the future. */
+    private function clamp(CarbonImmutable $at): CarbonImmutable
+    {
+        return $at->max($this->seasonStart)->min(CarbonImmutable::now());
     }
 
     private function user(string $username, string $first, string $last, string $gender, Role $role, array $phones, ?CarbonImmutable $loggedIn, bool $active = true): User
@@ -129,14 +177,14 @@ class HelpDemoUsersSeeder extends Seeder
             'role_id' => $role->id,
             'preferred_lng' => 'ar',
             'email_verified_at' => now(),
-            'logged_in_at' => $loggedIn,
+            'logged_in_at' => $loggedIn?->min(CarbonImmutable::now()),
         ]);
     }
 
-    private function log(User $user, string $action, ?Model $subject, int $daysBefore, int $hour, array $properties = []): ActivityLog
+    private function log(User $user, string $action, ?Model $subject, CarbonImmutable $at, array $properties = []): ActivityLog
     {
         $log = ActivityRecorder::record($user, $action, $subject, $properties);
-        $log->update(['occurred_at' => $this->today->subDays($daysBefore)->setTime($hour, 5)->max($this->seasonStart)]);
+        $log->update(['occurred_at' => $this->clamp($at)]);
 
         return $log;
     }

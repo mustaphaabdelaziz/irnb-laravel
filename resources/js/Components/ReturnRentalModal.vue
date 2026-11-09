@@ -60,7 +60,7 @@ function submit() {
             </h3>
             <form @submit.prevent="submit" class="mt-4 space-y-3">
                 <!-- Units can come back in instalments; the rental stays open until all are in. -->
-                <div v-if="(rental.quantity ?? 1) > 1">
+                <div v-if="(rental.quantity ?? 1) > 1" data-help="eq-ret-quantity">
                     <InputLabel :value="t('equipment.quantity')" />
                     <TextInput v-model="form.quantity" type="number" min="1" :max="outstanding(rental)" class="mt-1 w-full" required />
                     <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -68,11 +68,11 @@ function submit() {
                     </p>
                     <InputError :message="form.errors.quantity" class="mt-1" />
                 </div>
-                <div>
+                <div data-help="eq-ret-date">
                     <InputLabel :value="t('return_date')" />
                     <TextInput v-model="form.return_date" type="date" class="mt-1 w-full" />
                 </div>
-                <div>
+                <div data-help="eq-ret-condition">
                     <InputLabel :value="t('condition')" />
                     <div class="mt-2 grid grid-cols-5 gap-2">
                         <button v-for="c in CONDITIONS" :key="c" type="button" @click="form.condition = c"
@@ -80,13 +80,13 @@ function submit() {
                             class="rounded-lg border px-2 py-2 text-xs font-medium text-center transition-colors">{{ t(c.toLowerCase()) }}</button>
                     </div>
                 </div>
-                <div>
+                <div data-help="eq-ret-notes">
                     <InputLabel :value="t('notes')" />
                     <textarea v-model="form.notes" rows="2" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500" />
                 </div>
                 <div class="flex justify-end gap-3 pt-2">
                     <button type="button" @click="emit('close')" class="rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">{{ t('cancel') }}</button>
-                    <PrimaryButton :disabled="form.processing">{{ t('return') }}</PrimaryButton>
+                    <PrimaryButton data-help="eq-ret-save" :disabled="form.processing">{{ t('return') }}</PrimaryButton>
                 </div>
             </form>
         </div>

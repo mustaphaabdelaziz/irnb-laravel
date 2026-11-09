@@ -49,14 +49,14 @@ const returning = ref(null);
         <div class="space-y-4">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div class="flex gap-1.5">
-                    <button v-for="tab in tabs" :key="tab.key" type="button" @click="type = tab.key"
+                    <button v-for="tab in tabs" :key="tab.key" type="button" :data-help="'eq-out-tab-' + tab.key" @click="type = tab.key"
                         class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors"
                         :class="type === tab.key ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800 dark:hover:bg-slate-800'">
                         {{ t(tab.label) }}
                         <span class="rounded-full bg-black/10 px-1.5 text-xs dark:bg-white/10">{{ counts[tab.key] ?? 0 }}</span>
                     </button>
                 </div>
-                <div class="w-full sm:w-72"><SearchInput v-model="search" :loading="loading" :placeholder="t('search')" /></div>
+                <div class="w-full sm:w-72" data-help="eq-out-search"><SearchInput v-model="search" :loading="loading" :placeholder="t('search')" /></div>
             </div>
 
             <div :class="{ 'opacity-60': loading }" class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 transition-opacity dark:bg-slate-900 dark:ring-slate-800">
@@ -93,10 +93,10 @@ const returning = ref(null);
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ r.checkout_date }}</td>
                                 <td v-if="type === 'rental'" class="px-4 py-3 text-sm">
                                     <span class="text-slate-600 dark:text-slate-300">{{ r.due_date || '—' }}</span>
-                                    <Badge v-if="r.is_overdue" :label="t('overdue')" color="rose" class="ms-2" />
+                                    <Badge v-if="r.is_overdue" :label="t('overdue')" color="rose" class="ms-2" :data-help="'eq-out-overdue-' + r.id" />
                                 </td>
                                 <td class="px-4 py-3 text-end">
-                                    <IconButton v-if="can('equipment', 'edit')" icon="back" :label="t('return')" variant="success" plain size="sm" @click="returning = r" />
+                                    <IconButton v-if="can('equipment', 'edit')" icon="back" :label="t('return')" variant="success" plain size="sm" :data-help="'eq-out-return-' + r.id" @click="returning = r" />
                                 </td>
                             </tr>
                             <tr v-if="!rentals.data?.length">

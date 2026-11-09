@@ -1244,6 +1244,120 @@ export default [
             await blur(page);
         },
     },
+    // Lend: catalog 1 «كرة قدم مقاس 5» (lot item 3, 20 balls; rental 3 = 2 balls with أحمد بن علي, overdue).
+    // The example lends 2 more to أمين قاسمي for 7 days. «إيجار» is only ringed.
+    {
+        name: 'eq-lend-assign-list',
+        url: '/equipment/catalogs',
+        targets: ['nav-equipment', 'eq-catalog-link-1'],
+        before: async (page) => { await navIntoView(page, 'nav-equipment'); },
+    },
+    { name: 'eq-lend-assign-catalog', url: '/equipment/catalogs/1', targets: ['eq-rent-3', 'eq-holder-return-3'] },
+    {
+        // The rent window as it opens: «إعارة» chosen, «لاعب» chosen, nothing picked.
+        name: 'eq-lend-assign-type',
+        url: '/equipment/catalogs/1',
+        targets: ['eq-rent-rental', 'eq-rent-assignment'],
+        before: async (page) => { await openRent(page, 3); },
+    },
+    {
+        name: 'eq-lend-assign-player',
+        url: '/equipment/catalogs/1',
+        targets: ['eq-rent-player-btn', 'eq-rent-external-btn', 'eq-rent-player'],
+        before: async (page) => {
+            await openRent(page, 3);
+            await pickAmine(page);
+        },
+    },
+    {
+        // The reader's state before «إيجار»: 2 balls, today, 7 days (the return date shows under it).
+        name: 'eq-lend-assign-fields',
+        url: '/equipment/catalogs/1',
+        targets: ['eq-rent-quantity', 'eq-rent-date', 'eq-rent-days', 'eq-rent-save'],
+        before: async (page) => {
+            await openRent(page, 3);
+            await pickAmine(page);
+            await page.locator('[data-help="eq-rent-quantity"] input').fill('2');
+            await page.locator('[data-help="eq-rent-days"] input').fill('7');
+            await blur(page);
+        },
+    },
+    {
+        // The other recipient: «شخص خارجي», a name and a phone typed (the player choice is cleared).
+        name: 'eq-lend-assign-external',
+        url: '/equipment/catalogs/1',
+        targets: ['eq-rent-external-btn', 'eq-rent-name', 'eq-rent-phone'],
+        before: async (page) => {
+            await openRent(page, 3);
+            await page.locator('[data-help="eq-rent-external-btn"]').click();
+            await page.locator('[data-help="eq-rent-name"] input').fill('مراد بلقاسم');
+            await page.locator('[data-help="eq-rent-phone"] input').fill('0550123456');
+            await blur(page);
+        },
+    },
+    // Return: rental 3, أحمد بن علي's 2 balls, overdue. «إرجاع» is only ringed.
+    {
+        name: 'eq-return-out',
+        url: '/equipment/out',
+        targets: ['nav-equipment-out', 'eq-out-tab-rental', 'eq-out-tab-assignment'],
+        before: async (page) => { await navIntoView(page, 'nav-equipment-out'); },
+    },
+    {
+        name: 'eq-return-search',
+        url: '/equipment/out',
+        targets: ['eq-out-search', 'eq-out-overdue-3', 'eq-out-return-3'],
+        before: async (page) => {
+            await Promise.all([
+                page.waitForResponse((r) => r.url().includes('/equipment/out') && r.url().includes('search=')),
+                page.locator('[data-help="eq-out-search"] input').fill('بن علي'),
+            ]);
+            await page.waitForLoadState('networkidle');
+            await blur(page);
+        },
+    },
+    {
+        // The return window: 2 still out, today, «الحالة» on the lot's «جديد», a note typed.
+        name: 'eq-return-form',
+        url: '/equipment/out',
+        targets: ['eq-ret-quantity', 'eq-ret-date', 'eq-ret-condition', 'eq-ret-notes', 'eq-ret-save'],
+        before: async (page) => {
+            await page.locator('[data-help="eq-out-return-3"]').click();
+            await page.locator('[data-help="eq-ret-notes"] textarea').fill('رجعت الكرتان سليمتين');
+            await blur(page);
+        },
+    },
+    // Damage, repair, lost: catalog 2 «قمع تدريب» (lot item 4, 40 cones), catalog 4 «ساعة توقيت»
+    // (items 7–9; item 8 «ساعة توقيت 2» is under repair). Nothing is saved or confirmed.
+    { name: 'eq-damage-split-button', url: '/equipment/catalogs/2', targets: ['eq-split-4'] },
+    {
+        // 2 broken cones: «تالف» is the default condition; a note typed. The reader's state before «حفظ».
+        name: 'eq-damage-split-form',
+        url: '/equipment/catalogs/2',
+        targets: ['eq-split-quantity', 'eq-split-condition', 'eq-split-notes', 'eq-split-save'],
+        before: async (page) => {
+            await page.locator('[data-help="eq-split-4"]').click();
+            await page.locator('[data-help="eq-split-quantity"] input').fill('2');
+            await page.locator('[data-help="eq-split-notes"]').fill('انكسرا في التدريب');
+            await blur(page);
+        },
+    },
+    {
+        name: 'eq-damage-units',
+        url: '/equipment/catalogs/4',
+        targets: ['eq-repair-7', 'eq-fixed-8', 'eq-lost-9', 'eq-history-8'],
+    },
+    {
+        // The confirm window of «إرسال للإصلاح» for «ساعة توقيت 1». Its button is only ringed.
+        name: 'eq-damage-repair-confirm',
+        url: '/equipment/catalogs/4',
+        targets: ['confirm-panel', 'confirm-ok'],
+        before: async (page) => {
+            await page.locator('[data-help="eq-repair-7"]').click();
+            await page.locator('[data-help="confirm-ok"]').waitFor({ state: 'visible' });
+            await page.waitForTimeout(300);
+        },
+    },
+    { name: 'eq-damage-history', url: '/equipment/items/8/history', targets: [] },
     {
         name: 'fin-tx-saved',
         url: '/transactions/create',
@@ -1571,6 +1685,20 @@ async function fillNets(page) {
 async function openReceive(page) {
     await page.locator('[data-help="eq-receive"]').click();
     await page.locator('[data-help="eq-rcv-quantity"]').waitFor({ state: 'visible' });
+}
+
+/** Catalog page: opens the rent window of a lot (its «إيجار» row button) and waits for it. */
+async function openRent(page, itemId) {
+    await page.locator(`[data-help="eq-rent-${itemId}"]`).click();
+    await page.locator('[data-help="eq-rent-rental"]').waitFor({ state: 'visible' });
+}
+
+/** Rent window: picks أمين قاسمي in the «لاعب» list (typed, then the first match). */
+async function pickAmine(page) {
+    await page.locator('[data-help="eq-rent-player"] button').first().click();
+    await page.locator('[data-help="eq-rent-player"] input').fill('أمين قاسمي');
+    await page.locator('[data-help="eq-rent-player"] li').first().dispatchEvent('mousedown');
+    await blur(page);
 }
 
 /** The receive-stock example: 10 «قمع تدريب» (150 from the catalog), into «المخزن الرئيسي», shared (no branch). */

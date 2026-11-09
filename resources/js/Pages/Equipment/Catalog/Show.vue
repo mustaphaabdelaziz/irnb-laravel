@@ -490,7 +490,7 @@ function submitImport() {
                                             <RentalTypeBadge :type="r.type" />
                                             <span>{{ r.recipient_name || '—' }}</span>
                                             <span v-if="(r.quantity ?? 1) > 1" class="text-xs text-slate-400">({{ r.quantity - (r.returned_quantity ?? 0) }})</span>
-                                            <IconButton v-if="can('equipment', 'edit')" icon="back" :label="t('return')" variant="success" plain size="sm" @click="openReturn(item, r)" />
+                                            <IconButton v-if="can('equipment', 'edit')" icon="back" :label="t('return')" variant="success" plain size="sm" :data-help="'eq-holder-return-' + r.id" @click="openReturn(item, r)" />
                                         </li>
                                     </ul>
                                     <span v-else>-</span>
@@ -498,13 +498,13 @@ function submitImport() {
                                 <td class="px-4 py-3 text-end">
                                     <div class="flex items-center justify-end gap-1">
                                         <!-- Driven by available units, not status: a lot of 20 with 10 out is still lendable. -->
-                                        <IconButton v-if="(item.available_quantity ?? 0) > 0 && can('equipment', 'edit')" icon="send" :label="t('rent')" variant="primary" plain size="sm" @click="openRent(item)" />
-                                        <IconButton v-if="(item.quantity ?? 1) > 1 && (item.available_quantity ?? 0) > 0 && can('equipment', 'edit')" icon="alert" :label="t('equipment.mark_damaged')" plain size="sm" @click="openSplit(item)" />
-                                        <IconButton v-if="item.status === 'Available' && can('equipment', 'edit')" icon="wrench" :label="t('send_to_repair')" plain size="sm" @click="repairItemId = item.id" />
-                                        <IconButton v-if="item.status === 'Under Repair' && can('equipment', 'edit')" icon="check" :label="t('mark_fixed')" variant="success" plain size="sm" @click="fixedItemId = item.id" />
-                                        <IconButton v-if="['Available','Rented'].includes(item.status) && can('equipment', 'edit')" icon="xcircle" :label="t('lost')" variant="danger" plain size="sm" @click="lostItemId = item.id" />
+                                        <IconButton v-if="(item.available_quantity ?? 0) > 0 && can('equipment', 'edit')" icon="send" :label="t('rent')" variant="primary" plain size="sm" :data-help="'eq-rent-' + item.id" @click="openRent(item)" />
+                                        <IconButton v-if="(item.quantity ?? 1) > 1 && (item.available_quantity ?? 0) > 0 && can('equipment', 'edit')" icon="alert" :label="t('equipment.mark_damaged')" plain size="sm" :data-help="'eq-split-' + item.id" @click="openSplit(item)" />
+                                        <IconButton v-if="item.status === 'Available' && can('equipment', 'edit')" icon="wrench" :label="t('send_to_repair')" plain size="sm" :data-help="'eq-repair-' + item.id" @click="repairItemId = item.id" />
+                                        <IconButton v-if="item.status === 'Under Repair' && can('equipment', 'edit')" icon="check" :label="t('mark_fixed')" variant="success" plain size="sm" :data-help="'eq-fixed-' + item.id" @click="fixedItemId = item.id" />
+                                        <IconButton v-if="['Available','Rented'].includes(item.status) && can('equipment', 'edit')" icon="xcircle" :label="t('lost')" variant="danger" plain size="sm" :data-help="'eq-lost-' + item.id" @click="lostItemId = item.id" />
                                         <IconButton v-if="item.status === 'Lost' && can('equipment', 'edit')" icon="restore" :label="t('restore')" variant="success" plain size="sm" @click="foundItemId = item.id" />
-                                        <IconButton :href="route('equipment.items.history', item.id)" icon="calendar" :label="t('history')" plain size="sm" />
+                                        <IconButton :href="route('equipment.items.history', item.id)" icon="calendar" :label="t('history')" plain size="sm" :data-help="'eq-history-' + item.id" />
                                         <IconButton v-if="can('equipment', 'edit')" icon="pencil" :label="t('edit')" plain size="sm" @click="openEdit(item)" />
                                         <IconButton v-if="!item.open_rentals?.length && can('equipment', 'delete')" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteItemId = item.id" />
                                     </div>
@@ -569,40 +569,40 @@ function submitImport() {
                     <form @submit.prevent="doRent" class="mt-4 space-y-3">
                         <!-- A rental comes back by a date; an assignment is open-ended. -->
                         <div class="grid grid-cols-2 gap-2">
-                            <button type="button" @click="rentForm.type = 'rental'"
+                            <button type="button" data-help="eq-rent-rental" @click="rentForm.type = 'rental'"
                                 :class="rentForm.type === 'rental' ? 'bg-primary-100 dark:bg-primary-500/25 border-primary-500 text-primary-800 dark:text-primary-100' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'"
                                 class="rounded-lg border px-3 py-2 text-sm font-medium transition-colors">{{ t('equipment.rental') }}</button>
-                            <button type="button" @click="rentForm.type = 'assignment'"
+                            <button type="button" data-help="eq-rent-assignment" @click="rentForm.type = 'assignment'"
                                 :class="rentForm.type === 'assignment' ? 'bg-primary-100 dark:bg-primary-500/25 border-primary-500 text-primary-800 dark:text-primary-100' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'"
                                 class="rounded-lg border px-3 py-2 text-sm font-medium transition-colors">{{ t('equipment.assignment') }}</button>
                         </div>
-                        <p v-if="rentForm.type === 'assignment'" class="text-xs text-slate-500 dark:text-slate-400">{{ t('equipment.assignment_hint') }}</p>
+                        <p v-if="rentForm.type === 'assignment'" data-help="eq-rent-assignment-hint" class="text-xs text-slate-500 dark:text-slate-400">{{ t('equipment.assignment_hint') }}</p>
 
                         <!-- Recipient: a team player, or a free-text person from outside the club. -->
                         <div class="grid gap-2" :class="rentForm.type === 'rental' ? 'grid-cols-2' : 'grid-cols-1'">
-                            <button type="button" @click="rentForm.rentable_type = 'Player'"
+                            <button type="button" data-help="eq-rent-player-btn" @click="rentForm.rentable_type = 'Player'"
                                 :class="rentForm.rentable_type === 'Player' ? 'bg-slate-100 dark:bg-slate-800 border-slate-400' : 'border-slate-200 dark:border-slate-800'"
                                 class="rounded-lg border px-3 py-2 text-sm text-slate-700 dark:text-slate-200">{{ t('player') }}</button>
-                            <button v-if="rentForm.type === 'rental'" type="button" @click="rentForm.rentable_type = 'External'"
+                            <button v-if="rentForm.type === 'rental'" type="button" data-help="eq-rent-external-btn" @click="rentForm.rentable_type = 'External'"
                                 :class="rentForm.rentable_type === 'External' ? 'bg-slate-100 dark:bg-slate-800 border-slate-400' : 'border-slate-200 dark:border-slate-800'"
                                 class="rounded-lg border px-3 py-2 text-sm text-slate-700 dark:text-slate-200">{{ t('external_person') }}</button>
                         </div>
                         <p v-if="rentForm.type === 'assignment'" class="text-xs text-slate-500 dark:text-slate-400">{{ t('equipment.assignment_player_only') }}</p>
                         <InputError :message="rentForm.errors.rentable_type" class="mt-1" />
 
-                        <div v-if="rentForm.rentable_type === 'Player'">
+                        <div v-if="rentForm.rentable_type === 'Player'" data-help="eq-rent-player">
                             <InputLabel :value="t('player')" />
                             <SearchableSelect v-model="rentForm.rentable_id" :options="playerOptions" :placeholder="t('select_player')" />
                             <InputError :message="rentForm.errors.rentable_id" class="mt-1" />
                         </div>
 
                         <template v-else>
-                            <div>
+                            <div data-help="eq-rent-name">
                                 <InputLabel :value="t('full_name')" />
                                 <TextInput v-model="rentForm.external_name" class="mt-1 w-full" :placeholder="t('full_name')" required />
                                 <InputError :message="rentForm.errors.external_name" class="mt-1" />
                             </div>
-                            <div>
+                            <div data-help="eq-rent-phone">
                                 <InputLabel :value="t('phone')" />
                                 <TextInput v-model="rentForm.external_phone" type="tel" class="mt-1 w-full" />
                                 <InputError :message="rentForm.errors.external_phone" class="mt-1" />
@@ -614,7 +614,7 @@ function submitImport() {
                             ⚠ {{ crossBranchWarning }}
                         </p>
 
-                        <div v-if="(selectedItem?.quantity ?? 1) > 1">
+                        <div v-if="(selectedItem?.quantity ?? 1) > 1" data-help="eq-rent-quantity">
                             <InputLabel :value="t('equipment.quantity')" />
                             <TextInput v-model="rentForm.quantity" type="number" min="1" :max="selectedItem?.available_quantity" class="mt-1 w-full" required />
                             <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -624,11 +624,11 @@ function submitImport() {
                         </div>
 
                         <div class="grid gap-3" :class="rentForm.type === 'rental' ? 'sm:grid-cols-2' : ''">
-                            <div>
+                            <div data-help="eq-rent-date">
                                 <InputLabel :value="t('rental_date')" />
                                 <TextInput v-model="rentForm.checkout_date" type="date" class="mt-1 w-full" />
                             </div>
-                            <div v-if="rentForm.type === 'rental'">
+                            <div v-if="rentForm.type === 'rental'" data-help="eq-rent-days">
                                 <InputLabel :value="t('expected_rent_period')" />
                                 <TextInput v-model="rentForm.expected_days" type="number" min="1" class="mt-1 w-full" :placeholder="t('days')" />
                                 <p v-if="expectedReturnDate" class="mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -643,7 +643,7 @@ function submitImport() {
                         </div>
                         <div class="flex justify-end gap-3 pt-2">
                             <button type="button" @click="showRentModal = false" class="rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">{{ t('cancel') }}</button>
-                            <PrimaryButton :disabled="rentForm.processing">{{ t('rent') }}</PrimaryButton>
+                            <PrimaryButton data-help="eq-rent-save" :disabled="rentForm.processing">{{ t('rent') }}</PrimaryButton>
                         </div>
                     </form>
                 </div>
@@ -826,7 +826,7 @@ function submitImport() {
                 <div class="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-xl">
                     <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('equipment.mark_damaged') }}</h3>
                     <form @submit.prevent="doSplit" class="mt-4 space-y-3">
-                        <div>
+                        <div data-help="eq-split-quantity">
                             <InputLabel :value="t('equipment.quantity')" />
                             <TextInput v-model="splitForm.quantity" type="number" min="1" :max="selectedItem?.available_quantity" class="mt-1 w-full" required />
                             <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -834,7 +834,7 @@ function submitImport() {
                             </p>
                             <InputError :message="splitForm.errors.quantity" class="mt-1" />
                         </div>
-                        <div>
+                        <div data-help="eq-split-condition">
                             <InputLabel :value="t('condition')" />
                             <div class="mt-2 grid grid-cols-5 gap-2">
                                 <button v-for="c in ['New','Good','Fair','Poor','Damaged']" :key="c" type="button"
@@ -845,11 +845,11 @@ function submitImport() {
                         </div>
                         <div>
                             <InputLabel :value="t('notes')" />
-                            <textarea v-model="splitForm.notes" rows="2" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500" />
+                            <textarea v-model="splitForm.notes" data-help="eq-split-notes" rows="2" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500" />
                         </div>
                         <div class="flex justify-end gap-3 pt-2">
                             <button type="button" @click="showSplitModal = false" class="rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">{{ t('cancel') }}</button>
-                            <PrimaryButton :disabled="splitForm.processing">{{ t('save') }}</PrimaryButton>
+                            <PrimaryButton data-help="eq-split-save" :disabled="splitForm.processing">{{ t('save') }}</PrimaryButton>
                         </div>
                     </form>
                 </div>

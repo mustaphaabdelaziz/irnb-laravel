@@ -324,18 +324,18 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
             <section v-if="others.length" class="space-y-2">
                 <h2 class="text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('board.other_members') }}</h2>
                 <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                    <OrgNode v-for="m in others" :key="m.id" :member="m" :label="roleLabel(m.role)" size="sm" @select="openSeat(m)" />
+                    <OrgNode v-for="m in others" :key="m.id" :member="m" :label="roleLabel(m.role)" size="sm" :data-help="`board-other-${m.id}`" @select="openSeat(m)" />
                 </div>
             </section>
 
             <!-- Former members -->
             <section v-if="former.length" class="space-y-2">
-                <button type="button" @click="showFormer = !showFormer" class="flex items-center gap-1 text-sm font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
+                <button type="button" data-help="board-former-toggle" @click="showFormer = !showFormer" class="flex items-center gap-1 text-sm font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
                     <Icon name="chevron" class="h-4 w-4 transition-transform" :class="showFormer ? 'rotate-90' : 'rtl:rotate-180'" />
                     {{ t('board.former_members') }} ({{ former.length }})
                 </button>
                 <div v-if="showFormer" class="grid gap-2 opacity-70 sm:grid-cols-2 lg:grid-cols-4">
-                    <OrgNode v-for="m in former" :key="m.id" :member="m" :label="roleLabel(m.role)" size="sm" @select="openSeat(m)" />
+                    <OrgNode v-for="m in former" :key="m.id" :member="m" :label="roleLabel(m.role)" size="sm" :data-help="`board-former-${m.id}`" @select="openSeat(m)" />
                 </div>
             </section>
         </div>
@@ -350,13 +350,13 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                     </div>
                     <div class="relative">
                         <span class="pointer-events-none absolute inset-y-0 start-3 flex items-center text-slate-400"><Icon name="search" /></span>
-                        <input v-model="pickerSearch" :placeholder="t('search_for_member')" autocomplete="off" autofocus
+                        <input v-model="pickerSearch" data-help="board-picker-search" :placeholder="t('search_for_member')" autocomplete="off" autofocus
                             class="w-full rounded-lg border-slate-200 bg-white ps-9 text-sm dark:border-slate-700 dark:bg-slate-800" />
                     </div>
                     <p v-if="pickerError" class="text-xs text-rose-500 dark:text-rose-400">{{ pickerError }}</p>
                     <ul class="max-h-72 overflow-auto rounded-lg ring-1 ring-slate-100 dark:ring-slate-800">
                         <li v-for="p in pickerPlayers" :key="p.id">
-                            <button type="button" :disabled="pickerBusy" @click="picker.onPick(p)"
+                            <button type="button" :disabled="pickerBusy" :data-help="`board-picker-${p.id}`" @click="picker.onPick(p)"
                                 class="flex w-full items-center gap-2 px-3 py-2 text-start text-sm hover:bg-primary-50 disabled:opacity-50 dark:hover:bg-primary-500/10">
                                 <span class="min-w-0 flex-1 truncate font-medium text-slate-800 dark:text-slate-100">{{ p.name }}</span>
                                 <span v-if="onBoard.has(p.id)" class="shrink-0 rounded-full bg-primary-100 px-2 py-0.5 text-[10px] font-bold text-primary-700 dark:bg-primary-500/20 dark:text-primary-300">{{ t('board.on_board') }}</span>
@@ -397,7 +397,7 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                     <div v-if="selected.committee && can('board', 'edit')" class="space-y-2 rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50">
                         <p class="text-xs font-bold uppercase tracking-wide text-slate-400">{{ selected.committee.name }}</p>
                         <div class="grid grid-cols-3 gap-1.5">
-                            <button v-for="pos in ['head', 'deputy', 'member']" :key="pos" type="button" @click="pos !== selected.position && changePosition(pos)"
+                            <button v-for="pos in ['head', 'deputy', 'member']" :key="pos" type="button" :data-help="`board-seat-pos-${pos}`" @click="pos !== selected.position && changePosition(pos)"
                                 class="rounded-lg px-2 py-1.5 text-xs font-bold transition-colors"
                                 :class="pos === selected.position ? 'bg-primary-600 text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800'">
                                 {{ t(`board.position.${pos}`) }}
@@ -407,9 +407,9 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                     </div>
 
                     <div class="flex flex-wrap justify-end gap-2">
-                        <IconButton v-if="selected.committee && can('board', 'delete')" icon="logout" :label="t('board.leave_committee')" variant="danger" @click="leaveTarget = { member: selected.member, committee: selected.committee }" />
-                        <IconButton v-if="can('board', 'edit')" icon="pencil" :label="t('edit')" @click="openEdit(selected.member)" />
-                        <IconButton v-if="can('board', 'delete')" icon="trash" :label="t('board.remove_from_board')" variant="danger" @click="removeTarget = selected.member" />
+                        <IconButton v-if="selected.committee && can('board', 'delete')" icon="logout" :label="t('board.leave_committee')" variant="danger" data-help="board-seat-leave" @click="leaveTarget = { member: selected.member, committee: selected.committee }" />
+                        <IconButton v-if="can('board', 'edit')" icon="pencil" :label="t('edit')" data-help="board-seat-edit" @click="openEdit(selected.member)" />
+                        <IconButton v-if="can('board', 'delete')" icon="trash" :label="t('board.remove_from_board')" variant="danger" data-help="board-seat-remove" @click="removeTarget = selected.member" />
                     </div>
                 </div>
             </div>

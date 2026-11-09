@@ -1570,10 +1570,12 @@ export default [
         before: async (page) => { await navIntoView(page, 'nav-board-members'); },
     },
     {
-        // «لجنة الإعلام» (committee 3) has no one: its head box is an empty seat.
+        // «لجنة الإعلام» (committee 3) has no one: its head box is an empty seat. Also the
+        // committee cards (committee-seats), كمال درارجة's member box (14) in «اللجنة التقنية»
+        // and, for former-remove-member, ليلى بوعزة (13) under «أعضاء آخرون» and رشيد مقران's deputy box.
         name: 'board-add-member-empty',
         url: '/board/members',
-        targets: ['board-seat-3-head-1'],
+        targets: ['board-seat-3-head-1', 'nav-board-members', 'board-seat-2-member-1', 'board-other-13', 'board-seat-1-deputy-1'],
         before: async (page) => { await centre(page, 'board-seat-3-head-1'); },
     },
     {
@@ -1607,6 +1609,93 @@ export default [
         before: async (page) => {
             await page.locator('[data-help="board-box-president"]').click();
             await page.locator('[data-help="board-seat-whatsapp"]').waitFor({ state: 'visible' });
+        },
+    },
+    {
+        // The «لجنة الإعلام» head picker with «بوعلام» typed: هشام بوعلام (player 10), not on
+        // the board, so no «في المكتب». A click would save: his name is only ringed.
+        name: 'board-committee-seats-picker',
+        url: '/board/members',
+        targets: ['board-picker-search', 'board-picker-10'],
+        before: async (page) => {
+            await page.locator('[data-help="board-seat-3-head-1"]').click();
+            await page.locator('input[data-help="board-picker-search"]').fill('بوعلام');
+            await page.locator('[data-help="board-picker-10"]').waitFor({ state: 'visible' });
+        },
+    },
+    {
+        // The seat menu of كمال درارجة, member of «اللجنة التقنية». Its buttons save on a click.
+        name: 'board-committee-seats-menu',
+        url: '/board/members',
+        targets: ['board-seat-pos-head', 'board-seat-pos-deputy', 'board-seat-pos-member', 'board-seat-leave', 'board-seat-edit', 'board-seat-remove'],
+        before: async (page) => {
+            await page.locator('[data-help="board-seat-2-member-1"]').click();
+            await page.locator('[data-help="board-seat-pos-deputy"]').waitFor({ state: 'visible' });
+        },
+    },
+    {
+        // «إزالة من اللجنة» asked for كمال: the confirm, open and not confirmed.
+        name: 'board-committee-seats-leave-confirm',
+        url: '/board/members',
+        targets: ['confirm-panel', 'confirm-ok'],
+        before: async (page) => {
+            await page.locator('[data-help="board-seat-2-member-1"]').click();
+            await page.locator('[data-help="board-seat-leave"]').click();
+            await page.locator('[data-help="confirm-ok"]').waitFor({ state: 'visible' });
+        },
+    },
+    {
+        // The seat menu of ليلى بوعزة (member 13, «أعضاء آخرون»): no committee block.
+        name: 'board-former-remove-member-menu',
+        url: '/board/members',
+        targets: ['board-seat-edit', 'board-seat-remove'],
+        before: async (page) => {
+            await page.locator('[data-help="board-other-13"]').click();
+            await page.locator('[data-help="board-seat-edit"]').waitFor({ state: 'visible' });
+        },
+    },
+    {
+        // ليلى's edit form, «الحالة» set to «سابق». «حفظ» not pressed.
+        name: 'board-former-remove-member-form',
+        url: '/board/members',
+        targets: ['board-form-status', 'board-form-save'],
+        before: async (page) => {
+            await page.locator('[data-help="board-other-13"]').click();
+            await page.locator('[data-help="board-seat-edit"]').click();
+            await page.selectOption('select[data-help="board-form-status"]', 'former');
+            await blur(page);
+        },
+    },
+    {
+        // «الأعضاء السابقون (1)» opened (the toggle only expands): مراد زيتوني (member 15).
+        name: 'board-former-remove-member-list',
+        url: '/board/members',
+        targets: ['board-former-toggle', 'board-former-15'],
+        before: async (page) => {
+            await page.locator('[data-help="board-former-toggle"]').click();
+            await page.locator('[data-help="board-former-15"]').waitFor({ state: 'visible' });
+            await centre(page, 'board-former-toggle');
+        },
+    },
+    {
+        // The seat menu of رشيد مقران (member 12), deputy of «اللجنة المالية».
+        name: 'board-former-remove-member-seat',
+        url: '/board/members',
+        targets: ['board-seat-leave', 'board-seat-edit', 'board-seat-remove'],
+        before: async (page) => {
+            await page.locator('[data-help="board-seat-1-deputy-1"]').click();
+            await page.locator('[data-help="board-seat-remove"]').waitFor({ state: 'visible' });
+        },
+    },
+    {
+        // «إزالة من المكتب» asked for رشيد: the confirm, open and not confirmed.
+        name: 'board-former-remove-member-confirm',
+        url: '/board/members',
+        targets: ['confirm-panel', 'confirm-ok'],
+        before: async (page) => {
+            await page.locator('[data-help="board-seat-1-deputy-1"]').click();
+            await page.locator('[data-help="board-seat-remove"]').click();
+            await page.locator('[data-help="confirm-ok"]').waitFor({ state: 'visible' });
         },
     },
     {

@@ -6,10 +6,10 @@ use App\Models\Branch;
 use App\Models\BranchRegistration;
 use App\Models\Category;
 use App\Models\Player;
+use App\Services\Player\JoinDateSuggestion;
 use App\Services\Player\RegistrationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -28,8 +28,7 @@ class JoinDateController extends Controller
         $base = BranchRegistration::query()->needsJoinDate()
             ->whereHas('player', fn ($q) => $q->where('archived', false));
 
-        $query = (clone $base)
-            ->select('branch_player.*')
+        $query = JoinDateSuggestion::withTwoBranches((clone $base)->select('branch_player.*'))
             ->when($filters['branch_id'] ?? null, fn ($q, $id) => $q->where('branch_id', $id))
             ->when($filters['category_id'] ?? null, fn ($q, $id) => $q->where('category_id', $id))
             ->when($filters['year'] ?? null, fn ($q, $year) => $q->where('legacy_join_year', $year))
@@ -38,9 +37,6 @@ class JoinDateController extends Controller
                 'branch:id,name,name_ar,name_fr,name_en',
                 'category:id,name,name_ar,name_fr,name_en',
             ])
-            ->addSelect(['two_branches' => DB::table('branch_player as other')
-                ->selectRaw('COUNT(*) > 1')
-                ->whereColumn('other.player_id', 'branch_player.player_id')])
             // One year shared by two sports is the least certain, so it goes first.
             ->orderByDesc('two_branches')
             ->orderBy('player_id')
@@ -71,7 +67,7 @@ class JoinDateController extends Controller
                     'year' => $r->legacy_join_year,
                     'two_branches' => (bool) $r->two_branches,
                     'hint' => $this->hint($r),
-                    'suggestion' => $this->suggestion($r, $mainBranchId),
+                    'suggestion' => JoinDateSuggestion::for($r, $mainBranchId),
                 ]),
         ]);
     }
@@ -125,30 +121,6 @@ class JoinDateController extends Controller
         return back()
             ->withErrors($refused)
             ->with('success', ['key' => 'flash.join_dates_saved', 'params' => ['count' => $saved]]);
-    }
-
-    /**
-     * 1 September of the recorded year, the start of a season. Offered for the
-     * main branch (football) and for a player's only branch; a second branch of a
-     * two-branch player is dated by hand. Never before birth or after today.
-     */
-    private function suggestion(BranchRegistration $registration, ?int $mainBranchId): ?string
-    {
-        $year = $registration->legacy_join_year;
-        if ($year === null) {
-            return null;
-        }
-        if ($registration->two_branches && (int) $registration->branch_id !== $mainBranchId) {
-            return null;
-        }
-
-        $date = sprintf('%04d-09-01', $year);
-        $birthdate = $registration->player->birthdate?->toDateString();
-        if ($date > now()->toDateString() || ($birthdate !== null && $date < $birthdate)) {
-            return null;
-        }
-
-        return $date;
     }
 
     /** When the record was entered, if that year fits. A suggestion only: an admin must confirm it. */

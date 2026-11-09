@@ -6,6 +6,7 @@ use App\Models\Branch;
 use App\Models\BranchRegistration;
 use App\Models\Player;
 use App\Models\User;
+use App\Models\WebsiteConfig;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia;
@@ -101,7 +102,7 @@ class JoinDateQueueTest extends TestCase
     #[Test]
     public function the_first_of_september_is_suggested_for_football_and_single_branch_rows_only(): void
     {
-        \App\Models\WebsiteConfig::singleton()->update(['main_branch_id' => $this->foot->id]);
+        WebsiteConfig::singleton()->update(['main_branch_id' => $this->foot->id]);
         $this->member('Double', 2015, [$this->foot->id, $this->swim->id]);
         $this->member('SwimOnly', 2018, [$this->swim->id]);
 
@@ -150,6 +151,36 @@ class JoinDateQueueTest extends TestCase
         $this->put(route('players.join-dates.bulk-update'), ['dates' => [$registration->id => '2015-09-01']]);
 
         $this->assertSame('2015-03-03', $registration->fresh()->join_date->toDateString());
+    }
+
+    #[Test]
+    public function the_fill_command_dates_football_and_single_branch_rows_and_leaves_two_branch_swimming(): void
+    {
+        WebsiteConfig::singleton()->update(['main_branch_id' => $this->foot->id]);
+        $double = $this->member('Double', 2015, [$this->foot->id, $this->swim->id]);
+        $swimOnly = $this->member('SwimOnly', 2018, [$this->swim->id]);
+
+        $this->artisan('players:fill-join-dates')->assertSuccessful();
+        $this->assertSame(3, BranchRegistration::needsJoinDate()->count(), 'a dry run saves nothing');
+
+        $this->artisan('players:fill-join-dates', ['--force' => true])->assertSuccessful();
+
+        $this->assertSame('2015-09-01', $double->registrations()->where('branch_id', $this->foot->id)->first()->join_date->toDateString());
+        $this->assertNull($double->registrations()->where('branch_id', $this->swim->id)->first()->join_date);
+        $this->assertSame('2018-09-01', $swimOnly->registrations()->first()->join_date->toDateString());
+    }
+
+    #[Test]
+    public function the_one_time_migration_fills_the_same_rows_on_update(): void
+    {
+        WebsiteConfig::singleton()->update(['main_branch_id' => $this->foot->id]);
+        $double = $this->member('Double', 2015, [$this->foot->id, $this->swim->id]);
+        $this->member('SwimOnly', 2018, [$this->swim->id]);
+
+        (include database_path('migrations/2026_11_09_100001_fill_join_dates_with_first_of_september.php'))->up();
+
+        $this->assertSame(1, BranchRegistration::needsJoinDate()->count());
+        $this->assertNull($double->registrations()->where('branch_id', $this->swim->id)->first()->join_date);
     }
 
     #[Test]

@@ -10,6 +10,8 @@ return [
     'attributes' => ValidationAttributes::for('en'),
 
     'branch_code_locked' => "This code can't change: membership IDs already use it.",
+    'equipment_expense_needs_price' => 'Enter the unit price to record the expense.',
+    'equipment_source_required' => 'Choose where the stock came from.',
     'branch_code_needs_latin' => 'Type the branch code in Latin letters (e.g. HB): the name has none.',
 
     'join_date_before_birth' => 'The join date is before the birth date.',

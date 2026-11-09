@@ -1554,6 +1554,7 @@
     "equipment.assignments_tab": "Assignments",
     "equipment.available_of_total": "available",
     "equipment.branch_hint": "Leave empty for club-wide equipment that every branch can use.",
+    "equipment.choose_source": "Choose the source",
     "equipment.cross_branch_warning": "This equipment belongs to another branch.",
     "equipment.holder": "Held by",
     "equipment.lots": "lots",

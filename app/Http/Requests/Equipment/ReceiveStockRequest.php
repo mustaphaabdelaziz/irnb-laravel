@@ -19,7 +19,10 @@ class ReceiveStockRequest extends FormRequest
             'quantity' => ['required', 'integer', 'min:1', 'max:'.($this->receivesNumberedUnits() ? self::MAX_NUMBERED_UNITS : 100000)],
             // Numbered "{designation} N" per unit when several are received.
             'designation' => ['nullable', 'string', 'max:240'],
-            'unit_price' => ['nullable', 'numeric', 'min:0'],
+            // An expense of 0 would be silently skipped: ask for the price instead.
+            'unit_price' => $this->boolean('record_expense')
+                ? ['required', 'numeric', 'gt:0']
+                : ['nullable', 'numeric', 'min:0'],
             'purchase_date' => ['required', 'date'],
             'condition' => ['required', 'in:New,Good,Fair,Poor,Damaged'],
             'location' => ['nullable', 'string', 'max:255'],
@@ -27,7 +30,12 @@ class ReceiveStockRequest extends FormRequest
             // received_via is a plain string column (SQLite enum check
             // constraints cannot be altered later), so the allowed values are
             // enforced here.
-            'received_via' => ['nullable', 'in:purchase,donation,opening_balance,adjustment'],
+            // When no money is spent the reason must be chosen (the form starts empty).
+            'received_via' => [
+                Rule::requiredIf(fn () => ! $this->boolean('record_expense')),
+                'nullable',
+                'in:purchase,donation,opening_balance,adjustment',
+            ],
             'record_expense' => ['boolean'],
             'finance_account_id' => [
                 'nullable',
@@ -36,6 +44,15 @@ class ReceiveStockRequest extends FormRequest
             ],
             'branch_ids' => ['array'],
             'branch_ids.*' => ['exists:branches,id'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'unit_price.required' => __('validation.equipment_expense_needs_price'),
+            'unit_price.gt' => __('validation.equipment_expense_needs_price'),
+            'received_via.required' => __('validation.equipment_source_required'),
         ];
     }
 

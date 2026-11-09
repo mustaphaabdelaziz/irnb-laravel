@@ -199,6 +199,7 @@ class EquipmentLotJourneyTest extends TestCase
             'purchase_date' => '2026-01-01',
             'condition' => 'New',
             'record_expense' => false,
+            'received_via' => 'donation',
         ])->assertRedirect();
 
         $lot = EquipmentItem::first();
@@ -252,6 +253,7 @@ class EquipmentLotJourneyTest extends TestCase
             'purchase_date' => '2026-01-01',
             'condition' => 'New',
             'record_expense' => false,
+            'received_via' => 'donation',
         ])->assertRedirect();
 
         $lot = EquipmentItem::first();

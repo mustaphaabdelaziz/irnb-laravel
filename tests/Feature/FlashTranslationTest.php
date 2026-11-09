@@ -146,6 +146,7 @@ class FlashTranslationTest extends TestCase
                 'purchase_date' => '2026-01-01',
                 'condition' => 'New',
                 'record_expense' => false,
+                'received_via' => 'donation',
             ])
             ->assertSessionHas('success', 'flash.equipment_stock_received');
     }

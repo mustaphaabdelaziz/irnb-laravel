@@ -1554,6 +1554,7 @@
     "equipment.assignments_tab": "التسليمات للعمل",
     "equipment.available_of_total": "متاح",
     "equipment.branch_hint": "اتركه فارغاً للمعدات المشتركة التي يمكن لكل الفروع استخدامها.",
+    "equipment.choose_source": "اختر المصدر",
     "equipment.cross_branch_warning": "هذه المعدات تخص فرعاً آخر.",
     "equipment.holder": "بحوزة",
     "equipment.lots": "دفعات",

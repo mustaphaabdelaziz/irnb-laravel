@@ -107,6 +107,7 @@ class EquipmentReceiveStockTest extends TestCase
             'purchase_date' => '2026-03-15',
             'condition' => 'New',
             'record_expense' => false,
+            'received_via' => 'donation',
             'branch_ids' => [$branch->id],
         ])->assertRedirect();
 
@@ -122,6 +123,7 @@ class EquipmentReceiveStockTest extends TestCase
             'purchase_date' => '2026-03-15',
             'condition' => 'New',
             'record_expense' => false,
+            'received_via' => 'donation',
         ])->assertRedirect();
 
         $this->assertDatabaseHas('equipment_histories', [
@@ -160,6 +162,7 @@ class EquipmentReceiveStockTest extends TestCase
             'condition' => 'New',
             'location' => 'Store room',
             'record_expense' => false,
+            'received_via' => 'donation',
             'branch_ids' => [$branch->id],
         ])->assertRedirect(route('equipment.catalogs.show', $catalog->id));
 
@@ -200,6 +203,7 @@ class EquipmentReceiveStockTest extends TestCase
             'purchase_date' => '2026-06-01',
             'condition' => 'New',
             'record_expense' => false,
+            'received_via' => 'donation',
         ])->assertRedirect();
 
         $this->assertSame(
@@ -261,6 +265,7 @@ class EquipmentReceiveStockTest extends TestCase
             'purchase_date' => '2026-05-01',
             'condition' => 'New',
             'record_expense' => false,
+            'received_via' => 'donation',
         ])->assertSessionHasErrors('quantity');
 
         $this->assertSame(0, EquipmentItem::count());
@@ -278,6 +283,7 @@ class EquipmentReceiveStockTest extends TestCase
             'purchase_date' => '2026-05-01',
             'condition' => 'New',
             'record_expense' => false,
+            'received_via' => 'donation',
         ])->assertRedirect();
 
         $this->assertSame(
@@ -305,6 +311,7 @@ class EquipmentReceiveStockTest extends TestCase
             'purchase_date' => '2026-05-01',
             'condition' => 'New',
             'record_expense' => false,
+            'received_via' => 'donation',
         ])->assertRedirect();
 
         $this->assertSame(
@@ -325,6 +332,7 @@ class EquipmentReceiveStockTest extends TestCase
             'purchase_date' => '2026-05-01',
             'condition' => 'New',
             'record_expense' => false,
+            'received_via' => 'donation',
         ])->assertRedirect();
 
         $this->assertSame("Coach's vest", EquipmentItem::sole()->designation);
@@ -339,6 +347,7 @@ class EquipmentReceiveStockTest extends TestCase
             'purchase_date' => '2026-05-01',
             'condition' => 'New',
             'record_expense' => false,
+            'received_via' => 'donation',
         ])->assertRedirect();
 
         $lot = EquipmentItem::sole();
@@ -364,5 +373,55 @@ class EquipmentReceiveStockTest extends TestCase
 
         $this->assertSame(0, Transaction::count(), 'adding an item must not spend money');
         $this->assertEquals(4500, EquipmentItem::first()->unit_price, 'but the value is still recorded');
+    }
+
+    #[Test]
+    public function without_an_expense_the_source_must_be_chosen(): void
+    {
+        $this->actingAs($this->user())->post(route('equipment.stock.receive'), [
+            'catalog_id' => $this->catalog()->id,
+            'quantity' => 5,
+            'purchase_date' => '2026-03-15',
+            'condition' => 'New',
+            'record_expense' => false,
+        ])->assertSessionHasErrors('received_via');
+
+        $this->assertSame(0, EquipmentItem::count());
+    }
+
+    #[Test]
+    public function an_expense_needs_a_unit_price_above_zero(): void
+    {
+        foreach (['', 0] as $price) {
+            $this->actingAs($this->user())->post(route('equipment.stock.receive'), [
+                'catalog_id' => $this->catalog()->id,
+                'quantity' => 5,
+                'unit_price' => $price,
+                'purchase_date' => '2026-03-15',
+                'condition' => 'New',
+                'record_expense' => true,
+            ])->assertSessionHasErrors('unit_price');
+        }
+
+        $this->assertSame(0, Transaction::count());
+        $this->assertSame(0, EquipmentItem::count());
+    }
+
+    #[Test]
+    public function the_expense_description_follows_the_app_language(): void
+    {
+        // SetLocale takes the language from the user's preference.
+        $user = User::factory()->admin()->create(['email_verified_at' => now(), 'preferred_lng' => 'ar']);
+
+        $this->actingAs($user)->post(route('equipment.stock.receive'), [
+            'catalog_id' => $this->catalog()->id,
+            'quantity' => 4,
+            'unit_price' => 100,
+            'purchase_date' => '2026-03-15',
+            'condition' => 'New',
+            'record_expense' => true,
+        ])->assertRedirect();
+
+        $this->assertSame('شراء معدات: 4 وحدة', Transaction::first()->description);
     }
 }

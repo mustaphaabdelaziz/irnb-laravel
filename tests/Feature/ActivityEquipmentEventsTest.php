@@ -105,7 +105,7 @@ class ActivityEquipmentEventsTest extends TestCase
 
         $this->actingAs($admin)->post(route('equipment.stock.receive'), [
             'catalog_id' => $catalog->id, 'quantity' => 12,
-            'purchase_date' => '2026-03-15', 'condition' => 'New',
+            'purchase_date' => '2026-03-15', 'condition' => 'New', 'received_via' => 'donation',
         ])->assertSessionHasNoErrors()->assertRedirect();
 
         $lot = EquipmentItem::query()->sole();

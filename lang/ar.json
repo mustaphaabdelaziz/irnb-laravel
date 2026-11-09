@@ -113,5 +113,6 @@
     "Monthly": "شهري",
     "Quarterly": "ثلاثي",
     "Yearly": "سنوي",
-    "Ad Hoc": "ظرفي"
+    "Ad Hoc": "ظرفي",
+    "Equipment purchase: :count unit(s)": "شراء معدات: :count وحدة"
 }

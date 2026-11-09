@@ -1554,6 +1554,7 @@
     "equipment.assignments_tab": "Affectations",
     "equipment.available_of_total": "disponibles",
     "equipment.branch_hint": "Laissez vide pour un matériel commun, utilisable par toutes les sections.",
+    "equipment.choose_source": "Choisir la provenance",
     "equipment.cross_branch_warning": "Ce matériel appartient à une autre section.",
     "equipment.holder": "Détenu par",
     "equipment.lots": "lots",

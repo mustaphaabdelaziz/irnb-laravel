@@ -206,7 +206,7 @@ class EquipmentStockService
                     'transaction_date' => $purchaseDate,
                     'transaction_type' => 'expense',
                     'category' => 'equipment',
-                    'description' => "Equipment purchase: {$quantity} unit(s)",
+                    'description' => __('Equipment purchase: :count unit(s)', ['count' => $quantity]),
                     'recorded_by_user_id' => $userId,
                     'finance_account_id' => $data['finance_account_id'] ?? null,
                     'status' => 'Paid',

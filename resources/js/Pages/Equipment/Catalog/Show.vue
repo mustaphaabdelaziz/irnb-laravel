@@ -141,7 +141,7 @@ const receiveForm = useForm({
     // Recording an expense is an explicit choice when receiving material.
     record_expense: false,
     finance_account_id: props.financeAccounts[0]?.id || '',
-    received_via: 'purchase',
+    received_via: '',
     notes: '',
 });
 
@@ -783,11 +783,13 @@ function submitImport() {
                         <!-- Only asked when no money changed hands, so the reason is captured. -->
                         <div v-if="!receiveForm.record_expense">
                             <InputLabel :value="t('equipment.received_via')" />
-                            <select v-model="receiveForm.received_via" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                            <select v-model="receiveForm.received_via" required class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                                <option value="" disabled>{{ t('equipment.choose_source') }}</option>
                                 <option value="donation">{{ t('donation') }}</option>
                                 <option value="opening_balance">{{ t('opening_balance') }}</option>
                                 <option value="adjustment">{{ t('adjustment') }}</option>
                             </select>
+                            <InputError :message="receiveForm.errors.received_via" class="mt-1" />
                         </div>
 
                         <div>

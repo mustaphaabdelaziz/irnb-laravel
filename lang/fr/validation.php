@@ -173,6 +173,8 @@ return [
     'attributes' => ValidationAttributes::for('fr'),
 
     'branch_code_locked' => "Ce code ne peut plus changer : des numéros d'adhérent l'utilisent.",
+    'equipment_expense_needs_price' => 'Saisissez le prix unitaire pour enregistrer la dépense.',
+    'equipment_source_required' => 'Choisissez la provenance.',
     'branch_code_needs_latin' => "Saisissez le code de la section en lettres latines (ex. HB) : le nom n'en contient aucune.",
 
     'join_date_before_birth' => "La date d'adhésion précède la date de naissance.",

@@ -18,6 +18,7 @@ import { useBulkSelection } from '@/Composables/useBulkSelection';
 import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
 import { ref, watch, computed } from 'vue';
 import { localDateKey, localToday } from '@/lib/localDate';
+import { stateLabel as stateLabelOf } from '@/lib/stateLabel';
 
 const { t } = useI18n();
 const { formatMoney } = useFormatMoney();
@@ -327,14 +328,7 @@ const statusColor = (s) => {
     return map[s] || 'slate';
 };
 
-// Translate an enum value (status/condition) via its lowercased, underscored i18n key,
-// falling back to the raw value if no key exists.
-const stateLabel = (v) => {
-    if (!v) return '—';
-    const key = String(v).toLowerCase().replaceAll(' ', '_');
-    const translated = t(key);
-    return translated === key ? v : translated;
-};
+const stateLabel = (v) => stateLabelOf(t, v);
 
 // --- Item import (.xlsx or .csv, read on the server) ---
 const showImport = ref(false);
@@ -654,7 +648,7 @@ function submitImport() {
             </div>
 
             <!-- Return Modal -->
-            <ReturnRentalModal :rental="returningRental" :title="returningLabel" @close="returningRental = null" />
+            <ReturnRentalModal :rental="returningRental" :title="returningLabel" :condition="selectedItem?.condition" @close="returningRental = null" />
         </Teleport>
 
         <!-- Import items modal -->

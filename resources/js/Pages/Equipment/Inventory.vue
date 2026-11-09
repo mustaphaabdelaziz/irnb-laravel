@@ -7,8 +7,10 @@ import { Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
+import { stateLabel as stateLabelOf } from '@/lib/stateLabel';
 
 const { t } = useI18n();
+const stateLabel = (v) => stateLabelOf(t, v);
 const { formatMoney } = useFormatMoney();
 
 const props = defineProps({
@@ -127,7 +129,7 @@ const hasBranchValues = computed(
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                             <tr v-for="c in conditionBreakdown" :key="c.condition">
-                                <td class="px-4 py-3 text-sm text-slate-900 dark:text-slate-100">{{ c.condition }}</td>
+                                <td class="px-4 py-3 text-sm text-slate-900 dark:text-slate-100">{{ stateLabel(c.condition) }}</td>
                                 <td class="px-4 py-3 text-end text-sm font-semibold text-slate-900 dark:text-slate-100">{{ c.count }}</td>
                             </tr>
                         </tbody>

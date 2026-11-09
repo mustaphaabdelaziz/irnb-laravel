@@ -122,6 +122,17 @@ class EquipmentAssignmentTest extends TestCase
     }
 
     #[Test]
+    public function each_open_rental_carries_its_units_condition(): void
+    {
+        $lot = $this->lot(1);
+        $lot->update(['condition' => 'Fair']);
+        $this->open($lot, ['external_name' => 'Karim Visitor']);
+
+        $this->actingAs($this->admin())->get(route('equipment.out'))
+            ->assertInertia(fn ($page) => $page->where('rentals.data.0.item_condition', 'Fair'));
+    }
+
+    #[Test]
     public function equipment_out_searches_holders_by_name_or_membership_id(): void
     {
         $lot = $this->lot();

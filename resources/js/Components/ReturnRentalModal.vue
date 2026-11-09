@@ -16,6 +16,7 @@ import { localToday } from '@/lib/localDate';
 const props = defineProps({
     rental: { type: Object, default: null }, // { id, quantity, returned_quantity }
     title: { type: String, default: '' },
+    condition: { type: String, default: 'Good' }, // the unit's current condition: the form starts on it
 });
 const emit = defineEmits(['close']);
 const { t } = useI18n();
@@ -36,6 +37,7 @@ watch(() => props.rental, (rental) => {
     if (!rental) return;
     form.reset();
     form.clearErrors();
+    form.condition = CONDITIONS.includes(props.condition) ? props.condition : 'Good';
     form.quantity = outstanding(rental);
 }, { immediate: true });
 

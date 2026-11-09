@@ -49,6 +49,7 @@ class EquipmentOutController extends Controller
                     ? ['id' => $rental->equipmentItem->catalog->id, 'name' => $rental->equipmentItem->catalog->name]
                     : null,
                 'item_label' => $rental->equipmentItem?->unique_identifier ?: $rental->equipmentItem?->designation,
+                'item_condition' => $rental->equipmentItem?->condition,
                 'quantity' => $rental->quantity,
                 'returned_quantity' => $rental->returned_quantity,
                 'outstanding_quantity' => $rental->outstanding_quantity,

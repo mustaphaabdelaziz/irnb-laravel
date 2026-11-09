@@ -109,6 +109,6 @@ const returning = ref(null);
             </div>
         </div>
 
-        <ReturnRentalModal :rental="returning" :title="returning?.catalog?.name || ''" @close="returning = null" />
+        <ReturnRentalModal :rental="returning" :title="returning?.catalog?.name || ''" :condition="returning?.item_condition" @close="returning = null" />
     </AuthenticatedLayout>
 </template>

@@ -8,6 +8,7 @@ import Icon from '@/Components/Icon.vue';
 import ExportMenu from '@/Components/ExportMenu.vue';
 import IconButton from '@/Components/IconButton.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
+import { stateLabel as stateLabelOf } from '@/lib/stateLabel';
 
 const props = defineProps({
     session: { type: Object, required: true },
@@ -16,6 +17,7 @@ const props = defineProps({
     players: { type: Array, default: () => [] },
 });
 const { t, locale } = useI18n();
+const stateLabel = (v) => stateLabelOf(t, v);
 
 const isOpen = computed(() => props.session.status === 'in_progress');
 
@@ -188,14 +190,14 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
                         <div v-for="line in grp.lines" :key="line.id" class="flex flex-wrap items-center gap-3 px-5 py-3">
                             <div class="min-w-0 flex-1">
                                 <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ line.item?.unique_identifier }}</p>
-                                <p class="text-xs text-slate-400">{{ line.item?.catalog?.name }} · {{ t('expected') }}: {{ line.expected_condition }}<span v-if="line.expected_location"> · {{ line.expected_location }}</span></p>
+                                <p class="text-xs text-slate-400">{{ line.item?.catalog?.name }} · {{ t('expected') }}: {{ stateLabel(line.expected_condition) }}<span v-if="line.expected_location"> · {{ line.expected_location }}</span></p>
                             </div>
                             <div class="flex gap-1">
                                 <button @click="state[line.id].found = true" class="rounded-lg px-2.5 py-1 text-xs font-bold" :class="state[line.id].found ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'">{{ t('found') }}</button>
                                 <button @click="state[line.id].found = false" class="rounded-lg px-2.5 py-1 text-xs font-bold" :class="!state[line.id].found ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'">{{ t('missing') }}</button>
                             </div>
                             <select v-model="state[line.id].actual_condition" :disabled="!state[line.id].found" class="rounded-lg border-slate-200 bg-white py-1 text-xs disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800">
-                                <option v-for="c in conditions" :key="c" :value="c">{{ c }}</option>
+                                <option v-for="c in conditions" :key="c" :value="c">{{ stateLabel(c) }}</option>
                             </select>
                             <select v-model="state[line.id].actual_location" :disabled="!state[line.id].found" class="w-32 rounded-lg border-slate-200 bg-white py-1 text-xs disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800">
                                 <option value="">{{ t('location') }}</option>
@@ -225,8 +227,8 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
                                 <tr v-for="l in discrepancies" :key="l.id" class="border-b border-slate-50 dark:border-slate-800/50">
                                     <td class="px-3 py-2 font-medium text-slate-800 dark:text-slate-200">{{ l.item?.unique_identifier }}</td>
                                     <td class="px-3 py-2 text-center"><span :class="l.found ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'"><Icon :name="l.found ? 'check' : 'xcircle'" /></span></td>
-                                    <td class="px-3 py-2 text-slate-500 dark:text-slate-400">{{ l.expected_condition }}<span v-if="l.expected_location"> · {{ l.expected_location }}</span></td>
-                                    <td class="px-3 py-2 text-slate-700 dark:text-slate-300">{{ l.actual_condition }}<span v-if="l.actual_location"> · {{ l.actual_location }}</span></td>
+                                    <td class="px-3 py-2 text-slate-500 dark:text-slate-400">{{ stateLabel(l.expected_condition) }}<span v-if="l.expected_location"> · {{ l.expected_location }}</span></td>
+                                    <td class="px-3 py-2 text-slate-700 dark:text-slate-300">{{ stateLabel(l.actual_condition) }}<span v-if="l.actual_location"> · {{ l.actual_location }}</span></td>
                                     <td class="px-3 py-2 text-slate-500 dark:text-slate-400">{{ l.note }}</td>
                                 </tr>
                             </tbody>

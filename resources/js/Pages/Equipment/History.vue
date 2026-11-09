@@ -8,6 +8,7 @@ import { Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import WhatsAppLink from '@/Components/WhatsAppLink.vue';
 import { useI18n } from 'vue-i18n';
+import { stateLabel as stateLabelOf } from '@/lib/stateLabel';
 
 const { t } = useI18n();
 
@@ -84,13 +85,7 @@ const DOT_CLASSES = {
 };
 const dotClass = (type) => DOT_CLASSES[eventColor(type)] || DOT_CLASSES.slate;
 
-// Translate an enum value (status/condition) via its lowercased, underscored key.
-const stateLabel = (v) => {
-    if (!v) return '—';
-    const key = String(v).toLowerCase().replaceAll(' ', '_');
-    const translated = t(key);
-    return translated === key ? v : translated;
-};
+const stateLabel = (v) => stateLabelOf(t, v);
 
 // Translate the normalized event type; fall back to readable text if unmapped.
 const eventLabel = (type) => {

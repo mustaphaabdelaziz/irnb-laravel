@@ -395,6 +395,7 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
         // Board terms (mandates)
         Route::post('/board/terms', [BoardTermController::class, 'store'])->name('board.terms.store');
         Route::put('/board/terms/{boardTerm}', [BoardTermController::class, 'update'])->name('board.terms.update');
+        Route::post('/board/terms/{boardTerm}/copy-previous', [BoardTermController::class, 'copyPrevious'])->name('board.terms.copy-previous');
         Route::delete('/board/terms/{boardTerm}', [BoardTermController::class, 'destroy'])->name('board.terms.destroy');
 
         // Board roles (managed lookup)

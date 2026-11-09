@@ -19,6 +19,7 @@ const props = defineProps({
     committees: { type: Array, default: () => [] },
     players: { type: Array, default: () => [] },
     selectedTermId: { type: [Number, String], default: null },
+    previousTerm: { type: Object, default: null },
 });
 const { t } = useI18n();
 const { can } = useCan();
@@ -145,6 +146,15 @@ function changePosition(position) {
     const { member, committee } = selected.value;
     router.put(route('board.committees.members.update', [committee.id, member.id]), { position }, seatOpts);
 }
+const showCopy = ref(false);
+const copying = ref(false);
+function copyPrevious() {
+    router.post(route('board.terms.copy-previous', props.selectedTermId), {}, {
+        preserveScroll: true,
+        onStart: () => { copying.value = true; },
+        onFinish: () => { copying.value = false; showCopy.value = false; },
+    });
+}
 const leaveTarget = ref(null); // { member, committee }
 function leaveCommittee() {
     const { member, committee } = leaveTarget.value;
@@ -242,6 +252,7 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                 <p class="text-sm text-slate-500 dark:text-slate-400">{{ selectedTermId ? t('board.org_hint') : t('board.org_needs_term') }}</p>
                 <div class="flex gap-2">
                     <ExportMenu :href="route('board.members.export')" :label="t('export')" />
+                    <IconButton v-if="previousTerm && can('board', 'add')" icon="copy" :label="t('board.copy_previous')" data-help="board-copy-previous" @click="showCopy = true" />
                     <IconButton v-if="selectedTermId && can('board', 'add')" icon="plus" :label="t('add_member')" variant="primary" @click="openCreate" />
                 </div>
             </div>
@@ -458,6 +469,9 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
 
         <ConfirmModal :show="!!removeTarget" :title="t('board.remove_from_board')" :message="removeTarget ? `${removeTarget.name} — ${t('confirm_delete')}` : ''"
             @confirm="remove" @cancel="removeTarget = null" />
+        <ConfirmModal :show="showCopy" :title="t('board.copy_previous')" variant="primary" :busy="copying"
+            :message="previousTerm ? t('board.copy_previous_confirm', { count: previousTerm.count, name: previousTerm.name }) : ''"
+            :confirm-label="t('board.copy_previous')" @confirm="copyPrevious" @cancel="showCopy = false" />
         <ConfirmModal :show="!!leaveTarget" :title="t('board.leave_committee')"
             :message="leaveTarget ? t('board.leave_committee_confirm', { name: leaveTarget.member.name, committee: leaveTarget.committee.name }) : ''"
             :confirm-label="t('board.leave_committee')" @confirm="leaveCommittee" @cancel="leaveTarget = null" />

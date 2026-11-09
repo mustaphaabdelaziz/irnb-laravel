@@ -128,6 +128,8 @@ return [
         // organigram or the meetings list would need edit rights.
         'board.members' => ['board', 'view'],
         'board.meetings' => ['board', 'view'],
+        // Copying the previous term's members adds members.
+        'board.terms.copy-previous' => ['board', 'add'],
         // The tasks board and its stats are reading; changing a task keeps its own add/edit/delete guard.
         'board.tasks' => ['board', 'view'],
         // "download" is not a view verb: without this, fetching a file the user

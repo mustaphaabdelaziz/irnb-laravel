@@ -141,12 +141,17 @@ class BoardController extends Controller
             ->sortBy(fn (BoardMember $m) => [$m->status === 'active' ? 0 : 1, $m->roleModel?->sort_order ?? 99, $m->sort_order])
             ->values();
 
+        $selectedTerm = $terms->firstWhere('id', $selectedTermId);
+        $previous = $selectedTerm && $members->isEmpty() ? $selectedTerm->previous() : null;
+        $previousCount = $previous?->members()->where('status', 'active')->count() ?? 0;
+
         return Inertia::render('Board/Members', [
             'members' => $members,
             'terms' => $terms,
             'roles' => BoardRole::orderBy('sort_order')->orderBy('name')->get(['id', 'name', 'label', 'level']),
             'committees' => BoardCommittee::orderBy('sort_order')->orderBy('name')->get(['id', 'name']),
             'selectedTermId' => $selectedTermId,
+            'previousTerm' => $previousCount ? ['id' => $previous->id, 'name' => $previous->name, 'count' => $previousCount] : null,
             'players' => Player::where('archived', false)
                 ->orderBy('lastname')->orderBy('firstname')
                 ->get(['id', ...Player::NAME_COLUMNS, 'membership_id'])

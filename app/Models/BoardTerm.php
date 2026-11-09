@@ -29,6 +29,20 @@ class BoardTerm extends Model
         return self::where('is_current', true)->first() ?? self::latest('id')->first();
     }
 
+    /**
+     * The term before this one: by start date when both have one, else by id.
+     * Computed in PHP (a club has a handful of terms) so NULL dates sort the same on every database.
+     */
+    public function previous(): ?self
+    {
+        return self::whereKeyNot($this->id)->get()
+            ->filter(fn (self $t) => $this->start_date && $t->start_date
+                ? $t->start_date->lt($this->start_date)
+                : $t->id < $this->id)
+            ->sortByDesc(fn (self $t) => sprintf('%s-%010d', $t->start_date?->format('Y-m-d') ?? '0000-00-00', $t->id))
+            ->first();
+    }
+
     public function members(): HasMany
     {
         return $this->hasMany(BoardMember::class);

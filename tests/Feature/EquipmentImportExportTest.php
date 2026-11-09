@@ -7,9 +7,11 @@ use App\Models\EquipmentItem;
 use App\Models\FinanceAccount;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\Equipment\SerialNumberService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use PHPUnit\Framework\Attributes\Test;
+use RuntimeException;
 use Tests\TestCase;
 
 class EquipmentImportExportTest extends TestCase
@@ -116,6 +118,28 @@ class EquipmentImportExportTest extends TestCase
         $this->assertSame($account->id, $transaction->finance_account_id);
         $this->assertEquals(1500, $transaction->amount);
         $this->assertSame($transaction->id, EquipmentItem::first()->purchase_transaction_id);
+    }
+
+    #[Test]
+    public function a_row_that_cannot_be_saved_is_reported_in_arabic_beside_the_count(): void
+    {
+        $catalog = $this->catalog();
+        $file = $this->makeCsv([['Shirt 10', '2026-05-01', 'New', '', '', '']]);
+
+        $this->mock(SerialNumberService::class)
+            ->shouldReceive('assign')
+            ->andThrow(new RuntimeException('SQLSTATE[23000]: Integrity constraint violation'));
+
+        $user = User::factory()->admin()->create(['email_verified_at' => now(), 'preferred_lng' => 'ar']);
+
+        $this->actingAs($user)
+            ->post(route('equipment.items.import', $catalog), ['file' => $file])
+            ->assertRedirect()
+            ->assertSessionHas('success', 'تم استيراد 0 عنصر بنجاح.')
+            // The reader gets a sentence, never the database's English error.
+            ->assertSessionHas('error', 'السطر 2: تعذّر حفظ هذا السطر.');
+
+        $this->assertSame(0, EquipmentItem::count());
     }
 
     #[Test]

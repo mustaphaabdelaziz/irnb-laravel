@@ -76,6 +76,27 @@ class EquipmentCatalogImportExportTest extends TestCase
     }
 
     #[Test]
+    public function an_arabic_import_flashes_its_count_and_its_skipped_rows_in_arabic(): void
+    {
+        EquipmentCategory::firstOrCreate(['name' => 'Balls'], ['code' => 'BALL']);
+        EquipmentCatalog::create(['name' => 'Existing Ball', 'category' => 'Balls']);
+
+        $file = $this->makeCsv([
+            ['Match Ball', 'Balls', '', '', ''],
+            ['Mystery Gear', 'Nope', '', '', ''],
+            ['Existing Ball', 'Balls', '', '', ''],
+        ]);
+
+        $user = User::factory()->admin()->create(['email_verified_at' => now(), 'preferred_lng' => 'ar']);
+
+        $this->actingAs($user)
+            ->post(route('equipment.catalogs.import'), ['file' => $file])
+            ->assertRedirect()
+            ->assertSessionHas('success', 'تم استيراد 1 معدة بنجاح.')
+            ->assertSessionHas('error', "السطر 3: فئة غير معروفة \"Nope\".\nالسطر 4: \"Existing Ball\" موجود مسبقاً — تم تخطيه.");
+    }
+
+    #[Test]
     public function it_exports_catalogs_as_csv(): void
     {
         EquipmentCatalog::create(['name' => 'Exported Kit', 'category' => 'Kits', 'brand' => 'Nike']);

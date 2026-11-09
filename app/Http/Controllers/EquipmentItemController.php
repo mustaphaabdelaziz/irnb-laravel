@@ -556,7 +556,11 @@ class EquipmentItemController extends Controller
 
                 $imported++;
             } catch (Throwable $e) {
-                $errors[] = __('Row :line: :message', ['line' => $line, 'message' => $e->getMessage()]);
+                // Nothing in a row is user-fixable here (bad dates/conditions get
+                // defaults), so the failure is a database one: log it, and give the
+                // reader a sentence in their language instead of English SQL.
+                report($e);
+                $errors[] = __('Row :line: :message', ['line' => $line, 'message' => __('This row could not be saved.')]);
             }
         }
 

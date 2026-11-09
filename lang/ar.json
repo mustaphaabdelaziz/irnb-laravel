@@ -33,6 +33,7 @@
     "Row :line: \":name\" already exists — skipped.": "السطر :line: \":name\" موجود مسبقاً — تم تخطيه.",
     "Row :line: \":name\" looks like the existing \":existing\" — imported anyway.": "السطر :line: \":name\" يشبه \":existing\" الموجود — تم استيراده رغم ذلك.",
     "Row :line: :message": "السطر :line: :message",
+    "This row could not be saved.": "تعذّر حفظ هذا السطر.",
     "Row :line: amount \":value\" is not a number, the row was skipped.": "السطر :line: المبلغ \":value\" ليس رقماً، تم تخطي السطر.",
     "Row :line: cash register \":name\" not found, the default register was used.": "السطر :line: الصندوق \":name\" غير موجود، تم استعمال الصندوق الافتراضي.",
     "Row :line: date \":value\" is not valid, today's date was used.": "السطر :line: التاريخ \":value\" غير صالح، تم استعمال تاريخ اليوم.",

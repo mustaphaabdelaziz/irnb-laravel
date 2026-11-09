@@ -1770,6 +1770,7 @@
     "flash.equipment_lot_split": "تم إعادة تصنيف الوحدات بنجاح.",
     "flash.equipment_marked_as_lost": "تم تسجيل المعدات كمفقودة.",
     "flash.equipment_repair_completed": "تم إنهاء الإصلاح.",
+    "flash.equipment_repair_units_out": "لا يمكن إرسالها للإصلاح: بعض وحداتها خارج المخزن. أرجعها أولًا.",
     "flash.equipment_returned": "تم إرجاع المعدات بنجاح.",
     "flash.equipment_sent_to_repair": "تم إرسال المعدات للإصلاح.",
     "flash.equipment_stock_received": "تم استلام المخزون بنجاح.",

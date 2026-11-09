@@ -233,7 +233,11 @@ class EquipmentItemController extends Controller
     {
         $request->validate(['notes' => ['nullable', 'string']]);
 
-        $this->lifecycle->sendToRepair($item, $request->user()?->id, $request->input('notes'));
+        try {
+            $this->lifecycle->sendToRepair($item, $request->user()?->id, $request->input('notes'));
+        } catch (StockException $e) {
+            return back()->with('error', $e->toFlash());
+        }
 
         return back()->with('success', 'flash.equipment_sent_to_repair');
     }

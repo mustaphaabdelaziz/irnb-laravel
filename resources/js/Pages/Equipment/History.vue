@@ -180,6 +180,8 @@ const eventLabel = (type) => {
                                 <p v-if="event.details.unit_price">{{ t('unit_price') }}: {{ event.details.unit_price }}</p>
                                 <p v-if="event.details.received_via">{{ t('equipment.received_via') }}: {{ t(event.details.received_via) }}</p>
                                 <p v-if="event.details.due_date">{{ t('return_date') }}: {{ event.details.due_date }}</p>
+                                <!-- The day typed on a return; a partial return keeps the loan open, so only the event has it. -->
+                                <p v-if="event.details.return_date">{{ t('return_date') }}: {{ event.details.return_date }}</p>
                                 <p v-if="event.details.returned_condition">{{ t('condition') }}: {{ stateLabel(event.details.returned_condition) }}</p>
                                 <p v-if="event.details.condition">{{ t('condition') }}: {{ stateLabel(event.details.condition) }}</p>
                                 <p v-if="event.details.previous_status">{{ t('status') }}: {{ stateLabel(event.details.previous_status) }}</p>

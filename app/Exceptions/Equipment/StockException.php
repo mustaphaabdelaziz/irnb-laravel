@@ -64,6 +64,11 @@ class StockException extends InvalidArgumentException
         return new self('flash.stock_rental_closed', [], 'This rental is already closed.');
     }
 
+    public static function unitsOutForRepair(): self
+    {
+        return new self('flash.equipment_repair_units_out', [], 'Cannot send to repair: some units are still out.');
+    }
+
     public static function invalidQuantity(): self
     {
         return new self('flash.stock_invalid_quantity', [], 'Quantity must be at least 1.');

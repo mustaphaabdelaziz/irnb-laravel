@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class EquipmentLifecycleService
@@ -112,6 +113,9 @@ class EquipmentLifecycleService
         DB::transaction(function () use ($item, $rental, $options, $quantity, $condition, $actor) {
             $returned = $rental->returned_quantity + $quantity;
             $fullyReturned = $returned >= $rental->quantity;
+            // The day the user typed, kept on every return event: a partial
+            // return leaves the rental open, so its date lives only here.
+            $returnDate = Carbon::parse($options['return_date'] ?? now())->toDateString();
 
             $rental->update([
                 'returned_quantity' => $returned,
@@ -131,6 +135,7 @@ class EquipmentLifecycleService
             $this->logHistory($item, $options['user_id'] ?? null, 'Return', [
                 'rental_id' => $rental->id,
                 'quantity' => $quantity,
+                'return_date' => $returnDate,
                 'returned_condition' => $condition,
                 'fully_returned' => $fullyReturned,
                 'rental_duration_days' => $rental->rental_duration,
@@ -149,6 +154,11 @@ class EquipmentLifecycleService
     {
         if (! in_array($item->status, ['Available', 'Rented'])) {
             throw new \InvalidArgumentException("Item #{$item->unique_identifier} cannot be sent to repair (current status: {$item->status}).");
+        }
+
+        // Units out with someone are not in hand to be repaired.
+        if (app(EquipmentStockService::class)->outstandingQuantity($item) > 0) {
+            throw StockException::unitsOutForRepair();
         }
 
         DB::transaction(function () use ($item, $userId, $notes) {
@@ -186,14 +196,13 @@ class EquipmentLifecycleService
             $previousStatus = $item->status;
             $item->update(['status' => 'Lost']);
 
-            // Close any active rental. returned_quantity is squared up with
-            // quantity so the availability formula stays consistent — the
-            // units are gone, not outstanding.
-            $activeRental = $item->activeRental;
-            if ($activeRental) {
-                $activeRental->update([
+            // Close every open rental: a lot can be out with several people.
+            // returned_quantity is squared up with quantity so the availability
+            // formula stays consistent — the units are gone, not outstanding.
+            foreach ($item->openRentals()->get() as $rental) {
+                $rental->update([
                     'return_date' => now(),
-                    'returned_quantity' => $activeRental->quantity,
+                    'returned_quantity' => $rental->quantity,
                     'return_notes' => 'Marked as lost',
                 ]);
             }

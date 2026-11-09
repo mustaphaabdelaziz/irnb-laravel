@@ -31,6 +31,9 @@ const props = defineProps({
     catalog: Object,
     availableCount: Number,
     totalQuantity: Number,
+    // Units out with someone / units of lots under repair (the condition strip).
+    rentedCount: { type: Number, default: 0 },
+    underRepairCount: { type: Number, default: 0 },
     storageLocations: { type: Array, default: () => [] },
     branches: { type: Array, default: () => [] },
     financeAccounts: { type: Array, default: () => [] },
@@ -61,7 +64,6 @@ const conditionBreakdown = computed(() => {
     return Object.entries(totals).map(([condition, count]) => ({ condition, count }));
 });
 
-const unitsOut = computed(() => (props.totalQuantity ?? 0) - (props.availableCount ?? 0));
 const isDeletable = (item) => item.status !== 'Rented' && !item.open_rentals?.length;
 const deletableItems = computed(() => (props.catalog.items ?? []).filter(isDeletable));
 const {
@@ -404,9 +406,14 @@ function submitImport() {
                         <span class="text-slate-500 dark:text-slate-400">{{ stateLabel(row.condition) }}</span>
                         <span class="font-semibold text-slate-900 dark:text-slate-100">{{ row.count }}</span>
                     </span>
-                    <span v-if="unitsOut > 0" class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-500/20 px-3 py-1 text-xs">
+                    <span v-if="rentedCount > 0" class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-500/20 px-3 py-1 text-xs">
                         <span class="text-amber-700 dark:text-amber-300">{{ t('rented') }}</span>
-                        <span class="font-semibold text-amber-900 dark:text-amber-200">{{ unitsOut }}</span>
+                        <span class="font-semibold text-amber-900 dark:text-amber-200">{{ rentedCount }}</span>
+                    </span>
+                    <!-- In the club but not lendable: never counted as rented. -->
+                    <span v-if="underRepairCount > 0" class="inline-flex items-center gap-1.5 rounded-full bg-slate-200 dark:bg-slate-700 px-3 py-1 text-xs">
+                        <span class="text-slate-600 dark:text-slate-300">{{ stateLabel('Under Repair') }}</span>
+                        <span class="font-semibold text-slate-900 dark:text-slate-100">{{ underRepairCount }}</span>
                     </span>
                 </div>
 
@@ -500,7 +507,7 @@ function submitImport() {
                                         <!-- Driven by available units, not status: a lot of 20 with 10 out is still lendable. -->
                                         <IconButton v-if="(item.available_quantity ?? 0) > 0 && can('equipment', 'edit')" icon="send" :label="t('rent')" variant="primary" plain size="sm" :data-help="'eq-rent-' + item.id" @click="openRent(item)" />
                                         <IconButton v-if="(item.quantity ?? 1) > 1 && (item.available_quantity ?? 0) > 0 && can('equipment', 'edit')" icon="alert" :label="t('equipment.mark_damaged')" plain size="sm" :data-help="'eq-split-' + item.id" @click="openSplit(item)" />
-                                        <IconButton v-if="item.status === 'Available' && can('equipment', 'edit')" icon="wrench" :label="t('send_to_repair')" plain size="sm" :data-help="'eq-repair-' + item.id" @click="repairItemId = item.id" />
+                                        <IconButton v-if="item.status === 'Available' && !item.open_rentals?.length && can('equipment', 'edit')" icon="wrench" :label="t('send_to_repair')" plain size="sm" :data-help="'eq-repair-' + item.id" @click="repairItemId = item.id" />
                                         <IconButton v-if="item.status === 'Under Repair' && can('equipment', 'edit')" icon="check" :label="t('mark_fixed')" variant="success" plain size="sm" :data-help="'eq-fixed-' + item.id" @click="fixedItemId = item.id" />
                                         <IconButton v-if="['Available','Rented'].includes(item.status) && can('equipment', 'edit')" icon="xcircle" :label="t('lost')" variant="danger" plain size="sm" :data-help="'eq-lost-' + item.id" @click="lostItemId = item.id" />
                                         <IconButton v-if="item.status === 'Lost' && can('equipment', 'edit')" icon="restore" :label="t('restore')" variant="success" plain size="sm" :data-help="'eq-restore-' + item.id" @click="foundItemId = item.id" />

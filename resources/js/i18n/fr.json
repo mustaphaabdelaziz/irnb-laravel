@@ -1770,6 +1770,7 @@
     "flash.equipment_lot_split": "Unités reclassées avec succès.",
     "flash.equipment_marked_as_lost": "Matériel déclaré perdu.",
     "flash.equipment_repair_completed": "Réparation terminée.",
+    "flash.equipment_repair_units_out": "Envoi en réparation impossible : des unités sont encore sorties. Faites-les d'abord revenir.",
     "flash.equipment_returned": "Équipement rendu avec succès.",
     "flash.equipment_sent_to_repair": "Matériel envoyé en réparation.",
     "flash.equipment_stock_received": "Stock reçu avec succès.",

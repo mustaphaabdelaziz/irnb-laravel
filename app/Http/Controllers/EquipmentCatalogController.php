@@ -12,6 +12,7 @@ use App\Models\FinanceAccount;
 use App\Models\Player;
 use App\Models\StorageLocation;
 use App\Services\Dashboard\ModuleStats;
+use App\Services\Equipment\EquipmentStockService;
 use App\Services\Storage\FileStorageService;
 use App\Support\Export;
 use App\Support\Import\ImportColumns;
@@ -73,12 +74,19 @@ class EquipmentCatalogController extends Controller
         // not just the latest one.
         $catalog->load(['items.openRentals.rentable', 'items.rentals', 'items.branches']);
         $catalog->items->each->append('available_quantity');
+        $stock = app(EquipmentStockService::class);
 
         return Inertia::render('Equipment/Catalog/Show', [
             'catalog' => $catalog,
             // Units, not rows: sum what each lot can still issue.
             'availableCount' => $catalog->items->sum(fn (EquipmentItem $item) => $item->available_quantity),
             'totalQuantity' => (int) $catalog->items->sum('quantity'),
+            // The condition strip: units out with someone, and units of lots under
+            // repair still in the club. Total minus available would lump both together.
+            'rentedCount' => (int) $catalog->items->sum(fn (EquipmentItem $item) => $stock->outstandingQuantity($item)),
+            'underRepairCount' => (int) $catalog->items
+                ->where('status', 'Under Repair')
+                ->sum(fn (EquipmentItem $item) => max(0, $item->quantity - $stock->outstandingQuantity($item))),
             'storageLocations' => StorageLocation::orderBy('name')->pluck('name'),
             'branches' => Branch::orderBy('name')->get()
                 ->map(fn (Branch $b) => ['id' => $b->id, 'name' => $b->localized_name]),

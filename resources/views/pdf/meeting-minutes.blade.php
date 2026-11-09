@@ -44,8 +44,8 @@
             <tbody>
                 @foreach ($meeting->attendances as $a)
                     <tr>
-                        <td>{{ $a->member?->name }}</td>
-                        <td>{{ __(ucwords(str_replace('_', ' ', $a->member?->role ?? ''))) }}</td>
+                        <td>{{ $a->member?->name ?? $a->member_name }}</td>
+                        <td>{{ __(ucwords(str_replace('_', ' ', $a->member?->role ?? $a->member_role ?? ''))) }}</td>
                         <td>{{ __(ucfirst($a->status)) }}</td>
                     </tr>
                 @endforeach

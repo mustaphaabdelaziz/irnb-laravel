@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BoardMeeting;
+use App\Models\BoardMember;
 use App\Models\MeetingAttendance;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
@@ -54,10 +55,13 @@ class BoardMeetingController extends Controller
             'attendances.*.status' => ['required', Rule::in(['present', 'absent', 'excused'])],
         ]);
 
+        $members = BoardMember::withPlayer()->whereIn('id', collect($data['attendances'])->pluck('board_member_id'))->get()->keyBy('id');
+
         foreach ($data['attendances'] as $row) {
+            $member = $members[$row['board_member_id']];
             MeetingAttendance::updateOrCreate(
-                ['board_meeting_id' => $meeting->id, 'board_member_id' => $row['board_member_id']],
-                ['status' => $row['status']]
+                ['board_meeting_id' => $meeting->id, 'board_member_id' => $member->id],
+                ['status' => $row['status'], 'member_name' => $member->name, 'member_role' => $member->role]
             );
         }
 

@@ -10,7 +10,7 @@ class MeetingAttendance extends Model
 {
     use SerializesClubDates;
 
-    protected $fillable = ['board_meeting_id', 'board_member_id', 'status'];
+    protected $fillable = ['board_meeting_id', 'board_member_id', 'member_name', 'member_role', 'status'];
 
     public function meeting(): BelongsTo
     {

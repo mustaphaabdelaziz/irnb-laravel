@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BoardMember;
+use App\Models\MeetingAttendance;
 use App\Models\Player;
 use App\Services\Storage\FileStorageService;
 use Illuminate\Http\RedirectResponse;
@@ -41,6 +42,10 @@ class BoardMemberController extends Controller
     {
         // Photos uploaded before members came from players.
         $files->delete($boardMember->photo_filename);
+        // Their attendance stays in the minutes, under the name they had then.
+        $boardMember->loadMissing(['player' => fn ($q) => $q->select(BoardMember::PLAYER_COLUMNS)]);
+        MeetingAttendance::where('board_member_id', $boardMember->id)
+            ->update(['member_name' => $boardMember->name, 'member_role' => $boardMember->role]);
         $boardMember->delete();
 
         return back()->with('success', 'flash.board_member_removed');

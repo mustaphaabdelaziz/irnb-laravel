@@ -8,6 +8,7 @@ use App\Models\BoardMember;
 use App\Models\BoardRole;
 use App\Models\BoardTask;
 use App\Models\BoardTerm;
+use App\Models\MeetingAttendance;
 use App\Models\Player;
 use App\Models\PlayerSubscription;
 use App\Support\Export;
@@ -175,7 +176,7 @@ class BoardController extends Controller
     public function meeting(BoardMeeting $meeting): Response
     {
         $meeting->load(['attendances.member', 'tasks.member', 'createdBy:id,name', 'cancelledBy:id,name']);
-        $present = $meeting->attendances->keyBy('board_member_id');
+        $present = $meeting->attendances->whereNotNull('board_member_id')->keyBy('board_member_id');
 
         return Inertia::render('Board/Meeting', [
             'meeting' => $meeting,
@@ -185,6 +186,8 @@ class BoardController extends Controller
                     'attendance' => $present[$m->id]->status ?? null,
                 ]),
             'allMembers' => BoardMember::orderBy('sort_order')->get(['id', 'name', 'role']),
+            'removedAttendances' => $meeting->attendances->whereNull('board_member_id')->values()
+                ->map(fn (MeetingAttendance $a) => ['id' => $a->id, 'name' => $a->member_name, 'role' => $a->member_role, 'status' => $a->status]),
         ]);
     }
 

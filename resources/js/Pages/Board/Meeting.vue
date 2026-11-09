@@ -12,6 +12,7 @@ const props = defineProps({
     meeting: { type: Object, required: true },
     members: { type: Array, default: () => [] },
     allMembers: { type: Array, default: () => [] },
+    removedAttendances: { type: Array, default: () => [] },
 });
 const { t, locale } = useI18n();
 const { can } = useCan();
@@ -257,6 +258,15 @@ const attStyle = {
                             </div>
                         </li>
                     </ul>
+                    <div v-if="removedAttendances.length" class="mt-4 border-t border-slate-100 pt-3 dark:border-slate-800">
+                        <p class="mb-2 text-xs font-bold text-slate-500 dark:text-slate-400">{{ t('board.removed_members') }}</p>
+                        <ul class="space-y-2">
+                            <li v-for="a in removedAttendances" :key="a.id" class="flex items-center justify-between gap-2">
+                                <span class="min-w-0 truncate text-sm text-slate-700 dark:text-slate-200">{{ a.name }} <span v-if="a.role" class="text-xs text-slate-400">{{ t(a.role) }}</span></span>
+                                <span class="shrink-0 rounded-md px-2 py-0.5 text-xs font-bold" :class="attStyle[a.status]">{{ t(a.status) }}</span>
+                            </li>
+                        </ul>
+                    </div>
                     <p v-if="!members.length" class="py-4 text-center text-xs text-slate-400">{{ t('no_data') }}</p>
                     <button v-if="members.length && !isCancelled && can('board', 'edit')" @click="saveAttendance" class="mt-3 w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900">{{ t('save_attendance') }}</button>
                 </section>

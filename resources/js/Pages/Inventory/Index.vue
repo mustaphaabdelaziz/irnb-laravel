@@ -57,20 +57,20 @@ const lastDate = props.sessions[0]?.session_date;
             </div>
 
             <div v-if="can('inventory', 'add')" class="flex justify-end">
-                <IconButton icon="plus" :label="t('start_inventory')" variant="primary" @click="showForm = !showForm" />
+                <IconButton icon="plus" :label="t('start_inventory')" variant="primary" data-help="stk-start" @click="showForm = !showForm" />
             </div>
 
             <form v-if="showForm && can('inventory', 'add')" @submit.prevent="start" class="card flex flex-wrap items-end gap-3 p-5">
                 <label class="text-sm"><span class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('type') }}</span>
-                    <select v-model="form.type" class="rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800">
+                    <select v-model="form.type" data-help="stk-type" class="rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800">
                         <option value="monthly">{{ t('monthly') }}</option><option value="quarterly">{{ t('quarterly') }}</option>
                         <option value="yearly">{{ t('yearly') }}</option><option value="ad_hoc">{{ t('ad_hoc') }}</option>
                     </select></label>
                 <label class="text-sm"><span class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('date') }}</span>
-                    <input v-model="form.session_date" type="date" class="rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
+                    <input v-model="form.session_date" type="date" data-help="stk-date" class="rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
                 <label class="flex-1 text-sm"><span class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('note') }}</span>
-                    <input v-model="form.notes" class="w-full rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
-                <button :disabled="form.processing" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('start_inventory') }}</button>
+                    <input v-model="form.notes" data-help="stk-notes" class="w-full rounded-lg border-slate-200 bg-white py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
+                <button :disabled="form.processing" data-help="stk-submit" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('start_inventory') }}</button>
             </form>
 
             <div v-if="sessions.length" class="flex flex-wrap items-center gap-2">
@@ -100,7 +100,7 @@ const lastDate = props.sessions[0]?.session_date;
                             <span v-if="s.total_missing" class="font-bold text-rose-500 dark:text-rose-400">{{ s.total_missing }} {{ t('missing') }}</span>
                         </template>
                         <span class="inline-flex rounded-full px-2.5 py-0.5 font-bold" :class="statusChip[s.status]">{{ t(s.status) }}</span>
-                        <IconButton v-if="can('inventory', 'delete')" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="remove(s)" />
+                        <IconButton v-if="can('inventory', 'delete')" icon="trash" :label="t('delete')" variant="danger" plain size="sm" :data-help="'stk-delete-' + s.id" @click="remove(s)" />
                     </div>
                 </div>
                 <p v-if="!sessions.length" class="py-10 text-center text-sm text-slate-400">{{ t('no_sessions') }}</p>

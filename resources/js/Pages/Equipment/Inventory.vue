@@ -41,13 +41,13 @@ const hasBranchValues = computed(
                     </Link>
                     <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('inventory_report') }}</h1>
                 </div>
-                <IconButton icon="print" :label="t('print')" onclick="window.print()" class="print:hidden" />
+                <IconButton icon="print" :label="t('print')" onclick="window.print()" class="print:hidden" data-help="eq-inv-print" />
             </div>
         </template>
 
         <div class="space-y-6">
             <!-- Stats -->
-            <div class="grid gap-4 sm:grid-cols-3 xl:grid-cols-6">
+            <div class="grid gap-4 sm:grid-cols-3 xl:grid-cols-6" data-help="eq-inv-tiles">
                 <StatTile :label="t('total')" :value="summary?.total || 0" icon="box" />
                 <StatTile :label="t('available')" :value="summary?.available || 0" icon="check" tone="positive" />
                 <StatTile :label="t('rented')" :value="summary?.rented || 0" icon="refresh" tone="warning" />
@@ -57,7 +57,7 @@ const hasBranchValues = computed(
             </div>
 
             <!-- Asset value: the roll-up the lot model and branch pivot make possible. -->
-            <div v-if="hasBranchValues || totalValue > 0" class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+            <div v-if="hasBranchValues || totalValue > 0" data-help="eq-inv-value" class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div class="flex flex-wrap items-baseline justify-between gap-2">
                     <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('equipment.asset_value') }}</h3>
                     <p class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ formatMoney(totalValue) }}</p>
@@ -90,7 +90,7 @@ const hasBranchValues = computed(
             </div>
 
             <!-- Overdue rentals warning -->
-            <div v-if="overdueRentals?.length" class="rounded-2xl border border-rose-200 bg-rose-50 p-5 dark:border-rose-500/30 dark:bg-rose-500/10">
+            <div v-if="overdueRentals?.length" data-help="eq-inv-overdue" class="rounded-2xl border border-rose-200 bg-rose-50 p-5 dark:border-rose-500/30 dark:bg-rose-500/10">
                 <h3 class="flex items-center gap-2 text-base font-semibold text-rose-900 dark:text-rose-200"><Icon name="alert" class="text-lg text-rose-500 dark:text-rose-400" /> {{ t('overdue') }} ({{ overdueRentals.length }})</h3>
                 <div class="mt-3 overflow-x-auto">
                     <table class="min-w-full divide-y divide-rose-200 dark:divide-rose-500/20">
@@ -117,7 +117,7 @@ const hasBranchValues = computed(
             </div>
 
             <!-- Condition breakdown -->
-            <div class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+            <div data-help="eq-inv-conditions" class="rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <h3 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">{{ t('condition') }}</h3>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">

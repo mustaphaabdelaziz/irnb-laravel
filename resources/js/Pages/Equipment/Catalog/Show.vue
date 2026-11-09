@@ -364,8 +364,8 @@ function submitImport() {
                 <div class="flex flex-wrap gap-2">
                     <!-- One way in for every catalog: on a serial catalog it numbers each unit. -->
                     <IconButton v-if="can('equipment', 'edit')" icon="plus" :label="t('equipment.receive_stock')" variant="primary" data-help="eq-receive" @click="openReceive" />
-                    <IconButton v-if="can('equipment', 'edit')" icon="upload" :label="t('import')" @click="showImport = true" />
-                    <ExportMenu :href="route('equipment.items.export', catalog.id)" :label="t('export')" />
+                    <IconButton v-if="can('equipment', 'edit')" icon="upload" :label="t('import')" data-help="eq-units-import" @click="showImport = true" />
+                    <ExportMenu :href="route('equipment.items.export', catalog.id)" :label="t('export')" data-help="eq-units-export" />
                     <IconButton v-if="can('equipment', 'edit')" :href="route('equipment.catalogs.edit', catalog.id)" icon="pencil" :label="t('edit')" />
                 </div>
             </div>
@@ -666,11 +666,12 @@ function submitImport() {
                             accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                             @change="onImportFile"
                             required
+                            data-help="eq-units-import-file"
                             class="w-full text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 hover:file:bg-primary-100 dark:file:bg-primary-500/10 dark:file:text-primary-300 dark:hover:file:bg-primary-500/15"
                         />
                         <p v-if="importForm.errors.file" class="text-sm text-rose-600 dark:text-rose-400">{{ importForm.errors.file }}</p>
 
-                        <label class="flex items-start gap-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 p-3">
+                        <label data-help="eq-units-import-expense" class="flex items-start gap-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 p-3">
                             <input type="checkbox" v-model="importForm.record_expense"
                                 class="mt-0.5 rounded border-slate-300 dark:border-slate-600 text-primary-600 focus:ring-primary-500" />
                             <span>
@@ -679,7 +680,7 @@ function submitImport() {
                             </span>
                         </label>
 
-                        <div v-if="importForm.record_expense">
+                        <div v-if="importForm.record_expense" data-help="eq-units-import-caisse">
                             <InputLabel :value="t('source_register')" />
                             <select v-model="importForm.finance_account_id" required class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
                                 <option value="" disabled>{{ t('select_cash_register') }}</option>

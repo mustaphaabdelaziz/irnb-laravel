@@ -142,8 +142,8 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
                 <h1 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ session.reference }}</h1>
                 <span class="rounded-full px-2.5 py-0.5 text-xs font-bold" :class="isOpen ? 'bg-primary-100 text-primary-700 dark:bg-primary-500/20 dark:text-primary-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'">{{ t(session.status) }}</span>
                 <span class="ms-auto flex gap-2">
-                    <ExportMenu :href="route('inventory.export', session.id)" :label="t('export')" />
-                    <IconButton :href="route('inventory.report', session.id)" external target="_blank" icon="print" :label="t('report')" />
+                    <ExportMenu :href="route('inventory.export', session.id)" :label="t('export')" data-help="stk-export" />
+                    <IconButton :href="route('inventory.report', session.id)" external target="_blank" icon="print" :label="t('report')" data-help="stk-report" />
                 </span>
             </div>
         </template>
@@ -161,10 +161,10 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
                 </div>
                 <div v-if="canCount" class="mt-4 flex flex-wrap items-end gap-2">
                     <div class="min-w-[12rem] flex-1">
-                        <SearchableSelect v-model="participantPick" :options="participantOptions" :placeholder="t('add_participant')" />
+                        <SearchableSelect v-model="participantPick" :options="participantOptions" :placeholder="t('add_participant')" data-help="stk-participant-pick" />
                     </div>
-                    <IconButton icon="plus" :label="t('add')" @click="addParticipant" />
-                    <button @click="saveParticipants" class="rounded-xl bg-slate-900 px-3 py-1.5 text-sm font-bold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900">{{ t('save') }}</button>
+                    <IconButton icon="plus" :label="t('add')" data-help="stk-participant-add" @click="addParticipant" />
+                    <button data-help="stk-participant-save" @click="saveParticipants" class="rounded-xl bg-slate-900 px-3 py-1.5 text-sm font-bold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900">{{ t('save') }}</button>
                 </div>
             </div>
 
@@ -180,9 +180,9 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
                 <div class="flex flex-wrap items-center justify-between gap-2">
                     <p class="text-sm text-slate-500 dark:text-slate-400">{{ fmtDate(session.session_date) }} · {{ t(session.type) }}</p>
                     <div class="flex gap-2">
-                        <IconButton v-if="canCount" icon="check" :label="t('mark_all_found')" variant="success" @click="markAllFound" />
-                        <button v-if="canCount" @click="saveCounts" class="rounded-xl bg-slate-900 px-3.5 py-2 text-sm font-bold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900">{{ t('save_counts') }}</button>
-                        <button v-if="canCount" @click="complete" class="rounded-xl bg-emerald-600 px-3.5 py-2 text-sm font-bold text-white hover:bg-emerald-700">{{ t('complete_inventory') }}</button>
+                        <IconButton v-if="canCount" icon="check" :label="t('mark_all_found')" variant="success" data-help="stk-mark-all" @click="markAllFound" />
+                        <button v-if="canCount" data-help="stk-save-counts" @click="saveCounts" class="rounded-xl bg-slate-900 px-3.5 py-2 text-sm font-bold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900">{{ t('save_counts') }}</button>
+                        <button v-if="canCount" data-help="stk-complete" @click="complete" class="rounded-xl bg-emerald-600 px-3.5 py-2 text-sm font-bold text-white hover:bg-emerald-700">{{ t('complete_inventory') }}</button>
                     </div>
                 </div>
 
@@ -191,19 +191,19 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
                 <section v-for="grp in groups" :key="grp.location" class="card overflow-hidden">
                     <p class="border-b border-slate-100 px-5 py-2.5 text-sm font-bold text-slate-700 dark:border-slate-800 dark:text-slate-200">{{ grp.location }} <span class="font-normal text-slate-400">({{ grp.lines.length }})</span></p>
                     <div class="divide-y divide-slate-50 dark:divide-slate-800/50">
-                        <div v-for="line in grp.lines" :key="line.id" class="flex flex-wrap items-center gap-3 px-5 py-3">
+                        <div v-for="line in grp.lines" :key="line.id" :data-help="'stk-line-' + line.equipment_item_id" class="flex flex-wrap items-center gap-3 px-5 py-3">
                             <div class="min-w-0 flex-1">
                                 <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ line.item?.unique_identifier }}</p>
                                 <p class="text-xs text-slate-400">{{ line.item?.catalog?.name }} · {{ t('expected') }}: {{ stateLabel(line.expected_condition) }}<span v-if="line.expected_location"> · {{ line.expected_location }}</span></p>
                             </div>
                             <div class="flex gap-1">
-                                <button :disabled="!canCount" @click="state[line.id].found = true" class="rounded-lg px-2.5 py-1 text-xs font-bold" :class="state[line.id].found ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'">{{ t('found') }}</button>
-                                <button :disabled="!canCount" @click="state[line.id].found = false" class="rounded-lg px-2.5 py-1 text-xs font-bold" :class="!state[line.id].found ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'">{{ t('missing') }}</button>
+                                <button :disabled="!canCount" :data-help="'stk-found-' + line.equipment_item_id" @click="state[line.id].found = true" class="rounded-lg px-2.5 py-1 text-xs font-bold" :class="state[line.id].found ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'">{{ t('found') }}</button>
+                                <button :disabled="!canCount" :data-help="'stk-missing-' + line.equipment_item_id" @click="state[line.id].found = false" class="rounded-lg px-2.5 py-1 text-xs font-bold" :class="!state[line.id].found ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'">{{ t('missing') }}</button>
                             </div>
-                            <select v-model="state[line.id].actual_condition" :disabled="!canCount || !state[line.id].found" class="rounded-lg border-slate-200 bg-white py-1 text-xs disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800">
+                            <select v-model="state[line.id].actual_condition" :data-help="'stk-condition-' + line.equipment_item_id" :disabled="!canCount || !state[line.id].found" class="rounded-lg border-slate-200 bg-white py-1 text-xs disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800">
                                 <option v-for="c in conditions" :key="c" :value="c">{{ stateLabel(c) }}</option>
                             </select>
-                            <select v-model="state[line.id].actual_location" :disabled="!canCount || !state[line.id].found" class="w-32 rounded-lg border-slate-200 bg-white py-1 text-xs disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800">
+                            <select v-model="state[line.id].actual_location" :data-help="'stk-location-' + line.equipment_item_id" :disabled="!canCount || !state[line.id].found" class="w-32 rounded-lg border-slate-200 bg-white py-1 text-xs disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800">
                                 <option value="">{{ t('location') }}</option>
                                 <option v-for="loc in storageLocations" :key="loc" :value="loc">{{ loc }}</option>
                             </select>

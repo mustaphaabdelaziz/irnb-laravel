@@ -108,9 +108,9 @@ function submitImport() {
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('equipments') }}</h1>
                 <div class="flex flex-wrap gap-2">
                     <IconButton v-if="can('equipment', 'add')" :href="route('equipment.catalogs.create')" icon="plus" :label="t('add_equipment')" variant="primary" data-help="eq-add-catalog" />
-                    <IconButton v-if="can('equipment', 'edit')" icon="upload" :label="t('import')" @click="showImport = true" />
-                    <ExportMenu :href="route('equipment.catalogs.export')" :label="t('export')" />
-                    <IconButton :href="route('equipment.inventory')" icon="clipboard" :label="t('inventory_report')" />
+                    <IconButton v-if="can('equipment', 'edit')" icon="upload" :label="t('import')" data-help="eq-import" @click="showImport = true" />
+                    <ExportMenu :href="route('equipment.catalogs.export')" :label="t('export')" data-help="eq-export" />
+                    <IconButton :href="route('equipment.inventory')" icon="clipboard" :label="t('inventory_report')" data-help="eq-inventory-report" />
                 </div>
             </div>
         </template>
@@ -225,14 +225,15 @@ function submitImport() {
                             accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                             @change="onImportFile"
                             required
+                            data-help="eq-import-file"
                             class="w-full text-sm text-slate-600 dark:text-slate-300 file:me-4 file:rounded-lg file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 hover:file:bg-primary-100 dark:file:bg-primary-500/10 dark:file:text-primary-300 dark:hover:file:bg-primary-500/15"
                         />
                         <p v-if="importForm.errors.file" class="text-sm text-rose-600 dark:text-rose-400">{{ importForm.errors.file }}</p>
                         <div class="flex items-center justify-between gap-3 pt-2">
-                            <ExportMenu :href="route('equipment.catalogs.import.template')" :label="t('download_template')" align="left" />
+                            <ExportMenu :href="route('equipment.catalogs.import.template')" :label="t('download_template')" align="left" data-help="eq-import-template" />
                             <div class="flex gap-2">
                                 <button type="button" @click="showImport = false" class="rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800">{{ t('cancel') }}</button>
-                                <button type="submit" :disabled="importForm.processing || !importForm.file" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">{{ t('import') }}</button>
+                                <button type="submit" data-help="eq-import-submit" :disabled="importForm.processing || !importForm.file" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">{{ t('import') }}</button>
                             </div>
                         </div>
                     </form>

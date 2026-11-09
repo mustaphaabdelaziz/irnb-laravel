@@ -1,0 +1,42 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "nav-reports-equipment": {
+      "x": 81.02,
+      "y": 51.13,
+      "w": 17.11,
+      "h": 5
+    },
+    "report-card-equipment-inventory": {
+      "x": 53.13,
+      "y": 18.5,
+      "w": 24.38,
+      "h": 11.9
+    },
+    "report-card-equipment-out": {
+      "x": 27.81,
+      "y": 18.5,
+      "w": 24.38,
+      "h": 11.9
+    },
+    "report-card-equipment-valuation": {
+      "x": 2.5,
+      "y": 18.5,
+      "w": 24.38,
+      "h": 11.9
+    },
+    "report-card-equipment-lifecycle": {
+      "x": 53.13,
+      "y": 31.9,
+      "w": 24.38,
+      "h": 16.3
+    },
+    "report-card-equipment-stocktake": {
+      "x": 27.81,
+      "y": 31.9,
+      "w": 24.38,
+      "h": 16.3
+    }
+  }
+}

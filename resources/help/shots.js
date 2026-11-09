@@ -1352,6 +1352,122 @@ export default [
         },
     },
     { name: 'eq-damage-history', url: '/equipment/items/8/history', targets: [] },
+    // Import / export: the catalog list and catalog 4 «ساعة توقيت». Windows and menus are opened,
+    // a file is put in the file field; «استيراد» is only ringed, nothing is uploaded.
+    {
+        name: 'eq-import-export-list',
+        url: '/equipment/catalogs',
+        targets: ['nav-equipment', 'eq-import', 'eq-export'],
+        before: async (page) => { await navIntoView(page, 'nav-equipment'); },
+    },
+    {
+        // The import window with «تحميل النموذج» open: its «Excel (.xlsx)» line is ringed.
+        name: 'eq-import-export-template',
+        url: '/equipment/catalogs',
+        targets: ['eq-import-template', 'eq-import-template-xlsx'],
+        before: async (page) => {
+            await page.locator('[data-help="eq-import"]').click();
+            await openMenu(page, 'eq-import-template', 'eq-import-template-xlsx');
+        },
+    },
+    {
+        // The reader's state before «استيراد»: the filled template chosen in the file field.
+        name: 'eq-import-export-file',
+        url: '/equipment/catalogs',
+        targets: ['eq-import-file', 'eq-import-submit'],
+        before: async (page) => {
+            await page.locator('[data-help="eq-import"]').click();
+            await chooseSheet(page, 'eq-import-file', 'معدات النادي.xlsx');
+        },
+    },
+    { name: 'eq-import-export-units-button', url: '/equipment/catalogs/4', targets: ['eq-units-import', 'eq-units-export'] },
+    {
+        // The units import window with «تسجيل كمصروف» ticked: the caisse list shows on its first caisse.
+        name: 'eq-import-export-units-expense',
+        url: '/equipment/catalogs/4',
+        targets: ['eq-units-import-file', 'eq-units-import-expense', 'eq-units-import-caisse'],
+        before: async (page) => {
+            await page.locator('[data-help="eq-units-import"]').click();
+            await chooseSheet(page, 'eq-units-import-file', 'ساعات توقيت.xlsx');
+            await page.locator('[data-help="eq-units-import-expense"] input').check();
+            await blur(page);
+        },
+    },
+    {
+        // «تصدير» open on the list: both formats ringed.
+        name: 'eq-import-export-export',
+        url: '/equipment/catalogs',
+        targets: ['eq-export', 'eq-export-xlsx', 'eq-export-csv'],
+        before: async (page) => {
+            await openMenu(page, 'eq-export', 'eq-export-xlsx');
+            await tagIn(page, 'eq-export-csv', page.locator('[data-help="eq-export"] a', { hasText: 'CSV' }));
+        },
+    },
+    // Stock-take: session 2 «INV-<year>-02» (monthly, in progress, nothing counted, participant أمين قاسمي).
+    // Nothing is saved: «بدء الجرد», «حفظ العد», «إنهاء الجرد» and the participants' «حفظ» are only ringed;
+    // a line set to «مفقود» or a participant picked stays in the page.
+    {
+        name: 'eq-stock-take-list',
+        url: '/equipment/stocktake',
+        targets: ['nav-stocktake', 'stk-start', 'stk-delete-2'],
+        before: async (page) => { await navIntoView(page, 'nav-stocktake'); },
+    },
+    {
+        // The start form open: «شهري», today's date (the default), the note «جرد شهري».
+        name: 'eq-stock-take-form',
+        url: '/equipment/stocktake',
+        targets: ['stk-start', 'stk-type', 'stk-date', 'stk-notes', 'stk-submit'],
+        before: async (page) => {
+            await page.locator('[data-help="stk-start"]').click();
+            await page.locator('[data-help="stk-type"]').selectOption('monthly');
+            await page.locator('[data-help="stk-notes"]').fill('جرد شهري');
+            await blur(page);
+        },
+    },
+    { name: 'eq-stock-take-session', url: '/equipment/stocktake/2', targets: ['stk-mark-all', 'stk-save-counts', 'stk-complete', 'stk-report', 'stk-export'] },
+    {
+        // «ساعة توقيت 3» (item 9) not found: its line set to «مفقود» in the page only. Line 7 shows the two lists.
+        name: 'eq-stock-take-lines',
+        url: '/equipment/stocktake/2',
+        targets: ['stk-line-9', 'stk-missing-9', 'stk-condition-7', 'stk-location-7', 'stk-found-1'],
+        before: async (page) => {
+            await page.locator('[data-help="stk-missing-9"]').click();
+            await blur(page);
+            await centre(page, 'stk-line-8');
+        },
+    },
+    {
+        // A second participant picked (ياسين بوزيد), before «إضافة» and «حفظ».
+        name: 'eq-stock-take-participant',
+        url: '/equipment/stocktake/2',
+        targets: ['stk-participant-pick', 'stk-participant-add', 'stk-participant-save'],
+        before: async (page) => {
+            await page.locator('[data-help="stk-participant-pick"] button').first().click();
+            await page.locator('[data-help="stk-participant-pick"] input').fill('ياسين بوزيد');
+            await page.locator('[data-help="stk-participant-pick"] li').first().dispatchEvent('mousedown');
+            await blur(page);
+        },
+    },
+    // Inventory report («تقرير المخزون») and the equipment reports of the reports centre. Read only.
+    {
+        name: 'eq-inventory-report-list',
+        url: '/equipment/catalogs',
+        targets: ['nav-equipment', 'eq-inventory-report'],
+        before: async (page) => { await navIntoView(page, 'nav-equipment'); },
+    },
+    { name: 'eq-inventory-report-page', url: '/equipment/inventory', targets: ['eq-inv-print', 'eq-inv-tiles', 'eq-inv-value'] },
+    {
+        name: 'eq-inventory-report-lower',
+        url: '/equipment/inventory',
+        targets: ['eq-inv-overdue', 'eq-inv-conditions'],
+        before: async (page) => { await centre(page, 'eq-inv-conditions'); },
+    },
+    {
+        name: 'eq-inventory-report-centre',
+        url: '/reports/equipment',
+        targets: ['nav-reports-equipment', 'report-card-equipment-inventory', 'report-card-equipment-out', 'report-card-equipment-valuation', 'report-card-equipment-lifecycle', 'report-card-equipment-stocktake'],
+        before: async (page) => { await navIntoView(page, 'nav-reports-equipment'); },
+    },
     {
         // Writes: «ساعة توقيت 3» (item 9) is marked lost through the UI so its «استعادة» shows;
         // `after` restores it through the UI, back to the seeded state.
@@ -1694,6 +1810,28 @@ async function fillNets(page) {
     await page.locator('[data-help="txf-category"] select').selectOption({ label: 'معدات' });
     await page.locator('[data-help="txf-amount"] input').fill('15000');
     await page.locator('[data-help="txf-caisse"] select').selectOption('5');
+    await blur(page);
+}
+
+/**
+ * Opens a format menu (ExportMenu: «تصدير», «تحميل النموذج») and tags its «Excel (.xlsx)» line:
+ * the menu's lines are made by the component and carry no data-help of their own.
+ */
+async function openMenu(page, menu, tag) {
+    await page.locator(`[data-help="${menu}"] button`).first().click();
+    const xlsx = page.locator(`[data-help="${menu}"] a`, { hasText: 'Excel (.xlsx)' });
+    await xlsx.waitFor({ state: 'visible' });
+    await tagIn(page, tag, xlsx);
+    await page.waitForTimeout(250);
+}
+
+/** Puts a spreadsheet in an import window's file field (a few dummy bytes: it is never uploaded). */
+async function chooseSheet(page, field, name) {
+    await page.locator(`[data-help="${field}"]`).setInputFiles({
+        name,
+        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        buffer: Buffer.from('help screenshot'),
+    });
     await blur(page);
 }
 

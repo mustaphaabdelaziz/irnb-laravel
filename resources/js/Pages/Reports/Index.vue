@@ -91,7 +91,7 @@ function pin(card) {
                     <Link :href="g.href" class="hover:text-emerald-600 dark:hover:text-emerald-400">{{ t(`reports.category.${g.key}.title`) }}</Link>
                 </h2>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    <div v-for="card in g.cards" :key="card.id"
+                    <div v-for="card in g.cards" :key="card.id" :data-help="'report-card-' + card.id.replace('.', '-')"
                          class="relative flex flex-col rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 transition hover:ring-emerald-400 dark:bg-slate-900 dark:ring-slate-800">
                         <component :is="card.external ? 'a' : Link" :href="card.href" :target="card.external ? '_blank' : undefined" class="flex-1">
                             <div class="flex items-start gap-3 pe-8">

@@ -54,28 +54,28 @@ function destroy() {
             <form v-if="can('opponents', 'add')" @submit.prevent="add" class="flex flex-wrap items-end gap-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div class="min-w-48 flex-1">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('name') }}</label>
-                    <TextInput v-model="form.name" class="mt-1 w-full" required />
+                    <TextInput v-model="form.name" class="mt-1 w-full" required data-help="opp-name" />
                     <InputError :message="form.errors.name" class="mt-1" />
                 </div>
                 <div class="w-40">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('city') }}</label>
-                    <TextInput v-model="form.city" class="mt-1 w-full" />
+                    <TextInput v-model="form.city" class="mt-1 w-full" data-help="opp-city" />
                 </div>
-                <div>
+                <div data-help="opp-logo">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('comp.logo') }}</label>
                     <input type="file" accept="image/*" class="mt-1 block w-48 text-xs" @change="form.logo = $event.target.files[0]" />
                     <InputError :message="form.errors.logo" class="mt-1" />
                 </div>
-                <PrimaryButton :disabled="form.processing">{{ t('add') }}</PrimaryButton>
+                <PrimaryButton :disabled="form.processing" data-help="opp-add">{{ t('add') }}</PrimaryButton>
             </form>
 
-            <div class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+            <div class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800" data-help="opp-list">
                 <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
                     <thead class="bg-slate-50 dark:bg-slate-950">
                         <tr>
                             <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('name') }}</th>
                             <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('city') }}</th>
-                            <th class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('games') }}</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-500 dark:text-slate-400" data-help="opp-games-col">{{ t('games') }}</th>
                             <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('actions') }}</th>
                         </tr>
                     </thead>
@@ -83,12 +83,12 @@ function destroy() {
                         <tr v-for="opponent in opponents" :key="opponent.id">
                             <td class="px-4 py-3">
                                 <div v-if="editingId === opponent.id" class="space-y-1">
-                                    <TextInput v-model="editForm.name" class="w-full" />
+                                    <TextInput v-model="editForm.name" class="w-full" data-help="opp-edit-name" />
                                     <InputError :message="editForm.errors.name" />
-                                    <input type="file" accept="image/*" class="block text-xs" @change="editForm.logo = $event.target.files[0]" />
+                                    <input type="file" accept="image/*" class="block text-xs" data-help="opp-edit-logo" @change="editForm.logo = $event.target.files[0]" />
                                 </div>
                                 <div v-else class="flex items-center gap-2">
-                                    <img v-if="opponent.logo_url" :src="opponent.logo_url" alt="" class="h-7 w-7 rounded object-contain" />
+                                    <img v-if="opponent.logo_url" :src="opponent.logo_url" alt="" class="h-7 w-7 rounded object-contain" :data-help="`opp-logo-${opponent.id}`" />
                                     <span class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ opponent.name }}</span>
                                 </div>
                             </td>
@@ -103,7 +103,7 @@ function destroy() {
                                     <button @click="editingId = null" class="text-sm text-slate-500 dark:text-slate-400">{{ t('cancel') }}</button>
                                 </div>
                                 <div v-else class="flex justify-end gap-2">
-                                    <IconButton v-if="can('opponents', 'edit')" icon="pencil" :label="t('edit')" plain size="sm" @click="startEdit(opponent)" />
+                                    <IconButton v-if="can('opponents', 'edit')" icon="pencil" :label="t('edit')" plain size="sm" :data-help="`opp-edit-${opponent.id}`" @click="startEdit(opponent)" />
                                     <IconButton v-if="can('opponents', 'delete')" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteId = opponent.id" />
                                 </div>
                             </td>

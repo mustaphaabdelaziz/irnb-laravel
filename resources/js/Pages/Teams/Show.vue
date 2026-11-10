@@ -105,13 +105,13 @@ const tabs = computed(() => ['roster', 'coaches', 'competitions', 'games', ...(c
                     <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ team.name }}</h1>
                     <div class="text-sm text-slate-500 dark:text-slate-400">{{ team.branch }} · {{ team.category }} · {{ team.format }}</div>
                 </div>
-                <SeasonSelect :model-value="season" :seasons="seasons" @update:model-value="changeSeason" />
+                <SeasonSelect data-help="team-season" :model-value="season" :seasons="seasons" @update:model-value="changeSeason" />
             </div>
         </template>
 
         <div class="mx-auto max-w-5xl space-y-4">
             <nav class="flex flex-wrap gap-1 border-b border-slate-200 dark:border-slate-800">
-                <button v-for="key in tabs" :key="key" type="button" @click="tab = key"
+                <button v-for="key in tabs" :key="key" type="button" :data-help="`team-tab-${key}`" @click="tab = key"
                     class="-mb-px border-b-2 px-3 py-2 text-sm"
                     :class="tab === key ? 'border-primary-600 font-semibold text-primary-700 dark:text-primary-300' : 'border-transparent text-slate-500 dark:text-slate-400'">
                     {{ t(`comp.tab_${key}`) }}
@@ -121,8 +121,8 @@ const tabs = computed(() => ['roster', 'coaches', 'competitions', 'games', ...(c
             <!-- Roster -->
             <section v-if="tab === 'roster'" class="space-y-4 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div v-if="canManage && !rows.length && previousRosterCount" class="flex items-center justify-between rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-800">
-                    <span>{{ t('comp.copy_roster_hint', { n: previousRosterCount }) }}</span>
-                    <SecondaryButton @click="copyRoster">{{ t('comp.copy_roster') }}</SecondaryButton>
+                    <span data-help="team-copy-hint">{{ t('comp.copy_roster_hint', { n: previousRosterCount }) }}</span>
+                    <SecondaryButton data-help="team-copy-roster" @click="copyRoster">{{ t('comp.copy_roster') }}</SecondaryButton>
                 </div>
 
                 <template v-if="documentStats && roster.length">
@@ -138,7 +138,7 @@ const tabs = computed(() => ['roster', 'coaches', 'competitions', 'games', ...(c
                     </details>
                 </template>
 
-                <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-sm">
+                <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-sm" data-help="team-roster-table">
                     <thead>
                         <tr class="text-xs uppercase text-slate-500 dark:text-slate-400">
                             <th class="w-20 py-2 text-start">{{ t('comp.shirt') }}</th>
@@ -150,11 +150,11 @@ const tabs = computed(() => ['roster', 'coaches', 'competitions', 'games', ...(c
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                         <tr v-for="(row, i) in rows" :key="row.player_id">
                             <td class="py-2">
-                                <TextInput v-if="canManage" v-model.number="row.shirt_number" type="number" min="0" max="99" class="w-16" />
+                                <TextInput v-if="canManage" v-model.number="row.shirt_number" type="number" min="0" max="99" class="w-16" :data-help="`team-shirt-${row.player_id}`" />
                                 <span v-else class="font-mono">{{ row.shirt_number }}</span>
                                 <InputError :message="rosterForm.errors[`players.${i}.shirt_number`]" />
                             </td>
-                            <td class="py-2 font-medium text-slate-900 dark:text-slate-100">
+                            <td class="py-2 font-medium text-slate-900 dark:text-slate-100" :data-help="`team-player-${row.player_id}`">
                                 {{ row.name }}
                                 <span v-if="row.left_branch" class="ms-2 rounded bg-slate-200 px-1.5 py-0.5 text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-200">{{ t('comp.left_branch') }}</span>
                                 <PlayerBadges :flags="row.flags" class="ms-2" />
@@ -171,19 +171,19 @@ const tabs = computed(() => ['roster', 'coaches', 'competitions', 'games', ...(c
                 <div v-if="canManage" class="flex flex-wrap items-end gap-3 border-t border-slate-100 pt-4 dark:border-slate-800">
                     <div class="min-w-64 flex-1">
                         <label class="text-sm font-medium">{{ t('comp.add_player') }}</label>
-                        <SearchableSelect v-model="pick" :options="pickable" :placeholder="t('comp.search_player')" class="mt-1" @update:model-value="addPlayer" />
+                        <SearchableSelect v-model="pick" :options="pickable" :placeholder="t('comp.search_player')" class="mt-1" data-help="team-pick" @update:model-value="addPlayer" />
                     </div>
-                    <label class="flex items-center gap-2 text-sm"><input v-model="onlyCategory" type="checkbox" class="rounded" /> {{ t('comp.only_team_category') }}</label>
-                    <label class="flex items-center gap-2 text-sm"><input v-model="onlySport" type="checkbox" class="rounded" /> {{ t('comp.only_this_sport') }}</label>
-                    <PrimaryButton :disabled="rosterForm.processing" @click="saveRoster">{{ t('save') }}</PrimaryButton>
+                    <label class="flex items-center gap-2 text-sm" data-help="team-only-category"><input v-model="onlyCategory" type="checkbox" class="rounded" /> {{ t('comp.only_team_category') }}</label>
+                    <label class="flex items-center gap-2 text-sm" data-help="team-only-sport"><input v-model="onlySport" type="checkbox" class="rounded" /> {{ t('comp.only_this_sport') }}</label>
+                    <PrimaryButton :disabled="rosterForm.processing" data-help="team-roster-save" @click="saveRoster">{{ t('save') }}</PrimaryButton>
                 </div>
             </section>
 
             <!-- Coaches -->
-            <section v-if="tab === 'coaches'" class="space-y-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+            <section v-if="tab === 'coaches'" data-help="team-coaches-card" class="space-y-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div v-for="(c, i) in coachRows" :key="i" class="flex flex-wrap items-center gap-3">
-                    <SearchableSelect v-model="c.user_id" :options="users" :disabled="!canEditTeam" class="min-w-64 flex-1" />
-                    <select v-model="c.role" :disabled="!canEditTeam" class="rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
+                    <SearchableSelect v-model="c.user_id" :options="users" :disabled="!canEditTeam" class="min-w-64 flex-1" :data-help="`team-coach-user-${i}`" />
+                    <select v-model="c.role" :data-help="`team-coach-role-${i}`" :disabled="!canEditTeam" class="rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
                         <option value="head">{{ t('comp.coach_head') }}</option>
                         <option value="assistant">{{ t('comp.coach_assistant') }}</option>
                     </select>
@@ -192,8 +192,8 @@ const tabs = computed(() => ['roster', 'coaches', 'competitions', 'games', ...(c
                 <p v-if="!coachRows.length" class="text-sm text-slate-500 dark:text-slate-400">{{ t('comp.no_coach') }}</p>
                 <InputError :message="coachForm.errors.coaches" />
                 <div v-if="canEditTeam" class="flex gap-2">
-                    <SecondaryButton @click="coachRows.push({ user_id: '', role: 'head' })">{{ t('add') }}</SecondaryButton>
-                    <PrimaryButton :disabled="coachForm.processing" @click="saveCoaches">{{ t('save') }}</PrimaryButton>
+                    <SecondaryButton data-help="team-coach-add" @click="coachRows.push({ user_id: '', role: 'head' })">{{ t('add') }}</SecondaryButton>
+                    <PrimaryButton :disabled="coachForm.processing" data-help="team-coach-save" @click="saveCoaches">{{ t('save') }}</PrimaryButton>
                 </div>
             </section>
 

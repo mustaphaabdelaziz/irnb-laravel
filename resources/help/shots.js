@@ -1862,6 +1862,110 @@ export default [
             await page.getByText('تمت أرشفة المعاملة بنجاح.').waitFor({ state: 'visible', timeout: 10000 });
         },
     },
+    // --- Competitions: opponents & venues, create team, roster & coaches (Part 3c) ---
+    {
+        // The three demo opponents with their logos; the «المباريات» column; the pencil of the first.
+        name: 'comp-opponents-venues-list',
+        url: '/opponents',
+        targets: ['nav-opponents', 'opp-list', 'opp-logo-1', 'opp-games-col', 'opp-edit-1'],
+        before: async (page) => { await navIntoView(page, 'nav-opponents'); },
+    },
+    {
+        // The add form filled with «وفاق الجبل» / «البويرة» and a generated logo (a 1-pixel PNG built in
+        // memory, never a real club image). The native file text renders in French: the field is ringed.
+        // «إضافة» not pressed.
+        name: 'comp-opponents-venues-opponent-form',
+        url: '/opponents',
+        targets: ['opp-name', 'opp-city', 'opp-logo', 'opp-add'],
+        before: async (page) => {
+            await page.fill('input[data-help="opp-name"]', 'وفاق الجبل');
+            await page.fill('input[data-help="opp-city"]', 'البويرة');
+            await page.locator('[data-help="opp-logo"] input[type="file"]').setInputFiles({
+                name: 'logo.png',
+                mimeType: 'image/png',
+                buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64'),
+            });
+            await blur(page);
+        },
+    },
+    {
+        name: 'comp-opponents-venues-venues',
+        url: '/venues',
+        targets: ['nav-venues', 'venue-list', 'venue-badge-1', 'venue-games-col'],
+        before: async (page) => { await navIntoView(page, 'nav-venues'); },
+    },
+    {
+        // «ملعب الحي الجديد» typed, the home-ground box left empty. «إضافة» not pressed.
+        name: 'comp-opponents-venues-venue-form',
+        url: '/venues',
+        targets: ['venue-name', 'venue-address', 'venue-home', 'venue-add'],
+        before: async (page) => {
+            await page.fill('input[data-help="venue-name"]', 'ملعب الحي الجديد');
+            await page.fill('input[data-help="venue-address"]', 'حي النصر');
+            await blur(page);
+        },
+    },
+    {
+        name: 'comp-create-team-list',
+        url: '/teams',
+        targets: ['nav-teams', 'team-new', 'team-season', 'team-card-1'],
+        before: async (page) => { await navIntoView(page, 'nav-teams'); },
+    },
+    {
+        // «فريق جديد» opened and filled; «إضافة» not pressed.
+        name: 'comp-create-team-form',
+        url: '/teams',
+        targets: ['team-branch', 'team-category', 'team-name', 'team-format', 'team-add'],
+        before: async (page) => {
+            await page.locator('[data-help="team-new"]').click();
+            await page.locator('select[data-help="team-branch"]').selectOption({ label: 'كرة القدم' });
+            await page.locator('select[data-help="team-category"]').selectOption({ label: 'أقل من 12 سنة' });
+            await page.fill('input[data-help="team-name"]', 'الفريق أ');
+            await page.locator('select[data-help="team-format"]').selectOption({ label: 'كرة القدم 5' });
+            await blur(page);
+        },
+    },
+    {
+        name: 'comp-create-team-page',
+        url: '/teams/1',
+        targets: ['team-tab-roster', 'team-tab-coaches', 'team-tab-competitions', 'team-tab-games', 'team-tab-stats', 'team-tab-settings', 'team-season'],
+    },
+    {
+        // U14 team, season S empty: the hint and the copy button (not clicked).
+        name: 'comp-roster-coaches-copy',
+        url: '/teams/2',
+        targets: ['team-copy-hint', 'team-copy-roster'],
+    },
+    {
+        // U17 roster: shirt numbers, the category column and the badges of رياض (4).
+        name: 'comp-roster-coaches-roster',
+        url: '/teams/1',
+        targets: ['team-roster-table', 'team-shirt-7', 'team-shirt-4', 'team-player-4', 'team-roster-save'],
+        before: async (page) => { await centre(page, 'team-roster-table'); },
+    },
+    {
+        // The picker open with «فئة الفريق فقط» cleared, so players of other categories show.
+        name: 'comp-roster-coaches-add',
+        url: '/teams/1',
+        targets: ['team-pick', 'team-only-category', 'team-only-sport', 'team-roster-save'],
+        before: async (page) => {
+            await page.locator('[data-help="team-only-category"] input').uncheck();
+            // Room below the page so the open list is not cut by the window.
+            await page.evaluate(() => { document.body.style.paddingBottom = '420px'; });
+            await centre(page, 'team-pick');
+            await page.locator('[data-help="team-pick"] > button').click();
+            await page.locator('[data-help="team-pick"] li').first().waitFor({ state: 'visible' });
+        },
+    },
+    {
+        name: 'comp-roster-coaches-coaches',
+        url: '/teams/1',
+        targets: ['team-tab-coaches', 'team-coaches-card', 'team-coach-user-0', 'team-coach-role-0', 'team-coach-add', 'team-coach-save'],
+        before: async (page) => {
+            await page.locator('[data-help="team-tab-coaches"]').click();
+            await page.locator('[data-help="team-coaches-card"]').waitFor({ state: 'visible' });
+        },
+    },
 ];
 
 /** أمين قاسمي's grid cell holding the demo's «R15» (rows are found by last name). */

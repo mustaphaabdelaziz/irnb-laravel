@@ -185,12 +185,11 @@ class BoardController extends Controller
         $recorded = $meeting->attendances->pluck('board_member_id')->filter()->all();
         $assigned = $meeting->tasks->pluck('board_member_id')->filter()->all();
         $current = fn ($q) => $q->inCurrentTerm()->where('status', 'active');
-        // Someone who sits in two terms has two rows: the recorded/assigned row wins.
+        // Attendance: someone in two terms has two rows; the recorded row wins.
         $leaveOut = fn (array $playerIds) => fn ($q) => $playerIds === [] ? $q : $q->where(
             fn ($w) => $w->whereNull('player_id')->orWhereNotIn('player_id', $playerIds)
         );
         $recordedPlayers = BoardMember::whereIn('id', $recorded)->whereNotNull('player_id')->pluck('player_id')->all();
-        $assignedPlayers = BoardMember::whereIn('id', $assigned)->whereNotNull('player_id')->pluck('player_id')->all();
 
         return Inertia::render('Board/Meeting', [
             'meeting' => $meeting,
@@ -199,10 +198,25 @@ class BoardController extends Controller
                     'id' => $m->id, 'name' => $m->name, 'role' => $m->role,
                     'attendance' => $present[$m->id]->status ?? null,
                 ]),
-            'allMembers' => BoardMember::where(fn ($q) => $q->where($current)->where($leaveOut($assignedPlayers))->orWhereIn('id', $assigned))->orderBy('sort_order')->get(['id', 'name', 'role']),
+            'allMembers' => BoardMember::where(fn ($q) => $q->where($current)->orWhere(fn ($w) => $this->assignedOnly($w, $assigned)))->orderBy('sort_order')->get(['id', 'name', 'role']),
             'removedAttendances' => $meeting->attendances->whereNull('board_member_id')->values()
                 ->map(fn (MeetingAttendance $a) => ['id' => $a->id, 'name' => $a->member_name, 'role' => $a->member_role, 'status' => $a->status]),
         ]);
+    }
+
+    /**
+     * Assigned rows kept in an assignee list: the current-term row of a person
+     * wins, so an assigned row stays only when its player has no active
+     * current-term row (rows without a player always stay).
+     *
+     * @param  array<int, int>  $assigned
+     */
+    private function assignedOnly($q, array $assigned)
+    {
+        return $q->whereIn('id', $assigned)->where(fn ($w) => $w->whereNull('player_id')->orWhereNotIn(
+            'player_id',
+            BoardMember::query()->inCurrentTerm()->where('status', 'active')->whereNotNull('player_id')->select('player_id')
+        ));
     }
 
     public function tasks(): Response
@@ -211,15 +225,11 @@ class BoardController extends Controller
         $all = BoardTask::with(['member:id,name', 'meeting:id,title'])
             ->orderByRaw('due_date is null, due_date asc')->get();
         $assigned = $all->pluck('board_member_id')->filter()->unique();
-        $assignedPlayers = BoardMember::whereIn('id', $assigned)->whereNotNull('player_id')->pluck('player_id')->all();
 
         return Inertia::render('Board/Tasks', [
             'columns' => collect($columns)->mapWithKeys(fn ($c) => [$c => $all->where('status', $c)->values()]),
-            'members' => BoardMember::where(fn ($q) => $q->inCurrentTerm()->where('status', 'active')
-                ->when($assignedPlayers !== [], fn ($q) => $q->where(
-                    fn ($w) => $w->whereNull('player_id')->orWhereNotIn('player_id', $assignedPlayers)
-                ))
-                ->orWhereIn('id', $assigned))
+            'members' => BoardMember::where(fn ($q) => $q->where(fn ($w) => $w->inCurrentTerm()->where('status', 'active'))
+                ->orWhere(fn ($w) => $this->assignedOnly($w, $assigned->all())))
                 ->orderBy('sort_order')->get(['id', 'name', 'role']),
             'meetings' => BoardMeeting::orderByDesc('meeting_date')->limit(50)->get(['id', 'title', 'meeting_date']),
             'stats' => $this->taskStats($all),

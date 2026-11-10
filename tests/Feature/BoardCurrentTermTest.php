@@ -123,9 +123,9 @@ class BoardCurrentTermTest extends TestCase
 
         // Same person assigned a task through the old-term row: listed once.
         BoardTask::create(['title' => 'مهمة', 'board_member_id' => $this->old->id, 'board_meeting_id' => $this->held->id, 'status' => 'not_started']);
-        $this->assertSame(1, array_count_values($this->names($url, 'allMembers'))['قديم']);
-        $this->assertSame(1, array_count_values($this->names(route('board.tasks'), 'members'))['قديم']);
-        $this->assertNotNull($now);
+        $ids = fn ($u, $prop) => collect($this->actingAs($this->admin)->get($u)->viewData('page')['props'][$prop])->where('name', 'قديم')->pluck('id')->all();
+        $this->assertSame([$now->id], $ids($url, 'allMembers'));
+        $this->assertSame([$now->id], $ids(route('board.tasks'), 'members'));
     }
 
     #[Test]

@@ -176,7 +176,11 @@ class BoardMinutesPrivateTest extends TestCase
             'attachment' => UploadedFile::fake()->create('😀', 5, 'application/pdf'),
         ])->assertSessionHasNoErrors();
 
-        $this->actingAs($admin)->get(route('board.meetings.attachment.show', $meeting))->assertOk();
+        $response = $this->actingAs($admin)->get(route('board.meetings.attachment.show', $meeting));
+        $response->assertOk();
+        $disposition = (string) $response->headers->get('Content-Disposition');
+        $this->assertStringStartsWith('inline', $disposition);
+        $this->assertStringContainsString(basename($meeting->fresh()->attachment_filename), $disposition);
     }
 
     #[Test]

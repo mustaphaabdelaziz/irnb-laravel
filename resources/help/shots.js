@@ -1937,11 +1937,19 @@ export default [
         targets: ['team-copy-hint', 'team-copy-roster'],
     },
     {
-        // U17 roster: shirt numbers, the category column and the badges of رياض (4).
+        // U17 roster in the reader's state: بوعلام هشام (10) picked with «فئة الفريق فقط» cleared and
+        // 9 typed in his shirt field (local state, «حفظ» not pressed). The badges of رياض (4) show too.
         name: 'comp-roster-coaches-roster',
         url: '/teams/1',
-        targets: ['team-roster-table', 'team-shirt-7', 'team-shirt-4', 'team-roster-save'],
-        before: async (page) => { await centre(page, 'team-roster-table'); },
+        targets: ['team-roster-table', 'team-shirt-10', 'team-roster-save'],
+        before: async (page) => {
+            await page.locator('[data-help="team-only-category"] input').uncheck();
+            await page.locator('[data-help="team-pick"] > button').click();
+            await page.locator('[data-help="team-pick"] li', { hasText: 'بوعلام' }).first().dispatchEvent('mousedown');
+            await page.locator('input[data-help="team-shirt-10"]').fill('9');
+            await blur(page);
+            await centre(page, 'team-roster-table');
+        },
     },
     {
         // The picker open with «فئة الفريق فقط» cleared, so players of other categories show.

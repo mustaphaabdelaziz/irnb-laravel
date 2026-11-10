@@ -79,7 +79,7 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
 
         <div class="mx-auto max-w-5xl space-y-4">
             <nav class="flex flex-wrap gap-1 border-b border-slate-200 dark:border-slate-800">
-                <button v-for="key in tabs" :key="key" type="button" @click="tab = key" class="-mb-px border-b-2 px-3 py-2 text-sm"
+                <button v-for="key in tabs" :key="key" type="button" :data-help="`compn-tab-${key}`" @click="tab = key" class="-mb-px border-b-2 px-3 py-2 text-sm"
                     :class="tab === key ? 'border-primary-600 font-semibold text-primary-700 dark:text-primary-300' : 'border-transparent text-slate-500 dark:text-slate-400'">
                     {{ t(`comp.tab_${key}`) }}
                 </button>
@@ -87,9 +87,9 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
 
             <section v-if="tab === 'squad'" class="space-y-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('comp.squad_help', { n: selected.length }) }}</p>
-                <div class="grid gap-1 sm:grid-cols-2">
+                <div class="grid gap-1 sm:grid-cols-2" data-help="compn-squad-list">
                     <label v-for="r in roster" :key="r.player_id" class="flex items-center gap-2 rounded px-2 py-1 text-sm hover:bg-slate-50 dark:hover:bg-slate-800">
-                        <input v-model="selected" :value="r.player_id" :disabled="!canManage" type="checkbox" class="rounded" />
+                        <input v-model="selected" :value="r.player_id" :data-help="`compn-squad-check-${r.player_id}`" :disabled="!canManage" type="checkbox" class="rounded" />
                         <span class="w-6 text-end font-mono text-slate-400">{{ r.shirt_number }}</span>
                         <span class="font-medium">{{ r.name }}</span>
                         <span v-if="r.left_branch" class="rounded bg-slate-200 px-1.5 py-0.5 text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-200">{{ t('comp.left_branch') }}</span>
@@ -99,7 +99,7 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
                 </div>
                 <p v-if="!roster.length" class="text-sm text-slate-500 dark:text-slate-400">{{ t('comp.roster_empty') }}</p>
                 <InputError :message="squadForm.errors.player_ids" />
-                <PrimaryButton v-if="canManage" :disabled="squadForm.processing" @click="saveSquad">{{ t('save') }}</PrimaryButton>
+                <PrimaryButton v-if="canManage" :disabled="squadForm.processing" data-help="compn-squad-save" @click="saveSquad">{{ t('save') }}</PrimaryButton>
             </section>
 
             <section v-if="tab === 'games'" class="space-y-2 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
@@ -207,9 +207,9 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
                 </div>
                 <h3 class="pt-2 text-sm font-semibold">{{ t('comp.suspension_rules') }}</h3>
                 <div class="grid gap-3 sm:grid-cols-3">
-                    <label class="text-sm">{{ t('comp.red_ban_matches') }} <TextInput v-model.number="rulesForm.red_ban_matches" :disabled="!canManage" type="number" min="0" class="mt-1 w-full" /></label>
-                    <label class="text-sm">{{ t('comp.yellow_threshold') }} <TextInput v-model.number="rulesForm.yellow_threshold" :disabled="!canManage" type="number" min="1" class="mt-1 w-full" :placeholder="t('comp.yellow_threshold_none')" /></label>
-                    <label class="text-sm">{{ t('comp.yellow_ban_matches') }} <TextInput v-model.number="rulesForm.yellow_ban_matches" :disabled="!canManage" type="number" min="0" class="mt-1 w-full" /></label>
+                    <label class="text-sm">{{ t('comp.red_ban_matches') }} <TextInput v-model.number="rulesForm.red_ban_matches" data-help="compn-rule-red" :disabled="!canManage" type="number" min="0" class="mt-1 w-full" /></label>
+                    <label class="text-sm">{{ t('comp.yellow_threshold') }} <TextInput v-model.number="rulesForm.yellow_threshold" data-help="compn-rule-yellow" :disabled="!canManage" type="number" min="1" class="mt-1 w-full" :placeholder="t('comp.yellow_threshold_none')" /></label>
+                    <label class="text-sm">{{ t('comp.yellow_ban_matches') }} <TextInput v-model.number="rulesForm.yellow_ban_matches" data-help="compn-rule-yellow-ban" :disabled="!canManage" type="number" min="0" class="mt-1 w-full" /></label>
                 </div>
                 <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('comp.suspension_rules_help') }}</p>
                 <label class="block text-sm">{{ t('notes') }}

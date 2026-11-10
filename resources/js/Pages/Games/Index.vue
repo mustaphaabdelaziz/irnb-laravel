@@ -85,12 +85,12 @@ const statusClass = {
                         <option value="">{{ t('status') }}</option>
                         <option v-for="s in ['scheduled', 'played', 'postponed', 'cancelled']" :key="s" :value="s">{{ t(`comp.status_${s}`) }}</option>
                     </select>
-                    <div class="flex overflow-hidden rounded-lg ring-1 ring-slate-300 dark:ring-slate-700">
+                    <div data-help="game-view-toggle" class="flex overflow-hidden rounded-lg ring-1 ring-slate-300 dark:ring-slate-700">
                         <button v-for="v in ['list', 'month']" :key="v" type="button" class="px-3 py-1.5 text-sm"
                             :class="view === v ? 'bg-primary-600 text-white' : 'bg-white text-slate-600 dark:bg-slate-900 dark:text-slate-300'"
                             @click="reload({ view: v })">{{ t(`comp.view_${v}`) }}</button>
                     </div>
-                    <PrimaryButton v-if="canAdd && teamOptions.length" @click="creating = !creating">{{ t('comp.new_game') }}</PrimaryButton>
+                    <PrimaryButton v-if="canAdd && teamOptions.length" data-help="game-new" @click="creating = !creating">{{ t('comp.new_game') }}</PrimaryButton>
                 </div>
             </div>
         </template>
@@ -98,43 +98,43 @@ const statusClass = {
         <div class="mx-auto max-w-6xl space-y-6">
             <form v-if="creating" @submit.prevent="create" class="grid gap-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 sm:grid-cols-4">
                 <label class="text-sm">{{ t('team') }}
-                    <SearchableSelect v-model="form.team_id" :options="teamOptions" class="mt-1" @update:model-value="form.competition_id = ''" />
+                    <SearchableSelect v-model="form.team_id" :options="teamOptions" class="mt-1" data-help="game-team" @update:model-value="form.competition_id = ''" />
                     <InputError :message="form.errors.team_id" />
                 </label>
                 <label class="text-sm">{{ t('comp.competition') }}
-                    <select v-model="form.competition_id" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
+                    <select v-model="form.competition_id" data-help="game-competition" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
                         <option value="">{{ t('comp.friendly_no_competition') }}</option>
                         <option v-for="c in competitionOptions" :key="c.id" :value="c.id">{{ c.name }} ({{ c.season_start_year }})</option>
                     </select>
                     <InputError :message="form.errors.competition_id ? t(form.errors.competition_id) : ''" />
                 </label>
                 <label class="text-sm">{{ t('comp.opponent') }}
-                    <SearchableSelect v-model="form.opponent_id" :options="opponents" class="mt-1" />
+                    <SearchableSelect v-model="form.opponent_id" :options="opponents" class="mt-1" data-help="game-opponent" />
                     <InputError :message="form.errors.opponent_id" />
                     <Link :href="route('opponents.index')" class="text-xs text-primary-600 hover:underline dark:text-primary-300">{{ t('comp.manage_opponents') }}</Link>
                 </label>
                 <label class="text-sm">{{ t('comp.side') }}
-                    <select v-model="form.side" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
+                    <select v-model="form.side" data-help="game-side" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
                         <option v-for="s in ['home', 'away', 'neutral']" :key="s" :value="s">{{ t(`comp.side_${s}`) }}</option>
                     </select>
                 </label>
                 <label class="text-sm">{{ t('date') }}
-                    <TextInput v-model="form.date" type="date" class="mt-1 w-full" required />
+                    <TextInput v-model="form.date" data-help="game-date" type="date" class="mt-1 w-full" required />
                     <InputError :message="form.errors.date" />
                 </label>
-                <label class="text-sm">{{ t('comp.kickoff') }} <TextInput v-model="form.kickoff_time" type="time" class="mt-1 w-full" /></label>
+                <label class="text-sm">{{ t('comp.kickoff') }} <TextInput v-model="form.kickoff_time" data-help="game-kickoff" type="time" class="mt-1 w-full" /></label>
                 <label class="text-sm">{{ t('comp.venue') }}
-                    <select v-model="form.venue_id" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
+                    <select v-model="form.venue_id" data-help="game-venue" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
                         <option value="">—</option>
                         <option v-for="v in venues" :key="v.id" :value="v.id">{{ v.name }}</option>
                     </select>
                 </label>
-                <label class="text-sm">{{ t('comp.round_label') }} <TextInput v-model="form.round_label" class="mt-1 w-full" :placeholder="t('comp.round_label_hint')" /></label>
-                <label class="text-sm">{{ t('comp.meeting_time') }} <TextInput v-model="form.meeting_time" type="time" class="mt-1 w-full" /></label>
-                <label class="text-sm sm:col-span-2">{{ t('comp.meeting_place') }} <TextInput v-model="form.meeting_place" class="mt-1 w-full" /></label>
-                <label class="flex items-end gap-2 pb-2 text-sm"><input v-model="form.cancel_training" type="checkbox" class="rounded" /> {{ t('comp.cancel_training') }}</label>
+                <label class="text-sm">{{ t('comp.round_label') }} <TextInput v-model="form.round_label" data-help="game-round" class="mt-1 w-full" :placeholder="t('comp.round_label_hint')" /></label>
+                <label class="text-sm">{{ t('comp.meeting_time') }} <TextInput v-model="form.meeting_time" data-help="game-meeting-time" type="time" class="mt-1 w-full" /></label>
+                <label class="text-sm sm:col-span-2">{{ t('comp.meeting_place') }} <TextInput v-model="form.meeting_place" data-help="game-meeting-place" class="mt-1 w-full" /></label>
+                <label data-help="game-cancel-training" class="flex items-end gap-2 pb-2 text-sm"><input v-model="form.cancel_training" type="checkbox" class="rounded" /> {{ t('comp.cancel_training') }}</label>
                 <div class="flex items-end gap-2 sm:col-span-4">
-                    <PrimaryButton :disabled="form.processing || !form.team_id || !form.opponent_id">{{ t('add') }}</PrimaryButton>
+                    <PrimaryButton :disabled="form.processing || !form.team_id || !form.opponent_id" data-help="game-add">{{ t('add') }}</PrimaryButton>
                     <SecondaryButton type="button" @click="creating = false">{{ t('cancel') }}</SecondaryButton>
                 </div>
             </form>
@@ -143,7 +143,7 @@ const statusClass = {
                 <section class="space-y-2">
                     <h2 class="text-sm font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('comp.upcoming') }}</h2>
                     <div class="divide-y divide-slate-100 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:divide-slate-800 dark:bg-slate-900 dark:ring-slate-800">
-                        <Link v-for="g in upcoming" :key="g.id" :href="route('games.show', g.id)" class="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800">
+                        <Link v-for="g in upcoming" :key="g.id" :data-help="`game-row-${g.id}`" :href="route('games.show', g.id)" class="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800">
                             <div>
                                 <div class="font-medium text-slate-900 dark:text-slate-100">{{ g.team }} — {{ g.opponent }} <span class="text-sm text-slate-500 dark:text-slate-400">({{ t(`comp.side_${g.side}`) }})</span></div>
                                 <div class="text-xs text-slate-500 dark:text-slate-400">{{ g.competition || t('comp.type_friendly') }}<span v-if="g.round_label"> · {{ g.round_label }}</span><span v-if="g.venue"> · {{ g.venue }}</span></div>

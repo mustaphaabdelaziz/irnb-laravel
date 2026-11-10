@@ -112,7 +112,7 @@ function destroy() {
 
         <div class="mx-auto max-w-5xl space-y-4">
             <nav class="flex flex-wrap gap-1 border-b border-slate-200 dark:border-slate-800">
-                <button v-for="key in ['info', 'callup', 'lineup', 'report']" :key="key" type="button" @click="tab = key" class="-mb-px border-b-2 px-3 py-2 text-sm"
+                <button v-for="key in ['info', 'callup', 'lineup', 'report']" :key="key" type="button" :data-help="`game-tab-${key}`" @click="tab = key" class="-mb-px border-b-2 px-3 py-2 text-sm"
                     :class="tab === key ? 'border-primary-600 font-semibold text-primary-700 dark:text-primary-300' : 'border-transparent text-slate-500 dark:text-slate-400'">
                     {{ t(`comp.tab_${key}`) }}
                 </button>
@@ -168,12 +168,12 @@ function destroy() {
 
             <section v-if="tab === 'callup'" class="space-y-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div class="flex flex-wrap items-center justify-between gap-2">
-                    <span class="text-sm" :class="calledCount > game.format.max_called_up ? 'font-semibold text-rose-600 dark:text-rose-400' : 'text-slate-600 dark:text-slate-300'">
+                    <span data-help="game-callup-count" class="text-sm" :class="calledCount > game.format.max_called_up ? 'font-semibold text-rose-600 dark:text-rose-400' : 'text-slate-600 dark:text-slate-300'">
                         {{ t('comp.called_count', { n: calledCount, max: game.format.max_called_up }) }}
                     </span>
-                    <a :href="route('games.convocation', game.id)" target="_blank" class="text-sm text-primary-600 hover:underline dark:text-primary-300">{{ t('comp.convocation_pdf') }}</a>
+                    <a :href="route('games.convocation', game.id)" data-help="game-callup-pdf" target="_blank" class="text-sm text-primary-600 hover:underline dark:text-primary-300">{{ t('comp.convocation_pdf') }}</a>
                 </div>
-                <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
+                <table data-help="game-callup-table" class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
                     <thead class="text-xs uppercase text-slate-500 dark:text-slate-400">
                         <tr>
                             <th class="w-10 py-2"></th>
@@ -184,22 +184,22 @@ function destroy() {
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                         <tr v-for="row in callRows" :key="row.player_id" :class="{ 'bg-primary-50/50 dark:bg-primary-900/10': row.called_up }">
-                            <td class="py-2 text-center"><input v-model="row.called_up" :disabled="!canManage" type="checkbox" class="rounded" /></td>
+                            <td class="py-2 text-center"><input v-model="row.called_up" :data-help="`game-callup-check-${row.player_id}`" :disabled="!canManage" type="checkbox" class="rounded" /></td>
                             <td class="py-2 font-mono text-slate-500 dark:text-slate-400">{{ row.shirt_number }}</td>
                             <td class="py-2">
                                 <span class="font-medium text-slate-900 dark:text-slate-100">{{ row.name }}</span>
                                 <span class="ms-2 text-xs text-slate-400">{{ row.category }}</span>
-                                <PlayerBadges :flags="row.flags" class="ms-2" />
+                                <PlayerBadges :flags="row.flags" :data-help="`game-callup-badges-${row.player_id}`" class="ms-2" />
                             </td>
                             <td class="py-2">
-                                <TextInput v-if="!row.called_up" v-model="row.not_called_reason" :disabled="!canManage" class="w-full" :placeholder="t('comp.not_called_reason_hint')" />
+                                <TextInput v-if="!row.called_up" v-model="row.not_called_reason" :data-help="`game-callup-reason-${row.player_id}`" :disabled="!canManage" class="w-full" :placeholder="t('comp.not_called_reason_hint')" />
                             </td>
                         </tr>
                         <tr v-if="!callRows.length"><td colspan="4" class="py-6 text-center text-slate-500 dark:text-slate-400">{{ t(game.competition ? 'comp.callup_empty_squad' : 'comp.roster_empty') }}</td></tr>
                     </tbody>
                 </table>
                 <InputError :message="callForm.errors.players ? t(callForm.errors.players) : ''" />
-                <PrimaryButton v-if="canManage" :disabled="callForm.processing" @click="saveCallUp">{{ t('save') }}</PrimaryButton>
+                <PrimaryButton v-if="canManage" :disabled="callForm.processing" data-help="game-callup-save" @click="saveCallUp">{{ t('save') }}</PrimaryButton>
             </section>
             <section v-if="tab === 'lineup'" class="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <p v-if="!lineup.players.length" class="text-sm text-slate-500 dark:text-slate-400">

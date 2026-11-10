@@ -1974,6 +1974,92 @@ export default [
             await page.locator('[data-help="team-coaches-card"]').waitFor({ state: 'visible' });
         },
     },
+    // --- Competitions: create competition, schedule match, call-up (Part 3c) ---
+    {
+        // Sidebar entry, the season list that sets the new competition's season, «منافسة جديدة».
+        name: 'comp-create-competition-list',
+        url: '/competitions',
+        targets: ['nav-competitions', 'compn-season', 'compn-new'],
+        before: async (page) => { await navIntoView(page, 'nav-competitions'); },
+    },
+    {
+        // The form filled with the U17 team and «كأس الولاية لأقل من 17 سنة», type «كأس»; format left as
+        // the team's. «إضافة» not pressed.
+        name: 'comp-create-competition-form',
+        url: '/competitions',
+        targets: ['compn-team', 'compn-name', 'compn-type', 'compn-format', 'compn-add'],
+        before: async (page) => {
+            await page.locator('[data-help="compn-new"]').click();
+            await page.locator('[data-help="compn-team"] > button').click();
+            await page.locator('[data-help="compn-team"] li', { hasText: 'أقل من 17' }).first().dispatchEvent('mousedown');
+            await page.fill('input[data-help="compn-name"]', 'كأس الولاية لأقل من 17 سنة');
+            await page.locator('select[data-help="compn-type"]').selectOption({ label: 'كأس' });
+            await blur(page);
+        },
+    },
+    {
+        // The demo competition's squad (an existing competition stands in for the new one): all seven
+        // roster players ticked. Nothing saved.
+        name: 'comp-create-competition-squad',
+        url: '/competitions/1',
+        targets: ['compn-tab-squad', 'compn-squad-list', 'compn-squad-save'],
+    },
+    {
+        name: 'comp-create-competition-rules',
+        url: '/competitions/1',
+        targets: ['compn-tab-rules', 'compn-rule-red', 'compn-rule-yellow', 'compn-rule-yellow-ban'],
+        before: async (page) => {
+            await page.locator('[data-help="compn-tab-rules"]').click();
+            await page.locator('input[data-help="compn-rule-red"]').waitFor({ state: 'visible' });
+        },
+    },
+    {
+        // Matches list: sidebar entry, «مباراة جديدة», the list/calendar switch and M4's row.
+        name: 'comp-schedule-match-list',
+        url: '/games',
+        targets: ['nav-games', 'game-new', 'game-view-toggle', 'game-row-4'],
+        before: async (page) => { await navIntoView(page, 'nav-games'); },
+    },
+    {
+        // Form step by step, in the reader's state: team and opponent chosen.
+        name: 'comp-schedule-match-who',
+        url: '/games',
+        targets: ['game-team', 'game-competition', 'game-opponent', 'game-side'],
+        before: async (page) => { await openMatchForm(page); },
+    },
+    {
+        // + the day, kickoff 18:00 and «ملعب حي النصر». The day is the next Wednesday after the seed day
+        // (a U17 training day: Monday and Wednesday, planned for 35 days ahead).
+        name: 'comp-schedule-match-when',
+        url: '/games',
+        targets: ['game-date', 'game-kickoff', 'game-venue'],
+        before: async (page) => { await openMatchForm(page); await fillMatchWhen(page); },
+    },
+    {
+        // + meeting time and place.
+        name: 'comp-schedule-match-meeting',
+        url: '/games',
+        targets: ['game-meeting-time', 'game-meeting-place'],
+        before: async (page) => { await openMatchForm(page); await fillMatchWhen(page); await fillMatchMeeting(page); },
+    },
+    {
+        // The training box (ticked by default) and «إضافة». Not pressed.
+        name: 'comp-schedule-match-training',
+        url: '/games',
+        targets: ['game-cancel-training', 'game-add'],
+        before: async (page) => { await openMatchForm(page); await fillMatchWhen(page); await fillMatchMeeting(page); },
+    },
+    {
+        // M4's call-up tab as saved in the demo: counter, ticks, badges, رياض's reason, «حفظ», PDF link.
+        name: 'comp-call-up-list',
+        url: '/games/4',
+        targets: ['game-tab-callup', 'game-callup-count', 'game-callup-table', 'game-callup-badges-7', 'game-callup-badges-3', 'game-callup-badges-8', 'game-callup-badges-4', 'game-callup-badges-1', 'game-callup-reason-4', 'game-callup-save', 'game-callup-pdf'],
+        before: async (page) => {
+            await page.locator('[data-help="game-tab-callup"]').click();
+            await page.locator('[data-help="game-callup-table"]').waitFor({ state: 'visible' });
+            await centre(page, 'game-callup-table');
+        },
+    },
 ];
 
 /** أمين قاسمي's grid cell holding the demo's «R15» (rows are found by last name). */
@@ -2261,6 +2347,32 @@ async function fillUserNames(page) {
 /** Drops the focus ring of the last field typed in or ticked. */
 async function blur(page) {
     await page.evaluate(() => document.activeElement?.blur());
+}
+
+/** Matches list: opens «مباراة جديدة», picks the U17 team and the opponent «نجم الساحل». Nothing is saved. */
+async function openMatchForm(page) {
+    await page.locator('[data-help="game-new"]').click();
+    await page.locator('[data-help="game-team"] > button').click();
+    await page.locator('[data-help="game-team"] li', { hasText: 'أقل من 17' }).first().dispatchEvent('mousedown');
+    await page.locator('[data-help="game-opponent"] > button').click();
+    await page.locator('[data-help="game-opponent"] li', { hasText: 'نجم الساحل' }).first().dispatchEvent('mousedown');
+    await blur(page);
+    await centre(page, 'game-competition');
+}
+
+/** Match form: the next Wednesday after the seed day, 18:00, «ملعب حي النصر». */
+async function fillMatchWhen(page) {
+    await page.fill('input[data-help="game-date"]', ymd(nextDay([3], new Date(), true)));
+    await page.fill('input[data-help="game-kickoff"]', '18:00');
+    await page.locator('select[data-help="game-venue"]').selectOption({ label: 'ملعب حي النصر' });
+    await blur(page);
+}
+
+/** Match form: meeting at 17:00 at «مقر النادي». */
+async function fillMatchMeeting(page) {
+    await page.fill('input[data-help="game-meeting-time"]', '17:00');
+    await page.fill('input[data-help="game-meeting-place"]', 'مقر النادي');
+    await blur(page);
 }
 
 /** Role form: opens «إضافة» and types the Arabic name. Nothing is saved. */

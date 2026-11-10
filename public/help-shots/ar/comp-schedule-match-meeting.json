@@ -1,0 +1,18 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "game-meeting-time": {
+      "x": 58.67,
+      "y": 39,
+      "w": 17.27,
+      "h": 5.25
+    },
+    "game-meeting-place": {
+      "x": 22.27,
+      "y": 39,
+      "w": 35.47,
+      "h": 5.25
+    }
+  }
+}

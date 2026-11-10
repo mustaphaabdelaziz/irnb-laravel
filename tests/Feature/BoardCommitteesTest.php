@@ -10,6 +10,7 @@ use App\Models\Player;
 use App\Models\User;
 use App\Support\PermissionMap;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -203,5 +204,145 @@ class BoardCommitteesTest extends TestCase
                 ->where('committees.0.name', 'Finance')
                 ->where('members.0.committees.0.pivot.position', 'deputy')
                 ->has('roles.0.level'));
+    }
+
+    #[Test]
+    public function marking_a_seated_member_former_frees_their_seats(): void
+    {
+        $committee = BoardCommittee::create(['name' => 'Finance']);
+        $first = $this->player('Ali');
+        $second = $this->player('Omar');
+        $this->actingAs($this->admin());
+        $this->seat($committee, $first, 'head');
+        $this->seat($committee, $second, 'head')->assertSessionHasErrors('position');
+
+        $member = BoardMember::where('player_id', $first->id)->firstOrFail();
+        $this->post(route('board.members.update', $member), [
+            'player_id' => $first->id, 'board_term_id' => $this->term->id, 'role' => 'member', 'status' => 'former',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(0, DB::table('board_committee_member')->where('board_member_id', $member->id)->count());
+        $this->seat($committee, $second, 'head')->assertSessionHasNoErrors();
+    }
+
+    #[Test]
+    public function marking_a_member_former_through_the_store_route_frees_seats_too(): void
+    {
+        $committee = BoardCommittee::create(['name' => 'Finance']);
+        $player = $this->player();
+        $this->actingAs($this->admin());
+        $this->seat($committee, $player, 'head');
+
+        $this->post(route('board.members.store'), [
+            'player_id' => $player->id, 'board_term_id' => $this->term->id, 'role' => 'member', 'status' => 'former',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(0, DB::table('board_committee_member')->count());
+    }
+
+    #[Test]
+    public function a_former_member_never_counts_against_a_seat_limit(): void
+    {
+        $committee = BoardCommittee::create(['name' => 'Finance']);
+        $old = BoardMember::create([
+            'player_id' => $this->player('Ali')->id, 'board_term_id' => $this->term->id,
+            'name' => 'Ali', 'role' => 'member', 'status' => 'former',
+        ]);
+        // Legacy data: the seat survived the status change.
+        $committee->members()->attach($old->id, ['position' => 'head']);
+
+        $this->actingAs($this->admin());
+        $this->seat($committee, $this->player('Omar'), 'head')->assertSessionHasNoErrors();
+    }
+
+    #[Test]
+    public function the_cleanup_migration_removes_seats_of_former_members_only(): void
+    {
+        $committee = BoardCommittee::create(['name' => 'Finance']);
+        $mk = fn (string $name, string $status) => BoardMember::create([
+            'player_id' => $this->player($name)->id, 'board_term_id' => $this->term->id,
+            'name' => $name, 'role' => 'member', 'status' => $status,
+        ]);
+        $former = $mk('Ali', 'former');
+        $active = $mk('Omar', 'active');
+        $committee->members()->attach($former->id, ['position' => 'head']);
+        $committee->members()->attach($active->id, ['position' => 'deputy']);
+
+        (require database_path('migrations/2026_11_10_100003_free_committee_seats_of_former_board_members.php'))->up();
+
+        $this->assertSame([$active->id], DB::table('board_committee_member')->pluck('board_member_id')->all());
+    }
+
+    #[Test]
+    public function picking_a_former_member_for_a_seat_makes_them_active_again(): void
+    {
+        $committee = BoardCommittee::create(['name' => 'Finance']);
+        $player = $this->player();
+        $former = BoardMember::create([
+            'player_id' => $player->id, 'board_term_id' => $this->term->id,
+            'name' => 'X', 'role' => 'member', 'status' => 'former',
+        ]);
+
+        $this->actingAs($this->admin());
+        $this->seat($committee, $player, 'deputy')->assertSessionHasNoErrors();
+
+        $this->assertSame('active', $former->fresh()->status);
+        $this->assertSame(1, $former->committees()->count());
+    }
+
+    #[Test]
+    public function picking_a_former_member_for_a_role_makes_them_active_again(): void
+    {
+        $player = $this->player();
+        $former = BoardMember::create([
+            'player_id' => $player->id, 'board_term_id' => $this->term->id,
+            'name' => 'X', 'role' => 'member', 'status' => 'former',
+        ]);
+
+        $this->actingAs($this->admin());
+        $this->post(route('board.members.store'), [
+            'player_id' => $player->id, 'board_term_id' => $this->term->id, 'role' => 'treasurer', 'status' => 'active',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseCount('board_members', 1);
+        $this->assertSame(['treasurer', 'active'], [$former->fresh()->role, $former->fresh()->status]);
+    }
+
+    #[Test]
+    public function roles_and_committees_count_the_current_term_but_stay_in_use_for_any_term(): void
+    {
+        BoardTerm::where('id', '!=', $this->term->id)->update(['is_current' => false]);
+        $oldTerm = BoardTerm::create(['name' => 'old', 'is_current' => false]);
+        $mk = fn (BoardTerm $term, string $name) => BoardMember::create([
+            'player_id' => $this->player($name)->id, 'board_term_id' => $term->id,
+            'name' => $name, 'role' => 'president', 'status' => 'active',
+        ]);
+        $past = $mk($oldTerm, 'Ali');
+        $current = $mk($this->term, 'Omar');
+        $committee = BoardCommittee::create(['name' => 'Finance']);
+        $legacy = BoardCommittee::create(['name' => 'Old only']);
+        $committee->members()->attach($current->id, ['position' => 'head']);
+        $legacy->members()->attach($past->id, ['position' => 'head']);
+
+        $this->actingAs($this->admin());
+        $this->get(route('board-roles.index'))->assertInertia(fn ($page) => $page
+            ->where('roles', function ($roles) {
+                $roles = collect($roles)->keyBy('name');
+
+                return $roles['president']['members_count'] === 1
+                    && $roles['president']['in_use'] === true
+                    && $roles['treasurer']['in_use'] === false;
+            }));
+        $this->get(route('board-committees.index'))->assertInertia(fn ($page) => $page
+            ->where('committees', function ($rows) {
+                $rows = collect($rows)->keyBy('name');
+
+                return $rows['Old only']['members_count'] === 0 && $rows['Old only']['in_use'] === true
+                    && $rows['Finance']['members_count'] === 1;
+            }));
+
+        $this->delete(route('board-committees.destroy', $legacy))->assertSessionHas('error', 'flash.committee_in_use');
+        $this->delete(route('board-roles.destroy', BoardRole::where('name', 'president')->firstOrFail()))
+            ->assertSessionHas('error', 'flash.board_role_in_use');
     }
 }

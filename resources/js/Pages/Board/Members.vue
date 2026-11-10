@@ -9,6 +9,7 @@ import IconButton from '@/Components/IconButton.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import OrgNode from '@/Components/Board/OrgNode.vue';
 import { formatPhone } from '@/lib/phone';
+import { arMembers } from '@/lib/arCount';
 import WhatsAppLink from '@/Components/WhatsAppLink.vue';
 import { useCan } from '@/Composables/useCan';
 
@@ -21,7 +22,7 @@ const props = defineProps({
     selectedTermId: { type: [Number, String], default: null },
     previousTerm: { type: Object, default: null },
 });
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const { can } = useCan();
 
 function roleLabel(r) {
@@ -104,7 +105,8 @@ const pickerPlayers = computed(() => {
     const list = q ? props.players.filter((p) => `${p.name} ${p.membership_id}`.toLowerCase().includes(q)) : props.players;
     return list.slice(0, 40);
 });
-const onBoard = computed(() => new Set(props.members.map((m) => m.player_id)));
+// Only active members are «on the board»: a former member can be picked again.
+const onBoard = computed(() => new Set(props.members.filter((m) => m.status === 'active').map((m) => m.player_id)));
 function openPicker(title, onPick) {
     if (!props.selectedTermId) return;
     pickerSearch.value = ''; pickerError.value = '';
@@ -240,7 +242,7 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                     <option v-for="tm in terms" :key="tm.id" :value="tm.id">{{ tm.name }}{{ tm.is_current ? ' ★' : '' }}</option>
                 </select>
                 <span v-if="currentTerm && (currentTerm.start_date || currentTerm.end_date)" data-help="board-term-dates" class="text-sm text-slate-500 dark:text-slate-400">
-                    {{ fmt(currentTerm.start_date) || '…' }} → {{ fmt(currentTerm.end_date) || '…' }}
+                    {{ fmt(currentTerm.start_date) || '…' }} – {{ fmt(currentTerm.end_date) || '…' }}
                 </span>
                 <div class="ms-auto flex gap-2">
                     <IconButton v-if="currentTerm && can('board', 'edit')" icon="pencil" :label="t('edit_term')" data-help="board-term-edit" @click="openTermEdit(currentTerm)" />
@@ -423,9 +425,9 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                         <h2 class="text-base font-bold text-slate-900 dark:text-slate-100">{{ editingId ? t('edit') : t('add_member') }}</h2>
                         <button type="button" @click="showForm = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><Icon name="xcircle" /></button>
                     </div>
-                    <div class="grid gap-4 sm:grid-cols-3">
+                    <div class="grid gap-4 sm:grid-cols-2">
                         <!-- Searchable player picker -->
-                        <div class="relative block text-sm sm:col-span-3">
+                        <div class="relative block text-sm sm:col-span-2">
                             <span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('player') }}</span>
                             <div class="flex items-center gap-2">
                                 <div class="relative flex-1">
@@ -450,13 +452,13 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
                             <select v-model="form.role" data-help="board-form-role" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
                                 <option v-for="r in roles" :key="r.id" :value="r.name">{{ r.label || t(r.name) }}</option>
                             </select></label>
-                        <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('term') }}</span>
-                            <select v-model="form.board_term_id" data-help="board-form-term" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
-                                <option v-for="tm in terms" :key="tm.id" :value="tm.id">{{ tm.name }}</option>
-                            </select></label>
                         <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('status') }}</span>
                             <select v-model="form.status" data-help="board-form-status" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
                                 <option value="active">{{ t('active') }}</option><option value="former">{{ t('former') }}</option>
+                            </select></label>
+                        <label class="block text-sm sm:col-span-2"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('term') }}</span>
+                            <select v-model="form.board_term_id" data-help="board-form-term" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
+                                <option v-for="tm in terms" :key="tm.id" :value="tm.id">{{ tm.name }}</option>
                             </select></label>
                     </div>
                     <div class="flex justify-end gap-2">
@@ -467,10 +469,10 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
             </div>
         </Teleport>
 
-        <ConfirmModal :show="!!removeTarget" :title="t('board.remove_from_board')" :message="removeTarget ? `${removeTarget.name} — ${t('confirm_delete')}` : ''"
+        <ConfirmModal :show="!!removeTarget" :title="t('board.remove_from_board')" :message="removeTarget ? t('board.remove_confirm', { name: removeTarget.name }) : ''"
             @confirm="remove" @cancel="removeTarget = null" />
         <ConfirmModal :show="showCopy" :title="t('board.copy_previous')" variant="primary" :busy="copying"
-            :message="previousTerm ? t('board.copy_previous_confirm', { count: previousTerm.count, name: previousTerm.name }) : ''"
+            :message="previousTerm ? t('board.copy_previous_confirm', { count: previousTerm.count, members: locale === 'ar' ? arMembers(previousTerm.count) : previousTerm.count, name: previousTerm.name }) : ''"
             :confirm-label="t('board.copy_previous')" @confirm="copyPrevious" @cancel="showCopy = false" />
         <ConfirmModal :show="!!leaveTarget" :title="t('board.leave_committee')"
             :message="leaveTarget ? t('board.leave_committee_confirm', { name: leaveTarget.member.name, committee: leaveTarget.committee.name }) : ''"

@@ -92,7 +92,7 @@ function destroy() {
                                 </div>
                                 <div v-else class="flex justify-end gap-2">
                                     <IconButton v-if="can('board_committees', 'edit')" icon="pencil" :label="t('edit')" plain size="sm" @click="startEdit(c)" />
-                                    <IconButton v-if="can('board_committees', 'delete')" icon="trash" :label="c.members_count > 0 ? t('board.committee_in_use') : t('delete')" variant="danger" plain size="sm" :disabled="c.members_count > 0" @click="deleteId = c.id" />
+                                    <IconButton v-if="can('board_committees', 'delete')" icon="trash" :label="c.in_use ? t('board.committee_in_use') : t('delete')" variant="danger" plain size="sm" :disabled="c.in_use" @click="deleteId = c.id" />
                                 </div>
                             </td>
                         </tr>

@@ -22,11 +22,13 @@ class BoardMemberController extends Controller
             ->where('board_term_id', $data['board_term_id'])->first();
         if ($member) {
             $member->update($data);
+            $this->freeSeatsOfFormer($member);
 
             return back()->with('success', 'flash.board_member_updated');
         }
 
-        BoardMember::create($data);
+        $member = BoardMember::create($data);
+        $this->freeSeatsOfFormer($member);
 
         return back()->with('success', 'flash.board_member_added');
     }
@@ -34,6 +36,7 @@ class BoardMemberController extends Controller
     public function update(Request $request, BoardMember $boardMember): RedirectResponse
     {
         $boardMember->update($this->fillFromPlayer($this->validateData($request)));
+        $this->freeSeatsOfFormer($boardMember);
 
         return back()->with('success', 'flash.board_member_updated');
     }
@@ -50,6 +53,14 @@ class BoardMemberController extends Controller
         $boardMember->delete();
 
         return back()->with('success', 'flash.board_member_removed');
+    }
+
+    /** A former member holds no committee seat: it is free for someone else. */
+    private function freeSeatsOfFormer(BoardMember $member): void
+    {
+        if ($member->status === 'former') {
+            $member->committees()->detach();
+        }
     }
 
     /**

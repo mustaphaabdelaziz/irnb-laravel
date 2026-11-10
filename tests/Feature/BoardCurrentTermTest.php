@@ -76,6 +76,20 @@ class BoardCurrentTermTest extends TestCase
     }
 
     #[Test]
+    public function a_meetings_assignees_include_a_member_from_another_term_who_holds_its_task(): void
+    {
+        $new = BoardMeeting::create(['title' => 'جديد', 'type' => 'ordinary', 'meeting_date' => now()->addWeek(), 'status' => 'scheduled']);
+        $url = route('board.meetings.show', $new);
+        $this->assertSame(['أ', 'ب'], $this->names($url, 'allMembers'));
+
+        BoardTask::create(['title' => 'مهمة', 'board_member_id' => $this->old->id, 'board_meeting_id' => $new->id, 'status' => 'not_started']);
+
+        $this->assertSame(['قديم', 'أ', 'ب'], $this->names($url, 'allMembers'));
+        // Attendance of a new meeting still lists the current term only.
+        $this->assertSame(['أ', 'ب'], $this->names($url, 'members'));
+    }
+
+    #[Test]
     public function task_assignees_are_the_current_term_plus_people_already_assigned(): void
     {
         $this->assertSame(['أ', 'ب'], $this->names(route('board.tasks'), 'members'));

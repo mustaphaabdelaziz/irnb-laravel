@@ -94,9 +94,9 @@ function destroy() {
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                         <tr v-for="r in roles" :key="r.id">
                             <td class="px-4 py-3">
-                                <div v-if="editingId === r.id" class="flex gap-2">
+                                <div v-if="editingId === r.id">
                                     <TextInput v-model="editForm.label" class="w-full" :placeholder="t('name')" data-help="brole-edit-name" />
-                                    <InputError :message="editForm.errors.label || editForm.errors.name" />
+                                    <InputError :message="editForm.errors.label || editForm.errors.name" class="mt-1" />
                                 </div>
                                 <span v-else class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ display(r) }}</span>
                             </td>
@@ -120,7 +120,7 @@ function destroy() {
                                 </div>
                                 <div v-else class="flex justify-end gap-2">
                                     <IconButton v-if="can('board_roles', 'edit')" icon="pencil" :label="t('edit')" plain size="sm" :data-help="`brole-edit-${r.name}`" @click="startEdit(r)" />
-                                    <IconButton v-if="can('board_roles', 'delete')" icon="trash" :label="r.members_count > 0 ? t('role_in_use') : t('delete')" variant="danger" plain size="sm" :disabled="r.members_count > 0" @click="deleteId = r.id" />
+                                    <IconButton v-if="can('board_roles', 'delete')" icon="trash" :label="r.in_use ? t('role_in_use') : t('delete')" variant="danger" plain size="sm" :disabled="r.in_use" @click="deleteId = r.id" />
                                 </div>
                             </td>
                         </tr>

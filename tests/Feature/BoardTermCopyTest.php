@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\BoardCommittee;
 use App\Models\BoardMember;
 use App\Models\BoardTerm;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -96,6 +97,33 @@ class BoardTermCopyTest extends TestCase
         $this->assertSame($x->id, $y->previous()->id);
         $this->assertNull($x->previous());
         $this->assertSame($z->id, $w->previous()->id);
+    }
+
+    #[Test]
+    public function copying_needs_the_board_add_right(): void
+    {
+        $this->seedPrevious();
+        $viewer = User::factory()->create([
+            'privileges' => ['user'],
+            'role_id' => Role::factory()->create(['permissions' => ['board' => ['view', 'edit']]])->id,
+        ]);
+
+        $this->actingAs($viewer)->post(route('board.terms.copy-previous', $this->new))->assertForbidden();
+
+        $this->assertSame(0, BoardMember::where('board_term_id', $this->new->id)->count());
+    }
+
+    #[Test]
+    public function copied_members_do_not_share_the_sources_photo(): void
+    {
+        $source = $this->member($this->previous, 'A', 'president');
+        $source->update(['photo_filename' => 'board/a.jpg']);
+
+        $this->actingAs($this->admin)->post(route('board.terms.copy-previous', $this->new))
+            ->assertSessionHas('success', 'flash.term_members_copied');
+
+        $this->assertNull(BoardMember::where('board_term_id', $this->new->id)->firstOrFail()->photo_filename);
+        $this->assertSame('board/a.jpg', $source->fresh()->photo_filename);
     }
 
     #[Test]

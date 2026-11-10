@@ -51,16 +51,18 @@ class BoardTermController extends Controller
      */
     public function copyPrevious(BoardTerm $boardTerm): RedirectResponse
     {
-        if ($boardTerm->members()->exists()) {
-            return back()->with('error', 'flash.term_not_empty');
-        }
-
         $source = $boardTerm->previous()?->members()->where('status', 'active')->with('committees:id')->get() ?? collect();
         if ($source->isEmpty()) {
             return back()->with('error', 'flash.term_nothing_to_copy');
         }
 
-        DB::transaction(function () use ($source, $boardTerm) {
+        $copied = DB::transaction(function () use ($source, $boardTerm) {
+            // Locked, so two tabs cannot both copy into the same empty term.
+            $locked = BoardTerm::whereKey($boardTerm->id)->lockForUpdate()->first();
+            if ($locked->members()->exists()) {
+                return false;
+            }
+
             foreach ($source as $member) {
                 $copy = BoardMember::create([
                     'player_id' => $member->player_id,
@@ -78,7 +80,13 @@ class BoardTermController extends Controller
                     $member->committees->mapWithKeys(fn ($c) => [$c->id => ['position' => $c->pivot->position]])->all()
                 );
             }
+
+            return true;
         });
+
+        if (! $copied) {
+            return back()->with('error', 'flash.term_not_empty');
+        }
 
         return back()->with('success', 'flash.term_members_copied');
     }

@@ -38,6 +38,11 @@ class BoardCommitteeMemberController extends Controller
             ],
         );
 
+        // Picking a former member for a seat brings them back to the board.
+        if ($member->status === 'former') {
+            $member->update(['status' => 'active']);
+        }
+
         $this->ensureSeatFree($committee, $member, $data['position']);
         $committee->members()->syncWithoutDetaching([$member->id => ['position' => $data['position']]]);
 
@@ -76,6 +81,7 @@ class BoardCommitteeMemberController extends Controller
         $taken = $committee->members()
             ->where('board_members.board_term_id', $member->board_term_id)
             ->where('board_members.id', '!=', $member->id)
+            ->where('board_members.status', 'active')
             ->wherePivot('position', $position)
             ->count();
 

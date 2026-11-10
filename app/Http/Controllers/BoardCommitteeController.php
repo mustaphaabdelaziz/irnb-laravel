@@ -16,7 +16,8 @@ class BoardCommitteeController extends Controller
     {
         return Inertia::render('Settings/BoardCommittees', [
             'committees' => BoardCommittee::query()
-                ->withCount('members')
+                ->withCount(['members as members_count' => fn ($q) => $q->inCurrentTerm()])
+                ->withExists('members as in_use')
                 ->orderBy('sort_order')->orderBy('name')
                 ->get(),
         ]);

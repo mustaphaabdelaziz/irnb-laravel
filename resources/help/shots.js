@@ -59,6 +59,9 @@ export default [
                 await page.waitForTimeout(300);
             }
             await input.fill('لاعب');
+            // Help results arrive with the search index, fetched when the palette first
+            // opens: without this wait the shot can be taken before they show.
+            await page.getByText('كيف أضيف لاعباً جديداً').first().waitFor({ timeout: 15000 });
         },
     },
     {

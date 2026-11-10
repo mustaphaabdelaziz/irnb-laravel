@@ -182,6 +182,19 @@ class OperationsReportsTest extends TestCase
     }
 
     #[Test]
+    public function a_ban_that_has_not_started_reads_not_started_in_the_suspensions_report(): void
+    {
+        $team = $this->team();
+        $p = $this->player($team->category);
+        $competition = $this->competition($team, 2026);
+        Suspension::create(['player_id' => $p->id, 'competition_id' => $competition->id, 'team_id' => $team->id, 'source' => 'manual', 'kind' => 'matches', 'matches_count' => 1, 'starts_on' => now()->addDays(5)->toDateString()]);
+
+        $row = $this->report('competitions', 'suspensions')['rows']['data'][0];
+
+        $this->assertSame(UiLang::get('comp.ban.upcoming'), $row['active']);
+    }
+
+    #[Test]
     public function appearances_join_call_ups_with_match_stats(): void
     {
         $team = $this->team();

@@ -139,6 +139,8 @@ class CompetitionController extends Controller
             'formats' => GameFormat::query()->where('branch_id', $team->branch_id)->where('active', true)->orderBy('name')
                 ->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
             'types' => CompetitionType::values(),
+            // inScope: the user manages this team (delete and new match need it plus their own right); canManage adds the edit right.
+            'inScope' => TeamAccess::canManage($request->user(), $team, $season),
             'canManage' => $request->user()->hasPermission('competitions', 'edit') && TeamAccess::canManage($request->user(), $team, $season),
             'suspensions' => (function () use ($competition, $team, $season, $status) {
                 $rosterIds = DB::table('team_players')->where('team_id', $team->id)->where('season_start_year', $season)->pluck('player_id');
@@ -167,7 +169,7 @@ class CompetitionController extends Controller
                     // Same rule as CompetitionSuspensionController::destroy.
                     'deletable' => $s->source === 'manual'
                         && ($s->competition_id === $competition->id || ($s->competition_id === null && $s->team_id === (int) $competition->team_id)),
-                ])->sortByDesc(fn (array $row) => $row['active'] || $row['upcoming'])->values();
+                ])->sortByDesc(fn (array $row) => [$row['active'] || $row['upcoming'], $row['active'] && ! $row['upcoming']])->values();
             })(),
         ]);
     }

@@ -30,7 +30,8 @@ use Illuminate\Support\Facades\DB;
 final class SuspensionStatus
 {
     /**
-     * `upcoming` marks a date ban whose first day is still ahead.
+     * `upcoming` marks a ban that has not started yet: a date ban whose first day is ahead, or a manual matches ban
+     * with a future start date (`active` stays true for the latter: it still has matches to serve).
      *
      * @param  Collection<int, Suspension>  $suspensions
      * @return array<int, array{served: ?int, remaining: ?int, active: bool, upcoming: bool, until: ?string}>
@@ -52,7 +53,7 @@ final class SuspensionStatus
             }
             $count = (int) $s->matches_count;
             $done = min($served[$s->id] ?? 0, $count);
-            $out[$s->id] = ['served' => $done, 'remaining' => $count - $done, 'active' => $done < $count, 'upcoming' => false, 'until' => null];
+            $out[$s->id] = ['served' => $done, 'remaining' => $count - $done, 'active' => $done < $count, 'upcoming' => $done < $count && ! $this->started($s), 'until' => null];
         }
 
         return $out;

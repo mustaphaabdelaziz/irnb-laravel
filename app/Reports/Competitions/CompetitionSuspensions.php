@@ -120,7 +120,7 @@ class CompetitionSuspensions extends Report
                 'served' => $e['served'],
                 'remaining' => $e['remaining'],
                 'until' => $e['until'] ? substr((string) $e['until'], 0, 10) : null,
-                'active' => UiLang::get($e['active'] ? 'reports.yes' : 'reports.no'),
+                'active' => $e['upcoming'] ? UiLang::get('comp.ban.upcoming') : UiLang::get($e['active'] ? 'reports.yes' : 'reports.no'),
                 'active_flag' => $e['active'],
             ];
         })

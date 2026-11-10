@@ -163,6 +163,8 @@ class GameController extends Controller
             'report' => $page->report($game),
             'opponents' => Opponent::query()->orderBy('name')->get(['id', 'name'])->map(fn (Opponent $o) => ['value' => $o->id, 'label' => $o->name]),
             'venues' => Venue::query()->orderByDesc('is_home')->orderBy('name')->get(['id', 'name']),
+            // inScope: the user manages this team (delete needs it plus games/delete); canManage adds the edit right.
+            'inScope' => TeamAccess::canManage($request->user(), $game->team, $game->season_start_year),
             'canManage' => $request->user()->hasPermission('games', 'edit') && TeamAccess::canManage($request->user(), $game->team, $game->season_start_year),
         ]);
     }

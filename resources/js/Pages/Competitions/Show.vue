@@ -17,7 +17,7 @@ const { t } = useI18n();
 const { can } = useCan();
 
 const props = defineProps({
-    competition: Object, roster: Array, games: Array, record: Object, stats: Object, formats: Array, types: Array, suspensions: Array, canManage: Boolean,
+    competition: Object, roster: Array, games: Array, record: Object, stats: Object, formats: Array, types: Array, suspensions: Array, canManage: Boolean, inScope: Boolean,
 });
 
 const tab = ref('squad');
@@ -116,7 +116,7 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
                     </span>
                 </Link>
                 <p v-if="!games.length" class="text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</p>
-                <Link v-if="canManage && can('games', 'add')" :href="route('games.index', { team_id: competition.team.id, competition_id: competition.id, create: 1 })" class="inline-block text-sm text-primary-600 hover:underline dark:text-primary-300">{{ t('comp.new_game') }} →</Link>
+                <Link v-if="inScope && can('games', 'add')" :href="route('games.index', { team_id: competition.team.id, competition_id: competition.id, create: 1 })" class="inline-block text-sm text-primary-600 hover:underline dark:text-primary-300">{{ t('comp.new_game') }} →</Link>
             </section>
 
             <section v-if="tab === 'record'" class="grid gap-4 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 sm:grid-cols-4">
@@ -150,7 +150,7 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
                                 <span v-if="s.scope === 'all'" class="ms-1 rounded bg-slate-100 px-1 text-xs dark:bg-slate-800">{{ t('comp.ban.all_competitions') }}</span>
                             </td>
                             <td class="py-1"><bdi dir="ltr">{{ banLabel(s) }}</bdi></td>
-                            <td class="py-1">{{ s.active ? t('comp.ban.active') : s.upcoming ? t('comp.ban.upcoming') : t('comp.ban.served') }}</td>
+                            <td class="py-1">{{ s.upcoming ? t('comp.ban.upcoming') : s.active ? t('comp.ban.active') : t('comp.ban.served') }}</td>
                             <td class="py-1 text-end"><IconButton v-if="canManage && s.deletable" data-help="compn-ban-delete" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="banToRemove = s.id" /></td>
                         </tr>
                         <tr v-if="!suspensions.length"><td colspan="5" class="py-6 text-center text-slate-500 dark:text-slate-400">{{ t('comp.ban.none') }}</td></tr>
@@ -224,7 +224,7 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
                 <label class="flex items-center gap-2 text-sm"><input v-model="rulesForm.archived" :disabled="!canManage" type="checkbox" class="rounded" /> {{ t('archived') }}</label>
                 <div class="flex justify-between">
                     <PrimaryButton v-if="canManage" :disabled="rulesForm.processing" data-help="compn-rules-save" @click="saveRules">{{ t('save') }}</PrimaryButton>
-                    <SecondaryButton v-if="canManage && can('competitions', 'delete')" @click="confirmDelete = true">{{ t('delete') }}</SecondaryButton>
+                    <SecondaryButton v-if="inScope && can('competitions', 'delete')" @click="confirmDelete = true">{{ t('delete') }}</SecondaryButton>
                 </div>
             </section>
         </div>

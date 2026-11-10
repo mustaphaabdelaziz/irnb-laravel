@@ -230,9 +230,24 @@ class TeamsTest extends TestCase
         $team = $this->team();
         $other = Category::firstOrCreate(['name' => 'U19']);
         $p = $this->player($other);
+        $admin = $this->admin();
 
-        $this->actingAs($this->admin())->get(route('teams.show', $team))
+        $this->actingAs($admin)->get(route('teams.show', $team))
             ->assertInertia(fn (Assert $page) => $page->where('candidates.0.id', $p->id)->where('candidates.0.category', $other->localized_name));
+
+        // Candidates share their category queries: ten more players add none.
+        $count = function () use ($admin, $team): int {
+            DB::flushQueryLog();
+            DB::enableQueryLog();
+            $this->actingAs($admin)->get(route('teams.show', $team))->assertOk();
+
+            return count(DB::getQueryLog());
+        };
+        $before = $count();
+        for ($i = 0; $i < 10; $i++) {
+            $this->player($other);
+        }
+        $this->assertSame($before, $count());
     }
 
     #[Test]
@@ -255,7 +270,10 @@ class TeamsTest extends TestCase
             'season' => 2026, 'players' => [['player_id' => $a->id, 'shirt_number' => 7], ['player_id' => $b->id, 'shirt_number' => 7]],
         ]);
 
-        $response->assertSessionHasErrors(['players.1.shirt_number' => __('Two players have the same shirt number.')]);
+        $response->assertSessionHasErrors([
+            'players.0.shirt_number' => __('Two players have the same shirt number.'),
+            'players.1.shirt_number' => __('Two players have the same shirt number.'),
+        ]);
         foreach (['ar', 'fr'] as $locale) {
             $this->assertArrayHasKey('Two players have the same shirt number.', json_decode(file_get_contents(lang_path("$locale.json")), true));
         }

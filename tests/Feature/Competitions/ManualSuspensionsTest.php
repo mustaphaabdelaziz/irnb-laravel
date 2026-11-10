@@ -37,7 +37,7 @@ class ManualSuspensionsTest extends TestCase
         $this->assertSame($admin->id, Suspension::first()->created_by);
 
         $this->actingAs($admin)->get(route('competitions.show', $competition))
-            ->assertInertia(fn (Assert $page) => $page->has('suspensions', 2)->where('suspensions.1.reason', 'Federation letter 12/26')->where('suspensions.0.upcoming', true)); // both listed with the active bans, newest first
+            ->assertInertia(fn (Assert $page) => $page->has('suspensions', 2)->where('suspensions.0.reason', 'Federation letter 12/26')->where('suspensions.1.upcoming', true)); // the active ban first, then the one not started
     }
 
     #[Test]

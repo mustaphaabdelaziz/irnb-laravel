@@ -18,7 +18,7 @@ import { losingCallUpRows } from '@/lib/callUpLoss.js';
 const { t } = useI18n();
 const { can } = useCan();
 
-const props = defineProps({ game: Object, candidates: Array, lineup: Object, report: Object, opponents: Array, venues: Array, canManage: Boolean });
+const props = defineProps({ game: Object, candidates: Array, lineup: Object, report: Object, opponents: Array, venues: Array, canManage: Boolean, inScope: Boolean });
 
 // Inertia v2 keeps component state across visits (preserveState: false is not an
 // option: it would remount the page and drop the open tab). So every save rebuilds
@@ -175,7 +175,7 @@ function destroy() {
                 </label>
                 <div class="flex justify-between">
                     <PrimaryButton v-if="canManage" data-help="game-info-save" :disabled="form.processing" @click="save">{{ t('save') }}</PrimaryButton>
-                    <SecondaryButton v-if="canManage && can('games', 'delete')" data-help="game-delete" @click="confirmDelete = true">{{ t('delete') }}</SecondaryButton>
+                    <SecondaryButton v-if="inScope && can('games', 'delete')" data-help="game-delete" @click="confirmDelete = true">{{ t('delete') }}</SecondaryButton>
                 </div>
             </section>
 

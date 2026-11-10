@@ -94,7 +94,7 @@ class TeamController extends Controller
 
         $candidates = Player::query()->where('archived', false)->notLeft()
             ->whereNotIn('id', $roster->pluck('player_id'))
-            ->with('registrations')
+            ->with(['registrations.category', 'category'])
             ->get(['id', 'category_id', ...Player::NAME_COLUMNS])
             ->map(fn (Player $p) => [
                 'id' => $p->id,

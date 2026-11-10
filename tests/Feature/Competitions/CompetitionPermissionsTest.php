@@ -130,4 +130,29 @@ class CompetitionPermissionsTest extends TestCase
                 ->assertInertia(fn (Assert $page) => $page->where('canManage', $expected));
         }
     }
+
+    #[Test]
+    public function delete_and_new_match_follow_their_own_rights_not_the_edit_right(): void
+    {
+        $team = $this->team();
+        $season = Season::current()->startYear;
+        $competition = $this->competition($team, $season);
+        $game = $this->game($team, ['season_start_year' => $season, 'competition_id' => $competition->id]);
+        $user = fn (array $permissions, bool $scoped = false) => User::factory()->create(['role_id' => Role::factory()->create([
+            'own_teams_only' => $scoped, 'permissions' => $permissions,
+        ])->id]);
+        $deleter = $user(['games' => ['view', 'delete'], 'competitions' => ['view', 'add', 'delete']]);
+        $adder = $user(['games' => ['view', 'add'], 'competitions' => ['view']]);
+        $outsideCoach = $user(['games' => ['view', 'delete'], 'competitions' => ['view', 'delete']], true);
+
+        // Delete and "new match" need the user's scope, not the edit right: the server allows them.
+        $this->actingAs($deleter)->get(route('games.show', $game))->assertInertia(fn (Assert $page) => $page->where('canManage', false)->where('inScope', true));
+        $this->actingAs($deleter)->get(route('competitions.show', $competition))->assertInertia(fn (Assert $page) => $page->where('canManage', false)->where('inScope', true));
+        $this->actingAs($adder)->get(route('competitions.show', $competition))->assertInertia(fn (Assert $page) => $page->where('canManage', false)->where('inScope', true));
+        $this->actingAs($deleter)->delete(route('games.destroy', $game))->assertRedirect(route('games.index'));
+
+        // The same rights outside the coach's own teams: the server refuses, so inScope is false.
+        $this->actingAs($outsideCoach)->get(route('competitions.show', $competition))->assertInertia(fn (Assert $page) => $page->where('inScope', false));
+        $this->actingAs($outsideCoach)->delete(route('competitions.destroy', $competition))->assertForbidden();
+    }
 }

@@ -100,7 +100,7 @@ function destroy() {
                                     <button @click="editingId = null" class="text-sm text-slate-500 dark:text-slate-400">{{ t('cancel') }}</button>
                                 </div>
                                 <div v-else class="flex justify-end gap-2">
-                                    <IconButton v-if="can('venues', 'edit')" icon="pencil" :label="t('edit')" plain size="sm" :data-help="`venue-edit-${venue.id}`" @click="startEdit(venue)" />
+                                    <IconButton v-if="can('venues', 'edit')" icon="pencil" :label="t('edit')" plain size="sm" @click="startEdit(venue)" />
                                     <IconButton v-if="can('venues', 'delete')" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteId = venue.id" />
                                 </div>
                             </td>

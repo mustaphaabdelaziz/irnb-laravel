@@ -154,7 +154,7 @@ const tabs = computed(() => ['roster', 'coaches', 'competitions', 'games', ...(c
                                 <span v-else class="font-mono">{{ row.shirt_number }}</span>
                                 <InputError :message="rosterForm.errors[`players.${i}.shirt_number`]" />
                             </td>
-                            <td class="py-2 font-medium text-slate-900 dark:text-slate-100" :data-help="`team-player-${row.player_id}`">
+                            <td class="py-2 font-medium text-slate-900 dark:text-slate-100">
                                 {{ row.name }}
                                 <span v-if="row.left_branch" class="ms-2 rounded bg-slate-200 px-1.5 py-0.5 text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-200">{{ t('comp.left_branch') }}</span>
                                 <PlayerBadges :flags="row.flags" class="ms-2" />

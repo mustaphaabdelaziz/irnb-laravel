@@ -83,9 +83,9 @@ function destroy() {
                         <tr v-for="opponent in opponents" :key="opponent.id">
                             <td class="px-4 py-3">
                                 <div v-if="editingId === opponent.id" class="space-y-1">
-                                    <TextInput v-model="editForm.name" class="w-full" data-help="opp-edit-name" />
+                                    <TextInput v-model="editForm.name" class="w-full" />
                                     <InputError :message="editForm.errors.name" />
-                                    <input type="file" accept="image/*" class="block text-xs" data-help="opp-edit-logo" @change="editForm.logo = $event.target.files[0]" />
+                                    <input type="file" accept="image/*" class="block text-xs" @change="editForm.logo = $event.target.files[0]" />
                                 </div>
                                 <div v-else class="flex items-center gap-2">
                                     <img v-if="opponent.logo_url" :src="opponent.logo_url" alt="" class="h-7 w-7 rounded object-contain" :data-help="`opp-logo-${opponent.id}`" />

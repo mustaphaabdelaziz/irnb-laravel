@@ -1908,7 +1908,7 @@ export default [
     {
         name: 'comp-create-team-list',
         url: '/teams',
-        targets: ['nav-teams', 'team-new', 'team-season', 'team-card-1'],
+        targets: ['nav-teams', 'team-new', 'team-season', 'team-card-1', 'team-card-2'],
         before: async (page) => { await navIntoView(page, 'nav-teams'); },
     },
     {
@@ -1927,7 +1927,7 @@ export default [
     },
     {
         name: 'comp-create-team-page',
-        url: '/teams/1',
+        url: '/teams/2',
         targets: ['team-tab-roster', 'team-tab-coaches', 'team-tab-competitions', 'team-tab-games', 'team-tab-stats', 'team-tab-settings', 'team-season'],
     },
     {
@@ -1940,7 +1940,7 @@ export default [
         // U17 roster: shirt numbers, the category column and the badges of رياض (4).
         name: 'comp-roster-coaches-roster',
         url: '/teams/1',
-        targets: ['team-roster-table', 'team-shirt-7', 'team-shirt-4', 'team-player-4', 'team-roster-save'],
+        targets: ['team-roster-table', 'team-shirt-7', 'team-shirt-4', 'team-roster-save'],
         before: async (page) => { await centre(page, 'team-roster-table'); },
     },
     {

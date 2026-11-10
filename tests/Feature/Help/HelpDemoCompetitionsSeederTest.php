@@ -19,6 +19,8 @@ use App\Models\Team;
 use App\Models\TrainingSession;
 use App\Models\User;
 use App\Models\Venue;
+use App\Services\Competitions\CompetitionRecord;
+use App\Services\Competitions\PlayerFlags;
 use App\Support\Season;
 use Database\Seeders\HelpDemoCompetitionsSeeder as Demo;
 use Database\Seeders\HelpDemoSeeder;
@@ -70,6 +72,10 @@ class HelpDemoCompetitionsSeederTest extends TestCase
         );
         $this->assertSame(0, Opponent::whereNotNull('logo_url')->count());
         $this->assertNull(Opponent::where('name', Demo::OPP_YOUTH)->value('city'));
+        $this->assertSame(
+            [Demo::OPP_UNION => Demo::CITY_UNION, Demo::OPP_STAR => Demo::CITY_STAR, Demo::OPP_HOPE => Demo::CITY_HOPE],
+            Opponent::whereNotNull('city')->orderBy('id')->pluck('city', 'name')->all(),
+        );
         $this->assertSame('البليدة', Opponent::where('name', Demo::OPP_UNION)->value('city'));
         $this->assertEqualsCanonicalizing([Demo::VENUE_HOME, Demo::VENUE_TOWN, Demo::VENUE_HALL], Venue::pluck('name')->all());
         $this->assertSame([Demo::VENUE_HOME], Venue::where('is_home', true)->pluck('name')->all());
@@ -169,11 +175,31 @@ class HelpDemoCompetitionsSeederTest extends TestCase
         $this->assertSame($this->player('عبد الرحمن بلعيد')->id, $ban->player_id);
         $this->assertSame(['auto', 'red', 1, $m2->id], [$ban->source, $ban->cause, $ban->matches_count, $ban->game_id]);
 
-        // M3: the banned and the injured left out with a reason.
-        $this->assertEqualsCanonicalizing([Demo::REASON_BANNED, Demo::REASON_INJURED], $m3->players()->where('called_up', false)->pluck('not_called_reason')->all());
-        $this->assertTrue((bool) $m3->players()->where('player_id', $this->player('زكرياء عمراني')->id)->value('is_goalkeeper'));
+        // M2: four events; أنس has two yellows (M1, M2), one short of the threshold of three.
+        $this->assertSame(['goal' => 1, 'sanction' => 2, 'substitution' => 1], $m2->events()->get()->countBy('type')->sortKeys()->all());
+        $this->assertSame(2, GameEvent::where('type', 'sanction')->where('subtype', 'yellow')->where('player_id', $this->player('أنس لعريبي')->id)->count());
+        $this->assertSame(0, GameEvent::where('type', 'sanction')->where('subtype', 'yellow')->where('player_id', '!=', $this->player('أنس لعريبي')->id)->count());
 
-        // M4: call-up of six saved, no line-up.
+        // M3: two goals; only the banned goalkeeper has a not-called row, رياض has none.
+        $this->assertSame(['goal' => 2], $m3->events()->get()->countBy('type')->all());
+        $this->assertSame([Demo::REASON_BANNED], $m3->players()->where('called_up', false)->pluck('not_called_reason')->all());
+        $this->assertFalse($m3->players()->where('player_id', $this->player('رياض حمداني')->id)->exists());
+        $this->assertSame(
+            [0 => 'زكرياء', 1 => 'أنس', 2 => 'ياسين', 3 => 'أمين', 4 => 'أحمد'],
+            $m3->players()->where('role', 'starter')->with('player')->orderBy('slot')->get()->mapWithKeys(fn (GamePlayer $gp) => [$gp->slot => $gp->player->firstname])->all(),
+        );
+        $this->assertSame(0, $m3->players()->where('role', 'bench')->count());
+        $this->assertTrue((bool) $m3->players()->where('player_id', $this->player('زكرياء عمراني')->id)->value('is_goalkeeper'));
+        $this->assertTrue((bool) $m3->players()->where('player_id', $this->player('أمين قاسمي')->id)->value('is_captain'));
+
+        // The team's record: 3 played, 2 W 1 D 0 L, goals 6–2.
+        $record = CompetitionRecord::fromGames($competition->games()->get());
+        $this->assertSame([3, 2, 1, 0, 6, 2, ['W', 'D', 'W']], [
+            $record['played'], $record['wins'], $record['draws'], $record['losses'], $record['goals_for'], $record['goals_against'], $record['form'],
+        ]);
+
+        // M4: call-up of six saved, no line-up; رياض is injured on the seed day, before M4.
+        $this->assertTrue(app(PlayerFlags::class)->injured()[$this->player('رياض حمداني')->id] ?? false);
         $this->assertSame(6, $m4->players()->where('called_up', true)->count());
         $this->assertSame([Demo::REASON_INJURED], $m4->players()->where('called_up', false)->pluck('not_called_reason')->all());
         $this->assertSame(0, $m4->players()->where('role', '!=', 'none')->count());
@@ -195,8 +221,14 @@ class HelpDemoCompetitionsSeederTest extends TestCase
         $this->assertSame(2027, $s);
 
         $this->assertSame(5, Game::where('season_start_year', $s)->count());
-        // F(-3) falls before the season start; the competition keeps the match in season S.
-        $this->assertSame('2027-08-13', $this->game(Demo::ROUND_1)->date);
+        // 2027-09-03 is a Friday: F(-1) is the Friday before it, F(1) the one after; no match on D.
+        // F(-3) and F(-4) fall before the season start; the competition keeps them in season S.
+        $this->assertSame(
+            ['2027-08-13', '2027-08-20', '2027-08-27', '2027-09-10', '2027-08-06'],
+            [$this->game(Demo::ROUND_1)->date, $this->game(Demo::ROUND_2)->date, $this->game(Demo::ROUND_3)->date, $this->game(Demo::ROUND_4)->date, Game::whereNull('round_label')->value('date')],
+        );
+        $this->assertSame(0, Game::where('date', '2027-09-03')->count());
+        $this->assertTrue(app(PlayerFlags::class)->injured()[$this->player('رياض حمداني')->id] ?? false);
 
         $this->actingAs(User::where('username', HelpDemoSeeder::USERNAME)->firstOrFail())
             ->get(route('games.stats'))

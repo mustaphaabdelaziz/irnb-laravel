@@ -45,6 +45,12 @@ class HelpDemoCompetitionsSeeder extends Seeder
 
     public const OPP_YOUTH = 'شباب الحي';
 
+    public const CITY_UNION = 'البليدة';
+
+    public const CITY_STAR = 'تيبازة';
+
+    public const CITY_HOPE = 'المدية';
+
     public const VENUE_HOME = 'ملعب حي النصر';
 
     public const VENUE_HOME_ADDRESS = 'شارع الاستقلال';
@@ -112,9 +118,9 @@ class HelpDemoCompetitionsSeeder extends Seeder
 
         $opponents = [];
         foreach ([
-            [self::OPP_UNION, 'البليدة', ['#1d4ed8', '#facc15', 'shield']],
-            [self::OPP_STAR, 'تيبازة', ['#b91c1c', '#f8fafc', 'circle']],
-            [self::OPP_HOPE, 'المدية', ['#15803d', '#f8fafc', 'diamond']],
+            [self::OPP_UNION, self::CITY_UNION, ['#1d4ed8', '#facc15', 'shield']],
+            [self::OPP_STAR, self::CITY_STAR, ['#b91c1c', '#f8fafc', 'circle']],
+            [self::OPP_HOPE, self::CITY_HOPE, ['#15803d', '#f8fafc', 'diamond']],
             [self::OPP_YOUTH, null, null],
         ] as [$name, $city, $logo]) {
             $image = $logo === null ? null : HelpDemoImages::logo(...$logo);
@@ -219,15 +225,16 @@ class HelpDemoCompetitionsSeeder extends Seeder
             ['substitution', null, 33, 'أحمد', 'ياسين'],
         ]);
 
-        // M3 — 2–0 at home, زكرياء in goal; the banned and the injured left out with a reason.
-        $this->leftOut($m3, ['عبد الرحمن' => self::REASON_BANNED, 'رياض' => self::REASON_INJURED]);
+        // M3 — 2–0 at home, زكرياء in goal; the banned goalkeeper left out with a reason. رياض is
+        // simply not called (no row): his attendance-demo injury may start after F(-1) on some seed days.
+        $this->leftOut($m3, ['عبد الرحمن' => self::REASON_BANNED]);
         $this->lineup($m3, ['زكرياء', 'أنس', 'ياسين', 'أمين', 'أحمد'], [], goalkeeper: 'زكرياء');
         $this->report($m3, [[1, 0], [1, 0]], [
             ['goal', 'normal', 9, 'أمين', null],
             ['goal', 'normal', 34, 'أحمد', 'أنس'],
         ]);
 
-        // M4 — call-up saved (رياض out, injured), no line-up yet.
+        // M4 — call-up saved (رياض out, injured: his injury starts before D, M4 is after D), no line-up yet.
         $this->leftOut($m4, ['رياض' => self::REASON_INJURED]);
         foreach (['عبد الرحمن', 'أنس', 'أمين', 'ياسين', 'زكرياء', 'أحمد'] as $first) {
             GamePlayer::create([

@@ -7,7 +7,7 @@
 // the real database: it migrates + seeds storage/help-demo.sqlite and serves it
 // on its own port, writing public/help-shots/ar. Fails loudly when a data-help target is missing.
 import { execFileSync, spawn } from 'node:child_process';
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { chromium } from 'playwright';
 import sharp from 'sharp';
@@ -29,6 +29,17 @@ const db = join(root, 'storage', 'help-demo.sqlite');
 const out = join(root, 'public', 'help-shots', locale);
 const only = process.argv.slice(2);
 
+// The run's own Laravel storage: uploads (generated logos), sessions, caches, views
+// and logs land here, never in storage/app. Emptied at the start of every run.
+const demoStorage = join(root, 'storage', 'help-demo-storage');
+rmSync(demoStorage, { recursive: true, force: true });
+for (const dir of ['app/public', 'app/private', 'framework/cache/data', 'framework/sessions', 'framework/views', 'logs']) {
+    mkdirSync(join(demoStorage, dir), { recursive: true });
+}
+const realPublic = join(root, 'storage', 'app', 'public');
+const listRealPublic = () => (existsSync(realPublic) ? readdirSync(realPublic, { recursive: true }).map(String).sort() : []);
+const realPublicBefore = listRealPublic();
+
 // APP_CONFIG_CACHE points at a file that doesn't exist, so a cached config
 // can't override DB_DATABASE (see the db-swap gotchas).
 const env = {
@@ -40,6 +51,11 @@ const env = {
     APP_CONFIG_CACHE: join(root, 'storage', 'framework', 'help-demo-config.php'),
     SESSION_DRIVER: 'file',
     CACHE_STORE: 'file',
+    LARAVEL_STORAGE_PATH: demoStorage,
+    // php artisan serve's server process does not see LARAVEL_STORAGE_PATH in $_SERVER/$_ENV
+    // (only getenv), so the public disk, sessions and file cache read these variables.
+    HELP_DEMO_PUBLIC_ROOT: join(demoStorage, 'app', 'public'),
+    HELP_DEMO_STORAGE: demoStorage,
 };
 
 const list = only.length ? shots.filter((s) => only.includes(s.name)) : shots;
@@ -163,4 +179,9 @@ try {
     await browser?.close();
     stopServer();
     rmSync(db, { force: true });
+    if (JSON.stringify(listRealPublic()) !== JSON.stringify(realPublicBefore)) {
+        console.error('✗ Real storage/app/public changed during the run');
+        process.exitCode = 1;
+        throw new Error('Real storage/app/public changed during the run');
+    }
 }

@@ -60,7 +60,7 @@ return [
     |
     */
 
-    'files' => storage_path('framework/sessions'),
+    'files' => env('HELP_DEMO_STORAGE') ? env('HELP_DEMO_STORAGE').'/framework/sessions' : storage_path('framework/sessions'),
 
     /*
     |--------------------------------------------------------------------------

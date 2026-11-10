@@ -76,6 +76,14 @@ class HelpDemoSeeder extends Seeder
         }
     }
 
+    /** True only inside the screenshot run, whose storage is storage/help-demo-storage. */
+    public static function onThrowawayStorage(): bool
+    {
+        $root = str_replace('\\', '/', rtrim((string) config('filesystems.disks.public.root'), '/\\'));
+
+        return str_ends_with($root, '/help-demo-storage/app/public');
+    }
+
     public function run(): void
     {
         self::assertThrowawayDatabase();

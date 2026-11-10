@@ -20,6 +20,7 @@ use App\Models\Venue;
 use App\Services\Competitions\GameMinutes;
 use App\Services\Competitions\SuspensionEngine;
 use App\Services\Competitions\TeamRoster;
+use App\Services\Player\RegistrationService;
 use App\Support\Season;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
@@ -44,17 +45,23 @@ class HelpDemoCompetitionsSeeder extends Seeder
 
     public const OPP_YOUTH = 'شباب الحي';
 
-    public const VENUE_HOME = 'ملعب النادي';
+    public const VENUE_HOME = 'ملعب حي النصر';
 
-    public const VENUE_HOME_ADDRESS = 'حي النصر';
+    public const VENUE_HOME_ADDRESS = 'شارع الاستقلال';
 
     public const VENUE_TOWN = 'ملعب البلدية';
 
     public const VENUE_HALL = 'القاعة متعددة الرياضات';
 
-    public const TEAM_U17 = 'أقل من 17 سنة';
+    /** Both demo teams: lists read «الفريق أ · أقل من 17 سنة» / «الفريق أ · أقل من 14 سنة». */
+    public const TEAM_NAME = 'الفريق أ';
 
-    public const TEAM_U14 = 'أقل من 14 سنة';
+    public const CATEGORY_U17 = 'أقل من 17 سنة';
+
+    public const CATEGORY_U14 = 'أقل من 14 سنة';
+
+    /** Licence numbers on the Football registration, in U17 shirt order; أحمد بن علي keeps none. */
+    public const LICENCED = ['عبد الرحمن', 'رياض', 'أنس', 'ياسين', 'أمين', 'زكرياء'];
 
     public const COMPETITION = 'البطولة الولائية لأقل من 17 سنة';
 
@@ -139,12 +146,12 @@ class HelpDemoCompetitionsSeeder extends Seeder
 
         $category = fn (string $name) => Category::where('branch_id', $football->id)->where('name', $name)->firstOrFail();
         $u17 = Team::create([
-            'branch_id' => $football->id, 'category_id' => $category('أقل من 17 سنة')->id,
-            'name' => self::TEAM_U17, 'default_game_format_id' => $five->id,
+            'branch_id' => $football->id, 'category_id' => $category(self::CATEGORY_U17)->id,
+            'name' => self::TEAM_NAME, 'default_game_format_id' => $five->id,
         ]);
         $u14 = Team::create([
-            'branch_id' => $football->id, 'category_id' => $category('أقل من 14 سنة')->id,
-            'name' => self::TEAM_U14, 'default_game_format_id' => $eight->id,
+            'branch_id' => $football->id, 'category_id' => $category(self::CATEGORY_U14)->id,
+            'name' => self::TEAM_NAME, 'default_game_format_id' => $eight->id,
         ]);
 
         $this->shirts = ['عبد الرحمن' => 1, 'رياض' => 4, 'أنس' => 7, 'أمين' => 10, 'ياسين' => 8, 'زكرياء' => 11, 'أحمد' => 14];
@@ -152,6 +159,13 @@ class HelpDemoCompetitionsSeeder extends Seeder
         $roster->replace($u17, $season, $this->rows($this->shirts));
         // Last season only: this season stays empty, so the copy button shows.
         $roster->replace($u14, $season - 1, $this->rows(['أحمد' => 9, 'ياسين' => 7, 'زكرياء' => 5]));
+
+        // Licences on the Football registration (what TeamMembers::licence reads), mirrored onto players as the app does.
+        foreach (self::LICENCED as $i => $first) {
+            DB::table('branch_player')->where('player_id', $this->players[$first]->id)->where('branch_id', $football->id)
+                ->update(['licence_number' => self::licence($season, $i + 1)]);
+            app(RegistrationService::class)->refreshMirror($this->players[$first]);
+        }
 
         $samir = User::where('username', HelpDemoUsersSeeder::COACH)->firstOrFail();
         DB::table('team_coaches')->insert([
@@ -223,6 +237,12 @@ class HelpDemoCompetitionsSeeder extends Seeder
         }
 
         app(SuspensionEngine::class)->recompute($competition);
+    }
+
+    /** «L2026-0101»: season start year, then 01 and the row number. */
+    public static function licence(int $season, int $n): string
+    {
+        return sprintf('L%d-01%02d', $season, $n);
     }
 
     /** The Friday $n weeks from D's week: -1 the last Friday before D, 1 the first after it. */

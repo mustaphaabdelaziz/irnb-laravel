@@ -76,22 +76,35 @@ class HelpDemoCompetitionsSeederTest extends TestCase
         $this->assertSame(Demo::VENUE_HOME_ADDRESS, Venue::where('name', Demo::VENUE_HOME)->value('address'));
 
         // Team U17: 7 on the season's roster with their shirts, samir head coach.
-        $u17 = Team::where('name', Demo::TEAM_U17)->firstOrFail();
+        $this->assertSame([Demo::TEAM_NAME, Demo::TEAM_NAME], Team::orderBy('id')->pluck('name')->all());
+        $team = fn (string $category) => Team::whereHas('category', fn ($q) => $q->where('name', $category))->sole();
+        $u17 = $team(Demo::CATEGORY_U17);
         $this->assertSame($football->id, $u17->branch_id);
-        $this->assertSame('أقل من 17 سنة', $u17->category->name);
         $this->assertSame('Football 5', $u17->defaultFormat->name);
         $shirts = $u17->rosterFor($s)->get()->mapWithKeys(fn (Player $p) => [$p->firstname.' '.$p->lastname => (int) $p->pivot->shirt_number])->all();
         $this->assertEquals([
             'عبد الرحمن بلعيد' => 1, 'رياض حمداني' => 4, 'أنس لعريبي' => 7, 'أمين قاسمي' => 10,
             'ياسين بوزيد' => 8, 'زكرياء عمراني' => 11, 'أحمد بن علي' => 14,
         ], $shirts);
+        // Licences on the Football registration, all but أحمد بن علي. players.* mirrors the primary
+        // registration: رياض and ياسين also swim, and Swimming is the main branch, so theirs stays empty.
+        $licences = $u17->rosterFor($s)->get()->mapWithKeys(fn (Player $p) => [$p->firstname => [
+            $p->registrations()->where('branch_id', $football->id)->value('licence_number'), $p->licence_number,
+        ]])->all();
+        $this->assertEquals([
+            'عبد الرحمن' => ['L2026-0101', 'L2026-0101'], 'رياض' => ['L2026-0102', null], 'أنس' => ['L2026-0103', 'L2026-0103'],
+            'ياسين' => ['L2026-0104', null], 'أمين' => ['L2026-0105', 'L2026-0105'], 'زكرياء' => ['L2026-0106', 'L2026-0106'],
+            'أحمد' => [null, null],
+        ], $licences);
+        $this->assertSame('أشبال', $this->player('رياض حمداني')->registrations()->where('branch_id', '!=', $football->id)->sole()->category->name);
+        $this->assertNull($this->player('رياض حمداني')->registrations()->where('branch_id', '!=', $football->id)->value('licence_number'));
         $coaches = $u17->coachesFor($s)->get();
         $this->assertCount(1, $coaches);
         $this->assertSame(HelpDemoUsersSeeder::COACH, $coaches[0]->username);
         $this->assertSame('head', $coaches[0]->pivot->role);
 
         // Team U14: last season's roster only, so the copy button shows.
-        $u14 = Team::where('name', Demo::TEAM_U14)->firstOrFail();
+        $u14 = $team(Demo::CATEGORY_U14);
         $this->assertSame('Football 8', $u14->defaultFormat->name);
         $this->assertSame(3, $u14->rosterFor($s - 1)->count());
         $this->assertSame(0, $u14->rosterFor($s)->count());

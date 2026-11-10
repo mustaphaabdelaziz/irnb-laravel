@@ -2079,6 +2079,23 @@ export default [
         },
     },
     {
+        // Five players placed with the selects (formation «2-2»), only the captain ticked (step 4). Nothing is saved.
+        name: 'comp-lineup-captain',
+        url: '/games/4',
+        targets: ['lineup-starters', 'lineup-captain-3'],
+        before: async (page) => {
+            await page.locator('[data-help="game-tab-lineup"]').click();
+            await page.locator('[data-help="lineup-bench"]').waitFor({ state: 'visible' });
+            await page.locator('select[data-help="lineup-formation"]').selectOption({ label: '2-2' });
+            for (const [id, slot] of [[7, 0], [21, 1], [2, 2], [3, 3], [1, 4]]) {
+                await page.locator(`select[data-help="lineup-put-${id}"]`).selectOption({ index: slot + 1 });
+            }
+            await page.locator('input[data-help="lineup-captain-3"]').check();
+            await blur(page);
+            await centre(page, 'lineup-starters');
+        },
+    },
+    {
         // The reader has placed five players with the select (nothing dragged, nothing saved):
         // عبد الرحمن goalkeeper spot, أنس and ياسين defence, أمين and أحمد attack, then captain and goalkeeper
         // marks. زكرياء stays on the bench.
@@ -2176,7 +2193,7 @@ export default [
         // M1 (played): status changed to «مؤجلة», «حفظ» pressed: the confirm that the score will be erased. Not confirmed.
         name: 'comp-edit-cancel-erase',
         url: '/games/1',
-        targets: ['confirm-panel', 'confirm-ok'],
+        targets: ['confirm-panel', 'confirm-ok', 'confirm-cancel'],
         before: async (page) => {
             await page.locator('select[data-help="game-status"]').selectOption({ label: 'مؤجلة' });
             await page.locator('[data-help="game-info-save"]').click();
@@ -2187,7 +2204,7 @@ export default [
         // M5: «حذف» pressed: the confirm. Not confirmed.
         name: 'comp-edit-cancel-delete',
         url: '/games/5',
-        targets: ['confirm-panel', 'confirm-ok'],
+        targets: ['confirm-panel', 'confirm-ok', 'confirm-cancel'],
         before: async (page) => {
             await page.locator('[data-help="game-delete"]').click();
             await page.locator('[data-help="confirm-ok"]').waitFor({ state: 'visible' });

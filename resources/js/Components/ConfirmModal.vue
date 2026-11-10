@@ -56,7 +56,7 @@ watch(
             <!-- Optional extra fields, e.g. a required reason. -->
             <slot />
             <div class="mt-6 flex flex-wrap justify-end gap-3">
-                <SecondaryButton type="button" @click="emit('cancel')">{{ copy.cancelLabel || t('cancel') }}</SecondaryButton>
+                <SecondaryButton type="button" data-help="confirm-cancel" @click="emit('cancel')">{{ copy.cancelLabel || t('cancel') }}</SecondaryButton>
                 <PrimaryButton v-if="copy.variant === 'primary'" type="button" data-help="confirm-ok" :disabled="busy" @click="emit('confirm')">{{ copy.confirmLabel || t('confirm') }}</PrimaryButton>
                 <DangerButton v-else type="button" data-help="confirm-ok" :disabled="busy" @click="emit('confirm')">{{ copy.confirmLabel || t('delete') }}</DangerButton>
             </div>

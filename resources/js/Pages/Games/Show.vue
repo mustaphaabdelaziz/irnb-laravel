@@ -38,6 +38,7 @@ function saveCallUp() {
 
 const tab = ref('info');
 const confirmDelete = ref(false);
+const confirmErase = ref(false);
 
 const fromGame = (g) => ({
     opponent_id: g.opponent_id, venue_id: g.venue_id ?? '', side: g.side,
@@ -60,7 +61,16 @@ watch(() => props.game, (game) => {
     if (untouched.length) form.reset(...untouched);
 });
 
+// Leaving «played» clears the score on the server: say so before saving.
+// `saved` is a plain `let` (not reactive), so this is a function, not a computed.
+const erasesScore = () => saved.status === 'played' && form.status !== 'played';
+
 function save() {
+    if (erasesScore() && !confirmErase.value) {
+        confirmErase.value = true;
+        return;
+    }
+    confirmErase.value = false;
     form.transform((d) => ({
         ...d,
         venue_id: d.venue_id || null, kickoff_time: d.kickoff_time || null, meeting_time: d.meeting_time || null,
@@ -205,5 +215,8 @@ function destroy() {
         </div>
 
         <ConfirmModal :show="confirmDelete" :message="t('are_you_sure')" @confirm="destroy" @cancel="confirmDelete = false" />
+        <ConfirmModal :show="confirmErase" :title="t('comp.score_erase_title')"
+            :message="t('comp.score_erase_confirm', { score: `\u2066${game.our_score} – ${game.their_score}\u2069`, status: t(`comp.status_${form.status}`) })"
+            :confirm-label="t('save')" @confirm="save" @cancel="confirmErase = false" />
     </AuthenticatedLayout>
 </template>

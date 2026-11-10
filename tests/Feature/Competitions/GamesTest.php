@@ -173,4 +173,17 @@ class GamesTest extends TestCase
         $this->actingAs($admin)->delete(route('games.destroy', $game))->assertRedirect(route('games.index'));
         $this->assertModelMissing($game);
     }
+
+    #[Test]
+    public function a_played_match_moved_to_another_status_loses_its_score(): void
+    {
+        $game = $this->game($this->team(), ['status' => GameStatus::Played, 'our_score' => 3, 'their_score' => 1]);
+
+        $this->actingAs($this->admin())->put(route('games.update', $game), $this->payload([
+            'status' => 'postponed', 'our_score' => 3, 'their_score' => 1,
+        ]))->assertSessionHas('success', 'flash.game_updated');
+
+        $this->assertNull($game->fresh()->our_score);
+        $this->assertNull($game->fresh()->their_score);
+    }
 }

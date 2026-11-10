@@ -1098,6 +1098,8 @@
     "comp.sanction.yellow": "Carton jaune",
     "comp.sanctions": "Sanctions",
     "comp.save_report": "Enregistrer le rapport",
+    "comp.score_erase_confirm": "Le score du match ({score}) sera effacé en l’enregistrant avec le statut « {status} ».",
+    "comp.score_erase_title": "Effacer le score ?",
     "comp.scorer": "Buteur",
     "comp.scoring": "Score",
     "comp.scoring_goals": "Buts",

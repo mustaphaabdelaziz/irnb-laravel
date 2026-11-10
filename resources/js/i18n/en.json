@@ -1098,6 +1098,8 @@
     "comp.sanction.yellow": "Yellow card",
     "comp.sanctions": "Sanctions",
     "comp.save_report": "Save report",
+    "comp.score_erase_confirm": "The match score ({score}) will be erased when you save it as “{status}”.",
+    "comp.score_erase_title": "Erase the score?",
     "comp.scorer": "Scorer",
     "comp.scoring": "Scoring",
     "comp.scoring_goals": "Goals",

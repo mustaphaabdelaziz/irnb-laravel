@@ -1098,6 +1098,8 @@
     "comp.sanction.yellow": "بطاقة صفراء",
     "comp.sanctions": "العقوبات",
     "comp.save_report": "حفظ التقرير",
+    "comp.score_erase_confirm": "ستُحذف نتيجة المباراة ({score}) عند حفظها بالحالة «{status}».",
+    "comp.score_erase_title": "حذف النتيجة؟",
     "comp.scorer": "المسجل",
     "comp.scoring": "طريقة التسجيل",
     "comp.scoring_goals": "أهداف",

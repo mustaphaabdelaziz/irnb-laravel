@@ -10,7 +10,7 @@ import IconButton from '@/Components/IconButton.vue';
 import StatsLeaders from '@/Components/Competitions/StatsLeaders.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useCan } from '@/Composables/useCan.js';
 
 const { t } = useI18n();
@@ -49,6 +49,11 @@ function addBan() {
     banForm.transform((d) => ({ ...d, matches_count: d.kind === 'matches' ? d.matches_count : null, starts_on: d.starts_on || null, ends_on: d.kind === 'dates' ? d.ends_on : null }))
         .post(route('competitions.suspensions.store', props.competition.id), { preserveScroll: true, onSuccess: () => banForm.reset() });
 }
+// A ban for this competition names a squad player; one for all competitions, any rostered player (same rule as the server).
+const banPlayers = computed(() => (banForm.scope === 'competition' ? props.roster.filter((r) => r.in_squad) : props.roster));
+watch(() => banForm.scope, () => {
+    if (!banPlayers.value.some((r) => r.player_id === banForm.player_id)) banForm.player_id = '';
+});
 const banToRemove = ref(null);
 function removeBan() {
     const id = banToRemove.value;
@@ -111,7 +116,7 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
                     </span>
                 </Link>
                 <p v-if="!games.length" class="text-sm text-slate-500 dark:text-slate-400">{{ t('no_results') }}</p>
-                <Link v-if="canManage" :href="route('games.index', { team_id: competition.team.id, competition_id: competition.id, create: 1 })" class="inline-block text-sm text-primary-600 hover:underline dark:text-primary-300">{{ t('comp.new_game') }} →</Link>
+                <Link v-if="canManage && can('games', 'add')" :href="route('games.index', { team_id: competition.team.id, competition_id: competition.id, create: 1 })" class="inline-block text-sm text-primary-600 hover:underline dark:text-primary-300">{{ t('comp.new_game') }} →</Link>
             </section>
 
             <section v-if="tab === 'record'" class="grid gap-4 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800 sm:grid-cols-4">
@@ -137,7 +142,7 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
                         <th class="py-1 text-start" data-help="compn-ban-col-length">{{ t('comp.ban.length') }}</th><th class="py-1 text-start" data-help="compn-ban-col-status">{{ t('status') }}</th><th class="w-10"></th>
                     </tr></thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                        <tr v-for="s in suspensions" :key="s.id" :data-help="s.source === 'auto' ? 'compn-ban-auto' : 'compn-ban-manual'" :class="{ 'opacity-60': !s.active }">
+                        <tr v-for="s in suspensions" :key="s.id" :data-help="s.source === 'auto' ? 'compn-ban-auto' : 'compn-ban-manual'" :class="{ 'opacity-60': !s.active && !s.upcoming }">
                             <td class="py-1 font-medium">{{ s.player }}</td>
                             <td class="py-1">
                                 <template v-if="s.source === 'auto'">{{ t(`comp.flag.cause_${s.cause}`) }}<span v-if="s.trigger" class="text-xs text-slate-500 dark:text-slate-400"> · <bdi dir="ltr">{{ s.trigger.date }}</bdi> {{ s.trigger.opponent }}</span></template>
@@ -145,7 +150,7 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
                                 <span v-if="s.scope === 'all'" class="ms-1 rounded bg-slate-100 px-1 text-xs dark:bg-slate-800">{{ t('comp.ban.all_competitions') }}</span>
                             </td>
                             <td class="py-1"><bdi dir="ltr">{{ banLabel(s) }}</bdi></td>
-                            <td class="py-1">{{ s.active ? t('comp.ban.active') : t('comp.ban.served') }}</td>
+                            <td class="py-1">{{ s.active ? t('comp.ban.active') : s.upcoming ? t('comp.ban.upcoming') : t('comp.ban.served') }}</td>
                             <td class="py-1 text-end"><IconButton v-if="canManage && s.deletable" data-help="compn-ban-delete" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="banToRemove = s.id" /></td>
                         </tr>
                         <tr v-if="!suspensions.length"><td colspan="5" class="py-6 text-center text-slate-500 dark:text-slate-400">{{ t('comp.ban.none') }}</td></tr>
@@ -156,7 +161,7 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
                     <h3 class="text-sm font-semibold sm:col-span-3">{{ t('comp.ban.add_manual') }}</h3>
                     <label class="text-sm">{{ t('comp.player') }}
                         <select v-model="banForm.player_id" data-help="compn-ban-player" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800" required>
-                            <option v-for="r in roster" :key="r.player_id" :value="r.player_id">{{ r.name }}</option>
+                            <option v-for="r in banPlayers" :key="r.player_id" :value="r.player_id">{{ r.name }}</option>
                         </select>
                         <InputError :message="banForm.errors.player_id" />
                     </label>
@@ -178,6 +183,7 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
                     </label>
                     <label class="text-sm">{{ t('comp.ban.starts_on') }}
                         <TextInput v-model="banForm.starts_on" data-help="compn-ban-from" type="date" class="mt-1 w-full" :required="banForm.kind === 'dates'" />
+                        <span v-if="banForm.kind === 'matches'" data-help="compn-ban-from-hint" class="mt-1 block text-xs text-slate-500 dark:text-slate-400">{{ t('comp.ban.from_hint') }}</span>
                         <InputError :message="banForm.errors.starts_on" />
                     </label>
                     <label v-if="banForm.kind === 'dates'" class="text-sm">{{ t('comp.ban.ends_on') }}

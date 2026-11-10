@@ -18,6 +18,8 @@ class TeamRosterController extends Controller
             'players' => ['present', 'array'],
             'players.*.player_id' => ['required', 'integer', 'distinct', 'exists:players,id'],
             'players.*.shirt_number' => ['nullable', 'integer', 'min:0', 'max:99', 'distinct'],
+        ], [
+            'players.*.shirt_number.distinct' => __('Two players have the same shirt number.'),
         ]);
         TeamAccess::authorize($request->user(), $team, (int) $data['season']);
 

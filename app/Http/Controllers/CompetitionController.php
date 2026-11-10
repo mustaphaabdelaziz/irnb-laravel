@@ -82,7 +82,18 @@ class CompetitionController extends Controller
         TeamAccess::authorize($request->user(), $team, (int) $data['season_start_year']);
         $this->assertFormatFits($data['game_format_id'] ?? null, $team);
 
-        $competition = Competition::create($data);
+        $competition = DB::transaction(function () use ($data, $team) {
+            $competition = Competition::create($data);
+            // The squad starts as the whole roster of the season; the manager unticks who is not playing.
+            $now = now();
+            $rows = DB::table('team_players')->where('team_id', $team->id)->where('season_start_year', $data['season_start_year'])
+                ->pluck('player_id')
+                ->map(fn ($id) => ['competition_id' => $competition->id, 'player_id' => (int) $id, 'hidden' => false, 'created_at' => $now, 'updated_at' => $now])
+                ->all();
+            DB::table('competition_players')->insert($rows);
+
+            return $competition;
+        });
 
         return redirect()->route('competitions.show', $competition)->with('success', 'flash.competition_created');
     }
@@ -128,7 +139,7 @@ class CompetitionController extends Controller
             'formats' => GameFormat::query()->where('branch_id', $team->branch_id)->where('active', true)->orderBy('name')
                 ->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
             'types' => CompetitionType::values(),
-            'canManage' => TeamAccess::canManage($request->user(), $team, $season),
+            'canManage' => $request->user()->hasPermission('competitions', 'edit') && TeamAccess::canManage($request->user(), $team, $season),
             'suspensions' => (function () use ($competition, $team, $season, $status) {
                 $rosterIds = DB::table('team_players')->where('team_id', $team->id)->where('season_start_year', $season)->pluck('player_id');
                 $list = Suspension::query()
@@ -148,6 +159,7 @@ class CompetitionController extends Controller
                     'served' => $eval[$s->id]['served'],
                     'remaining' => $eval[$s->id]['remaining'],
                     'active' => $eval[$s->id]['active'],
+                    'upcoming' => $eval[$s->id]['upcoming'],
                     'starts_on' => $s->starts_on,
                     'ends_on' => $s->ends_on,
                     'reason' => $s->reason,
@@ -155,7 +167,7 @@ class CompetitionController extends Controller
                     // Same rule as CompetitionSuspensionController::destroy.
                     'deletable' => $s->source === 'manual'
                         && ($s->competition_id === $competition->id || ($s->competition_id === null && $s->team_id === (int) $competition->team_id)),
-                ])->sortByDesc('active')->values();
+                ])->sortByDesc(fn (array $row) => $row['active'] || $row['upcoming'])->values();
             })(),
         ]);
     }

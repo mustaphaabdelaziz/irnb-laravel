@@ -223,4 +223,41 @@ class TeamsTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->where('canDeleteTeam', true));
         $this->actingAs($coach)->delete(route('teams.destroy', $team))->assertForbidden();
     }
+
+    #[Test]
+    public function a_roster_candidate_carries_its_category_name_for_the_new_row(): void
+    {
+        $team = $this->team();
+        $other = Category::firstOrCreate(['name' => 'U19']);
+        $p = $this->player($other);
+
+        $this->actingAs($this->admin())->get(route('teams.show', $team))
+            ->assertInertia(fn (Assert $page) => $page->where('candidates.0.id', $p->id)->where('candidates.0.category', $other->localized_name));
+    }
+
+    #[Test]
+    public function the_coaches_tab_knows_whether_the_user_is_limited_to_own_teams(): void
+    {
+        $team = $this->team();
+        $coach = $this->coach();
+        $this->assignCoach($team, $coach, Season::current()->startYear);
+
+        $this->actingAs($coach)->get(route('teams.show', $team))->assertInertia(fn (Assert $page) => $page->where('ownTeamsOnly', true)->where('canEditTeam', false));
+        $this->actingAs($this->admin())->get(route('teams.show', $team))->assertInertia(fn (Assert $page) => $page->where('ownTeamsOnly', false));
+    }
+
+    #[Test]
+    public function two_players_with_one_shirt_get_the_shirt_message_not_the_generic_one(): void
+    {
+        $team = $this->team();
+        [$a, $b] = [$this->player($team->category), $this->player($team->category)];
+        $response = $this->actingAs($this->admin())->put(route('teams.roster.update', $team), [
+            'season' => 2026, 'players' => [['player_id' => $a->id, 'shirt_number' => 7], ['player_id' => $b->id, 'shirt_number' => 7]],
+        ]);
+
+        $response->assertSessionHasErrors(['players.1.shirt_number' => __('Two players have the same shirt number.')]);
+        foreach (['ar', 'fr'] as $locale) {
+            $this->assertArrayHasKey('Two players have the same shirt number.', json_decode(file_get_contents(lang_path("$locale.json")), true));
+        }
+    }
 }

@@ -2229,7 +2229,7 @@ export default [
         // The manual-ban form filled for لعريبي أنس: this competition, 1 match, a reason. «إضافة» not pressed.
         name: 'comp-suspensions-form',
         url: '/competitions/1',
-        targets: ['compn-ban-player', 'compn-ban-scope', 'compn-ban-kind', 'compn-ban-count', 'compn-ban-from', 'compn-ban-reason', 'compn-ban-add'],
+        targets: ['compn-ban-player', 'compn-ban-scope', 'compn-ban-kind', 'compn-ban-count', 'compn-ban-from', 'compn-ban-from-hint', 'compn-ban-reason', 'compn-ban-add'],
         before: async (page) => {
             await page.locator('[data-help="compn-tab-suspensions"]').click();
             await fillBan(page);

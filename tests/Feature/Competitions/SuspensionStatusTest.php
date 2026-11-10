@@ -30,7 +30,7 @@ class SuspensionStatusTest extends TestCase
         $ban = Suspension::create(['player_id' => $p->id, 'competition_id' => $competition->id, 'team_id' => $team->id, 'source' => 'auto', 'kind' => 'matches', 'matches_count' => 2, 'cause' => 'red', 'game_id' => $trigger->id, 'starts_on' => '2026-10-01']);
         $status = app(SuspensionStatus::class);
 
-        $this->assertSame(['served' => 1, 'remaining' => 1, 'active' => true, 'until' => null], $status->evaluate(collect([$ban]), $next)[$ban->id]);
+        $this->assertSame(['served' => 1, 'remaining' => 1, 'active' => true, 'upcoming' => false, 'until' => null], $status->evaluate(collect([$ban]), $next)[$ban->id]);
         $this->assertArrayHasKey($p->id, $status->forPlayers([$p->id], $next));
         $this->assertSame([], $status->forPlayers([$p->id], $trigger), 'a ban never applies to the match that caused it');
         $friendly = $this->game($team, ['date' => '2026-10-20']);
@@ -73,7 +73,7 @@ class SuspensionStatusTest extends TestCase
         $status = app(SuspensionStatus::class);
 
         $this->assertSame(1, $status->forPlayers([$p->id], $first)[$p->id]['remaining'] ?? null, 'the 2027 cup match is the first official match after the ban');
-        $this->assertSame(['served' => 1, 'remaining' => 0, 'active' => false, 'until' => null], $status->evaluate(collect([$ban]), $second)[$ban->id]);
+        $this->assertSame(['served' => 1, 'remaining' => 0, 'active' => false, 'upcoming' => false, 'until' => null], $status->evaluate(collect([$ban]), $second)[$ban->id]);
         $this->assertSame([], $status->forPlayers([$p->id], $second));
     }
 
@@ -113,7 +113,7 @@ class SuspensionStatusTest extends TestCase
         $status = app(SuspensionStatus::class);
 
         $this->assertSame([], $status->forPlayers([$p->id], $sameDay), 'a match on the start day does not count');
-        $this->assertSame(['served' => 0, 'remaining' => 1, 'active' => true, 'until' => null], $status->evaluate(collect([$ban]), $next)[$ban->id]);
+        $this->assertSame(['served' => 0, 'remaining' => 1, 'active' => true, 'upcoming' => false, 'until' => null], $status->evaluate(collect([$ban]), $next)[$ban->id]);
         $this->assertArrayHasKey($p->id, $status->forPlayers([$p->id], $next));
         $this->assertSame([], $status->forPlayers([$p->id], $after));
     }
@@ -158,5 +158,32 @@ class SuspensionStatusTest extends TestCase
 
         $this->actingAs($this->admin())->getJson(route('games.players.show', ['player' => $p]))
             ->assertOk()->assertJsonCount(0, 'suspensions');
+    }
+
+    #[Test]
+    public function a_date_ban_that_has_not_started_is_upcoming_and_listed_with_the_active_bans(): void
+    {
+        $team = $this->team();
+        $competition = $this->competition($team, 2026);
+        $p = $this->player($team->category);
+        $this->onRoster($team, 2026, [$p]);
+        $make = fn (string $from, string $to) => Suspension::create([
+            'player_id' => $p->id, 'competition_id' => $competition->id, 'team_id' => $team->id, 'source' => 'manual',
+            'kind' => 'dates', 'starts_on' => $from, 'ends_on' => $to,
+        ]);
+        $past = $make(now()->subDays(20)->toDateString(), now()->subDays(10)->toDateString());
+        $current = $make(now()->subDay()->toDateString(), now()->addDay()->toDateString());
+        $upcoming = $make(now()->addDays(10)->toDateString(), now()->addDays(20)->toDateString());
+        $eval = app(SuspensionStatus::class)->evaluate(collect([$past, $current, $upcoming]));
+
+        $this->assertSame([false, false, true], [$eval[$past->id]['upcoming'], $eval[$current->id]['upcoming'], $eval[$upcoming->id]['upcoming']]);
+        $this->assertSame([false, true, false], [$eval[$past->id]['active'], $eval[$current->id]['active'], $eval[$upcoming->id]['active']]);
+
+        $this->actingAs($this->admin())->get(route('competitions.show', $competition))
+            ->assertInertia(fn ($page) => $page->has('suspensions', 3)
+                ->where('suspensions.0.id', $upcoming->id)->where('suspensions.0.upcoming', true)->where('suspensions.1.id', $current->id)
+                ->where('suspensions.2.id', $past->id)->where('suspensions.2.upcoming', false));
+        $inside = $this->game($team, ['competition_id' => $competition->id, 'date' => now()->addDays(15)->toDateString()]);
+        $this->assertArrayHasKey($p->id, app(SuspensionStatus::class)->forPlayers([$p->id], $inside), 'the match-day check still bans on a day inside the range');
     }
 }

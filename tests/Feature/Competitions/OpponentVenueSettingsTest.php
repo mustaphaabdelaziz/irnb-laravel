@@ -49,7 +49,7 @@ class OpponentVenueSettingsTest extends TestCase
     }
 
     #[Test]
-    public function venues_are_managed_and_deleting_one_keeps_its_matches(): void
+    public function venues_are_managed_and_one_with_matches_cannot_be_deleted(): void
     {
         $admin = $this->admin();
         $this->actingAs($admin)->post(route('venues.store'), ['name' => 'Stade 5 Juillet', 'address' => 'Alger', 'is_home' => true])
@@ -58,9 +58,13 @@ class OpponentVenueSettingsTest extends TestCase
         $this->assertTrue($venue->is_home);
 
         $game = $this->game($this->team(), ['venue_id' => $venue->id]);
-        $this->actingAs($admin)->delete(route('venues.destroy', $venue))->assertSessionHas('success', 'flash.venue_deleted');
+        $this->actingAs($admin)->delete(route('venues.destroy', $venue))->assertSessionHas('error', 'flash.venue_in_use');
 
-        $this->assertNull($game->fresh()->venue_id);
+        $this->assertModelExists($venue);
+        $this->assertSame($venue->id, $game->fresh()->venue_id);
+
+        $game->delete();
+        $this->actingAs($admin)->delete(route('venues.destroy', $venue))->assertSessionHas('success', 'flash.venue_deleted');
         $this->actingAs($admin)->get(route('venues.index'))->assertOk()
             ->assertInertia(fn (Assert $page) => $page->component('Settings/Venues')->has('venues', 0));
     }

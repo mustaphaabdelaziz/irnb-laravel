@@ -6,6 +6,7 @@ use App\Enums\GameStatus;
 use App\Models\Competition;
 use App\Models\GamePlayer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\CompetitionFixtures;
@@ -29,6 +30,27 @@ class CompetitionsTest extends TestCase
         $competition = Competition::sole();
         $response->assertRedirect(route('competitions.show', $competition))->assertSessionHas('success', 'flash.competition_created');
         $this->assertNull($competition->game_format_id);
+    }
+
+    #[Test]
+    public function a_new_competition_starts_with_the_whole_season_roster_in_its_squad(): void
+    {
+        $team = $this->team();
+        [$a, $b, $lastYear] = [$this->player($team->category), $this->player($team->category), $this->player($team->category)];
+        $this->onRoster($team, 2026, [$a, $b]);
+        $this->onRoster($team, 2025, [$lastYear]);
+
+        $this->actingAs($this->admin())->post(route('competitions.store'), ['team_id' => $team->id, 'season_start_year' => 2026, 'name' => 'Cup', 'type' => 'cup'])
+            ->assertSessionHasNoErrors();
+        $competition = Competition::sole();
+
+        $this->assertEqualsCanonicalizing([$a->id, $b->id], DB::table('competition_players')->where('competition_id', $competition->id)->where('hidden', false)->pluck('player_id')->map(fn ($id) => (int) $id)->all());
+        $this->actingAs($this->admin())->get(route('competitions.show', $competition))
+            ->assertInertia(fn (Assert $page) => $page->where('roster.0.in_squad', true)->where('roster.1.in_squad', true));
+
+        $empty = $this->team();
+        $this->actingAs($this->admin())->post(route('competitions.store'), ['team_id' => $empty->id, 'season_start_year' => 2026, 'name' => 'League', 'type' => 'league']);
+        $this->assertSame(0, DB::table('competition_players')->where('competition_id', Competition::where('name', 'League')->value('id'))->count());
     }
 
     #[Test]

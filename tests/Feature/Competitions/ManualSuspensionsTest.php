@@ -5,6 +5,7 @@ namespace Tests\Feature\Competitions;
 use App\Models\Suspension;
 use App\Support\PermissionMap;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\CompetitionFixtures;
@@ -21,6 +22,7 @@ class ManualSuspensionsTest extends TestCase
         $competition = $this->competition($team, 2026);
         $p = $this->player($team->category);
         $this->onRoster($team, 2026, [$p]);
+        $this->inSquad($competition, $p);
         $admin = $this->admin();
 
         $this->actingAs($admin)->post(route('competitions.suspensions.store', $competition), [
@@ -35,7 +37,7 @@ class ManualSuspensionsTest extends TestCase
         $this->assertSame($admin->id, Suspension::first()->created_by);
 
         $this->actingAs($admin)->get(route('competitions.show', $competition))
-            ->assertInertia(fn (Assert $page) => $page->has('suspensions', 2)->where('suspensions.0.reason', 'Federation letter 12/26')); // active first; the date ban has not started
+            ->assertInertia(fn (Assert $page) => $page->has('suspensions', 2)->where('suspensions.1.reason', 'Federation letter 12/26')->where('suspensions.0.upcoming', true)); // both listed with the active bans, newest first
     }
 
     #[Test]
@@ -46,6 +48,7 @@ class ManualSuspensionsTest extends TestCase
         $p = $this->player($team->category);
         $outsider = $this->player($team->category);
         $this->onRoster($team, 2026, [$p]);
+        $this->inSquad($competition, $p);
         $admin = $this->admin();
 
         $this->actingAs($admin)->post(route('competitions.suspensions.store', $competition), ['player_id' => $outsider->id, 'scope' => 'competition', 'kind' => 'matches', 'matches_count' => 1])
@@ -95,5 +98,36 @@ class ManualSuspensionsTest extends TestCase
             ->assertForbidden();
         $this->assertSame(['competitions', 'edit'], PermissionMap::resolve('competitions.suspensions.store'));
         $this->assertSame(['competitions', 'edit'], PermissionMap::resolve('competitions.suspensions.destroy'));
+    }
+
+    private function inSquad($competition, $player, bool $hidden = false): void
+    {
+        DB::table('competition_players')->insert([
+            'competition_id' => $competition->id, 'player_id' => $player->id, 'hidden' => $hidden,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+    }
+
+    #[Test]
+    public function a_ban_for_this_competition_takes_squad_players_only_while_all_competitions_takes_the_roster(): void
+    {
+        $team = $this->team();
+        $competition = $this->competition($team, 2026);
+        [$inSquad, $hidden, $rosterOnly] = [$this->player($team->category), $this->player($team->category), $this->player($team->category)];
+        $this->onRoster($team, 2026, [$inSquad, $hidden, $rosterOnly]);
+        $this->inSquad($competition, $inSquad);
+        $this->inSquad($competition, $hidden, true);
+        $admin = $this->admin();
+        $ban = fn ($player, string $scope) => $this->actingAs($admin)->post(route('competitions.suspensions.store', $competition), [
+            'player_id' => $player->id, 'scope' => $scope, 'kind' => 'matches', 'matches_count' => 1,
+        ]);
+
+        $ban($rosterOnly, 'competition')->assertSessionHasErrors('player_id');
+        $ban($hidden, 'competition')->assertSessionHasErrors('player_id');
+        $this->assertSame(0, Suspension::count());
+
+        $ban($inSquad, 'competition')->assertSessionHasNoErrors();
+        $ban($rosterOnly, 'all')->assertSessionHasNoErrors();
+        $this->assertSame(2, Suspension::count());
     }
 }

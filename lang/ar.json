@@ -116,5 +116,6 @@
     "Yearly": "سنوي",
     "Ad Hoc": "ظرفي",
     "Equipment purchase: :count unit(s)": "شراء معدات (العدد: :count)",
-    "Equipment purchase: :identifier": "شراء معدات: :identifier"
+    "Equipment purchase: :identifier": "شراء معدات: :identifier",
+    "Two players have the same shirt number.": "لاعبان بنفس رقم القميص."
 }

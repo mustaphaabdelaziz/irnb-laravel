@@ -24,7 +24,7 @@ const { can } = useCan();
 
 const props = defineProps({
     team: Object, season: Number, seasons: Array, roster: Array, candidates: Array, previousRosterCount: Number,
-    coaches: Array, users: Array, competitions: Array, games: Array, stats: Object, formats: Array, categories: Array, canManage: Boolean, canEditTeam: Boolean, canDeleteTeam: Boolean,
+    coaches: Array, ownTeamsOnly: Boolean, users: Array, competitions: Array, games: Array, stats: Object, formats: Array, categories: Array, canManage: Boolean, canEditTeam: Boolean, canDeleteTeam: Boolean,
     documentStats: Object,
 });
 const { formatNumber } = useFormatNumber();
@@ -50,7 +50,7 @@ const pickable = computed(() => props.candidates
 
 function addPlayer(id) {
     const c = props.candidates.find((x) => x.id === Number(id));
-    if (c) rows.value.push({ player_id: c.id, name: c.name, category: null, shirt_number: null, injured: false, left_branch: false });
+    if (c) rows.value.push({ player_id: c.id, name: c.name, category: c.category, shirt_number: null, injured: false, left_branch: false });
     pick.value = '';
 }
 
@@ -190,6 +190,7 @@ const tabs = computed(() => ['roster', 'coaches', 'competitions', 'games', ...(c
                     <IconButton v-if="canEditTeam" icon="trash" :label="t('comp.remove')" variant="danger" plain size="sm" @click="coachRows.splice(i, 1)" />
                 </div>
                 <p v-if="!coachRows.length" class="text-sm text-slate-500 dark:text-slate-400">{{ t('comp.no_coach') }}</p>
+                <p v-if="!canEditTeam" class="text-sm text-slate-500 dark:text-slate-400">{{ ownTeamsOnly ? t('comp.coaches_hint_scoped') : t('comp.coaches_hint_rights') }}</p>
                 <InputError :message="coachForm.errors.coaches" />
                 <div v-if="canEditTeam" class="flex gap-2">
                     <SecondaryButton data-help="team-coach-add" @click="coachRows.push({ user_id: '', role: 'head' })">{{ t('add') }}</SecondaryButton>

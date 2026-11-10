@@ -100,6 +100,7 @@ class TeamController extends Controller
                 'id' => $p->id,
                 'name' => $p->fullname,
                 'category_id' => $members->categoryId($p),
+                'category' => $members->category($p)?->localized_name,
                 'in_sport' => $members->isActiveMember($p),
             ])->sortBy('name')->values();
 
@@ -131,12 +132,13 @@ class TeamController extends Controller
             'formats' => GameFormat::query()->where('branch_id', $team->branch_id)->where('active', true)->orderBy('name')
                 ->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
             'categories' => Category::forBranch($team->branch_id)->orWhere('id', $team->category_id)->orderBy('name')->get(),
-            'canManage' => TeamAccess::canManage($request->user(), $team, $season),
+            'canManage' => $request->user()->hasPermission('teams', 'edit') && TeamAccess::canManage($request->user(), $team, $season),
             // Match statistics need games/view; without it the Stats tab is not shown.
             'stats' => $request->user()->hasPermission('games', 'view') ? [
                 'record' => CompetitionRecord::fromGames($team->games()->where('season_start_year', $season)->get(['id', 'date', 'status', 'our_score', 'their_score'])),
                 'leaders' => MatchStats::leaderboards($stats->players($season, $team->id)),
             ] : null,
+            'ownTeamsOnly' => TeamAccess::isScoped($request->user()),
             'canEditTeam' => ! TeamAccess::isScoped($request->user()) && $request->user()->hasPermission('teams', 'edit'),
             // A coach limited to own teams never deletes one (destroy() refuses it).
             'canDeleteTeam' => ! TeamAccess::isScoped($request->user()) && $request->user()->hasPermission('teams', 'delete'),

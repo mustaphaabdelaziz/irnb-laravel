@@ -30,8 +30,10 @@ use Illuminate\Support\Facades\DB;
 final class SuspensionStatus
 {
     /**
+     * `upcoming` marks a date ban whose first day is still ahead.
+     *
      * @param  Collection<int, Suspension>  $suspensions
-     * @return array<int, array{served: ?int, remaining: ?int, active: bool, until: ?string}>
+     * @return array<int, array{served: ?int, remaining: ?int, active: bool, upcoming: bool, until: ?string}>
      */
     public function evaluate(Collection $suspensions, ?Game $at = null): array
     {
@@ -44,13 +46,13 @@ final class SuspensionStatus
         $out = [];
         foreach ($suspensions as $s) {
             if ($s->kind === 'dates') {
-                $out[$s->id] = ['served' => null, 'remaining' => null, 'active' => $s->starts_on <= $atDate && $atDate <= $s->ends_on, 'until' => $s->ends_on];
+                $out[$s->id] = ['served' => null, 'remaining' => null, 'active' => $s->starts_on <= $atDate && $atDate <= $s->ends_on, 'upcoming' => $s->starts_on > $atDate, 'until' => $s->ends_on];
 
                 continue;
             }
             $count = (int) $s->matches_count;
             $done = min($served[$s->id] ?? 0, $count);
-            $out[$s->id] = ['served' => $done, 'remaining' => $count - $done, 'active' => $done < $count, 'until' => null];
+            $out[$s->id] = ['served' => $done, 'remaining' => $count - $done, 'active' => $done < $count, 'upcoming' => false, 'until' => null];
         }
 
         return $out;

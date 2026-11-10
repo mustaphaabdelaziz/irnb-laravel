@@ -32,9 +32,12 @@ class VenueController extends Controller
         return back()->with('success', 'flash.venue_updated');
     }
 
-    /** Matches played there keep their record; only the venue link is cleared. */
+    /** A venue with matches stays: their record keeps pointing at it (same rule as opponents). */
     public function destroy(Venue $venue): RedirectResponse
     {
+        if ($venue->games()->exists()) {
+            return back()->with('error', 'flash.venue_in_use');
+        }
         $venue->delete();
 
         return back()->with('success', 'flash.venue_deleted');

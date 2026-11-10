@@ -6,7 +6,9 @@ use App\Models\Role;
 use App\Models\User;
 use App\Services\Competitions\TeamAccess;
 use App\Support\PermissionMap;
+use App\Support\Season;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\CompetitionFixtures;
 use Tests\TestCase;
@@ -104,5 +106,28 @@ class CompetitionPermissionsTest extends TestCase
 
         $this->assertFalse($system->fresh()->own_teams_only);
         $this->assertFalse($root->fresh()->own_teams_only);
+    }
+
+    #[Test]
+    public function edit_controls_follow_the_edit_right_on_the_team_competition_and_match_pages(): void
+    {
+        $team = $this->team();
+        $season = Season::current()->startYear;
+        $competition = $this->competition($team, $season);
+        $game = $this->game($team, ['season_start_year' => $season, 'competition_id' => $competition->id]);
+        $viewer = User::factory()->create(['role_id' => Role::factory()->create(['permissions' => [
+            'teams' => ['view'], 'competitions' => ['view'], 'games' => ['view'],
+        ]])->id]);
+        $coach = $this->coach();
+        $this->assignCoach($team, $coach, $season);
+
+        foreach ([[$viewer, false], [$coach, true]] as [$user, $expected]) {
+            $this->actingAs($user)->get(route('teams.show', $team))
+                ->assertInertia(fn (Assert $page) => $page->where('canManage', $expected));
+            $this->actingAs($user)->get(route('competitions.show', $competition))
+                ->assertInertia(fn (Assert $page) => $page->where('canManage', $expected));
+            $this->actingAs($user)->get(route('games.show', $game))
+                ->assertInertia(fn (Assert $page) => $page->where('canManage', $expected));
+        }
     }
 }

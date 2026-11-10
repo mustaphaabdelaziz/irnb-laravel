@@ -116,5 +116,6 @@
     "Yearly": "Annuel",
     "Ad Hoc": "Ponctuel",
     "Equipment purchase: :count unit(s)": "Achat de matériel : :count unité(s)",
-    "Equipment purchase: :identifier": "Achat de matériel : :identifier"
+    "Equipment purchase: :identifier": "Achat de matériel : :identifier",
+    "Two players have the same shirt number.": "Deux joueurs ont le même numéro de maillot."
 }

@@ -22,8 +22,13 @@ class CompetitionSuspensionController extends Controller
         TeamAccess::authorize($request->user(), $competition->team, $competition->season_start_year);
         $roster = DB::table('team_players')->where('team_id', $competition->team_id)
             ->where('season_start_year', $competition->season_start_year)->pluck('player_id')->map(fn ($id) => (int) $id)->all();
+        // A ban for this competition names a squad player (not hidden); one for all competitions, any rostered player.
+        $eligible = $request->input('scope') === 'competition'
+            ? DB::table('competition_players')->where('competition_id', $competition->id)->where('hidden', false)
+                ->pluck('player_id')->map(fn ($id) => (int) $id)->all()
+            : $roster;
         $data = $request->validate([
-            'player_id' => ['required', 'integer', Rule::in($roster)],
+            'player_id' => ['required', 'integer', Rule::in($eligible)],
             'scope' => ['required', Rule::in(['competition', 'all'])],
             'kind' => ['required', Rule::in(['matches', 'dates'])],
             'matches_count' => ['nullable', 'required_if:kind,matches', 'integer', 'min:1', 'max:50'],

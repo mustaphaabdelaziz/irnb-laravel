@@ -2055,7 +2055,7 @@ export default [
     },
     // --- Competitions: line-up, match report, edit and cancel (Part 3c) ---
     {
-        // M4's line-up tab as the reader first sees it: the first formation («1-2-1»), nobody placed,
+        // M4 line-up tab as the reader first sees it: opens on «2-2» (the team latest), nobody placed,
         // every called-up player on the bench. Nothing is saved.
         name: 'comp-lineup-tab',
         url: '/games/4',

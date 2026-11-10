@@ -18,6 +18,7 @@ use App\Models\Team;
 use App\Models\User;
 use App\Models\Venue;
 use App\Services\Competitions\GameMinutes;
+use App\Services\Competitions\SlotPositions;
 use App\Services\Competitions\SuspensionEngine;
 use App\Services\Competitions\TeamRoster;
 use App\Services\Player\RegistrationService;
@@ -143,8 +144,9 @@ class HelpDemoCompetitionsSeeder extends Seeder
         $eight = GameFormat::where('is_preset', true)->where('name', 'Football 8')->firstOrFail();
         $this->formation = Formation::where('game_format_id', $five->id)->where('name', '2-2')->firstOrFail();
         $positions = Position::where('branch_id', $football->id)->pluck('id', 'abbreviation');
-        // As GameLineupController: a slot's label names the position (GK, DF; ST has none).
-        $this->slotPositions = array_map(fn (array $slot) => $positions[$slot['label']] ?? null, $this->formation->slots);
+        // As GameLineupController: the shared slot map (GK, DF; ST is a forward).
+        $map = new SlotPositions;
+        $this->slotPositions = array_map(fn (array $slot) => $map->resolve($slot['label'], $positions), $this->formation->slots);
 
         foreach (['عبد الرحمن' => 'بلعيد', 'رياض' => 'حمداني', 'أنس' => 'لعريبي', 'أمين' => 'قاسمي', 'ياسين' => 'بوزيد', 'زكرياء' => 'عمراني', 'أحمد' => 'بن علي'] as $first => $last) {
             $this->players[$first] = Player::where('archived', false)->where('firstname', $first)->where('lastname', $last)->firstOrFail();

@@ -12,7 +12,8 @@ const props = defineProps({ gameId: Number, lineup: Object, canManage: Boolean }
 
 // Local edit state, rebuilt from the server's line-up after each successful save
 // (onSuccess page props; see Games/Show.vue): saved numbers and benched players show as stored.
-const initialFormation = (lineup) => lineup.formation_id ?? lineup.formations[0]?.id ?? null;
+// A match with no saved formation opens on the one the server proposes (the team's latest in this format).
+const initialFormation = (lineup) => lineup.formation_id ?? lineup.default_formation_id ?? lineup.formations[0]?.id ?? null;
 const fromLineup = (lineup) => lineup.players.map((p) => ({ ...p }));
 const formationId = ref(initialFormation(props.lineup));
 const formation = computed(() => props.lineup.formations.find((f) => f.id === formationId.value) ?? null);
@@ -96,7 +97,9 @@ function autoFill() {
     slots.value.forEach((slot, i) => {
         if (starterAt(i)) return;
         // Injured players are never picked for their usual spot; the second pass only falls back to them.
-        const match = bench.value.find((r) => !r.injured && r.usual_position && r.usual_position.toUpperCase() === String(slot.label).toUpperCase());
+        // The server lists which position abbreviations a slot stands for (ST: ST, FW, CF).
+        const wanted = (slot.positions ?? []).map((p) => p.toUpperCase());
+        const match = bench.value.find((r) => !r.injured && r.usual_position && wanted.includes(r.usual_position.toUpperCase()));
         if (match) Object.assign(match, { role: 'starter', slot: i });
     });
     slots.value.forEach((slot, i) => {
@@ -109,7 +112,8 @@ function autoFill() {
 const warnings = computed(() => {
     const list = [];
     if (starters.value.length < props.lineup.players_on_field) list.push(t('comp.warn.few_starters', { n: starters.value.length, max: props.lineup.players_on_field }));
-    if (bench.value.length > props.lineup.max_bench) list.push(t('comp.warn.big_bench', { n: bench.value.length, max: props.lineup.max_bench }));
+    // A big bench is only a problem once someone is placed: with an empty pitch everyone is on it.
+    if (starters.value.length > 0 && bench.value.length > props.lineup.max_bench) list.push(t('comp.warn.big_bench', { n: bench.value.length, max: props.lineup.max_bench }));
     return list;
 });
 

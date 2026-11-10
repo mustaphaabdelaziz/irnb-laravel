@@ -28,7 +28,17 @@ const callRows = ref(fromCandidates(props.candidates));
 const calledCount = computed(() => callRows.value.filter((r) => r.called_up).length);
 const callForm = useForm({ players: [] });
 
+// Un-calling a player deletes what the report holds about them: ask first.
+const confirmCallUp = ref(false);
+const losingRows = computed(() => callRows.value.filter((r) => !r.called_up && props.candidates.find((c) => c.player_id === r.player_id)?.called_up && r.has_report_data));
+const losingNames = computed(() => losingRows.value.map((r) => r.name).join('، '));
+
 function saveCallUp() {
+    if (losingRows.value.length && !confirmCallUp.value) {
+        confirmCallUp.value = true;
+        return;
+    }
+    confirmCallUp.value = false;
     callForm.players = callRows.value.map((r) => ({ player_id: r.player_id, called_up: r.called_up, not_called_reason: r.not_called_reason }));
     callForm.put(route('games.call-up.update', props.game.id), {
         preserveScroll: true,
@@ -217,6 +227,8 @@ function destroy() {
         <ConfirmModal :show="confirmDelete" :message="t('are_you_sure')" @confirm="destroy" @cancel="confirmDelete = false" />
         <ConfirmModal :show="confirmErase" :title="t('comp.score_erase_title')"
             :message="t('comp.score_erase_confirm', { score: `\u2066${game.our_score} – ${game.their_score}\u2069`, status: t(`comp.status_${form.status}`) })"
-            :confirm-label="t('save')" @confirm="save" @cancel="confirmErase = false" />
+            :confirm-label="t('comp.score_erase_button')" @confirm="save" @cancel="confirmErase = false" />
+        <ConfirmModal :show="confirmCallUp" :title="t('comp.callup_loss_title')" :message="t('comp.callup_loss_confirm', { names: losingNames })"
+            :confirm-label="t('save')" @confirm="saveCallUp" @cancel="confirmCallUp = false" />
     </AuthenticatedLayout>
 </template>

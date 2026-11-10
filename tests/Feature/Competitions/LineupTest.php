@@ -5,8 +5,11 @@ namespace Tests\Feature\Competitions;
 use App\Enums\GameStatus;
 use App\Models\Formation;
 use App\Models\GameEvent;
+use App\Models\GameFormat;
 use App\Models\GamePlayer;
 use App\Models\Position;
+use App\Services\Competitions\SlotPositions;
+use Database\Seeders\PositionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
@@ -203,5 +206,93 @@ class LineupTest extends TestCase
         $this->actingAs($this->admin())->put(route('games.lineup.update', $game), ['formation_id' => $formation->id, 'players' => [
             $this->row($a, 'starter', 3),
         ]])->assertSessionHasErrors(['players' => 'comp.error.invalid_slot']);
+    }
+
+    /** A Football 5 «2-2» match with the seeded positions and 5 called-up players. */
+    private function football5Match(): array
+    {
+        $this->seed(PositionSeeder::class);
+        $team = $this->team();
+        Position::whereNull('branch_id')->update(['branch_id' => $team->branch_id]);
+        $five = GameFormat::where('is_preset', true)->where('name', 'Football 5')->firstOrFail();
+        $team->update(['default_game_format_id' => $five->id]);
+        $formation = Formation::where('game_format_id', $five->id)->where('name', '2-2')->firstOrFail();
+        $players = array_map(fn () => $this->player($team->category), range(1, 5));
+        $this->onRoster($team, 2026, $players);
+        $game = $this->game($team);
+        foreach ($players as $i => $p) {
+            GamePlayer::create(['game_id' => $game->id, 'player_id' => $p->id, 'called_up' => true, 'shirt_number' => $i + 1]);
+        }
+
+        return [$game, $formation, $players, $team];
+    }
+
+    #[Test]
+    public function striker_slots_resolve_to_the_forward_position_with_the_seeded_positions(): void
+    {
+        [$game, $formation, $players] = $this->football5Match();
+
+        $this->actingAs($this->admin())->put(route('games.lineup.update', $game), ['formation_id' => $formation->id, 'players' => [
+            $this->row($players[0], 'starter', 0, ['is_goalkeeper' => true]),
+            $this->row($players[1], 'starter', 1),
+            $this->row($players[2], 'starter', 2),
+            $this->row($players[3], 'starter', 3),
+            $this->row($players[4], 'starter', 4),
+        ]])->assertSessionHasNoErrors();
+
+        $abbreviations = Position::pluck('abbreviation', 'id');
+        $abbr = fn ($p) => $abbreviations[GamePlayer::where('game_id', $game->id)->where('player_id', $p->id)->sole()->position_id] ?? null;
+        $this->assertSame(['GK', 'DF', 'DF', 'FW', 'FW'], array_map($abbr, $players));
+    }
+
+    #[Test]
+    public function slot_aliases_map_each_preset_label_to_a_seeded_position(): void
+    {
+        $map = new SlotPositions;
+        $this->assertSame(['ST', 'FW', 'CF'], $map->candidates('ST'));
+        $this->assertSame(['CM', 'MF'], $map->candidates('CM'));
+        $this->assertSame(['LW', 'WG'], $map->candidates('LW'));
+        $this->assertSame(['LWB', 'LB'], $map->candidates('LWB'));
+        $this->assertSame(['RWB', 'RB'], $map->candidates('RWB'));
+        $this->assertSame(['GK'], $map->candidates('GK'));
+        $this->assertSame([], $map->candidates('1'));
+        // An exact position wins over an alias.
+        $this->assertSame(11, $map->resolve('CF', collect(['FW' => 4, 'CF' => 11])));
+        $this->assertSame(4, $map->resolve('ST', collect(['FW' => 4, 'CF' => 11])));
+    }
+
+    #[Test]
+    public function the_line_up_prop_lists_the_position_candidates_of_each_slot(): void
+    {
+        [$game, $formation] = $this->football5Match();
+        $at = $game->format->formations->search(fn ($f) => $f->id === $formation->id);
+
+        $this->actingAs($this->admin())->get(route('games.show', $game))->assertInertia(fn (Assert $page) => $page
+            ->where("lineup.formations.{$at}.slots.3.positions", ['ST', 'FW', 'CF'])
+            ->where("lineup.formations.{$at}.slots.0.positions", ['GK']));
+    }
+
+    #[Test]
+    public function a_game_without_a_formation_opens_on_the_teams_latest_formation_in_this_format(): void
+    {
+        [$game, $formation, , $team] = $this->football5Match();
+        $other = Formation::where('game_format_id', $formation->game_format_id)->where('name', '1-2-1')->firstOrFail();
+        $this->game($team, ['date' => '2026-09-01', 'formation_id' => $formation->id]);
+        $this->game($team, ['date' => '2026-10-01', 'formation_id' => $other->id]);
+        // Another team's recent match must not count.
+        $this->game($this->team(null, ['default_game_format_id' => $formation->game_format_id]), ['date' => '2026-10-10', 'formation_id' => $formation->id]);
+
+        $this->actingAs($this->admin())->get(route('games.show', $game))->assertInertia(fn (Assert $page) => $page
+            ->where('lineup.formation_id', null)->where('lineup.default_formation_id', $other->id));
+    }
+
+    #[Test]
+    public function with_no_history_the_line_up_opens_on_the_formats_first_formation(): void
+    {
+        [$game] = $this->football5Match();
+        $first = $game->format->formations->first();
+
+        $this->actingAs($this->admin())->get(route('games.show', $game))->assertInertia(fn (Assert $page) => $page
+            ->where('lineup.default_formation_id', $first->id));
     }
 }

@@ -9,6 +9,7 @@ use App\Models\GamePlayer;
 use App\Models\Position;
 use App\Services\Competitions\DefaultFormation;
 use App\Services\Competitions\GameMinutes;
+use App\Services\Competitions\SlotPositions;
 use App\Services\Competitions\TeamAccess;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,7 +25,7 @@ class GameLineupController extends Controller
      * Limits are blocking only where they break the match (too many starters,
      * a slot or number used twice); "too few" is a warning shown on the page.
      */
-    public function update(Request $request, Game $game, GameMinutes $minutes): RedirectResponse
+    public function update(Request $request, Game $game, GameMinutes $minutes, SlotPositions $slotPositions): RedirectResponse
     {
         TeamAccess::authorize($request->user(), $game->team, $game->season_start_year);
         $called = $game->players()->where('called_up', true)->pluck('player_id')->map(fn ($id) => (int) $id)->all();
@@ -81,7 +82,7 @@ class GameLineupController extends Controller
             throw ValidationException::withMessages(['players' => 'comp.error.shirt_taken']);
         }
 
-        DB::transaction(function () use ($game, $byPlayer, $effective, $formation, $positions, $roster, $minutes) {
+        DB::transaction(function () use ($game, $byPlayer, $effective, $formation, $positions, $roster, $minutes, $slotPositions) {
             $game->update(['formation_id' => $formation?->id]);
             // Numbers first cleared, so moving #7 from one player to another never trips the unique index.
             GamePlayer::where('game_id', $game->id)->update(['shirt_number' => null]);
@@ -98,7 +99,7 @@ class GameLineupController extends Controller
                     'slot' => $starter ? ($row['slot'] ?? null) : null,
                     'pos_x' => $starter ? ($row['pos_x'] ?? null) : null,
                     'pos_y' => $starter ? ($row['pos_y'] ?? null) : null,
-                    'position_id' => $label !== null ? ($positions[$label] ?? null) : null,
+                    'position_id' => $label !== null ? $slotPositions->resolve($label, $positions) : null,
                     'shirt_number' => $shirt,
                     'shirt_override' => $shirt !== $rosterShirt,
                     'is_captain' => (bool) ($row['is_captain'] ?? false),

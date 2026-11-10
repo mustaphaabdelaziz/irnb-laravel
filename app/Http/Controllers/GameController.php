@@ -138,6 +138,9 @@ class GameController extends Controller
                 $list = $candidates->for($game);
                 $badges = $flags->for($list->pluck('id')->all(), $request->user(), $game);
                 $members = TeamMembers::of($game->team);
+                // Players a report event names, as actor or as the related player: un-calling them erases or edits it.
+                $inEvents = $game->events()->get(['player_id', 'related_player_id'])
+                    ->flatMap(fn ($e) => [$e->player_id, $e->related_player_id])->filter()->flip();
 
                 return $list->map(fn (Player $p) => [
                     'player_id' => $p->id,
@@ -148,6 +151,8 @@ class GameController extends Controller
                     'not_called_reason' => $rows->get($p->id)?->not_called_reason,
                     'injured' => isset($injured[$p->id]),
                     'flags' => $badges[$p->id] ?? null,
+                    'has_report_data' => $inEvents->has($p->id) || ($rows->get($p->id)?->called_up && (
+                        $rows->get($p->id)->rating !== null || $rows->get($p->id)->coach_note !== null || $rows->get($p->id)->slot !== null)),
                 ])->values();
             })(),
             'lineup' => $page->lineup($game, $injured),

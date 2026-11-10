@@ -6,11 +6,12 @@ use App\Models\Formation;
 use App\Models\Game;
 use App\Models\GameEvent;
 use App\Models\GamePlayer;
+use Illuminate\Support\Collection;
 
 /** The match page's line-up (and, from the report task, report) props. */
 final class MatchPage
 {
-    public function __construct(private readonly PlayerFlags $flags) {}
+    public function __construct(private readonly PlayerFlags $flags, private readonly SlotPositions $slotPositions) {}
 
     /** @return array<string, mixed> */
     /** @param  array<int, true>|null  $injured  PlayerFlags::injured(), when the caller already has it */
@@ -20,15 +21,17 @@ final class MatchPage
         $injured ??= $this->flags->injured();
         $members = TeamMembers::of($game->team);
         $formations = $game->format->formations
-            ->map(fn (Formation $f) => ['id' => $f->id, 'name' => $f->name, 'slots' => $f->slots])->values();
+            ->map(fn (Formation $f) => ['id' => $f->id, 'name' => $f->name, 'slots' => $this->slotPositions->withCandidates($f->slots)])->values();
         if ($formations->isEmpty()) {
             // No formations for this format: one virtual shape (id null), named on screen via comp.formation_default.
-            $formations->push(['id' => null, 'name' => 'default', 'slots' => DefaultFormation::slots((int) $game->rule('players_on_field'))]);
+            $formations->push(['id' => null, 'name' => 'default', 'slots' => $this->slotPositions->withCandidates(DefaultFormation::slots((int) $game->rule('players_on_field')))]);
         }
 
         return [
             'formations' => $formations,
             'formation_id' => $game->formation_id,
+            // Where a game with no saved formation opens: the team's latest in this format, else the format's first.
+            'default_formation_id' => $game->formation_id === null ? $this->defaultFormationId($game, $formations) : null,
             'has_goalkeeper' => $game->hasGoalkeeper(),
             'players_on_field' => (int) $game->rule('players_on_field'),
             'max_bench' => (int) $game->rule('max_bench'),
@@ -96,5 +99,16 @@ final class MatchPage
                 ])->values(),
             'warnings' => ReportWarnings::for($game),
         ];
+    }
+
+    /** @param  Collection<int, array<string, mixed>>  $formations */
+    private function defaultFormationId(Game $game, Collection $formations): ?int
+    {
+        $latest = Game::query()
+            ->where('team_id', $game->team_id)->where('game_format_id', $game->game_format_id)
+            ->where('id', '!=', $game->id)->whereNotNull('formation_id')
+            ->orderByDesc('date')->orderByDesc('id')->value('formation_id');
+
+        return $formations->contains('id', $latest) && $latest !== null ? (int) $latest : ($formations->first()['id'] ?? null);
     }
 }

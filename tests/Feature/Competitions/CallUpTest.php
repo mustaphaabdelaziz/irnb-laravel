@@ -267,4 +267,26 @@ class CallUpTest extends TestCase
         $this->assertSame(0, $rows[$d->id]->minutes_played);
         $this->assertFalse($rows[$d->id]->played);
     }
+
+    #[Test]
+    public function a_candidate_carries_whether_un_calling_them_would_lose_report_data(): void
+    {
+        $team = $this->team();
+        [$none, $scorer, $rated, $placed, $assisted] = array_map(fn () => $this->player($team->category), range(1, 5));
+        $this->onRoster($team, 2026, [$none, $scorer, $rated, $placed, $assisted]);
+        $game = $this->game($team);
+        foreach ([$none, $scorer, $rated, $placed, $assisted] as $p) {
+            GamePlayer::create(['game_id' => $game->id, 'player_id' => $p->id, 'called_up' => true]);
+        }
+        GamePlayer::where('player_id', $rated->id)->update(['rating' => 7]);
+        GamePlayer::where('player_id', $placed->id)->update(['role' => 'starter', 'slot' => 2]);
+        GameEvent::create(['game_id' => $game->id, 'player_id' => $scorer->id, 'related_player_id' => $assisted->id, 'type' => 'goal', 'minute' => 10, 'period' => 1]);
+
+        $this->actingAs($this->admin())->get(route('games.show', $game))->assertInertia(fn (Assert $page) => $page
+            ->where('candidates.0.has_report_data', false)
+            ->where('candidates.1.has_report_data', true)
+            ->where('candidates.2.has_report_data', true)
+            ->where('candidates.3.has_report_data', true)
+            ->where('candidates.4.has_report_data', true));
+    }
 }

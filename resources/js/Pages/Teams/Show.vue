@@ -24,7 +24,7 @@ const { can } = useCan();
 
 const props = defineProps({
     team: Object, season: Number, seasons: Array, roster: Array, candidates: Array, previousRosterCount: Number,
-    coaches: Array, users: Array, competitions: Array, games: Array, stats: Object, formats: Array, categories: Array, canManage: Boolean, canEditTeam: Boolean,
+    coaches: Array, users: Array, competitions: Array, games: Array, stats: Object, formats: Array, categories: Array, canManage: Boolean, canEditTeam: Boolean, canDeleteTeam: Boolean,
     documentStats: Object,
 });
 const { formatNumber } = useFormatNumber();
@@ -252,7 +252,7 @@ const tabs = computed(() => ['roster', 'coaches', 'competitions', 'games', ...(c
                 <label class="flex items-center gap-2 text-sm"><input v-model="teamForm.archived" :disabled="!canEditTeam" type="checkbox" class="rounded" /> {{ t('archived') }}</label>
                 <div class="flex justify-between">
                     <PrimaryButton v-if="canEditTeam" :disabled="teamForm.processing" @click="saveTeam">{{ t('save') }}</PrimaryButton>
-                    <SecondaryButton v-if="can('teams', 'delete')" @click="confirmDelete = true">{{ t('delete') }}</SecondaryButton>
+                    <SecondaryButton v-if="canDeleteTeam" @click="confirmDelete = true">{{ t('delete') }}</SecondaryButton>
                 </div>
             </section>
         </div>

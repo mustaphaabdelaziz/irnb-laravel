@@ -138,6 +138,8 @@ class TeamController extends Controller
                 'leaders' => MatchStats::leaderboards($stats->players($season, $team->id)),
             ] : null,
             'canEditTeam' => ! TeamAccess::isScoped($request->user()) && $request->user()->hasPermission('teams', 'edit'),
+            // A coach limited to own teams never deletes one (destroy() refuses it).
+            'canDeleteTeam' => ! TeamAccess::isScoped($request->user()) && $request->user()->hasPermission('teams', 'delete'),
             // Document completion of this season's roster; needs documents/view.
             'documentStats' => fn (): ?array => $request->user()->hasPermission('documents', 'view')
                 ? app(DocumentStats::class)->summary(Player::query()->whereIn('players.id', $roster->pluck('player_id')->all()), null, $team->branch_id)

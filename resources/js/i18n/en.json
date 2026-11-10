@@ -1157,7 +1157,7 @@
     "comp.substitute": "substitute",
     "comp.substitutes": "Substitutes",
     "comp.suspension_rules": "Suspension rules",
-    "comp.suspension_rules_help": "Suspensions are counted from match reports in a later update; these rules are saved now.",
+    "comp.suspension_rules_help": "Suspensions are worked out automatically from match reports using these rules.",
     "comp.tab_callup": "Call-up",
     "comp.tab_coaches": "Coaches",
     "comp.tab_competitions": "Competitions",

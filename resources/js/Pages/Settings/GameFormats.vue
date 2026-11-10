@@ -8,9 +8,11 @@ import ConfirmModal from '@/Components/ConfirmModal.vue';
 import IconButton from '@/Components/IconButton.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
+import { useCan } from '@/Composables/useCan.js';
 import { computed, ref } from 'vue';
 
 const { t } = useI18n();
+const { can } = useCan();
 
 const props = defineProps({
     formats: Array,
@@ -83,7 +85,7 @@ function destroy() {
         <template #header>
             <div class="flex items-center justify-between">
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('game_formats') }}</h1>
-                <PrimaryButton @click="openNew">{{ t('comp.new_format') }}</PrimaryButton>
+                <PrimaryButton v-if="can('game_formats', 'add')" @click="openNew">{{ t('comp.new_format') }}</PrimaryButton>
             </div>
         </template>
 
@@ -196,8 +198,8 @@ function destroy() {
                                 </div>
                             </div>
                             <div class="flex gap-1">
-                                <IconButton icon="pencil" :label="t('edit')" plain size="sm" @click="openEdit(format)" />
-                                <IconButton icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteId = format.id" />
+                                <IconButton v-if="can('game_formats', 'edit')" icon="pencil" :label="t('edit')" plain size="sm" @click="openEdit(format)" />
+                                <IconButton v-if="can('game_formats', 'delete')" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteId = format.id" />
                             </div>
                         </div>
                         <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">

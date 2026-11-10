@@ -208,4 +208,19 @@ class TeamsTest extends TestCase
         $this->actingAs($admin)->delete(route('branches.destroy', $team->branch_id))->assertSessionHas('error', 'flash.branch_has_teams');
         $this->assertModelExists($team->category);
     }
+
+    #[Test]
+    public function the_delete_button_is_offered_only_to_unscoped_users_with_the_delete_right(): void
+    {
+        $team = $this->team();
+        $season = Season::current()->startYear;
+        $coach = $this->coach(['teams' => ['view', 'edit', 'delete']]);
+        $this->assignCoach($team, $coach, $season);
+
+        $this->actingAs($coach)->get(route('teams.show', $team))->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('canDeleteTeam', false));
+        $this->actingAs($this->admin())->get(route('teams.show', $team))
+            ->assertInertia(fn (Assert $page) => $page->where('canDeleteTeam', true));
+        $this->actingAs($coach)->delete(route('teams.destroy', $team))->assertForbidden();
+    }
 }

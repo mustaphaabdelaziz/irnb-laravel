@@ -7,9 +7,11 @@ import ConfirmModal from '@/Components/ConfirmModal.vue';
 import IconButton from '@/Components/IconButton.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
+import { useCan } from '@/Composables/useCan.js';
 import { ref } from 'vue';
 
 const { t } = useI18n();
+const { can } = useCan();
 
 defineProps({ venues: Array });
 
@@ -47,7 +49,7 @@ function destroy() {
         </template>
 
         <div class="mx-auto max-w-3xl space-y-6">
-            <form @submit.prevent="add" class="flex flex-wrap items-end gap-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+            <form v-if="can('venues', 'add')" @submit.prevent="add" class="flex flex-wrap items-end gap-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div class="min-w-48 flex-1">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('name') }}</label>
                     <TextInput v-model="form.name" class="mt-1 w-full" required />
@@ -98,8 +100,8 @@ function destroy() {
                                     <button @click="editingId = null" class="text-sm text-slate-500 dark:text-slate-400">{{ t('cancel') }}</button>
                                 </div>
                                 <div v-else class="flex justify-end gap-2">
-                                    <IconButton icon="pencil" :label="t('edit')" plain size="sm" @click="startEdit(venue)" />
-                                    <IconButton icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteId = venue.id" />
+                                    <IconButton v-if="can('venues', 'edit')" icon="pencil" :label="t('edit')" plain size="sm" @click="startEdit(venue)" />
+                                    <IconButton v-if="can('venues', 'delete')" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteId = venue.id" />
                                 </div>
                             </td>
                         </tr>

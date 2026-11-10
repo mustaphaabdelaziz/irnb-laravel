@@ -1157,7 +1157,7 @@
     "comp.substitute": "احتياطي",
     "comp.substitutes": "الاحتياط",
     "comp.suspension_rules": "قواعد الإيقاف",
-    "comp.suspension_rules_help": "ستُحسب الإيقافات من أوراق المباريات في تحديث قادم؛ تُحفظ القواعد من الآن.",
+    "comp.suspension_rules_help": "تُحسب الإيقافات تلقائيًا من أوراق المباريات حسب هذه القواعد.",
     "comp.tab_callup": "الاستدعاء",
     "comp.tab_coaches": "المدربون",
     "comp.tab_competitions": "المنافسات",

@@ -3,6 +3,8 @@
 namespace Tests\Feature\Competitions;
 
 use App\Models\Opponent;
+use App\Models\Role;
+use App\Models\User;
 use App\Models\Venue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -61,5 +63,20 @@ class OpponentVenueSettingsTest extends TestCase
         $this->assertNull($game->fresh()->venue_id);
         $this->actingAs($admin)->get(route('venues.index'))->assertOk()
             ->assertInertia(fn (Assert $page) => $page->component('Settings/Venues')->has('venues', 0));
+    }
+
+    #[Test]
+    public function view_only_users_open_the_lists_but_cannot_change_them(): void
+    {
+        $user = User::factory()->create(['privileges' => ['user'], 'role_id' => Role::factory()->create([
+            'permissions' => ['opponents' => ['view'], 'venues' => ['view'], 'game_formats' => ['view']],
+        ])->id]);
+
+        $this->actingAs($user)->get(route('opponents.index'))->assertOk();
+        $this->actingAs($user)->get(route('venues.index'))->assertOk();
+        $this->actingAs($user)->get(route('game-formats.index'))->assertOk();
+        $this->actingAs($user)->post(route('opponents.store'), ['name' => 'X'])->assertForbidden();
+        $this->actingAs($user)->post(route('venues.store'), ['name' => 'X'])->assertForbidden();
+        $this->actingAs($user)->post(route('game-formats.store'), [])->assertForbidden();
     }
 }

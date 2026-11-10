@@ -1157,7 +1157,7 @@
     "comp.substitute": "remplaçant",
     "comp.substitutes": "Remplaçants",
     "comp.suspension_rules": "Règles de suspension",
-    "comp.suspension_rules_help": "Les suspensions seront calculées depuis les feuilles de match dans une prochaine mise à jour ; les règles sont enregistrées dès maintenant.",
+    "comp.suspension_rules_help": "Les suspensions sont calculées automatiquement depuis les feuilles de match selon ces règles.",
     "comp.tab_callup": "Convocation",
     "comp.tab_coaches": "Entraîneurs",
     "comp.tab_competitions": "Compétitions",

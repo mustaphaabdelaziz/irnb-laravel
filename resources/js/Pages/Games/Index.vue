@@ -160,7 +160,7 @@ const statusClass = {
                 <section class="space-y-2">
                     <h2 class="text-sm font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('comp.past') }}</h2>
                     <div class="divide-y divide-slate-100 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:divide-slate-800 dark:bg-slate-900 dark:ring-slate-800">
-                        <Link v-for="g in past.data" :key="g.id" :href="route('games.show', g.id)" class="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800">
+                        <Link v-for="g in past.data" :key="g.id" :data-help="`game-row-${g.id}`" :href="route('games.show', g.id)" class="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800">
                             <div>
                                 <div class="font-medium text-slate-900 dark:text-slate-100">{{ g.team }} — {{ g.opponent }} <span class="text-sm text-slate-500 dark:text-slate-400">({{ t(`comp.side_${g.side}`) }})</span></div>
                                 <div class="text-xs text-slate-500 dark:text-slate-400">{{ g.competition || t('comp.type_friendly') }}<span v-if="g.round_label"> · {{ g.round_label }}</span></div>

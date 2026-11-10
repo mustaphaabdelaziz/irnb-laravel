@@ -2053,6 +2053,146 @@ export default [
             await centre(page, 'game-callup-table');
         },
     },
+    // --- Competitions: line-up, match report, edit and cancel (Part 3c) ---
+    {
+        // M4's line-up tab as the reader first sees it: the first formation («1-2-1»), nobody placed,
+        // every called-up player on the bench. Nothing is saved.
+        name: 'comp-lineup-tab',
+        url: '/games/4',
+        targets: ['game-tab-lineup', 'lineup-formation', 'lineup-counts'],
+        before: async (page) => {
+            await page.locator('[data-help="game-tab-lineup"]').click();
+            await page.locator('[data-help="lineup-bench"]').waitFor({ state: 'visible' });
+        },
+    },
+    {
+        // Formation «2-2» picked, nobody placed yet: the bench cards with the «ضعه في مركز…» select. Nothing is saved.
+        name: 'comp-lineup-empty',
+        url: '/games/4',
+        targets: ['lineup-formation', 'lineup-counts', 'lineup-bench', 'lineup-put-7'],
+        before: async (page) => {
+            await page.locator('[data-help="game-tab-lineup"]').click();
+            await page.locator('[data-help="lineup-bench"]').waitFor({ state: 'visible' });
+            await page.locator('select[data-help="lineup-formation"]').selectOption({ label: '2-2' });
+            await blur(page);
+            await centre(page, 'lineup-counts');
+        },
+    },
+    {
+        // The reader has placed five players with the select (nothing dragged, nothing saved):
+        // عبد الرحمن goalkeeper spot, أنس and ياسين defence, أمين and أحمد attack, then captain and goalkeeper
+        // marks. زكرياء stays on the bench.
+        name: 'comp-lineup-placed',
+        url: '/games/4',
+        targets: ['lineup-counts', 'lineup-bench', 'lineup-starters', 'lineup-captain-3', 'lineup-keeper-7', 'lineup-save', 'lineup-pdf'],
+        before: async (page) => {
+            await page.locator('[data-help="game-tab-lineup"]').click();
+            await page.locator('[data-help="lineup-bench"]').waitFor({ state: 'visible' });
+            await page.locator('select[data-help="lineup-formation"]').selectOption({ label: '2-2' });
+            // player id -> spot index of «2-2»: 0 GK, 1 DF, 2 DF, 3 ST, 4 ST
+            for (const [id, slot] of [[7, 0], [21, 1], [2, 2], [3, 3], [1, 4]]) {
+                await page.locator(`select[data-help="lineup-put-${id}"]`).selectOption({ index: slot + 1 });
+            }
+            await page.locator('input[data-help="lineup-captain-3"]').check();
+            await page.locator('input[data-help="lineup-keeper-7"]').check();
+            await blur(page);
+            await centre(page, 'lineup-starters');
+        },
+    },
+    {
+        // M1's saved report: the tab and the score block (two halves, the total follows).
+        name: 'comp-match-report-score',
+        url: '/games/1',
+        targets: ['game-tab-report', 'report-score'],
+        before: async (page) => {
+            await page.locator('[data-help="game-tab-report"]').click();
+            await page.locator('[data-help="report-score"]').waitFor({ state: 'visible' });
+            await centre(page, 'report-score');
+        },
+    },
+    {
+        // The three «+» buttons and M1's saved events: goal 12' (row 0), yellow 18' (row 1), substitution 30' (row 4).
+        name: 'comp-match-report-timeline',
+        url: '/games/1',
+        targets: ['report-add-goal', 'report-add-sanction', 'report-add-substitution', 'report-event-0', 'report-event-1', 'report-event-3', 'report-event-4'],
+        before: async (page) => {
+            await page.locator('[data-help="game-tab-report"]').click();
+            await page.locator('[data-help="report-add-goal"]').waitFor({ state: 'visible' });
+            await centre(page, 'report-event-2');
+        },
+    },
+    {
+        // The player grid: minutes (worked out), ratings, coach notes, MVP radio. أمين: rating 9 and MVP; ياسين: the note.
+        name: 'comp-match-report-grid',
+        url: '/games/1',
+        targets: ['report-grid', 'report-rating-3', 'report-note-2', 'report-mvp-3'],
+        before: async (page) => {
+            await page.locator('[data-help="game-tab-report"]').click();
+            await page.locator('[data-help="report-grid"]').waitFor({ state: 'visible' });
+            await centre(page, 'report-grid');
+        },
+    },
+    {
+        // «حفظ التقرير» and the PDF link (shown because the match is played). Not pressed.
+        name: 'comp-match-report-save',
+        url: '/games/1',
+        targets: ['report-save', 'report-pdf'],
+        before: async (page) => {
+            await page.locator('[data-help="game-tab-report"]').click();
+            await page.locator('[data-help="report-save"]').waitFor({ state: 'visible' });
+            await centre(page, 'report-save');
+        },
+    },
+    {
+        // The past list holds M5 (postponed). Row ringed; the sidebar entry comes from comp-schedule-match-list.
+        name: 'comp-edit-cancel-list',
+        url: '/games',
+        targets: ['game-row-5', 'game-row-1'],
+        before: async (page) => { await centre(page, 'game-row-5'); },
+    },
+    {
+        // M5's «المباراة» tab: the status picked as «ملغاة», «حفظ» and «حذف» in view. Not saved.
+        name: 'comp-edit-cancel-status',
+        url: '/games/5',
+        targets: ['game-status', 'game-info-save', 'game-delete'],
+        before: async (page) => {
+            await page.locator('select[data-help="game-status"]').selectOption({ label: 'ملغاة' });
+            await blur(page);
+            await centre(page, 'game-status');
+        },
+    },
+    {
+        // M1 (played) before «حفظ»: the status picked as «مؤجلة». The score fields vanish with the choice. Not saved.
+        name: 'comp-edit-cancel-played',
+        url: '/games/1',
+        targets: ['game-status', 'game-info-save'],
+        before: async (page) => {
+            await page.locator('select[data-help="game-status"]').selectOption({ label: 'مؤجلة' });
+            await blur(page);
+            await centre(page, 'game-status');
+        },
+    },
+    {
+        // M1 (played): status changed to «مؤجلة», «حفظ» pressed: the confirm that the score will be erased. Not confirmed.
+        name: 'comp-edit-cancel-erase',
+        url: '/games/1',
+        targets: ['confirm-panel', 'confirm-ok'],
+        before: async (page) => {
+            await page.locator('select[data-help="game-status"]').selectOption({ label: 'مؤجلة' });
+            await page.locator('[data-help="game-info-save"]').click();
+            await page.locator('[data-help="confirm-ok"]').waitFor({ state: 'visible' });
+        },
+    },
+    {
+        // M5: «حذف» pressed: the confirm. Not confirmed.
+        name: 'comp-edit-cancel-delete',
+        url: '/games/5',
+        targets: ['confirm-panel', 'confirm-ok'],
+        before: async (page) => {
+            await page.locator('[data-help="game-delete"]').click();
+            await page.locator('[data-help="confirm-ok"]').waitFor({ state: 'visible' });
+        },
+    },
 ];
 
 /** أمين قاسمي's grid cell holding the demo's «R15» (rows are found by last name). */

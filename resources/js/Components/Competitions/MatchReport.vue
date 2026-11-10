@@ -145,7 +145,7 @@ function iconFor(e) {
         <!-- 1. Score -->
         <section class="space-y-2">
             <h3 class="font-semibold">{{ t('comp.report_score') }}</h3>
-            <div class="grid max-w-md grid-cols-[1fr_5rem_5rem] items-center gap-2 text-sm" dir="ltr">
+            <div data-help="report-score" class="grid max-w-md grid-cols-[1fr_5rem_5rem] items-center gap-2 text-sm" dir="ltr">
                 <span></span><span class="text-center text-xs uppercase text-slate-500 dark:text-slate-400">{{ t('comp.us') }}</span><span class="text-center text-xs uppercase text-slate-500 dark:text-slate-400">{{ t('comp.them') }}</span>
                 <template v-for="(row, i) in periods" :key="i">
                     <span>{{ t(`comp.period_${rules.period_label}`) }} {{ i + 1 }}</span>
@@ -179,10 +179,10 @@ function iconFor(e) {
             <div class="flex flex-wrap items-center gap-2">
                 <h3 class="font-semibold">{{ t('comp.timeline') }}</h3>
                 <template v-if="canManage">
-                    <SecondaryButton v-for="type in types" :key="type" @click="addEvent(type)">+ {{ t(`comp.event_${type}`) }}</SecondaryButton>
+                    <SecondaryButton v-for="type in types" :key="type" :data-help="`report-add-${type}`" @click="addEvent(type)">+ {{ t(`comp.event_${type}`) }}</SecondaryButton>
                 </template>
             </div>
-            <div v-for="{ e, index } in ordered" :key="index" class="flex flex-wrap items-start gap-2 rounded-lg bg-slate-50 p-2 text-sm dark:bg-slate-800/60">
+            <div v-for="{ e, index } in ordered" :key="index" :data-help="`report-event-${index}`" class="flex flex-wrap items-start gap-2 rounded-lg bg-slate-50 p-2 text-sm dark:bg-slate-800/60">
                 <span class="w-6 text-center">{{ iconFor(e) }}</span>
                 <!-- Untimed formats (sets, no clock): the period/set number is the timing. -->
                 <div v-if="rules.untimed">
@@ -225,7 +225,7 @@ function iconFor(e) {
         <!-- 3. Player grid -->
         <section class="space-y-2">
             <h3 class="font-semibold">{{ t('comp.player_grid') }}</h3>
-            <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
+            <table data-help="report-grid" class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
                 <thead class="text-xs uppercase text-slate-500 dark:text-slate-400"><tr>
                     <th class="py-1 text-start">{{ t('comp.player') }}</th>
                     <th v-if="rules.rolling_subs" class="py-1">{{ t('comp.played') }}</th>
@@ -245,9 +245,9 @@ function iconFor(e) {
                             <span v-else class="font-mono">{{ p.minutes_played ?? '—' }}</span>
                             <InputError :message="err(`players.${i}.minutes_played`) || err(`players.${i}.sets_played`)" />
                         </td>
-                        <td class="py-1 text-center"><input v-model="p.rating" :disabled="!canManage" type="number" min="1" max="10" class="w-14 rounded border-slate-300 text-center text-sm dark:border-slate-700 dark:bg-slate-800" /></td>
-                        <td class="py-1"><input v-model="p.coach_note" :disabled="!canManage" class="w-full rounded border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800" /></td>
-                        <td class="py-1 text-center"><input v-model="mvp" :value="p.player_id" :disabled="!canManage" type="radio" name="mvp" /></td>
+                        <td class="py-1 text-center"><input v-model="p.rating" :data-help="`report-rating-${p.player_id}`" :disabled="!canManage" type="number" min="1" max="10" class="w-14 rounded border-slate-300 text-center text-sm dark:border-slate-700 dark:bg-slate-800" /></td>
+                        <td class="py-1"><input v-model="p.coach_note" :data-help="`report-note-${p.player_id}`" :disabled="!canManage" class="w-full rounded border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800" /></td>
+                        <td class="py-1 text-center"><input v-model="mvp" :value="p.player_id" :data-help="`report-mvp-${p.player_id}`" :disabled="!canManage" type="radio" name="mvp" /></td>
                     </tr>
                 </tbody>
             </table>
@@ -266,8 +266,8 @@ function iconFor(e) {
             <li v-for="msg in otherErrors" :key="msg">{{ msg }}</li>
         </ul>
         <div class="flex flex-wrap items-center gap-3">
-            <PrimaryButton v-if="canManage" :disabled="form.processing" @click="save">{{ t('comp.save_report') }}</PrimaryButton>
-            <a v-if="report.status === 'played'" :href="route('games.report-sheet', gameId)" target="_blank" class="text-sm text-primary-600 hover:underline dark:text-primary-300">{{ t('comp.report_sheet_pdf') }}</a>
+            <PrimaryButton v-if="canManage" data-help="report-save" :disabled="form.processing" @click="save">{{ t('comp.save_report') }}</PrimaryButton>
+            <a v-if="report.status === 'played'" :href="route('games.report-sheet', gameId)" data-help="report-pdf" target="_blank" class="text-sm text-primary-600 hover:underline dark:text-primary-300">{{ t('comp.report_sheet_pdf') }}</a>
         </div>
     </div>
 </template>

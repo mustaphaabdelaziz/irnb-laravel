@@ -142,7 +142,7 @@ function destroy() {
                 </div>
                 <div class="grid gap-3 sm:grid-cols-4">
                     <label class="text-sm">{{ t('status') }}
-                        <select v-model="form.status" :disabled="!canManage" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
+                        <select v-model="form.status" data-help="game-status" :disabled="!canManage" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
                             <option v-for="s in ['scheduled', 'played', 'postponed', 'cancelled']" :key="s" :value="s">{{ t(`comp.status_${s}`) }}</option>
                         </select>
                     </label>
@@ -161,8 +161,8 @@ function destroy() {
                     <textarea v-model="form.notes" :disabled="!canManage" rows="3" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800"></textarea>
                 </label>
                 <div class="flex justify-between">
-                    <PrimaryButton v-if="canManage" :disabled="form.processing" @click="save">{{ t('save') }}</PrimaryButton>
-                    <SecondaryButton v-if="canManage && can('games', 'delete')" @click="confirmDelete = true">{{ t('delete') }}</SecondaryButton>
+                    <PrimaryButton v-if="canManage" data-help="game-info-save" :disabled="form.processing" @click="save">{{ t('save') }}</PrimaryButton>
+                    <SecondaryButton v-if="canManage && can('games', 'delete')" data-help="game-delete" @click="confirmDelete = true">{{ t('delete') }}</SecondaryButton>
                 </div>
             </section>
 

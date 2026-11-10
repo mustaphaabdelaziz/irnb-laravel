@@ -154,12 +154,12 @@ const shortName = (name) => String(name ?? '').split(' ').slice(0, 2).join(' ');
         <div class="flex flex-wrap items-center gap-3">
             <label class="text-sm">{{ t('comp.formation') }}
                 <!-- A format without formations gets one automatic shape whose id is null. -->
-                <select :value="formationId ?? ''" :disabled="!canManage" class="ms-2 rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800"
+                <select :value="formationId ?? ''" data-help="lineup-formation" :disabled="!canManage" class="ms-2 rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800"
                     @change="changeFormation($event.target.value === '' ? null : Number($event.target.value))">
                     <option v-for="f in lineup.formations" :key="f.id ?? 'default'" :value="f.id ?? ''">{{ f.id === null ? t('comp.formation_default') : f.name }}</option>
                 </select>
             </label>
-            <span class="text-sm text-slate-600 dark:text-slate-300">{{ t('comp.starters_count', { n: starters.length, max: lineup.players_on_field }) }} · {{ t('comp.bench_count', { n: bench.length, max: lineup.max_bench }) }}</span>
+            <span data-help="lineup-counts" class="text-sm text-slate-600 dark:text-slate-300">{{ t('comp.starters_count', { n: starters.length, max: lineup.players_on_field }) }} · {{ t('comp.bench_count', { n: bench.length, max: lineup.max_bench }) }}</span>
             <SecondaryButton v-if="canManage" @click="autoFill">{{ t('comp.auto_fill') }}</SecondaryButton>
         </div>
         <ul v-if="warnings.length" class="rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
@@ -189,7 +189,7 @@ const shortName = (name) => String(name ?? '').split(' ').slice(0, 2).join(' ');
 
             <div class="space-y-4">
                 <!-- Bench / called-up list: drop a dot here to send the player to the bench. -->
-                <div class="min-h-24 rounded-xl border border-dashed border-slate-300 p-3 dark:border-slate-700" @dragover.prevent @drop.prevent="dropOnBench">
+                <div data-help="lineup-bench" class="min-h-24 rounded-xl border border-dashed border-slate-300 p-3 dark:border-slate-700" @dragover.prevent @drop.prevent="dropOnBench">
                     <h3 class="mb-2 text-sm font-semibold">{{ t('comp.bench') }}</h3>
                     <div class="flex flex-wrap gap-2">
                         <div v-for="r in bench" :key="r.player_id" class="rounded-lg bg-slate-100 px-2 py-1 text-sm dark:bg-slate-800">
@@ -201,7 +201,7 @@ const shortName = (name) => String(name ?? '').split(' ').slice(0, 2).join(' ');
                             <div class="mt-1 flex items-center gap-1">
                                 <input v-model="r.shirt_number" :disabled="!canManage" :aria-label="t('comp.shirt')" type="number" min="0" max="99" draggable="false"
                                     class="w-14 rounded border-slate-300 py-0.5 text-sm dark:border-slate-700 dark:bg-slate-900" @mousedown.stop />
-                                <select :disabled="!canManage" :aria-label="t('comp.put_on_spot')" class="rounded border-slate-300 py-0.5 text-xs dark:border-slate-700 dark:bg-slate-900"
+                                <select :disabled="!canManage" :data-help="`lineup-put-${r.player_id}`" :aria-label="t('comp.put_on_spot')" class="rounded border-slate-300 py-0.5 text-xs dark:border-slate-700 dark:bg-slate-900"
                                     @change="placeOnSlot(r, $event.target.value); $event.target.value = ''">
                                     <option value="">{{ t('comp.put_on_spot') }}</option>
                                     <option v-for="(slot, i) in slots" :key="i" :value="i">{{ slot.label }}</option>
@@ -213,7 +213,7 @@ const shortName = (name) => String(name ?? '').split(' ').slice(0, 2).join(' ');
                 </div>
 
                 <!-- Starters: number, captain, goalkeeper. -->
-                <table class="min-w-full text-sm">
+                <table data-help="lineup-starters" class="min-w-full text-sm">
                     <thead class="text-xs uppercase text-slate-500 dark:text-slate-400"><tr>
                         <th class="py-1 text-start">{{ t('comp.spot') }}</th><th class="py-1 text-start">{{ t('comp.player') }}</th>
                         <th class="w-20 py-1">{{ t('comp.shirt') }}</th><th class="py-1">{{ t('comp.captain_short') }}</th><th v-if="lineup.has_goalkeeper" class="py-1">{{ t('comp.goalkeeper_short') }}</th><th class="py-1"></th>
@@ -228,8 +228,8 @@ const shortName = (name) => String(name ?? '').split(' ').slice(0, 2).join(' ');
                             </td>
                             <td class="py-1">{{ r.name }}</td>
                             <td class="py-1"><input v-model="r.shirt_number" :disabled="!canManage" :aria-label="t('comp.shirt')" type="number" min="0" max="99" class="w-16 rounded border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800" /></td>
-                            <td class="py-1 text-center"><input type="checkbox" :checked="r.is_captain" :disabled="!canManage" :aria-label="t('comp.captain_short')" class="rounded" @change="setCaptain(r)" /></td>
-                            <td v-if="lineup.has_goalkeeper" class="py-1 text-center"><input type="checkbox" :checked="r.is_goalkeeper" :disabled="!canManage" :aria-label="t('comp.goalkeeper_short')" class="rounded" @change="setKeeper(r)" /></td>
+                            <td class="py-1 text-center"><input type="checkbox" :data-help="`lineup-captain-${r.player_id}`" :checked="r.is_captain" :disabled="!canManage" :aria-label="t('comp.captain_short')" class="rounded" @change="setCaptain(r)" /></td>
+                            <td v-if="lineup.has_goalkeeper" class="py-1 text-center"><input type="checkbox" :data-help="`lineup-keeper-${r.player_id}`" :checked="r.is_goalkeeper" :disabled="!canManage" :aria-label="t('comp.goalkeeper_short')" class="rounded" @change="setKeeper(r)" /></td>
                             <td class="py-1 text-end"><button type="button" :disabled="!canManage" class="rounded bg-slate-100 px-2 py-0.5 text-xs hover:bg-slate-200 disabled:opacity-50 dark:bg-slate-800 dark:hover:bg-slate-700" @click="sendToBench(r)">{{ t('comp.to_bench') }}</button></td>
                         </tr>
                     </tbody>
@@ -237,8 +237,8 @@ const shortName = (name) => String(name ?? '').split(' ').slice(0, 2).join(' ');
                 <InputError :message="form.errors.players ? t(form.errors.players) : ''" />
                 <InputError v-for="(msg, key) in form.errors" v-show="key !== 'players'" :key="key" :message="t(msg)" />
                 <div class="flex flex-wrap gap-2">
-                    <PrimaryButton v-if="canManage" :disabled="form.processing" @click="save">{{ t('save') }}</PrimaryButton>
-                    <a :href="route('games.lineup-sheet', gameId)" target="_blank" class="self-center text-sm text-primary-600 hover:underline dark:text-primary-300">{{ t('comp.lineup_sheet_pdf') }}</a>
+                    <PrimaryButton v-if="canManage" data-help="lineup-save" :disabled="form.processing" @click="save">{{ t('save') }}</PrimaryButton>
+                    <a :href="route('games.lineup-sheet', gameId)" data-help="lineup-pdf" target="_blank" class="self-center text-sm text-primary-600 hover:underline dark:text-primary-300">{{ t('comp.lineup_sheet_pdf') }}</a>
                 </div>
             </div>
         </div>

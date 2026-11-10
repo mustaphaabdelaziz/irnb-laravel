@@ -20,6 +20,8 @@ const props = defineProps({
     // 'danger' (default) for what destroys something; 'primary' for a confirm
     // that loses nothing, e.g. closing or reopening a season.
     variant: { type: String, default: 'danger' },
+    // A piece of the message (a score such as "3 – 1") shown left-to-right inside right-to-left text.
+    isolate: { type: String, default: '' },
 });
 
 const emit = defineEmits(['confirm', 'cancel']);
@@ -29,7 +31,7 @@ const emit = defineEmits(['confirm', 'cancel']);
 // open, so the closing box never goes blank.
 const copy = ref({});
 watch(
-    () => [props.show, props.title, props.message, props.confirmLabel, props.cancelLabel, props.variant],
+    () => [props.show, props.title, props.message, props.confirmLabel, props.cancelLabel, props.variant, props.isolate],
     () => {
         if (!props.show) return;
         copy.value = {
@@ -38,6 +40,7 @@ watch(
             confirmLabel: props.confirmLabel,
             cancelLabel: props.cancelLabel,
             variant: props.variant,
+            isolate: props.isolate,
         };
     },
     { immediate: true },
@@ -51,7 +54,8 @@ watch(
                 {{ copy.title || t('confirm_action') }}
             </h3>
             <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
-                {{ copy.message || t('are_you_sure') }}
+                <template v-if="copy.isolate && copy.message?.includes(copy.isolate)">{{ copy.message.split(copy.isolate)[0] }}<bdi dir="ltr">{{ copy.isolate }}</bdi>{{ copy.message.split(copy.isolate).slice(1).join(copy.isolate) }}</template>
+                <template v-else>{{ copy.message || t('are_you_sure') }}</template>
             </p>
             <!-- Optional extra fields, e.g. a required reason. -->
             <slot />

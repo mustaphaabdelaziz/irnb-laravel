@@ -272,13 +272,15 @@ class CallUpTest extends TestCase
     public function a_candidate_carries_whether_un_calling_them_would_lose_report_data(): void
     {
         $team = $this->team();
-        [$none, $scorer, $rated, $placed, $assisted] = array_map(fn () => $this->player($team->category), range(1, 5));
-        $this->onRoster($team, 2026, [$none, $scorer, $rated, $placed, $assisted]);
+        [$none, $scorer, $rated, $placed, $assisted, $mvp, $minutes] = array_map(fn () => $this->player($team->category), range(1, 7));
+        $this->onRoster($team, 2026, [$none, $scorer, $rated, $placed, $assisted, $mvp, $minutes]);
         $game = $this->game($team);
-        foreach ([$none, $scorer, $rated, $placed, $assisted] as $p) {
+        foreach ([$none, $scorer, $rated, $placed, $assisted, $mvp, $minutes] as $p) {
             GamePlayer::create(['game_id' => $game->id, 'player_id' => $p->id, 'called_up' => true]);
         }
         GamePlayer::where('player_id', $rated->id)->update(['rating' => 7]);
+        GamePlayer::where('player_id', $mvp->id)->update(['is_mvp' => true]);
+        GamePlayer::where('player_id', $minutes->id)->update(['played' => true, 'minutes_played' => 20]);
         GamePlayer::where('player_id', $placed->id)->update(['role' => 'starter', 'slot' => 2]);
         GameEvent::create(['game_id' => $game->id, 'player_id' => $scorer->id, 'related_player_id' => $assisted->id, 'type' => 'goal', 'minute' => 10, 'period' => 1]);
 
@@ -287,6 +289,8 @@ class CallUpTest extends TestCase
             ->where('candidates.1.has_report_data', true)
             ->where('candidates.2.has_report_data', true)
             ->where('candidates.3.has_report_data', true)
-            ->where('candidates.4.has_report_data', true));
+            ->where('candidates.4.has_report_data', true)
+            ->where('candidates.5.has_report_data', true)
+            ->where('candidates.6.has_report_data', true));
     }
 }

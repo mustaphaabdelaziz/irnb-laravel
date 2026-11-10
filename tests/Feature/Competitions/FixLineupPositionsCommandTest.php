@@ -66,4 +66,39 @@ class FixLineupPositionsCommandTest extends TestCase
         $this->assertSame($cb->id, $rows[1]->fresh()->position_id);
         $this->assertSame(0, GamePlayer::whereNull('position_id')->where('role', 'starter')->count());
     }
+
+    #[Test]
+    public function every_row_is_filled_across_chunks(): void
+    {
+        [, $rows] = $this->oldLineup();
+
+        $this->artisan('competitions:fix-lineup-positions', ['--chunk' => 2])->expectsOutputToContain('Filled 5')->assertSuccessful();
+        $this->assertSame(0, GamePlayer::whereNull('position_id')->where('role', 'starter')->count());
+    }
+
+    #[Test]
+    public function only_the_games_own_branch_positions_are_used_and_a_branch_without_one_is_left_empty(): void
+    {
+        [$game, $rows] = $this->oldLineup();
+        // The team's branch has no forward; another branch does.
+        Position::where('branch_id', $game->team->branch_id)->whereIn('abbreviation', ['FW', 'CF'])->delete();
+        $other = $this->sportBranch('Handball');
+        Position::create(['branch_id' => $other->id, 'name' => 'Forward', 'abbreviation' => 'FW']);
+
+        $this->artisan('competitions:fix-lineup-positions')
+            ->expectsOutputToContain('Filled 3 starter position(s). Left empty: 2 (the branch has no matching position), 0 (formation')->assertSuccessful();
+        $this->assertNull($rows[3]->fresh()->position_id);
+        $this->assertNull($rows[4]->fresh()->position_id);
+        $this->assertNotNull($rows[0]->fresh()->position_id);
+    }
+
+    #[Test]
+    public function a_deleted_formation_or_an_out_of_range_slot_is_counted_apart(): void
+    {
+        [$game, $rows] = $this->oldLineup();
+        $rows[4]->update(['slot' => 9]);
+
+        $this->artisan('competitions:fix-lineup-positions')
+            ->expectsOutputToContain('Filled 4 starter position(s). Left empty: 0 (the branch has no matching position), 1 (formation or slot no longer exists)')->assertSuccessful();
+    }
 }

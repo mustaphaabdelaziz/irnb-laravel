@@ -279,7 +279,9 @@ class LineupTest extends TestCase
         $other = Formation::where('game_format_id', $formation->game_format_id)->where('name', '1-2-1')->firstOrFail();
         $this->game($team, ['date' => '2026-09-01', 'formation_id' => $formation->id]);
         $this->game($team, ['date' => '2026-10-01', 'formation_id' => $other->id]);
-        // Another team's recent match must not count.
+        // A later match and a cancelled one must not count; neither does another team's.
+        $this->game($team, ['date' => '2026-11-01', 'formation_id' => $formation->id]);
+        $this->game($team, ['date' => '2026-10-10', 'formation_id' => $formation->id, 'status' => GameStatus::Cancelled]);
         $this->game($this->team(null, ['default_game_format_id' => $formation->game_format_id]), ['date' => '2026-10-10', 'formation_id' => $formation->id]);
 
         $this->actingAs($this->admin())->get(route('games.show', $game))->assertInertia(fn (Assert $page) => $page

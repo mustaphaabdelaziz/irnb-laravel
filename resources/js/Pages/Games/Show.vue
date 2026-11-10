@@ -30,7 +30,11 @@ const callForm = useForm({ players: [] });
 
 // Un-calling a player deletes what the report holds about them: ask first.
 const confirmCallUp = ref(false);
-const losingRows = computed(() => callRows.value.filter((r) => !r.called_up && props.candidates.find((c) => c.player_id === r.player_id)?.called_up && r.has_report_data));
+// The flag is read from the fresh props: callRows is only rebuilt by the call-up save, not by a line-up or report save.
+const losingRows = computed(() => callRows.value.filter((r) => {
+    const c = props.candidates.find((c) => c.player_id === r.player_id);
+    return !r.called_up && c?.called_up && c.has_report_data;
+}));
 const losingNames = computed(() => losingRows.value.map((r) => r.name).join('، '));
 
 function saveCallUp() {
@@ -49,6 +53,7 @@ function saveCallUp() {
 const tab = ref('info');
 const confirmDelete = ref(false);
 const confirmErase = ref(false);
+const eraseScore = computed(() => `${props.game.our_score} – ${props.game.their_score}`);
 
 const fromGame = (g) => ({
     opponent_id: g.opponent_id, venue_id: g.venue_id ?? '', side: g.side,
@@ -226,7 +231,7 @@ function destroy() {
 
         <ConfirmModal :show="confirmDelete" :message="t('are_you_sure')" @confirm="destroy" @cancel="confirmDelete = false" />
         <ConfirmModal :show="confirmErase" :title="t('comp.score_erase_title')"
-            :message="t('comp.score_erase_confirm', { score: `\u2066${game.our_score} – ${game.their_score}\u2069`, status: t(`comp.status_${form.status}`) })"
+            :message="t('comp.score_erase_confirm', { score: eraseScore, status: t(`comp.status_${form.status}`) })" :isolate="eraseScore"
             :confirm-label="t('comp.score_erase_button')" @confirm="save" @cancel="confirmErase = false" />
         <ConfirmModal :show="confirmCallUp" :title="t('comp.callup_loss_title')" :message="t('comp.callup_loss_confirm', { names: losingNames })"
             :confirm-label="t('save')" @confirm="saveCallUp" @cancel="confirmCallUp = false" />

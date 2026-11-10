@@ -2055,27 +2055,15 @@ export default [
     },
     // --- Competitions: line-up, match report, edit and cancel (Part 3c) ---
     {
-        // M4 line-up tab as the reader first sees it: opens on «2-2» (the team latest), nobody placed,
-        // every called-up player on the bench. Nothing is saved.
+        // M4 line-up tab as the reader first sees it: no formation chosen, the page opens on «2-2» (the team's
+        // latest, from M1–M3), nobody placed, every called-up player on the bench. Nothing is picked or saved.
+        // Also serves the formation and bench steps (rings chosen per figure).
         name: 'comp-lineup-tab',
         url: '/games/4',
-        targets: ['game-tab-lineup', 'lineup-formation', 'lineup-counts'],
+        targets: ['game-tab-lineup', 'lineup-formation', 'lineup-counts', 'lineup-bench', 'lineup-put-7'],
         before: async (page) => {
             await page.locator('[data-help="game-tab-lineup"]').click();
             await page.locator('[data-help="lineup-bench"]').waitFor({ state: 'visible' });
-        },
-    },
-    {
-        // Formation «2-2» picked, nobody placed yet: the bench cards with the «ضعه في مركز…» select. Nothing is saved.
-        name: 'comp-lineup-empty',
-        url: '/games/4',
-        targets: ['lineup-formation', 'lineup-counts', 'lineup-bench', 'lineup-put-7'],
-        before: async (page) => {
-            await page.locator('[data-help="game-tab-lineup"]').click();
-            await page.locator('[data-help="lineup-bench"]').waitFor({ state: 'visible' });
-            await page.locator('select[data-help="lineup-formation"]').selectOption({ label: '2-2' });
-            await blur(page);
-            await centre(page, 'lineup-counts');
         },
     },
     {

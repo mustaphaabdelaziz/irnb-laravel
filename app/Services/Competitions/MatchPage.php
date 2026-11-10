@@ -2,6 +2,7 @@
 
 namespace App\Services\Competitions;
 
+use App\Enums\GameStatus;
 use App\Models\Formation;
 use App\Models\Game;
 use App\Models\GameEvent;
@@ -107,6 +108,9 @@ final class MatchPage
         $latest = Game::query()
             ->where('team_id', $game->team_id)->where('game_format_id', $game->game_format_id)
             ->where('id', '!=', $game->id)->whereNotNull('formation_id')
+            // The formation last used up to this match: not a later one, not a cancelled one.
+            ->where(fn ($q) => $q->where('date', '<', $game->date)->orWhere(fn ($q) => $q->where('date', $game->date)->where('id', '<', $game->id)))
+            ->where('status', '!=', GameStatus::Cancelled->value)
             ->orderByDesc('date')->orderByDesc('id')->value('formation_id');
 
         return $formations->contains('id', $latest) && $latest !== null ? (int) $latest : ($formations->first()['id'] ?? null);

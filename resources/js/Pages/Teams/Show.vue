@@ -221,7 +221,7 @@ const tabs = computed(() => ['roster', 'coaches', 'competitions', 'games', ...(c
             </section>
 
             <section v-if="tab === 'stats' && stats" class="space-y-4 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
-                <div class="flex flex-wrap items-center gap-4 text-sm">
+                <div class="flex flex-wrap items-center gap-4 text-sm" data-help="team-stats-record">
                     <span v-for="key in ['played', 'wins', 'draws', 'losses', 'goals_for', 'goals_against']" :key="key"><b>{{ stats.record[key] }}</b> {{ t(`comp.record_${key}`) }}</span>
                     <span v-if="stats.record.form?.length" class="flex items-center gap-1">
                         <span class="text-xs uppercase text-slate-500 dark:text-slate-400">{{ t('comp.form') }}</span>

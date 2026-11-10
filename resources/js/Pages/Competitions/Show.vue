@@ -127,17 +127,17 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
                 </div>
             </section>
 
-            <section v-if="tab === 'stats' && stats" class="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+            <section v-if="tab === 'stats' && stats" data-help="compn-stats" class="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <StatsLeaders :leaders="stats.leaders" />
             </section>
             <section v-if="tab === 'suspensions'" class="space-y-4 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
-                <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
+                <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800" data-help="compn-ban-table">
                     <thead class="text-xs uppercase text-slate-500 dark:text-slate-400"><tr>
                         <th class="py-1 text-start">{{ t('comp.player') }}</th><th class="py-1 text-start">{{ t('comp.ban.cause') }}</th>
-                        <th class="py-1 text-start">{{ t('comp.ban.length') }}</th><th class="py-1 text-start">{{ t('status') }}</th><th class="w-10"></th>
+                        <th class="py-1 text-start" data-help="compn-ban-col-length">{{ t('comp.ban.length') }}</th><th class="py-1 text-start" data-help="compn-ban-col-status">{{ t('status') }}</th><th class="w-10"></th>
                     </tr></thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                        <tr v-for="s in suspensions" :key="s.id" :class="{ 'opacity-60': !s.active }">
+                        <tr v-for="s in suspensions" :key="s.id" :data-help="s.source === 'auto' ? 'compn-ban-auto' : 'compn-ban-manual'" :class="{ 'opacity-60': !s.active }">
                             <td class="py-1 font-medium">{{ s.player }}</td>
                             <td class="py-1">
                                 <template v-if="s.source === 'auto'">{{ t(`comp.flag.cause_${s.cause}`) }}<span v-if="s.trigger" class="text-xs text-slate-500 dark:text-slate-400"> · <bdi dir="ltr">{{ s.trigger.date }}</bdi> {{ s.trigger.opponent }}</span></template>
@@ -146,7 +146,7 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
                             </td>
                             <td class="py-1"><bdi dir="ltr">{{ banLabel(s) }}</bdi></td>
                             <td class="py-1">{{ s.active ? t('comp.ban.active') : t('comp.ban.served') }}</td>
-                            <td class="py-1 text-end"><IconButton v-if="canManage && s.deletable" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="banToRemove = s.id" /></td>
+                            <td class="py-1 text-end"><IconButton v-if="canManage && s.deletable" data-help="compn-ban-delete" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="banToRemove = s.id" /></td>
                         </tr>
                         <tr v-if="!suspensions.length"><td colspan="5" class="py-6 text-center text-slate-500 dark:text-slate-400">{{ t('comp.ban.none') }}</td></tr>
                     </tbody>
@@ -155,37 +155,37 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
                 <form v-if="canManage" class="grid gap-3 border-t border-slate-100 pt-4 dark:border-slate-800 sm:grid-cols-3" @submit.prevent="addBan">
                     <h3 class="text-sm font-semibold sm:col-span-3">{{ t('comp.ban.add_manual') }}</h3>
                     <label class="text-sm">{{ t('comp.player') }}
-                        <select v-model="banForm.player_id" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800" required>
+                        <select v-model="banForm.player_id" data-help="compn-ban-player" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800" required>
                             <option v-for="r in roster" :key="r.player_id" :value="r.player_id">{{ r.name }}</option>
                         </select>
                         <InputError :message="banForm.errors.player_id" />
                     </label>
                     <label class="text-sm">{{ t('comp.ban.scope') }}
-                        <select v-model="banForm.scope" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
+                        <select v-model="banForm.scope" data-help="compn-ban-scope" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
                             <option value="competition">{{ t('comp.ban.this_competition') }}</option>
                             <option value="all">{{ t('comp.ban.all_competitions') }}</option>
                         </select>
                     </label>
                     <label class="text-sm">{{ t('comp.ban.kind') }}
-                        <select v-model="banForm.kind" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
+                        <select v-model="banForm.kind" data-help="compn-ban-kind" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800">
                             <option value="matches">{{ t('comp.ban.kind_matches') }}</option>
                             <option value="dates">{{ t('comp.ban.kind_dates') }}</option>
                         </select>
                     </label>
                     <label v-if="banForm.kind === 'matches'" class="text-sm">{{ t('comp.ban.matches_count') }}
-                        <TextInput v-model.number="banForm.matches_count" type="number" min="1" class="mt-1 w-full" />
+                        <TextInput v-model.number="banForm.matches_count" data-help="compn-ban-count" type="number" min="1" class="mt-1 w-full" />
                         <InputError :message="banForm.errors.matches_count" />
                     </label>
                     <label class="text-sm">{{ t('comp.ban.starts_on') }}
-                        <TextInput v-model="banForm.starts_on" type="date" class="mt-1 w-full" :required="banForm.kind === 'dates'" />
+                        <TextInput v-model="banForm.starts_on" data-help="compn-ban-from" type="date" class="mt-1 w-full" :required="banForm.kind === 'dates'" />
                         <InputError :message="banForm.errors.starts_on" />
                     </label>
                     <label v-if="banForm.kind === 'dates'" class="text-sm">{{ t('comp.ban.ends_on') }}
-                        <TextInput v-model="banForm.ends_on" type="date" class="mt-1 w-full" required />
+                        <TextInput v-model="banForm.ends_on" data-help="compn-ban-to" type="date" class="mt-1 w-full" required />
                         <InputError :message="banForm.errors.ends_on" />
                     </label>
-                    <label class="text-sm sm:col-span-2">{{ t('comp.ban.reason') }} <TextInput v-model="banForm.reason" class="mt-1 w-full" /></label>
-                    <div class="flex items-end"><PrimaryButton :disabled="banForm.processing">{{ t('add') }}</PrimaryButton></div>
+                    <label class="text-sm sm:col-span-2">{{ t('comp.ban.reason') }} <TextInput v-model="banForm.reason" data-help="compn-ban-reason" class="mt-1 w-full" /></label>
+                    <div class="flex items-end"><PrimaryButton :disabled="banForm.processing" data-help="compn-ban-add">{{ t('add') }}</PrimaryButton></div>
                 </form>
             </section>
 
@@ -211,13 +211,13 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
                     <label class="text-sm">{{ t('comp.yellow_threshold') }} <TextInput v-model.number="rulesForm.yellow_threshold" data-help="compn-rule-yellow" :disabled="!canManage" type="number" min="1" class="mt-1 w-full" :placeholder="t('comp.yellow_threshold_none')" /></label>
                     <label class="text-sm">{{ t('comp.yellow_ban_matches') }} <TextInput v-model.number="rulesForm.yellow_ban_matches" data-help="compn-rule-yellow-ban" :disabled="!canManage" type="number" min="0" class="mt-1 w-full" /></label>
                 </div>
-                <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('comp.suspension_rules_help') }}</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400" data-help="compn-rules-help">{{ t('comp.suspension_rules_help') }}</p>
                 <label class="block text-sm">{{ t('notes') }}
                     <textarea v-model="rulesForm.notes" :disabled="!canManage" rows="3" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800"></textarea>
                 </label>
                 <label class="flex items-center gap-2 text-sm"><input v-model="rulesForm.archived" :disabled="!canManage" type="checkbox" class="rounded" /> {{ t('archived') }}</label>
                 <div class="flex justify-between">
-                    <PrimaryButton v-if="canManage" :disabled="rulesForm.processing" @click="saveRules">{{ t('save') }}</PrimaryButton>
+                    <PrimaryButton v-if="canManage" :disabled="rulesForm.processing" data-help="compn-rules-save" @click="saveRules">{{ t('save') }}</PrimaryButton>
                     <SecondaryButton v-if="canManage && can('competitions', 'delete')" @click="confirmDelete = true">{{ t('delete') }}</SecondaryButton>
                 </div>
             </section>

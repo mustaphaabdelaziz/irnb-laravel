@@ -2210,7 +2210,175 @@ export default [
             await page.locator('[data-help="confirm-ok"]').waitFor({ state: 'visible' });
         },
     },
+    // --- Competitions: suspensions and statistics (Part 3c) ---
+    {
+        // The competitions list: the demo competition's name link is ringed (the sidebar entry comes from comp-create-competition-list).
+        name: 'comp-suspensions-list',
+        url: '/competitions',
+        targets: ['compn-link-1'],
+    },
+    {
+        // The «الإعدادات» tab of the demo competition: the three ban rules, the hint and «حفظ». Nothing is changed or saved.
+        name: 'comp-suspensions-rules',
+        url: '/competitions/1',
+        targets: ['compn-tab-rules', 'compn-rule-red', 'compn-rule-yellow', 'compn-rule-yellow-ban', 'compn-rules-help', 'compn-rules-save'],
+        before: async (page) => {
+            await page.locator('[data-help="compn-tab-rules"]').click();
+            await page.locator('input[data-help="compn-rule-red"]').waitFor({ state: 'visible' });
+        },
+    },
+    {
+        // The «الإيقافات» tab: عبد الرحمن's automatic ban from M2, already served by M3.
+        name: 'comp-suspensions-bans',
+        url: '/competitions/1',
+        targets: ['compn-tab-suspensions', 'compn-ban-table', 'compn-ban-auto', 'compn-ban-col-length', 'compn-ban-col-status'],
+        before: async (page) => {
+            await page.locator('[data-help="compn-tab-suspensions"]').click();
+            await page.locator('[data-help="compn-ban-auto"]').waitFor({ state: 'visible' });
+        },
+    },
+    {
+        // The manual-ban form filled for لعريبي أنس: this competition, 1 match, a reason. «إضافة» not pressed.
+        name: 'comp-suspensions-form',
+        url: '/competitions/1',
+        targets: ['compn-ban-player', 'compn-ban-scope', 'compn-ban-kind', 'compn-ban-count', 'compn-ban-from', 'compn-ban-reason', 'compn-ban-add'],
+        before: async (page) => {
+            await page.locator('[data-help="compn-tab-suspensions"]').click();
+            await fillBan(page);
+            await centre(page, 'compn-ban-player');
+        },
+    },
+    {
+        // The same form with «فترة زمنية» picked: «من» and «إلى» show. Nothing saved.
+        name: 'comp-suspensions-dates',
+        url: '/competitions/1',
+        targets: ['compn-ban-kind', 'compn-ban-from', 'compn-ban-to'],
+        before: async (page) => {
+            await page.locator('[data-help="compn-tab-suspensions"]').click();
+            await page.locator('select[data-help="compn-ban-kind"]').selectOption({ label: 'فترة زمنية' });
+            await blur(page);
+            await centre(page, 'compn-ban-kind');
+        },
+    },
+    {
+        // Statistics page, unfiltered: the sidebar entry and the three filters.
+        name: 'comp-statistics-page',
+        url: '/games/stats',
+        targets: ['nav-games-stats', 'stats-season', 'stats-team', 'stats-competition'],
+        before: async (page) => { await navIntoView(page, 'nav-games-stats'); },
+    },
+    {
+        // The team filter set to the U17 team: leaderboards and the player table.
+        name: 'comp-statistics-team',
+        url: '/games/stats',
+        targets: ['stats-team', 'stats-leaders', 'stats-table'],
+        before: async (page) => { await pickStatsTeam(page); },
+    },
+    {
+        // «تصدير» open on the U17 view: the three formats.
+        name: 'comp-statistics-export',
+        url: '/games/stats',
+        targets: ['stats-export', 'stats-export-xlsx', 'stats-export-csv', 'stats-export-pdf'],
+        before: async (page) => {
+            await pickStatsTeam(page);
+            await openMenu(page, 'stats-export', 'stats-export-xlsx');
+            await tagIn(page, 'stats-export-csv', page.locator('[data-help="stats-export"] a', { hasText: 'CSV' }));
+            await tagIn(page, 'stats-export-pdf', page.locator('[data-help="stats-export"] a', { hasText: 'PDF' }));
+        },
+    },
+    {
+        // The U17 team page, «الإحصائيات» tab: the record line and the tab.
+        name: 'comp-statistics-team-page',
+        url: '/teams/1',
+        targets: ['team-tab-stats', 'team-stats-record'],
+        before: async (page) => {
+            await page.locator('[data-help="team-tab-stats"]').click();
+            await page.locator('[data-help="team-stats-record"]').waitFor({ state: 'visible' });
+        },
+    },
+    {
+        // The demo competition page, «الإحصائيات» tab.
+        name: 'comp-statistics-competition',
+        url: '/competitions/1',
+        targets: ['compn-tab-stats', 'compn-stats'],
+        before: async (page) => {
+            await page.locator('[data-help="compn-tab-stats"]').click();
+            await page.locator('[data-help="compn-stats"]').waitFor({ state: 'visible' });
+        },
+    },
+    {
+        // قاسمي أمين's page: the «المباريات» section with its totals, loaded on its own.
+        name: 'comp-statistics-player',
+        url: '/players/3',
+        targets: ['player-matches', 'player-matches-season', 'player-matches-totals'],
+        before: async (page) => {
+            await page.locator('[data-help="player-matches-totals"]').first().waitFor({ state: 'visible' });
+            await centre(page, 'player-matches');
+        },
+    },
+    // Writes, last: a manual ban for لعريبي أنس is added through the UI so its row and trash show.
+    // `after` deletes it through the UI, back to the seeded state.
+    {
+        name: 'comp-suspensions-added',
+        url: '/competitions/1',
+        targets: ['compn-ban-manual', 'compn-ban-delete'],
+        before: async (page) => { await addManualBan(page); },
+        after: async (page) => { await removeManualBan(page); },
+    },
+    {
+        // The same ban with the trash pressed: the confirm. `after` confirms it (the ban is deleted).
+        name: 'comp-suspensions-delete-confirm',
+        url: '/competitions/1',
+        targets: ['confirm-panel', 'confirm-ok', 'confirm-cancel'],
+        before: async (page) => {
+            await addManualBan(page);
+            await page.locator('[data-help="compn-ban-delete"]').click();
+            await page.locator('[data-help="confirm-ok"]').waitFor({ state: 'visible' });
+        },
+        after: async (page) => {
+            await page.locator('[data-help="confirm-ok"]').click();
+            await page.locator('[data-help="compn-ban-manual"]').waitFor({ state: 'detached', timeout: 10000 });
+        },
+    },
 ];
+
+/** Statistics page: picks the U17 team in the team filter and waits for the filtered table. */
+async function pickStatsTeam(page) {
+    await page.locator('[data-help="stats-team"] > button').click();
+    await page.locator('[data-help="stats-team"] li', { hasText: 'أقل من 17' }).first().dispatchEvent('mousedown');
+    await page.waitForURL(/team_id=1/);
+    await page.waitForLoadState('networkidle');
+    await page.locator('[data-help="stats-table"] tbody tr').first().waitFor({ state: 'visible' });
+}
+
+/** «الإيقافات» tab: picks لعريبي أنس, this competition, 1 match, and types the reason. Nothing is added. */
+async function fillBan(page) {
+    const player = page.locator('select[data-help="compn-ban-player"]');
+    await player.waitFor({ state: 'visible' });
+    const value = await player.locator('option', { hasText: 'لعريبي' }).first().getAttribute('value');
+    await player.selectOption(value);
+    await page.fill('input[data-help="compn-ban-reason"]', 'قرار لجنة الانضباط');
+    await blur(page);
+}
+
+/** Adds the ban of fillBan through «إضافة», reloads (no toast) and reopens the «الإيقافات» tab. */
+async function addManualBan(page) {
+    await page.locator('[data-help="compn-tab-suspensions"]').click();
+    await fillBan(page);
+    await page.locator('[data-help="compn-ban-add"]').click();
+    await page.locator('[data-help="compn-ban-manual"]').waitFor({ state: 'visible', timeout: 10000 });
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.locator('[data-help="compn-tab-suspensions"]').click();
+    await page.locator('[data-help="compn-ban-manual"]').waitFor({ state: 'visible' });
+}
+
+/** Deletes the manual ban through its trash and the confirm. */
+async function removeManualBan(page) {
+    await page.locator('[data-help="compn-ban-delete"]').click();
+    await page.locator('[data-help="confirm-ok"]').waitFor({ state: 'visible' });
+    await page.locator('[data-help="confirm-ok"]').click();
+    await page.locator('[data-help="compn-ban-manual"]').waitFor({ state: 'detached', timeout: 10000 });
+}
 
 /** أمين قاسمي's grid cell holding the demo's «R15» (rows are found by last name). */
 async function amineR15Cell(page) {

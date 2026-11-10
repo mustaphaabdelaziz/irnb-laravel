@@ -4,7 +4,7 @@ summary: أنشئ بطولة أو كأسًا لفريق في موسم، ثم ا�
 module: competitions
 pages: [competitions.index, competitions.show]
 keywords: [منافسة, منافسات, منافسة جديدة, بطولة, كأس, دورة, ودية, نوع المنافسة, قائمة المنافسة, لاعبو المنافسة, قواعد الإيقاف, الإعدادات, نظام اللعب]
-related: [competitions/schedule-match, competitions/call-up, competitions/roster-coaches]
+related: [competitions/schedule-match, competitions/call-up, competitions/roster-coaches, competitions/suspensions]
 ---
 
 المنافسة بطولة أو كأس أو دورة يشارك فيها فريق واحد في موسم واحد. لها قائمة لاعبين تُختار من تشكيلة الفريق. مباريات المنافسة تُستدعى من هذه القائمة.

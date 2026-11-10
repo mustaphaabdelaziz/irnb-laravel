@@ -31,10 +31,10 @@ const sanctionLabel = (key) => {
 </script>
 
 <template>
-    <section class="space-y-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+    <section data-help="player-matches" class="space-y-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
         <div class="flex flex-wrap items-center justify-between gap-2">
             <h2 class="text-lg font-semibold">{{ t('games') }}</h2>
-            <SeasonSelect v-if="data" :model-value="data.season" :seasons="data.seasons" @update:model-value="load($event)" />
+            <SeasonSelect v-if="data" data-help="player-matches-season" :model-value="data.season" :seasons="data.seasons" @update:model-value="load($event)" />
         </div>
         <p v-if="failed" class="text-sm text-rose-600 dark:text-rose-400">{{ t('comp.load_failed') }}</p>
         <p v-if="loading && !data" class="text-sm text-slate-500 dark:text-slate-400">…</p>
@@ -43,7 +43,7 @@ const sanctionLabel = (key) => {
                 ⛔ {{ t('comp.flag.suspended') }} — {{ s.until ? t('comp.flag.suspended_until', { date: s.until }) : t('comp.flag.suspended_left', { n: s.remaining }) }}
                 <span v-if="s.competition">· {{ s.competition }}</span><span v-if="s.reason"> · {{ s.reason }}</span>
             </div>
-            <div v-for="row in data.totals" :key="row.sport" class="grid grid-cols-3 gap-2 text-center text-sm sm:grid-cols-9">
+            <div v-for="row in data.totals" :key="row.sport" data-help="player-matches-totals" class="grid grid-cols-3 gap-2 text-center text-sm sm:grid-cols-9">
                 <div v-for="c in ['appearances', 'starts', row.sport === 'volleyball' ? 'sets' : 'minutes', 'goals', 'assists', 'yellows', 'reds', 'avg_rating', 'motm']" :key="c" class="rounded-lg bg-slate-50 p-2 dark:bg-slate-800">
                     <div class="text-lg font-bold">{{ row[c] ?? '—' }}</div>
                     <div class="text-xs text-slate-500 dark:text-slate-400">{{ t(`comp.stats.col_${c}`) }}</div>

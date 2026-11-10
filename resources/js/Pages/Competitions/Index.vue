@@ -99,7 +99,7 @@ const formClass = { W: 'bg-emerald-500', D: 'bg-slate-400', L: 'bg-rose-500' };
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                         <tr v-for="c in competitions" :key="c.id" :class="{ 'opacity-60': c.archived }">
                             <td class="px-4 py-3">
-                                <Link :href="route('competitions.show', c.id)" class="font-medium text-primary-700 hover:underline dark:text-primary-300">{{ c.name }}</Link>
+                                <Link :href="route('competitions.show', c.id)" :data-help="`compn-link-${c.id}`" class="font-medium text-primary-700 hover:underline dark:text-primary-300">{{ c.name }}</Link>
                                 <div class="text-xs text-slate-500 dark:text-slate-400">{{ t(`comp.type_${c.type}`) }} · {{ t('comp.games_count', { n: c.games_count }) }}</div>
                             </td>
                             <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ c.team }}</td>

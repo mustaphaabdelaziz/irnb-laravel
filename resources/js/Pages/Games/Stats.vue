@@ -30,17 +30,17 @@ const hasSets = computed(() => props.rows.some((r) => r.sport === 'volleyball'))
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('comp.stats.title') }}</h1>
                 <div class="flex flex-wrap items-center gap-2">
-                    <SeasonSelect :model-value="season" :seasons="seasons" @update:model-value="reload({ season: $event, competition_id: null })" />
-                    <SearchableSelect :model-value="filters.team_id ?? ''" :options="teams" :placeholder="t('team')" class="w-56" @update:model-value="reload({ team_id: $event || null, competition_id: null })" />
-                    <SearchableSelect :model-value="filters.competition_id ?? ''" :options="competitionOptions" :placeholder="t('comp.competition')" class="w-56" @update:model-value="reload({ competition_id: $event || null })" />
-                    <ExportMenu :href="exportHref" :label="t('export')" :formats="['xlsx', 'csv', 'pdf']" />
+                    <SeasonSelect data-help="stats-season" :model-value="season" :seasons="seasons" @update:model-value="reload({ season: $event, competition_id: null })" />
+                    <SearchableSelect :model-value="filters.team_id ?? ''" :options="teams" :placeholder="t('team')" class="w-56" data-help="stats-team" @update:model-value="reload({ team_id: $event || null, competition_id: null })" />
+                    <SearchableSelect :model-value="filters.competition_id ?? ''" :options="competitionOptions" :placeholder="t('comp.competition')" class="w-56" data-help="stats-competition" @update:model-value="reload({ competition_id: $event || null })" />
+                    <ExportMenu data-help="stats-export" :href="exportHref" :label="t('export')" :formats="['xlsx', 'csv', 'pdf']" />
                 </div>
             </div>
         </template>
 
         <div class="mx-auto max-w-6xl space-y-6">
-            <StatsLeaders :leaders="leaders" />
-            <div class="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+            <StatsLeaders data-help="stats-leaders" :leaders="leaders" />
+            <div data-help="stats-table" class="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
                 <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
                     <thead class="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-950 dark:text-slate-400"><tr>
                         <th class="px-3 py-2 text-start">{{ t('comp.player') }}</th>

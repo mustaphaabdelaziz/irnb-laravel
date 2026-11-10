@@ -58,7 +58,7 @@ One-time setup on a new machine (the script drives the full Chromium build):
 
 Each shot is taken light, then dark, before the next. A shot with `ownLogin: true` signs in on its own (for «الدخول بحساب», which would otherwise break the shared session).
 
-The run uses its own Laravel storage folder, `storage/help-demo-storage` (emptied at every run; `LARAVEL_STORAGE_PATH`), so uploads, sessions, caches and logs of the screenshot server never touch `storage/app`. Seeders may generate images (`HelpDemoImages`), but only there: they check `HelpDemoSeeder::onThrowawayStorage()` first and write nothing otherwise. The script fails if `storage/app/public` changed during the run.
+The run uses its own storage folder, `storage/help-demo-storage` (emptied at every run). The seeding CLI gets `LARAVEL_STORAGE_PATH`, but the served app (`php -S`, `variables_order` GPCS) does not see it, so the server reads `HELP_DEMO_PUBLIC_ROOT` / `HELP_DEMO_STORAGE` instead. Only the public disk, sessions and file-cache data move there; compiled views, logs and the server's local (private) disk stay in real storage, so a future seeder storing a private file for a shot would need the same treatment. Seeders may generate images (`HelpDemoImages`), but only there: they check `HelpDemoSeeder::onThrowawayStorage()` first and write nothing otherwise. The script fails if `storage/app/public` changed during the run.
 
 Shots live in `public/help-shots`, not `public/help`: a real `public/help`
 folder would be served instead of the `/help` page.

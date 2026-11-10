@@ -33,7 +33,8 @@ final class HelpDemoImages
             default => self::shield($img, $primary, $secondary, $white),
         };
 
-        $tmp = tempnam(sys_get_temp_dir(), 'logo').'.png';
+        $base = tempnam(sys_get_temp_dir(), 'logo');
+        $tmp = $base.'.png';
         imagepng($img, $tmp);
         imagedestroy($img);
 
@@ -41,6 +42,7 @@ final class HelpDemoImages
             $stored = app(FileStorageService::class)->storeImage(new UploadedFile($tmp, 'logo.png', 'image/png', null, true), 'opponents', 256);
         } finally {
             @unlink($tmp);
+            @unlink($base);
         }
 
         return ['url' => $stored['url'], 'filename' => $stored['filename']];

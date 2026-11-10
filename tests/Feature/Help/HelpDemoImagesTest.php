@@ -6,6 +6,7 @@ use Database\Seeders\HelpDemoImages;
 use Database\Seeders\HelpDemoSeeder;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -19,7 +20,8 @@ class HelpDemoImagesTest extends TestCase
     }
 
     #[Test]
-    public function a_logo_is_a_png_in_the_throwaway_public_disk(): void
+    #[DataProvider('shapes')]
+    public function a_logo_is_a_png_in_the_throwaway_public_disk(string $shape): void
     {
         $root = sys_get_temp_dir().'/'.uniqid('help', true).'/help-demo-storage/app/public';
         File::ensureDirectoryExists($root);
@@ -28,7 +30,7 @@ class HelpDemoImagesTest extends TestCase
 
         try {
             $this->assertTrue(HelpDemoSeeder::onThrowawayStorage());
-            $logo = HelpDemoImages::logo('#1d4ed8', '#facc15', 'shield');
+            $logo = HelpDemoImages::logo('#1d4ed8', '#facc15', $shape);
 
             $this->assertNotNull($logo);
             $this->assertStringStartsWith('opponents/', $logo['filename']);
@@ -37,5 +39,11 @@ class HelpDemoImagesTest extends TestCase
         } finally {
             File::deleteDirectory(dirname($root, 3));
         }
+    }
+
+    /** @return array<string, array{string}> */
+    public static function shapes(): array
+    {
+        return ['shield' => ['shield'], 'circle' => ['circle'], 'diamond' => ['diamond']];
     }
 }

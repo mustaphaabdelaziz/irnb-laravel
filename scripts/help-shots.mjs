@@ -29,16 +29,16 @@ const db = join(root, 'storage', 'help-demo.sqlite');
 const out = join(root, 'public', 'help-shots', locale);
 const only = process.argv.slice(2);
 
-// The run's own Laravel storage: uploads (generated logos), sessions, caches, views
-// and logs land here, never in storage/app. Emptied at the start of every run.
+// The run's own storage folder, emptied at the start of every run. Only the public disk
+// (generated logos), sessions and file-cache data move here: the seeding CLI gets
+// LARAVEL_STORAGE_PATH, but the served app (php -S, variables_order GPCS) does not see it in
+// $_SERVER/$_ENV, so the server reads HELP_DEMO_PUBLIC_ROOT / HELP_DEMO_STORAGE instead.
+// Compiled views, logs and the server's local (private) disk stay in real storage.
 const demoStorage = join(root, 'storage', 'help-demo-storage');
-rmSync(demoStorage, { recursive: true, force: true });
-for (const dir of ['app/public', 'app/private', 'framework/cache/data', 'framework/sessions', 'framework/views', 'logs']) {
-    mkdirSync(join(demoStorage, dir), { recursive: true });
-}
 const realPublic = join(root, 'storage', 'app', 'public');
 const listRealPublic = () => (existsSync(realPublic) ? readdirSync(realPublic, { recursive: true }).map(String).sort() : []);
 const realPublicBefore = listRealPublic();
+const realPublicChanged = () => JSON.stringify(listRealPublic()) !== JSON.stringify(realPublicBefore);
 
 // APP_CONFIG_CACHE points at a file that doesn't exist, so a cached config
 // can't override DB_DATABASE (see the db-swap gotchas).
@@ -71,9 +71,15 @@ if (existsSync(join(root, 'public', 'hot'))) {
 const portTaken = await fetch(`${base}/login`).then(() => true, () => false);
 if (portTaken) throw new Error(`Port ${port} is already in use — stop the old server first.`);
 
+rmSync(demoStorage, { recursive: true, force: true });
+for (const dir of ['app/public', 'app/private', 'framework/cache/data', 'framework/sessions', 'framework/views', 'logs']) {
+    mkdirSync(join(demoStorage, dir), { recursive: true });
+}
+
 rmSync(db, { force: true });
 writeFileSync(db, '');
 execFileSync('php', ['artisan', 'migrate:fresh', '--force', '--seed', '--seeder=HelpDemoSeeder'], { cwd: root, env, stdio: 'inherit' });
+if (realPublicChanged()) throw new Error('Real storage/app/public changed during the run');
 
 const server = spawn('php', ['artisan', 'serve', '--no-reload', '--host=127.0.0.1', `--port=${port}`], { cwd: root, env, stdio: 'ignore' });
 const stopServer = () => {
@@ -179,9 +185,9 @@ try {
     await browser?.close();
     stopServer();
     rmSync(db, { force: true });
-    if (JSON.stringify(listRealPublic()) !== JSON.stringify(realPublicBefore)) {
+    // Names only: this would also fire if the real dev app uploads during a run.
+    if (realPublicChanged()) {
         console.error('✗ Real storage/app/public changed during the run');
         process.exitCode = 1;
-        throw new Error('Real storage/app/public changed during the run');
     }
 }

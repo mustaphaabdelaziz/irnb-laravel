@@ -50,7 +50,7 @@ return [
         'file' => [
             'driver' => 'file',
             'path' => env('HELP_DEMO_STORAGE') ? env('HELP_DEMO_STORAGE').'/framework/cache/data' : storage_path('framework/cache/data'),
-            'lock_path' => storage_path('framework/cache/data'),
+            'lock_path' => env('HELP_DEMO_STORAGE') ? env('HELP_DEMO_STORAGE').'/framework/cache/data' : storage_path('framework/cache/data'),
         ],
 
         'memcached' => [

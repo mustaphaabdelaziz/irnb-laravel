@@ -178,5 +178,6 @@ class HelpDemoSeeder extends Seeder
         $this->call(HelpDemoUsersSeeder::class);
         $this->call(HelpDemoEquipmentSeeder::class);
         $this->call(HelpDemoBoardSeeder::class);
+        $this->call(HelpDemoCompetitionsSeeder::class);
     }
 }

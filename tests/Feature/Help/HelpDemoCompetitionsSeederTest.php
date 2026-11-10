@@ -1,0 +1,197 @@
+<?php
+
+namespace Tests\Feature\Help;
+
+use App\Enums\GameStatus;
+use App\Enums\SessionState;
+use App\Models\ActivityLog;
+use App\Models\Branch;
+use App\Models\Competition;
+use App\Models\Game;
+use App\Models\GameEvent;
+use App\Models\GameFormat;
+use App\Models\GamePlayer;
+use App\Models\Opponent;
+use App\Models\Player;
+use App\Models\Position;
+use App\Models\Suspension;
+use App\Models\Team;
+use App\Models\TrainingSession;
+use App\Models\User;
+use App\Models\Venue;
+use App\Support\Season;
+use Database\Seeders\HelpDemoCompetitionsSeeder as Demo;
+use Database\Seeders\HelpDemoSeeder;
+use Database\Seeders\HelpDemoUsersSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
+use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
+
+class HelpDemoCompetitionsSeederTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private function seedOn(string $day): void
+    {
+        $this->travelTo($day);
+        $this->seed(HelpDemoSeeder::class);
+    }
+
+    private function player(string $fullname): Player
+    {
+        return Player::where('archived', false)->get()
+            ->first(fn (Player $p) => $p->firstname.' '.$p->lastname === $fullname)
+            ?? $this->fail("No demo player {$fullname}");
+    }
+
+    private function game(string $round): Game
+    {
+        return Game::where('round_label', $round)->firstOrFail();
+    }
+
+    #[Test]
+    public function the_demo_competition_matches_the_articles(): void
+    {
+        $this->seedOn('2026-11-18 10:00:00');
+        $s = Season::current()->startYear;
+        $this->assertSame(2026, $s);
+        $football = Branch::where('name', 'Football')->firstOrFail();
+
+        // Setup: presets and positions belong to Football.
+        $this->assertSame(0, GameFormat::whereIn('sport', ['football', 'futsal'])->where('branch_id', '!=', $football->id)->count());
+        $this->assertSame(0, GameFormat::whereIn('sport', ['football', 'futsal'])->whereNull('branch_id')->count());
+        $this->assertSame(0, Position::whereNull('branch_id')->count());
+        $this->assertGreaterThan(0, Position::where('branch_id', $football->id)->count());
+
+        $this->assertEqualsCanonicalizing(
+            [Demo::OPP_UNION, Demo::OPP_STAR, Demo::OPP_HOPE, Demo::OPP_YOUTH],
+            Opponent::pluck('name')->all(),
+        );
+        $this->assertSame(0, Opponent::whereNotNull('logo_url')->count());
+        $this->assertNull(Opponent::where('name', Demo::OPP_YOUTH)->value('city'));
+        $this->assertSame('البليدة', Opponent::where('name', Demo::OPP_UNION)->value('city'));
+        $this->assertEqualsCanonicalizing([Demo::VENUE_HOME, Demo::VENUE_TOWN, Demo::VENUE_HALL], Venue::pluck('name')->all());
+        $this->assertSame([Demo::VENUE_HOME], Venue::where('is_home', true)->pluck('name')->all());
+        $this->assertSame(Demo::VENUE_HOME_ADDRESS, Venue::where('name', Demo::VENUE_HOME)->value('address'));
+
+        // Team U17: 7 on the season's roster with their shirts, samir head coach.
+        $u17 = Team::where('name', Demo::TEAM_U17)->firstOrFail();
+        $this->assertSame($football->id, $u17->branch_id);
+        $this->assertSame('أقل من 17 سنة', $u17->category->name);
+        $this->assertSame('Football 5', $u17->defaultFormat->name);
+        $shirts = $u17->rosterFor($s)->get()->mapWithKeys(fn (Player $p) => [$p->firstname.' '.$p->lastname => (int) $p->pivot->shirt_number])->all();
+        $this->assertEquals([
+            'عبد الرحمن بلعيد' => 1, 'رياض حمداني' => 4, 'أنس لعريبي' => 7, 'أمين قاسمي' => 10,
+            'ياسين بوزيد' => 8, 'زكرياء عمراني' => 11, 'أحمد بن علي' => 14,
+        ], $shirts);
+        $coaches = $u17->coachesFor($s)->get();
+        $this->assertCount(1, $coaches);
+        $this->assertSame(HelpDemoUsersSeeder::COACH, $coaches[0]->username);
+        $this->assertSame('head', $coaches[0]->pivot->role);
+
+        // Team U14: last season's roster only, so the copy button shows.
+        $u14 = Team::where('name', Demo::TEAM_U14)->firstOrFail();
+        $this->assertSame('Football 8', $u14->defaultFormat->name);
+        $this->assertSame(3, $u14->rosterFor($s - 1)->count());
+        $this->assertSame(0, $u14->rosterFor($s)->count());
+        $this->assertSame(0, $u14->coaches()->count());
+
+        // Competition: rules 1/3/1, squad of 7.
+        $competition = Competition::where('name', Demo::COMPETITION)->firstOrFail();
+        $this->assertSame($u17->id, $competition->team_id);
+        $this->assertSame($s, $competition->season_start_year);
+        $this->assertSame('league', $competition->type->value);
+        $this->assertSame('Football 5', $competition->format->name);
+        $this->assertSame([1, 3, 1], [$competition->red_ban_matches, $competition->yellow_threshold, $competition->yellow_ban_matches]);
+        $this->assertSame(7, $competition->players()->wherePivot('hidden', false)->count());
+
+        // Five matches, all in the competition and season S, on Fridays.
+        $this->assertSame(5, Game::count());
+        $this->assertSame(5, Game::where('competition_id', $competition->id)->where('season_start_year', $s)->count());
+        $m1 = $this->game(Demo::ROUND_1);
+        $m2 = $this->game(Demo::ROUND_2);
+        $m3 = $this->game(Demo::ROUND_3);
+        $m4 = $this->game(Demo::ROUND_4);
+        $m5 = Game::whereNull('round_label')->firstOrFail();
+        $this->assertSame(['2026-10-30', '2026-11-06', '2026-11-13', '2026-11-20', '2026-10-23'], [$m1->date, $m2->date, $m3->date, $m4->date, $m5->date]);
+        $this->assertSame(
+            [GameStatus::Played, GameStatus::Played, GameStatus::Played, GameStatus::Scheduled, GameStatus::Postponed],
+            [$m1->status, $m2->status, $m3->status, $m4->status, $m5->status],
+        );
+        $this->assertSame([3, 1], [$m1->our_score, $m1->their_score]);
+        $this->assertSame([1, 1], [$m2->our_score, $m2->their_score]);
+        $this->assertSame([2, 0], [$m3->our_score, $m3->their_score]);
+        $this->assertSame([[2, 1], [1, 0]], $m1->period_scores);
+        $this->assertSame([null, null], [$m4->our_score, $m4->their_score]);
+        $this->assertSame(['home', 'away', 'home', 'away', 'away'], [$m1->side->value, $m2->side->value, $m3->side->value, $m4->side->value, $m5->side->value]);
+        $this->assertSame(Demo::OPP_UNION, $m4->opponent->name);
+        $this->assertSame(Demo::VENUE_HALL, $m4->venue->name);
+        $this->assertSame(Demo::OPP_YOUTH, $m5->opponent->name);
+        $this->assertSame('15:00', $m1->kickoff_time);
+        $this->assertSame(Demo::MEETING_PLACE, $m4->meeting_place);
+        $this->assertSame(40, $m1->matchLength());
+        $this->assertSame(0, $m5->players()->count());
+
+        // M1: five events, one substitution (player_id comes on, related_player_id goes off).
+        $this->assertSame(5, $m1->events()->count());
+        $sub = $m1->events()->where('type', 'substitution')->sole();
+        $this->assertSame($this->player('رياض حمداني')->id, $sub->player_id);
+        $this->assertSame($this->player('زكرياء عمراني')->id, $sub->related_player_id);
+        $this->assertSame(1, $m1->events()->where('type', 'goal')->where('subtype', 'penalty')->count());
+
+        // Minutes worked out by GameMinutes.
+        $minutes = fn (Game $g) => $g->players()->with('player')->get()
+            ->mapWithKeys(fn (GamePlayer $gp) => [$gp->player->firstname => $gp->minutes_played])->all();
+        $m1Minutes = $minutes($m1);
+        $this->assertSame(40, $m1Minutes['أمين']);
+        $this->assertSame(30, $m1Minutes['زكرياء']);
+        $this->assertSame(10, $m1Minutes['رياض']);
+        $this->assertSame(0, $m1Minutes['أحمد']);
+        $this->assertSame(32, $minutes($m2)['عبد الرحمن']);
+        $this->assertTrue((bool) $m1->players()->where('player_id', $this->player('أمين قاسمي')->id)->value('is_mvp'));
+
+        // One automatic ban: عبد الرحمن, red card in M2, one match.
+        $ban = Suspension::sole();
+        $this->assertSame($this->player('عبد الرحمن بلعيد')->id, $ban->player_id);
+        $this->assertSame(['auto', 'red', 1, $m2->id], [$ban->source, $ban->cause, $ban->matches_count, $ban->game_id]);
+
+        // M3: the banned and the injured left out with a reason.
+        $this->assertEqualsCanonicalizing([Demo::REASON_BANNED, Demo::REASON_INJURED], $m3->players()->where('called_up', false)->pluck('not_called_reason')->all());
+        $this->assertTrue((bool) $m3->players()->where('player_id', $this->player('زكرياء عمراني')->id)->value('is_goalkeeper'));
+
+        // M4: call-up of six saved, no line-up.
+        $this->assertSame(6, $m4->players()->where('called_up', true)->count());
+        $this->assertSame([Demo::REASON_INJURED], $m4->players()->where('called_up', false)->pluck('not_called_reason')->all());
+        $this->assertSame(0, $m4->players()->where('role', '!=', 'none')->count());
+        $this->assertNull($m4->formation_id);
+
+        // Nothing else of the demo moves.
+        $this->assertSame(22, Player::where('archived', false)->count());
+        $this->assertSame(1, TrainingSession::where('state', SessionState::Cancelled->value)->count());
+        $this->assertSame(0, ActivityLog::whereIn('subject_type', [
+            Game::class, GamePlayer::class, GameEvent::class, Team::class, Competition::class, Opponent::class, Venue::class, Suspension::class,
+        ])->count());
+    }
+
+    #[Test]
+    public function a_seed_on_the_first_days_of_a_season_keeps_every_match_in_it(): void
+    {
+        $this->seedOn('2027-09-03 09:00:00');
+        $s = Season::current()->startYear;
+        $this->assertSame(2027, $s);
+
+        $this->assertSame(5, Game::where('season_start_year', $s)->count());
+        // F(-3) falls before the season start; the competition keeps the match in season S.
+        $this->assertSame('2027-08-13', $this->game(Demo::ROUND_1)->date);
+
+        $this->actingAs(User::where('username', HelpDemoSeeder::USERNAME)->firstOrFail())
+            ->get(route('games.stats'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Games/Stats')
+                ->where('season', $s)
+                ->where('rows', fn ($rows) => collect($rows)->firstWhere('name', $this->player('أمين قاسمي')->fullname)['appearances'] === 3
+                    && collect($rows)->firstWhere('name', $this->player('أمين قاسمي')->fullname)['goals'] === 3));
+    }
+}

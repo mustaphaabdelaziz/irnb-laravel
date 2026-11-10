@@ -59,7 +59,7 @@ class BoardTermController extends Controller
         $copied = DB::transaction(function () use ($source, $boardTerm) {
             // Locked, so two tabs cannot both copy into the same empty term.
             $locked = BoardTerm::whereKey($boardTerm->id)->lockForUpdate()->first();
-            if ($locked->members()->exists()) {
+            if (! $locked || $locked->members()->exists()) {
                 return false;
             }
 

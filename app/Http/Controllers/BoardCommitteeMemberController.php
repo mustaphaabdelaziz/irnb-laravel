@@ -8,6 +8,7 @@ use App\Models\BoardRole;
 use App\Models\Player;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -29,22 +30,25 @@ class BoardCommitteeMemberController extends Controller
             'position' => ['required', Rule::in(BoardCommittee::POSITIONS)],
         ]);
 
-        $member = BoardMember::firstOrCreate(
-            ['player_id' => $data['player_id'], 'board_term_id' => $data['board_term_id']],
-            [
-                'name' => Player::findOrFail($data['player_id'])->fullname,
-                'role' => BoardRole::where('level', 'member')->orderBy('sort_order')->value('name') ?? 'member',
-                'status' => 'active',
-            ],
-        );
+        // One unit: a refused seat leaves no new member and no reactivation behind.
+        DB::transaction(function () use ($data, $committee) {
+            $member = BoardMember::firstOrCreate(
+                ['player_id' => $data['player_id'], 'board_term_id' => $data['board_term_id']],
+                [
+                    'name' => Player::findOrFail($data['player_id'])->fullname,
+                    'role' => BoardRole::where('level', 'member')->orderBy('sort_order')->value('name') ?? 'member',
+                    'status' => 'active',
+                ],
+            );
 
-        // Picking a former member for a seat brings them back to the board.
-        if ($member->status === 'former') {
-            $member->update(['status' => 'active']);
-        }
+            $this->ensureSeatFree($committee, $member, $data['position']);
 
-        $this->ensureSeatFree($committee, $member, $data['position']);
-        $committee->members()->syncWithoutDetaching([$member->id => ['position' => $data['position']]]);
+            // Picking a former member for a seat brings them back to the board.
+            if ($member->status === 'former') {
+                $member->update(['status' => 'active']);
+            }
+            $committee->members()->syncWithoutDetaching([$member->id => ['position' => $data['position']]]);
+        });
 
         return back()->with('success', 'flash.committee_seat_saved');
     }

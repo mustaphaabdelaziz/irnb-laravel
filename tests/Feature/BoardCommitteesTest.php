@@ -256,6 +256,30 @@ class BoardCommitteesTest extends TestCase
     }
 
     #[Test]
+    public function a_refused_seat_neither_reactivates_a_former_member_nor_creates_a_member(): void
+    {
+        $committee = BoardCommittee::create(['name' => 'Finance']);
+        $holder = BoardMember::create([
+            'player_id' => $this->player('Ali')->id, 'board_term_id' => $this->term->id,
+            'name' => 'Ali', 'role' => 'member', 'status' => 'active',
+        ]);
+        $committee->members()->attach($holder->id, ['position' => 'head']);
+        $formerPlayer = $this->player('Omar');
+        $former = BoardMember::create([
+            'player_id' => $formerPlayer->id, 'board_term_id' => $this->term->id,
+            'name' => 'Omar', 'role' => 'member', 'status' => 'former',
+        ]);
+        $newcomer = $this->player('Sami');
+
+        $this->actingAs($this->admin());
+        $this->seat($committee, $formerPlayer, 'head')->assertSessionHasErrors('position');
+        $this->assertSame('former', $former->fresh()->status);
+
+        $this->seat($committee, $newcomer, 'head')->assertSessionHasErrors('position');
+        $this->assertDatabaseMissing('board_members', ['player_id' => $newcomer->id]);
+    }
+
+    #[Test]
     public function the_cleanup_migration_removes_seats_of_former_members_only(): void
     {
         $committee = BoardCommittee::create(['name' => 'Finance']);

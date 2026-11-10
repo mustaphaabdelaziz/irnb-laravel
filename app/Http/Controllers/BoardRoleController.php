@@ -15,7 +15,7 @@ class BoardRoleController extends Controller
     {
         return Inertia::render('Settings/BoardRoles', [
             'roles' => BoardRole::query()
-                ->withCount(['members as members_count' => fn ($q) => $q->inCurrentTerm()])
+                ->withCount(['members as members_count' => fn ($q) => $q->inCurrentTerm()->where('status', 'active')])
                 ->withExists('members as in_use')
                 ->orderBy('sort_order')->orderBy('name')
                 ->get(),

@@ -7,6 +7,7 @@ use App\Models\BoardMember;
 use App\Models\BoardTask;
 use App\Models\BoardTerm;
 use App\Models\MeetingAttendance;
+use App\Models\Player;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -97,6 +98,34 @@ class BoardCurrentTermTest extends TestCase
         BoardTask::create(['title' => 'مهمة', 'board_member_id' => $this->old->id, 'status' => 'not_started']);
 
         $this->assertSame(['قديم', 'أ', 'ب'], $this->names(route('board.tasks'), 'members'));
+    }
+
+    #[Test]
+    public function a_person_in_both_terms_appears_once_on_an_old_meeting_and_in_assignee_lists(): void
+    {
+        $player = Player::create(['membership_id' => 'P1', 'firstname' => 'Sami', 'lastname' => 'Zidane']);
+        $this->old->update(['player_id' => $player->id]);
+        $now = BoardMember::create([
+            'board_term_id' => BoardTerm::current()->id, 'player_id' => $player->id,
+            'name' => 'قديم', 'role' => 'member', 'status' => 'active', 'sort_order' => 4,
+        ]);
+        BoardMember::create([
+            'board_term_id' => BoardTerm::current()->id, 'player_id' => null,
+            'name' => 'قديم الصفحة', 'role' => 'member', 'status' => 'active', 'sort_order' => 5,
+        ]);
+
+        $url = route('board.meetings.show', $this->held);
+        $names = $this->names($url, 'members');
+        $this->assertSame(1, array_count_values($names)['قديم']);
+        $this->assertContains('قديم الصفحة', $names);
+        $this->actingAs($this->admin)->get($url)->assertInertia(fn ($page) => $page
+            ->where('members.0.id', $this->old->id)->where('members.0.attendance', 'present'));
+
+        // Same person assigned a task through the old-term row: listed once.
+        BoardTask::create(['title' => 'مهمة', 'board_member_id' => $this->old->id, 'board_meeting_id' => $this->held->id, 'status' => 'not_started']);
+        $this->assertSame(1, array_count_values($this->names($url, 'allMembers'))['قديم']);
+        $this->assertSame(1, array_count_values($this->names(route('board.tasks'), 'members'))['قديم']);
+        $this->assertNotNull($now);
     }
 
     #[Test]

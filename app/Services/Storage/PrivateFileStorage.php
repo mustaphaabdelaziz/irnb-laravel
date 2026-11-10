@@ -4,6 +4,7 @@ namespace App\Services\Storage;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -115,6 +116,12 @@ class PrivateFileStorage
     {
         $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
         $mime = self::INLINE_MIME_TYPES[$extension] ?? null;
+
+        // A name with no ASCII left (e.g. only emoji) makes Symfony's
+        // Content-Disposition builder throw: fall back to the stored name.
+        if (trim(str_replace(['%', '/'], '', Str::ascii($name))) === '') {
+            $name = basename($path);
+        }
 
         return $mime !== null
             ? $this->inline($path, $name, $mime)

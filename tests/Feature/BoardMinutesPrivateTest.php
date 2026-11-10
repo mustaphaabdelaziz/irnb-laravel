@@ -144,7 +144,7 @@ class BoardMinutesPrivateTest extends TestCase
         Storage::disk('local')->assertExists($meeting->fresh()->attachment_filename);
     }
 
-#[Test]
+    #[Test]
     public function the_minutes_keep_their_real_file_name(): void
     {
         $meeting = $this->meeting();
@@ -165,6 +165,18 @@ class BoardMinutesPrivateTest extends TestCase
 
         $this->actingAs($admin)->delete(route('board.meetings.attachment.delete', $meeting))->assertRedirect();
         $this->assertNull($meeting->fresh()->attachment_name);
+    }
+
+    #[Test]
+    public function minutes_with_an_emoji_only_name_still_open(): void
+    {
+        $meeting = $this->meeting();
+        $admin = $this->admin();
+        $this->actingAs($admin)->post(route('board.meetings.attachment', $meeting), [
+            'attachment' => UploadedFile::fake()->create('😀', 5, 'application/pdf'),
+        ])->assertSessionHasNoErrors();
+
+        $this->actingAs($admin)->get(route('board.meetings.attachment.show', $meeting))->assertOk();
     }
 
     #[Test]

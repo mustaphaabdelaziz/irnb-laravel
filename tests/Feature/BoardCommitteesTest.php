@@ -346,6 +346,11 @@ class BoardCommitteesTest extends TestCase
         $committee = BoardCommittee::create(['name' => 'Finance']);
         $legacy = BoardCommittee::create(['name' => 'Old only']);
         $committee->members()->attach($current->id, ['position' => 'head']);
+        $gone = BoardMember::create([
+            'player_id' => $this->player('Karim')->id, 'board_term_id' => $this->term->id,
+            'name' => 'Karim', 'role' => 'president', 'status' => 'former',
+        ]);
+        $committee->members()->attach($gone->id, ['position' => 'member']);
         $legacy->members()->attach($past->id, ['position' => 'head']);
 
         $this->actingAs($this->admin());

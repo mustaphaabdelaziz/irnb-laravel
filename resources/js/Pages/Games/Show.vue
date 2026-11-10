@@ -13,6 +13,7 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { computed, ref, watch } from 'vue';
 import { useCan } from '@/Composables/useCan.js';
+import { losingCallUpRows } from '@/lib/callUpLoss.js';
 
 const { t } = useI18n();
 const { can } = useCan();
@@ -30,11 +31,8 @@ const callForm = useForm({ players: [] });
 
 // Un-calling a player deletes what the report holds about them: ask first.
 const confirmCallUp = ref(false);
-// The flag is read from the fresh props: callRows is only rebuilt by the call-up save, not by a line-up or report save.
-const losingRows = computed(() => callRows.value.filter((r) => {
-    const c = props.candidates.find((c) => c.player_id === r.player_id);
-    return !r.called_up && c?.called_up && c.has_report_data;
-}));
+// Flags come from the fresh props (see callUpLoss.js), not from the rows.
+const losingRows = computed(() => losingCallUpRows(callRows.value, props.candidates));
 const losingNames = computed(() => losingRows.value.map((r) => r.name).join('، '));
 
 function saveCallUp() {

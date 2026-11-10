@@ -2036,17 +2036,10 @@ export default [
         before: async (page) => { await openMatchForm(page); await fillMatchWhen(page); },
     },
     {
-        // + meeting time and place.
+        // + meeting 17:00 / «مقر النادي»; the training box (ticked by default) and «إضافة». Not pressed.
         name: 'comp-schedule-match-meeting',
         url: '/games',
-        targets: ['game-meeting-time', 'game-meeting-place'],
-        before: async (page) => { await openMatchForm(page); await fillMatchWhen(page); await fillMatchMeeting(page); },
-    },
-    {
-        // The training box (ticked by default) and «إضافة». Not pressed.
-        name: 'comp-schedule-match-training',
-        url: '/games',
-        targets: ['game-cancel-training', 'game-add'],
+        targets: ['game-meeting-time', 'game-meeting-place', 'game-cancel-training', 'game-add'],
         before: async (page) => { await openMatchForm(page); await fillMatchWhen(page); await fillMatchMeeting(page); },
     },
     {

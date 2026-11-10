@@ -129,7 +129,7 @@ const statusClass = {
                         <option v-for="v in venues" :key="v.id" :value="v.id">{{ v.name }}</option>
                     </select>
                 </label>
-                <label class="text-sm">{{ t('comp.round_label') }} <TextInput v-model="form.round_label" data-help="game-round" class="mt-1 w-full" :placeholder="t('comp.round_label_hint')" /></label>
+                <label class="text-sm">{{ t('comp.round_label') }} <TextInput v-model="form.round_label" class="mt-1 w-full" :placeholder="t('comp.round_label_hint')" /></label>
                 <label class="text-sm">{{ t('comp.meeting_time') }} <TextInput v-model="form.meeting_time" data-help="game-meeting-time" type="time" class="mt-1 w-full" /></label>
                 <label class="text-sm sm:col-span-2">{{ t('comp.meeting_place') }} <TextInput v-model="form.meeting_place" data-help="game-meeting-place" class="mt-1 w-full" /></label>
                 <label data-help="game-cancel-training" class="flex items-end gap-2 pb-2 text-sm"><input v-model="form.cancel_training" type="checkbox" class="rounded" /> {{ t('comp.cancel_training') }}</label>

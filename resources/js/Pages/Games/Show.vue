@@ -184,7 +184,7 @@ function destroy() {
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                         <tr v-for="row in callRows" :key="row.player_id" :class="{ 'bg-primary-50/50 dark:bg-primary-900/10': row.called_up }">
-                            <td class="py-2 text-center"><input v-model="row.called_up" :data-help="`game-callup-check-${row.player_id}`" :disabled="!canManage" type="checkbox" class="rounded" /></td>
+                            <td class="py-2 text-center"><input v-model="row.called_up" :disabled="!canManage" type="checkbox" class="rounded" /></td>
                             <td class="py-2 font-mono text-slate-500 dark:text-slate-400">{{ row.shirt_number }}</td>
                             <td class="py-2">
                                 <span class="font-medium text-slate-900 dark:text-slate-100">{{ row.name }}</span>

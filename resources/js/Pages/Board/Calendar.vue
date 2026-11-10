@@ -154,7 +154,7 @@ function submit() {
                 </div>
                 <div class="grid gap-4 sm:grid-cols-2">
                     <label class="block text-sm sm:col-span-2"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('title') }}</span>
-                        <input v-model="form.title" required class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
+                        <input v-model="form.title" data-help="meet-cal-form-title" required class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
                     <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('meeting_type') }}</span>
                         <select v-model="form.type" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
                             <option value="ordinary">{{ t('ordinary') }}</option><option value="extraordinary">{{ t('extraordinary') }}</option><option value="general_assembly">{{ t('general_assembly') }}</option>
@@ -162,7 +162,7 @@ function submit() {
                     <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('date') }}</span>
                         <input v-model="form.meeting_date" data-help="meet-cal-form-date" type="datetime-local" required class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
                     <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('location') }}</span>
-                        <input v-model="form.location" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
+                        <input v-model="form.location" data-help="meet-cal-form-location" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
                 </div>
                 <div class="flex justify-end gap-2">
                     <button type="button" @click="showForm = false" class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-400">{{ t('cancel') }}</button>

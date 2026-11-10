@@ -29,7 +29,8 @@ const nextDay = (weekdays, from = new Date(), strict = false) => {
 const sessionMonth = ym(nextDay([1, 3]));
 const nextSaturday = ymd(nextDay([6], new Date(), true));
 // The schedule-meeting example: «اجتماع تحضير الموسم» next Tuesday (after today) at 18:00.
-const nextTuesday = nextDay([2], new Date(), true);
+// A Date, not a `ymd` string like nextSaturday: pass it through ymd()/ym().
+const nextTuesdayDate = nextDay([2], new Date(), true);
 const U17 = 'branch_id=2&category_id=7';
 // The month grid first opens on the month of 7 days ago. That is only a first guess:
 // the held U17 sessions are 1-5 days before the seed day, and the one holding أمين's
@@ -1470,7 +1471,11 @@ export default [
         targets: ['nav-reports-equipment', 'report-card-report-equipment-inventory', 'report-card-report-equipment-out', 'report-card-report-equipment-valuation', 'report-card-report-equipment-lifecycle', 'report-card-report-equipment-stocktake', 'report-card-link-equipment-stocktake'],
         before: async (page) => { await navIntoView(page, 'nav-reports-equipment'); },
     },
-    // --- Board --- (HelpDemoBoardSeeder). Terms: 1 current, 2 previous, 3 next and empty
+    // --- Board --- (HelpDemoBoardSeeder). The board articles quote term names and dates for
+    // Y = 2025 («العهدة 2025–2029», «العهدة 2029–2033», 01/03/2029…): the seeder gives Y = 2025
+    // for seed days from 1 Sep 2025 to 31 Aug 2027. A re-shoot outside that window shifts the
+    // years: update terms.md (and any other board article quoting them) to match.
+    // Terms: 1 current, 2 previous, 3 next and empty
     // (its «نسخ أعضاء العهدة السابقة» shows). Committee 3 is «لجنة الإعلام», all seats empty.
     // Player 10 is هشام بوعلام (HelpDemoSeeder). Nothing here saves: the organigram picker
     // saves on a click, so its names are never clicked; forms are filled, «حفظ» only ringed.
@@ -1732,28 +1737,26 @@ export default [
         },
     },
     {
-        // The calendar on next Tuesday's month, the mouse on its cell: the + shows only on hover.
+        // The calendar on next Tuesday's month. Every day's + is always visible: no hover.
         name: 'board-schedule-meeting-calendar',
-        url: `/board/calendar?month=${ym(nextTuesday)}`,
+        url: `/board/calendar?month=${ym(nextTuesdayDate)}`,
         targets: ['nav-board-calendar', 'meet-cal-day', 'meet-cal-add'],
         before: async (page) => {
             await tagTuesday(page);
             await navIntoView(page, 'nav-board-calendar');
             await centre(page, 'meet-cal-day');
-            await page.locator('[data-help="meet-cal-day"]').hover();
-            await page.waitForTimeout(300);
         },
     },
     {
         // Its + pressed: «إضافة اجتماع» with the date filled (18:00); title and place typed. Not created.
         name: 'board-schedule-meeting-calendar-form',
-        url: `/board/calendar?month=${ym(nextTuesday)}`,
-        targets: ['meet-cal-form', 'meet-cal-form-date', 'meet-cal-form-create'],
+        url: `/board/calendar?month=${ym(nextTuesdayDate)}`,
+        targets: ['meet-cal-form', 'meet-cal-form-title', 'meet-cal-form-date', 'meet-cal-form-location', 'meet-cal-form-create'],
         before: async (page) => {
             await tagTuesday(page);
             await page.locator('[data-help="meet-cal-add"]').click();
-            await page.locator('[data-help="meet-cal-form"] input').first().fill('اجتماع تحضير الموسم');
-            await page.locator('[data-help="meet-cal-form"] input').nth(2).fill('مقر النادي');
+            await page.fill('input[data-help="meet-cal-form-title"]', 'اجتماع تحضير الموسم');
+            await page.fill('input[data-help="meet-cal-form-location"]', 'مقر النادي');
             await blur(page);
         },
     },
@@ -1803,7 +1806,7 @@ export default [
         },
     },
     // Meeting 4, cancelled by the demo user: the banner, the locked fields, the struck title.
-    { name: 'board-cancel-delete-meeting-cancelled', url: '/board/meetings/4', targets: ['meet-cancelled-banner', 'meet-fields'] },
+    { name: 'board-cancel-delete-meeting-cancelled', url: '/board/meetings/4', targets: ['meet-cancelled-banner', 'meet-fields', 'meet-status', 'meet-attendance'] },
     {
         // «حذف الاجتماع» opened on meeting 3. Not confirmed.
         name: 'board-cancel-delete-meeting-delete',
@@ -2108,14 +2111,14 @@ async function fillSeasonMeeting(page) {
     await page.locator('[data-help="meet-add"]').click();
     await page.fill('input[data-help="meet-form-title"]', 'اجتماع تحضير الموسم');
     await page.selectOption('select[data-help="meet-form-type"]', 'ordinary');
-    await page.fill('input[data-help="meet-form-date"]', `${ymd(nextTuesday)}T18:00`);
+    await page.fill('input[data-help="meet-form-date"]', `${ymd(nextTuesdayDate)}T18:00`);
     await page.fill('input[data-help="meet-form-location"]', 'مقر النادي');
     await blur(page);
 }
 
 /** Board calendar: names next Tuesday's cell `meet-cal-day` and its + `meet-cal-add`. */
 async function tagTuesday(page) {
-    const key = ymd(nextTuesday);
+    const key = ymd(nextTuesdayDate);
     await tagIn(page, 'meet-cal-add', page.locator(`[data-help="meet-cal-add-${key}"]`));
     await tagIn(page, 'meet-cal-day', page.locator(`[data-help="meet-cal-day-${key}"]`));
 }

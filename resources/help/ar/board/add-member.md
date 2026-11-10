@@ -3,7 +3,7 @@ title: كيف أضيف عضوًا إلى المجلس
 summary: اختر لاعبًا من النادي، وأعطه دورًا في المكتب داخل عهدة.
 pages: [board.members]
 keywords: [عضو, عضو جديد, إضافة عضو, أعضاء المجلس, الهيكل التنظيمي, دور, خانة فارغة, رئيس, هاتف العضو, واتساب, أعضاء آخرون]
-related: [board/roles-committees, board/terms]
+related: [board/roles-committees, board/terms, board/committee-seats, board/former-remove-member]
 ---
 
 كل عضو في المجلس لاعب مسجّل في النادي. يأخذ البرنامج اسمه وهاتفه وصورته من ملف اللاعب. وإذا تغيّر الملف، تتغيّر معه.
@@ -17,7 +17,7 @@ related: [board/roles-committees, board/terms]
 ::figure board-add-member-page ring=nav-board-members
 :::
 
-:::step لمنصب فارغ، اضغط على خانته
+:::step منصب فارغ؟ اضغط على خانته
 الخانة الفارغة لها إطار متقطع وعلامة +. مثل «رئيس اللجنة» في «لجنة الإعلام». اضغط عليها، فتظهر قائمة اللاعبين. انتبه: الضغط على اسم يحفظه فورًا، بلا «حفظ». تحتاج إلى صلاحية «إضافة» في «المجلس». هشام في مثالنا بلا منصب ولا لجنة، فاتبع الخطوة التالية.
 ::figure board-add-member-empty ring=board-seat-3-head-1
 :::
@@ -29,12 +29,12 @@ related: [board/roles-committees, board/terms]
 
 :::step ابحث عن اللاعب واختره
 في «لاعب» اكتب: بوعلام. يظهر اللاعبون الذين يطابقون البحث، إلا المؤرشفين. اضغط على: بوعلام هشام بن جمال بن مصطفى. يمتلئ «لاعب» باسمه، ولا يُحفظ شيء بعد.
-::figure board-add-member-player ring=board-form-player-10
+::figure board-add-member-player ring=board-form-player,board-form-player-10
 :::
 
-:::step راجع «الدور» و«العهدة» و«الحالة»
-تفتح النافذة على «عضو»، والعهدة التي تعرضها الصفحة، و«نشط». هذا ما يريده المثال، فاتركها. لدور آخر، اختره من «الدور». و«سابق» في «الحالة» يضع العضو تحت «الأعضاء السابقون».
-::figure board-add-member-form ring=board-form-role,board-form-term,board-form-status
+:::step راجع «الدور» و«الحالة» و«العهدة»
+تفتح النافذة على «عضو»، و«نشط»، والعهدة التي تعرضها الصفحة. هذا ما يريده المثال، فاتركها. لدور آخر، اختره من «الدور». و«سابق» في «الحالة» يضع العضو تحت «الأعضاء السابقون».
+::figure board-add-member-form ring=board-form-role,board-form-status,board-form-term
 :::
 
 :::step اضغط «حفظ»

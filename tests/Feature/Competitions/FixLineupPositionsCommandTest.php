@@ -8,6 +8,7 @@ use App\Models\GamePlayer;
 use App\Models\Position;
 use Database\Seeders\PositionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\CompetitionFixtures;
 use Tests\TestCase;
@@ -90,6 +91,17 @@ class FixLineupPositionsCommandTest extends TestCase
         $this->assertNull($rows[3]->fresh()->position_id);
         $this->assertNull($rows[4]->fresh()->position_id);
         $this->assertNotNull($rows[0]->fresh()->position_id);
+    }
+
+    #[Test]
+    public function a_missing_formation_is_counted_apart_and_cached(): void
+    {
+        [$game] = $this->oldLineup();
+        DB::statement('PRAGMA defer_foreign_keys = ON');
+        DB::table('games')->where('id', $game->id)->update(['formation_id' => 99999]);
+
+        $this->artisan('competitions:fix-lineup-positions')
+            ->expectsOutputToContain('Filled 0 starter position(s). Left empty: 0 (the branch has no matching position), 5 (formation or slot no longer exists)')->assertSuccessful();
     }
 
     #[Test]

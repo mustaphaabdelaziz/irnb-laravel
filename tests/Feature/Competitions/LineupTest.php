@@ -289,6 +289,22 @@ class LineupTest extends TestCase
     }
 
     #[Test]
+    public function on_the_same_date_only_an_earlier_game_counts_for_the_default_formation(): void
+    {
+        [$game, $formation, , $team] = $this->football5Match();
+        $one = Formation::where('game_format_id', $formation->game_format_id)->where('name', '1-2-1')->firstOrFail();
+        $day = ['date' => '2026-10-20'];
+        $lower = $this->game($team, $day + ['formation_id' => $one->id]);
+        $viewed = $this->game($team, $day);
+        $higher = $this->game($team, $day + ['formation_id' => $formation->id]);
+        $this->assertTrue($lower->id < $viewed->id && $viewed->id < $higher->id);
+
+        // The higher-id match is later on the same day: only the lower-id one counts.
+        $this->actingAs($this->admin())->get(route('games.show', $viewed))->assertInertia(fn (Assert $page) => $page
+            ->where('lineup.default_formation_id', $one->id));
+    }
+
+    #[Test]
     public function with_no_history_the_line_up_opens_on_the_formats_first_formation(): void
     {
         [$game] = $this->football5Match();

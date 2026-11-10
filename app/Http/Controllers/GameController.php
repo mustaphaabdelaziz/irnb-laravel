@@ -151,11 +151,12 @@ class GameController extends Controller
                     'not_called_reason' => $rows->get($p->id)?->not_called_reason,
                     'injured' => isset($injured[$p->id]),
                     'flags' => $badges[$p->id] ?? null,
-                    // Everything GameCallUpController deletes or clears when this player is un-called.
+                    // What GameCallUpController deletes or clears when this player is un-called. Zero minutes is what
+                    // GameMinutes writes for an unused substitute, so it is not report data.
                     'has_report_data' => $inEvents->has($p->id) || ($rows->get($p->id)?->called_up && (
                         $rows->get($p->id)->rating !== null || $rows->get($p->id)->coach_note !== null || $rows->get($p->id)->slot !== null
                         || $rows->get($p->id)->is_mvp || $rows->get($p->id)->played
-                        || $rows->get($p->id)->minutes_played !== null || $rows->get($p->id)->sets_played !== null)),
+                        || $rows->get($p->id)->minutes_played > 0 || $rows->get($p->id)->sets_played > 0)),
                 ])->values();
             })(),
             'lineup' => $page->lineup($game, $injured),

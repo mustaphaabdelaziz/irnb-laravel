@@ -269,6 +269,19 @@ class CallUpTest extends TestCase
     }
 
     #[Test]
+    public function an_unused_substitute_with_computed_zero_minutes_has_no_report_data(): void
+    {
+        $team = $this->team();
+        $bench = $this->player($team->category);
+        $this->onRoster($team, 2026, [$bench]);
+        $game = $this->game($team, ['status' => GameStatus::Played, 'our_score' => 1, 'their_score' => 0]);
+        GamePlayer::create(['game_id' => $game->id, 'player_id' => $bench->id, 'called_up' => true, 'role' => 'bench', 'played' => false, 'minutes_played' => 0, 'sets_played' => 0]);
+
+        $this->actingAs($this->admin())->get(route('games.show', $game))->assertInertia(fn (Assert $page) => $page
+            ->where('candidates.0.has_report_data', false));
+    }
+
+    #[Test]
     public function a_candidate_carries_whether_un_calling_them_would_lose_report_data(): void
     {
         $team = $this->team();

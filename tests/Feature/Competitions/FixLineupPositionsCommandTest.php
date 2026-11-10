@@ -9,6 +9,7 @@ use App\Models\Position;
 use Database\Seeders\PositionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\CompetitionFixtures;
 use Tests\TestCase;
@@ -97,8 +98,15 @@ class FixLineupPositionsCommandTest extends TestCase
     public function a_missing_formation_is_counted_apart_and_cached(): void
     {
         [$game] = $this->oldLineup();
-        DB::statement('PRAGMA defer_foreign_keys = ON');
-        DB::table('games')->where('id', $game->id)->update(['formation_id' => 99999]);
+        // A formation id that no longer exists. SQLite ignores foreign_keys = OFF inside the test
+        // transaction, so it defers the check instead; other drivers switch the checks off.
+        $orphan = fn () => DB::table('games')->where('id', $game->id)->update(['formation_id' => 99999]);
+        if (DB::getDriverName() === 'sqlite') {
+            DB::statement('PRAGMA defer_foreign_keys = ON');
+            $orphan();
+        } else {
+            Schema::withoutForeignKeyConstraints($orphan);
+        }
 
         $this->artisan('competitions:fix-lineup-positions')
             ->expectsOutputToContain('Filled 0 starter position(s). Left empty: 0 (the branch has no matching position), 5 (formation or slot no longer exists)')->assertSuccessful();

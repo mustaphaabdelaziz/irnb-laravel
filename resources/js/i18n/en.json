@@ -671,6 +671,7 @@
     "board.level.bureau": "Bureau",
     "board.level.member": "Member",
     "board.level.top": "Top (president)",
+    "board.meeting_status.cancelled": "Cancelled",
     "board.no_committees": "No committees yet. Add them in",
     "board.on_board": "On the board",
     "board.org_hint": "Click a box to set who holds it.",

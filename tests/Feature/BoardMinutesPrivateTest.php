@@ -144,6 +144,39 @@ class BoardMinutesPrivateTest extends TestCase
         Storage::disk('local')->assertExists($meeting->fresh()->attachment_filename);
     }
 
+#[Test]
+    public function the_minutes_keep_their_real_file_name(): void
+    {
+        $meeting = $this->meeting();
+        $admin = $this->admin();
+        $this->actingAs($admin)->post(route('board.meetings.attachment', $meeting), [
+            'attachment' => UploadedFile::fake()->create('محضر أكتوبر.pdf', 10, 'application/pdf'),
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame('محضر أكتوبر.pdf', $meeting->fresh()->attachment_name);
+
+        $response = $this->actingAs($admin)->get(route('board.meetings.attachment.show', $meeting));
+        $response->assertOk();
+        $disposition = (string) $response->headers->get('Content-Disposition');
+        $this->assertTrue(
+            str_contains($disposition, rawurlencode('محضر أكتوبر.pdf')) || str_contains($disposition, 'محضر أكتوبر.pdf'),
+            $disposition
+        );
+
+        $this->actingAs($admin)->delete(route('board.meetings.attachment.delete', $meeting))->assertRedirect();
+        $this->assertNull($meeting->fresh()->attachment_name);
+    }
+
+    #[Test]
+    public function replacing_the_minutes_replaces_the_name(): void
+    {
+        $meeting = $this->meeting();
+        $this->upload($meeting, 'first.pdf');
+        $this->upload($meeting, 'second.pdf');
+
+        $this->assertSame('second.pdf', $meeting->fresh()->attachment_name);
+    }
+
     #[Test]
     public function the_migration_moves_existing_minutes_off_the_public_disk(): void
     {

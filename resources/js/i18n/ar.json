@@ -671,6 +671,7 @@
     "board.level.bureau": "المكتب",
     "board.level.member": "عضو",
     "board.level.top": "القمة (الرئيس)",
+    "board.meeting_status.cancelled": "ملغى",
     "board.no_committees": "لا توجد لجان بعد. أضفها من",
     "board.on_board": "في المكتب",
     "board.org_hint": "انقر على خانة لتعيين من يشغلها.",

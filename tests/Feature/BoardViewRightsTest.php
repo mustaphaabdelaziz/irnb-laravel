@@ -26,6 +26,14 @@ class BoardViewRightsTest extends TestCase
     }
 
     #[Test]
+    public function meeting_and_task_routes_resolve_to_their_own_right(): void
+    {
+        $this->assertSame(['board', 'edit'], PermissionMap::resolve('board.meetings.update'));
+        $this->assertSame(['board', 'delete'], PermissionMap::resolve('board.meetings.attachment.delete'));
+        $this->assertSame(['board', 'add'], PermissionMap::resolve('board.tasks.store'));
+    }
+
+    #[Test]
     public function a_view_only_user_opens_both_pages_but_cannot_change_a_term(): void
     {
         $user = $this->viewOnlyBoardUser();

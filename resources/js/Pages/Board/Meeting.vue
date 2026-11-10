@@ -19,6 +19,7 @@ const { can } = useCan();
 
 // A cancelled meeting is kept as history and can no longer be changed.
 const isCancelled = computed(() => props.meeting.status === 'cancelled');
+const editLocked = computed(() => isCancelled.value || !can('board', 'edit'));
 const canCancel = computed(() => props.meeting.status === 'scheduled' && can('board', 'edit'));
 
 // Delete = erase the meeting (any status); tasks stay, unlinked.
@@ -49,8 +50,8 @@ const form = useForm({
     type: props.meeting.type,
     meeting_date: toLocalInput(props.meeting.meeting_date),
     location: props.meeting.location || '',
-    // 'cancelled' is not offered: cancelling goes through the Cancel action.
-    status: props.meeting.status === 'cancelled' ? 'scheduled' : props.meeting.status,
+    // 'cancelled' is shown (disabled option) but never sent: the form is locked and the server refuses.
+    status: props.meeting.status,
     agenda: props.meeting.agenda?.length ? [...props.meeting.agenda] : [''],
     minutes: props.meeting.minutes || '',
     decisions: props.meeting.decisions?.length ? [...props.meeting.decisions] : [''],
@@ -92,10 +93,14 @@ const attachmentName = computed(() => (props.meeting.attachment_filename || '').
 
 // Attendance
 const attendance = reactive({});
-props.members.forEach((m) => { attendance[m.id] = m.attendance || 'present'; });
-const presentCount = computed(() => Object.values(attendance).filter((s) => s === 'present').length);
+// A member with nothing saved starts unmarked: no button is lit.
+props.members.forEach((m) => { attendance[m.id] = m.attendance || null; });
+const markedCount = computed(() => Object.values(attendance).filter(Boolean).length);
+// Present marks on screen, plus removed members' saved present rows.
+const presentCount = computed(() => Object.values(attendance).filter((s) => s === 'present').length
+    + props.removedAttendances.filter((a) => a.status === 'present').length);
 function saveAttendance() {
-    const rows = Object.entries(attendance).map(([id, status]) => ({ board_member_id: Number(id), status }));
+    const rows = Object.entries(attendance).filter(([, status]) => status).map(([id, status]) => ({ board_member_id: Number(id), status }));
     router.put(route('board.meetings.attendance', props.meeting.id), { attendances: rows }, { preserveScroll: true });
 }
 
@@ -135,7 +140,7 @@ const attStyle = {
 
         <!-- Cancelled: the record stays, with who/when/why, and is read-only. -->
         <div v-if="isCancelled" data-help="meet-cancelled-banner" class="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-700 dark:bg-slate-800/60">
-            <p class="flex items-center gap-2 font-bold text-slate-700 dark:text-slate-200"><Icon name="xcircle" /> {{ t('cancelled') }}</p>
+            <p class="flex items-center gap-2 font-bold text-slate-700 dark:text-slate-200"><Icon name="xcircle" /> {{ t('board.meeting_status.cancelled') }}</p>
             <p v-if="meeting.cancelled_at" class="mt-1 text-slate-500 dark:text-slate-400">
                 {{ t('meeting_cancelled_banner', { date: fmtDateTime(meeting.cancelled_at), name: meeting.cancelled_by?.name || '—' }) }}
             </p>
@@ -144,10 +149,11 @@ const attStyle = {
         </div>
 
         <div class="grid gap-6 lg:grid-cols-3">
-            <!-- Left: details + minutes. A disabled fieldset locks every control at once. -->
-            <fieldset :disabled="isCancelled || !can('board', 'edit')" class="min-w-0 space-y-6 lg:col-span-2">
+            <!-- Left: details + minutes. Edit-only parts sit in a disabled fieldset that locks every control at once; tasks and file removal follow their own rights (add / delete). -->
+            <div class="min-w-0 space-y-6 lg:col-span-2">
                 <!-- Core fields -->
-                <section class="card space-y-4 p-5" data-help="meet-fields">
+                <section class="card p-5" data-help="meet-fields">
+                    <fieldset :disabled="editLocked" class="min-w-0 space-y-4">
                     <div class="grid gap-4 sm:grid-cols-2">
                         <label class="block text-sm sm:col-span-2"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('title') }}</span>
                             <input v-model="form.title" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
@@ -157,6 +163,7 @@ const attStyle = {
                             </select></label>
                         <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('status') }}</span>
                             <select v-model="form.status" data-help="meet-status" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800">
+                                <option v-if="isCancelled" value="cancelled" disabled>{{ t('board.meeting_status.cancelled') }}</option>
                                 <option value="scheduled">{{ t('scheduled') }}</option><option value="held">{{ t('held') }}</option>
                             </select>
                             <span v-if="form.errors.status" class="mt-1 block text-xs text-rose-500 dark:text-rose-400">{{ form.errors.status }}</span></label>
@@ -176,30 +183,32 @@ const attStyle = {
                         </div>
                         <button type="button" @click="form.agenda.push('')" class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary-600 dark:text-primary-300"><Icon name="plus" /> {{ t('add_item') }}</button>
                     </div>
+                    </fieldset>
                 </section>
 
                 <!-- Minutes + decisions -->
                 <section class="card space-y-4 p-5">
-                    <div>
+                    <fieldset :disabled="editLocked" class="min-w-0">
                         <span class="mb-1 block text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('minutes') }}</span>
                         <textarea v-model="form.minutes" data-help="meet-minutes" rows="6" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800"></textarea>
-                    </div>
+                    </fieldset>
 
                     <!-- Minutes file (PDF / Word / photo) -->
                     <div data-help="meet-file">
                         <span class="mb-1 block text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('minutes_file') }}</span>
                         <div v-if="meeting.attachment_url" class="mb-2 flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/50">
                             <Icon name="document" class="text-primary-500 dark:text-primary-300" />
-                            <a :href="meeting.attachment_url" target="_blank" class="min-w-0 flex-1 truncate text-sm font-medium text-primary-600 hover:underline dark:text-primary-300">{{ attachmentName || t('view_file') }}</a>
+                            <a :href="meeting.attachment_url" target="_blank" class="min-w-0 flex-1 truncate text-sm font-medium text-primary-600 hover:underline dark:text-primary-300">{{ meeting.attachment_name || attachmentName || t('view_file') }}</a>
                             <IconButton v-if="!isCancelled && can('board', 'delete')" icon="trash" :label="t('remove')" variant="danger" plain size="sm" @click="confirmRemoveAttachment = true" />
                         </div>
-                        <div v-if="!isCancelled && can('board', 'edit')" class="flex flex-wrap items-center gap-2">
+                        <div v-if="!editLocked" class="flex flex-wrap items-center gap-2">
                             <input type="file" data-help="meet-file-input" accept=".pdf,.doc,.docx,image/*" @change="fileForm.attachment = $event.target.files[0]"
                                 class="block w-full max-w-xs text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-primary-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-700 hover:file:bg-primary-100 dark:text-slate-400 dark:file:bg-primary-500/10 dark:file:text-primary-300 dark:hover:file:bg-primary-500/15" />
                             <IconButton data-help="meet-file-upload" icon="upload" :label="t('upload')" :disabled="!fileForm.attachment || fileForm.processing" @click="uploadAttachment" />
                         </div>
                         <p v-if="fileForm.errors.attachment" class="mt-1 text-xs text-rose-500 dark:text-rose-400">{{ fileForm.errors.attachment }}</p>
                     </div>
+                    <fieldset :disabled="editLocked" class="min-w-0 space-y-4">
                     <div>
                         <span class="mb-1 block text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('decisions') }}</span>
                         <div class="space-y-2" data-help="meet-decisions">
@@ -211,9 +220,10 @@ const attStyle = {
                         </div>
                         <button type="button" data-help="meet-decisions-add" @click="form.decisions.push('')" class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary-600 dark:text-primary-300"><Icon name="plus" /> {{ t('add_item') }}</button>
                     </div>
-                    <div v-if="!isCancelled && can('board', 'edit')" class="flex justify-end">
+                    <div v-if="!editLocked" class="flex justify-end">
                         <button data-help="meet-save-minutes" @click="saveMeeting" :disabled="form.processing" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('save_minutes') }}</button>
                     </div>
+                    </fieldset>
                 </section>
 
                 <!-- Tasks from this meeting -->
@@ -239,10 +249,10 @@ const attStyle = {
                         <IconButton type="submit" data-help="meet-task-add" icon="plus" :label="t('add_task')" variant="primary" />
                     </form>
                 </section>
-            </fieldset>
+            </div>
 
             <!-- Right: attendance -->
-            <fieldset :disabled="isCancelled || !can('board', 'edit')" class="min-w-0 space-y-6">
+            <fieldset :disabled="editLocked" class="min-w-0 space-y-6">
                 <section class="card p-5" data-help="meet-attendance">
                     <div class="mb-3 flex items-center justify-between">
                         <p class="text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('attendance') }}</p>
@@ -267,8 +277,8 @@ const attStyle = {
                             </li>
                         </ul>
                     </div>
-                    <p v-if="!members.length" class="py-4 text-center text-xs text-slate-400">{{ t('no_data') }}</p>
-                    <button v-if="members.length && !isCancelled && can('board', 'edit')" data-help="meet-att-save" @click="saveAttendance" class="mt-3 w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900">{{ t('save_attendance') }}</button>
+                    <p v-if="!members.length && !removedAttendances.length" class="py-4 text-center text-xs text-slate-400">{{ t('no_data') }}</p>
+                    <button v-if="members.length && !isCancelled && can('board', 'edit')" data-help="meet-att-save" @click="saveAttendance" :disabled="!markedCount" class="mt-3 w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-50 dark:bg-slate-100 dark:text-slate-900">{{ t('save_attendance') }}</button>
                 </section>
             </fieldset>
         </div>

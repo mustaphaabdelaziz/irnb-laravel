@@ -91,6 +91,7 @@ class BoardMeetingController extends Controller
         $meeting->update([
             'attachment_url' => null,
             'attachment_filename' => $stored['path'],
+            'attachment_name' => mb_substr($request->file('attachment')->getClientOriginalName(), 0, 255),
         ]);
 
         return back()->with('success', 'flash.minutes_file_uploaded');
@@ -102,7 +103,7 @@ class BoardMeetingController extends Controller
 
         abort_unless($path && $storage->exists($path), 404);
 
-        return $storage->serve($path, basename($path));
+        return $storage->serve($path, $meeting->attachment_name ?: basename($path));
     }
 
     public function deleteAttachment(BoardMeeting $meeting, PrivateFileStorage $storage, FileStorageService $legacy): RedirectResponse
@@ -112,7 +113,7 @@ class BoardMeetingController extends Controller
         }
 
         $this->forgetStoredAttachment($meeting, $storage, $legacy);
-        $meeting->update(['attachment_url' => null, 'attachment_filename' => null]);
+        $meeting->update(['attachment_url' => null, 'attachment_filename' => null, 'attachment_name' => null]);
 
         return back()->with('success', 'flash.minutes_file_removed');
     }

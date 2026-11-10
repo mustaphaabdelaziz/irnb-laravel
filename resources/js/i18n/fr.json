@@ -671,6 +671,7 @@
     "board.level.bureau": "Bureau",
     "board.level.member": "Membre",
     "board.level.top": "Sommet (président)",
+    "board.meeting_status.cancelled": "Annulée",
     "board.no_committees": "Aucune commission. Ajoutez-les dans",
     "board.on_board": "Au bureau",
     "board.org_hint": "Cliquez sur une case pour désigner son titulaire.",

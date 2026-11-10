@@ -42,7 +42,8 @@ class BoardMemberController extends Controller
     {
         // Photos uploaded before members came from players.
         $files->delete($boardMember->photo_filename);
-        // Their attendance stays in the minutes, under the name they had then.
+        // Their attendance stays in the minutes: name and role are copied at removal
+        // (overwriting the snapshot taken when attendance was saved).
         $boardMember->loadMissing(['player' => fn ($q) => $q->select(BoardMember::PLAYER_COLUMNS)]);
         MeetingAttendance::where('board_member_id', $boardMember->id)
             ->update(['member_name' => $boardMember->name, 'member_role' => $boardMember->role]);

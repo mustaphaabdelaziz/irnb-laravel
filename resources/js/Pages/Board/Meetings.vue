@@ -53,6 +53,8 @@ watch(statusFilter, (status) => {
     });
 });
 const filterOptions = ['', 'scheduled', 'held', 'cancelled'];
+// A meeting is masculine in Arabic: its cancelled state has its own wording.
+const statusLabel = (s) => (s === 'cancelled' ? t('board.meeting_status.cancelled') : t(s));
 </script>
 
 <template>
@@ -71,7 +73,7 @@ const filterOptions = ['', 'scheduled', 'held', 'cancelled'];
                     <button v-for="s in filterOptions" :key="s || 'all'" type="button" @click="statusFilter = s"
                         class="rounded-full px-3 py-1 text-xs font-bold transition-colors"
                         :class="statusFilter === s ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' : 'bg-white text-slate-500 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-400 dark:ring-slate-800 dark:hover:bg-slate-800'">
-                        {{ s ? t(s) : t('all') }}
+                        {{ s ? statusLabel(s) : t('all') }}
                     </button>
                 </div>
                 <IconButton v-if="can('board', 'add')" data-help="meet-add" icon="plus" :label="t('add_meeting')" variant="primary" @click="showForm = !showForm" />
@@ -120,7 +122,7 @@ const filterOptions = ['', 'scheduled', 'held', 'cancelled'];
                     <div class="flex shrink-0 items-center gap-3 text-xs">
                         <span v-if="mt.present_count" class="hidden items-center gap-1 text-slate-400 sm:inline-flex"><Icon name="board" /> {{ mt.present_count }}</span>
                         <span v-if="mt.tasks_count" class="hidden items-center gap-1 text-slate-400 sm:inline-flex"><Icon name="task" /> {{ mt.tasks_count }}</span>
-                        <span class="inline-flex rounded-full px-2.5 py-0.5 font-bold" :class="statusChip[mt.status]">{{ t(mt.status) }}</span>
+                        <span class="inline-flex rounded-full px-2.5 py-0.5 font-bold" :class="statusChip[mt.status]">{{ statusLabel(mt.status) }}</span>
                         <IconButton v-if="can('board', 'delete')" :data-help="`meet-row-delete-${mt.id}`" icon="trash" :label="t('delete_meeting')" variant="danger" plain size="sm" icon-only @click.prevent.stop="deleteTarget = mt" />
                     </div>
                 </Link>

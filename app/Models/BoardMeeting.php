@@ -16,7 +16,7 @@ class BoardMeeting extends Model
     protected $fillable = [
         'title', 'type', 'meeting_date', 'location', 'agenda', 'status',
         'quorum_required', 'minutes', 'decisions', 'attachment_url',
-        'attachment_filename', 'created_by_user_id',
+        'attachment_filename', 'attachment_name', 'created_by_user_id',
         'cancelled_at', 'cancelled_by_user_id', 'cancel_reason',
     ];
 

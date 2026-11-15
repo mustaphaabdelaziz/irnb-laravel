@@ -4,6 +4,7 @@ namespace Tests\Feature\Competitions;
 
 use App\Enums\GameStatus;
 use App\Models\GamePlayer;
+use App\Support\Export\CsvWriter;
 use App\Support\PermissionMap;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -63,8 +64,10 @@ class ClubStatsTest extends TestCase
     {
         $this->seedStats();
         $body = $this->actingAs($this->admin())->get(route('games.stats.export', ['season' => 2026, 'format' => 'csv']))->streamedContent();
-        $this->assertStringContainsString('التمريرات الحاسمة', $body);
-        $this->assertStringNotContainsString(',التمريرات,', $body);
+        $lines = array_map('str_getcsv', preg_split('/\r?\n/', trim(str_replace(CsvWriter::BOM, '', $body))));
+        $header = collect($lines)->first(fn ($cells) => count($cells) > 1);
+        $this->assertContains('التمريرات الحاسمة', $header);
+        $this->assertNotContains('التمريرات', $header);
         $this->assertSame(['players', 'view'], PermissionMap::resolve('players.show'), 'the name links in the stats tables follow this right');
         $this->actingAs($this->admin())->get(route('games.stats', ['season' => 2026]))
             ->assertInertia(fn (Assert $page) => $page->where('rows.0.player_id', fn ($id) => is_int($id))->has('leaders.appearances.0.player_id'));

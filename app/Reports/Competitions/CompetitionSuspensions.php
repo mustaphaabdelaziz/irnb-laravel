@@ -74,7 +74,7 @@ class CompetitionSuspensions extends Report
 
     public function sortable(): array
     {
-        return ['player' => 'player', 'remaining' => 'remaining', 'active' => 'active_flag'];
+        return ['player' => 'player', 'remaining' => 'remaining', 'active' => 'sort_rank'];
     }
 
     public function defaultSort(): array
@@ -123,6 +123,7 @@ class CompetitionSuspensions extends Report
                 'active' => $e['upcoming'] ? UiLang::get('comp.ban.upcoming') : UiLang::get($e['active'] ? 'reports.yes' : 'reports.no'),
                 'active_flag' => $e['active'],
                 'in_force' => $e['active'] && ! $e['upcoming'],
+                'sort_rank' => $e['upcoming'] ? 1 : ($e['active'] ? 2 : 0),
             ];
         })
             ->when($filters->filled('active'), fn (Collection $rows) => $rows->where('in_force', true))

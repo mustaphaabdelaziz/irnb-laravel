@@ -211,14 +211,17 @@ class SuspensionStatusTest extends TestCase
         Suspension::create($base + ['kind' => 'matches', 'matches_count' => 1, 'starts_on' => now()->addDays(5)->toDateString()]);
         Suspension::create($base + ['kind' => 'dates', 'starts_on' => now()->addDays(5)->toDateString(), 'ends_on' => now()->addDays(9)->toDateString()]);
         Suspension::create($base + ['kind' => 'matches', 'matches_count' => 1, 'starts_on' => now()->subDay()->toDateString()]);
+        Suspension::create($base + ['kind' => 'dates', 'starts_on' => now()->subDays(20)->toDateString(), 'ends_on' => now()->subDays(10)->toDateString()]);
 
         $report = app(CompetitionSuspensions::class);
         $all = ReportFilters::fromRequest(Request::create('/', 'GET'), $report);
         $active = ReportFilters::fromRequest(Request::create('/', 'GET', ['active' => 1]), $report);
 
-        $this->assertSame(3, $report->summary($all)[0]['value']);
+        $this->assertSame(4, $report->summary($all)[0]['value']);
         $this->assertSame(1, $report->summary($all)[1]['value'], 'the active KPI skips both not-started bans');
         $this->assertSame(1, $report->rows($active)->count(), 'the active filter skips both not-started bans');
+        $this->assertSame('sort_rank', $report->sortable()['active']);
+        $this->assertSame([0, 1, 1, 2], $report->rows($all)->pluck('sort_rank')->sort()->values()->all(), 'in force 2, not started 1, served 0: both kinds of not-started ban sort together');
     }
 
     #[Test]

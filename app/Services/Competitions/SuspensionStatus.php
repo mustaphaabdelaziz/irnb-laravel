@@ -53,7 +53,7 @@ final class SuspensionStatus
             }
             $count = (int) $s->matches_count;
             $done = min($served[$s->id] ?? 0, $count);
-            $out[$s->id] = ['served' => $done, 'remaining' => $count - $done, 'active' => $done < $count, 'upcoming' => $done < $count && $s->source === 'manual' && $s->starts_on !== null && $s->starts_on > $atDate, 'until' => null];
+            $out[$s->id] = ['served' => $done, 'remaining' => $count - $done, 'active' => $done < $count, 'upcoming' => $done < $count && ! $this->started($s, (string) $atDate), 'until' => null];
         }
 
         return $out;
@@ -63,9 +63,9 @@ final class SuspensionStatus
      * Whether a ban is already in force today (the player page): an automatic
      * ban from its match on, a manual one from its start date on.
      */
-    public function started(Suspension $s): bool
+    public function started(Suspension $s, ?string $on = null): bool
     {
-        return $s->source !== 'manual' || $s->starts_on === null || $s->starts_on <= now()->toDateString();
+        return $s->source !== 'manual' || $s->starts_on === null || $s->starts_on <= ($on ?? now()->toDateString());
     }
 
     /**

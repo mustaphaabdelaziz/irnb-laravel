@@ -1,8 +1,11 @@
 <script setup>
 import { useI18n } from 'vue-i18n';
+import { Link } from '@inertiajs/vue3';
+import { useCan } from '@/Composables/useCan';
 
 // Leaderboards (top 5 per metric). Ratings are shown in the app only, never exported.
 const { t } = useI18n();
+const { can } = useCan();
 defineProps({ leaders: Object, showRating: { type: Boolean, default: true } });
 const boards = [
     { key: 'goals', value: (r) => r.goals },
@@ -21,7 +24,7 @@ const boards = [
             <h4 class="mb-2 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t(`comp.stats.${b.key}`) }}</h4>
             <ol class="space-y-1 text-sm">
                 <li v-for="(r, i) in (leaders[b.key] ?? [])" :key="`${r.player_id}-${r.sport}`" class="flex justify-between gap-2">
-                    <span class="truncate"><span class="text-slate-400">{{ i + 1 }}.</span> {{ r.name }}</span>
+                    <span class="truncate"><span class="text-slate-400">{{ i + 1 }}.</span> <Link v-if="can('players', 'view')" :href="route('players.show', r.player_id)" class="hover:underline">{{ r.name }}</Link><template v-else>{{ r.name }}</template></span>
                     <bdi dir="ltr" class="font-mono">{{ b.value(r) }}</bdi>
                 </li>
                 <li v-if="!(leaders[b.key] ?? []).length" class="text-slate-400">—</li>

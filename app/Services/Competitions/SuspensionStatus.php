@@ -53,7 +53,7 @@ final class SuspensionStatus
             }
             $count = (int) $s->matches_count;
             $done = min($served[$s->id] ?? 0, $count);
-            $out[$s->id] = ['served' => $done, 'remaining' => $count - $done, 'active' => $done < $count, 'upcoming' => $done < $count && ! $this->started($s), 'until' => null];
+            $out[$s->id] = ['served' => $done, 'remaining' => $count - $done, 'active' => $done < $count, 'upcoming' => $done < $count && $s->source === 'manual' && $s->starts_on !== null && $s->starts_on > $atDate, 'until' => null];
         }
 
         return $out;

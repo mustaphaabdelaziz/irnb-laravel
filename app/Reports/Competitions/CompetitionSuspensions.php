@@ -93,7 +93,7 @@ class CompetitionSuspensions extends Report
 
         return [
             ['label' => 'reports.kpi.suspensions', 'value' => $rows->count(), 'format' => 'number'],
-            ['label' => 'comp.ban.active', 'value' => $rows->where('active_flag', true)->count(), 'format' => 'number'],
+            ['label' => 'comp.ban.active', 'value' => $rows->where('in_force', true)->count(), 'format' => 'number'],
         ];
     }
 
@@ -122,9 +122,10 @@ class CompetitionSuspensions extends Report
                 'until' => $e['until'] ? substr((string) $e['until'], 0, 10) : null,
                 'active' => $e['upcoming'] ? UiLang::get('comp.ban.upcoming') : UiLang::get($e['active'] ? 'reports.yes' : 'reports.no'),
                 'active_flag' => $e['active'],
+                'in_force' => $e['active'] && ! $e['upcoming'],
             ];
         })
-            ->when($filters->filled('active'), fn (Collection $rows) => $rows->where('active_flag', true))
+            ->when($filters->filled('active'), fn (Collection $rows) => $rows->where('in_force', true))
             ->values();
     }
 }

@@ -4,7 +4,7 @@ summary: سجّل الأندية التي تلعب ضدها وملاعب الم�
 module: opponents
 pages: [opponents.index, venues.index]
 keywords: [منافس, المنافسون, نادي منافس, شعار المنافس, ملعب, ملاعب, قاعة, الملاعب والقاعات, ملعب النادي, عنوان الملعب, حذف منافس, مباراة]
-related: [competitions/create-team, competitions/roster-coaches]
+related: [competitions/create-team, competitions/schedule-match]
 ---
 
 كل مباراة لها منافس وملعب. تسجّلهما مرة واحدة هنا، ثم تختارهما من قائمة عند برمجة المباراة.

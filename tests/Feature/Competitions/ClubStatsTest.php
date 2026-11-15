@@ -57,4 +57,16 @@ class ClubStatsTest extends TestCase
         $this->assertSame(['games', 'view'], PermissionMap::resolve('games.stats'));
         $this->assertSame(['games', 'view'], PermissionMap::resolve('games.stats.export'));
     }
+
+    #[Test]
+    public function the_assists_column_is_called_decisive_passes_in_the_export_and_names_link_with_the_players_right(): void
+    {
+        $this->seedStats();
+        $body = $this->actingAs($this->admin())->get(route('games.stats.export', ['season' => 2026, 'format' => 'csv']))->streamedContent();
+        $this->assertStringContainsString('التمريرات الحاسمة', $body);
+        $this->assertStringNotContainsString(',التمريرات,', $body);
+        $this->assertSame(['players', 'view'], PermissionMap::resolve('players.show'), 'the name links in the stats tables follow this right');
+        $this->actingAs($this->admin())->get(route('games.stats', ['season' => 2026]))
+            ->assertInertia(fn (Assert $page) => $page->where('rows.0.player_id', fn ($id) => is_int($id))->has('leaders.appearances.0.player_id'));
+    }
 }

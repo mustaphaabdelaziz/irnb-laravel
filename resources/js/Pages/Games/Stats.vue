@@ -4,11 +4,13 @@ import SearchableSelect from '@/Components/SearchableSelect.vue';
 import ExportMenu from '@/Components/ExportMenu.vue';
 import SeasonSelect from '@/Components/Competitions/SeasonSelect.vue';
 import StatsLeaders from '@/Components/Competitions/StatsLeaders.vue';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { useCan } from '@/Composables/useCan';
 import { useI18n } from 'vue-i18n';
 import { computed } from 'vue';
 
 const { t } = useI18n();
+const { can } = useCan();
 const props = defineProps({ rows: Array, leaders: Object, season: Number, seasons: Array, teams: Array, competitions: Array, filters: Object });
 
 const query = computed(() => ({ season: props.season, ...(props.filters.team_id ? { team_id: props.filters.team_id } : {}), ...(props.filters.competition_id ? { competition_id: props.filters.competition_id } : {}) }));
@@ -48,7 +50,7 @@ const hasSets = computed(() => props.rows.some((r) => r.sport === 'volleyball'))
                     </tr></thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                         <tr v-for="r in rows" :key="`${r.player_id}-${r.sport}`">
-                            <td class="px-3 py-2 font-medium">{{ r.name }} <span v-if="r.sport !== 'football'" class="text-xs text-slate-400">· {{ t(`comp.sport_${r.sport}`) }}</span></td>
+                            <td class="px-3 py-2 font-medium"><Link v-if="can('players', 'view')" :href="route('players.show', r.player_id)" class="hover:underline">{{ r.name }}</Link><template v-else>{{ r.name }}</template> <span v-if="r.sport !== 'football'" class="text-xs text-slate-400">· {{ t(`comp.sport_${r.sport}`) }}</span></td>
                             <td class="px-3 py-2 text-center">{{ r.appearances }}</td>
                             <td class="px-3 py-2 text-center">{{ r.starts }}</td>
                             <td class="px-3 py-2 text-center"><bdi dir="ltr">{{ r.sport === 'volleyball' ? r.sets : r.minutes }}</bdi></td>

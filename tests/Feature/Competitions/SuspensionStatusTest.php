@@ -4,9 +4,12 @@ namespace Tests\Feature\Competitions;
 
 use App\Enums\GameStatus;
 use App\Models\Suspension;
+use App\Reports\Competitions\CompetitionSuspensions;
+use App\Reports\ReportFilters;
 use App\Services\Competitions\SuspensionStatus;
 use App\Support\Season;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\CompetitionFixtures;
@@ -196,5 +199,42 @@ class SuspensionStatusTest extends TestCase
                 ->where('suspensions', fn ($rows) => collect($rows)->pluck('id')->all() === [$started->id, $current->id, $future->id, $upcoming->id, $past->id]));
         $inside = $this->game($team, ['competition_id' => $competition->id, 'date' => now()->addDays(15)->toDateString()]);
         $this->assertArrayHasKey($p->id, app(SuspensionStatus::class)->forPlayers([$p->id], $inside), 'the match-day check still bans on a day inside the range');
+    }
+
+    #[Test]
+    public function the_suspensions_report_counts_only_bans_in_force_not_the_ones_not_started(): void
+    {
+        $team = $this->team();
+        $competition = $this->competition($team, 2026);
+        $p = $this->player($team->category);
+        $base = ['player_id' => $p->id, 'competition_id' => $competition->id, 'team_id' => $team->id, 'source' => 'manual'];
+        Suspension::create($base + ['kind' => 'matches', 'matches_count' => 1, 'starts_on' => now()->addDays(5)->toDateString()]);
+        Suspension::create($base + ['kind' => 'dates', 'starts_on' => now()->addDays(5)->toDateString(), 'ends_on' => now()->addDays(9)->toDateString()]);
+        Suspension::create($base + ['kind' => 'matches', 'matches_count' => 1, 'starts_on' => now()->subDay()->toDateString()]);
+
+        $report = app(CompetitionSuspensions::class);
+        $all = ReportFilters::fromRequest(Request::create('/', 'GET'), $report);
+        $active = ReportFilters::fromRequest(Request::create('/', 'GET', ['active' => 1]), $report);
+
+        $this->assertSame(3, $report->summary($all)[0]['value']);
+        $this->assertSame(1, $report->summary($all)[1]['value'], 'the active KPI skips both not-started bans');
+        $this->assertSame(1, $report->rows($active)->count(), 'the active filter skips both not-started bans');
+    }
+
+    #[Test]
+    public function a_manual_matches_ban_is_upcoming_relative_to_the_match_it_is_evaluated_at(): void
+    {
+        $team = $this->team();
+        $competition = $this->competition($team, 2026);
+        $p = $this->player($team->category);
+        $ban = Suspension::create(['player_id' => $p->id, 'competition_id' => $competition->id, 'team_id' => $team->id, 'source' => 'manual',
+            'kind' => 'matches', 'matches_count' => 1, 'starts_on' => now()->addDays(5)->toDateString()]);
+        $before = $this->game($team, ['competition_id' => $competition->id, 'date' => now()->addDays(2)->toDateString()]);
+        $after = $this->game($team, ['competition_id' => $competition->id, 'date' => now()->addDays(8)->toDateString()]);
+        $status = app(SuspensionStatus::class);
+
+        $this->assertTrue($status->evaluate(collect([$ban]), $before)[$ban->id]['upcoming']);
+        $this->assertFalse($status->evaluate(collect([$ban]), $after)[$ban->id]['upcoming'], 'the same ban has started by a later match');
+        $this->assertTrue($status->evaluate(collect([$ban]))[$ban->id]['upcoming'], 'without a match it is relative to today');
     }
 }

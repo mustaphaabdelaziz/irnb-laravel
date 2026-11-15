@@ -1820,48 +1820,6 @@ export default [
             await page.locator('[data-help="confirm-ok"]').waitFor({ state: 'visible' });
         },
     },
-    {
-        // Writes: «ساعة توقيت 3» (item 9) is marked lost through the UI so its «استعادة» shows;
-        // `after` restores it through the UI, back to the seeded state.
-        name: 'eq-damage-restore',
-        url: '/equipment/catalogs/4',
-        targets: ['eq-restore-9'],
-        before: async (page) => {
-            await page.locator('[data-help="eq-lost-9"]').click();
-            await page.locator('[data-help="confirm-ok"]').waitFor({ state: 'visible' });
-            await page.locator('[data-help="confirm-ok"]').click();
-            await page.locator('[data-help="eq-restore-9"]').waitFor({ state: 'visible' });
-            // Reload so the «تم تسجيل المعدات كمفقودة.» toast is not in the picture.
-            await page.reload({ waitUntil: 'networkidle' });
-            await page.locator('[data-help="eq-restore-9"]').waitFor({ state: 'visible' });
-        },
-        after: async (page) => {
-            await page.locator('[data-help="eq-restore-9"]').click();
-            await page.locator('[data-help="confirm-ok"]').waitFor({ state: 'visible' });
-            await page.locator('[data-help="confirm-ok"]').click();
-            await page.locator('[data-help="eq-lost-9"]').waitFor({ state: 'visible', timeout: 10000 });
-        },
-    },
-    {
-        name: 'fin-tx-saved',
-        url: '/transactions/create',
-        targets: ['tx-show-amount', 'tx-print-ticket', 'tx-print-a4'],
-        before: async (page) => {
-            await fillNets(page);
-            await Promise.all([
-                page.waitForURL(/\/transactions\/\d+$/),
-                page.locator('[data-help="txf-save"]').click(),
-            ]);
-            await page.waitForLoadState('networkidle');
-        },
-        // Archive the entry just saved (the only row with this title) through the list's «حذف».
-        after: async (page) => {
-            await page.goto(new URL('/transactions?search=' + encodeURIComponent('شباك المرمى'), page.url()).href, { waitUntil: 'networkidle' });
-            await page.locator('tbody tr', { hasText: 'شباك المرمى' }).first().locator('button').last().click();
-            await page.getByRole('button', { name: 'حذف', exact: true }).last().click();
-            await page.getByText('تمت أرشفة المعاملة بنجاح.').waitFor({ state: 'visible', timeout: 10000 });
-        },
-    },
     // --- Competitions: opponents & venues, create team, roster & coaches (Part 3c) ---
     {
         // The three demo opponents with their logos; the «المباريات» column; the pencil of the first.
@@ -2302,6 +2260,48 @@ export default [
         before: async (page) => {
             await page.locator('[data-help="player-matches-totals"]').first().waitFor({ state: 'visible' });
             await centre(page, 'player-matches');
+        },
+    },
+    {
+        // Writes: «ساعة توقيت 3» (item 9) is marked lost through the UI so its «استعادة» shows;
+        // `after` restores it through the UI, back to the seeded state.
+        name: 'eq-damage-restore',
+        url: '/equipment/catalogs/4',
+        targets: ['eq-restore-9'],
+        before: async (page) => {
+            await page.locator('[data-help="eq-lost-9"]').click();
+            await page.locator('[data-help="confirm-ok"]').waitFor({ state: 'visible' });
+            await page.locator('[data-help="confirm-ok"]').click();
+            await page.locator('[data-help="eq-restore-9"]').waitFor({ state: 'visible' });
+            // Reload so the «تم تسجيل المعدات كمفقودة.» toast is not in the picture.
+            await page.reload({ waitUntil: 'networkidle' });
+            await page.locator('[data-help="eq-restore-9"]').waitFor({ state: 'visible' });
+        },
+        after: async (page) => {
+            await page.locator('[data-help="eq-restore-9"]').click();
+            await page.locator('[data-help="confirm-ok"]').waitFor({ state: 'visible' });
+            await page.locator('[data-help="confirm-ok"]').click();
+            await page.locator('[data-help="eq-lost-9"]').waitFor({ state: 'visible', timeout: 10000 });
+        },
+    },
+    {
+        name: 'fin-tx-saved',
+        url: '/transactions/create',
+        targets: ['tx-show-amount', 'tx-print-ticket', 'tx-print-a4'],
+        before: async (page) => {
+            await fillNets(page);
+            await Promise.all([
+                page.waitForURL(/\/transactions\/\d+$/),
+                page.locator('[data-help="txf-save"]').click(),
+            ]);
+            await page.waitForLoadState('networkidle');
+        },
+        // Archive the entry just saved (the only row with this title) through the list's «حذف».
+        after: async (page) => {
+            await page.goto(new URL('/transactions?search=' + encodeURIComponent('شباك المرمى'), page.url()).href, { waitUntil: 'networkidle' });
+            await page.locator('tbody tr', { hasText: 'شباك المرمى' }).first().locator('button').last().click();
+            await page.getByRole('button', { name: 'حذف', exact: true }).last().click();
+            await page.getByText('تمت أرشفة المعاملة بنجاح.').waitFor({ state: 'visible', timeout: 10000 });
         },
     },
     // Writes, last: a manual ban for لعريبي أنس is added through the UI so its row and trash show.

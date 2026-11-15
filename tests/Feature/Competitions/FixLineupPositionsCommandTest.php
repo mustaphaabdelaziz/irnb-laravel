@@ -70,6 +70,18 @@ class FixLineupPositionsCommandTest extends TestCase
     }
 
     #[Test]
+    public function the_data_migration_runs_the_repair_so_the_desktop_needs_no_command(): void
+    {
+        [, $rows] = $this->oldLineup();
+        $migration = require database_path('migrations/2026_11_15_100001_fill_lineup_positions_from_slots.php');
+
+        $migration->up();
+
+        $this->assertSame(0, GamePlayer::whereNull('position_id')->where('role', 'starter')->count());
+        $this->assertSame('FW', Position::find($rows[4]->fresh()->position_id)->abbreviation);
+    }
+
+    #[Test]
     public function every_row_is_filled_across_chunks(): void
     {
         [, $rows] = $this->oldLineup();

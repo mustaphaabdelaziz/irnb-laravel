@@ -15,6 +15,7 @@ return [
         'equipment' => ['icon' => 'equipment', 'module' => 'equipment', 'articles' => ['equipment-lists', 'add-catalog', 'receive-stock', 'lend-assign', 'return-equipment', 'damage-repair-lost', 'import-export', 'stock-take', 'inventory-report']],
         'board' => ['icon' => 'board', 'module' => 'board', 'articles' => ['roles-committees', 'terms', 'add-member', 'committee-seats', 'former-remove-member', 'schedule-meeting', 'meeting-minutes', 'cancel-delete-meeting']],
         'competitions' => ['icon' => 'flag', 'module' => 'games', 'articles' => ['opponents-venues', 'create-team', 'roster-coaches', 'create-competition', 'schedule-match', 'call-up', 'lineup', 'match-report', 'edit-cancel-match', 'suspensions', 'statistics']],
+        'social' => ['icon' => 'heart', 'module' => 'activities', 'articles' => ['activity-types', 'record-activity', 'photos-files', 'find-edit-activity', 'create-literary-report', 'export-literary-report']],
     ],
     'start_here' => [
         'getting-started/login',

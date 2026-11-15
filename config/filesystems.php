@@ -32,7 +32,8 @@ return [
 
         'local' => [
             'driver' => 'local',
-            'root' => storage_path('app/private'),
+            // HELP_DEMO_PRIVATE_ROOT is set only by scripts/help-shots.mjs (throwaway screenshot storage).
+            'root' => env('HELP_DEMO_PRIVATE_ROOT', storage_path('app/private')),
             'serve' => true,
             'throw' => false,
             'report' => false,

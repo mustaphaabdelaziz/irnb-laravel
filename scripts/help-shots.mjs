@@ -29,16 +29,21 @@ const db = join(root, 'storage', 'help-demo.sqlite');
 const out = join(root, 'public', 'help-shots', locale);
 const only = process.argv.slice(2);
 
-// The run's own storage folder, emptied at the start of every run. Only the public disk
-// (generated logos), sessions and file-cache data move here: the seeding CLI gets
-// LARAVEL_STORAGE_PATH, but the served app (php -S, variables_order GPCS) does not see it in
-// $_SERVER/$_ENV, so the server reads HELP_DEMO_PUBLIC_ROOT / HELP_DEMO_STORAGE instead.
-// Compiled views, logs and the server's local (private) disk stay in real storage.
+// The run's own storage folder, emptied at the start of every run. The public and private
+// disks (generated logos, photos, files), sessions and file-cache data move here: the seeding
+// CLI gets LARAVEL_STORAGE_PATH, but the served app (php -S, variables_order GPCS) does not see
+// it in $_SERVER/$_ENV, so the server reads HELP_DEMO_PUBLIC_ROOT / HELP_DEMO_PRIVATE_ROOT /
+// HELP_DEMO_STORAGE instead. Compiled views and logs stay in real storage.
 const demoStorage = join(root, 'storage', 'help-demo-storage');
 const realPublic = join(root, 'storage', 'app', 'public');
 const listRealPublic = () => (existsSync(realPublic) ? readdirSync(realPublic, { recursive: true }).map(String).sort() : []);
 const realPublicBefore = listRealPublic();
 const realPublicChanged = () => JSON.stringify(listRealPublic()) !== JSON.stringify(realPublicBefore);
+// Only the activity files: the real private disk also holds backups other tools write.
+const realPrivate = join(root, 'storage', 'app', 'private', 'activities');
+const listRealPrivate = () => (existsSync(realPrivate) ? readdirSync(realPrivate, { recursive: true }).map(String).sort() : []);
+const realPrivateBefore = listRealPrivate();
+const realPrivateChanged = () => JSON.stringify(listRealPrivate()) !== JSON.stringify(realPrivateBefore);
 
 // APP_CONFIG_CACHE points at a file that doesn't exist, so a cached config
 // can't override DB_DATABASE (see the db-swap gotchas).
@@ -55,6 +60,7 @@ const env = {
     // php artisan serve's server process does not see LARAVEL_STORAGE_PATH in $_SERVER/$_ENV
     // (only getenv), so the public disk, sessions and file cache read these variables.
     HELP_DEMO_PUBLIC_ROOT: join(demoStorage, 'app', 'public'),
+    HELP_DEMO_PRIVATE_ROOT: join(demoStorage, 'app', 'private'),
     HELP_DEMO_STORAGE: demoStorage,
 };
 
@@ -80,6 +86,7 @@ rmSync(db, { force: true });
 writeFileSync(db, '');
 execFileSync('php', ['artisan', 'migrate:fresh', '--force', '--seed', '--seeder=HelpDemoSeeder'], { cwd: root, env, stdio: 'inherit' });
 if (realPublicChanged()) throw new Error('Real storage/app/public changed during the run');
+if (realPrivateChanged()) throw new Error('Real storage/app/private changed during the run');
 
 const server = spawn('php', ['artisan', 'serve', '--no-reload', '--host=127.0.0.1', `--port=${port}`], { cwd: root, env, stdio: 'ignore' });
 const stopServer = () => {
@@ -188,6 +195,10 @@ try {
     // Names only: this would also fire if the real dev app uploads during a run.
     if (realPublicChanged()) {
         console.error('✗ Real storage/app/public changed during the run');
+        process.exitCode = 1;
+    }
+    if (realPrivateChanged()) {
+        console.error('✗ Real storage/app/private changed during the run');
         process.exitCode = 1;
     }
 }

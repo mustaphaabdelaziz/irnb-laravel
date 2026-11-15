@@ -68,7 +68,7 @@
     "activities.pick_player": "Add a player…",
     "activities.players": "Participating players",
     "activities.report": "Activity report",
-    "activities.report_hint": "This text is printed in the literary report",
+    "activities.report_hint": "This text is printed in the literary report when “Include details” is ticked",
     "activities.report_photo": "Report photo",
     "activities.report_photo_hint": "One photo per activity, printed in the literary report's photo appendix",
     "activities.responsible": "Person in charge",

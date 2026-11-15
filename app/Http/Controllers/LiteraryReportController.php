@@ -44,7 +44,12 @@ class LiteraryReportController extends Controller
 
         ActivityRecorder::record($request->user(), ActivityAction::LITERARY_REPORT_CREATED, $report);
 
-        return redirect()->route('literary-reports.edit', $report)->with('success', 'flash.literary_report_created');
+        // Opening the report needs the edit right; without it the list shows the new row.
+        $target = $request->user()->hasPermission('literary_reports', 'edit')
+            ? route('literary-reports.edit', $report)
+            : route('literary-reports.index');
+
+        return redirect($target)->with('success', 'flash.literary_report_created');
     }
 
     public function edit(Request $request, LiteraryReport $literaryReport): Response

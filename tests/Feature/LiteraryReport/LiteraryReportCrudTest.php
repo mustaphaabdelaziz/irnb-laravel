@@ -182,6 +182,35 @@ class LiteraryReportCrudTest extends TestCase
     }
 
     #[Test]
+    public function a_user_who_can_add_but_not_edit_lands_back_on_the_list(): void
+    {
+        $user = User::factory()->create(['role_id' => Role::factory()->create(['permissions' => [
+            'literary_reports' => ['view', 'add'],
+        ]])->id]);
+
+        $this->actingAs($user)
+            ->post(route('literary-reports.store'), ['title' => 'تقرير', 'period_from' => '2026-09-01', 'period_to' => '2027-08-31'])
+            ->assertRedirect(route('literary-reports.index'))
+            ->assertSessionHas('success', 'flash.literary_report_created');
+
+        $this->assertSame(1, LiteraryReport::count());
+        $this->actingAs($user)->get(route('literary-reports.index'))->assertOk();
+    }
+
+    #[Test]
+    public function a_user_who_can_edit_opens_the_new_report(): void
+    {
+        $user = User::factory()->create(['role_id' => Role::factory()->create(['permissions' => [
+            'literary_reports' => ['view', 'add', 'edit'],
+        ]])->id]);
+
+        $response = $this->actingAs($user)
+            ->post(route('literary-reports.store'), ['title' => 'تقرير', 'period_from' => '2026-09-01', 'period_to' => '2027-08-31']);
+
+        $response->assertRedirect(route('literary-reports.edit', LiteraryReport::firstOrFail()));
+    }
+
+    #[Test]
     public function deleting_removes_the_report(): void
     {
         $report = $this->report();

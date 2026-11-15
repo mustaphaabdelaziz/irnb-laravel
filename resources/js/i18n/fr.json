@@ -68,7 +68,7 @@
     "activities.pick_player": "Ajouter un joueur…",
     "activities.players": "Joueurs participants",
     "activities.report": "Rapport de l'activité",
-    "activities.report_hint": "Ce texte est imprimé dans le rapport moral",
+    "activities.report_hint": "Ce texte est imprimé dans le rapport moral lorsque « Ajouter les détails » est coché",
     "activities.report_photo": "Photo du rapport",
     "activities.report_photo_hint": "Une photo par activité, imprimée dans l'annexe photos du rapport moral",
     "activities.responsible": "Responsable",

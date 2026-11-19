@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\SerializesClubDates;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -71,6 +72,21 @@ class PlayerSubscription extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Transaction::class, 'player_subscription_id');
+    }
+
+    /**
+     * Obligations that belong to no branch: a manual debt (no subscription) or
+     * one whose subscription has no branch ticked. The same rule the per-branch
+     * totals of the Subscriptions page use for their "No branch" row.
+     *
+     * One NOT EXISTS covers both cases: with a null subscription_id the inner
+     * comparison is never true, so nothing "exists".
+     */
+    public function scopeWithoutBranch(Builder $query): Builder
+    {
+        return $query->whereNotExists(fn ($branches) => $branches
+            ->from('branch_subscription')
+            ->whereColumn('branch_subscription.subscription_id', 'player_subscriptions.subscription_id'));
     }
 
     public function isExempt(): bool

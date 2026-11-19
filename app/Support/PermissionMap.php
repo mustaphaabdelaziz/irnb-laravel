@@ -53,7 +53,7 @@ class PermissionMap
             'store', 'create' => 'add',
             'index', 'show', 'export', 'template', 'card', 'history',
             'report', 'receipt', 'minutes', 'calendar', 'inventory',
-            'preview-serial' => 'view',
+            'preview-serial', 'manual-debts' => 'view',
             default => 'edit', // update, edit, approve, assign, rent, return, close, counts, participants, …
         };
     }

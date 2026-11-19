@@ -19,14 +19,6 @@ class ManualDebtsPageTest extends TestCase
 
     private int $seq = 0;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        // The built manifest has no entry for a page added since the last build.
-        $this->withoutVite();
-    }
-
     private function userWith(array $permissions): User
     {
         return User::factory()->create([

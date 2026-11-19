@@ -29,6 +29,11 @@ const STYLE = {
     subs_owed: { icon: 'alert', tone: 'warning' },
     subs_rate: { icon: 'money', tone: 'primary' },
 
+    debts_count: { icon: 'subscriptions', tone: 'primary' },
+    debts_owed: { icon: 'money', tone: 'neutral' },
+    debts_collected: { icon: 'check', tone: 'positive' },
+    debts_left: { icon: 'alert', tone: 'warning' },
+
     equip_catalogs: { icon: 'box', tone: 'primary' },
     equip_units: { icon: 'archive', tone: 'neutral' },
     equip_value: { icon: 'money', tone: 'primary' },

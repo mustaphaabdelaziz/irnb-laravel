@@ -201,8 +201,8 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
                     <p class="border-b border-slate-100 px-5 py-2.5 text-sm font-bold text-slate-700 dark:border-slate-800 dark:text-slate-200">{{ grp.location }} <span class="font-normal text-slate-400">({{ grp.lines.length }})</span></p>
                     <div class="divide-y divide-slate-50 dark:divide-slate-800/50">
                         <div v-for="line in grp.lines" :key="line.id" :data-help="'stk-line-' + line.equipment_item_id" class="flex flex-wrap items-center gap-3 px-5 py-3">
-                            <div class="min-w-0 flex-1">
-                                <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ line.item?.unique_identifier }}<span v-if="line.expected_status && !['Available', 'Rented'].includes(line.expected_status)" class="ms-2 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">{{ stateLabel(line.expected_status) }}</span></p>
+                            <div class="min-w-0 basis-full sm:basis-0 sm:flex-1">
+                                <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ line.item?.unique_identifier }}<span v-if="line.expected_status && !['Available', 'Rented'].includes(line.expected_status)" class="ms-2 whitespace-nowrap rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">{{ stateLabel(line.expected_status) }}</span></p>
                                 <p class="text-xs text-slate-400">{{ line.item?.catalog?.name }} · {{ t('expected') }}: {{ stateLabel(line.expected_condition) }}<span v-if="line.expected_location"> · {{ line.expected_location }}</span><span v-if="line.on_loan_quantity > 0"> · {{ t('inventory_sheet.on_loan', { n: line.on_loan_quantity }) }}</span></p>
                             </div>
                             <div v-if="line.expected_quantity === 1" class="flex gap-1">

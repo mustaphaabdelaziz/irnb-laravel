@@ -2328,6 +2328,139 @@ export default [
             await page.locator('[data-help="compn-ban-manual"]').waitFor({ state: 'detached', timeout: 10000 });
         },
     },
+    // --- Social activities: activity types, record an activity, photos and files (Part 3d) ---
+    {
+        // The 11 types in «#» order, the «الأنشطة» column, the add form, the pencil of the unused «حملة تطوعية»
+        // (shown as the edit example), the disabled trash of the used «تنظيمات النادي» and the live trash
+        // of the unused «احتفال / مناسبة». Nothing is pressed.
+        name: 'soc-activity-types-list',
+        url: '/activity-types',
+        targets: ['nav-activity-types', 'atype-name', 'atype-add', 'atype-count-col', 'atype-delete-used'],
+        before: async (page) => {
+            await tagType(page, 'atype-delete-used', 'تنظيمات النادي', 1);
+            await navIntoView(page, 'nav-activity-types');
+        },
+    },
+    {
+        // The lower rows: the pencil of the unused «حملة تطوعية» (the edit example) and the live trash of
+        // the unused «احتفال / مناسبة». Nothing is pressed.
+        name: 'soc-activity-types-rows',
+        url: '/activity-types',
+        targets: ['atype-edit-demo', 'atype-delete-free'],
+        before: async (page) => {
+            await tagType(page, 'atype-edit-demo', 'حملة تطوعية', 0);
+            await tagType(page, 'atype-delete-free', 'احتفال / مناسبة', 1);
+            await centre(page, 'atype-delete-free');
+        },
+    },
+    {
+        // «الأيام التحسيسية» typed in the add form. «إضافة» not pressed.
+        name: 'soc-activity-types-add',
+        url: '/activity-types',
+        targets: ['atype-name', 'atype-add'],
+        before: async (page) => {
+            await page.fill('input[data-help="atype-name"]', 'الأيام التحسيسية');
+            await blur(page);
+        },
+    },
+    {
+        // The row of «حملة تطوعية» in edit mode (an unused older type stands in for the new one: the
+        // new type is not saved). «حفظ» not pressed.
+        name: 'soc-activity-types-edit',
+        url: '/activity-types',
+        targets: ['atype-order-edit', 'atype-name-edit', 'atype-save'],
+        before: async (page) => {
+            await tagType(page, 'atype-edit-demo', 'حملة تطوعية', 0);
+            await page.locator('[data-help="atype-edit-demo"]').click();
+            await page.locator('[data-help="atype-save"]').waitFor({ state: 'visible' });
+            await blur(page);
+            await centre(page, 'atype-save');
+        },
+    },
+    {
+        name: 'soc-record-activity-list',
+        url: '/activities',
+        targets: ['nav-activities', 'act-new', 'act-card-3'],
+        before: async (page) => { await navIntoView(page, 'nav-activities'); },
+    },
+    {
+        name: 'soc-record-activity-main',
+        url: '/activities/create',
+        targets: ['act-title', 'act-type', 'act-starts', 'act-ends', 'act-single-hint', 'act-date-label', 'act-date-label-hint'],
+        before: async (page) => {
+            await fillBeach(page);
+            await centre(page, 'act-title');
+        },
+    },
+    {
+        name: 'soc-record-activity-details',
+        url: '/activities/create',
+        targets: ['act-location', 'act-partners', 'act-organizer', 'act-result', 'act-branch', 'act-categories', 'act-responsible'],
+        before: async (page) => {
+            await fillBeach(page);
+            await centre(page, 'act-branch');
+        },
+    },
+    {
+        name: 'soc-record-activity-people',
+        url: '/activities/create',
+        targets: ['act-beneficiaries', 'act-external', 'act-cost', 'act-cost-hint', 'act-players', 'act-board'],
+        before: async (page) => {
+            await fillBeach(page);
+            await centre(page, 'act-card-people');
+        },
+    },
+    {
+        // The text card with the report hint, and «حفظ» under it. «حفظ» not pressed.
+        name: 'soc-record-activity-text',
+        url: '/activities/create',
+        targets: ['act-description', 'act-report', 'act-report-hint', 'act-save'],
+        before: async (page) => {
+            await fillBeach(page);
+            await centre(page, 'act-report');
+        },
+    },
+    {
+        // The saved demo activity (its row already exists).
+        name: 'soc-record-activity-saved',
+        url: '/activities/3',
+        targets: ['act-edit'],
+        before: async (page) => { await page.waitForLoadState('networkidle'); },
+    },
+    {
+        name: 'soc-photos-files-photos',
+        url: '/activities/3',
+        targets: ['act-photos', 'act-add-photos', 'act-caption-3', 'act-photo-4', 'act-report-box-4', 'act-photo-open-5', 'act-photo-trash-5'],
+        before: async (page) => { await centre(page, 'act-photos'); },
+    },
+    {
+        // The caption editor of the first photo opened, new text typed. The save icon is not pressed.
+        name: 'soc-photos-files-caption',
+        url: '/activities/3',
+        targets: ['act-caption-input', 'act-caption-save'],
+        before: async (page) => {
+            await page.locator('[data-help="act-caption-3"]').click();
+            await page.locator('[data-help="act-caption-input"]').fill('جمع النفايات من الشاطئ');
+            await blur(page);
+            await centre(page, 'act-photos');
+        },
+    },
+    {
+        name: 'soc-photos-files-files',
+        url: '/activities/3',
+        targets: ['act-files', 'act-file-add', 'act-file-trash-2'],
+        before: async (page) => { await centre(page, 'act-files'); },
+    },
+    {
+        name: 'soc-photos-files-lightbox',
+        url: '/activities/3',
+        targets: ['act-lightbox'],
+        before: async (page) => {
+            await page.locator('[data-help="act-photo-open-4"]').click();
+            await page.locator('[data-help="act-lightbox"] img').waitFor({ state: 'visible' });
+            await page.waitForTimeout(500);
+        },
+    },
 ];
 
 /** Statistics page: picks the U17 team in the team filter and waits for the filtered table. */
@@ -2769,5 +2902,46 @@ async function fillCones(page) {
     await openReceive(page);
     await page.locator('[data-help="eq-rcv-quantity"] input').fill('10');
     await page.locator('[data-help="eq-rcv-location"] select').selectOption('المخزن الرئيسي');
+    await blur(page);
+}
+
+/** Activity types: tags the n-th button of the row holding `name` (0 = pencil, 1 = trash). */
+async function tagType(page, tag, name, n) {
+    await tagIn(page, tag, page.locator('tbody tr', { hasText: name }).locator('button').nth(n));
+}
+
+/** Picks the first match of `text` in the searchable list tagged `name` (a picker or a select). */
+async function pickFrom(page, name, text) {
+    await page.locator(`[data-help="${name}"] button`).first().click();
+    await page.locator(`[data-help="${name}"] input`).fill(text);
+    await page.locator(`[data-help="${name}"] li`).first().dispatchEvent('mousedown');
+    await blur(page);
+}
+
+/** The demo date of the beach campaign: 28 days before the seed day, never before 1 September of the season. */
+function beachDate() {
+    const today = new Date();
+    const seasonStart = new Date(today.getMonth() >= 8 ? today.getFullYear() : today.getFullYear() - 1, 8, 1);
+    const d = inDays(-28);
+    return ymd(d < seasonStart ? seasonStart : d);
+}
+
+/** New-activity form filled with the demo beach campaign. Nothing is saved. */
+async function fillBeach(page) {
+    await page.fill('input[data-help="act-title"]', 'حملة تنظيف شاطئ المدينة');
+    await page.locator('select[data-help="act-type"]').selectOption({ label: 'الحملات التطوعية' });
+    await page.fill('input[data-help="act-starts"]', beachDate());
+    await page.fill('input[data-help="act-location"]', 'شاطئ المدينة');
+    await page.fill('input[data-help="act-partners"]', 'جمعية البيئة المحلية');
+    await page.locator('select[data-help="act-branch"]').selectOption({ label: 'السباحة' });
+    await page.locator('[data-help="act-categories"] label', { hasText: 'أصاغر' }).locator('input').check();
+    await pickFrom(page, 'act-responsible', 'ليلى بوعزة');
+    await page.fill('input[data-help="act-beneficiaries"]', '150');
+    await page.fill('input[data-help="act-external"]', '12');
+    await page.fill('input[data-help="act-cost"]', '8500');
+    for (const name of ['سارة بن يوسف', 'إيناس حداد', 'يوسف بوشامة', 'لينا قادري', 'شيماء مزياني']) await pickFrom(page, 'act-players', name);
+    for (const name of ['ليلى بوعزة', 'كمال درارجة']) await pickFrom(page, 'act-board', name);
+    await page.fill('textarea[data-help="act-description"]', 'حملة تطوعية لتنظيف الشاطئ بمشاركة سباحي النادي.');
+    await page.fill('textarea[data-help="act-report"]', 'نظّف المتطوعون الشاطئ وجمعوا كمية كبيرة من النفايات. شارك فيها سباحو فئة الأصاغر مع أعضاء من الجمعية. وتقرر تكرار الحملة كل موسم.');
     await blur(page);
 }

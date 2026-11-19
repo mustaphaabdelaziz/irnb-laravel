@@ -51,31 +51,31 @@ function destroy() {
             <form v-if="can('activity_types', 'add')" @submit.prevent="add" class="flex flex-wrap items-end gap-3 rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
                 <div class="min-w-48 flex-1">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('name') }}</label>
-                    <TextInput v-model="form.name" class="mt-1 w-full" required />
+                    <TextInput v-model="form.name" class="mt-1 w-full" required data-help="atype-name" />
                     <InputError :message="form.errors.name" class="mt-1" />
                 </div>
-                <PrimaryButton :disabled="form.processing">{{ t('add') }}</PrimaryButton>
+                <PrimaryButton :disabled="form.processing" data-help="atype-add">{{ t('add') }}</PrimaryButton>
             </form>
 
-            <div class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">
+            <div class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800" data-help="atype-list">
                 <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
                     <thead class="bg-slate-50 dark:bg-slate-950">
                         <tr>
-                            <th class="w-20 px-4 py-3 text-center text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">#</th>
+                            <th data-help="atype-order-col" class="w-20 px-4 py-3 text-center text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">#</th>
                             <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('name') }}</th>
-                            <th class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('activities') }}</th>
+                            <th data-help="atype-count-col" class="px-4 py-3 text-center text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('activities') }}</th>
                             <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('actions') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                        <tr v-for="type in types" :key="type.id">
+                        <tr v-for="type in types" :key="type.id" :data-help="`atype-row-${type.id}`">
                             <td class="px-4 py-3 text-center text-sm text-slate-500 dark:text-slate-400">
-                                <TextInput v-if="editingId === type.id" v-model="editForm.sort_order" type="number" min="0" class="w-16" />
+                                <TextInput v-if="editingId === type.id" v-model="editForm.sort_order" type="number" min="0" class="w-16" data-help="atype-order-edit" />
                                 <span v-else>{{ type.sort_order }}</span>
                             </td>
                             <td class="px-4 py-3">
                                 <div v-if="editingId === type.id" class="space-y-1">
-                                    <TextInput v-model="editForm.name" class="w-full" />
+                                    <TextInput v-model="editForm.name" class="w-full" data-help="atype-name-edit" />
                                     <InputError :message="editForm.errors.name" />
                                 </div>
                                 <span v-else class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ type.name }}</span>
@@ -83,12 +83,12 @@ function destroy() {
                             <td class="px-4 py-3 text-center text-sm text-slate-600 dark:text-slate-300">{{ type.activities_count }}</td>
                             <td class="px-4 py-3 text-end">
                                 <div v-if="editingId === type.id" class="flex justify-end gap-2">
-                                    <button @click="saveEdit(type.id)" class="text-sm text-primary-600 hover:text-primary-800 dark:text-primary-300 dark:hover:text-primary-200">{{ t('save') }}</button>
+                                    <button @click="saveEdit(type.id)" data-help="atype-save" class="text-sm text-primary-600 hover:text-primary-800 dark:text-primary-300 dark:hover:text-primary-200">{{ t('save') }}</button>
                                     <button @click="editingId = null" class="text-sm text-slate-500 dark:text-slate-400">{{ t('cancel') }}</button>
                                 </div>
                                 <div v-else class="flex justify-end gap-2">
-                                    <IconButton v-if="can('activity_types', 'edit')" icon="pencil" :label="t('edit')" plain size="sm" @click="startEdit(type)" />
-                                    <IconButton v-if="can('activity_types', 'delete')" icon="trash" :label="t('delete')" variant="danger" plain size="sm" :disabled="type.activities_count > 0" @click="deleteId = type.id" />
+                                    <IconButton v-if="can('activity_types', 'edit')" icon="pencil" :label="t('edit')" plain size="sm" :data-help="`atype-edit-${type.id}`" @click="startEdit(type)" />
+                                    <IconButton v-if="can('activity_types', 'delete')" icon="trash" :label="t('delete')" variant="danger" plain size="sm" :disabled="type.activities_count > 0" :data-help="`atype-delete-${type.id}`" @click="deleteId = type.id" />
                                 </div>
                             </td>
                         </tr>

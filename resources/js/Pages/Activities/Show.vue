@@ -77,7 +77,7 @@ const card = 'rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-s
                     <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ a.title }}</h1>
                 </div>
                 <div class="flex gap-2">
-                    <IconButton v-if="canEdit" icon="pencil" :label="t('edit')" :href="route('activities.edit', a.id)" />
+                    <IconButton v-if="canEdit" icon="pencil" :label="t('edit')" :href="route('activities.edit', a.id)" data-help="act-edit" />
                     <IconButton v-if="can('activities', 'delete')" icon="trash" :label="t('delete')" variant="danger" @click="confirm = { kind: 'activity' }" />
                 </div>
             </div>
@@ -107,32 +107,32 @@ const card = 'rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-s
                     <p v-else class="text-sm text-slate-400">{{ t('activities.no_report') }}</p>
                 </section>
 
-                <section :class="card">
+                <section :class="card" data-help="act-photos">
                     <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
                         <h2 class="font-semibold">{{ t('activities.photos') }}</h2>
-                        <label v-if="canEdit" class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-primary-700">
+                        <label v-if="canEdit" data-help="act-add-photos" class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-primary-700">
                             <Icon name="upload" class="h-4 w-4" /> {{ t('activities.add_photos') }}
                             <input type="file" accept="image/jpeg,image/png,image/webp" multiple class="hidden" :disabled="photoForm.processing" @change="uploadPhotos" />
                         </label>
                     </div>
                     <p v-if="photoForm.errors.photos || Object.keys(photoForm.errors).length" class="mb-2 text-sm text-red-600 dark:text-red-400">{{ Object.values(photoForm.errors)[0] }}</p>
                     <ul v-if="a.photos.length" class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                        <li v-for="p in a.photos" :key="p.id" class="group relative overflow-hidden rounded-xl ring-1 ring-slate-200 dark:ring-slate-800" :class="p.in_report ? 'ring-2 ring-primary-500' : ''">
-                            <button type="button" class="block w-full" @click="lightbox = p"><img :src="p.thumb_url" :alt="p.caption || ''" loading="lazy" class="h-32 w-full object-cover" /></button>
+                        <li v-for="p in a.photos" :key="p.id" :data-help="`act-photo-${p.id}`" class="group relative overflow-hidden rounded-xl ring-1 ring-slate-200 dark:ring-slate-800" :class="p.in_report ? 'ring-2 ring-primary-500' : ''">
+                            <button type="button" class="block w-full" :data-help="`act-photo-open-${p.id}`" @click="lightbox = p"><img :src="p.thumb_url" :alt="p.caption || ''" loading="lazy" class="h-32 w-full object-cover" /></button>
                             <div class="space-y-1 p-2 text-xs">
                                 <div v-if="captionEdit === p.id" class="flex gap-1">
-                                    <TextInput v-model="captionText" class="w-full text-xs" @keyup.enter="saveCaption(p)" />
-                                    <IconButton icon="save" :label="t('save')" plain size="sm" @click="saveCaption(p)" />
+                                    <TextInput v-model="captionText" class="w-full text-xs" data-help="act-caption-input" @keyup.enter="saveCaption(p)" />
+                                    <IconButton icon="save" :label="t('save')" plain size="sm" data-help="act-caption-save" @click="saveCaption(p)" />
                                 </div>
                                 <p v-else class="truncate text-slate-600 dark:text-slate-300">{{ p.caption || '—' }}</p>
                                 <div v-if="canEdit" class="flex items-center justify-between">
-                                    <label class="flex items-center gap-1" :title="t('activities.report_photo_hint')">
+                                    <label class="flex items-center gap-1" :title="t('activities.report_photo_hint')" :data-help="`act-report-box-${p.id}`">
                                         <input type="checkbox" :checked="p.in_report" class="rounded border-slate-300" @change="toggleReport(p, $event)" />
                                         {{ t('activities.report_photo') }}
                                     </label>
                                     <span class="flex">
-                                        <IconButton icon="pencil" :label="t('activities.caption')" plain size="sm" @click="captionEdit = p.id; captionText = p.caption || ''" />
-                                        <IconButton icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="confirm = { kind: 'photo', id: p.id }" />
+                                        <IconButton icon="pencil" :label="t('activities.caption')" plain size="sm" :data-help="`act-caption-${p.id}`" @click="captionEdit = p.id; captionText = p.caption || ''" />
+                                        <IconButton icon="trash" :label="t('delete')" variant="danger" plain size="sm" :data-help="`act-photo-trash-${p.id}`" @click="confirm = { kind: 'photo', id: p.id }" />
                                     </span>
                                 </div>
                             </div>
@@ -162,10 +162,10 @@ const card = 'rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-s
                     </div>
                 </section>
 
-                <section :class="card">
+                <section :class="card" data-help="act-files">
                     <div class="mb-3 flex items-center justify-between">
                         <h2 class="font-semibold">{{ t('activities.files') }}</h2>
-                        <label v-if="canEdit" class="inline-flex h-7 min-w-7 cursor-pointer items-center justify-center rounded-lg px-1.5 text-primary-600 hover:bg-primary-50 dark:text-primary-300 dark:hover:bg-primary-500/10" :title="t('activities.add_file')">
+                        <label v-if="canEdit" data-help="act-file-add" class="inline-flex h-7 min-w-7 cursor-pointer items-center justify-center rounded-lg px-1.5 text-primary-600 hover:bg-primary-50 dark:text-primary-300 dark:hover:bg-primary-500/10" :title="t('activities.add_file')">
                             <Icon name="upload" class="h-4 w-4" />
                             <span class="sr-only">{{ t('activities.add_file') }}</span>
                             <input type="file" accept=".pdf,.doc,.docx,image/jpeg,image/png,image/webp" class="hidden" :disabled="fileForm.processing" @change="uploadFile" />
@@ -173,11 +173,11 @@ const card = 'rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-s
                     </div>
                     <p v-if="fileForm.errors.file" class="mb-2 text-sm text-red-600 dark:text-red-400">{{ fileForm.errors.file }}</p>
                     <ul v-if="a.files.length" class="divide-y divide-slate-100 text-sm dark:divide-slate-800">
-                        <li v-for="f in a.files" :key="f.id" class="flex items-center justify-between gap-2 py-2">
+                        <li v-for="f in a.files" :key="f.id" :data-help="`act-file-${f.id}`" class="flex items-center justify-between gap-2 py-2">
                             <a :href="route('activities.files.show', [a.id, f.id])" target="_blank" class="truncate hover:underline">{{ f.original_name }}</a>
                             <span class="flex shrink-0 items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
                                 {{ size(f.size) }}
-                                <IconButton v-if="canEdit" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="confirm = { kind: 'file', id: f.id }" />
+                                <IconButton v-if="canEdit" icon="trash" :label="t('delete')" variant="danger" plain size="sm" :data-help="`act-file-trash-${f.id}`" @click="confirm = { kind: 'file', id: f.id }" />
                             </span>
                         </li>
                     </ul>
@@ -187,7 +187,7 @@ const card = 'rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-s
         </div>
 
         <Modal :show="!!lightbox" max-width="2xl" @close="lightbox = null">
-            <figure v-if="lightbox" class="bg-black">
+            <figure v-if="lightbox" class="bg-black" data-help="act-lightbox">
                 <img :src="lightbox.url" :alt="lightbox.caption || ''" class="mx-auto max-h-[80vh] object-contain" />
                 <figcaption v-if="lightbox.caption" class="p-3 text-center text-sm text-white">{{ lightbox.caption }}</figcaption>
             </figure>

@@ -74,16 +74,16 @@ const card = 'space-y-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200
         </template>
 
         <form @submit.prevent="submit" class="mx-auto max-w-3xl space-y-6">
-            <section :class="card">
+            <section :class="card" data-help="act-card-main">
                 <div>
                     <label :class="label">{{ t('activities.title') }}</label>
-                    <TextInput v-model="form.title" class="mt-1 w-full" required />
+                    <TextInput v-model="form.title" class="mt-1 w-full" required data-help="act-title" />
                     <InputError :message="form.errors.title" class="mt-1" />
                 </div>
                 <div class="grid gap-4 sm:grid-cols-3">
                     <div>
                         <label :class="label">{{ t('activities.type') }}</label>
-                        <select v-model="form.activity_type_id" :class="field" required>
+                        <select v-model="form.activity_type_id" :class="field" required data-help="act-type">
                             <option value="" disabled>—</option>
                             <option v-for="ty in types" :key="ty.id" :value="ty.id">{{ ty.name }}</option>
                         </select>
@@ -91,56 +91,56 @@ const card = 'space-y-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200
                     </div>
                     <div>
                         <label :class="label">{{ t('activities.starts_on') }}</label>
-                        <input v-model="form.starts_on" type="date" :class="field" required />
+                        <input v-model="form.starts_on" type="date" :class="field" required data-help="act-starts" />
                         <InputError :message="form.errors.starts_on" class="mt-1" />
                     </div>
                     <div>
                         <label :class="label">{{ t('activities.ends_on') }}</label>
-                        <input v-model="form.ends_on" type="date" :min="form.starts_on" :class="field" />
-                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('activities.single_day_hint') }}</p>
+                        <input v-model="form.ends_on" type="date" :min="form.starts_on" :class="field" data-help="act-ends" />
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400" data-help="act-single-hint">{{ t('activities.single_day_hint') }}</p>
                         <InputError :message="form.errors.ends_on" class="mt-1" />
                     </div>
                     <div>
                         <label :class="label">{{ t('activities.date_label') }}</label>
-                        <TextInput v-model="form.date_label" class="mt-1 w-full" maxlength="100" />
-                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('activities.date_label_hint') }}</p>
+                        <TextInput v-model="form.date_label" class="mt-1 w-full" maxlength="100" data-help="act-date-label" />
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400" data-help="act-date-label-hint">{{ t('activities.date_label_hint') }}</p>
                         <InputError :message="form.errors.date_label" class="mt-1" />
                     </div>
                 </div>
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
                         <label :class="label">{{ t('activities.location') }}</label>
-                        <TextInput v-model="form.location" class="mt-1 w-full" />
+                        <TextInput v-model="form.location" class="mt-1 w-full" data-help="act-location" />
                     </div>
                     <div>
                         <label :class="label">{{ t('activities.partners') }}</label>
-                        <TextInput v-model="form.partners" class="mt-1 w-full" />
+                        <TextInput v-model="form.partners" class="mt-1 w-full" data-help="act-partners" />
                     </div>
                     <div>
                         <label :class="label">{{ t('activities.organizer') }}</label>
-                        <TextInput v-model="form.organizer" class="mt-1 w-full" maxlength="150" />
+                        <TextInput v-model="form.organizer" class="mt-1 w-full" maxlength="150" data-help="act-organizer" />
                         <InputError :message="form.errors.organizer" class="mt-1" />
                     </div>
                     <div>
                         <label :class="label">{{ t('activities.result') }}</label>
-                        <TextInput v-model="form.result" class="mt-1 w-full" maxlength="150" :placeholder="t('activities.result_hint')" />
+                        <TextInput v-model="form.result" class="mt-1 w-full" maxlength="150" :placeholder="t('activities.result_hint')" data-help="act-result" />
                         <InputError :message="form.errors.result" class="mt-1" />
                     </div>
                     <div>
                         <label :class="label">{{ t('activities.branch') }}</label>
-                        <select v-model="form.branch_id" :class="field">
+                        <select v-model="form.branch_id" :class="field" data-help="act-branch">
                             <option value="">—</option>
                             <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.localized_name }}</option>
                         </select>
                     </div>
                     <div>
                         <label :class="label">{{ t('activities.responsible') }}</label>
-                        <SearchableSelect v-model="form.responsible_board_member_id" :options="boardMembers" class="mt-1" />
+                        <SearchableSelect v-model="form.responsible_board_member_id" :options="boardMembers" class="mt-1" data-help="act-responsible" />
                     </div>
                 </div>
                 <div>
                     <span :class="label">{{ t('activities.categories') }}</span>
-                    <div class="mt-2 flex flex-wrap gap-3">
+                    <div class="mt-2 flex flex-wrap gap-3" data-help="act-categories">
                         <label v-for="c in offeredCategories" :key="c.id" class="flex items-center gap-1.5 text-sm text-slate-700 dark:text-slate-200">
                             <input v-model="form.category_ids" type="checkbox" :value="c.id" class="rounded border-slate-300 dark:border-slate-700" /> {{ categoryLabel(c) }}
                         </label>
@@ -149,50 +149,50 @@ const card = 'space-y-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200
                 </div>
             </section>
 
-            <section :class="card">
+            <section :class="card" data-help="act-card-people">
                 <h2 class="font-semibold text-slate-900 dark:text-slate-100">{{ t('activities.participants') }}</h2>
                 <div class="grid gap-4 sm:grid-cols-3">
                     <div>
                         <label :class="label">{{ t('activities.beneficiaries') }}</label>
-                        <TextInput v-model="form.beneficiaries_count" type="number" min="0" class="mt-1 w-full" />
+                        <TextInput v-model="form.beneficiaries_count" type="number" min="0" class="mt-1 w-full" data-help="act-beneficiaries" />
                         <InputError :message="form.errors.beneficiaries_count" class="mt-1" />
                     </div>
                     <div>
                         <label :class="label">{{ t('activities.external_volunteers') }}</label>
-                        <TextInput v-model="form.external_volunteers_count" type="number" min="0" class="mt-1 w-full" />
+                        <TextInput v-model="form.external_volunteers_count" type="number" min="0" class="mt-1 w-full" data-help="act-external" />
                     </div>
                     <div>
                         <label :class="label">{{ t('activities.cost') }}</label>
-                        <TextInput v-model="form.cost" type="number" min="0" step="0.01" class="mt-1 w-full" />
-                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('activities.cost_hint') }}</p>
+                        <TextInput v-model="form.cost" type="number" min="0" step="0.01" class="mt-1 w-full" data-help="act-cost" />
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400" data-help="act-cost-hint">{{ t('activities.cost_hint') }}</p>
                     </div>
                 </div>
                 <div>
                     <label :class="label">{{ t('activities.players') }}</label>
-                    <ParticipantPicker v-model="form.player_ids" :options="players" :placeholder="t('activities.pick_player')" class="mt-1" />
+                    <ParticipantPicker v-model="form.player_ids" :options="players" :placeholder="t('activities.pick_player')" class="mt-1" data-help="act-players" />
                 </div>
                 <div>
                     <label :class="label">{{ t('activities.board_members') }}</label>
-                    <ParticipantPicker v-model="form.board_member_ids" :options="boardMembers" :placeholder="t('activities.pick_member')" class="mt-1" />
+                    <ParticipantPicker v-model="form.board_member_ids" :options="boardMembers" :placeholder="t('activities.pick_member')" class="mt-1" data-help="act-board" />
                 </div>
             </section>
 
-            <section :class="card">
+            <section :class="card" data-help="act-card-text">
                 <div>
                     <label :class="label">{{ t('activities.description') }}</label>
-                    <textarea v-model="form.description" rows="3" :class="field" />
+                    <textarea v-model="form.description" rows="3" :class="field" data-help="act-description" />
                 </div>
                 <div>
                     <label :class="label">{{ t('activities.report') }}</label>
-                    <textarea v-model="form.report" rows="8" :class="field" />
-                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('activities.report_hint') }}</p>
+                    <textarea v-model="form.report" rows="8" :class="field" data-help="act-report" />
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400" data-help="act-report-hint">{{ t('activities.report_hint') }}</p>
                     <InputError :message="form.errors.report" class="mt-1" />
                 </div>
             </section>
 
             <div class="flex justify-end gap-3">
                 <Link :href="activity ? route('activities.show', activity.id) : route('activities.index')" class="rounded-lg px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">{{ t('cancel') }}</Link>
-                <PrimaryButton :disabled="form.processing">{{ t('save') }}</PrimaryButton>
+                <PrimaryButton :disabled="form.processing" data-help="act-save">{{ t('save') }}</PrimaryButton>
             </div>
         </form>
     </AuthenticatedLayout>

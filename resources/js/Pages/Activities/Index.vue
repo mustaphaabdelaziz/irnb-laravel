@@ -52,7 +52,7 @@ const dates = (a) => {
         <template #header>
             <div class="flex items-center justify-between gap-3">
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('activities') }}</h1>
-                <Link v-if="can('activities', 'add')" :href="route('activities.create')" class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">
+                <Link v-if="can('activities', 'add')" :href="route('activities.create')" data-help="act-new" class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">
                     <Icon name="plus" class="h-4 w-4" /> {{ t('activities.add') }}
                 </Link>
             </div>
@@ -81,7 +81,7 @@ const dates = (a) => {
             </div>
 
             <ul class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                <li v-for="a in activities.data" :key="a.id">
+                <li v-for="a in activities.data" :key="a.id" :data-help="`act-card-${a.id}`">
                     <Link :href="route('activities.show', a.id)" class="flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 transition hover:ring-primary-300 dark:bg-slate-900 dark:ring-slate-800">
                         <img v-if="a.cover" :src="a.cover.thumb_url" alt="" loading="lazy" class="h-40 w-full object-cover" />
                         <div v-else class="flex h-40 items-center justify-center bg-slate-50 text-slate-300 dark:bg-slate-950 dark:text-slate-700"><Icon name="heart" class="h-10 w-10" /></div>

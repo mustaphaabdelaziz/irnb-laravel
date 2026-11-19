@@ -244,7 +244,7 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
                             </thead>
                             <tbody>
                                 <tr v-for="l in discrepancies" :key="l.id" class="border-b border-slate-50 dark:border-slate-800/50">
-                                    <td class="px-3 py-2 font-medium text-slate-800 dark:text-slate-200">{{ l.item?.unique_identifier }}</td>
+                                    <td class="px-3 py-2 font-medium text-slate-800 dark:text-slate-200">{{ l.item?.unique_identifier }} <span class="font-normal text-slate-400">{{ l.item?.catalog?.name }}</span></td>
                                     <td class="px-3 py-2 text-center"><span v-if="l.expected_quantity > 1" dir="ltr" :class="l.found_units >= l.expected_quantity ? 'text-emerald-600 dark:text-emerald-400' : (l.found_units > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-500 dark:text-rose-400')">{{ l.found_units }} / {{ l.expected_quantity }}</span><span v-else :class="l.found ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'"><Icon :name="l.found ? 'check' : 'xcircle'" /></span></td>
                                     <td class="px-3 py-2 text-slate-500 dark:text-slate-400">{{ stateLabel(l.expected_condition) }}<span v-if="l.expected_location"> · {{ l.expected_location }}</span></td>
                                     <td class="px-3 py-2 text-slate-700 dark:text-slate-300">{{ stateLabel(l.actual_condition) }}<span v-if="l.actual_location"> · {{ l.actual_location }}</span></td>

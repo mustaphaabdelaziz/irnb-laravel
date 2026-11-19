@@ -30,6 +30,7 @@ class InventorySessionItem extends Model
         ];
     }
 
+    // Legacy per-line gap, kept for InventoryQuantityTest; found_units is the authoritative found rule.
     /** Units expected but not accounted for. An uncounted line is all missing. */
     public function getMissingQuantityAttribute(): int
     {

@@ -123,9 +123,8 @@ class EquipmentStocktakePdfTest extends TestCase
             if ($s->is($done)) {
                 $this->assertStringContainsString('38 / 40', $html);
             }
-            $text .= ' '.html_entity_decode(strip_tags(preg_replace('#<(style|script)\b.*?</>#s', '', $html)));
+            $text .= ' '.html_entity_decode(strip_tags(preg_replace('#<(style|script)\b.*?</\1>#s', '', $html)));
         }
-        $text = html_entity_decode(strip_tags(preg_replace('#<(style|script)\b.*?</\1>#s', '', $html)));
         $text = preg_replace('/INV-\d+|\d{4}-\d{2}-\d{2}( \d{2}:\d{2})?/', '', $text);
         $this->assertDoesNotMatchRegularExpression('/[A-Za-z]{3,}/', $text, 'English left in: '.$text);
     }

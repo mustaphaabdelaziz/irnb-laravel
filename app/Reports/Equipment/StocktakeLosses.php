@@ -14,8 +14,9 @@ use Illuminate\Support\Facades\DB;
 /**
  * Completed stock-takes with the units expected, found and missing, and what
  * the missing units were worth (lot price, else the catalog's reference
- * price). Missing = expected − found per line, never negative
- * (InventorySessionItem::missing_quantity); an uncounted line is all missing.
+ * price). Missing = expected − found per line, never negative, where found
+ * is InventorySessionItem::found_units (the FOUND_UNITS_SQL constant here);
+ * an uncounted line is all missing.
  */
 class StocktakeLosses extends Report
 {

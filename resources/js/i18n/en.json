@@ -70,7 +70,7 @@
     "activities.report": "Activity report",
     "activities.report_hint": "This text is printed in the literary report when “Include details” is ticked",
     "activities.report_photo": "Report photo",
-    "activities.report_photo_hint": "One photo per activity, printed in the literary report's photo appendix",
+    "activities.report_photo_hint": "One photo per activity, printed in the literary report's photo appendix; if you pick none, the first photo is printed",
     "activities.responsible": "Person in charge",
     "activities.result": "Result",
     "activities.result_hint": "E.g. champion, runner-up",

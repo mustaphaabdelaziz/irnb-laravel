@@ -117,7 +117,7 @@ const card = 'rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-s
                     </div>
                     <p v-if="photoForm.errors.photos || Object.keys(photoForm.errors).length" class="mb-2 text-sm text-red-600 dark:text-red-400">{{ Object.values(photoForm.errors)[0] }}</p>
                     <ul v-if="a.photos.length" class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                        <li v-for="p in a.photos" :key="p.id" :data-help="`act-photo-${p.id}`" class="group relative overflow-hidden rounded-xl ring-1 ring-slate-200 dark:ring-slate-800" :class="p.in_report ? 'ring-2 ring-primary-500' : ''">
+                        <li v-for="p in a.photos" :key="p.id" :data-help="`act-photo-${p.id}`" class="group relative overflow-hidden rounded-xl" :class="p.in_report ? 'ring-2 ring-primary-500 dark:ring-primary-300' : 'ring-1 ring-slate-200 dark:ring-slate-800'">
                             <button type="button" class="block w-full" :data-help="`act-photo-open-${p.id}`" @click="lightbox = p"><img :src="p.thumb_url" :alt="p.caption || ''" loading="lazy" class="h-32 w-full object-cover" /></button>
                             <div class="space-y-1 p-2 text-xs">
                                 <div v-if="captionEdit === p.id" class="flex gap-1">
@@ -176,7 +176,7 @@ const card = 'rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-s
                         <li v-for="f in a.files" :key="f.id" :data-help="`act-file-${f.id}`" class="flex items-center justify-between gap-2 py-2">
                             <a :href="route('activities.files.show', [a.id, f.id])" target="_blank" class="truncate hover:underline">{{ f.original_name }}</a>
                             <span class="flex shrink-0 items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-                                {{ size(f.size) }}
+                                <bdi dir="ltr">{{ size(f.size) }}</bdi>
                                 <IconButton v-if="canEdit" icon="trash" :label="t('delete')" variant="danger" plain size="sm" :data-help="`act-file-trash-${f.id}`" @click="confirm = { kind: 'file', id: f.id }" />
                             </span>
                         </li>

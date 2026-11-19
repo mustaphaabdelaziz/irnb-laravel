@@ -70,7 +70,7 @@
     "activities.report": "تقرير النشاط",
     "activities.report_hint": "يُطبع هذا النص في التقرير الأدبي عند اختيار «إضافة التفاصيل»",
     "activities.report_photo": "صورة التقرير",
-    "activities.report_photo_hint": "صورة واحدة لكل نشاط تُطبع في ملحق صور التقرير الأدبي",
+    "activities.report_photo_hint": "صورة واحدة لكل نشاط تُطبع في ملحق صور التقرير الأدبي، وإن لم تختر صورة تُطبع الأولى",
     "activities.responsible": "المسؤول",
     "activities.result": "النتيجة",
     "activities.result_hint": "مثال: بطل الدورة، وصيف",

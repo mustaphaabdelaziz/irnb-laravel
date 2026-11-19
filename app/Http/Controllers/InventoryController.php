@@ -68,7 +68,7 @@ class InventoryController extends Controller
             // off, and units out on loan are with the borrower, not on a shelf.
             $stock = app(EquipmentStockService::class);
             $items = EquipmentItem::whereNotIn('status', ['Retired', 'Lost'])
-                ->with('rentals')
+                ->with(['rentals' => fn ($q) => $q->whereNull('return_date')])
                 ->get(['id', 'status', 'condition', 'location', 'quantity']);
 
             $expectedTotal = 0;
@@ -136,7 +136,7 @@ class InventoryController extends Controller
         $errors = [];
         foreach ($data['items'] as $i => $row) {
             $max = $lines[$row['id']] ?? null;
-            if ($max !== null && isset($row['found_quantity']) && $row['found_quantity'] > $max) {
+            if ($max !== null && $row['found'] && isset($row['found_quantity']) && $row['found_quantity'] > $max) {
                 $errors["items.$i.found_quantity"] = __('validation.max.numeric', ['attribute' => __('Found'), 'max' => $max]);
             }
         }
@@ -205,14 +205,8 @@ class InventoryController extends Controller
             $missing = 0;
             $stock = app(EquipmentStockService::class);
 
-            foreach ($session->items()->with('item')->get() as $line) {
+            foreach ($session->items()->with(['item.rentals' => fn ($q) => $q->whereNull('return_date')])->get() as $line) {
                 if (! $line->counted) {
-                    continue;
-                }
-
-                // The item was lost or retired after the sheet was made: it has
-                // already left stock, so the count must not condemn it again.
-                if (! $line->item || in_array($line->item->status, ['Lost', 'Retired'], true)) {
                     continue;
                 }
 
@@ -221,10 +215,17 @@ class InventoryController extends Controller
                 $foundUnits = $line->found ? (int) ($line->found_quantity ?? $line->expected_quantity) : 0;
                 $missingUnits = max(0, $line->expected_quantity - $foundUnits);
 
+                // Totals stay as computed from the sheet, whatever happens to stock.
                 $found += $foundUnits;
                 $missing += $missingUnits;
 
-                if ($line->item && $foundUnits > 0) {
+                // The item was lost or retired after the sheet was made: it has
+                // already left stock, so the count must not condemn it again.
+                if (! $line->item || in_array($line->item->status, ['Lost', 'Retired'], true)) {
+                    continue;
+                }
+
+                if ($foundUnits > 0) {
                     $update = [];
                     if ($line->actual_condition && $line->actual_condition !== $line->item->condition) {
                         $update['condition'] = $line->actual_condition;

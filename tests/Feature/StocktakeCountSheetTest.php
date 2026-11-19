@@ -3,12 +3,14 @@
 namespace Tests\Feature;
 
 use App\Models\EquipmentCatalog;
+use App\Models\EquipmentHistory;
 use App\Models\EquipmentItem;
 use App\Models\InventorySession;
 use App\Models\InventorySessionItem;
 use App\Models\User;
 use App\Services\Equipment\EquipmentLifecycleService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -137,29 +139,92 @@ class StocktakeCountSheetTest extends TestCase
 
         $this->actingAs($this->admin)->put(route('inventory.counts', $session), ['items' => [
             ['id' => $line->id, 'found' => true, 'found_quantity' => 5],
-        ]]);
-        $this->actingAs($this->admin)->post(route('inventory.complete', $session));
+        ]])->assertSessionHasNoErrors();
+        $this->actingAs($this->admin)->post(route('inventory.complete', $session))->assertSessionHasNoErrors();
 
         // 5 expected-but-missing, but only 6 are in the club and 5 were seen: write off 1.
         $this->assertSame(1, (int) EquipmentItem::where('status', 'Lost')->sum('quantity'));
         $this->assertSame(9, $lot->fresh()->quantity);
     }
 
+    /** @return array<string, array{0: string}> */
+    public static function leftStock(): array
+    {
+        return ['lost' => ['Lost'], 'retired' => ['Retired']];
+    }
+
     #[Test]
-    public function an_item_lost_since_the_sheet_was_made_is_skipped(): void
+    #[DataProvider('leftStock')]
+    public function an_item_lost_or_retired_since_the_sheet_was_made_is_skipped(string $status): void
     {
         $lot = $this->lot(6);
         $session = $this->start();
         $line = $this->line($session, $lot);
-        $lot->update(['status' => 'Lost']);
+        $lot->update(['status' => $status]);
 
+        // Partial count: without the skip, 4 units would be split into a new Lost lot.
         $this->actingAs($this->admin)->put(route('inventory.counts', $session), ['items' => [
-            ['id' => $line->id, 'found' => false, 'found_quantity' => 0],
-        ]]);
-        $this->actingAs($this->admin)->post(route('inventory.complete', $session));
+            ['id' => $line->id, 'found' => true, 'found_quantity' => 2],
+        ]])->assertSessionHasNoErrors();
+        $this->actingAs($this->admin)->post(route('inventory.complete', $session))->assertSessionHasNoErrors();
 
         $this->assertSame(1, EquipmentItem::count(), 'no second lost lot');
         $this->assertSame(6, $lot->fresh()->quantity);
+        $this->assertSame(0, EquipmentHistory::where('event_type', 'Lost')->count());
+        // Totals still reflect the sheet.
+        $this->assertSame(2, $session->fresh()->total_found);
+        $this->assertSame(4, $session->fresh()->total_missing);
+    }
+
+    #[Test]
+    public function missing_lot_with_a_loan_writes_off_only_the_units_in_the_club(): void
+    {
+        $lot = $this->lot(20);
+        $this->lend($lot, 5);
+        $session = $this->start();
+        $line = $this->line($session, $lot);
+
+        $this->actingAs($this->admin)->put(route('inventory.counts', $session), ['items' => [
+            ['id' => $line->id, 'found' => false],
+        ]])->assertSessionHasNoErrors();
+        $this->actingAs($this->admin)->post(route('inventory.complete', $session))->assertSessionHasNoErrors();
+
+        $lost = EquipmentItem::where('status', 'Lost')->get();
+        $this->assertCount(1, $lost);
+        $this->assertSame(15, $lost->first()->quantity);
+        $this->assertSame(5, $lot->fresh()->quantity);
+        $this->assertNotSame('Lost', $lot->fresh()->status);
+        $this->assertSame(1, $lot->rentals()->whereNull('return_date')->count());
+    }
+
+    #[Test]
+    public function found_with_zero_quantity_is_stored_as_not_found(): void
+    {
+        $lot = $this->lot(10);
+        $session = $this->start();
+        $line = $this->line($session, $lot);
+
+        $this->actingAs($this->admin)->put(route('inventory.counts', $session), ['items' => [
+            ['id' => $line->id, 'found' => true, 'found_quantity' => 0],
+        ]])->assertSessionHasNoErrors();
+
+        $this->assertFalse((bool) $line->fresh()->found);
+        $this->assertSame(0, $line->fresh()->found_quantity);
+    }
+
+    #[Test]
+    public function found_without_a_quantity_means_the_whole_line(): void
+    {
+        $lot = $this->lot(40);
+        $session = $this->start();
+        $line = $this->line($session, $lot);
+
+        $this->actingAs($this->admin)->put(route('inventory.counts', $session), ['items' => [
+            ['id' => $line->id, 'found' => true],
+        ]])->assertSessionHasNoErrors();
+
+        $this->assertTrue((bool) $line->fresh()->found);
+        $this->assertSame(40, $line->fresh()->found_quantity);
     }
 
     #[Test]

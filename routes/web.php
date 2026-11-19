@@ -250,6 +250,8 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
     Route::delete('/players/{player}/documents/files/{file}', [PlayerDocumentController::class, 'destroyFile'])->name('players.documents.files.destroy');
 
     // Subscriptions
+    // Before the resource: otherwise "manual-debts" is read as a {subscription} id.
+    Route::get('/subscriptions/manual-debts', [SubscriptionController::class, 'manualDebts'])->name('subscriptions.manual-debts');
     Route::resource('subscriptions', SubscriptionController::class);
     Route::post('/subscriptions/{subscription}/assign', [SubscriptionController::class, 'assign'])->name('subscriptions.assign');
     Route::post('/subscriptions/{subscription}/assign-one', [SubscriptionController::class, 'assignOne'])->name('subscriptions.assignOne');

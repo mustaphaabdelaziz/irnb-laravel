@@ -22,6 +22,7 @@ use App\Support\UiLang;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -136,6 +137,102 @@ class SubscriptionController extends Controller
         }
 
         return $stats;
+    }
+
+    /**
+     * Every obligation behind the "No branch" row of the index: manual debts
+     * and obligations of a subscription with no branch. Read-only; paying,
+     * editing and deleting stay on the player's page.
+     *
+     * "Remaining" depends on discounts and exemptions, so status filtering and
+     * ordering happen in PHP on plain rows. The bucket is small: it only holds
+     * debts typed by hand.
+     */
+    public function manualDebts(Request $request): Response
+    {
+        $status = in_array($request->query('status'), ['unpaid', 'paid'], true) ? $request->query('status') : null;
+        $search = is_string($request->query('search')) ? trim($request->query('search')) : '';
+
+        $columns = ['id', 'amount_owed', 'amount_paid', 'is_exempt', 'discount_type', 'discount_value', 'created_at'];
+        $withMoney = fn ($row) => ['id' => (int) $row->id, 'created_at' => (string) $row->created_at]
+            + PlayerSubscription::moneyFor($row->amount_owed, $row->amount_paid, (bool) $row->is_exempt, $row->discount_type, $row->discount_value);
+
+        $bucket = PlayerSubscription::query()->withoutBranch()->toBase()->get($columns)->map($withMoney);
+
+        $rows = $search === '' ? $bucket : PlayerSubscription::query()->withoutBranch()
+            // Every word must be found somewhere: in the label, the subscription
+            // name, or one of the player's names / membership id.
+            ->where(function (Builder $query) use ($search) {
+                foreach (preg_split('/\s+/u', $search) as $word) {
+                    $like = '%'.$word.'%';
+                    $query->where(fn (Builder $q) => $q
+                        ->where('label', 'like', $like)
+                        ->orWhereHas('subscription', fn (Builder $s) => $s->where('name', 'like', $like))
+                        ->orWhereHas('player', fn (Builder $p) => $p->where(fn (Builder $p) => $p
+                            ->where('firstname', 'like', $like)
+                            ->orWhere('lastname', 'like', $like)
+                            ->orWhere('nickname', 'like', $like)
+                            ->orWhere('father', 'like', $like)
+                            ->orWhere('membership_id', 'like', $like))));
+                }
+            })
+            ->toBase()->get($columns)->map($withMoney);
+
+        if ($status !== null) {
+            $rows = $rows->filter(fn (array $row) => ($row['remaining'] > 0) === ($status === 'unpaid'));
+        }
+
+        // Something left to pay first, then the newest.
+        $rows = $rows->sort(fn (array $a, array $b) => [$b['remaining'] > 0, $b['created_at'], $b['id']]
+            <=> [$a['remaining'] > 0, $a['created_at'], $a['id']])->values();
+
+        $perPage = 25;
+        $page = max(1, (int) $request->query('page', 1));
+        $ids = $rows->forPage($page, $perPage)->pluck('id');
+
+        $models = PlayerSubscription::query()
+            ->with(['subscription', 'player:id,membership_id,'.implode(',', Player::NAME_COLUMNS)])
+            ->whereIn('id', $ids)
+            ->get()
+            ->keyBy('id');
+
+        $items = $ids->map(function (int $id) use ($models) {
+            $debt = $models[$id];
+            $money = $debt->money();
+
+            return [
+                'id' => $debt->id,
+                'player' => $debt->player ? [
+                    'id' => $debt->player->id,
+                    'fullname' => $debt->player->fullname,
+                    'membership_id' => $debt->player->membership_id,
+                ] : null,
+                'label' => $debt->subscription?->name ?? $debt->label,
+                'season' => $debt->subscription ? $debt->subscription->year_label : ($debt->year ? (string) $debt->year : null),
+                'is_manual' => $debt->subscription_id === null,
+                'owed' => $money['owed'],
+                'paid' => $money['paid'],
+                'remaining' => $money['remaining'],
+                'status' => $money['status'],
+                // Through the model's serializer, so it is on the club's clock.
+                'created_at' => $debt->attributesToArray()['created_at'] ?? null,
+            ];
+        })->all();
+
+        return Inertia::render('Subscriptions/ManualDebts', [
+            'debts' => new LengthAwarePaginator($items, $rows->count(), $perPage, $page, [
+                'path' => $request->url(),
+                'query' => $request->query(),
+            ]),
+            // The whole bucket, whatever the filters: these equal the index row.
+            'strip' => [
+                ['key' => 'debts_count', 'value' => $bucket->count(), 'format' => 'number'],
+                ['key' => 'debts_owed', 'value' => round($bucket->sum('owed'), 2), 'format' => 'money'],
+                ['key' => 'debts_collected', 'value' => round($bucket->sum('paid'), 2), 'format' => 'money'],
+                ['key' => 'debts_left', 'value' => round($bucket->sum('remaining'), 2), 'format' => 'money'],
+            ],
+            'filters' => array_filter(['status' => $status, 'search' => $search], fn ($v) => $v !== null && $v !== ''),
+        ]);
     }
 
     /**

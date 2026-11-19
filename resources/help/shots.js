@@ -1410,8 +1410,10 @@ export default [
         },
     },
     // Stock-take: session 2 «INV-<year>-02» (monthly, in progress, nothing counted, participant أمين قاسمي).
+    // Its sheet follows the store rule: the balls line expects 18 (2 on loan to أحمد, «2 معارة»), «مرمى 1»
+    // (item 1, lent to مراد بلقاسم) has no line, «ساعة توقيت 2» (item 8, under repair) has one.
     // Nothing is saved: «بدء الجرد», «حفظ العد», «إنهاء الجرد» and the participants' «حفظ» are only ringed;
-    // a line set to «مفقود» or a participant picked stays in the page.
+    // a line set to «مفقود», a typed number or note, or a participant picked stays in the page.
     {
         name: 'eq-stock-take-list',
         url: '/equipment/stocktake',
@@ -1432,12 +1434,15 @@ export default [
     },
     { name: 'eq-stock-take-session', url: '/equipment/stocktake/2', targets: ['stk-mark-all', 'stk-save-counts', 'stk-complete', 'stk-report', 'stk-export'] },
     {
-        // «ساعة توقيت 3» (item 9) not found: its line set to «مفقود» in the page only. Line 7 shows the two lists.
+        // «ساعة توقيت 3» (item 9) not found: its line set to «مفقود»; the cones (item 4, a group of 40)
+        // typed as 38 found, with a note. In the page only. Line 7 shows the two lists.
         name: 'eq-stock-take-lines',
         url: '/equipment/stocktake/2',
-        targets: ['stk-line-9', 'stk-missing-9', 'stk-condition-7', 'stk-location-7', 'stk-found-1'],
+        targets: ['stk-line-9', 'stk-missing-9', 'stk-qty-4', 'stk-note-4', 'stk-condition-7', 'stk-location-7'],
         before: async (page) => {
             await page.locator('[data-help="stk-missing-9"]').click();
+            await page.locator('[data-help="stk-qty-4"]').fill('38');
+            await page.locator('[data-help="stk-note-4"]').fill('ضاع قمعان في التدريب');
             await blur(page);
             await centre(page, 'stk-line-8');
         },

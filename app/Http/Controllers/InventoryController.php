@@ -64,23 +64,34 @@ class InventoryController extends Controller
                 'notes' => $data['notes'] ?? null,
             ]);
 
-            // Snapshot every non-retired item into the count sheet.
-            $items = EquipmentItem::where('status', '!=', 'Retired')
+            // Only units in the club are counted: lost lots are already written
+            // off, and units out on loan are with the borrower, not on a shelf.
+            $stock = app(EquipmentStockService::class);
+            $items = EquipmentItem::whereNotIn('status', ['Retired', 'Lost'])
+                ->with('rentals')
                 ->get(['id', 'status', 'condition', 'location', 'quantity']);
 
+            $expectedTotal = 0;
             foreach ($items as $it) {
+                $onLoan = min($it->quantity, $stock->outstandingQuantity($it));
+                $expected = $it->quantity - $onLoan;
+                if ($expected < 1) {
+                    continue; // wholly on loan: nothing to find
+                }
+
                 InventorySessionItem::create([
                     'inventory_session_id' => $session->id,
                     'equipment_item_id' => $it->id,
                     'expected_status' => $it->status,
                     'expected_condition' => $it->condition,
                     'expected_location' => $it->location,
-                    // How many units of this lot the counter should find.
-                    'expected_quantity' => $it->quantity,
+                    'expected_quantity' => $expected,
+                    'on_loan_quantity' => $onLoan,
                 ]);
+                $expectedTotal += $expected;
             }
-            // Expected is a number of units to find, not a number of lots.
-            $session->update(['total_expected' => (int) $items->sum('quantity')]);
+            // Expected is a number of units to find, not a number of lines.
+            $session->update(['total_expected' => $expectedTotal]);
 
             ActivityRecorder::record($request->user(), ActivityAction::STOCKTAKE_STARTED, $session);
 
@@ -121,12 +132,26 @@ class InventoryController extends Controller
             'items.*.note' => ['nullable', 'string', 'max:500'],
         ]);
 
+        $lines = $session->items()->pluck('expected_quantity', 'id');
+        $errors = [];
+        foreach ($data['items'] as $i => $row) {
+            $max = $lines[$row['id']] ?? null;
+            if ($max !== null && isset($row['found_quantity']) && $row['found_quantity'] > $max) {
+                $errors["items.$i.found_quantity"] = __('validation.max.numeric', ['attribute' => __('Found'), 'max' => $max]);
+            }
+        }
+        if ($errors) {
+            throw \Illuminate\Validation\ValidationException::withMessages($errors);
+        }
+
         foreach ($data['items'] as $row) {
             InventorySessionItem::where('id', $row['id'])->where('inventory_session_id', $session->id)
                 ->update([
                     'counted' => true,
-                    'found' => $row['found'],
-                    'found_quantity' => $row['found'] ? ($row['found_quantity'] ?? null) : 0,
+                    'found' => $row['found'] && (($row['found_quantity'] ?? 1) > 0),
+                    'found_quantity' => $row['found']
+                        ? ($row['found_quantity'] ?? ($lines[$row['id']] ?? 1))
+                        : 0,
                     'actual_condition' => $row['actual_condition'] ?? null,
                     'actual_location' => $row['actual_location'] ?? null,
                     'note' => $row['note'] ?? null,
@@ -185,6 +210,12 @@ class InventoryController extends Controller
                     continue;
                 }
 
+                // The item was lost or retired after the sheet was made: it has
+                // already left stock, so the count must not condemn it again.
+                if (! $line->item || in_array($line->item->status, ['Lost', 'Retired'], true)) {
+                    continue;
+                }
+
                 // Units, not lines: a lot of 50 where 47 turned up is 47 found
                 // and 3 missing, not one "found" tick.
                 $foundUnits = $line->found ? (int) ($line->found_quantity ?? $line->expected_quantity) : 0;
@@ -206,9 +237,13 @@ class InventoryController extends Controller
                     }
                 }
 
-                if ($line->item && $missingUnits > 0) {
-                    // Only the missing units are condemned; the rest stay in service.
-                    $stock->writeOffMissing($line->item, $missingUnits, $session->conducted_by_user_id);
+                if ($missingUnits > 0) {
+                    $inClub = max(0, $line->item->quantity - $stock->outstandingQuantity($line->item));
+                    $toWriteOff = min($missingUnits, max(0, $inClub - $foundUnits));
+                    if ($toWriteOff > 0) {
+                        // Only the missing units are condemned; the rest stay in service.
+                        $stock->writeOffMissing($line->item, $toWriteOff, $session->conducted_by_user_id);
+                    }
                 }
             }
 

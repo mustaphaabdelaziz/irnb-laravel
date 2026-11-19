@@ -12,7 +12,7 @@ class InventorySessionItem extends Model
 
     protected $fillable = [
         'inventory_session_id', 'equipment_item_id', 'expected_status',
-        'expected_condition', 'expected_location', 'expected_quantity',
+        'expected_condition', 'expected_location', 'expected_quantity', 'on_loan_quantity',
         'counted', 'found', 'found_quantity',
         'actual_condition', 'actual_location', 'note',
     ];
@@ -23,6 +23,7 @@ class InventorySessionItem extends Model
             'counted' => 'boolean',
             'found' => 'boolean',
             'expected_quantity' => 'integer',
+            'on_loan_quantity' => 'integer',
             'found_quantity' => 'integer',
         ];
     }

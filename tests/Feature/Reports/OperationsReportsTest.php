@@ -124,6 +124,19 @@ class OperationsReportsTest extends TestCase
         $this->assertEquals(['expected' => 16, 'found' => 7, 'missing' => 9, 'missing_value' => 135], collect($props['rows']['data'][0])->only(['expected', 'found', 'missing', 'missing_value'])->all());
     }
 
+    #[Test]
+    public function stocktake_losses_treat_old_style_found_lines_as_fully_found(): void
+    {
+        $old = $this->lot('Balls', 10, ['unit_price' => 25]);
+        $new = $this->lot('Bibs', 10, ['unit_price' => 25]);
+        $session = InventorySession::create(['reference' => 'INV-3', 'type' => 'ad_hoc', 'session_date' => '2026-10-01', 'status' => 'completed']);
+        InventorySessionItem::create(['inventory_session_id' => $session->id, 'equipment_item_id' => $old->id, 'expected_status' => 'Available', 'expected_quantity' => 10, 'counted' => true, 'found' => true, 'found_quantity' => null]);
+        InventorySessionItem::create(['inventory_session_id' => $session->id, 'equipment_item_id' => $new->id, 'expected_status' => 'Available', 'expected_quantity' => 10, 'counted' => true, 'found' => true, 'found_quantity' => 7]);
+
+        $props = $this->report('equipment', 'stocktake');
+        $this->assertEquals(['expected' => 20, 'found' => 17, 'missing' => 3, 'missing_value' => 75], collect($props['rows']['data'][0])->only(['expected', 'found', 'missing', 'missing_value'])->all());
+    }
+
     // Competitions ------------------------------------------------------------
 
     private function rules(): array

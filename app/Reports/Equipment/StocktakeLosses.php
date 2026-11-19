@@ -19,6 +19,9 @@ use Illuminate\Support\Facades\DB;
  */
 class StocktakeLosses extends Report
 {
+    /** Units found per line, same rule as InventorySessionItem::found_units (boolean-safe on SQLite, MySQL and PostgreSQL). */
+    private const FOUND_UNITS_SQL = 'CASE WHEN inventory_session_items.counted AND inventory_session_items.found THEN COALESCE(inventory_session_items.found_quantity, inventory_session_items.expected_quantity) ELSE 0 END';
+
     /** @var array<string, Collection<int, array<string, mixed>>> */
     private array $memo = [];
 
@@ -125,19 +128,21 @@ class StocktakeLosses extends Report
             return collect();
         }
 
+        $found = self::FOUND_UNITS_SQL;
+
         $lines = DB::table('inventory_session_items')
             ->join('equipment_items', 'equipment_items.id', '=', 'inventory_session_items.equipment_item_id')
             ->join('equipment_catalogs', 'equipment_catalogs.id', '=', 'equipment_items.catalog_id')
             ->whereIn('inventory_session_items.inventory_session_id', $sessions->modelKeys())
             ->groupBy('inventory_session_items.inventory_session_id')
-            ->selectRaw('inventory_session_items.inventory_session_id as session_id,
+            ->selectRaw("inventory_session_items.inventory_session_id as session_id,
                 SUM(inventory_session_items.expected_quantity) as expected,
-                SUM(COALESCE(inventory_session_items.found_quantity, 0)) as found,
-                SUM(CASE WHEN inventory_session_items.expected_quantity > COALESCE(inventory_session_items.found_quantity, 0)
-                    THEN inventory_session_items.expected_quantity - COALESCE(inventory_session_items.found_quantity, 0) ELSE 0 END) as missing,
-                SUM(CASE WHEN inventory_session_items.expected_quantity > COALESCE(inventory_session_items.found_quantity, 0)
-                    THEN (inventory_session_items.expected_quantity - COALESCE(inventory_session_items.found_quantity, 0))
-                        * COALESCE(equipment_items.unit_price, equipment_catalogs.purchase_price, 0) ELSE 0 END) as missing_value')
+                SUM({$found}) as found,
+                SUM(CASE WHEN inventory_session_items.expected_quantity > {$found}
+                    THEN inventory_session_items.expected_quantity - {$found} ELSE 0 END) as missing,
+                SUM(CASE WHEN inventory_session_items.expected_quantity > {$found}
+                    THEN (inventory_session_items.expected_quantity - {$found})
+                        * COALESCE(equipment_items.unit_price, equipment_catalogs.purchase_price, 0) ELSE 0 END) as missing_value")
             ->get()->keyBy('session_id');
 
         return $sessions->map(fn (InventorySession $s) => [

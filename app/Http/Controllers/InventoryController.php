@@ -232,6 +232,8 @@ class InventoryController extends Controller
 
                 // The item was lost or retired after the sheet was made: it has
                 // already left stock, so the count must not condemn it again.
+                // This skip also bypasses the condition/location update below,
+                // not only the write-off: never move that update above it.
                 if (! $line->item || in_array($line->item->status, ['Lost', 'Retired'], true)) {
                     continue;
                 }

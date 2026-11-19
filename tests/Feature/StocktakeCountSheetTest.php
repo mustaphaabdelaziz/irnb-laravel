@@ -237,8 +237,8 @@ class StocktakeCountSheetTest extends TestCase
 
         $this->actingAs($this->admin)->put(route('inventory.counts', $session), ['items' => [
             ['id' => $line->id, 'found' => false],
-        ]]);
-        $this->actingAs($this->admin)->post(route('inventory.complete', $session));
+        ]])->assertSessionHasNoErrors();
+        $this->actingAs($this->admin)->post(route('inventory.complete', $session))->assertSessionHasNoErrors();
 
         $this->assertSame('Lost', $unit->fresh()->status);
     }

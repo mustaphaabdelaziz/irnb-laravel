@@ -5,10 +5,11 @@ import Pagination from '@/Components/Pagination.vue';
 import Badge from '@/Components/Badge.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import IconButton from '@/Components/IconButton.vue';
-import { Head, router } from '@inertiajs/vue3';
+import Icon from '@/Components/Icon.vue';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { asList, useListFilters } from '@/Composables/useListFilters';
 import MultiSelectFilter from '@/Components/MultiSelectFilter.vue';
 
@@ -47,6 +48,13 @@ const { loading: filtering } = useListFilters('subscriptions.index', () => ({
 }), { only: ['subscriptions', 'filters'] });
 
 const branchName = (row) => row.branch_id === null ? t('no_branch') : row.name;
+
+// A branch row narrows the list below to that branch and brings it into view.
+const list = ref(null);
+function showBranch(branchId) {
+    branchFilter.value = [String(branchId)];
+    nextTick(() => list.value?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+}
 
 const deleteId = ref(null);
 
@@ -95,7 +103,13 @@ function destroy() {
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                             <tr v-for="row in branchStats" :key="row.branch_id ?? 'none'" class="hover:bg-slate-50 dark:hover:bg-slate-800">
-                                <td class="px-4 py-3 text-sm font-medium" :class="row.branch_id === null ? 'text-slate-400 dark:text-slate-400 italic' : 'text-slate-900 dark:text-slate-100'">{{ branchName(row) }}</td>
+                                <td class="px-4 py-3 text-sm font-medium">
+                                    <Link v-if="row.branch_id === null" :href="route('subscriptions.manual-debts')" :title="t('manual_debts')" class="inline-flex items-center gap-1 italic text-primary-600 hover:text-primary-800 hover:underline dark:text-primary-300 dark:hover:text-primary-200">
+                                        {{ branchName(row) }}
+                                        <Icon name="arrow" class="h-4 w-4 rtl:rotate-180" aria-hidden="true" />
+                                    </Link>
+                                    <button v-else type="button" :title="t('show_branch_subscriptions')" class="text-start text-slate-900 hover:text-primary-600 hover:underline dark:text-slate-100 dark:hover:text-primary-300" @click="showBranch(row.branch_id)">{{ branchName(row) }}</button>
+                                </td>
                                 <td class="px-4 py-3 text-end text-sm">{{ formatMoney(row.owed) }}</td>
                                 <td class="px-4 py-3 text-end text-sm text-emerald-700 dark:text-emerald-400">{{ formatMoney(row.collected) }}</td>
                                 <td class="px-4 py-3 text-end text-sm" :class="row.outstanding > 0 ? 'text-rose-700 dark:text-rose-400 font-semibold' : 'text-slate-500 dark:text-slate-400'">{{ formatMoney(row.outstanding) }}</td>
@@ -108,7 +122,7 @@ function destroy() {
             </div>
 
             <!-- Filters -->
-            <div class="flex flex-wrap items-end gap-3">
+            <div ref="list" class="flex scroll-mt-24 flex-wrap items-end gap-3">
                 <div>
                     <label class="block text-xs font-medium text-slate-500 dark:text-slate-400">{{ t('branch') }}</label>
                     <MultiSelectFilter v-model="branchFilter" :options="branchOptions" :placeholder="t('all_branches')" class="mt-1 w-48" />

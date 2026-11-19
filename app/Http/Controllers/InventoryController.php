@@ -212,7 +212,7 @@ class InventoryController extends Controller
 
                 // Units, not lines: a lot of 50 where 47 turned up is 47 found
                 // and 3 missing, not one "found" tick.
-                $foundUnits = $line->found ? (int) ($line->found_quantity ?? $line->expected_quantity) : 0;
+                $foundUnits = $line->found_units;
                 $missingUnits = max(0, $line->expected_quantity - $foundUnits);
 
                 // Totals stay as computed from the sheet, whatever happens to stock.
@@ -274,7 +274,7 @@ class InventoryController extends Controller
             return [
                 $l->item?->unique_identifier, $l->item?->catalog?->name, EquipmentItem::stateLabel($l->expected_status),
                 EquipmentItem::stateLabel($l->expected_condition), $l->expected_location, $found,
-                $l->counted ? (int) ($l->found ? ($l->found_quantity ?? $l->expected_quantity) : 0) : '', $l->expected_quantity,
+                $l->counted ? $l->found_units : '', $l->expected_quantity,
                 EquipmentItem::stateLabel($l->actual_condition), $l->actual_location, $l->note,
             ];
         })->all();

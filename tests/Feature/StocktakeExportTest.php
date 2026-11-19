@@ -7,6 +7,7 @@ use App\Models\EquipmentItem;
 use App\Models\InventorySession;
 use App\Models\InventorySessionItem;
 use App\Models\User;
+use App\Support\UiLang;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -28,11 +29,31 @@ class StocktakeExportTest extends TestCase
             'counted' => true, 'found' => true, 'found_quantity' => 38, 'note' => 'تحت المدرج',
         ]);
 
+        $other = EquipmentItem::create(['catalog_id' => $catalog->id, 'purchase_date' => '2026-01-01', 'quantity' => 5]);
+        InventorySessionItem::create([
+            'inventory_session_id' => $session->id, 'equipment_item_id' => $other->id,
+            'expected_status' => 'Available', 'expected_quantity' => 5, 'counted' => false,
+        ]);
+
         $csv = $this->actingAs($admin)->get(route('inventory.export', [$session, 'format' => 'csv']))
             ->assertOk()->streamedContent();
 
-        $this->assertStringContainsString('38', $csv);
-        $this->assertStringContainsString('40', $csv);
-        $this->assertStringContainsString('تحت المدرج', $csv);
+        $lines = array_values(array_filter(preg_split('/\r?\n/', preg_replace('/^\xEF\xBB\xBF/', '', $csv))));
+        // First line is the title row, then the headers, then one row per line.
+        $header = str_getcsv($lines[1]);
+        $foundCol = array_search(UiLang::get('col.found_quantity'), $header, true);
+        $expectedCol = array_search(UiLang::get('col.expected_quantity'), $header, true);
+        $this->assertNotFalse($foundCol);
+        $this->assertNotFalse($expectedCol);
+
+        $rows = array_map('str_getcsv', array_slice($lines, 2));
+        $row = collect($rows)->first(fn ($r) => in_array('تحت المدرج', $r, true));
+        $uncounted = collect($rows)->first(fn ($r) => ! in_array('تحت المدرج', $r, true));
+        $this->assertSame('38', $row[$foundCol]);
+        $this->assertSame('40', $row[$expectedCol]);
+        $this->assertContains('تحت المدرج', $row);
+
+        $this->assertSame('', $uncounted[$foundCol]);
+        $this->assertSame('5', $uncounted[$expectedCol]);
     }
 }

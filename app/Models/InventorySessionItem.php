@@ -17,6 +17,8 @@ class InventorySessionItem extends Model
         'actual_condition', 'actual_location', 'note',
     ];
 
+    protected $appends = ['found_units'];
+
     protected function casts(): array
     {
         return [
@@ -32,6 +34,20 @@ class InventorySessionItem extends Model
     public function getMissingQuantityAttribute(): int
     {
         return max(0, $this->expected_quantity - (int) $this->found_quantity);
+    }
+
+    /**
+     * Units found on this line, the single rule everywhere: 0 when not counted
+     * or not found; a found line with no quantity (saved before quantities
+     * existed) means every expected unit turned up.
+     */
+    public function getFoundUnitsAttribute(): int
+    {
+        if (! $this->counted || ! $this->found) {
+            return 0;
+        }
+
+        return (int) ($this->found_quantity ?? $this->expected_quantity);
     }
 
     public function session(): BelongsTo

@@ -57,6 +57,46 @@ class EquipmentStocktakePdfTest extends TestCase
     }
 
     #[Test]
+    public function an_old_found_line_without_a_quantity_prints_every_unit_found(): void
+    {
+        $catalog = EquipmentCatalog::create(['name' => 'Cones', 'category' => 'Training']);
+        $item = EquipmentItem::create(['catalog_id' => $catalog->id, 'purchase_date' => '2026-01-01', 'quantity' => 50, 'condition' => 'Good']);
+        $session = InventorySession::create(['reference' => 'INV-4', 'type' => 'monthly', 'session_date' => '2026-10-01', 'status' => 'completed']);
+        InventorySessionItem::create([
+            'inventory_session_id' => $session->id, 'equipment_item_id' => $item->id,
+            'expected_status' => 'Available', 'expected_condition' => 'Good', 'expected_quantity' => 50,
+            'counted' => true, 'found' => true, 'found_quantity' => null, 'actual_condition' => 'Damaged',
+        ]);
+
+        app()->setLocale('ar');
+        $session->load(['items.item.catalog:id,name', 'conductedBy:id,name', 'participants.participant']);
+        $html = view('pdf.inventory-report', ['club' => ClubHeader::data(), 'session' => $session])->render();
+
+        $this->assertStringContainsString('50 / 50', $html);
+        $this->assertStringNotContainsString('0 / 50', str_replace('50 / 50', '', $html));
+        $this->assertStringNotContainsString('class="partial"', $html);
+    }
+
+    #[Test]
+    public function a_partly_found_line_uses_the_partial_colour(): void
+    {
+        $catalog = EquipmentCatalog::create(['name' => 'Cones', 'category' => 'Training']);
+        $item = EquipmentItem::create(['catalog_id' => $catalog->id, 'purchase_date' => '2026-01-01', 'quantity' => 40, 'condition' => 'Good']);
+        $session = InventorySession::create(['reference' => 'INV-5', 'type' => 'monthly', 'session_date' => '2026-10-01', 'status' => 'completed']);
+        InventorySessionItem::create([
+            'inventory_session_id' => $session->id, 'equipment_item_id' => $item->id,
+            'expected_status' => 'Available', 'expected_condition' => 'Good', 'expected_quantity' => 40,
+            'counted' => true, 'found' => true, 'found_quantity' => 38,
+        ]);
+
+        app()->setLocale('ar');
+        $session->load(['items.item.catalog:id,name', 'conductedBy:id,name', 'participants.participant']);
+        $html = view('pdf.inventory-report', ['club' => ClubHeader::data(), 'session' => $session])->render();
+
+        $this->assertStringContainsString('<td class="partial">', $html);
+    }
+
+    #[Test]
     public function the_arabic_stocktake_pdf_has_no_english_words(): void
     {
         $catalog = EquipmentCatalog::create(['name' => 'كرة', 'category' => 'Balls']);
@@ -68,10 +108,23 @@ class EquipmentStocktakePdfTest extends TestCase
             'counted' => true, 'found' => false, 'found_quantity' => 0,
         ]);
 
-        app()->setLocale('ar');
-        $session->load(['items.item.catalog:id,name', 'conductedBy:id,name', 'participants.participant']);
-        $html = view('pdf.inventory-report', ['club' => ClubHeader::data(), 'session' => $session])->render();
+        $done = InventorySession::create(['reference' => 'INV-6', 'type' => 'monthly', 'session_date' => '2026-10-02', 'status' => 'completed']);
+        InventorySessionItem::create([
+            'inventory_session_id' => $done->id, 'equipment_item_id' => $item->id,
+            'expected_status' => 'Available', 'expected_condition' => 'Good', 'expected_quantity' => 40,
+            'counted' => true, 'found' => true, 'found_quantity' => 38,
+        ]);
 
+        app()->setLocale('ar');
+        $text = '';
+        foreach ([$session, $done] as $s) {
+            $s->load(['items.item.catalog:id,name', 'conductedBy:id,name', 'participants.participant']);
+            $html = view('pdf.inventory-report', ['club' => ClubHeader::data(), 'session' => $s])->render();
+            if ($s->is($done)) {
+                $this->assertStringContainsString('38 / 40', $html);
+            }
+            $text .= ' '.html_entity_decode(strip_tags(preg_replace('#<(style|script)\b.*?</>#s', '', $html)));
+        }
         $text = html_entity_decode(strip_tags(preg_replace('#<(style|script)\b.*?</\1>#s', '', $html)));
         $text = preg_replace('/INV-\d+|\d{4}-\d{2}-\d{2}( \d{2}:\d{2})?/', '', $text);
         $this->assertDoesNotMatchRegularExpression('/[A-Za-z]{3,}/', $text, 'English left in: '.$text);

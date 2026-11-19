@@ -14,7 +14,7 @@
         table.tbl { width: 100%; border-collapse: collapse; }
         table.tbl th { background: #f1f5f9; padding: 6px; text-align: start; font-size: 11px; color: #475569; }
         table.tbl td { padding: 6px; border-bottom: 1px solid #eef2f6; font-size: 11px; }
-        .found { color: #047857; } .missing { color: #be123c; font-weight: bold; }
+        .found { color: #047857; } .partial { color: #b45309; } .missing { color: #be123c; font-weight: bold; }
         .footer { margin-top: 24px; font-size: 10px; color: #94a3b8; text-align: center; }
     </style>
 </head>
@@ -26,7 +26,7 @@
             return $l->counted && (! $l->found
                 || ($l->actual_condition && $l->actual_condition !== $l->expected_condition)
                 || ($l->actual_location && $l->actual_location !== $l->expected_location)
-                || ($l->found_quantity !== null && $l->found_quantity < $l->expected_quantity));
+                || $l->found_units < $l->expected_quantity);
         });
     @endphp
 
@@ -70,9 +70,9 @@
             @forelse ($discrepancies as $l)
                 <tr>
                     <td>{{ $l->item?->unique_identifier }} <span style="color:#94a3b8;">{{ $l->item?->catalog?->name }}</span></td>
-                    <td class="{{ $l->found ? 'found' : 'missing' }}">
+                    <td class="{{ $l->found_units >= $l->expected_quantity ? 'found' : ($l->found_units > 0 ? 'partial' : 'missing') }}">
                         @if ($l->expected_quantity > 1)
-                            <span dir="ltr">{{ (int) $l->found_quantity }} / {{ $l->expected_quantity }}</span>
+                            <span dir="ltr">{{ $l->found_units }} / {{ $l->expected_quantity }}</span>
                         @else
                             {{ $l->found ? __('Found') : __('Missing') }}
                         @endif

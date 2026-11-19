@@ -1,0 +1,24 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "nav-board-members": {
+      "x": 1.88,
+      "y": 41.88,
+      "w": 17.11,
+      "h": 5
+    },
+    "board-add-member": {
+      "x": 94.69,
+      "y": 23.25,
+      "w": 2.81,
+      "h": 4.5
+    },
+    "board-box-president": {
+      "x": 50,
+      "y": 33.25,
+      "w": 20,
+      "h": 9
+    }
+  }
+}

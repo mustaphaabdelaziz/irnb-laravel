@@ -1,0 +1,12 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "sub-outside-category": {
+      "x": 31.87,
+      "y": 36,
+      "w": 36.25,
+      "h": 2.5
+    }
+  }
+}

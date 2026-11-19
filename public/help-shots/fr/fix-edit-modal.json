@@ -1,0 +1,18 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "payment-edit-amount": {
+      "x": 34.38,
+      "y": 14,
+      "w": 31.25,
+      "h": 8.25
+    },
+    "payment-edit-save": {
+      "x": 57.29,
+      "y": 59.75,
+      "w": 8.34,
+      "h": 4.75
+    }
+  }
+}

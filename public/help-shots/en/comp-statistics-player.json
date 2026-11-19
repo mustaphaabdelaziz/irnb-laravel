@@ -1,0 +1,24 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "player-matches": {
+      "x": 22.5,
+      "y": 34.03,
+      "w": 75,
+      "h": 32
+    },
+    "player-matches-season": {
+      "x": 87.27,
+      "y": 36.53,
+      "w": 8.67,
+      "h": 4.75
+    },
+    "player-matches-totals": {
+      "x": 24.06,
+      "y": 43.28,
+      "w": 71.88,
+      "h": 7.5
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "eq-import-template": {
+      "x": 34.38,
+      "y": 59.5,
+      "w": 16.05,
+      "h": 4.5
+    },
+    "eq-import-template-xlsx": {
+      "x": 34.38,
+      "y": 65.5,
+      "w": 15,
+      "h": 4.5
+    }
+  }
+}

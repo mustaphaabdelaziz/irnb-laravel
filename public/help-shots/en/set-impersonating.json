@@ -1,0 +1,18 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "impersonate-banner": {
+      "x": 20,
+      "y": 0,
+      "w": 80,
+      "h": 5
+    },
+    "impersonate-leave": {
+      "x": 71.58,
+      "y": 1,
+      "w": 10.77,
+      "h": 3
+    }
+  }
+}

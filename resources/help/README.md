@@ -54,7 +54,12 @@ One-time setup on a new machine (the script drives the full Chromium build):
 1. Put `data-help="<name>"` on the element in the Vue page (attribute only).
 2. Add or extend the shot in `resources/help/shots.js`.
 3. `npm run build && npm run help:shots` (or `npm run help:shots -- <shot>`).
-4. Commit `public/help-shots/ar/*`.
+4. Redo the same shots for the translations: `npm run help:shots -- --locale=fr <shot>` and `--locale=en` (app in that language, same Arabic demo data, into `public/help-shots/<locale>`).
+5. Commit `public/help-shots/{ar,fr,en}/*`.
+
+## Translations (French, English)
+
+`resources/help/fr` and `resources/help/en` mirror `ar` file for file: same slugs, same `module`/`pages`/`related`, same blocks and `::figure` lines; only the text changes. A language is all or nothing (the Help Center switches when the folder exists), and a test checks that every Arabic article has its French and English twin. After changing an Arabic article, change both twins in the same commit. UI labels are quoted exactly as the app shows them in that language (« … » in French, “…” in English); demo data stays Arabic. In `shots.js`, a UI text the script waits on or clicks by name goes through `ui('<key>')`, `textOf('<arabic>')` or `choose(locator, '<arabic>')`, so the same list runs in every language.
 
 Each shot is taken light, then dark, before the next. A shot with `ownLogin: true` signs in on its own (for «الدخول بحساب», which would otherwise break the shared session).
 

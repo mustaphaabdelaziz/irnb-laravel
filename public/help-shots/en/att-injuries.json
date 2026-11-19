@@ -1,0 +1,18 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "injuries-current": {
+      "x": 22.5,
+      "y": 23.5,
+      "w": 75,
+      "h": 14.12
+    },
+    "injuries-current-name": {
+      "x": 23.13,
+      "y": 34.25,
+      "w": 14.16,
+      "h": 2.13
+    }
+  }
+}

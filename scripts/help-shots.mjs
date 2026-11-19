@@ -2,6 +2,7 @@
 //
 //   npm run build && npm run help:shots          all shots
 //   npm run help:shots -- players-index          one shot (several names: a few shots, in list order)
+//   npm run help:shots -- --locale=fr            the French set (app in French), into public/help-shots/fr
 //
 // Dev machine only (needs `npx playwright install chromium` once). Never touches
 // the real database: it migrates + seeds storage/help-demo.sqlite and serves it
@@ -11,23 +12,34 @@ import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:
 import { join, resolve } from 'node:path';
 import { chromium } from 'playwright';
 import sharp from 'sharp';
-import shots from '../resources/help/shots.js';
+
+// --locale=fr|en takes the shots with the app in that language (default ar), into
+// public/help-shots/<locale>. shots.js reads HELP_LOCALE for the few UI texts it waits on,
+// so it is imported only once the variable is set.
+const args = process.argv.slice(2);
+const locale = (args.find((a) => a.startsWith('--locale='))?.split('=')[1] ?? process.env.HELP_LOCALE ?? 'ar').trim();
+if (!['ar', 'fr', 'en'].includes(locale)) {
+    console.error(`Unknown --locale "${locale}" (ar, fr or en).`);
+    process.exit(1);
+}
+process.env.HELP_LOCALE = locale;
+const { default: shots } = await import('../resources/help/shots.js');
 
 const root = resolve(import.meta.dirname, '..');
-const locale = 'ar';
 // Chromium draws native controls (date fields, the file button) in the browser's
 // UI language, so it must match the articles: day/month/year, Western digits.
 // The context locale alone changes nothing there, so the full Chromium build is
 // launched with --lang (the headless shell keeps an English file button).
 // ar-DZ gives Arabic-Indic digits while the text says 14/03/2012, so fr-DZ:
 // 14/03/2012 and a French, not English, file button. The app itself stays Arabic.
-const browserLocale = 'fr-DZ';
+// English articles get en-GB: day/month/year and an English file button.
+const browserLocale = { ar: 'fr-DZ', fr: 'fr-DZ', en: 'en-GB' }[locale];
 const port = 8765;
 const base = `http://127.0.0.1:${port}`;
 const viewport = { width: 1280, height: 800 };
 const db = join(root, 'storage', 'help-demo.sqlite');
 const out = join(root, 'public', 'help-shots', locale);
-const only = process.argv.slice(2);
+const only = args.filter((a) => !a.startsWith('--locale='));
 
 // The run's own storage folder, emptied at the start of every run. The public and private
 // disks (generated logos, photos, files), sessions and file-cache data move here: the seeding
@@ -112,6 +124,8 @@ const pct = (n) => Math.round(n * 100) / 100;
 
 async function capture(context, shot, theme) {
     const page = await context.newPage();
+    // A guest page (login) has no signed-in user's language: set it on the guest session.
+    if (shot.guest && locale !== 'ar') await page.goto(`${base}/lang/${locale}`);
     await page.goto(base + shot.url, { waitUntil: 'networkidle' });
     if (shot.before) await shot.before(page);
     await page.waitForTimeout(400);
@@ -180,7 +194,14 @@ try {
             });
             await context.addInitScript((t) => localStorage.setItem('theme', t), theme);
             if (shot.ownLogin) await signIn(context);
-            await capture(context, shot, theme);
+            try {
+                await capture(context, shot, theme);
+            } catch (error) {
+                // A busy machine can time a wait out or catch a page mid-render: one retry
+                // on a fresh page before failing (a real missing target fails twice).
+                console.warn(`… retrying ${theme} ${shot.name} (${String(error.message).split('\n')[0]})`);
+                await capture(context, shot, theme);
+            }
             await context.close();
             console.log(`✓ ${theme} ${shot.name}`);
         }

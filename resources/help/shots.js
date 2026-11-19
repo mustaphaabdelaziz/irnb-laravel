@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 // Every screenshot the help articles use. `targets` are data-help names whose
 // boxes are saved for rings and magnifiers; `before` runs after the page loads
 // (open a menu, type a search); the optional `after` runs once the screenshot and boxes
@@ -16,6 +18,71 @@
 // change: regenerate outside that window. The seeder dates things with the app timezone
 // (CarbonImmutable::today()), this file with Node's local Date: if they differ, do not
 // run the shots near midnight.
+// The language the shots are taken in (scripts/help-shots.mjs --locale). Demo data stays
+// Arabic in every language; only UI texts the script waits on or clicks by name differ.
+const LOCALE = process.env.HELP_LOCALE || 'ar';
+const MESSAGES = JSON.parse(readFileSync(new URL(`../js/i18n/${LOCALE}.json`, import.meta.url), 'utf8'));
+/** A UI string in the shots' language, by its i18n key (fails loudly when the key is missing). */
+const ui = (key) => {
+    if (typeof MESSAGES[key] !== 'string') throw new Error(`shots.js: no "${key}" in ${LOCALE}.json`);
+    return MESSAGES[key];
+};
+/** An article's title in the shots' language (its front matter), for the Ctrl+K results. */
+const articleTitle = (path) => {
+    const file = new URL(`./${LOCALE}/${path}.md`, import.meta.url);
+    const found = readFileSync(file, 'utf8').match(/^title:\s*(.+)$/m);
+    if (!found) throw new Error(`shots.js: no title in ${LOCALE}/${path}.md`);
+    return found[1].trim();
+};
+/** Every spelling an Arabic UI string has in the shots' language (Arabic data stays as is). */
+const AR = LOCALE === 'ar' ? {} : JSON.parse(readFileSync(new URL('../js/i18n/ar.json', import.meta.url), 'utf8'));
+// Demo data the app shows translated: the branches' name_fr / name_en (BranchSeeder).
+const DATA = {
+    'كرة القدم': { fr: 'Football', en: 'Football' },
+    'السباحة': { fr: 'Natation', en: 'Swimming' },
+    // Built-in role (RoleSeeder).
+    'مدرب': { fr: 'Entraîneur', en: 'Coach' },
+};
+// Built-in finance categories: 'base name' => ['fr', 'ar'] (App\Support\FinanceCategoryTranslations);
+// English shows the base name.
+if (LOCALE !== 'ar') {
+    const php = readFileSync(new URL('../../app/Support/FinanceCategoryTranslations.php', import.meta.url), 'utf8');
+    for (const [, base, fr, ar] of php.matchAll(/'([^']+)' => \[["']([^"']+)["'], '([^']+)'\]/g)) {
+        DATA[ar] ??= { fr, en: base.replace(/\b\w/g, (c) => c.toUpperCase()) };
+    }
+    // Built-in roles: 'name' => ['en' => …, 'fr' => …, 'ar' => …] (RoleSeeder).
+    const roles = readFileSync(new URL('../../database/seeders/RoleSeeder.php', import.meta.url), 'utf8');
+    for (const [, en, fr, ar] of roles.matchAll(/'name' => \['en' => '([^']+)', 'fr' => '([^']+)', 'ar' => '([^']+)'\]/g)) {
+        DATA[ar] ??= { fr, en };
+    }
+    // Game-format presets: $base(sport, en, ar, fr, …).
+    const formats = readFileSync(new URL('../../database/migrations/2026_10_15_100002_seed_game_format_presets.php', import.meta.url), 'utf8');
+    for (const [, en, ar, fr] of formats.matchAll(/\$base\('[^']+', '([^']+)', '([^']+)', '([^']+)'/g)) {
+        DATA[ar] ??= { fr, en };
+    }
+}
+const spellings = (ar) => {
+    const found = Object.keys(AR).filter((k) => AR[k] === ar && typeof MESSAGES[k] === 'string').map((k) => MESSAGES[k]);
+    return [...new Set([ar, ...found, ...(DATA[ar]?.[LOCALE] ? [DATA[ar][LOCALE]] : [])])];
+};
+const escapeRe = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/** A hasText filter: the Arabic text, or (other languages) any of its spellings. */
+const textOf = (ar) => (LOCALE === 'ar' ? ar : new RegExp(spellings(ar).map(escapeRe).join('|')));
+/** Picks the <select> option labelled `ar` (or its translation in the shots' language). */
+async function choose(locator, ar) {
+    const want = spellings(ar);
+    const value = await locator.evaluate((el, w) => {
+        const wanted = w.map((t) => t.toLowerCase());
+        const o = [...el.options].find((x) => wanted.includes(x.textContent.trim().toLowerCase()));
+        return o ? o.value : null;
+    }, want);
+    if (value === null) throw new Error(`No option labelled ${want.join(' / ')}`);
+    await locator.selectOption(value);
+}
+
+/** What the reader types into Ctrl+K in each language. */
+const paletteQuery = (byLocale) => byLocale[LOCALE] ?? byLocale.ar;
+
 const ym = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 const pad = (n) => String(n).padStart(2, '0');
 const ymd = (d) => `${ym(d)}-${pad(d.getDate())}`;
@@ -58,10 +125,10 @@ export default [
                 await input.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
                 await page.waitForTimeout(300);
             }
-            await input.fill('لاعب');
+            await input.fill(paletteQuery({ ar: 'لاعب', fr: 'joueur', en: 'player' }));
             // Help results arrive with the search index, fetched when the palette first
             // opens: without this wait the shot can be taken before they show.
-            await page.getByText('كيف أضيف لاعباً جديداً').first().waitFor({ timeout: 15000 });
+            await page.getByText(articleTitle('players/add-player')).first().waitFor({ timeout: 15000 });
         },
     },
     {
@@ -94,7 +161,7 @@ export default [
         before: async (page) => {
             await searchAhmed(page);
             await page.locator('[data-help="players-category"] button').first().click();
-            await page.locator('[data-help="players-category"] label', { hasText: 'أقل من 14 سنة' }).click();
+            await page.locator('[data-help="players-category"] label', { hasText: textOf('أقل من 14 سنة') }).click();
             await page.waitForURL(/category_id/);
             await page.waitForLoadState('networkidle');
             await page.keyboard.press('Escape');
@@ -249,7 +316,7 @@ export default [
         targets: ['sub-assign-category', 'sub-assign-submit'],
         before: async (page) => {
             await page.locator('[data-help="sub-assign"]').click();
-            await page.locator('[data-help="sub-assign-category"] select').selectOption({ label: 'أقل من 14 سنة' });
+            await choose(page.locator('[data-help="sub-assign-category"] select'), 'أقل من 14 سنة');
         },
     },
     {
@@ -260,7 +327,7 @@ export default [
         before: async (page) => {
             await page.locator('[data-help="sub-add-player"]').click();
             await page.locator('[data-help="sub-player-search"]').fill('نور');
-            await page.locator('label', { hasText: 'شعبان' }).first().click();
+            await page.locator('label', { hasText: textOf('شعبان') }).first().click();
             await page.locator('[data-help="sub-amount-will-be"]').waitFor();
         },
     },
@@ -273,7 +340,7 @@ export default [
             await page.locator('[data-help="sub-add-player"]').click();
             await page.locator('[data-help="sub-outside-category"] input').check();
             await page.waitForLoadState('networkidle');
-            await page.locator('text=فئة أخرى').first().waitFor();
+            await page.getByText(ui('subscription_outside_category')).first().waitFor();
         },
     },
     // --- Payments from the player page --- (HelpDemoSubscriptionsSeeder: 3 أمين paid 1000 of 3000,
@@ -559,8 +626,8 @@ export default [
         targets: ['set-schedules', 'set-schedule-form', 'set-schedule-add'],
         before: async (page) => {
             const form = page.locator('[data-help="set-schedule-form"]');
-            await form.locator('select').nth(0).selectOption({ label: 'كرة القدم' });
-            await form.locator('select').nth(1).selectOption({ label: 'أقل من 17 سنة' });
+            await choose(form.locator('select').nth(0), 'كرة القدم');
+            await choose(form.locator('select').nth(1), 'أقل من 17 سنة');
             await form.locator('select').nth(2).selectOption('5');
             await blur(page);
             await centre(page, 'set-schedules');
@@ -578,7 +645,7 @@ export default [
             await form.locator('input[type="date"]').nth(0).fill(ymd(inDays(20)));
             await form.locator('input[type="date"]').nth(1).fill(ymd(inDays(22)));
             await form.locator('input[type="text"]').fill('عطلة مدرسية');
-            await page.locator('[data-help="set-closure-list"] li', { hasText: 'عطلة مدرسية' }).evaluate((li) => li.remove());
+            await page.locator('[data-help="set-closure-list"] li', { hasText: textOf('عطلة مدرسية') }).evaluate((li) => li.remove());
             await blur(page);
             await centre(page, 'set-closures');
         },
@@ -976,7 +1043,7 @@ export default [
             await fillUserLogin(page);
             await fillUserNames(page);
             await page.locator('[data-help="uc-role"] button').first().click();
-            await page.locator('[data-help="uc-role"] li').filter({ hasText: /^\s*مدرب\s*$/ }).first().click();
+            await page.locator('[data-help="uc-role"] li').filter({ hasText: new RegExp(`^\\s*(${spellings('مدرب').map(escapeRe).join('|')})\\s*$`) }).first().click();
             await blur(page);
             await centre(page, 'uc-create');
         },
@@ -1121,7 +1188,7 @@ export default [
             ]);
             await page.waitForLoadState('networkidle');
             // The «أنت الآن داخل…» toast covers the banner for two seconds.
-            await page.getByText('أنت الآن داخل بحساب هذا المستخدم.').waitFor({ state: 'hidden', timeout: 10000 });
+            await page.getByText(ui('flash.impersonate_started')).waitFor({ state: 'hidden', timeout: 10000 });
         },
         after: async (page) => {
             await Promise.all([
@@ -1180,7 +1247,7 @@ export default [
         targets: ['eq-name', 'eq-category', 'eq-brand', 'eq-price', 'eq-track', 'eq-save'],
         before: async (page) => {
             await page.fill('input[data-help="eq-name"]', 'حبل قفز');
-            await page.selectOption('select[data-help="eq-category"]', { label: 'معدات التدريب' });
+            await choose(page.locator('select[data-help="eq-category"]').first(), 'معدات التدريب');
             await page.fill('input[data-help="eq-price"]', '400');
             await blur(page);
         },
@@ -1406,7 +1473,7 @@ export default [
         targets: ['eq-export', 'eq-export-xlsx', 'eq-export-csv'],
         before: async (page) => {
             await openMenu(page, 'eq-export', 'eq-export-xlsx');
-            await tagIn(page, 'eq-export-csv', page.locator('[data-help="eq-export"] a', { hasText: 'CSV' }));
+            await tagIn(page, 'eq-export-csv', page.locator('[data-help="eq-export"] a', { hasText: textOf('CSV') }));
         },
     },
     // Stock-take: session 2 «INV-<year>-02» (monthly, in progress, nothing counted, participant أمين قاسمي).
@@ -1881,10 +1948,10 @@ export default [
         targets: ['team-branch', 'team-category', 'team-name', 'team-format', 'team-add'],
         before: async (page) => {
             await page.locator('[data-help="team-new"]').click();
-            await page.locator('select[data-help="team-branch"]').selectOption({ label: 'كرة القدم' });
-            await page.locator('select[data-help="team-category"]').selectOption({ label: 'أقل من 12 سنة' });
+            await choose(page.locator('select[data-help="team-branch"]'), 'كرة القدم');
+            await choose(page.locator('select[data-help="team-category"]'), 'أقل من 12 سنة');
             await page.fill('input[data-help="team-name"]', 'الفريق أ');
-            await page.locator('select[data-help="team-format"]').selectOption({ label: 'كرة القدم 5' });
+            await choose(page.locator('select[data-help="team-format"]'), 'كرة القدم 5');
             await blur(page);
         },
     },
@@ -1908,7 +1975,7 @@ export default [
         before: async (page) => {
             await page.locator('[data-help="team-only-category"] input').uncheck();
             await page.locator('[data-help="team-pick"] > button').click();
-            await page.locator('[data-help="team-pick"] li', { hasText: 'بوعلام' }).first().dispatchEvent('mousedown');
+            await page.locator('[data-help="team-pick"] li', { hasText: textOf('بوعلام') }).first().dispatchEvent('mousedown');
             await page.locator('input[data-help="team-shirt-10"]').fill('9');
             await blur(page);
             await centre(page, 'team-roster-table');
@@ -1954,9 +2021,9 @@ export default [
         before: async (page) => {
             await page.locator('[data-help="compn-new"]').click();
             await page.locator('[data-help="compn-team"] > button').click();
-            await page.locator('[data-help="compn-team"] li', { hasText: 'أقل من 17' }).first().dispatchEvent('mousedown');
+            await page.locator('[data-help="compn-team"] li', { hasText: textOf('أقل من 17') }).first().dispatchEvent('mousedown');
             await page.fill('input[data-help="compn-name"]', 'كأس الولاية لأقل من 17 سنة');
-            await page.locator('select[data-help="compn-type"]').selectOption({ label: 'كأس' });
+            await choose(page.locator('select[data-help="compn-type"]'), 'كأس');
             await blur(page);
         },
     },
@@ -2037,7 +2104,7 @@ export default [
         before: async (page) => {
             await page.locator('[data-help="game-tab-lineup"]').click();
             await page.locator('[data-help="lineup-bench"]').waitFor({ state: 'visible' });
-            await page.locator('select[data-help="lineup-formation"]').selectOption({ label: '2-2' });
+            await choose(page.locator('select[data-help="lineup-formation"]'), '2-2');
             for (const [id, slot] of [[7, 0], [21, 1], [2, 2], [3, 3], [1, 4]]) {
                 await page.locator(`select[data-help="lineup-put-${id}"]`).selectOption({ index: slot + 1 });
             }
@@ -2056,7 +2123,7 @@ export default [
         before: async (page) => {
             await page.locator('[data-help="game-tab-lineup"]').click();
             await page.locator('[data-help="lineup-bench"]').waitFor({ state: 'visible' });
-            await page.locator('select[data-help="lineup-formation"]').selectOption({ label: '2-2' });
+            await choose(page.locator('select[data-help="lineup-formation"]'), '2-2');
             // player id -> spot index of «2-2»: 0 GK, 1 DF, 2 DF, 3 ST, 4 ST
             for (const [id, slot] of [[7, 0], [21, 1], [2, 2], [3, 3], [1, 4]]) {
                 await page.locator(`select[data-help="lineup-put-${id}"]`).selectOption({ index: slot + 1 });
@@ -2124,7 +2191,7 @@ export default [
         url: '/games/5',
         targets: ['game-status', 'game-info-save', 'game-delete'],
         before: async (page) => {
-            await page.locator('select[data-help="game-status"]').selectOption({ label: 'ملغاة' });
+            await choose(page.locator('select[data-help="game-status"]'), 'ملغاة');
             await blur(page);
             await centre(page, 'game-status');
         },
@@ -2135,7 +2202,7 @@ export default [
         url: '/games/1',
         targets: ['game-status', 'game-info-save'],
         before: async (page) => {
-            await page.locator('select[data-help="game-status"]').selectOption({ label: 'مؤجلة' });
+            await choose(page.locator('select[data-help="game-status"]'), 'مؤجلة');
             await blur(page);
             await centre(page, 'game-status');
         },
@@ -2146,7 +2213,7 @@ export default [
         url: '/games/1',
         targets: ['confirm-panel', 'confirm-ok', 'confirm-cancel'],
         before: async (page) => {
-            await page.locator('select[data-help="game-status"]').selectOption({ label: 'مؤجلة' });
+            await choose(page.locator('select[data-help="game-status"]'), 'مؤجلة');
             await page.locator('[data-help="game-info-save"]').click();
             await page.locator('[data-help="confirm-ok"]').waitFor({ state: 'visible' });
         },
@@ -2206,7 +2273,7 @@ export default [
         targets: ['compn-ban-kind', 'compn-ban-from', 'compn-ban-to'],
         before: async (page) => {
             await page.locator('[data-help="compn-tab-suspensions"]').click();
-            await page.locator('select[data-help="compn-ban-kind"]').selectOption({ label: 'فترة زمنية' });
+            await choose(page.locator('select[data-help="compn-ban-kind"]'), 'فترة زمنية');
             await blur(page);
             await centre(page, 'compn-ban-kind');
         },
@@ -2223,7 +2290,15 @@ export default [
         name: 'comp-statistics-team',
         url: '/games/stats',
         targets: ['stats-team', 'stats-leaders', 'stats-table'],
-        before: async (page) => { await pickStatsTeam(page); },
+        before: async (page) => {
+            await pickStatsTeam(page);
+            // French labels wrap to a second line: the table's last row would fall below the
+            // screen. A slight zoom-out keeps the whole page in one shot (Arabic and English fit).
+            if (LOCALE === 'fr') {
+                await page.evaluate(() => { document.body.style.zoom = '0.94'; });
+                await page.waitForTimeout(300);
+            }
+        },
     },
     {
         // «تصدير» open on the U17 view: the three formats.
@@ -2233,8 +2308,8 @@ export default [
         before: async (page) => {
             await pickStatsTeam(page);
             await openMenu(page, 'stats-export', 'stats-export-xlsx');
-            await tagIn(page, 'stats-export-csv', page.locator('[data-help="stats-export"] a', { hasText: 'CSV' }));
-            await tagIn(page, 'stats-export-pdf', page.locator('[data-help="stats-export"] a', { hasText: 'PDF' }));
+            await tagIn(page, 'stats-export-csv', page.locator('[data-help="stats-export"] a', { hasText: textOf('CSV') }));
+            await tagIn(page, 'stats-export-pdf', page.locator('[data-help="stats-export"] a', { hasText: textOf('PDF') }));
         },
     },
     {
@@ -2304,9 +2379,9 @@ export default [
         // Archive the entry just saved (the only row with this title) through the list's «حذف».
         after: async (page) => {
             await page.goto(new URL('/transactions?search=' + encodeURIComponent('شباك المرمى'), page.url()).href, { waitUntil: 'networkidle' });
-            await page.locator('tbody tr', { hasText: 'شباك المرمى' }).first().locator('button').last().click();
-            await page.getByRole('button', { name: 'حذف', exact: true }).last().click();
-            await page.getByText('تمت أرشفة المعاملة بنجاح.').waitFor({ state: 'visible', timeout: 10000 });
+            await page.locator('tbody tr', { hasText: textOf('شباك المرمى') }).first().locator('button').last().click();
+            await page.getByRole('button', { name: ui('delete'), exact: true }).last().click();
+            await page.getByText(ui('flash.transaction_archived')).waitFor({ state: 'visible', timeout: 10000 });
         },
     },
     // Writes, last: a manual ban for لعريبي أنس is added through the UI so its row and trash show.
@@ -2596,10 +2671,10 @@ export default [
 /** Activities list: «النوع» = «المشاركات الرياضية» and «الفرع» = السباحة, then waits for the filtered list. */
 async function filterSwimChampionship(page) {
     await page.locator('[data-help="act-filter-type"] > button').click();
-    await page.locator('[data-help="act-filter-type"] label', { hasText: 'المشاركات الرياضية' }).locator('input').check();
+    await page.locator('[data-help="act-filter-type"] label', { hasText: textOf('المشاركات الرياضية') }).locator('input').check();
     await page.keyboard.press('Escape');
     await page.locator('h1').first().click();
-    await page.locator('select[data-help="act-filter-branch"]').selectOption({ label: 'السباحة' });
+    await choose(page.locator('select[data-help="act-filter-branch"]'), 'السباحة');
     await page.waitForURL(/branch=/);
     await page.waitForLoadState('networkidle');
     await page.locator('[data-help="act-card-2"]').waitFor({ state: 'detached', timeout: 10000 });
@@ -2619,7 +2694,7 @@ async function fillLitOptions(page) {
     await page.fill('textarea[data-help="lit-note"]', 'الأرقام محسوبة إلى نهاية الفترة المحددة في التقرير.');
     const pick = async (name, text) => {
         const select = page.locator(`select[data-help="${name}"]`);
-        const value = await select.locator('option', { hasText: text }).first().getAttribute('value');
+        const value = await select.locator('option', { hasText: textOf(text) }).first().getAttribute('value');
         await select.selectOption(value);
     };
     await pick('lit-signer-1', 'بوخالفة');
@@ -2636,7 +2711,7 @@ async function fillLitTexts(page) {
 /** Statistics page: picks the U17 team in the team filter and waits for the filtered table. */
 async function pickStatsTeam(page) {
     await page.locator('[data-help="stats-team"] > button').click();
-    await page.locator('[data-help="stats-team"] li', { hasText: 'أقل من 17' }).first().dispatchEvent('mousedown');
+    await page.locator('[data-help="stats-team"] li', { hasText: textOf('أقل من 17') }).first().dispatchEvent('mousedown');
     await page.waitForURL(/team_id=1/);
     await page.waitForLoadState('networkidle');
     await page.locator('[data-help="stats-table"] tbody tr').first().waitFor({ state: 'visible' });
@@ -2646,7 +2721,7 @@ async function pickStatsTeam(page) {
 async function fillBan(page) {
     const player = page.locator('select[data-help="compn-ban-player"]');
     await player.waitFor({ state: 'visible' });
-    const value = await player.locator('option', { hasText: 'لعريبي' }).first().getAttribute('value');
+    const value = await player.locator('option', { hasText: textOf('لعريبي') }).first().getAttribute('value');
     await player.selectOption(value);
     await page.fill('input[data-help="compn-ban-reason"]', 'قرار لجنة الانضباط');
     await blur(page);
@@ -2677,7 +2752,7 @@ async function amineR15Cell(page) {
     const months = [...new Set([gridMonth, ym(now), ym(new Date(now.getFullYear(), now.getMonth() - 1, 1))])];
     for (let k = 0; k < months.length; k++) {
         if (k > 0) await page.goto(new URL(`/attendance/grid?${U17}&month=${months[k]}`, page.url()).href, { waitUntil: 'networkidle' });
-        const inputs = page.locator('tbody tr', { hasText: 'قاسمي' }).locator('input');
+        const inputs = page.locator('tbody tr', { hasText: textOf('قاسمي') }).locator('input');
         const i = (await inputs.evaluateAll((els) => els.map((el) => el.value))).indexOf('R15');
         if (i !== -1) return inputs.nth(i);
     }
@@ -2705,7 +2780,7 @@ async function openPlannedCadets(page) {
 
 /** One row of the session page, found by the player's last name. */
 function attRow(page, lastname) {
-    return page.locator('[data-help="att-roster"] > li', { hasText: lastname });
+    return page.locator('[data-help="att-roster"] > li', { hasText: textOf(lastname) });
 }
 
 /**
@@ -2720,7 +2795,7 @@ async function tagIn(page, name, locator) {
 /** أمين قاسمي came 10 minutes late: «متأخر», then 10 in «الدقائق». */
 async function markLate(page) {
     const row = attRow(page, 'قاسمي');
-    const late = row.getByRole('button', { name: 'متأخر', exact: true });
+    const late = row.getByRole('button', { name: ui('att.status.late'), exact: true });
     await tagIn(page, 'att-row-late', late);
     await late.click();
     await row.locator('[data-help="att-minutes"]').fill('10');
@@ -2730,10 +2805,10 @@ async function markLate(page) {
 /** عبد الرحمن بلعيد is ill: «غائب بعذر» (the app presets «أخرى»), then «مرض» in «السبب». */
 async function markExcused(page) {
     const row = attRow(page, 'بلعيد');
-    const excused = row.getByRole('button', { name: 'غائب بعذر', exact: true });
+    const excused = row.getByRole('button', { name: ui('att.status.absent_excused'), exact: true });
     await tagIn(page, 'att-row-excused', excused);
     await excused.click();
-    await row.locator('[data-help="att-reason"]').selectOption({ label: 'مرض' });
+    await choose(row.locator('[data-help="att-reason"]'), 'مرض');
     await blur(page);
 }
 
@@ -2792,7 +2867,7 @@ async function payBoth(page) {
 
 /** Ticks one line of «الاشتراكات المراد دفعها»: the order of the ticks is the order of payment. */
 async function tickPayable(page, text) {
-    await page.locator('[data-help="payment-subscriptions"] label', { hasText: text }).locator('input').check();
+    await page.locator('[data-help="payment-subscriptions"] label', { hasText: textOf(text) }).locator('input').check();
 }
 
 /** Brings the subscriptions card's header (with «إضافة دين سابق») to the bottom edge of the screen. */
@@ -2861,10 +2936,10 @@ async function fillAhmed(page) {
 /** Picks a branch in «أضف فرعاً…», then fills the card it adds: join date and category. */
 async function addBranch(page, branch, card, category, date) {
     await page.locator('[data-help="player-add-branch"] button').first().click();
-    await page.locator('[data-help="player-add-branch"] li', { hasText: branch }).click();
+    await page.locator('[data-help="player-add-branch"] li', { hasText: textOf(branch) }).click();
     const added = page.locator(`[data-help="${card}"]`);
     await added.locator('input[type="date"]').fill(date);
-    await added.locator('select').first().selectOption({ label: category });
+    await choose(added.locator('select').first(), category);
     await added.locator('select').first().blur();
     await added.locator('input[type="date"]').blur();
     await centre(page, card);
@@ -2900,8 +2975,8 @@ async function fillTrip(page) {
 
 /** The trip's scope: Football (which narrows the categories), then «أقل من 14 سنة». */
 async function tripScope(page) {
-    await page.locator('[data-help="sub-branches"] label', { hasText: 'كرة القدم' }).locator('input').check();
-    await page.locator('[data-help="sub-categories"] label', { hasText: 'أقل من 14 سنة' }).locator('input').check();
+    await page.locator('[data-help="sub-branches"] label', { hasText: textOf('كرة القدم') }).locator('input').check();
+    await page.locator('[data-help="sub-categories"] label', { hasText: textOf('أقل من 14 سنة') }).locator('input').check();
     await blur(page);
 }
 
@@ -2962,9 +3037,9 @@ async function blur(page) {
 async function openMatchForm(page) {
     await page.locator('[data-help="game-new"]').click();
     await page.locator('[data-help="game-team"] > button').click();
-    await page.locator('[data-help="game-team"] li', { hasText: 'أقل من 17' }).first().dispatchEvent('mousedown');
+    await page.locator('[data-help="game-team"] li', { hasText: textOf('أقل من 17') }).first().dispatchEvent('mousedown');
     await page.locator('[data-help="game-opponent"] > button').click();
-    await page.locator('[data-help="game-opponent"] li', { hasText: 'نجم الساحل' }).first().dispatchEvent('mousedown');
+    await page.locator('[data-help="game-opponent"] li', { hasText: textOf('نجم الساحل') }).first().dispatchEvent('mousedown');
     await blur(page);
     await centre(page, 'game-competition');
 }
@@ -2973,7 +3048,7 @@ async function openMatchForm(page) {
 async function fillMatchWhen(page) {
     await page.fill('input[data-help="game-date"]', ymd(nextDay([3], new Date(), true)));
     await page.fill('input[data-help="game-kickoff"]', '18:00');
-    await page.locator('select[data-help="game-venue"]').selectOption({ label: 'ملعب حي النصر' });
+    await choose(page.locator('select[data-help="game-venue"]'), 'ملعب حي النصر');
     await blur(page);
 }
 
@@ -3009,7 +3084,7 @@ async function tickAll(page, name) {
 async function fillNets(page) {
     await page.locator('[data-help="txf-type"] select').selectOption('expense');
     await page.locator('[data-help="txf-title"] input').fill('شراء شباك المرمى');
-    await page.locator('[data-help="txf-category"] select').selectOption({ label: 'معدات' });
+    await choose(page.locator('[data-help="txf-category"] select'), 'معدات');
     await page.locator('[data-help="txf-amount"] input').fill('15000');
     await page.locator('[data-help="txf-caisse"] select').selectOption('5');
     await blur(page);
@@ -3021,7 +3096,7 @@ async function fillNets(page) {
  */
 async function openMenu(page, menu, tag) {
     await page.locator(`[data-help="${menu}"] button`).first().click();
-    const xlsx = page.locator(`[data-help="${menu}"] a`, { hasText: 'Excel (.xlsx)' });
+    const xlsx = page.locator(`[data-help="${menu}"] a`, { hasText: textOf('Excel (.xlsx)') });
     await xlsx.waitFor({ state: 'visible' });
     await tagIn(page, tag, xlsx);
     await page.waitForTimeout(250);
@@ -3077,7 +3152,7 @@ async function fillCones(page) {
 
 /** Activity types: tags the n-th button of the row holding `name` (0 = pencil, 1 = trash). */
 async function tagType(page, tag, name, n) {
-    await tagIn(page, tag, page.locator('tbody tr', { hasText: name }).locator('button').nth(n));
+    await tagIn(page, tag, page.locator('tbody tr', { hasText: textOf(name) }).locator('button').nth(n));
 }
 
 /** Picks the first match of `text` in the searchable list tagged `name` (a picker or a select). */
@@ -3099,12 +3174,12 @@ function beachDate() {
 /** New-activity form filled with the demo beach campaign. Nothing is saved. */
 async function fillBeach(page) {
     await page.fill('input[data-help="act-title"]', 'حملة تنظيف شاطئ المدينة');
-    await page.locator('select[data-help="act-type"]').selectOption({ label: 'الحملات التطوعية' });
+    await choose(page.locator('select[data-help="act-type"]'), 'الحملات التطوعية');
     await page.fill('input[data-help="act-starts"]', beachDate());
     await page.fill('input[data-help="act-location"]', 'شاطئ المدينة');
     await page.fill('input[data-help="act-partners"]', 'جمعية البيئة المحلية');
-    await page.locator('select[data-help="act-branch"]').selectOption({ label: 'السباحة' });
-    await page.locator('[data-help="act-categories"] label', { hasText: 'أصاغر' }).locator('input').check();
+    await choose(page.locator('select[data-help="act-branch"]'), 'السباحة');
+    await page.locator('[data-help="act-categories"] label', { hasText: textOf('أصاغر') }).locator('input').check();
     await pickFrom(page, 'act-responsible', 'ليلى بوعزة');
     await page.fill('input[data-help="act-beneficiaries"]', '150');
     await page.fill('input[data-help="act-external"]', '12');

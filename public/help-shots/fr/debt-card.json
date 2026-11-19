@@ -1,0 +1,12 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "player-subscriptions-card": {
+      "x": 22.5,
+      "y": 40.41,
+      "w": 75,
+      "h": 19.25
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "nav-equipment-out": {
+      "x": 1.88,
+      "y": 41.88,
+      "w": 17.11,
+      "h": 5
+    },
+    "eq-out-tab-rental": {
+      "x": 22.5,
+      "y": 12.38,
+      "w": 6.76,
+      "h": 4
+    },
+    "eq-out-tab-assignment": {
+      "x": 29.73,
+      "y": 12.38,
+      "w": 10.31,
+      "h": 4
+    }
+  }
+}

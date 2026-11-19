@@ -1,0 +1,18 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "settings-logo": {
+      "x": 43.75,
+      "y": 69.5,
+      "w": 51.88,
+      "h": 7
+    },
+    "settings-branding-save": {
+      "x": 89.16,
+      "y": 91.5,
+      "w": 8.34,
+      "h": 4.5
+    }
+  }
+}

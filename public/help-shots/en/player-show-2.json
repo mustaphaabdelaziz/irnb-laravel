@@ -1,0 +1,18 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "player-tabs": {
+      "x": 53.38,
+      "y": 15,
+      "w": 13.81,
+      "h": 4
+    },
+    "player-registrations": {
+      "x": 24.38,
+      "y": 60,
+      "w": 45.63,
+      "h": 28.13
+    }
+  }
+}

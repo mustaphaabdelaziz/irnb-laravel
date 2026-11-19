@@ -1,0 +1,24 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "stk-participant-pick": {
+      "x": 24.06,
+      "y": 24.5,
+      "w": 60,
+      "h": 4.75
+    },
+    "stk-participant-add": {
+      "x": 84.69,
+      "y": 24.75,
+      "w": 2.81,
+      "h": 4.5
+    },
+    "stk-participant-save": {
+      "x": 88.13,
+      "y": 25.25,
+      "w": 7.81,
+      "h": 4
+    }
+  }
+}

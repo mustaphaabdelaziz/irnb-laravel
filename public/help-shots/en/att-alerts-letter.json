@@ -1,0 +1,18 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "alerts-letter-first": {
+      "x": 97.19,
+      "y": 34.88,
+      "w": 2.19,
+      "h": 3.5
+    },
+    "alerts-stats-link": {
+      "x": 70.56,
+      "y": 1.69,
+      "w": 2.81,
+      "h": 4.5
+    }
+  }
+}

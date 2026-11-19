@@ -1,0 +1,30 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "ranking-category": {
+      "x": 37.25,
+      "y": 12,
+      "w": 11.41,
+      "h": 4.5
+    },
+    "ranking-type": {
+      "x": 49.59,
+      "y": 12,
+      "w": 8.13,
+      "h": 4.5
+    },
+    "ranking-print-top3": {
+      "x": 71.76,
+      "y": 1.69,
+      "w": 2.81,
+      "h": 4.5
+    },
+    "ranking-certificate-first": {
+      "x": 94.69,
+      "y": 28.63,
+      "w": 2.19,
+      "h": 3.5
+    }
+  }
+}

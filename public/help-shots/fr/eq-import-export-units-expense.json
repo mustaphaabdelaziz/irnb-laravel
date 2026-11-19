@@ -1,0 +1,24 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "eq-units-import-file": {
+      "x": 34.38,
+      "y": 39.75,
+      "w": 31.25,
+      "h": 4.5
+    },
+    "eq-units-import-expense": {
+      "x": 34.38,
+      "y": 46.25,
+      "w": 31.25,
+      "h": 9.5
+    },
+    "eq-units-import-caisse": {
+      "x": 34.38,
+      "y": 57.75,
+      "w": 31.25,
+      "h": 8.25
+    }
+  }
+}

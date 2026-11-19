@@ -10,6 +10,7 @@ use App\Models\InventorySessionItem;
 use App\Models\User;
 use App\Services\Equipment\EquipmentLifecycleService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -240,5 +241,19 @@ class StocktakeCountSheetTest extends TestCase
         $this->actingAs($this->admin)->post(route('inventory.complete', $session));
 
         $this->assertSame('Lost', $unit->fresh()->status);
+    }
+
+    #[Test]
+    public function the_list_tile_counts_what_a_new_count_would_expect(): void
+    {
+        $lot = $this->lot(20);
+        $this->lend($lot, 5);
+        $this->lot(3, 'Lost');
+
+        $this->actingAs($this->admin)->get(route('inventory.index'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('itemCount', 15));
+
+        $this->assertSame(15, (int) $this->start()->total_expected);
     }
 }

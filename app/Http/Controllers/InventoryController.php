@@ -15,6 +15,7 @@ use App\Support\Export;
 use App\Support\UiLang;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -31,8 +32,8 @@ class InventoryController extends Controller
             'sessions' => InventorySession::withCount('items')
                 ->with('conductedBy:id,name')
                 ->orderByDesc('session_date')->orderByDesc('id')->get(),
-            // Units awaiting a count, not lot rows.
-            'itemCount' => (int) EquipmentItem::where('status', '!=', 'Retired')->sum('quantity'),
+            // Units a new count would expect (the store rule), not lot rows.
+            'itemCount' => (int) $this->countableLots()->sum('expected'),
         ]);
     }
 
@@ -64,21 +65,8 @@ class InventoryController extends Controller
                 'notes' => $data['notes'] ?? null,
             ]);
 
-            // Only units in the club are counted: lost lots are already written
-            // off, and units out on loan are with the borrower, not on a shelf.
-            $stock = app(EquipmentStockService::class);
-            $items = EquipmentItem::whereNotIn('status', ['Retired', 'Lost'])
-                ->with(['rentals' => fn ($q) => $q->whereNull('return_date')])
-                ->get(['id', 'status', 'condition', 'location', 'quantity']);
-
             $expectedTotal = 0;
-            foreach ($items as $it) {
-                $onLoan = min($it->quantity, $stock->outstandingQuantity($it));
-                $expected = $it->quantity - $onLoan;
-                if ($expected < 1) {
-                    continue; // wholly on loan: nothing to find
-                }
-
+            foreach ($this->countableLots() as ['item' => $it, 'on_loan' => $onLoan, 'expected' => $expected]) {
                 InventorySessionItem::create([
                     'inventory_session_id' => $session->id,
                     'equipment_item_id' => $it->id,
@@ -99,6 +87,29 @@ class InventoryController extends Controller
         });
 
         return redirect()->route('inventory.show', $session)->with('success', ['key' => 'flash.inventory_started', 'params' => ['reference' => $session->reference]]);
+    }
+
+    /**
+     * The lots a count sheet lists, with the units it expects: only units in the
+     * club are counted. Lost lots are already written off, and units out on loan
+     * are with the borrower, not on a shelf; a lot wholly on loan is left out.
+     *
+     * @return Collection<int, array{item: EquipmentItem, on_loan: int, expected: int}>
+     */
+    private function countableLots(): Collection
+    {
+        $stock = app(EquipmentStockService::class);
+
+        return EquipmentItem::whereNotIn('status', ['Retired', 'Lost'])
+            ->with(['rentals' => fn ($q) => $q->whereNull('return_date')])
+            ->get(['id', 'status', 'condition', 'location', 'quantity'])
+            ->map(function (EquipmentItem $it) use ($stock) {
+                $onLoan = min($it->quantity, $stock->outstandingQuantity($it));
+
+                return ['item' => $it, 'on_loan' => $onLoan, 'expected' => $it->quantity - $onLoan];
+            })
+            ->filter(fn (array $lot) => $lot['expected'] >= 1)
+            ->values();
     }
 
     public function show(InventorySession $session): Response

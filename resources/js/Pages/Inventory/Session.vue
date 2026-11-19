@@ -10,6 +10,7 @@ import IconButton from '@/Components/IconButton.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import { stateLabel as stateLabelOf } from '@/lib/stateLabel';
 import { useCan } from '@/Composables/useCan';
+import { initialFound, unitTotals, clampFound } from '@/lib/stocktake';
 
 const props = defineProps({
     session: { type: Object, required: true },
@@ -29,7 +30,7 @@ const canCount = computed(() => isOpen.value && can('inventory', 'edit'));
 const state = reactive({});
 props.session.items.forEach((line) => {
     state[line.id] = {
-        found: line.counted ? !!line.found : true,
+        qty: initialFound(line),
         actual_condition: line.actual_condition || line.expected_condition || '',
         actual_location: line.actual_location ?? line.expected_location ?? '',
         note: line.note || '',
@@ -94,33 +95,33 @@ const groups = computed(() => {
         });
 });
 
-const countedCount = computed(() => props.session.items.length);
-const foundCount = computed(() => Object.values(state).filter((s) => s.found).length);
+const totals = computed(() => unitTotals(props.session.items, state));
 
 function markAllFound() {
-    Object.values(state).forEach((s) => { s.found = true; });
+    props.session.items.forEach((l) => { state[l.id].qty = l.expected_quantity; });
+}
+function payload() {
+    return props.session.items.map((line) => {
+        const qty = clampFound(state[line.id].qty, line.expected_quantity);
+        return {
+            id: line.id,
+            found: qty > 0,
+            found_quantity: qty,
+            actual_condition: state[line.id].actual_condition || null,
+            actual_location: state[line.id].actual_location || null,
+            note: state[line.id].note || null,
+        };
+    });
 }
 function saveCounts() {
-    const items = props.session.items.map((line) => ({
-        id: line.id,
-        found: state[line.id].found,
-        actual_condition: state[line.id].actual_condition || null,
-        actual_location: state[line.id].actual_location || null,
-        note: state[line.id].note || null,
-    }));
-    router.put(route('inventory.counts', props.session.id), { items }, { preserveScroll: true });
+    router.put(route('inventory.counts', props.session.id), { items: payload() }, { preserveScroll: true });
 }
 function complete() {
     if (!window.confirm(t('complete_inventory_confirm'))) return;
     saveCountsThen(() => router.post(route('inventory.complete', props.session.id), {}, { preserveScroll: true }));
 }
 function saveCountsThen(cb) {
-    const items = props.session.items.map((line) => ({
-        id: line.id, found: state[line.id].found,
-        actual_condition: state[line.id].actual_condition || null,
-        actual_location: state[line.id].actual_location || null, note: state[line.id].note || null,
-    }));
-    router.put(route('inventory.counts', props.session.id), { items }, { preserveScroll: true, onSuccess: cb });
+    router.put(route('inventory.counts', props.session.id), { items: payload() }, { preserveScroll: true, onSuccess: cb });
 }
 function fmtDate(d) {
     if (!d) return '';
@@ -170,9 +171,9 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
 
             <!-- Summary -->
             <div class="grid grid-cols-3 gap-1.5 sm:gap-4">
-                <StatTile :label="t('total_expected')" :value="session.total_expected" compact />
-                <StatTile :label="t('found')" :value="isOpen ? foundCount : session.total_found" compact />
-                <StatTile :label="t('missing')" :value="isOpen ? (countedCount - foundCount) : session.total_missing" compact />
+                <StatTile :label="t('total_expected')" :value="isOpen ? totals.expected : session.total_expected" compact />
+                <StatTile :label="t('found')" :value="isOpen ? totals.found : session.total_found" compact />
+                <StatTile :label="t('missing')" :value="isOpen ? totals.missing : session.total_missing" compact />
             </div>
 
             <!-- OPEN: count sheet -->
@@ -194,19 +195,25 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
                         <div v-for="line in grp.lines" :key="line.id" :data-help="'stk-line-' + line.equipment_item_id" class="flex flex-wrap items-center gap-3 px-5 py-3">
                             <div class="min-w-0 flex-1">
                                 <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ line.item?.unique_identifier }}</p>
-                                <p class="text-xs text-slate-400">{{ line.item?.catalog?.name }} · {{ t('expected') }}: {{ stateLabel(line.expected_condition) }}<span v-if="line.expected_location"> · {{ line.expected_location }}</span></p>
+                                <p class="text-xs text-slate-400">{{ line.item?.catalog?.name }} · {{ t('expected') }}: {{ stateLabel(line.expected_condition) }}<span v-if="line.expected_location"> · {{ line.expected_location }}</span><span v-if="line.on_loan_quantity > 0"> · {{ t('inventory_sheet.on_loan', { n: line.on_loan_quantity }) }}</span></p>
                             </div>
-                            <div class="flex gap-1">
-                                <button :disabled="!canCount" :data-help="'stk-found-' + line.equipment_item_id" @click="state[line.id].found = true" class="rounded-lg px-2.5 py-1 text-xs font-bold" :class="state[line.id].found ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'">{{ t('found') }}</button>
-                                <button :disabled="!canCount" :data-help="'stk-missing-' + line.equipment_item_id" @click="state[line.id].found = false" class="rounded-lg px-2.5 py-1 text-xs font-bold" :class="!state[line.id].found ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'">{{ t('missing') }}</button>
+                            <div v-if="line.expected_quantity === 1" class="flex gap-1">
+                                <button :disabled="!canCount" :data-help="'stk-found-' + line.equipment_item_id" @click="state[line.id].qty = 1" class="rounded-lg px-2.5 py-1 text-xs font-bold" :class="state[line.id].qty > 0 ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'">{{ t('found') }}</button>
+                                <button :disabled="!canCount" :data-help="'stk-missing-' + line.equipment_item_id" @click="state[line.id].qty = 0" class="rounded-lg px-2.5 py-1 text-xs font-bold" :class="state[line.id].qty === 0 ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'">{{ t('missing') }}</button>
                             </div>
-                            <select v-model="state[line.id].actual_condition" :data-help="'stk-condition-' + line.equipment_item_id" :disabled="!canCount || !state[line.id].found" class="rounded-lg border-slate-200 bg-white py-1 text-xs disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800">
+                            <div v-else class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                                <span class="font-bold">{{ t('found') }}</span>
+                                <input type="number" min="0" :max="line.expected_quantity" v-model.number="state[line.id].qty" @blur="state[line.id].qty = clampFound(state[line.id].qty, line.expected_quantity)" :disabled="!canCount" :data-help="'stk-qty-' + line.equipment_item_id" class="w-16 rounded-lg border-slate-200 py-1 text-center text-xs disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800" dir="ltr">
+                                <span>{{ t('inventory_sheet.of', { n: line.expected_quantity }) }}</span>
+                            </div>
+                            <select v-model="state[line.id].actual_condition" :data-help="'stk-condition-' + line.equipment_item_id" :disabled="!canCount || !state[line.id].qty" class="rounded-lg border-slate-200 bg-white py-1 text-xs disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800">
                                 <option v-for="c in conditions" :key="c" :value="c">{{ stateLabel(c) }}</option>
                             </select>
-                            <select v-model="state[line.id].actual_location" :data-help="'stk-location-' + line.equipment_item_id" :disabled="!canCount || !state[line.id].found" class="w-32 rounded-lg border-slate-200 bg-white py-1 text-xs disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800">
+                            <select v-model="state[line.id].actual_location" :data-help="'stk-location-' + line.equipment_item_id" :disabled="!canCount || !state[line.id].qty" class="w-32 rounded-lg border-slate-200 bg-white py-1 text-xs disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800">
                                 <option value="">{{ t('location') }}</option>
                                 <option v-for="loc in storageLocations" :key="loc" :value="loc">{{ loc }}</option>
                             </select>
+                            <input v-model="state[line.id].note" maxlength="500" :placeholder="t('inventory_sheet.note_placeholder')" :disabled="!canCount" :data-help="'stk-note-' + line.equipment_item_id" class="w-full rounded-lg border-slate-200 py-1 text-xs disabled:opacity-40 sm:w-40 dark:border-slate-700 dark:bg-slate-800">
                         </div>
                     </div>
                 </section>

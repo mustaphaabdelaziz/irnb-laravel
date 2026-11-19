@@ -123,7 +123,7 @@ const statusLabel = (s) => (s === 'cancelled' ? t('board.meeting_status.cancelle
                         <span v-if="mt.present_count" class="hidden items-center gap-1 text-slate-400 sm:inline-flex"><Icon name="board" /> {{ mt.present_count }}</span>
                         <span v-if="mt.tasks_count" class="hidden items-center gap-1 text-slate-400 sm:inline-flex"><Icon name="task" /> {{ mt.tasks_count }}</span>
                         <span class="inline-flex rounded-full px-2.5 py-0.5 font-bold" :class="statusChip[mt.status]">{{ statusLabel(mt.status) }}</span>
-                        <IconButton v-if="can('board', 'delete')" :data-help="`meet-row-delete-${mt.id}`" icon="trash" :label="t('delete_meeting')" variant="danger" plain size="sm" icon-only @click.prevent.stop="deleteTarget = mt" />
+                        <IconButton v-if="can('board', 'delete')" :data-help="`meet-row-delete-${mt.id}`" icon="trash" :label="t('delete_meeting')" variant="danger" plain size="sm" @click.prevent.stop="deleteTarget = mt" />
                     </div>
                 </Link>
                 <p v-if="!meetings.length" class="py-10 text-center text-sm text-slate-400">{{ t('no_meetings') }}</p>

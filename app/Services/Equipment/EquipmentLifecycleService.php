@@ -153,7 +153,7 @@ class EquipmentLifecycleService
     public function sendToRepair(EquipmentItem $item, ?int $userId = null, ?string $notes = null): void
     {
         if (! in_array($item->status, ['Available', 'Rented'])) {
-            throw new \InvalidArgumentException("Item #{$item->unique_identifier} cannot be sent to repair (current status: {$item->status}).");
+            throw StockException::wrongStatus((string) $item->unique_identifier, (string) $item->status);
         }
 
         // Units out with someone are not in hand to be repaired.
@@ -175,7 +175,7 @@ class EquipmentLifecycleService
     public function completeRepair(EquipmentItem $item, ?int $userId = null, string $condition = 'Good'): void
     {
         if ($item->status !== 'Under Repair') {
-            throw new \InvalidArgumentException("Item #{$item->unique_identifier} is not under repair.");
+            throw StockException::wrongStatus((string) $item->unique_identifier, (string) $item->status);
         }
 
         DB::transaction(function () use ($item, $userId, $condition) {
@@ -203,7 +203,8 @@ class EquipmentLifecycleService
                 $rental->update([
                     'return_date' => now(),
                     'returned_quantity' => $rental->quantity,
-                    'return_notes' => 'Marked as lost',
+                    // The Lost event in the history says why; no English note.
+                    'return_notes' => null,
                 ]);
             }
 
@@ -217,7 +218,7 @@ class EquipmentLifecycleService
     public function markAsFound(EquipmentItem $item, ?int $userId = null, ?string $notes = null): void
     {
         if ($item->status !== 'Lost') {
-            throw new \InvalidArgumentException("Item #{$item->unique_identifier} is not lost (current status: {$item->status}).");
+            throw StockException::wrongStatus((string) $item->unique_identifier, (string) $item->status);
         }
 
         DB::transaction(function () use ($item, $userId, $notes) {

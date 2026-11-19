@@ -32,6 +32,7 @@
     "Recorded by": "سجّله",
     "Row :line: \":name\" already exists — skipped.": "السطر :line: \":name\" موجود مسبقاً — تم تخطيه.",
     "Row :line: \":name\" looks like the existing \":existing\" — imported anyway.": "السطر :line: \":name\" يشبه \":existing\" الموجود — تم استيراده رغم ذلك.",
+    "Row :line: place \":place\" is not in the storage places list — kept as typed.": "السطر :line: المكان \":place\" ليس في قائمة أماكن التخزين — حُفظ كما كُتب.",
     "Row :line: :message": "السطر :line: :message",
     "This row could not be saved.": "تعذّر حفظ هذا السطر.",
     "Row :line: amount \":value\" is not a number, the row was skipped.": "السطر :line: المبلغ \":value\" ليس رقماً، تم تخطي السطر.",

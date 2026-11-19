@@ -8,11 +8,13 @@ use App\Models\EquipmentCategory;
 use App\Models\EquipmentItem;
 use App\Models\EquipmentRental;
 use App\Models\Player;
+use App\Models\StorageLocation;
 use App\Models\User;
 use App\Reports\ReportRegistry;
 use App\Services\Equipment\EquipmentLifecycleService;
 use App\Services\Equipment\EquipmentStockService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -123,5 +125,82 @@ class EquipmentNitsTest extends TestCase
         $ids = collect(app(ReportRegistry::class)->cards($this->user()))->pluck('id');
 
         $this->assertSame($ids->count(), $ids->unique()->count(), 'duplicate: '.$ids->duplicates()->implode(', '));
+    }
+
+    /** A CSV of $columns header cells, then the rows. */
+    private function csv(int $columns, array $rows, string $name): UploadedFile
+    {
+        $fh = fopen('php://temp', 'r+');
+        fputcsv($fh, array_fill(0, $columns, 'header'));
+        foreach ($rows as $row) {
+            fputcsv($fh, $row);
+        }
+        rewind($fh);
+        $path = tempnam(sys_get_temp_dir(), 'nits').'.csv';
+        file_put_contents($path, stream_get_contents($fh));
+        fclose($fh);
+
+        return new UploadedFile($path, $name, 'text/csv', null, true);
+    }
+
+    #[Test]
+    public function marking_fixed_keeps_the_chosen_condition(): void
+    {
+        $lot = $this->lot(1);
+        app(EquipmentLifecycleService::class)->sendToRepair($lot);
+
+        $this->actingAs($this->user())
+            ->post(route('equipment.items.complete-repair', $lot), ['condition' => 'Fair'])
+            ->assertSessionHas('success');
+
+        $this->assertSame('Fair', $lot->fresh()->condition);
+        $this->assertSame('Available', $lot->fresh()->status);
+    }
+
+    #[Test]
+    public function a_stale_repair_or_found_click_gets_a_translated_message_not_a_crash(): void
+    {
+        $lot = $this->lot(1);
+        $user = $this->user();
+
+        $this->actingAs($user)->post(route('equipment.items.complete-repair', $lot))
+            ->assertRedirect()->assertSessionHas('error', ['key' => 'flash.stock_wrong_status', 'params' => []]);
+        $this->actingAs($user)->post(route('equipment.items.mark-found', $lot))
+            ->assertRedirect()->assertSessionHas('error', ['key' => 'flash.stock_wrong_status', 'params' => []]);
+
+        $lot->update(['status' => 'Lost']);
+        $this->actingAs($user)->post(route('equipment.items.repair', $lot))
+            ->assertRedirect()->assertSessionHas('error', ['key' => 'flash.stock_wrong_status', 'params' => []]);
+    }
+
+    #[Test]
+    public function a_catalog_import_warns_about_a_name_held_inside_an_existing_one(): void
+    {
+        EquipmentCategory::firstOrCreate(['name' => 'Balls'], ['code' => 'BALL']);
+        EquipmentCatalog::create(['name' => 'Match Ball Pro', 'category' => 'Balls']);
+
+        $this->actingAs($this->user())
+            ->post(route('equipment.catalogs.import'), ['file' => $this->csv(5, [['Match Ball', 'Balls', '', '', '']], 'equipments.csv')])
+            ->assertSessionHas('success')
+            ->assertSessionHas('error', fn ($e) => str_contains($e, 'Match Ball Pro'));
+
+        $this->assertTrue(EquipmentCatalog::where('name', 'Match Ball')->exists(), 'imported anyway');
+    }
+
+    #[Test]
+    public function an_imported_unit_takes_the_storage_list_spelling_or_is_flagged(): void
+    {
+        StorageLocation::create(['name' => 'المخزن الرئيسي']);
+        $catalog = EquipmentCatalog::firstOrCreate(['name' => 'Dossards'], ['category' => 'Apparel']);
+
+        $this->actingAs($this->user())
+            ->post(route('equipment.items.import', $catalog), ['file' => $this->csv(6, [
+                ['A', '2026-05-01', 'New', 'المخزن  الرئيسى', '', ''],
+                ['B', '2026-05-01', 'New', 'Garage', '', ''],
+            ], 'units.csv'), 'record_expense' => false])
+            ->assertSessionHas('success')
+            ->assertSessionHas('error', fn ($e) => str_contains($e, 'Garage') && ! str_contains($e, 'الرئيس'));
+
+        $this->assertSame(['A' => 'المخزن الرئيسي', 'B' => 'Garage'], EquipmentItem::where('catalog_id', $catalog->id)->pluck('location', 'designation')->all());
     }
 }

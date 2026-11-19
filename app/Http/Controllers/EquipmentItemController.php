@@ -12,6 +12,7 @@ use App\Models\EquipmentHistory;
 use App\Models\EquipmentItem;
 use App\Models\EquipmentRental;
 use App\Models\Player;
+use App\Models\StorageLocation;
 use App\Models\Transaction;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
@@ -21,6 +22,7 @@ use App\Services\Equipment\SerialNumberService;
 use App\Support\Export;
 use App\Support\Import\ImportColumns;
 use App\Support\Import\ImportRowError;
+use App\Support\NameNormalizer;
 use App\Support\Spreadsheet;
 use App\Support\UiLang;
 use Carbon\Carbon;
@@ -250,7 +252,11 @@ class EquipmentItemController extends Controller
             'condition' => ['nullable', 'string', 'in:New,Good,Fair,Poor,Damaged'],
         ]);
 
-        $this->lifecycle->completeRepair($item, $request->user()?->id, $request->input('condition', 'Good'));
+        try {
+            $this->lifecycle->completeRepair($item, $request->user()?->id, $request->input('condition') ?: 'Good');
+        } catch (StockException $e) {
+            return back()->with('error', $e->toFlash());
+        }
 
         return back()->with('success', 'flash.equipment_repair_completed');
     }
@@ -268,7 +274,11 @@ class EquipmentItemController extends Controller
     {
         $request->validate(['notes' => ['nullable', 'string']]);
 
-        $this->lifecycle->markAsFound($item, $request->user()?->id, $request->input('notes'));
+        try {
+            $this->lifecycle->markAsFound($item, $request->user()?->id, $request->input('notes'));
+        } catch (StockException $e) {
+            return back()->with('error', $e->toFlash());
+        }
 
         return back()->with('success', 'flash.equipment_found');
     }
@@ -549,6 +559,8 @@ class EquipmentItemController extends Controller
 
         $imported = 0;
         $errors = [];
+        // Storage places by spelling-insensitive key: a typed place takes the list's spelling.
+        $places = StorageLocation::pluck('name')->mapWithKeys(fn ($name) => [NameNormalizer::key($name) => $name])->all();
 
         foreach ($rows as $i => $row) {
             $line = $headerRow + $i + 2; // the real spreadsheet row number
@@ -562,6 +574,16 @@ class EquipmentItemController extends Controller
             // The template's own example line, left in by mistake, is not a unit.
             if ($this->isTemplateExample($data)) {
                 continue;
+            }
+
+            if (($data['location'] ?? '') !== '' && $data['location'] !== null) {
+                $place = $places[NameNormalizer::key($data['location'])] ?? null;
+                if ($place === null) {
+                    // Kept as typed, but said: the list is what the forms offer.
+                    $errors[] = __('Row :line: place ":place" is not in the storage places list — kept as typed.', ['line' => $line, 'place' => $data['location']]);
+                } else {
+                    $data['location'] = $place;
+                }
             }
 
             try {

@@ -35,12 +35,27 @@ export function nameKey(value) {
         .replace(NOISE, '');
 }
 
-/** The first of `names` spelled like `value` (exact match included), or null. */
+// A shorter name only counts as part of a longer one from this many letters on,
+// so "كرة" is not flagged against every ball.
+export const PARTIAL_MIN = 4;
+
+/** Two keys name the same thing: equal, or one holds the other (PARTIAL_MIN letters at least). */
+export function keysResemble(a, b) {
+    if (a === '' || b === '') return false;
+    if (a === b) return true;
+    const [short, long] = a.length <= b.length ? [a, b] : [b, a];
+    return short.length >= PARTIAL_MIN && long.includes(short);
+}
+
+/** The first of `names` spelled like `value` (exact match first), else one that holds it or is held by it, or null. */
 export function similarName(names, value) {
     const key = nameKey(value);
     if (key === '') {
         return null;
     }
+    const list = names ?? [];
 
-    return (names ?? []).find((name) => nameKey(name) === key) ?? null;
+    return list.find((name) => nameKey(name) === key)
+        ?? list.find((name) => keysResemble(nameKey(name), key))
+        ?? null;
 }

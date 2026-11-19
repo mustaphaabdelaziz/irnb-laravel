@@ -32,6 +32,16 @@ class StockException extends InvalidArgumentException
         return ['key' => $this->key, 'params' => $this->params];
     }
 
+    /** Repair, fixed or found asked of a unit whose status no longer allows it (a stale page). */
+    public static function wrongStatus(string $identifier, string $status): self
+    {
+        return new self(
+            'flash.stock_wrong_status',
+            [],
+            "Item #{$identifier} cannot do this in its current status ({$status}).",
+        );
+    }
+
     public static function notEnoughAvailable(int $requested, int $available): self
     {
         return new self(

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\EquipmentCatalog;
 use App\Models\EquipmentItem;
 use App\Models\FinanceAccount;
+use App\Models\StorageLocation;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\Equipment\SerialNumberService;
@@ -161,6 +162,8 @@ class EquipmentImportExportTest extends TestCase
     public function an_items_xlsx_export_re_imports_without_reading_status_as_a_price(): void
     {
         $catalog = $this->catalog();
+        // The exported place is one of the storage places, so the re-import has nothing to flag.
+        StorageLocation::create(['name' => 'Locker B']);
         EquipmentItem::create([
             'catalog_id' => $catalog->id,
             'unique_identifier' => 'IRNB-2026-BALL-00042',

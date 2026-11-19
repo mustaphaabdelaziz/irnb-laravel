@@ -24,6 +24,23 @@ final class NameNormalizer
         'ـ' => '', // tatweel
     ];
 
+    /** Mirror of PARTIAL_MIN in resources/js/lib/nameKey.js. */
+    public const PARTIAL_MIN = 4;
+
+    /** Two keys name the same thing: equal, or one holds the other (PARTIAL_MIN letters at least). */
+    public static function resemble(string $a, string $b): bool
+    {
+        if ($a === '' || $b === '') {
+            return false;
+        }
+        if ($a === $b) {
+            return true;
+        }
+        [$short, $long] = mb_strlen($a) <= mb_strlen($b) ? [$a, $b] : [$b, $a];
+
+        return mb_strlen($short) >= self::PARTIAL_MIN && str_contains($long, $short);
+    }
+
     public static function key(?string $value): string
     {
         $value = mb_strtolower(trim((string) $value));

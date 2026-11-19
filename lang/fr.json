@@ -32,6 +32,7 @@
     "Recorded by": "Enregistré par",
     "Row :line: \":name\" already exists — skipped.": "Ligne :line : « :name » existe déjà — ignoré.",
     "Row :line: \":name\" looks like the existing \":existing\" — imported anyway.": "Ligne :line : « :name » ressemble à « :existing » qui existe déjà — importé quand même.",
+    "Row :line: place \":place\" is not in the storage places list — kept as typed.": "Ligne :line : le lieu « :place » ne figure pas dans la liste des lieux de stockage — conservé tel quel.",
     "Row :line: :message": "Ligne :line : :message",
     "This row could not be saved.": "Cette ligne n'a pas pu être enregistrée.",
     "Row :line: amount \":value\" is not a number, the row was skipped.": "Ligne :line : montant « :value » n'est pas un nombre, la ligne a été ignorée.",

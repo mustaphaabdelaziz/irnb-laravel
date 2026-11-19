@@ -28,7 +28,7 @@ related: [subscriptions/create-annual, subscriptions/create-exceptional]
 :::
 
 :::step اضغط «تعيين»
-تظهر عبارة «تم إسناد 1 لاعبين.». أُضيف زكرياء عمراني وحده، لأن أحمد وياسين في الاشتراك من قبل. يصير «إجمالي اللاعبين» 7 بدل 6.
+تظهر عبارة «تم إسناد لاعب واحد.». أُضيف زكرياء عمراني وحده، لأن أحمد وياسين في الاشتراك من قبل. يصير «إجمالي اللاعبين» 7 بدل 6.
 ::figure subscription-assign ring=sub-assign-submit zoom=sub-assign-submit
 :::
 

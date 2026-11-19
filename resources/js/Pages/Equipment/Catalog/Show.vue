@@ -80,6 +80,8 @@ const lostItemId = ref(null);
 const foundItemId = ref(null);
 const repairItemId = ref(null);
 const fixedItemId = ref(null);
+// What the unit is like coming back from the repairer; «جيد» unless changed.
+const fixedCondition = ref('Good');
 const bulkDeleteItemsPending = ref(false);
 
 // The serial the first received unit will get (serial catalogs only).
@@ -290,7 +292,7 @@ function sendToRepair(itemId) {
 
 function completeRepair(itemId) {
     fixedItemId.value = null;
-    router.post(route('equipment.items.complete-repair', itemId), {}, {
+    router.post(route('equipment.items.complete-repair', itemId), { condition: fixedCondition.value }, {
         preserveState: false,
     });
 }
@@ -508,7 +510,7 @@ function submitImport() {
                                         <IconButton v-if="(item.available_quantity ?? 0) > 0 && can('equipment', 'edit')" icon="send" :label="t('rent')" variant="primary" plain size="sm" :data-help="'eq-rent-' + item.id" @click="openRent(item)" />
                                         <IconButton v-if="(item.quantity ?? 1) > 1 && (item.available_quantity ?? 0) > 0 && can('equipment', 'edit')" icon="alert" :label="t('equipment.mark_damaged')" plain size="sm" :data-help="'eq-split-' + item.id" @click="openSplit(item)" />
                                         <IconButton v-if="item.status === 'Available' && !item.open_rentals?.length && can('equipment', 'edit')" icon="wrench" :label="t('send_to_repair')" plain size="sm" :data-help="'eq-repair-' + item.id" @click="repairItemId = item.id" />
-                                        <IconButton v-if="item.status === 'Under Repair' && can('equipment', 'edit')" icon="check" :label="t('mark_fixed')" variant="success" plain size="sm" :data-help="'eq-fixed-' + item.id" @click="fixedItemId = item.id" />
+                                        <IconButton v-if="item.status === 'Under Repair' && can('equipment', 'edit')" icon="check" :label="t('mark_fixed')" variant="success" plain size="sm" :data-help="'eq-fixed-' + item.id" @click="fixedCondition = 'Good'; fixedItemId = item.id" />
                                         <IconButton v-if="['Available','Rented'].includes(item.status) && can('equipment', 'edit')" icon="xcircle" :label="t('lost')" variant="danger" plain size="sm" :data-help="'eq-lost-' + item.id" @click="lostItemId = item.id" />
                                         <IconButton v-if="item.status === 'Lost' && can('equipment', 'edit')" icon="restore" :label="t('restore')" variant="success" plain size="sm" :data-help="'eq-restore-' + item.id" @click="foundItemId = item.id" />
                                         <IconButton :href="route('equipment.items.history', item.id)" icon="calendar" :label="t('history')" plain size="sm" :data-help="'eq-history-' + item.id" />
@@ -710,7 +712,14 @@ function submitImport() {
         </Teleport>
 
         <ConfirmModal :show="!!repairItemId" variant="primary" :confirm-label="t('confirm')" :message="t('send_to_repair_confirm')" @confirm="sendToRepair(repairItemId)" @cancel="repairItemId = null" />
-        <ConfirmModal :show="!!fixedItemId" variant="primary" :confirm-label="t('confirm')" :message="t('mark_fixed_confirm')" @confirm="completeRepair(fixedItemId)" @cancel="fixedItemId = null" />
+        <ConfirmModal :show="!!fixedItemId" variant="primary" :confirm-label="t('confirm')" :message="t('mark_fixed_confirm')" @confirm="completeRepair(fixedItemId)" @cancel="fixedItemId = null">
+            <div class="mt-4" data-help="eq-fixed-condition">
+                <InputLabel :value="t('condition')" />
+                <select v-model="fixedCondition" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                    <option v-for="c in ['New','Good','Fair','Poor','Damaged']" :key="c" :value="c">{{ stateLabel(c) }}</option>
+                </select>
+            </div>
+        </ConfirmModal>
         <!-- Receive stock: the only path that can spend money, and only if asked to. -->
         <Teleport to="body">
             <div v-if="showReceiveModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" @click.self="showReceiveModal = false">

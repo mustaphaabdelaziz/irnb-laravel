@@ -17,12 +17,17 @@ test('Arabic member counts agree with their number', () => {
     assert.equal(arMembers(25), '25 عضوًا');
     assert.equal(arMembers(103), '103 أعضاء');
     assert.equal(arMembers(112), '112 عضوًا');
+    assert.equal(arMembers(100), '100 عضو');
+    assert.equal(arMembers(102), '102 عضو');
 });
 
 test('Arabic plural rule picks one of four forms', () => {
     assert.deepEqual([0, 1, 2, 3, 10, 11, 25, 100].map((n) => arPluralIndex(n, 4)), [2, 0, 1, 2, 2, 3, 3, 3]);
     // From 100 on the last two digits decide.
     assert.deepEqual([103, 110, 111, 150, 205, 238].map((n) => arPluralIndex(n, 4)), [2, 2, 3, 3, 2, 3]);
+    // 100, 101, 102, 200: a fifth form when the message has one.
+    assert.deepEqual([100, 101, 102, 200, 103, 111].map((n) => arPluralIndex(n, 5)), [4, 4, 4, 4, 2, 3]);
+    assert.equal(arPluralIndex(100, 4), 3);
 });
 
 test('Arabic plural rule copes with messages of fewer forms', () => {
@@ -40,6 +45,8 @@ test('player-count flashes agree with their number in ar/fr/en', () => {
     assert.equal(say('ar', 2), 'تم إسناد لاعبَين.');
     assert.equal(say('ar', 7), 'تم إسناد 7 لاعبين.');
     assert.equal(say('ar', 12), 'تم إسناد 12 لاعبًا.');
+    assert.equal(say('ar', 101), 'تم إسناد 101 لاعب.');
+    assert.equal(say('ar', 238), 'تم إسناد 238 لاعبًا.');
     assert.equal(say('fr', 1), '1 joueur affecté.');
     assert.equal(say('fr', 3), '3 joueurs affectés.');
     assert.equal(say('en', 1), '1 player assigned.');

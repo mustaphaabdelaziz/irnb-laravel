@@ -23,4 +23,8 @@ test('similarName finds the existing spelling, or null', () => {
     assert.equal(similarName(names, 'Training Ball'), null);
     assert.equal(similarName(names, '   '), null);
     assert.equal(similarName(undefined, 'x'), null);
+    // Part of a longer name, or holding a shorter one, from 4 letters on.
+    assert.equal(similarName(names, 'Ball'), 'Match Ball');
+    assert.equal(similarName(names, 'Match Ball Pro'), 'Match Ball');
+    assert.equal(similarName(['كرة'], 'كرة قدم'), null, 'too short to count as part');
 });

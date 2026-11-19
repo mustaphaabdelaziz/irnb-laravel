@@ -102,7 +102,7 @@ class EquipmentLoanRepairFixesTest extends TestCase
             $rental->refresh();
             $this->assertNotNull($rental->return_date);
             $this->assertSame($rental->quantity, $rental->returned_quantity);
-            $this->assertSame('Marked as lost', $rental->return_notes);
+            $this->assertNull($rental->return_notes, 'no English note');
         }
         $this->assertSame(0, $item->openRentals()->count());
         $this->assertSame('Lost', $item->fresh()->status);

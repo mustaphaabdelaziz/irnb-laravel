@@ -321,7 +321,7 @@ class BoardController extends Controller
         $roleLabels = BoardRole::pluck('label', 'name');
         // Committees: "Finance (Head), Media (Member)".
         $committees = fn (BoardMember $m) => $m->committees
-            ->map(fn (BoardCommittee $c) => $c->name.' ('.UiLang::get('board.position.'.$c->pivot->position).')')
+            ->map(fn (BoardCommittee $c) => $c->name.' ('.UiLang::get('board.position_short.'.$c->pivot->position).')')
             ->implode(', ') ?: null;
         $rows = BoardMember::withPlayer()->with('committees:id,name')->orderBy('sort_order')->get()->map(fn (BoardMember $m) => [
             $m->name, ($roleLabels[$m->role] ?? null) ?: self::codeLabel($m->role), $committees($m), $m->email, $m->phone !== null ? (string) $m->phone : null,

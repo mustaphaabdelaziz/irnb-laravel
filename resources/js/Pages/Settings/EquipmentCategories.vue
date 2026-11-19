@@ -76,6 +76,7 @@ function destroy() {
                 </div>
                 <PrimaryButton data-help="eqcat-add" :disabled="form.processing">{{ t('add') }}</PrimaryButton>
             </form>
+            <p class="text-xs text-slate-500 dark:text-slate-400" data-help="eqcat-code-hint">{{ t('equipment.category_code_hint') }}</p>
 
             <!-- List -->
             <div class="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">

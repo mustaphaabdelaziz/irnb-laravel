@@ -4,6 +4,7 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Icon from '@/Components/Icon.vue';
+import IconButton from '@/Components/IconButton.vue';
 import { useCan } from '@/Composables/useCan';
 import { localDateKey, localToday } from '@/lib/localDate';
 
@@ -123,7 +124,7 @@ function submit() {
                     >
                         <div class="mb-1 flex items-center justify-between">
                             <span class="text-xs font-semibold" :class="cell.inMonth ? 'text-slate-500 dark:text-slate-300' : 'text-slate-300 dark:text-slate-600'">{{ cell.date.getDate() }}</span>
-                            <button v-if="can('board', 'add')" :data-help="`meet-cal-add-${cell.key}`" @click="openCreate(cell)" :title="t('add_meeting')" class="rounded p-0.5 text-slate-300 transition-colors hover:bg-primary-50 hover:text-primary-600 dark:text-slate-600 dark:hover:bg-primary-500/10 dark:hover:text-primary-300"><Icon name="plus" class="h-3.5 w-3.5" /></button>
+                            <IconButton v-if="can('board', 'add')" :data-help="`meet-cal-add-${cell.key}`" icon="plus" :label="t('add_meeting')" plain size="sm" icon-only @click="openCreate(cell)" />
                         </div>
                         <div class="space-y-1">
                             <template v-for="e in (eventsByDate[cell.key] || [])" :key="e.kind + e.id">

@@ -309,9 +309,11 @@ class EquipmentCatalogController extends Controller
             }
 
             $key = NameNormalizer::key($data['name']);
-            if (isset($known[$key])) {
+            // Same spelling first, else a name that holds this one or is held by it.
+            $existing = $known[$key] ?? collect($known)->first(fn ($name, $knownKey) => NameNormalizer::resemble((string) $knownKey, $key));
+            if ($existing !== null) {
                 $errors[] = __('Row :line: ":name" looks like the existing ":existing" — imported anyway.', [
-                    'line' => $line, 'name' => $data['name'], 'existing' => $known[$key],
+                    'line' => $line, 'name' => $data['name'], 'existing' => $existing,
                 ]);
             }
             $known[$key] ??= $data['name'];

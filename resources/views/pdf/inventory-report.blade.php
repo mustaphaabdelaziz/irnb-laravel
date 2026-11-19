@@ -74,7 +74,7 @@
                         @if ($l->expected_quantity > 1)
                             <span dir="ltr">{{ $l->found_units }} / {{ $l->expected_quantity }}</span>
                         @else
-                            {{ $l->found ? __('Found') : __('Missing') }}
+                            {{ $l->found ? \App\Support\UiLang::get('found') : \App\Support\UiLang::get('missing') }}
                         @endif
                     </td>
                     <td>{{ \App\Models\EquipmentItem::stateLabel($l->expected_condition) }}@if ($l->expected_location) · {{ $l->expected_location }}@endif</td>

@@ -37,6 +37,28 @@ class EquipmentStocktakePdfTest extends TestCase
     }
 
     #[Test]
+    public function a_single_unit_line_prints_found_and_missing_like_the_screen(): void
+    {
+        $catalog = EquipmentCatalog::create(['name' => 'Whistle', 'category' => 'Training']);
+        $session = InventorySession::create(['reference' => 'INV-9', 'type' => 'ad_hoc', 'session_date' => '2026-10-01', 'status' => 'completed']);
+        foreach ([false, true] as $found) {
+            $item = EquipmentItem::create(['catalog_id' => $catalog->id, 'purchase_date' => '2026-01-01', 'quantity' => 1, 'condition' => 'Good']);
+            InventorySessionItem::create([
+                'inventory_session_id' => $session->id, 'equipment_item_id' => $item->id,
+                'expected_status' => 'Available', 'expected_condition' => 'Good', 'expected_quantity' => 1,
+                'counted' => true, 'found' => $found, 'found_quantity' => $found ? 1 : 0, 'actual_condition' => $found ? 'Damaged' : null,
+            ]);
+        }
+
+        app()->setLocale('ar');
+        $session->load(['items.item.catalog:id,name', 'conductedBy:id,name', 'participants.participant']);
+        $html = view('pdf.inventory-report', ['club' => ClubHeader::data(), 'session' => $session])->render();
+
+        $this->assertMatchesRegularExpression('/>\s*مفقود\s*<\/td>/u', $html);
+        $this->assertMatchesRegularExpression('/>\s*موجود\s*<\/td>/u', $html);
+    }
+
+    #[Test]
     public function a_partly_found_line_prints_found_of_expected(): void
     {
         $catalog = EquipmentCatalog::create(['name' => 'Cones', 'category' => 'Training']);

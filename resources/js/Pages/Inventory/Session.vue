@@ -113,15 +113,20 @@ function payload() {
         };
     });
 }
+const saveError = ref('');
+const saveOpts = {
+    onSuccess: () => { saveError.value = ''; },
+    onError: (errors) => { saveError.value = Object.values(errors)[0] || t('save_failed'); },
+};
 function saveCounts() {
-    router.put(route('inventory.counts', props.session.id), { items: payload() }, { preserveScroll: true });
+    router.put(route('inventory.counts', props.session.id), { items: payload() }, { preserveScroll: true, ...saveOpts });
 }
 function complete() {
     if (!window.confirm(t('complete_inventory_confirm'))) return;
     saveCountsThen(() => router.post(route('inventory.complete', props.session.id), {}, { preserveScroll: true }));
 }
 function saveCountsThen(cb) {
-    router.put(route('inventory.counts', props.session.id), { items: payload() }, { preserveScroll: true, onSuccess: cb });
+    router.put(route('inventory.counts', props.session.id), { items: payload() }, { preserveScroll: true, ...saveOpts, onSuccess: () => { saveError.value = ''; cb(); } });
 }
 function fmtDate(d) {
     if (!d) return '';
@@ -187,6 +192,8 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
                     </div>
                 </div>
 
+                <p v-if="saveError" class="text-xs text-rose-500 dark:text-rose-400">{{ saveError }}</p>
+
                 <div v-if="!session.items.length" class="card py-10 text-center text-sm text-slate-400">{{ t('no_data') }}</div>
 
                 <section v-for="grp in groups" :key="grp.location" class="card overflow-hidden">
@@ -203,7 +210,7 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
                             </div>
                             <div v-else class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                                 <span class="font-bold">{{ t('found') }}</span>
-                                <input type="number" min="0" :max="line.expected_quantity" v-model.number="state[line.id].qty" @blur="state[line.id].qty = clampFound(state[line.id].qty, line.expected_quantity)" :disabled="!canCount" :data-help="'stk-qty-' + line.equipment_item_id" class="w-16 rounded-lg border-slate-200 py-1 text-center text-xs disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800" dir="ltr">
+                                <input type="number" min="0" :max="line.expected_quantity" v-model.number="state[line.id].qty" @blur="state[line.id].qty = clampFound(state[line.id].qty, line.expected_quantity)" :disabled="!canCount" :data-help="'stk-qty-' + line.equipment_item_id" class="w-16 rounded-lg border-slate-200 bg-white py-1 text-center text-xs disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800" dir="ltr">
                                 <span>{{ t('inventory_sheet.of', { n: line.expected_quantity }) }}</span>
                             </div>
                             <select v-model="state[line.id].actual_condition" :data-help="'stk-condition-' + line.equipment_item_id" :disabled="!canCount || !state[line.id].qty" class="rounded-lg border-slate-200 bg-white py-1 text-xs disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800">
@@ -213,7 +220,7 @@ const discrepancies = computed(() => props.session.items.filter((l) =>
                                 <option value="">{{ t('location') }}</option>
                                 <option v-for="loc in storageLocations" :key="loc" :value="loc">{{ loc }}</option>
                             </select>
-                            <input v-model="state[line.id].note" maxlength="500" :placeholder="t('inventory_sheet.note_placeholder')" :disabled="!canCount" :data-help="'stk-note-' + line.equipment_item_id" class="w-full rounded-lg border-slate-200 py-1 text-xs disabled:opacity-40 sm:w-40 dark:border-slate-700 dark:bg-slate-800">
+                            <input v-model="state[line.id].note" maxlength="500" :placeholder="t('inventory_sheet.note_placeholder')" :disabled="!canCount" :data-help="'stk-note-' + line.equipment_item_id" class="w-full rounded-lg border-slate-200 bg-white py-1 text-xs disabled:opacity-40 sm:w-40 dark:border-slate-700 dark:bg-slate-800">
                         </div>
                     </div>
                 </section>

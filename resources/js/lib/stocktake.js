@@ -18,7 +18,7 @@ export function unitTotals(lines, state) {
     let found = 0;
     for (const line of lines) {
         expected += line.expected_quantity;
-        found += state[line.id]?.qty ?? 0;
+        found += clampFound(state[line.id]?.qty, line.expected_quantity);
     }
     return { expected, found, missing: expected - found };
 }

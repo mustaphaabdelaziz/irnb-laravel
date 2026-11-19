@@ -20,7 +20,7 @@ const deleteId = ref(null);
 const form = useForm({ title: '', period_from: props.defaults.period_from, period_to: props.defaults.period_to });
 
 function add() {
-    form.post(route('literary-reports.store'));
+    form.post(route('literary-reports.store'), { onSuccess: () => form.reset('title') });
 }
 
 function destroy() {

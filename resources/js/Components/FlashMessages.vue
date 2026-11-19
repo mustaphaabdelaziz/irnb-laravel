@@ -24,7 +24,10 @@ const flash = computed(() => page.props.flash);
  */
 function translate(payload) {
     if (payload && typeof payload === 'object' && payload.key) {
-        return t(payload.key, payload.params ?? {});
+        const params = payload.params ?? {};
+        // A count picks the message's plural form («1 لاعبين» → «لاعب واحد»);
+        // a message with a single form ignores it.
+        return typeof params.count === 'number' ? t(payload.key, params, params.count) : t(payload.key, params);
     }
 
     return typeof payload === 'string' ? t(payload) : payload;

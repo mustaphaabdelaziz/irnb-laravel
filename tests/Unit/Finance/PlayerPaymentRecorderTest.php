@@ -53,6 +53,32 @@ class PlayerPaymentRecorderTest extends TestCase
     }
 
     #[Test]
+    public function an_overpayment_prints_as_one_receipt(): void
+    {
+        $player = $this->player();
+        $sub = $this->subscription($player, 3000);
+
+        $created = app(PlayerPaymentRecorder::class)->subscription($sub, $player, 3500, 'cash', null, null, null);
+
+        $group = $created[0]->fresh()->payment_group;
+        $this->assertNotNull($group);
+        $this->assertSame($group, $created[1]->fresh()->payment_group);
+        $this->assertCount(2, $created[0]->fresh()->receiptLines());
+    }
+
+    #[Test]
+    public function an_exact_payment_stays_a_single_receipt(): void
+    {
+        $player = $this->player();
+        $sub = $this->subscription($player, 3000);
+
+        $created = app(PlayerPaymentRecorder::class)->subscription($sub, $player, 3000, 'cash', null, null, null);
+
+        $this->assertCount(1, $created);
+        $this->assertNull($created[0]->fresh()->payment_group);
+    }
+
+    #[Test]
     public function a_group_payment_pays_in_order_and_shares_one_group(): void
     {
         $player = $this->player();

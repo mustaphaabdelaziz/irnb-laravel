@@ -143,6 +143,20 @@ const kinds = [
                 </label>
                 <p v-else data-help="sub-debt-note" class="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('subscription_exceptional_debt_note') }}</p>
 
+                <!-- Branches first: the categories offered below follow the ticked branches. -->
+                <div v-if="branches.length" data-help="sub-branches">
+                    <InputLabel :value="t('branches')" />
+                    <p class="mb-2 text-xs text-slate-500 dark:text-slate-400">{{ t('subscription_branch_hint') }}</p>
+                    <div class="flex flex-wrap gap-3">
+                        <label v-for="b in branches" :key="b.id" class="flex items-center gap-2">
+                            <input type="checkbox" :value="b.id" v-model="form.branch_ids"
+                                class="rounded border-gray-300 text-primary-600 shadow-sm focus:ring-primary-500" />
+                            <span class="text-sm">{{ b.localized_name || b.name }}</span>
+                        </label>
+                    </div>
+                    <InputError :message="form.errors.branch_ids" class="mt-1" />
+                </div>
+
                 <!-- Categories + their own prices -->
                 <div>
                     <InputLabel :value="t('categories')" />
@@ -176,19 +190,6 @@ const kinds = [
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <div v-if="branches.length" data-help="sub-branches">
-                    <InputLabel :value="t('branches')" />
-                    <p class="mb-2 text-xs text-slate-500 dark:text-slate-400">{{ t('subscription_branch_hint') }}</p>
-                    <div class="flex flex-wrap gap-3">
-                        <label v-for="b in branches" :key="b.id" class="flex items-center gap-2">
-                            <input type="checkbox" :value="b.id" v-model="form.branch_ids"
-                                class="rounded border-gray-300 text-primary-600 shadow-sm focus:ring-primary-500" />
-                            <span class="text-sm">{{ b.localized_name || b.name }}</span>
-                        </label>
-                    </div>
-                    <InputError :message="form.errors.branch_ids" class="mt-1" />
                 </div>
             </div>
         </div>

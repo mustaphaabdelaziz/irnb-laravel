@@ -14,7 +14,8 @@ class PlayerPaymentRecorder
 {
     /**
      * Record a subscription payment. Any amount beyond the subscription's remaining
-     * balance is split off into a separate player-level donation.
+     * balance is split off into a player-level donation that shares the payment's
+     * group, so both print on one receipt.
      *
      * @return list<Transaction> the created transactions, the subscription payment first
      */
@@ -63,6 +64,12 @@ class PlayerPaymentRecorder
 
             if ($donationPortion > 0) {
                 $created[] = $this->playerLevel($player, 'donation', $donationPortion, $method, $description, $userId, $financeAccountId, $date);
+            }
+
+            // The payment and its donation are one hand-over of money: one receipt.
+            if (count($created) > 1) {
+                Transaction::whereKey(array_map(fn (Transaction $t) => $t->id, $created))
+                    ->update(['payment_group' => (string) Str::uuid()]);
             }
 
             return $created;

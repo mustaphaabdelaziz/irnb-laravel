@@ -1,5 +1,6 @@
 import { compile, registerMessageCompiler } from '@intlify/core-base';
 import { createI18n } from 'vue-i18n';
+import { arPluralIndex } from '../lib/arCount.js';
 import ar from './ar.json';
 import en from './en.json';
 import fr from './fr.json';
@@ -17,6 +18,8 @@ export function setupI18n(locale = 'ar') {
         locale,
         fallbackLocale: 'en',
         messages: { ar, en, fr },
+        // Arabic counts agree with their number: «لاعب واحد», «لاعبَين», «5 لاعبين», «12 لاعبًا».
+        pluralRules: { ar: arPluralIndex },
     });
 
     return i18n;

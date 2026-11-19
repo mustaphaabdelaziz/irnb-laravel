@@ -274,13 +274,14 @@ class InventoryController extends Controller
             return [
                 $l->item?->unique_identifier, $l->item?->catalog?->name, EquipmentItem::stateLabel($l->expected_status),
                 EquipmentItem::stateLabel($l->expected_condition), $l->expected_location, $found,
+                $l->counted ? (int) ($l->found ? ($l->found_quantity ?? $l->expected_quantity) : 0) : '', $l->expected_quantity,
                 EquipmentItem::stateLabel($l->actual_condition), $l->actual_location, $l->note,
             ];
         })->all();
 
         $headers = array_map(fn (string $key) => UiLang::get($key), [
             'col.item', 'col.catalog', 'col.expected_status', 'col.expected_condition', 'col.expected_location',
-            'col.result', 'col.actual_condition', 'col.actual_location', 'col.note',
+            'col.result', 'col.found_quantity', 'col.expected_quantity', 'col.actual_condition', 'col.actual_location', 'col.note',
         ]);
 
         return Export::download(Export::format($request), 'inventory-'.$session->reference, $headers, $rows,

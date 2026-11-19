@@ -905,6 +905,8 @@
     "col.purchase_price": "Prix d'achat",
     "col.recorded_by": "Saisi par",
     "col.result": "Résultat",
+    "col.found_quantity": "Quantité trouvée",
+    "col.expected_quantity": "Quantité attendue",
     "col.role": "Fonction",
     "col.serial": "N° de série",
     "col.skill_level": "Niveau",

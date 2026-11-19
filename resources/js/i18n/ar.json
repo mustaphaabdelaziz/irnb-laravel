@@ -905,6 +905,8 @@
     "col.purchase_price": "سعر الشراء",
     "col.recorded_by": "سجّله",
     "col.result": "النتيجة",
+    "col.found_quantity": "العدد الموجود",
+    "col.expected_quantity": "العدد المتوقع",
     "col.role": "المنصب",
     "col.serial": "الرقم التسلسلي",
     "col.skill_level": "المستوى",

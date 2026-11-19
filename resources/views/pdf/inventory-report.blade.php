@@ -25,15 +25,16 @@
         $discrepancies = $session->items->filter(function ($l) {
             return $l->counted && (! $l->found
                 || ($l->actual_condition && $l->actual_condition !== $l->expected_condition)
-                || ($l->actual_location && $l->actual_location !== $l->expected_location));
+                || ($l->actual_location && $l->actual_location !== $l->expected_location)
+                || ($l->found_quantity !== null && $l->found_quantity < $l->expected_quantity));
         });
     @endphp
 
     <div class="title">{{ __('Inventory') }} — {{ $session->reference }}</div>
     <div class="sub">
-        {{ __(ucwords(str_replace('_', ' ', $session->type))) }}
+        {{ \App\Support\UiLang::get($session->type) }}
         &middot; {{ $session->session_date?->format('Y-m-d') }}
-        &middot; {{ __(ucwords(str_replace('_', ' ', $session->status))) }}
+        &middot; {{ \App\Support\UiLang::get($session->status) }}
         @if ($session->conductedBy) &middot; {{ $session->conductedBy->name }} @endif
     </div>
 
@@ -69,7 +70,13 @@
             @forelse ($discrepancies as $l)
                 <tr>
                     <td>{{ $l->item?->unique_identifier }} <span style="color:#94a3b8;">{{ $l->item?->catalog?->name }}</span></td>
-                    <td class="{{ $l->found ? 'found' : 'missing' }}">{{ $l->found ? __('Found') : __('Missing') }}</td>
+                    <td class="{{ $l->found ? 'found' : 'missing' }}">
+                        @if ($l->expected_quantity > 1)
+                            <span dir="ltr">{{ (int) $l->found_quantity }} / {{ $l->expected_quantity }}</span>
+                        @else
+                            {{ $l->found ? __('Found') : __('Missing') }}
+                        @endif
+                    </td>
                     <td>{{ \App\Models\EquipmentItem::stateLabel($l->expected_condition) }}@if ($l->expected_location) · {{ $l->expected_location }}@endif</td>
                     <td>{{ \App\Models\EquipmentItem::stateLabel($l->actual_condition) }}@if ($l->actual_location) · {{ $l->actual_location }}@endif</td>
                     <td>{{ $l->note }}</td>

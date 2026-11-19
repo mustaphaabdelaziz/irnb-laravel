@@ -35,4 +35,45 @@ class EquipmentStocktakePdfTest extends TestCase
         $this->assertStringContainsString('<td>تالف</td>', $html);
         $this->assertStringNotContainsString('Damaged', $html);
     }
+
+    #[Test]
+    public function a_partly_found_line_prints_found_of_expected(): void
+    {
+        $catalog = EquipmentCatalog::create(['name' => 'Cones', 'category' => 'Training']);
+        $item = EquipmentItem::create(['catalog_id' => $catalog->id, 'purchase_date' => '2026-01-01', 'quantity' => 38, 'condition' => 'Good']);
+        $session = InventorySession::create(['reference' => 'INV-2', 'type' => 'monthly', 'session_date' => '2026-10-01', 'status' => 'completed', 'total_expected' => 40, 'total_found' => 38, 'total_missing' => 2]);
+        InventorySessionItem::create([
+            'inventory_session_id' => $session->id, 'equipment_item_id' => $item->id,
+            'expected_status' => 'Available', 'expected_condition' => 'Good', 'expected_quantity' => 40,
+            'counted' => true, 'found' => true, 'found_quantity' => 38, 'note' => 'تحت المدرج',
+        ]);
+
+        app()->setLocale('ar');
+        $session->load(['items.item.catalog:id,name', 'conductedBy:id,name', 'participants.participant']);
+        $html = view('pdf.inventory-report', ['club' => ClubHeader::data(), 'session' => $session])->render();
+
+        $this->assertStringContainsString('38 / 40', $html);
+        $this->assertStringContainsString('تحت المدرج', $html);
+    }
+
+    #[Test]
+    public function the_arabic_stocktake_pdf_has_no_english_words(): void
+    {
+        $catalog = EquipmentCatalog::create(['name' => 'كرة', 'category' => 'Balls']);
+        $item = EquipmentItem::create(['catalog_id' => $catalog->id, 'purchase_date' => '2026-01-01', 'quantity' => 1, 'condition' => 'Good']);
+        $session = InventorySession::create(['reference' => 'INV-3', 'type' => 'ad_hoc', 'session_date' => '2026-10-01', 'status' => 'in_progress']);
+        InventorySessionItem::create([
+            'inventory_session_id' => $session->id, 'equipment_item_id' => $item->id,
+            'expected_status' => 'Available', 'expected_condition' => 'Good', 'expected_quantity' => 1,
+            'counted' => true, 'found' => false, 'found_quantity' => 0,
+        ]);
+
+        app()->setLocale('ar');
+        $session->load(['items.item.catalog:id,name', 'conductedBy:id,name', 'participants.participant']);
+        $html = view('pdf.inventory-report', ['club' => ClubHeader::data(), 'session' => $session])->render();
+
+        $text = html_entity_decode(strip_tags(preg_replace('#<(style|script)\b.*?</\1>#s', '', $html)));
+        $text = preg_replace('/INV-\d+|\d{4}-\d{2}-\d{2}( \d{2}:\d{2})?/', '', $text);
+        $this->assertDoesNotMatchRegularExpression('/[A-Za-z]{3,}/', $text, 'English left in: '.$text);
+    }
 }

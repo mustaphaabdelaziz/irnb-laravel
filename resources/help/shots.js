@@ -2456,7 +2456,7 @@ export default [
         url: '/activities/3',
         targets: ['act-lightbox'],
         before: async (page) => {
-            await page.locator('[data-help="act-photo-open-4"]').click();
+            await page.locator('[data-help="act-photo-open-5"]').click();
             await page.locator('[data-help="act-lightbox"] img').waitFor({ state: 'visible' });
             await page.waitForTimeout(500);
         },

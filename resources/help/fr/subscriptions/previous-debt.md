@@ -51,3 +51,7 @@ Vous vous êtes trompé dans la dette ? Cliquez sur le bouton crayon de sa ligne
 :::tip
 Plus rapide : choisissez « Paiement de dette » dans « Type de paiement », et tapez le montant payé. L'application règle d'abord la dette la plus ancienne, puis la suivante. Ce qui dépasse le total des dettes est enregistré comme don.
 :::
+
+:::tip
+Où voir toutes les dettes ajoutées à la main ? Ouvrez « Abonnements ». Dans le tableau « État financier par section », cliquez sur « Sans section ». La page « Dettes manuelles » s'ouvre : chaque dette y figure avec le nom du joueur. Cliquez sur le nom pour ouvrir sa fiche.
+:::

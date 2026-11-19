@@ -51,3 +51,7 @@ Made a mistake in the debt? Click the pencil button in its row. The “Edit prev
 :::tip
 A faster way: choose “Debt payment” in “Payment category”, and type the amount he paid. The app pays off the oldest debt first, then the next one. Anything above the total debt is recorded as a donation.
 :::
+
+:::tip
+Where can I see every debt added by hand? Open “Subscriptions”. In the “Financial state by branch” table, click “No branch”. The “Manual debts” page opens, with each debt and the player's name. Click the name to open the player's page.
+:::

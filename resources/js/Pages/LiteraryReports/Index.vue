@@ -37,23 +37,23 @@ function destroy() {
         </template>
 
         <div class="mx-auto max-w-4xl space-y-6">
-            <form v-if="can('literary_reports', 'add')" @submit.prevent="add" class="flex flex-wrap items-end gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+            <form v-if="can('literary_reports', 'add')" @submit.prevent="add" data-help="lit-form" class="flex flex-wrap items-end gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
                 <div class="min-w-56 flex-1">
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('literary.report_title') }}</label>
-                    <TextInput v-model="form.title" class="mt-1 w-full" required />
+                    <TextInput v-model="form.title" class="mt-1 w-full" required data-help="lit-title" />
                     <InputError :message="form.errors.title" class="mt-1" />
                 </div>
                 <div>
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('literary.period_from') }}</label>
-                    <TextInput v-model="form.period_from" type="date" class="mt-1" required />
+                    <TextInput v-model="form.period_from" type="date" class="mt-1" required data-help="lit-from" />
                     <InputError :message="form.errors.period_from" class="mt-1" />
                 </div>
                 <div>
                     <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('literary.period_to') }}</label>
-                    <TextInput v-model="form.period_to" type="date" class="mt-1" required />
+                    <TextInput v-model="form.period_to" type="date" class="mt-1" required data-help="lit-to" />
                     <InputError :message="form.errors.period_to" class="mt-1" />
                 </div>
-                <PrimaryButton :disabled="form.processing">{{ t('literary.new') }}</PrimaryButton>
+                <PrimaryButton :disabled="form.processing" data-help="lit-new">{{ t('literary.new') }}</PrimaryButton>
             </form>
 
             <div class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
@@ -66,19 +66,19 @@ function destroy() {
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                        <tr v-for="report in reports" :key="report.id">
+                        <tr v-for="report in reports" :key="report.id" :data-help="`lit-row-${report.id}`">
                             <td class="px-4 py-3 text-sm font-medium text-slate-900 dark:text-slate-100">
-                                <Link v-if="can('literary_reports', 'edit')" :href="route('literary-reports.edit', report.id)" class="hover:text-primary-700 dark:hover:text-primary-300">{{ report.title }}</Link>
+                                <Link v-if="can('literary_reports', 'edit')" :href="route('literary-reports.edit', report.id)" :data-help="`lit-open-${report.id}`" class="hover:text-primary-700 dark:hover:text-primary-300">{{ report.title }}</Link>
                                 <span v-else>{{ report.title }}</span>
                             </td>
                             <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300"><bdi dir="ltr">{{ report.period_from }} → {{ report.period_to }}</bdi></td>
                             <td class="px-4 py-3 text-end">
                                 <div class="flex justify-end gap-2">
-                                    <a :href="route('literary-reports.pdf', report.id)" target="_blank" class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-sm text-primary-700 hover:bg-primary-50 dark:text-primary-300 dark:hover:bg-slate-800">
+                                    <a :href="route('literary-reports.pdf', report.id)" target="_blank" :data-help="`lit-pdf-${report.id}`" class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-sm text-primary-700 hover:bg-primary-50 dark:text-primary-300 dark:hover:bg-slate-800">
                                         <Icon name="download" class="h-4 w-4" /> {{ t('literary.export_pdf') }}
                                     </a>
-                                    <IconButton v-if="can('literary_reports', 'edit')" icon="pencil" :label="t('edit')" plain size="sm" @click="router.visit(route('literary-reports.edit', report.id))" />
-                                    <IconButton v-if="can('literary_reports', 'delete')" icon="trash" :label="t('delete')" variant="danger" plain size="sm" @click="deleteId = report.id" />
+                                    <IconButton v-if="can('literary_reports', 'edit')" icon="pencil" :label="t('edit')" plain size="sm" :data-help="`lit-edit-${report.id}`" @click="router.visit(route('literary-reports.edit', report.id))" />
+                                    <IconButton v-if="can('literary_reports', 'delete')" icon="trash" :label="t('delete')" variant="danger" plain size="sm" :data-help="`lit-delete-${report.id}`" @click="deleteId = report.id" />
                                 </div>
                             </td>
                         </tr>

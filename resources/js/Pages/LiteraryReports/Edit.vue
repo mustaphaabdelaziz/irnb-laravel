@@ -46,10 +46,10 @@ function save() {
                     <Link :href="route('literary-reports.index')" class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">{{ t('literary_reports') }}</Link>
                     <span class="mx-2 text-slate-400">/</span>{{ report.title }}
                 </h1>
-                <a v-if="!form.isDirty" :href="route('literary-reports.pdf', report.id)" target="_blank" class="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">
+                <a v-if="!form.isDirty" :href="route('literary-reports.pdf', report.id)" target="_blank" data-help="lit-pdf" class="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">
                     <Icon name="download" class="h-4 w-4" /> {{ t('literary.export_pdf') }}
                 </a>
-                <span v-else class="text-sm text-amber-700 dark:text-amber-400">{{ t('literary.save_first') }}</span>
+                <span v-else data-help="lit-unsaved" class="text-sm text-amber-700 dark:text-amber-400">{{ t('literary.save_first') }}</span>
             </div>
         </template>
 
@@ -72,7 +72,7 @@ function save() {
                 </div>
             </section>
 
-            <section class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+            <section data-help="lit-sections" class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
                 <h2 class="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">{{ t('literary.sections') }}</h2>
                 <ul class="grid gap-2 sm:grid-cols-2">
                     <li v-for="section in sections" :key="section.key">
@@ -88,14 +88,14 @@ function save() {
                 <InputError :message="form.errors.sections" class="mt-2" />
             </section>
 
-            <section class="space-y-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
-                <label class="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-200">
+            <section data-help="lit-card-options" class="space-y-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+                <label data-help="lit-details" class="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-200">
                     <input v-model="form.include_details" type="checkbox" class="mt-0.5 rounded border-slate-300 text-primary-600" />
                     <span>{{ t('literary.include_details') }}</span>
                 </label>
                 <div>
                     <label for="note" class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('literary.note') }}</label>
-                    <textarea id="note" v-model="form.note" rows="3" class="mt-1 w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"></textarea>
+                    <textarea id="note" data-help="lit-note" v-model="form.note" rows="3" class="mt-1 w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"></textarea>
                     <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('literary.note_hint') }}</p>
                     <InputError :message="form.errors.note" class="mt-1" />
                 </div>
@@ -104,7 +104,7 @@ function save() {
                     <div class="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div v-for="slot in ['signer_1_board_member_id', 'signer_2_board_member_id']" :key="slot">
                             <label :for="slot" class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t(slot === 'signer_1_board_member_id' ? 'literary.signer_1' : 'literary.signer_2') }}</label>
-                            <select :id="slot" v-model="form[slot]" class="mt-1 w-full rounded-xl border-slate-300 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                            <select :id="slot" v-model="form[slot]" :data-help="slot === 'signer_1_board_member_id' ? 'lit-signer-1' : 'lit-signer-2'" class="mt-1 w-full rounded-xl border-slate-300 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
                                 <option value="">{{ t('literary.no_signer') }}</option>
                                 <option v-for="m in boardMembers" :key="m.value" :value="m.value">{{ m.label }}</option>
                             </select>
@@ -114,17 +114,17 @@ function save() {
                 </div>
             </section>
 
-            <section class="space-y-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+            <section data-help="lit-texts" class="space-y-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
                 <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ t('literary.texts') }}</h2>
                 <div v-for="field in texts" :key="field">
                     <label :for="field" class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t(`literary.${field}`) }}</label>
-                    <textarea :id="field" v-model="form[field]" rows="8" class="mt-1 w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"></textarea>
+                    <textarea :id="field" v-model="form[field]" :data-help="`lit-${field}`" rows="8" class="mt-1 w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"></textarea>
                     <InputError :message="form.errors[field]" class="mt-1" />
                 </div>
             </section>
 
             <div class="flex justify-end">
-                <PrimaryButton :disabled="form.processing || !form.isDirty">{{ t('save') }}</PrimaryButton>
+                <PrimaryButton :disabled="form.processing || !form.isDirty" data-help="lit-save">{{ t('save') }}</PrimaryButton>
             </div>
         </form>
     </AuthenticatedLayout>

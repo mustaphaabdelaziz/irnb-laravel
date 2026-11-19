@@ -78,7 +78,7 @@ const card = 'rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-s
                 </div>
                 <div class="flex gap-2">
                     <IconButton v-if="canEdit" icon="pencil" :label="t('edit')" :href="route('activities.edit', a.id)" data-help="act-edit" />
-                    <IconButton v-if="can('activities', 'delete')" icon="trash" :label="t('delete')" variant="danger" @click="confirm = { kind: 'activity' }" />
+                    <IconButton v-if="can('activities', 'delete')" icon="trash" :label="t('delete')" variant="danger" data-help="act-delete" @click="confirm = { kind: 'activity' }" />
                 </div>
             </div>
         </template>

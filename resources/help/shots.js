@@ -2461,7 +2461,172 @@ export default [
             await page.waitForTimeout(500);
         },
     },
+    // --- Social activities: find and edit an activity, create and export the literary report (Part 3d) ---
+    {
+        // Unfiltered list: the sidebar entry, the three totals and the filter bar. Nothing typed.
+        name: 'soc-find-edit-activity-list',
+        url: '/activities',
+        targets: ['nav-activities', 'act-stats', 'act-search', 'act-filter-type', 'act-filter-branch', 'act-filter-from', 'act-filter-to'],
+        before: async (page) => { await navIntoView(page, 'nav-activities'); },
+    },
+    {
+        // «النوع» = «المشاركات الرياضية», «الفرع» = السباحة: only the swimming championship is left.
+        name: 'soc-find-edit-activity-filtered',
+        url: '/activities',
+        targets: ['act-stats', 'act-filter-type', 'act-filter-branch', 'act-card-6'],
+        before: async (page) => { await filterSwimChampionship(page); },
+    },
+    {
+        name: 'soc-find-edit-activity-show',
+        url: '/activities/6',
+        targets: ['act-edit', 'act-delete'],
+        before: async (page) => { await page.waitForLoadState('networkidle'); },
+    },
+    {
+        // The result corrected in the edit form. «حفظ» not pressed.
+        name: 'soc-find-edit-activity-result',
+        url: '/activities/6/edit',
+        targets: ['act-result'],
+        before: async (page) => {
+            await page.fill('input[data-help="act-result"]', 'المرتبة الثانية');
+            await blur(page);
+            await centre(page, 'act-result');
+        },
+    },
+    {
+        name: 'soc-find-edit-activity-save',
+        url: '/activities/6/edit',
+        targets: ['act-save'],
+        before: async (page) => {
+            await page.fill('input[data-help="act-result"]', 'المرتبة الثانية');
+            await blur(page);
+            await centre(page, 'act-save');
+        },
+    },
+    {
+        // The trash pressed: the confirm. Not confirmed (the page is left as it is).
+        name: 'soc-find-edit-activity-confirm',
+        url: '/activities/6',
+        targets: ['confirm-panel', 'confirm-ok', 'confirm-cancel'],
+        before: async (page) => {
+            await page.locator('[data-help="act-delete"]').click();
+            await page.locator('[data-help="confirm-ok"]').waitFor({ state: 'visible' });
+        },
+    },
+    {
+        name: 'soc-create-literary-report-list',
+        url: '/literary-reports',
+        targets: ['nav-literary-reports', 'lit-row-1', 'lit-open-1', 'lit-edit-1', 'lit-pdf-1', 'lit-delete-1'],
+        before: async (page) => { await navIntoView(page, 'nav-literary-reports'); },
+    },
+    {
+        // The new-report form: title typed, «إلى» moved to the last day of February. «تقرير جديد» not pressed.
+        name: 'soc-create-literary-report-form',
+        url: '/literary-reports',
+        targets: ['lit-title', 'lit-from', 'lit-to', 'lit-new'],
+        before: async (page) => {
+            await page.fill('input[data-help="lit-title"]', 'التقرير الأدبي — نصف الموسم');
+            await page.fill('input[data-help="lit-to"]', halfSeasonEnd());
+            await blur(page);
+            await centre(page, 'lit-form');
+        },
+    },
+    {
+        name: 'soc-export-literary-report-sections',
+        url: '/literary-reports/1/edit',
+        targets: ['lit-sections'],
+        before: async (page) => { await centre(page, 'lit-sections'); },
+    },
+    {
+        // «إضافة التفاصيل» ticked, a note, the two signers. Nothing saved.
+        name: 'soc-export-literary-report-details',
+        url: '/literary-reports/1/edit',
+        targets: ['lit-card-options', 'lit-details', 'lit-note', 'lit-signer-1', 'lit-signer-2'],
+        before: async (page) => {
+            await fillLitOptions(page);
+            await centre(page, 'lit-card-options');
+        },
+    },
+    {
+        name: 'soc-export-literary-report-texts',
+        url: '/literary-reports/1/edit',
+        targets: ['lit-texts', 'lit-president_word', 'lit-introduction', 'lit-conclusion'],
+        before: async (page) => {
+            await fillLitTexts(page);
+            await centre(page, 'lit-texts');
+        },
+    },
+    {
+        // The header of the edited, unsaved form: the notice replaces the export link.
+        name: 'soc-export-literary-report-unsaved',
+        url: '/literary-reports/1/edit',
+        targets: ['lit-unsaved'],
+        before: async (page) => {
+            await fillLitOptions(page);
+            await fillLitTexts(page);
+            await page.evaluate(() => window.scrollTo(0, 0));
+            await page.waitForTimeout(200);
+        },
+    },
+    {
+        // «حفظ» under the filled form. Not pressed.
+        name: 'soc-export-literary-report-save',
+        url: '/literary-reports/1/edit',
+        targets: ['lit-save'],
+        before: async (page) => {
+            await fillLitOptions(page);
+            await fillLitTexts(page);
+            await centre(page, 'lit-save');
+        },
+    },
+    {
+        // The saved (clean) report: the export link is back.
+        name: 'soc-export-literary-report-ready',
+        url: '/literary-reports/1/edit',
+        targets: ['lit-pdf'],
+        before: async (page) => { await page.evaluate(() => window.scrollTo(0, 0)); },
+    },
 ];
+
+/** Activities list: «النوع» = «المشاركات الرياضية» and «الفرع» = السباحة, then waits for the filtered list. */
+async function filterSwimChampionship(page) {
+    await page.locator('[data-help="act-filter-type"] > button').click();
+    await page.locator('[data-help="act-filter-type"] label', { hasText: 'المشاركات الرياضية' }).locator('input').check();
+    await page.keyboard.press('Escape');
+    await page.locator('h1').first().click();
+    await page.locator('select[data-help="act-filter-branch"]').selectOption({ label: 'السباحة' });
+    await page.waitForURL(/branch=/);
+    await page.waitForLoadState('networkidle');
+    await page.locator('[data-help="act-card-2"]').waitFor({ state: 'detached', timeout: 10000 });
+    await centre(page, 'act-filters');
+}
+
+/** Last day of February in the season that starts on 1 September (the half-season report ends there). */
+function halfSeasonEnd() {
+    const today = new Date();
+    const year = (today.getMonth() >= 8 ? today.getFullYear() : today.getFullYear() - 1) + 1;
+    return ymd(new Date(year, 2, 0));
+}
+
+/** Report edit page: «إضافة التفاصيل» ticked, a note, and the president and Fatima as signers. */
+async function fillLitOptions(page) {
+    await page.locator('[data-help="lit-details"] input').check();
+    await page.fill('textarea[data-help="lit-note"]', 'الأرقام محسوبة إلى نهاية الفترة المحددة في التقرير.');
+    const pick = async (name, text) => {
+        const select = page.locator(`select[data-help="${name}"]`);
+        const value = await select.locator('option', { hasText: text }).first().getAttribute('value');
+        await select.selectOption(value);
+    };
+    await pick('lit-signer-1', 'بوخالفة');
+    await pick('lit-signer-2', 'فاطمة');
+    await blur(page);
+}
+
+/** Report edit page: a short president's word. */
+async function fillLitTexts(page) {
+    await page.fill('textarea[data-help="lit-president_word"]', 'يسرّنا أن نقدّم لكم حصيلة موسم حافل بالنشاط. نشكر كل من ساهم في نجاحه.');
+    await blur(page);
+}
 
 /** Statistics page: picks the U17 team in the team filter and waits for the filtered table. */
 async function pickStatsTeam(page) {

@@ -59,24 +59,24 @@ const dates = (a) => {
         </template>
 
         <div class="space-y-6">
-            <div class="grid gap-4 sm:grid-cols-3">
+            <div class="grid gap-4 sm:grid-cols-3" data-help="act-stats">
                 <StatTile :label="t('activities.stats.count')" :value="stats.count" icon="heart" />
                 <StatTile :label="t('activities.stats.beneficiaries')" :value="stats.beneficiaries" icon="players" />
                 <StatTile :label="t('activities.stats.participants')" :value="stats.participants" icon="members" />
             </div>
 
-            <div class="flex flex-wrap items-end gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
-                <SearchInput v-model="state.search" :placeholder="t('activities.search_placeholder')" class="min-w-56 flex-1" />
-                <MultiSelectFilter v-model="state.types" :options="types.map((ty) => ({ value: String(ty.id), label: ty.name }))" :label="t('activities.type')" :placeholder="t('activities.all_types')" collapse-all />
-                <select v-model="state.branch" class="rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900">
+            <div data-help="act-filters" class="flex flex-wrap items-end gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+                <SearchInput v-model="state.search" data-help="act-search" :placeholder="t('activities.search_placeholder')" class="min-w-56 flex-1" />
+                <MultiSelectFilter v-model="state.types" data-help="act-filter-type" :options="types.map((ty) => ({ value: String(ty.id), label: ty.name }))" :label="t('activities.type')" :placeholder="t('activities.all_types')" collapse-all />
+                <select v-model="state.branch" data-help="act-filter-branch" class="rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900">
                     <option value="">{{ t('activities.all_branches') }}</option>
                     <option v-for="b in branches" :key="b.id" :value="String(b.id)">{{ b.localized_name }}</option>
                 </select>
                 <label class="text-sm text-slate-600 dark:text-slate-300">{{ t('activities.from') }}
-                    <input v-model="state.from" type="date" class="ms-1 rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900" />
+                    <input v-model="state.from" type="date" data-help="act-filter-from" class="ms-1 rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900" />
                 </label>
                 <label class="text-sm text-slate-600 dark:text-slate-300">{{ t('activities.to') }}
-                    <input v-model="state.to" type="date" class="ms-1 rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900" />
+                    <input v-model="state.to" type="date" data-help="act-filter-to" class="ms-1 rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900" />
                 </label>
             </div>
 

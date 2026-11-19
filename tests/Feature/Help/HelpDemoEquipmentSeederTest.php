@@ -212,8 +212,28 @@ class HelpDemoEquipmentSeederTest extends TestCase
         $this->assertSame('2026-11-18', $open->session_date->toDateString());
         $this->assertSame(Demo::STOCKTAKE_NOTES, $open->notes);
         $this->assertSame(0, $open->items()->where('counted', true)->count());
-        $this->assertSame((int) EquipmentItem::where('status', '!=', 'Retired')->sum('quantity'), (int) $open->total_expected);
-        $this->assertSame(EquipmentItem::count(), $open->items()->count());
+        // As InventoryController::store: units on loan are not expected, a lot wholly
+        // on loan has no line, a unit under repair stays on the sheet.
+        $line = fn (string $catalog, ?string $designation = null) => $open->items()
+            ->whereHas('item', fn ($q) => $q->where('catalog_id', $this->catalog($catalog)->id)
+                ->when($designation, fn ($q) => $q->where('designation', $designation)))
+            ->first();
+        $balls = $line(Demo::BALL);
+        $this->assertSame(2, (int) $balls->on_loan_quantity);
+        $this->assertSame(EquipmentItem::find($balls->equipment_item_id)->quantity - 2, (int) $balls->expected_quantity);
+        $this->assertSame(18, (int) $balls->expected_quantity);
+        $this->assertSame(40, (int) $line(Demo::CONE)->expected_quantity);
+        $this->assertSame(0, (int) $line(Demo::CONE)->on_loan_quantity);
+        $this->assertSame(1, (int) $line(Demo::GOGGLES)->on_loan_quantity);
+        $this->assertNull($line(Demo::GOAL, 'مرمى 1'));
+        $this->assertNotNull($line(Demo::GOAL, 'مرمى 2'));
+        $this->assertSame('Under Repair', $line(Demo::STOPWATCH, 'ساعة توقيت 2')?->expected_status);
+        $this->assertSame(EquipmentItem::count() - 1, $open->items()->count());
+        $this->assertSame((int) $open->items()->sum('expected_quantity'), (int) $open->total_expected);
+        $this->assertSame(116, (int) $open->total_expected);
+        // The completed count expected and found the same units, line by line.
+        $this->assertSame((int) $done->items()->sum('expected_quantity'), (int) $done->total_expected);
+        $this->assertSame((int) $done->items()->sum('found_quantity'), (int) $done->total_found);
         $participant = $open->participants()->with('participant')->sole()->participant;
         $this->assertInstanceOf(Player::class, $participant);
         $this->assertSame('قاسمي', $participant->lastname);

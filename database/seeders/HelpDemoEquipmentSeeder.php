@@ -247,28 +247,38 @@ class HelpDemoEquipmentSeeder extends Seeder
     }
 
     /**
-     * InventoryController::store's count sheet: one line per non-retired lot
-     * received by $day, and total_expected in units. With $found every line is
-     * counted and found in full. Returns the units expected.
+     * InventoryController::store's count sheet: one line per lot received by $day
+     * that is neither retired nor lost, expecting the units not out on loan; a lot
+     * wholly on loan gets no line. total_expected is in units. With $found every
+     * line is counted and found in full. Returns the units expected.
      */
     private function snapshot(InventorySession $session, CarbonImmutable $day, bool $found): int
     {
-        $items = EquipmentItem::where('status', '!=', 'Retired')
+        $items = EquipmentItem::whereNotIn('status', ['Retired', 'Lost'])
             ->whereDate('purchase_date', '<=', $day->toDateString())
+            ->with(['rentals' => fn ($q) => $q->whereNull('return_date')])
             ->get(['id', 'status', 'condition', 'location', 'quantity']);
 
+        $total = 0;
         foreach ($items as $it) {
+            $onLoan = min($it->quantity, $this->stock->outstandingQuantity($it));
+            $expected = $it->quantity - $onLoan;
+            if ($expected < 1) {
+                continue; // wholly on loan: nothing to find
+            }
+
             InventorySessionItem::create([
                 'inventory_session_id' => $session->id,
                 'equipment_item_id' => $it->id,
                 'expected_status' => $it->status,
                 'expected_condition' => $it->condition,
                 'expected_location' => $it->location,
-                'expected_quantity' => $it->quantity,
-            ] + ($found ? ['counted' => true, 'found' => true, 'found_quantity' => $it->quantity] : []));
+                'expected_quantity' => $expected,
+                'on_loan_quantity' => $onLoan,
+            ] + ($found ? ['counted' => true, 'found' => true, 'found_quantity' => $expected] : []));
+            $total += $expected;
         }
 
-        $total = (int) $items->sum('quantity');
         $session->update(['total_expected' => $total]);
 
         return $total;

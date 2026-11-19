@@ -4,7 +4,7 @@ summary: أضف أنواع الأنشطة وعدّل ترتيبها، فيطبع
 module: activity_types
 pages: [activity-types.index]
 keywords: [نوع النشاط, أنواع الأنشطة, فصول التقرير, ترتيب الفصول, إضافة نوع, حذف نوع, تعديل نوع, التقرير الأدبي]
-related: [social/record-activity]
+related: [social/record-activity, social/create-literary-report]
 ---
 
 لكل نشاط نوع، مثل «الحملات التطوعية». كل نوع فصل في التقرير الأدبي، ويُطبع بحسب رقمه «#». الأنواع التي لا نشاط لها في فترة التقرير لا تُطبع.

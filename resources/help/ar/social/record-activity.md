@@ -4,7 +4,7 @@ summary: سجّل نشاط النادي بتاريخه ومشاركيه وتقر
 module: activities
 pages: [activities.index, activities.create, activities.show]
 keywords: [نشاط, نشاط جديد, تسجيل نشاط, حملة, تكوين, مشاركة رياضية, المستفيدون, متطوعون, تاريخ النشاط, تاريخ نصي, تكلفة النشاط, تقرير النشاط]
-related: [social/activity-types, social/photos-files]
+related: [social/activity-types, social/photos-files, social/find-edit-activity, social/create-literary-report]
 ---
 
 كل ما يفعله النادي خارج التدريب نشاط: حملة أو تكوين أو مشاركة في دورة. تسجّله مرة واحدة، فيدخل في التقرير الأدبي.

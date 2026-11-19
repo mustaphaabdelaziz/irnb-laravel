@@ -4,7 +4,7 @@ summary: ابحث عن نشاط بالمرشحات، ثم صحّح بيانات�
 module: activities
 pages: [activities.index, activities.show, activities.edit]
 keywords: [بحث عن نشاط, تصفية الأنشطة, مرشح النوع, مرشح الفرع, من إلى, تعديل نشاط, حذف نشاط, نشاط مكرر, تصحيح النتيجة, عدد المستفيدين]
-related: [social/record-activity, social/photos-files]
+related: [social/record-activity, social/photos-files, social/export-literary-report, social/create-literary-report]
 ---
 
 تتراكم الأنشطة على مدار الموسم. المرشحات تجد النشاط بسرعة، ومن صفحته تصحّح بياناته أو تحذفه.

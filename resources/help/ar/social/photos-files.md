@@ -4,7 +4,7 @@ summary: أضف صور النشاط وعلّق عليها، واختر صورة 
 module: activities
 pages: [activities.show]
 keywords: [صور النشاط, إضافة صور, تعليق على صورة, صورة التقرير, ملحق الصور, ملف مرفق, إرفاق ملف, اتفاقية, محضر, حذف صورة, تكبير الصورة]
-related: [social/record-activity]
+related: [social/record-activity, social/export-literary-report]
 ---
 
 تُحفظ صور النشاط وملفاته في صفحة النشاط. صورة واحدة منها تُطبع في ملحق الصور من التقرير الأدبي.

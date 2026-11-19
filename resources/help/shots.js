@@ -2550,7 +2550,7 @@ export default [
     {
         name: 'soc-export-literary-report-texts',
         url: '/literary-reports/1/edit',
-        targets: ['lit-texts', 'lit-president_word', 'lit-introduction', 'lit-conclusion'],
+        targets: ['lit-texts', 'lit-president-word', 'lit-introduction', 'lit-conclusion'],
         before: async (page) => {
             await fillLitTexts(page);
             await centre(page, 'lit-texts');
@@ -2624,7 +2624,7 @@ async function fillLitOptions(page) {
 
 /** Report edit page: a short president's word. */
 async function fillLitTexts(page) {
-    await page.fill('textarea[data-help="lit-president_word"]', 'يسرّنا أن نقدّم لكم حصيلة موسم حافل بالنشاط. نشكر كل من ساهم في نجاحه.');
+    await page.fill('textarea[data-help="lit-president-word"]', 'يسرّنا أن نقدّم لكم حصيلة موسم حافل بالنشاط. نشكر كل من ساهم في نجاحه.');
     await blur(page);
 }
 

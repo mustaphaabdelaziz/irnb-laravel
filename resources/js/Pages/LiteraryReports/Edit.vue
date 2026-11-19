@@ -118,7 +118,7 @@ function save() {
                 <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ t('literary.texts') }}</h2>
                 <div v-for="field in texts" :key="field">
                     <label :for="field" class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t(`literary.${field}`) }}</label>
-                    <textarea :id="field" v-model="form[field]" :data-help="`lit-${field}`" rows="8" class="mt-1 w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"></textarea>
+                    <textarea :id="field" v-model="form[field]" :data-help="`lit-${field.replace('_', '-')}`" rows="8" class="mt-1 w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"></textarea>
                     <InputError :message="form.errors[field]" class="mt-1" />
                 </div>
             </section>

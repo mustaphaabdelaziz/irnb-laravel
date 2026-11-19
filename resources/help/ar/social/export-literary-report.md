@@ -35,7 +35,7 @@ related: [social/create-literary-report, social/photos-files, social/record-acti
 
 :::step اكتب النصوص في «النصوص التحريرية»
 اكتب في «كلمة الرئيس» نصًّا قصيرًا. وكذلك «المقدمة» و«الخاتمة والآفاق». النصوص الثلاثة اختيارية. «المقدمة» مكتوبة هنا مسبقًا في التقرير التجريبي.
-::figure soc-export-literary-report-texts ring=lit-president_word,lit-introduction,lit-conclusion
+::figure soc-export-literary-report-texts ring=lit-president-word,lit-introduction,lit-conclusion
 :::
 
 :::step اضغط «حفظ»

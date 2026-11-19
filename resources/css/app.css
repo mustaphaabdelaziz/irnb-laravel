@@ -135,9 +135,9 @@
         @apply border-slate-600 bg-slate-800;
     }
 
-    /* Native date/time pickers render their glyph dark-on-dark otherwise. */
-    .dark ::-webkit-calendar-picker-indicator {
-        filter: invert(0.8);
+    /* Native controls follow the theme: date/time picker glyph and popup, scrollbars. */
+    .dark {
+        color-scheme: dark;
     }
 
     /* Slim themed scrollbars. */

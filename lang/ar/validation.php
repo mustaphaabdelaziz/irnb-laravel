@@ -176,6 +176,7 @@ return [
     'equipment_expense_needs_price' => 'اكتب سعر الوحدة لتسجيل المصروف.',
     'equipment_source_required' => 'اختر مصدر الاستلام.',
     'branch_code_needs_latin' => 'اكتب رمز الفرع بحروف لاتينية (مثل HB)، فالاسم ليس فيه حروف لاتينية.',
+    'category_code_needs_latin' => 'اكتب رمز الفئة بحروف لاتينية (مثل BALL)، فالاسم ليس فيه حروف لاتينية.',
 
     'join_date_before_birth' => 'تاريخ الانضمام يسبق تاريخ الميلاد.',
     'position_other_branch' => 'هذا المركز تابع لفرع آخر.',

@@ -345,7 +345,7 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
         <!-- Player picker: fills an empty seat -->
         <Teleport to="body">
             <div v-if="picker" class="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-slate-900/60 p-4 backdrop-blur-sm sm:items-center" @click.self="picker = null">
-                <div class="my-auto w-full max-w-md space-y-3 rounded-2xl bg-white p-5 shadow-2xl dark:bg-slate-900">
+                <div class="my-auto w-full max-w-md space-y-3 rounded-2xl bg-white p-5 shadow-2xl ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-700">
                     <div class="flex items-center justify-between gap-2">
                         <h2 class="truncate text-base font-bold text-slate-900 dark:text-slate-100">{{ picker.title }}</h2>
                         <button type="button" @click="picker = null" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><Icon name="xcircle" /></button>
@@ -374,7 +374,7 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
         <!-- Seat menu: a filled seat -->
         <Teleport to="body">
             <div v-if="selected" class="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-slate-900/60 p-4 backdrop-blur-sm sm:items-center" @click.self="selected = null">
-                <div class="my-auto w-full max-w-sm space-y-4 rounded-2xl bg-white p-5 shadow-2xl dark:bg-slate-900">
+                <div class="my-auto w-full max-w-sm space-y-4 rounded-2xl bg-white p-5 shadow-2xl ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-700">
                     <div class="flex items-start gap-3">
                         <span class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-xl font-bold text-white">
                             <img v-if="selected.member.photo_url" :src="selected.member.photo_url" :alt="selected.member.name" class="h-full w-full object-cover" />
@@ -420,7 +420,7 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
         <!-- Member form (add / edit role, term, status) -->
         <Teleport to="body">
             <div v-if="showForm" class="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-slate-900/60 p-4 backdrop-blur-sm sm:items-center" @click.self="showForm = false">
-                <form @submit.prevent="submit" class="my-auto w-full max-w-lg space-y-4 rounded-2xl bg-white p-5 shadow-2xl dark:bg-slate-900">
+                <form @submit.prevent="submit" class="my-auto w-full max-w-lg space-y-4 rounded-2xl bg-white p-5 shadow-2xl ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-700">
                     <div class="flex items-center justify-between">
                         <h2 class="text-base font-bold text-slate-900 dark:text-slate-100">{{ editingId ? t('edit') : t('add_member') }}</h2>
                         <button type="button" @click="showForm = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><Icon name="xcircle" /></button>
@@ -481,7 +481,7 @@ function fmt(d) { return d ? String(d).slice(0, 10) : ''; }
         <!-- Term modal -->
         <Teleport to="body">
             <div v-if="showTermForm" class="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-slate-900/60 p-4 backdrop-blur-sm sm:items-center" @click.self="showTermForm = false">
-                <form @submit.prevent="submitTerm" class="my-auto w-full max-w-md space-y-4 rounded-2xl bg-white p-5 shadow-2xl dark:bg-slate-900">
+                <form @submit.prevent="submitTerm" class="my-auto w-full max-w-md space-y-4 rounded-2xl bg-white p-5 shadow-2xl ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-700">
                     <div class="flex items-center justify-between">
                         <h2 class="text-base font-bold text-slate-900 dark:text-slate-100">{{ editingTermId ? t('edit_term') : t('new_term') }}</h2>
                         <button type="button" @click="showTermForm = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><Icon name="xcircle" /></button>

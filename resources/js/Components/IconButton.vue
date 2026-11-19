@@ -70,7 +70,7 @@ const pressedClass = 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200 da
         :aria-label="label"
         :title="label"
         :aria-pressed="pressed === null ? undefined : pressed"
-        class="group/ib inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-lg font-medium transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-slate-900"
+        class="group/ib inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-lg font-medium transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1 disabled:pointer-events-none disabled:cursor-not-allowed disabled:grayscale disabled:opacity-50 dark:focus-visible:ring-offset-slate-900"
         :class="[SIZES[size] ?? SIZES.md, pressed ? pressedClass : colorClass]"
     >
         <Icon :name="icon" class="text-[1.1em]" :class="iconClass" />

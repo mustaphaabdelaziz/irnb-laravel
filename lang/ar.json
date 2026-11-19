@@ -1,7 +1,7 @@
 {
     "The kind cannot change once players are assigned.": "لا يمكن تغيير النوع بعد تعيين لاعبين.",
-    ":count equipments imported successfully.": "تم استيراد :count معدة بنجاح.",
-    ":count items imported successfully.": "تم استيراد :count عنصر بنجاح.",
+    ":count equipments imported successfully.": "تم استيراد المعدات بنجاح (العدد: :count).",
+    ":count items imported successfully.": "تم استيراد العناصر بنجاح (العدد: :count).",
     ":count players imported successfully.": "تم استيراد :count لاعب بنجاح.",
     ":count transactions imported successfully.": "تم استيراد :count معاملة بنجاح.",
     "Amount": "المبلغ",

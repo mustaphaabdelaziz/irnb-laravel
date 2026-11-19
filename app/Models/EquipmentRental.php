@@ -104,7 +104,8 @@ class EquipmentRental extends Model
             return false;
         }
 
-        return $this->due_date->isPast();
+        // The due day itself is still on time.
+        return $this->due_date->lt(today());
     }
 
     public function getRentalDurationAttribute(): int

@@ -27,7 +27,7 @@ function initial(n) { return (n || '?').charAt(0).toUpperCase(); }
             <span v-else>{{ initial(member.name) }}</span>
         </span>
         <span class="min-w-0 flex-1">
-            <span class="block truncate font-bold text-slate-900 dark:text-slate-100" :class="size === 'sm' ? 'text-xs' : 'text-sm'">{{ member.name }}</span>
+            <span class="block font-bold text-slate-900 dark:text-slate-100" :class="size === 'sm' ? 'line-clamp-2 break-words text-xs' : 'truncate text-sm'">{{ member.name }}</span>
             <span class="block text-xs font-semibold text-primary-600 dark:text-primary-300" :class="size === 'sm' ? 'line-clamp-2' : 'truncate'">{{ label }}</span>
         </span>
     </button>

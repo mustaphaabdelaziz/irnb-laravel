@@ -13,12 +13,15 @@ const props = defineProps({
     members: { type: Array, default: () => [] },
     allMembers: { type: Array, default: () => [] },
     removedAttendances: { type: Array, default: () => [] },
+    roleLabels: { type: Object, default: () => ({}) },
 });
 const { t, locale } = useI18n();
 const { can } = useCan();
 
 // A cancelled meeting is kept as history and can no longer be changed.
 const isCancelled = computed(() => props.meeting.status === 'cancelled');
+// The label typed for the role in settings wins over the built-in translation.
+const roleLabel = (r) => props.roleLabels[r] || t(r);
 const editLocked = computed(() => isCancelled.value || !can('board', 'edit'));
 const canCancel = computed(() => props.meeting.status === 'scheduled' && can('board', 'edit'));
 
@@ -178,10 +181,10 @@ const attStyle = {
                             <div v-for="(item, i) in form.agenda" :key="i" class="flex items-center gap-2">
                                 <span class="text-xs font-bold text-slate-400">{{ i + 1 }}</span>
                                 <input v-model="form.agenda[i]" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
-                                <button type="button" @click="form.agenda.splice(i, 1)" class="text-slate-300 hover:text-rose-500 dark:hover:text-rose-400"><Icon name="xcircle" /></button>
+                                <button v-if="!editLocked" type="button" @click="form.agenda.splice(i, 1)" class="text-slate-300 hover:text-rose-500 dark:hover:text-rose-400"><Icon name="xcircle" /></button>
                             </div>
                         </div>
-                        <button type="button" @click="form.agenda.push('')" class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary-600 dark:text-primary-300"><Icon name="plus" /> {{ t('add_item') }}</button>
+                        <button v-if="!editLocked" type="button" @click="form.agenda.push('')" class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary-600 dark:text-primary-300"><Icon name="plus" /> {{ t('add_item') }}</button>
                     </div>
                     </fieldset>
                 </section>
@@ -215,10 +218,10 @@ const attStyle = {
                             <div v-for="(d, i) in form.decisions" :key="i" class="flex items-center gap-2">
                                 <Icon name="check" class="text-emerald-500 dark:text-emerald-400" />
                                 <input v-model="form.decisions[i]" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" />
-                                <button type="button" @click="form.decisions.splice(i, 1)" class="text-slate-300 hover:text-rose-500 dark:hover:text-rose-400"><Icon name="xcircle" /></button>
+                                <button v-if="!editLocked" type="button" @click="form.decisions.splice(i, 1)" class="text-slate-300 hover:text-rose-500 dark:hover:text-rose-400"><Icon name="xcircle" /></button>
                             </div>
                         </div>
-                        <button type="button" data-help="meet-decisions-add" @click="form.decisions.push('')" class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary-600 dark:text-primary-300"><Icon name="plus" /> {{ t('add_item') }}</button>
+                        <button v-if="!editLocked" type="button" data-help="meet-decisions-add" @click="form.decisions.push('')" class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary-600 dark:text-primary-300"><Icon name="plus" /> {{ t('add_item') }}</button>
                     </div>
                     <div v-if="!editLocked" class="flex justify-end">
                         <button data-help="meet-save-minutes" @click="saveMeeting" :disabled="form.processing" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50">{{ t('save_minutes') }}</button>
@@ -260,7 +263,7 @@ const attStyle = {
                     </div>
                     <ul class="space-y-2">
                         <li v-for="m in members" :key="m.id" class="flex items-center justify-between gap-2">
-                            <span class="min-w-0 truncate text-sm text-slate-700 dark:text-slate-200">{{ m.name }} <span class="text-xs text-slate-400">{{ t(m.role) }}</span></span>
+                            <span class="min-w-0 truncate text-sm text-slate-700 dark:text-slate-200">{{ m.name }} <span class="text-xs text-slate-400">{{ roleLabel(m.role) }}</span></span>
                             <div class="flex shrink-0 gap-1">
                                 <button v-for="s in ['present', 'absent', 'excused']" :key="s" :data-help="`meet-att-${m.id}-${s}`" @click="attendance[m.id] = s"
                                     class="rounded-md px-2 py-0.5 text-xs font-bold transition-colors"
@@ -272,7 +275,7 @@ const attStyle = {
                         <p class="mb-2 text-xs font-bold text-slate-500 dark:text-slate-400">{{ t('board.removed_members') }}</p>
                         <ul class="space-y-2">
                             <li v-for="a in removedAttendances" :key="a.id" class="flex items-center justify-between gap-2">
-                                <span class="min-w-0 truncate text-sm text-slate-700 dark:text-slate-200">{{ a.name }} <span v-if="a.role" class="text-xs text-slate-400">{{ t(a.role) }}</span></span>
+                                <span class="min-w-0 truncate text-sm text-slate-700 dark:text-slate-200">{{ a.name }} <span v-if="a.role" class="text-xs text-slate-400">{{ roleLabel(a.role) }}</span></span>
                                 <span class="shrink-0 rounded-md px-2 py-0.5 text-xs font-bold" :class="attStyle[a.status]">{{ t(a.status) }}</span>
                             </li>
                         </ul>

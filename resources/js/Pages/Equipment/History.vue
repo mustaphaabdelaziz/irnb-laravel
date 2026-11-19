@@ -184,7 +184,7 @@ const eventLabel = (type) => {
                                 <p v-if="event.details.return_date">{{ t('return_date') }}: {{ event.details.return_date }}</p>
                                 <p v-if="event.details.returned_condition">{{ t('condition') }}: {{ stateLabel(event.details.returned_condition) }}</p>
                                 <p v-if="event.details.condition">{{ t('condition') }}: {{ stateLabel(event.details.condition) }}</p>
-                                <p v-if="event.details.previous_status">{{ t('status') }}: {{ stateLabel(event.details.previous_status) }}</p>
+                                <p v-if="event.details.previous_status">{{ t('previous_status') }}: {{ stateLabel(event.details.previous_status) }}</p>
                                 <p v-if="event.details.notes">{{ event.details.notes }}</p>
                             </div>
                         </div>

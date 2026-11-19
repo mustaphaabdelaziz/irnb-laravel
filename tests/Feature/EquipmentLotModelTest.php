@@ -158,7 +158,7 @@ class EquipmentLotModelTest extends TestCase
         $catalog = $catalog->fresh();
 
         $this->assertSame(25, $catalog->total_quantity);
-        $this->assertSame(25, $catalog->available_count);
+        $this->assertSame(20, $catalog->available_count, 'damaged units are in the store room but not lendable');
     }
 
     #[Test]

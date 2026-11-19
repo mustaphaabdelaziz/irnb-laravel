@@ -176,6 +176,7 @@ return [
     'equipment_expense_needs_price' => 'Saisissez le prix unitaire pour enregistrer la dépense.',
     'equipment_source_required' => 'Choisissez la provenance.',
     'branch_code_needs_latin' => "Saisissez le code de la section en lettres latines (ex. HB) : le nom n'en contient aucune.",
+    'category_code_needs_latin' => "Saisissez le code de la catégorie en lettres latines (ex. BALL) : le nom n'en contient aucune.",
 
     'join_date_before_birth' => "La date d'adhésion précède la date de naissance.",
     'position_other_branch' => 'Ce poste appartient à une autre section.',

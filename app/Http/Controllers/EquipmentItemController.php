@@ -281,6 +281,12 @@ class EquipmentItemController extends Controller
             ->groupBy('status')
             ->pluck('c', 'status');
 
+        // Damaged lots are in the store room but not lendable (EquipmentStockService::availableQuantity).
+        $damagedUnits = (int) EquipmentItem::query()
+            ->where('condition', EquipmentStockService::BLOCKING_CONDITION)
+            ->whereNotIn('status', EquipmentStockService::BLOCKING_STATUSES)
+            ->sum('quantity');
+
         // "Rented" cannot come from the status column any more: a lot of 20
         // with 10 units issued is still status Available. It comes from the
         // open rentals instead.
@@ -295,11 +301,12 @@ class EquipmentItemController extends Controller
 
         $summary = [
             'total' => (int) $statusQuantities->sum(),
-            'available' => max(0, $unblockedUnits - $unitsOut),
+            'available' => max(0, $unblockedUnits - $damagedUnits - $unitsOut),
             'rented' => $unitsOut,
             'under_repair' => (int) ($statusQuantities['Under Repair'] ?? 0),
             'lost' => (int) ($statusQuantities['Lost'] ?? 0),
-            'retired' => (int) ($statusQuantities['Retired'] ?? 0),
+            // In the store room but kept apart: not lendable until repaired.
+            'damaged' => $damagedUnits,
         ];
 
         $conditionBreakdown = EquipmentItem::query()
@@ -312,6 +319,8 @@ class EquipmentItemController extends Controller
             ->values();
 
         $blockedList = "'".implode("','", EquipmentStockService::BLOCKING_STATUSES)."'";
+        // Quoted by the grammar: MySQL and MariaDB reserve the column's name.
+        $damagedLot = DB::getQueryGrammar()->wrap('equipment_items.condition')." = '".EquipmentStockService::BLOCKING_CONDITION."'";
 
         $categoryBreakdown = DB::table('equipment_items')
             ->join('equipment_catalogs', 'equipment_catalogs.id', '=', 'equipment_items.catalog_id')
@@ -321,7 +330,7 @@ class EquipmentItemController extends Controller
             ->groupBy('equipment_catalogs.category')
             ->selectRaw("equipment_catalogs.category as category,
                 SUM(equipment_items.quantity) as total,
-                SUM(CASE WHEN equipment_items.status IN ({$blockedList}) THEN 0
+                SUM(CASE WHEN equipment_items.status IN ({$blockedList}) OR {$damagedLot} THEN 0
                     ELSE equipment_items.quantity - COALESCE(rentals_out.out_units, 0) END) as available,
                 COALESCE(SUM(rentals_out.out_units), 0) as rented")
             ->orderBy('equipment_catalogs.category')
@@ -471,6 +480,21 @@ class EquipmentItemController extends Controller
     /** Stored condition code => UI label key (the one stateLabel() shows). */
     private const CONDITIONS = ['New' => 'new', 'Good' => 'good', 'Fair' => 'fair', 'Poor' => 'poor', 'Damaged' => 'damaged'];
 
+    /** True when the row repeats the template's fixed example cells (designation, date, location). */
+    private function isTemplateExample(array $data): bool
+    {
+        foreach (self::IMPORT_COLUMNS as $column) {
+            if ($column['example'] === '' || ! empty($column['localized'])) {
+                continue;
+            }
+            if (trim((string) ($data[$column['key']] ?? '')) !== $column['example']) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public function importTemplate(Request $request): SymfonyResponse
     {
         $example = array_map(
@@ -535,6 +559,11 @@ class EquipmentItemController extends Controller
                 continue;
             }
 
+            // The template's own example line, left in by mistake, is not a unit.
+            if ($this->isTemplateExample($data)) {
+                continue;
+            }
+
             try {
                 DB::transaction(function () use ($data, $catalog, $request, $recordExpense, $accountId) {
                     $item = new EquipmentItem([
@@ -543,6 +572,10 @@ class EquipmentItemController extends Controller
                         'purchase_date' => $this->parseDate($data['purchase_date']) ?? now()->toDateString(),
                         'condition' => ImportColumns::value($data['condition'], self::CONDITIONS) ?? 'New',
                         'location' => $data['location'] ?: null,
+                        // What the unit cost stays on the unit, expense or not.
+                        'unit_price' => is_numeric($data['purchase_price']) && (float) $data['purchase_price'] > 0
+                            ? (float) $data['purchase_price']
+                            : null,
                         'notes' => $data['notes'] ?: null,
                     ]);
 

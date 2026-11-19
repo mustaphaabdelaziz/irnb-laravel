@@ -160,11 +160,11 @@ class EquipmentOut extends Report
         return $query;
     }
 
-    /** The is_overdue rule in SQL: a rental whose due date is today or past (due_date->isPast()). */
+    /** The is_overdue rule in SQL: a rental whose due date is before today. */
     private function overdue(Builder $query): Builder
     {
         return $query->where('equipment_rentals.type', '!=', 'assignment')
             ->whereNotNull('equipment_rentals.due_date')
-            ->whereDate('equipment_rentals.due_date', '<=', today()->toDateString());
+            ->whereDate('equipment_rentals.due_date', '<', today()->toDateString());
     }
 }

@@ -451,7 +451,7 @@ function submitImport() {
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('equipment.quantity') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('status') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('condition') }}</th>
-                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('branch') }}</th>
+                                <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('branches') }}</th>
                                 <th class="px-4 py-3 text-start text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('equipment.holder') }}</th>
                                 <th class="px-4 py-3 text-end text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">{{ t('actions') }}</th>
                             </tr>
@@ -769,7 +769,7 @@ function submitImport() {
                         </div>
 
                         <div v-if="branches.length" data-help="eq-rcv-branches">
-                            <InputLabel :value="t('branch')" />
+                            <InputLabel :value="t('branches')" />
                             <div class="mt-2 flex flex-wrap gap-2">
                                 <label v-for="b in branches" :key="b.id"
                                     class="relative inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm"

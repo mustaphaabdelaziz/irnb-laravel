@@ -15,10 +15,14 @@ test('Arabic member counts agree with their number', () => {
     assert.equal(arMembers(10), '10 أعضاء');
     assert.equal(arMembers(11), '11 عضوًا');
     assert.equal(arMembers(25), '25 عضوًا');
+    assert.equal(arMembers(103), '103 أعضاء');
+    assert.equal(arMembers(112), '112 عضوًا');
 });
 
 test('Arabic plural rule picks one of four forms', () => {
     assert.deepEqual([0, 1, 2, 3, 10, 11, 25, 100].map((n) => arPluralIndex(n, 4)), [2, 0, 1, 2, 2, 3, 3, 3]);
+    // From 100 on the last two digits decide.
+    assert.deepEqual([103, 110, 111, 150, 205, 238].map((n) => arPluralIndex(n, 4)), [2, 2, 3, 3, 2, 3]);
 });
 
 test('Arabic plural rule copes with messages of fewer forms', () => {

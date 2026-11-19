@@ -135,7 +135,8 @@ class EquipmentLotJourneyTest extends TestCase
 
         $this->assertSame(150, $props['summary']['total']);
         $this->assertSame(4, $props['summary']['rented'], '4 units still out');
-        $this->assertSame(146, $props['summary']['available']);
+        $this->assertSame(143, $props['summary']['available'], 'the 3 damaged units are not lendable');
+        $this->assertSame(3, $props['summary']['damaged']);
 
         // 100 x 120 + 50 x 135 = 18 750, whatever the lots were split into.
         $this->assertEqualsWithDelta(18750, $props['totalValue'], 0.01);

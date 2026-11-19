@@ -92,7 +92,7 @@ class EquipmentCatalogImportExportTest extends TestCase
         $this->actingAs($user)
             ->post(route('equipment.catalogs.import'), ['file' => $file])
             ->assertRedirect()
-            ->assertSessionHas('success', 'تم استيراد 1 معدة بنجاح.')
+            ->assertSessionHas('success', 'تم استيراد المعدات بنجاح (العدد: 1).')
             ->assertSessionHas('error', "السطر 3: فئة غير معروفة \"Nope\".\nالسطر 4: \"Existing Ball\" موجود مسبقاً — تم تخطيه.");
     }
 

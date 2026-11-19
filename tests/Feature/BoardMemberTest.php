@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\BoardMeeting;
 use App\Models\BoardMember;
 use App\Models\BoardRole;
 use App\Models\BoardTerm;
@@ -139,6 +140,19 @@ class BoardMemberTest extends TestCase
             ->assertRedirect();
 
         $this->assertSame('lead_coordinator', $member->fresh()->role);
+    }
+
+    #[Test]
+    public function board_pages_carry_the_labels_typed_for_roles(): void
+    {
+        BoardRole::create(['name' => 'coordinator', 'label' => 'منسق', 'sort_order' => 9]);
+        $meeting = BoardMeeting::create(['title' => 'M', 'meeting_date' => now(), 'status' => 'scheduled']);
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->get(route('board.index'))
+            ->assertInertia(fn ($page) => $page->where('roleLabels.coordinator', 'منسق'));
+        $this->actingAs($admin)->get(route('board.meetings.show', $meeting))
+            ->assertInertia(fn ($page) => $page->where('roleLabels.coordinator', 'منسق'));
     }
 
     #[Test]

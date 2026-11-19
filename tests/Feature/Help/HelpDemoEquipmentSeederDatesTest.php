@@ -39,7 +39,7 @@ class HelpDemoEquipmentSeederDatesTest extends TestCase
 
         $catalogs = EquipmentCatalog::orderBy('id')->get();
         $this->assertSame([20, 40, 30, 3, 2, 25], $catalogs->map->total_quantity->all());
-        $this->assertSame([18, 40, 30, 2, 1, 24], $catalogs->map->available_count->all());
+        $this->assertSame([18, 40, 27, 2, 1, 24], $catalogs->map->available_count->all());
 
         $done = InventorySession::where('status', 'completed')->sole();
         $open = InventorySession::where('status', 'in_progress')->sole();

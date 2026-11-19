@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\EquipmentCategory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -57,6 +58,12 @@ class EquipmentCategoryController extends Controller
 
     private function normaliseCode(?string $code, string $name): string
     {
+        // An Arabic-only name has nothing to derive a code from: every such
+        // category would share «CAT» in its serial numbers, so ask for one.
+        if (! $code && ! preg_match('/[A-Za-z0-9]/', $name)) {
+            throw ValidationException::withMessages(['code' => __('validation.category_code_needs_latin')]);
+        }
+
         return $code ? strtoupper($code) : EquipmentCategory::deriveCode($name);
     }
 

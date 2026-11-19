@@ -81,7 +81,7 @@ final class ReportRegistry
         'finance.transactions' => ['finance', 'transactions.index', 'transactions', 'transactions', false],
         'finance.season_pdf' => ['finance', 'reports.financial', 'reports', 'document', true],
         'equipment.inventory_page' => ['equipment', 'equipment.inventory', 'equipment', 'equipment', false],
-        'equipment.stocktake' => ['equipment', 'inventory.index', 'inventory', 'clipboard', false],
+        'equipment.stocktake_page' => ['equipment', 'inventory.index', 'inventory', 'clipboard', false],
         'competitions.match_stats' => ['competitions', 'games.stats', 'games', 'clipboard', false],
         'attendance.stats' => ['attendance', 'attendance.stats', 'attendance', 'calendar', false],
         'attendance.alerts' => ['attendance', 'attendance.alerts', 'attendance', 'alert', false],

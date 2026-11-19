@@ -135,7 +135,7 @@ class EquipmentImportExportTest extends TestCase
         $this->actingAs($user)
             ->post(route('equipment.items.import', $catalog), ['file' => $file])
             ->assertRedirect()
-            ->assertSessionHas('success', 'تم استيراد 0 عنصر بنجاح.')
+            ->assertSessionHas('success', 'تم استيراد العناصر بنجاح (العدد: 0).')
             // The reader gets a sentence, never the database's English error.
             ->assertSessionHas('error', 'السطر 2: تعذّر حفظ هذا السطر.');
 
@@ -216,5 +216,31 @@ class EquipmentImportExportTest extends TestCase
         $content = $response->streamedContent();
         $this->assertStringContainsString('IRNB-2026-BALL-00042', $content);
         $this->assertStringContainsString('Exported Ball', $content);
+    }
+
+    #[Test]
+    public function an_imported_unit_keeps_its_purchase_price(): void
+    {
+        $catalog = $this->catalog();
+
+        $this->importUnits($catalog, ['record_expense' => false]);
+
+        $this->assertEquals(1500, EquipmentItem::where('catalog_id', $catalog->id)->sole()->unit_price);
+    }
+
+    #[Test]
+    public function the_template_example_row_left_in_the_file_is_not_imported(): void
+    {
+        $catalog = $this->catalog();
+        $file = $this->makeCsv([
+            ['قميص رقم 10', '2026-05-01', 'New', 'المخزن A', '', ''],
+            ['Shirt 11', '2026-05-02', 'New', 'Locker A', '', ''],
+        ]);
+
+        $this->actingAs($this->user())
+            ->post(route('equipment.items.import', $catalog), ['file' => $file, 'record_expense' => false])
+            ->assertSessionHas('success');
+
+        $this->assertSame(['Shirt 11'], EquipmentItem::where('catalog_id', $catalog->id)->pluck('designation')->all());
     }
 }

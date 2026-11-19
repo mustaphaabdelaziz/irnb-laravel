@@ -8,6 +8,7 @@ import Icon from '@/Components/Icon.vue';
 
 const props = defineProps({
     stats: { type: Object, default: () => ({}) },
+    roleLabels: { type: Object, default: () => ({}) },
     currentTerm: { type: Object, default: null },
     upcomingMeetings: { type: Array, default: () => [] },
     recentTasks: { type: Array, default: () => [] },
@@ -25,7 +26,7 @@ function fmtDate(d) {
     if (!d) return '';
     return new Date(d).toLocaleDateString(locale.value === 'ar' ? 'ar' : locale.value, { day: '2-digit', month: 'short', year: 'numeric' });
 }
-function roleLabel(r) { return t(r); }
+function roleLabel(r) { return props.roleLabels[r] || t(r); }
 function initial(n) { return (n || '?').charAt(0).toUpperCase(); }
 </script>
 

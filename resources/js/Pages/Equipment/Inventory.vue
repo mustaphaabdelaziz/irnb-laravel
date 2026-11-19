@@ -53,7 +53,7 @@ const hasBranchValues = computed(
                 <StatTile :label="t('rented')" :value="summary?.rented || 0" icon="refresh" tone="warning" />
                 <StatTile :label="t('under_repair')" :value="summary?.under_repair || 0" icon="wrench" tone="neutral" />
                 <StatTile :label="t('lost')" :value="summary?.lost || 0" icon="xcircle" tone="negative" />
-                <StatTile :label="t('retired')" :value="summary?.retired || 0" icon="archive" tone="neutral" />
+                <StatTile :label="t('damaged')" :value="summary?.damaged || 0" icon="alert" tone="neutral" />
             </div>
 
             <!-- Asset value: the roll-up the lot model and branch pivot make possible. -->

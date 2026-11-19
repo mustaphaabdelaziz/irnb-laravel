@@ -25,6 +25,9 @@ class EquipmentStockService
     /** Statuses that make an entire lot unavailable whatever the rentals say. */
     public const BLOCKING_STATUSES = ['Under Repair', 'Lost', 'Retired', 'Out of Service'];
 
+    /** A lot in this condition is kept apart, not lent: it leaves by repair or by an edit. */
+    public const BLOCKING_CONDITION = 'Damaged';
+
     /**
      * Units of this lot that can be issued right now.
      *
@@ -33,7 +36,7 @@ class EquipmentStockService
      */
     public function availableQuantity(EquipmentItem $item): int
     {
-        if (in_array($item->status, self::BLOCKING_STATUSES, true)) {
+        if (in_array($item->status, self::BLOCKING_STATUSES, true) || $item->condition === self::BLOCKING_CONDITION) {
             return 0;
         }
 

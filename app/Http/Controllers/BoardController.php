@@ -37,6 +37,7 @@ class BoardController extends Controller
         }
 
         return Inertia::render('Board/Index', [
+            'roleLabels' => $this->roleLabels(),
             'stats' => [
                 'members' => BoardMember::inCurrentTerm()->where('status', 'active')->count(),
                 'meetings_held' => BoardMeeting::where('status', 'held')->count(),
@@ -192,6 +193,7 @@ class BoardController extends Controller
         $recordedPlayers = BoardMember::whereIn('id', $recorded)->whereNotNull('player_id')->pluck('player_id')->all();
 
         return Inertia::render('Board/Meeting', [
+            'roleLabels' => $this->roleLabels(),
             'meeting' => $meeting,
             'members' => BoardMember::where(fn ($q) => $q->where($current)->where($leaveOut($recordedPlayers))->orWhereIn('id', $recorded))->orderBy('sort_order')->get()
                 ->map(fn (BoardMember $m) => [
@@ -299,6 +301,17 @@ class BoardController extends Controller
             'currentYear' => $year,
             'yearly' => collect($yearly)->map(fn ($count, $yr) => ['year' => $yr, 'count' => $count])->values(),
         ];
+    }
+
+    /**
+     * Role name => the label typed for it in settings. Pages show it before the
+     * built-in translation, so a custom or relabelled role never shows its raw name.
+     *
+     * @return array<string, string>
+     */
+    private function roleLabels(): array
+    {
+        return BoardRole::whereNotNull('label')->where('label', '!=', '')->pluck('label', 'name')->all();
     }
 
     public function exportMembers(Request $request): SymfonyResponse

@@ -1476,7 +1476,7 @@ export default [
     {
         name: 'eq-inventory-report-centre',
         url: '/reports/equipment',
-        targets: ['nav-reports-equipment', 'report-card-report-equipment-inventory', 'report-card-report-equipment-out', 'report-card-report-equipment-valuation', 'report-card-report-equipment-lifecycle', 'report-card-report-equipment-stocktake', 'report-card-link-equipment-stocktake'],
+        targets: ['nav-reports-equipment', 'report-card-report-equipment-inventory', 'report-card-report-equipment-out', 'report-card-report-equipment-valuation', 'report-card-report-equipment-lifecycle', 'report-card-report-equipment-stocktake', 'report-card-link-equipment-stocktake-page'],
         before: async (page) => { await navIntoView(page, 'nav-reports-equipment'); },
     },
     // --- Board --- (HelpDemoBoardSeeder). The board articles quote term names and dates for

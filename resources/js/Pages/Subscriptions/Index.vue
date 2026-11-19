@@ -108,7 +108,7 @@ function destroy() {
                                         {{ branchName(row) }}
                                         <Icon name="arrow" class="h-4 w-4 rtl:rotate-180" aria-hidden="true" />
                                     </Link>
-                                    <button v-else type="button" :title="t('show_branch_subscriptions')" class="text-start text-slate-900 hover:text-primary-600 hover:underline dark:text-slate-100 dark:hover:text-primary-300" @click="showBranch(row.branch_id)">{{ branchName(row) }}</button>
+                                    <button v-else type="button" :title="t('show_branch_subscriptions')" class="text-start text-slate-900 underline decoration-dotted decoration-slate-400 underline-offset-4 hover:text-primary-600 hover:decoration-solid dark:text-slate-100 dark:decoration-slate-500 dark:hover:text-primary-300" @click="showBranch(row.branch_id)">{{ branchName(row) }}</button>
                                 </td>
                                 <td class="px-4 py-3 text-end text-sm">{{ formatMoney(row.owed) }}</td>
                                 <td class="px-4 py-3 text-end text-sm text-emerald-700 dark:text-emerald-400">{{ formatMoney(row.collected) }}</td>

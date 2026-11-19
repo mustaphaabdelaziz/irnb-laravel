@@ -159,11 +159,18 @@ class SubscriptionController extends Controller
 
         $bucket = PlayerSubscription::query()->withoutBranch()->toBase()->get($columns)->map($withMoney);
 
-        $rows = $search === '' ? $bucket : PlayerSubscription::query()->withoutBranch()
+        // The page shows the name with بن / بنت connectors (and the nickname in
+        // brackets), so a pasted name must still match: drop those, like Player::scopeSearch.
+        $words = collect(preg_split('/\s+/u', $search, -1, PREG_SPLIT_NO_EMPTY) ?: [])
+            ->map(fn (string $word) => trim($word, '()'))
+            ->reject(fn (string $word) => $word === '' || $word === 'بن' || $word === 'بنت')
+            ->values();
+
+        $rows = $words->isEmpty() ? $bucket : PlayerSubscription::query()->withoutBranch()
             // Every word must be found somewhere: in the label, the subscription
             // name, or one of the player's names / membership id.
-            ->where(function (Builder $query) use ($search) {
-                foreach (preg_split('/\s+/u', $search) as $word) {
+            ->where(function (Builder $query) use ($words) {
+                foreach ($words as $word) {
                     $like = '%'.$word.'%';
                     $query->where(fn (Builder $q) => $q
                         ->where('label', 'like', $like)
@@ -173,6 +180,7 @@ class SubscriptionController extends Controller
                             ->orWhere('lastname', 'like', $like)
                             ->orWhere('nickname', 'like', $like)
                             ->orWhere('father', 'like', $like)
+                            ->orWhere('grandfather', 'like', $like)
                             ->orWhere('membership_id', 'like', $like))));
                 }
             })
@@ -187,7 +195,9 @@ class SubscriptionController extends Controller
             <=> [$a['remaining'] > 0, $a['created_at'], $a['id']])->values();
 
         $perPage = 25;
-        $page = max(1, (int) $request->query('page', 1));
+        $rawPage = $request->query('page', 1);
+        $page = is_string($rawPage) && preg_match('/^\d{1,9}$/', $rawPage) ? max(1, (int) $rawPage) : 1;
+        $page = min($page, max(1, (int) ceil($rows->count() / $perPage)));
         $ids = $rows->forPage($page, $perPage)->pluck('id');
 
         $models = PlayerSubscription::query()
@@ -209,7 +219,6 @@ class SubscriptionController extends Controller
                 ] : null,
                 'label' => $debt->subscription?->name ?? $debt->label,
                 'season' => $debt->subscription ? $debt->subscription->year_label : ($debt->year ? (string) $debt->year : null),
-                'is_manual' => $debt->subscription_id === null,
                 'owed' => $money['owed'],
                 'paid' => $money['paid'],
                 'remaining' => $money['remaining'],

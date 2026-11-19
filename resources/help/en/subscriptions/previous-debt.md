@@ -2,7 +2,7 @@
 title: How do I add an old debt
 summary: Record on a player a debt from before the app was used, then take its payment.
 module: players
-pages: [players.show]
+pages: [players.show, subscriptions.manual-debts]
 keywords: [previous debt, old debt, carried-over debt, past season, before the app, debt, add previous debt, arrears]
 related: [subscriptions/take-payment, subscriptions/fix-payment]
 ---

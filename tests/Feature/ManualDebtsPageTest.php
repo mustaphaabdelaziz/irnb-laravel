@@ -124,7 +124,6 @@ class ManualDebtsPageTest extends TestCase
         $this->assertSame($ali->membership_id, $row['player']['membership_id']);
         $this->assertSame('Winter kit', $row['label']);
         $this->assertSame('2025', $row['season']);
-        $this->assertTrue($row['is_manual']);
         $this->assertEquals(1500, $row['owed']);
         $this->assertEquals(500, $row['paid']);
         $this->assertEquals(1000, $row['remaining']);
@@ -133,7 +132,6 @@ class ManualDebtsPageTest extends TestCase
 
         $this->assertSame('Loose fee', $rows[$branchless->id]['label']);
         $this->assertSame($loose->year_label, $rows[$branchless->id]['season']);
-        $this->assertFalse($rows[$branchless->id]['is_manual']);
     }
 
     #[Test]
@@ -204,6 +202,74 @@ class ManualDebtsPageTest extends TestCase
         $this->assertSame([$omar->id], $ids('season'));
         $this->assertSame([], $ids('Benali Omar'));
         $this->assertSame('benali', $this->page(['search' => ' benali '])['filters']['search']);
+    }
+
+    #[Test]
+    public function search_matches_the_name_as_the_page_displays_it(): void
+    {
+        $player = $this->makePlayer('Ali', 'Benali');
+        $player->update(['father' => 'Omar', 'grandfather' => 'Said']);
+        $mine = $this->debt($player->fresh(), null, 1000, 0);
+        $this->debt($this->makePlayer('Ali', 'Benali'), null, 1000, 0);
+
+        $this->assertStringContainsString('Said', $player->fresh()->fullname);
+        $ids = array_column($this->page(['search' => $player->fresh()->fullname])['debts']['data'], 'id');
+
+        $this->assertSame([$mine->id], $ids);
+    }
+
+    #[Test]
+    public function a_search_of_only_connector_words_is_no_search(): void
+    {
+        $this->debt($this->makePlayer(), null, 1000, 0);
+        $this->debt($this->makePlayer(), null, 1000, 0);
+
+        $this->assertCount(2, $this->page(['search' => 'بن'])['debts']['data']);
+        $this->assertCount(2, $this->page(['search' => 'بنت بن'])['debts']['data']);
+    }
+
+    #[Test]
+    public function status_and_search_combine(): void
+    {
+        $paid = $this->debt($this->makePlayer('Ali', 'Benali'), null, 1000, 1000);
+        $this->debt($this->makePlayer('Ali', 'Benali'), null, 1000, 0);
+        $this->debt($this->makePlayer('Omar', 'Cherif'), null, 1000, 1000);
+
+        $ids = array_column($this->page(['status' => 'paid', 'search' => 'benali'])['debts']['data'], 'id');
+
+        $this->assertSame([$paid->id], $ids);
+    }
+
+    #[Test]
+    public function invalid_utf8_in_the_search_does_not_crash(): void
+    {
+        $this->actingAs($this->userWith(['subscriptions' => ['view']]))
+            ->get(route('subscriptions.manual-debts').'?search=%FF')
+            ->assertOk();
+    }
+
+    #[Test]
+    public function a_page_past_the_end_shows_the_last_page(): void
+    {
+        $player = $this->makePlayer();
+        foreach (range(1, 27) as $i) {
+            $this->debt($player, null, 100, 0, ['label' => "Debt $i"]);
+        }
+
+        $debts = $this->page(['page' => 99])['debts'];
+
+        $this->assertCount(2, $debts['data']);
+        $this->assertSame(2, $debts['current_page']);
+    }
+
+    #[Test]
+    public function an_overflowing_page_number_does_not_crash(): void
+    {
+        $this->debt($this->makePlayer(), null, 100, 0);
+
+        $this->actingAs($this->userWith(['subscriptions' => ['view']]))
+            ->get(route('subscriptions.manual-debts').'?page=9223372036854775807')
+            ->assertOk();
     }
 
     #[Test]

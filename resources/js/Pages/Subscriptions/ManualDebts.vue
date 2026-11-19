@@ -78,7 +78,7 @@ const leftClass = (debt) => debt.remaining > 0
                         @click="status = option.value"
                     >{{ option.label }}</button>
                 </div>
-                <SearchInput v-model="search" :loading="filtering" :placeholder="t('manual_debts_search')" class="min-w-0 flex-1 sm:max-w-sm" />
+                <SearchInput v-model="search" :loading="filtering" :placeholder="t('manual_debts_search')" class="w-full sm:w-auto sm:flex-1 sm:max-w-sm" />
             </div>
 
             <div :class="{ 'opacity-60': filtering }" :aria-busy="filtering" class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 transition-opacity dark:bg-slate-900 dark:ring-slate-800">
@@ -93,8 +93,8 @@ const leftClass = (debt) => debt.remaining > 0
                         <p class="break-words text-xs text-slate-500 dark:text-slate-400">
                             {{ debt.label || t('previous_debt') }}<template v-if="debt.season"> · {{ debt.season }}</template>
                         </p>
-                        <p class="text-xs text-slate-400 dark:text-slate-400">
-                            <span dir="ltr">{{ debt.player?.membership_id }}</span> · {{ formatDate(debt.created_at) }}
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                            <template v-if="debt.player"><span dir="ltr">{{ debt.player.membership_id }}</span> · </template>{{ formatDate(debt.created_at) }}
                         </p>
                         <dl class="grid grid-cols-3 gap-2 pt-1 text-xs">
                             <div>
@@ -134,7 +134,7 @@ const leftClass = (debt) => debt.remaining > 0
                                 <td class="px-4 py-3 text-sm">
                                     <Link v-if="debt.player" :href="route('players.show', debt.player.id)" :class="playerLink">{{ debt.player.fullname }}</Link>
                                     <span v-else class="text-slate-400">-</span>
-                                    <p class="text-xs text-slate-400 dark:text-slate-400" dir="ltr">{{ debt.player?.membership_id }}</p>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400" dir="ltr">{{ debt.player?.membership_id }}</p>
                                 </td>
                                 <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">{{ debt.label || t('previous_debt') }}</td>
                                 <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ debt.season || '-' }}</td>

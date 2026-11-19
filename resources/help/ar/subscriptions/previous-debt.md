@@ -2,7 +2,7 @@
 title: كيف أضيف ديناً قديماً
 summary: سجّل على اللاعب دينًا من قبل استعمال التطبيق، ثم استلم دفعه.
 module: players
-pages: [players.show]
+pages: [players.show, subscriptions.manual-debts]
 keywords: [دين سابق, دين قديم, دين مرحل, موسم سابق, قبل التطبيق, دين, إضافة دين سابق]
 related: [subscriptions/take-payment, subscriptions/fix-payment]
 ---

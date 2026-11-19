@@ -2,7 +2,7 @@
 title: Comment ajouter une ancienne dette
 summary: Enregistrez sur le joueur une dette d'avant l'utilisation de l'application, puis encaissez son paiement.
 module: players
-pages: [players.show]
+pages: [players.show, subscriptions.manual-debts]
 keywords: [dette antérieure, ancienne dette, dette reportée, saison précédente, avant l'application, dette, ajouter une dette antérieure, arriéré]
 related: [subscriptions/take-payment, subscriptions/fix-payment]
 ---

@@ -3,7 +3,7 @@ title: Comment inscrire un joueur dans une deuxième section
 summary: Ajoutez une deuxième section à un joueur déjà inscrit, avec sa date d'adhésion et sa catégorie, et complétez les dates manquantes.
 pages: [players.show, players.edit, players.join-dates.index]
 keywords: [deuxième section, deux sections, inscription section, ajouter une section, date d'adhésion, numéro d'adhésion, dates manquantes]
-related: [players/add-player, players/edit-player, players/player-page]
+related: [players/add-player, players/edit-player, players/player-page, players/status-history]
 ---
 
 Un joueur reste un seul joueur, quel que soit son nombre de sections. Chaque section a sa propre carte, avec sa catégorie, sa date d'adhésion et son numéro d'adhésion.

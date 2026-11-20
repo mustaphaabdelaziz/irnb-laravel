@@ -2682,7 +2682,7 @@
     "reports.players.directory.title": "Player directory",
     "reports.players.documents.description": "Every document missing, expired or expiring within 30 days, per player.",
     "reports.players.documents.title": "Documents compliance",
-    "reports.players.movement.description": "Who joined by join year and who left by leaving date.",
+    "reports.players.movement.description": "Who joined by join year, and who left or came back by the status history.",
     "reports.players.movement.title": "Joins & leavers",
     "reports.recent": "Recently opened",
     "reports.reset": "Reset",

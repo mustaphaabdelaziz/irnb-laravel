@@ -2682,7 +2682,7 @@
     "reports.players.directory.title": "Annuaire des joueurs",
     "reports.players.documents.description": "Chaque document manquant, expiré ou expirant sous 30 jours, par joueur.",
     "reports.players.documents.title": "Suivi des documents",
-    "reports.players.movement.description": "Qui est arrivé selon l'année d'adhésion et qui est parti selon la date de départ.",
+    "reports.players.movement.description": "Qui est arrivé selon l'année d'adhésion, qui est parti et qui est revenu selon l'historique du statut.",
     "reports.players.movement.title": "Arrivées et départs",
     "reports.recent": "Ouverts récemment",
     "reports.reset": "Réinitialiser",

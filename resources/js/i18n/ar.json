@@ -2682,7 +2682,7 @@
     "reports.players.directory.title": "دليل اللاعبين",
     "reports.players.documents.description": "كل وثيقة ناقصة أو منتهية أو تنتهي خلال 30 يوماً، لكل لاعب.",
     "reports.players.documents.title": "متابعة الوثائق",
-    "reports.players.movement.description": "من انضم حسب سنة الانخراط ومن غادر حسب تاريخ المغادرة.",
+    "reports.players.movement.description": "من انضم حسب سنة الانخراط، ومن غادر ومن عاد حسب سجل الحالة.",
     "reports.players.movement.title": "المنخرطون الجدد والمغادرون",
     "reports.recent": "المفتوحة مؤخراً",
     "reports.reset": "إعادة الضبط",

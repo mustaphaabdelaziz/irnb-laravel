@@ -3,7 +3,7 @@ title: How do I register a player in a second branch
 summary: Add a second branch to a registered player, with its join date and category, and fill in missing dates.
 pages: [players.show, players.edit, players.join-dates.index]
 keywords: [second branch, two branches, branch registration, add branch, join date, membership number, missing dates]
-related: [players/add-player, players/edit-player, players/player-page]
+related: [players/add-player, players/edit-player, players/player-page, players/status-history]
 ---
 
 A player stays one player, however many branches they have. Each branch has its own card, with its category, join date and membership number.

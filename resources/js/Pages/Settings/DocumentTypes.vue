@@ -12,6 +12,7 @@ import TextInput from '@/Components/TextInput.vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { ageRangeLabel } from '@/lib/documentAge';
 
 const { t, locale } = useI18n();
 
@@ -32,6 +33,7 @@ const FIELDS = {
     is_required: false,
     required_for_matches: false,
     validity: 'none',
+    min_age: '',
     max_age: '',
     copies: 1,
     sort_order: 0,
@@ -73,10 +75,10 @@ function untickedWithRecords() {
 const inputClass = 'mt-1 w-full rounded-lg border-slate-300 text-slate-900 shadow-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/40 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100';
 
 // The full payload for a type (or for a blank one): the server expects every
-// field on update, and an empty age box means "every age".
+// field on update, and an empty age box means "no limit on that side".
 function payloadOf(type) {
     return Object.fromEntries(Object.keys(FIELDS).map((key) => {
-        if (key === 'max_age') return [key, type.max_age ?? ''];
+        if (key === 'min_age' || key === 'max_age') return [key, type[key] ?? ''];
         if (key === 'branch_ids') return [key, [...(type.branch_ids ?? [])]];
         return [key, type[key] ?? FIELDS[key]];
     }));
@@ -177,7 +179,7 @@ function destroy() {
                             </td>
                             <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ validityLabels[type.validity] || type.validity }}</td>
                             <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
-                                {{ type.max_age ? t('doc_up_to_age', { age: type.max_age }) : t('doc_all_ages') }}
+                                {{ ageRangeLabel(t, type) ?? t('doc_all_ages') }}
                             </td>
                             <td class="px-4 py-3 text-end text-sm text-slate-600 dark:text-slate-300">{{ type.copies }}</td>
                             <td class="px-4 py-3 text-end text-sm text-slate-600 dark:text-slate-300">{{ type.player_documents_count }}</td>
@@ -235,10 +237,17 @@ function destroy() {
                         <InputError :message="form.errors.validity" class="mt-1" />
                     </div>
                     <div>
-                        <InputLabel :value="t('doc_max_age')" />
-                        <input v-model="form.max_age" type="number" min="1" max="99" :class="inputClass" />
+                        <InputLabel :value="t('doc_age_min')" />
+                        <input v-model="form.min_age" data-help="doc-min-age" type="number" min="1" max="99" :class="inputClass" />
+                        <InputError :message="form.errors.min_age" class="mt-1" />
+                    </div>
+                    <div>
+                        <InputLabel :value="t('doc_age_max')" />
+                        <input v-model="form.max_age" data-help="doc-max-age" type="number" min="1" max="99" :class="inputClass" />
                         <InputError :message="form.errors.max_age" class="mt-1" />
                     </div>
+                    <!-- Right under the two age boxes: it used to sit under the order box and read as its hint. -->
+                    <p class="text-xs text-slate-500 dark:text-slate-400 sm:col-span-2">{{ t('doc_age_hint') }}</p>
                     <div>
                         <InputLabel :value="t('doc_copies')" />
                         <input v-model="form.copies" data-help="doc-copies" type="number" min="1" max="99" :class="inputClass" />
@@ -250,7 +259,6 @@ function destroy() {
                         <input v-model="form.sort_order" type="number" min="0" :class="inputClass" />
                         <InputError :message="form.errors.sort_order" class="mt-1" />
                     </div>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 sm:col-span-2">{{ t('doc_max_age_hint') }}</p>
                     <fieldset v-if="branches.length" data-help="doc-branches" class="sm:col-span-2">
                         <legend class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('doc_branches') }}</legend>
                         <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('doc_branches_hint') }}</p>

@@ -101,7 +101,9 @@ class DocumentTypeController extends Controller
             'is_required' => ['boolean'],
             'required_for_matches' => ['boolean'],
             'validity' => ['required', Rule::in(DocumentType::VALIDITIES)],
-            'max_age' => ['nullable', 'integer', 'min:1', 'max:99'],
+            'min_age' => ['nullable', 'integer', 'min:1', 'max:99'],
+            // A range must hold at least one age: the maximum is never below the minimum.
+            'max_age' => ['nullable', 'integer', 'min:1', 'max:99', Rule::when($request->filled('min_age'), ['gte:min_age'])],
             'copies' => ['nullable', 'integer', 'min:1', 'max:99'],
             'is_active' => ['boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:65535'],
@@ -109,8 +111,9 @@ class DocumentTypeController extends Controller
             'branch_ids.*' => ['integer', 'distinct', Rule::exists('branches', 'id')],
         ]);
 
-        // An emptied age box means "every age", so it must be written as null
-        // rather than left out of the update.
+        // An emptied age box means "no limit on that side", so it must be written
+        // as null rather than left out of the update.
+        $data['min_age'] = $data['min_age'] ?? null;
         $data['max_age'] = $data['max_age'] ?? null;
         $data['sort_order'] = (int) ($data['sort_order'] ?? 0);
         $data['copies'] = (int) ($data['copies'] ?? 1);

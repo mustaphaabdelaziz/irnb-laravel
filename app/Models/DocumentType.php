@@ -42,6 +42,7 @@ class DocumentType extends Model
         'is_required',
         'required_for_matches',
         'validity',
+        'min_age',
         'max_age',
         'copies',
         'is_active',
@@ -58,6 +59,7 @@ class DocumentType extends Model
             'is_required' => 'boolean',
             'required_for_matches' => 'boolean',
             'is_active' => 'boolean',
+            'min_age' => 'integer',
             'max_age' => 'integer',
             'copies' => 'integer',
             'sort_order' => 'integer',
@@ -104,12 +106,12 @@ class DocumentType extends Model
 
     /**
      * The earliest birth date this type still applies to, or null when it has
-     * no age limit. A player applies while their birthdate is ON OR AFTER it:
+     * no maximum age. A player applies while their birthdate is ON OR AFTER it:
      * with max_age 17 on 2026-09-23 that is 2008-09-24 — 17 today, 18 tomorrow.
      *
-     * This single boundary is what both the PHP checklist and its SQL twin
-     * compare against (DocumentChecklist), so they can never disagree about
-     * a birthday.
+     * This boundary and latestApplicableBirthdate() are what both the PHP
+     * checklist and its SQL twin compare against (DocumentChecklist), so they
+     * can never disagree about a birthday.
      */
     public function earliestApplicableBirthdate(?CarbonInterface $today = null): ?CarbonImmutable
     {
@@ -123,14 +125,37 @@ class DocumentType extends Model
             ->addDay();
     }
 
-    /** Owner decision: a player with no birth date is treated as not limited. */
+    /**
+     * The latest birth date this type already applies to, or null when it has
+     * no minimum age. A player applies once their birthdate is ON OR BEFORE it:
+     * with min_age 15 on 2026-09-23 that is 2011-09-23 — 15 today.
+     */
+    public function latestApplicableBirthdate(?CarbonInterface $today = null): ?CarbonImmutable
+    {
+        if ($this->min_age === null) {
+            return null;
+        }
+
+        return CarbonImmutable::parse($today ?? CarbonImmutable::today())
+            ->startOfDay()
+            ->subYearsNoOverflow($this->min_age);
+    }
+
+    /**
+     * Inside the type's age range, both ends included. Owner decision: a player
+     * with no birth date is treated as not limited.
+     */
     public function appliesTo(Player $player, ?CarbonInterface $today = null): bool
     {
-        $earliest = $this->earliestApplicableBirthdate($today);
+        if ($player->birthdate === null) {
+            return true;
+        }
 
-        return $earliest === null
-            || $player->birthdate === null
-            || $player->birthdate->gte($earliest);
+        $earliest = $this->earliestApplicableBirthdate($today);
+        $latest = $this->latestApplicableBirthdate($today);
+
+        return ($earliest === null || $player->birthdate->gte($earliest))
+            && ($latest === null || $player->birthdate->lte($latest));
     }
 
     /**

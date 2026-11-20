@@ -149,6 +149,29 @@ class DocumentChecklistTest extends TestCase
     }
 
     #[Test]
+    public function a_minimum_age_starts_on_that_birthday(): void
+    {
+        // Today is 2026-10-05.
+        $type = $this->type('id_card_copy');
+        $type->update(['is_required' => true, 'min_age' => 15]);
+
+        $fourteen = $this->player(['birthdate' => '2011-10-06']); // 15 tomorrow
+        $fifteen = $this->player(['birthdate' => '2011-10-05']);  // 15 today
+
+        $this->assertSame('not_required', $this->states($fourteen)['id_card_copy']);
+        $this->assertSame('age', $this->item($fourteen, 'id_card_copy')['reason']);
+        $this->assertSame('missing', $this->states($fifteen)['id_card_copy']);
+        $this->assertSame(15, $this->item($fifteen, 'id_card_copy')['type']['min_age']);
+
+        // The SQL twin draws the same line.
+        [$sql, $bindings] = DocumentChecklist::missingCountSql(null, $type->id);
+        $this->assertSame(
+            [$fifteen->id],
+            Player::query()->whereRaw("{$sql} > 0", $bindings)->orderBy('id')->pluck('id')->all()
+        );
+    }
+
+    #[Test]
     public function the_photo_is_the_profile_picture(): void
     {
         $player = $this->player(['picture_url' => '/media/players/amine.jpg']);
@@ -300,6 +323,12 @@ class DocumentChecklistTest extends TestCase
         $this->type('parental_authorization')->update(['max_age' => null]);
 
         $this->assertAgreement($players);
+
+        // A minimum age, alone and together with a maximum.
+        $this->type('birth_certificate')->update(['min_age' => 18]);
+        $this->type('parental_authorization')->update(['min_age' => 15, 'max_age' => 17]);
+
+        $this->assertAgreement($players);
     }
 
     /** @return array<string, Player> label => player */
@@ -402,6 +431,12 @@ class DocumentChecklistTest extends TestCase
         $this->type('medical_certificate')->update(['is_active' => false]);
         $this->type('parental_authorization')->update(['max_age' => null]);
         $this->type('school_certificate')->update(['is_required' => true]);
+
+        $this->assertTypeAgreement($players);
+
+        // A minimum age, alone and together with a maximum.
+        $this->type('birth_certificate')->update(['min_age' => 18]);
+        $this->type('parental_authorization')->update(['min_age' => 15, 'max_age' => 17]);
 
         $this->assertTypeAgreement($players);
     }

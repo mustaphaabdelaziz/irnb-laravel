@@ -13,15 +13,14 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Turns a category's weekly schedule into planned sessions, one month at a
- * time. Each session takes its schedule's branch; moved, joint and deleted
- * slots only block the same branch. Called whenever a month is opened (the
- * desktop app has no reliable scheduler), so it must be idempotent: the
- * unique (branch, category, date, start)
- * key ignores slots that already exist, including cancelled ones, and dates
- * whose sessions were moved away from are never regenerated. A slot the
- * category already attends through another category's joint pre-season
- * session is left free too, and so is a regular slot deleted for good
- * (deleted_session_slots).
+ * time. Each session takes its schedule's branch and training group; moved,
+ * joint and deleted slots only block the same branch. Called whenever a month
+ * is opened (the desktop app has no reliable scheduler), so it must be
+ * idempotent: the unique (branch, category, date, start) key ignores slots
+ * that already exist, including cancelled ones, and dates whose sessions were
+ * moved away from are never regenerated. A slot the category already attends
+ * through another category's joint pre-season session is left free too, and
+ * so is a regular slot deleted for good (deleted_session_slots).
  *
  * A generated month is marked (GenerationMarks) and skipped until one of its
  * inputs changes, so opening the calendar again only reads.
@@ -179,6 +178,7 @@ final class SessionGenerator
                 $rows[] = [
                     'branch_id' => $schedule->branch_id,
                     'category_id' => $categoryId,
+                    'group_id' => $schedule->group_id,
                     'schedule_id' => $schedule->id,
                     'date' => $date,
                     'start_time' => $schedule->start_time,

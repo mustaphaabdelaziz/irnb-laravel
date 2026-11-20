@@ -11,6 +11,7 @@ use App\Models\Category;
 use App\Models\ClubClosure;
 use App\Models\PlayerStatus;
 use App\Models\PreseasonTarget;
+use App\Models\TrainingGroup;
 use App\Models\TrainingSchedule;
 use App\Models\TrainingSession;
 use App\Services\Attendance\AttendanceCode;
@@ -36,7 +37,7 @@ class AttendanceSettingsController extends Controller
                 ->map(fn (Category $c) => ['id' => $c->id, 'name' => $c->localized_name, 'branch_id' => $c->branch_id, 'is_active' => $c->is_active])->values(),
             'branches' => Branch::orderBy('id')->get()->map(fn (Branch $b) => ['id' => $b->id, 'name' => $b->localized_name])->values(),
             'schedules' => TrainingSchedule::orderBy('branch_id')->orderBy('category_id')->orderBy('weekday')->orderBy('start_time')
-                ->get(['id', 'branch_id', 'category_id', 'weekday', 'start_time', 'end_time', 'valid_from', 'valid_to']),
+                ->get(['id', 'branch_id', 'category_id', 'group_id', 'weekday', 'start_time', 'end_time', 'valid_from', 'valid_to']),
             'closures' => ClubClosure::orderByDesc('start_date')->get(['id', 'start_date', 'end_date', 'reason']),
             'targets' => PreseasonTarget::get(['branch_id', 'category_id', 'season_start_year', 'target_count']),
             'seasons' => collect([$current, Season::forStartYear($current->startYear + 1)])
@@ -128,6 +129,12 @@ class AttendanceSettingsController extends Controller
         // One transaction: see purgeFuturePlanned().
         DB::transaction(function () use ($schedule, $data) {
             $schedule->update($data);
+            // Sessions of this line nobody marked follow its group: past ones, and moved ones
+            // the purge leaves alone. Saved sessions keep their group; their list is their marks.
+            TrainingSession::where('schedule_id', $schedule->id)
+                ->where('category_id', $schedule->category_id)
+                ->whereDoesntHave('attendances')
+                ->update(['group_id' => $schedule->group_id]);
             $this->purgeFuturePlanned($schedule);
         });
 
@@ -244,6 +251,7 @@ class AttendanceSettingsController extends Controller
         $data = $request->validate([
             'branch_id' => [Rule::requiredIf(fn () => Branch::exists()), 'nullable', 'integer', 'exists:branches,id'],
             'category_id' => ['required', 'integer', 'exists:categories,id'],
+            'group_id' => ['nullable', 'integer'],
             'weekday' => ['required', 'integer', 'between:1,7'],
             'start_time' => ['required', 'date_format:H:i'],
             'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
@@ -252,6 +260,15 @@ class AttendanceSettingsController extends Controller
         ]);
         $branchId = isset($data['branch_id']) ? (int) $data['branch_id'] : null;
         CategoryOwnership::assertIn('category_id', $data['category_id'], $branchId, $schedule !== null && $schedule->branch_id === $branchId ? $schedule->category_id : null);
+
+        // Always present, so an edit that drops the group clears it. A group belongs to one branch + category.
+        $data['group_id'] = isset($data['group_id']) ? (int) $data['group_id'] : null;
+        if ($data['group_id'] !== null && ! TrainingGroup::whereKey($data['group_id'])
+            ->where('branch_id', $branchId) // null → whereNull
+            ->where('category_id', $data['category_id'])
+            ->exists()) {
+            throw ValidationException::withMessages(['group_id' => 'att.error.group_other_category']);
+        }
 
         return $data;
     }

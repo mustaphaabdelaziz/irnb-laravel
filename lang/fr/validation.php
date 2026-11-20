@@ -179,6 +179,8 @@ return [
     'category_code_needs_latin' => "Saisissez le code de la catégorie en lettres latines (ex. BALL) : le nom n'en contient aucune.",
 
     'join_date_before_birth' => "La date d'adhésion précède la date de naissance.",
+    'status_change_before_birth' => 'La date du changement précède la date de naissance.',
+    'status_change_before_join' => "La date du changement précède la date d'adhésion.",
     'position_other_branch' => 'Ce poste appartient à une autre section.',
     'category_other_branch' => 'Cette catégorie appartient à une autre section.',
     'category_not_in_branch' => 'La catégorie « :name » n\'existe pas dans cette section.',

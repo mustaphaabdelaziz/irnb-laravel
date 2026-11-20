@@ -5,6 +5,7 @@ namespace App\Reports\Players;
 use App\Models\Branch;
 use App\Models\BranchRegistration;
 use App\Models\Player;
+use App\Models\RegistrationStatusChange;
 use App\Reports\Column;
 use App\Reports\Concerns\FiltersPlayers;
 use App\Reports\Filter;
@@ -16,8 +17,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 /**
- * Who joined and who left. Joins follow the join year on the player record
- * (a year, not a date); departures follow the date the player left.
+ * Who joined, who left and who came back. Joins follow the join year on the player
+ * record (a year, not a date). Departures and returns follow the status history
+ * (MovementEvents), so a player who came back still counts in the year he left.
  */
 class PlayerMovement extends Report
 {
@@ -26,6 +28,9 @@ class PlayerMovement extends Report
     private ?int $rowBranch = null;
 
     private ?RegistrationDisplay $display = null;
+
+    /** @var array<int, array{left_at: ?string, returned_at: ?string}> the dates each listed player was found by */
+    private array $dates = [];
 
     public function key(): string
     {
@@ -52,6 +57,7 @@ class PlayerMovement extends Report
         $joinYears = Player::query()->whereNotNull('join_year')->distinct()->pluck('join_year')->map(fn ($y) => (int) $y);
         $leftYears = BranchRegistration::query()->whereNotNull('left_at')->pluck('left_at')
             ->merge(Player::query()->whereNotNull('left_at')->pluck('left_at'))
+            ->merge(RegistrationStatusChange::query()->pluck('changed_on'))
             ->map(fn ($d) => (int) substr((string) $d, 0, 4));
         $years = $joinYears->merge($leftYears)->push((int) now()->year)->unique()->sortDesc()->values();
 
@@ -59,6 +65,7 @@ class PlayerMovement extends Report
             Filter::select('movement', 'reports.filter.movement', [
                 ['value' => 'joined', 'label' => UiLang::get('reports.movement.joined')],
                 ['value' => 'left', 'label' => UiLang::get('reports.movement.left')],
+                ['value' => 'returned', 'label' => UiLang::get('reports.movement.returned')],
             ], 'joined'),
             Filter::select('year', 'reports.filter.year', $years->map(fn (int $y) => ['value' => $y, 'label' => (string) $y])->all(), (int) now()->year),
             $this->categoryFilter(),
@@ -75,6 +82,7 @@ class PlayerMovement extends Report
             new Column('branches', 'col.branches'),
             new Column('join_year', 'col.join_year', Column::NUMBER),
             new Column('left_at', 'reports.col.left_at', Column::DATE),
+            new Column('returned_at', 'reports.col.returned_at', Column::DATE),
             new Column('status', 'col.status'),
         ];
     }
@@ -93,8 +101,10 @@ class PlayerMovement extends Report
     {
         $this->rowBranch = $this->shownBranch($filters);
         $this->display = RegistrationDisplay::make();
+        $movement = (string) $filters->get('movement');
+        $this->dates = $movement === 'joined' ? [] : $this->datesFor($filters, $movement);
 
-        return $this->base($filters, (string) $filters->get('movement'))
+        return $this->base($filters, $movement, $this->dates)
             ->with(['category', 'status', 'branches'])
             ->when($this->rowBranch !== null, fn ($q) => $q->with(['registrations.category', 'registrations.status']));
     }
@@ -103,6 +113,7 @@ class PlayerMovement extends Report
     public function row(mixed $record): array
     {
         $this->display->overlay($record, $this->rowBranch);
+        $found = $this->dates[$record->id] ?? null;
 
         return [
             'membership_id' => $record->membership_id,
@@ -110,7 +121,8 @@ class PlayerMovement extends Report
             'category' => $record->category?->localized_name,
             'branches' => $record->branches->map(fn (Branch $b) => $b->localized_name)->implode(', '),
             'join_year' => $record->join_year,
-            'left_at' => $record->left_at?->format('Y-m-d'),
+            'left_at' => $found !== null ? $found['left_at'] : $record->left_at?->format('Y-m-d'),
+            'returned_at' => $found['returned_at'] ?? null,
             'status' => $record->status?->localized_name,
         ];
     }
@@ -120,6 +132,7 @@ class PlayerMovement extends Report
         return [
             ['label' => 'reports.movement.joined', 'value' => $this->base($filters, 'joined')->count(), 'format' => 'number'],
             ['label' => 'reports.movement.left', 'value' => $this->base($filters, 'left')->count(), 'format' => 'number'],
+            ['label' => 'reports.movement.returned', 'value' => $this->base($filters, 'returned')->count(), 'format' => 'number'],
         ];
     }
 
@@ -136,42 +149,82 @@ class PlayerMovement extends Report
         ];
     }
 
-    /** Grouped in PHP: a year taken from a date has no form all three databases accept. */
+    /** Distinct leavers per year. Grouped in PHP: a year taken from a date has no form all three databases accept. */
     private function leftByYear(ReportFilters $filters): Collection
     {
-        $dates = $filters->filled('branch_id')
-            ? $this->leftRegistrations($filters)->pluck('left_at')
-            : $this->applyCategoryBranch(Player::query()->whereNotNull('left_at'), $filters)->pluck('left_at');
+        $events = $this->allowed($filters, app(MovementEvents::class)->departures(...$this->scope($filters)));
 
-        return $dates->countBy(fn ($date) => substr((string) $date, 0, 4))
+        return $events->groupBy(fn ($e) => substr($e->on, 0, 4))
+            ->map(fn (Collection $items) => $items->pluck('player_id')->unique()->count())
             ->sortKeys()
-            ->map(fn (int $count, string $year) => (object) ['y' => $year, 'c' => $count])
+            ->map(fn (int $count, $year) => (object) ['y' => (string) $year, 'c' => $count])
             ->values();
     }
 
-    /** With a branch selected, "left" means left that branch, whatever the player's other branches. */
-    private function leftRegistrations(ReportFilters $filters, ?int $year = null): Builder
-    {
-        return BranchRegistration::query()
-            ->inBranches((array) $filters->get('branch_id'))
-            ->whereNotNull('left_at')
-            ->when($filters->filled('category_id'), fn ($q) => $q->inCategories((array) $filters->get('category_id')))
-            ->when($year !== null, fn ($q) => $q->whereDate('left_at', '>=', $year.'-01-01')->whereDate('left_at', '<', ($year + 1).'-01-01'));
-    }
-
-    /** @return Builder<Player> */
-    private function base(ReportFilters $filters, string $movement): Builder
+    /**
+     * The players a movement lists in the filter's year, with the dates they were found by.
+     * Left: the year's last departure, then the first return on or after it.
+     * Returned: the year's last return, and the last departure on or before it.
+     *
+     * @return array<int, array{left_at: ?string, returned_at: ?string}>
+     */
+    private function datesFor(ReportFilters $filters, string $movement): array
     {
         $year = (int) $filters->get('year');
+        $events = app(MovementEvents::class);
+        $departures = $this->allowed($filters, $events->departures(...$this->scope($filters)));
+        $returns = $this->allowed($filters, $events->returns(...$this->scope($filters)));
+        $inYear = fn ($e) => (int) substr($e->on, 0, 4) === $year;
 
-        if ($movement === 'left' && $filters->filled('branch_id')) {
-            return Player::query()->whereIn('id', $this->leftRegistrations($filters, $year)->select('player_id'));
+        if ($movement === 'left') {
+            return $departures->filter($inYear)->groupBy('player_id')
+                ->map(function (Collection $items, $playerId) use ($returns) {
+                    $on = $items->max('on');
+
+                    return ['left_at' => $on, 'returned_at' => $returns->where('player_id', (int) $playerId)->filter(fn ($r) => $r->on >= $on)->min('on')];
+                })->all();
         }
 
-        $query = $movement === 'left'
-            ? Player::query()->whereDate('left_at', '>=', $year.'-01-01')->whereDate('left_at', '<', ($year + 1).'-01-01')
-            : Player::query()->where('join_year', $year);
+        return $returns->filter($inYear)->groupBy('player_id')
+            ->map(function (Collection $items, $playerId) use ($departures) {
+                $on = $items->max('on');
 
-        return $this->applyCategoryBranch($query, $filters);
+                return ['left_at' => $departures->where('player_id', (int) $playerId)->filter(fn ($d) => $d->on <= $on)->max('on'), 'returned_at' => $on];
+            })->all();
+    }
+
+    /** @return array{0: ?array, 1: ?array} branches and categories for MovementEvents */
+    private function scope(ReportFilters $filters): array
+    {
+        return [
+            $filters->filled('branch_id') ? array_map('intval', (array) $filters->get('branch_id')) : null,
+            $filters->filled('category_id') ? array_map('intval', (array) $filters->get('category_id')) : null,
+        ];
+    }
+
+    /** Club-wide, the category filter follows the shared list rule on the players found. */
+    private function allowed(ReportFilters $filters, Collection $events): Collection
+    {
+        if ($filters->filled('branch_id') || ! $filters->filled('category_id') || $events->isEmpty()) {
+            return $events;
+        }
+        $kept = $this->applyCategoryBranch(Player::query()->whereIn('id', $events->pluck('player_id')->unique()->all()), $filters)
+            ->pluck('id')->flip();
+
+        return $events->filter(fn ($e) => $kept->has($e->player_id))->values();
+    }
+
+    /**
+     * @param  array<int, mixed>|null  $dates  already computed by rows()
+     * @return Builder<Player>
+     */
+    private function base(ReportFilters $filters, string $movement, ?array $dates = null): Builder
+    {
+        if ($movement === 'joined') {
+            return $this->applyCategoryBranch(Player::query()->where('join_year', (int) $filters->get('year')), $filters);
+        }
+
+        // Events already carry the branch and category filters.
+        return Player::query()->whereIn('id', array_keys($dates ?? $this->datesFor($filters, $movement)));
     }
 }

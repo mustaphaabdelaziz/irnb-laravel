@@ -28,6 +28,9 @@ trait ValidatesRegistrations
             'registrations.*.status_id' => ['nullable', 'integer', 'exists:player_statuses,id'],
             'registrations.*.left_at' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today', 'after:1900-01-01'],
             'registrations.*.sporting_status_id' => ['nullable', 'integer', 'exists:sporting_statuses,id'],
+            // Read only when the card's status differs from the saved one.
+            'registrations.*.status_changed_on' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today', 'after:1900-01-01'],
+            'registrations.*.status_note' => ['nullable', 'string', 'max:255'],
         ];
     }
 
@@ -50,6 +53,19 @@ trait ValidatesRegistrations
                 }
                 if (! empty($date) && $birthdate && $date < $birthdate) {
                     $validator->errors()->add("registrations.$i.join_date", __('validation.join_date_before_birth'));
+                }
+
+                $changedOn = $card['status_changed_on'] ?? null;
+                $statusChanges = $saved !== null && array_key_exists('status_id', $card)
+                    && (int) ($card['status_id'] ?? 0) !== (int) ($saved->status_id ?? 0);
+                if ($statusChanges && ! empty($changedOn)) {
+                    if ($birthdate && $changedOn < $birthdate) {
+                        $validator->errors()->add("registrations.$i.status_changed_on", __('validation.status_change_before_birth'));
+                    }
+                    $joined = $saved->join_date?->toDateString();
+                    if ($joined !== null && $changedOn < $joined) {
+                        $validator->errors()->add("registrations.$i.status_changed_on", __('validation.status_change_before_join'));
+                    }
                 }
 
                 $category = $card['category_id'] ?? null;

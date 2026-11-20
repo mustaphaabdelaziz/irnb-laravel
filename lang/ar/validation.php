@@ -179,6 +179,8 @@ return [
     'category_code_needs_latin' => 'اكتب رمز الفئة بحروف لاتينية (مثل BALL)، فالاسم ليس فيه حروف لاتينية.',
 
     'join_date_before_birth' => 'تاريخ الانضمام يسبق تاريخ الميلاد.',
+    'status_change_before_birth' => 'تاريخ التغيير يسبق تاريخ الميلاد.',
+    'status_change_before_join' => 'تاريخ التغيير يسبق تاريخ الانضمام.',
     'position_other_branch' => 'هذا المركز تابع لفرع آخر.',
     'category_other_branch' => 'هذه الفئة تابعة لفرع آخر.',
     'category_not_in_branch' => 'الفئة «:name» غير موجودة في هذا الفرع.',

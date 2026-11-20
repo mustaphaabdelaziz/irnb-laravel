@@ -69,7 +69,7 @@ class PlayerReportsTest extends TestCase
         $this->assertEquals(['2'], array_column($this->report('movement', ['year' => 2026])['rows']['data'], 'membership_id'));
         $left = $this->report('movement', ['year' => 2026, 'movement' => 'left']);
         $this->assertEquals(['3'], array_column($left['rows']['data'], 'membership_id'));
-        $this->assertEquals([1, 1], array_column($left['summary'], 'value'));
+        $this->assertEquals([1, 1, 0], array_column($left['summary'], 'value'));
     }
 
     #[Test]

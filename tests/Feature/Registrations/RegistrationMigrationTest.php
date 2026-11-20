@@ -20,7 +20,9 @@ class RegistrationMigrationTest extends TestCase
 
     private function oldPivot(): void
     {
-        // The legacy state predates the documents foreign key on branch_player(id).
+        // The legacy state predates the documents foreign key on branch_player(id),
+        // and the status history that references it too.
+        Schema::dropIfExists('registration_status_changes');
         (require database_path('migrations/2026_11_05_500001_add_registration_to_player_documents.php'))->down();
 
         Schema::drop('branch_player');

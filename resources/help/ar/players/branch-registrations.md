@@ -3,7 +3,7 @@ title: كيف أسجّل لاعباً في فرع ثانٍ
 summary: أضف فرعًا ثانيًا للاعب مسجّل، بتاريخ انضمامه وفئته، وأكمل التواريخ الناقصة.
 pages: [players.show, players.edit, players.join-dates.index]
 keywords: [فرع ثان, فرعين, تسجيل في فرع, تاريخ الانضمام, رقم العضوية]
-related: [players/add-player, players/edit-player, players/player-page]
+related: [players/add-player, players/edit-player, players/player-page, players/status-history]
 ---
 
 اللاعب واحد مهما كان عدد فروعه. لكل فرع بطاقة خاصة، بفئتها وتاريخ انضمامها ورقم عضويتها.

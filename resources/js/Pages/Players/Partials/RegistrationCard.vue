@@ -8,6 +8,7 @@ import { computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { localToday } from '@/lib/localDate';
 import { categoriesForBranch } from '@/lib/categoryPicker';
+import { statusChanged } from '@/lib/registrationCards';
 import { useCan } from '@/Composables/useCan';
 
 const { t } = useI18n();
@@ -59,6 +60,13 @@ function removeOther(id) {
     props.card.other_position_ids = props.card.other_position_ids.filter((value) => Number(value) !== Number(id));
 }
 watch(() => props.card.position_id, (id) => { removeOther(id); });
+
+// A saved card whose status is changed asks when it happened, and why (optional).
+const changing = computed(() => statusChanged(props.card));
+watch(changing, (on) => {
+    if (on && !props.card.status_changed_on) props.card.status_changed_on = localToday();
+}, { immediate: true });
+const today = localToday();
 
 // The built-in "left" status is found by its code, never its editable name.
 const isLeft = computed(() => props.playerStatuses.find((s) => Number(s.id) === Number(props.card.status_id))?.code === 'left');
@@ -135,7 +143,19 @@ const dateRequired = computed(() => props.card.is_new || props.card.had_date);
                 </select>
                 <InputError :message="fieldError('status_id')" class="mt-1" />
             </div>
-            <div v-if="isLeft">
+            <template v-if="changing">
+                <div>
+                    <InputLabel :value="t('status_change.date') + ' *'" />
+                    <TextInput v-model="card.status_changed_on" type="date" class="mt-1 w-full" :max="today" required />
+                    <InputError :message="fieldError('status_changed_on')" class="mt-1" />
+                </div>
+                <div>
+                    <InputLabel :value="t('status_change.note')" />
+                    <TextInput v-model="card.status_note" class="mt-1 w-full" maxlength="255" :placeholder="t('status_change.note_hint')" />
+                    <InputError :message="fieldError('status_note')" class="mt-1" />
+                </div>
+            </template>
+            <div v-else-if="isLeft">
                 <InputLabel :value="t('left_at')" />
                 <TextInput v-model="card.left_at" type="date" class="mt-1 w-full" />
                 <InputError :message="fieldError('left_at')" class="mt-1" />

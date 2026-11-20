@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Player;
 use App\Models\PlayerStatus;
 use App\Models\Position;
+use App\Models\RegistrationStatusChange;
 use App\Models\User;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
@@ -224,15 +225,39 @@ class RegistrationService
      */
     private function change(BranchRegistration $registration, array $card, ?User $user = null): void
     {
+        $from = self::statusKey($registration->status_id);
         foreach (self::DETAILS as $field) {
             if (array_key_exists($field, $card)) {
                 $registration->{$field} = $card[$field];
             }
         }
+        $to = self::statusKey($registration->status_id);
+        $statusChanged = array_key_exists('status_id', $card) && $from !== $to;
+        // A client that sends only a leave date for a departure means that day.
+        $changedOn = match (true) {
+            ! $statusChanged => null,
+            ! empty($card['status_changed_on']) => (string) $card['status_changed_on'],
+            Player::isLeftStatus($to) && ! empty($card['left_at']) => (string) $card['left_at'],
+            default => now()->toDateString(),
+        };
+        // Leaving: the leave date and the date of the change are one fact.
+        if ($statusChanged && Player::isLeftStatus($to)) {
+            $registration->left_at = $changedOn;
+        }
         if (! empty($card['join_date'])) {
             $this->applyDate($registration, (string) $card['join_date'], $user);
         }
         $registration->save();
+
+        // Only the player form reaches here with a change: bulk paths keep no line.
+        if ($statusChanged) {
+            app(StatusHistory::class)->record($registration, $from, $to, $changedOn, $card['status_note'] ?? null, $user, RegistrationStatusChange::ORIGIN_FORM);
+        }
+    }
+
+    private static function statusKey(mixed $statusId): ?int
+    {
+        return $statusId === null || $statusId === '' ? null : (int) $statusId;
     }
 
     public function setJoinDate(BranchRegistration $registration, string $date, ?User $user = null): void

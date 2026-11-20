@@ -38,6 +38,7 @@ use App\Services\Player\RegisterPlayerService;
 use App\Services\Player\RegistrationCounts;
 use App\Services\Player\RegistrationDisplay;
 use App\Services\Player\RegistrationService;
+use App\Services\Player\StatusHistory;
 use App\Services\Storage\FileStorageService;
 use App\Support\CertificateThresholds;
 use App\Support\ClubIdentity;
@@ -251,6 +252,9 @@ class PlayerController extends Controller
         // making every serialized rental elsewhere carry the extra attribute.
         $player->equipmentRentals->each->append('is_overdue');
 
+        // Each branch's past statuses, as `status_history` on its registration.
+        app(StatusHistory::class)->attachTo($player->registrations);
+
         $transactions = Transaction::query()
             ->with([...Transaction::FINANCE_ACCOUNT_LABEL, ...TransactionTitle::RELATIONS])
             ->where('related_entity_type', 'Player')
@@ -265,6 +269,8 @@ class PlayerController extends Controller
 
         return Inertia::render('Players/Show', [
             'player' => $player,
+            // The choices of a hand-typed history line, inactive ones included: the past may use them.
+            'playerStatuses' => PlayerStatus::orderBy('sort_order')->get(),
             // The tab the page opens on, and the ID it shows first.
             'mainBranchId' => RegistrationDisplay::make()->main($player)?->branch_id,
             'transactions' => $transactions,

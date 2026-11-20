@@ -16,6 +16,8 @@ return [
     'category_code_needs_latin' => 'Type the category code in Latin letters (e.g. BALL): the name has none.',
 
     'join_date_before_birth' => 'The join date is before the birth date.',
+    'status_change_before_birth' => 'The date of change is before the birth date.',
+    'status_change_before_join' => 'The date of change is before the join date.',
     'position_other_branch' => 'This position belongs to another branch.',
     'category_other_branch' => 'This category belongs to another branch.',
     'category_not_in_branch' => 'The category ":name" does not exist in this branch.',

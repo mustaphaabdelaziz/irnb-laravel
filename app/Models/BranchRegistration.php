@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\SerializesClubDates;
 use App\Services\Attendance\GroupMembership;
+use App\Services\Player\StatusHistory;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -76,6 +77,8 @@ class BranchRegistration extends Pivot
             if (! $registration->isDirty(['status_id', 'left_at'])) {
                 return;
             }
+            // A return wipes left_at below: its day goes to the history first, whatever the writer.
+            app(StatusHistory::class)->keepDeparture($registration);
             if (! Player::isLeftStatus($registration->status_id)) {
                 $registration->left_at = null;
             } elseif ($registration->left_at === null) {
@@ -88,6 +91,13 @@ class BranchRegistration extends Pivot
         static::updated(function (BranchRegistration $registration) {
             if ($registration->wasChanged('category_id')) {
                 app(GroupMembership::class)->closeInBranch((int) $registration->player_id, (int) $registration->branch_id, now()->toDateString());
+            }
+        });
+
+        // The leave date and its history line are one fact: correcting one moves the other.
+        static::updated(function (BranchRegistration $registration) {
+            if ($registration->wasChanged('left_at') && ! $registration->wasChanged('status_id') && Player::isLeftStatus($registration->status_id)) {
+                app(StatusHistory::class)->moveDeparture($registration, $registration->getRawOriginal('left_at'), $registration->left_at?->toDateString());
             }
         });
     }
@@ -197,6 +207,14 @@ class BranchRegistration extends Pivot
     public function documents(): HasMany
     {
         return $this->hasMany(PlayerDocument::class, 'branch_registration_id');
+    }
+
+    /** The registration's past statuses, oldest first. */
+    public function statusChanges(): HasMany
+    {
+        return $this->hasMany(RegistrationStatusChange::class, 'branch_registration_id')
+            ->orderBy('changed_on')
+            ->orderBy('id');
     }
 
     public function sportingStatus(): BelongsTo

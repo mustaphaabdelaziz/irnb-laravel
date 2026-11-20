@@ -24,7 +24,7 @@ En haut de la page, cliquez sur le bouton avec le signe +. Passez la souris dess
 :::
 
 :::step Tapez le « Nom » et choisissez le coffre et la catégorie
-Dans « Nom », tapez : صندوق أقل من 17 سنة. Dans « Où est-elle rattachée ? », choisissez « Coffre — Football ». « Catégorie liée (facultatif) » apparaît alors : choisissez « أقل من 17 سنة ». Une catégorie qui a déjà une caisse porte « (a déjà une caisse) » et ne peut pas être choisie.
+Dans « Nom », tapez : صندوق أقل من 17 سنة. Dans « Où est-elle rattachée ? », choisissez « Coffre — Football ». « Catégorie liée (facultatif) » apparaît alors : choisissez « أقل من 17 سنة ». Une catégorie qui a déjà une caisse porte « (a déjà une caisse) » et ne peut pas être choisie. Laissez « Solde initial » à 0, sauf si la caisse contenait déjà de l'argent avant l'utilisation de l'application. L'argent entré cette saison s'enregistre comme une transaction de revenu, pas dans ce champ.
 ::figure fin-caisse-add ring=caisse-name,caisse-place,caisse-category
 :::
 

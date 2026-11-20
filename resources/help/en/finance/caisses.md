@@ -24,7 +24,7 @@ At the top of the page, click the button with the + sign. Hover over it to see i
 :::
 
 :::step Type the “Name” and choose the safe and the category
-In “Name”, type: صندوق أقل من 17 سنة. In “Where does it belong?”, choose “Football safe”. “Linked category (optional)” then appears: choose “أقل من 17 سنة”. A category that already has a caisse shows “(already has a caisse)” and can't be chosen.
+In “Name”, type: صندوق أقل من 17 سنة. In “Where does it belong?”, choose “Football safe”. “Linked category (optional)” then appears: choose “أقل من 17 سنة”. A category that already has a caisse shows “(already has a caisse)” and can't be chosen. Leave “Opening balance” at 0, unless the caisse already held money before you started using the app. Money that comes in this season is recorded as an income transaction, not in this field.
 ::figure fin-caisse-add ring=caisse-name,caisse-place,caisse-category
 :::
 

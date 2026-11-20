@@ -3,7 +3,7 @@ title: How do I read the finance dashboard and print the season report
 summary: Read the season's figures and compare them with last season, follow the budget, then print the season report as a PDF.
 module: finance
 pages: [finance.index]
-keywords: [finance dashboard, financial report, season report, financial summary, print, PDF, income, expenses, net balance, budget vs actual, all years, compare seasons]
+keywords: [finance dashboard, financial report, season report, financial summary, print, PDF, income, expenses, season net, net balance, cash in the safes, budget vs actual, all years, compare seasons]
 related: [finance/season, finance/record-transaction]
 ---
 
@@ -24,7 +24,7 @@ The coloured button is the season shown. A closed season has a tick mark. For an
 :::
 
 :::step Read the four cards
-First “Opening balance”, then “Total Income”, “Total Expense” and “Net Balance”. The small percentage with an arrow compares the figure with last season. That answers the comparison question.
+First “Opening balance”, then “Total Income”, “Total Expense” and “Season net”. Under each figure, a small line says what it counts. The small percentage with an arrow compares the figure with last season. That answers the comparison question. “Season net” counts the chosen season only. “Cash in the safes now”, next to the chart, is what is left in every safe and caisse, all seasons together.
 ::figure fin-dashboard ring=fin-tiles
 :::
 
@@ -44,5 +44,5 @@ Go back to the top of the page. To go back up, roll the mouse wheel away from yo
 :::
 
 :::tip
-The report prints the season chosen in the buttons. Choose the season before you click the print button. The report holds income, expenses, donations, net balance, and a breakdown by category.
+The report prints the season chosen in the buttons. Choose the season before you click the print button. The report holds income, expenses, donations, season net, and a breakdown by category.
 :::

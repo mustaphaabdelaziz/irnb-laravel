@@ -163,6 +163,60 @@ class DocumentTypeSettingsTest extends TestCase
     }
 
     #[Test]
+    public function a_type_can_have_a_minimum_age_alone_or_with_a_maximum(): void
+    {
+        $this->actingAs($this->admin())->post(route('document-types.store'), $this->payload(['min_age' => 15]))
+            ->assertSessionHasNoErrors();
+
+        $type = DocumentType::where('name', 'Licence fédérale')->firstOrFail();
+        $this->assertSame(15, $type->min_age);
+        $this->assertNull($type->max_age);
+
+        // The same age on both sides is a one-year range, not a mistake.
+        $this->actingAs($this->admin())->put(route('document-types.update', $type), $this->payload(['min_age' => 15, 'max_age' => 15]))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame([15, 15], [$type->fresh()->min_age, $type->fresh()->max_age]);
+    }
+
+    #[Test]
+    public function a_minimum_age_above_the_maximum_is_rejected(): void
+    {
+        $this->actingAs($this->admin())->post(route('document-types.store'), $this->payload(['min_age' => 18, 'max_age' => 15]))
+            ->assertSessionHasErrors('max_age');
+
+        $this->actingAs($this->admin())->post(route('document-types.store'), $this->payload(['min_age' => 0]))
+            ->assertSessionHasErrors('min_age');
+
+        $this->assertFalse(DocumentType::where('name', 'Licence fédérale')->exists());
+    }
+
+    #[Test]
+    public function clearing_the_minimum_age_makes_a_type_apply_from_birth(): void
+    {
+        $type = $this->type('id_card_copy');
+        $type->update(['min_age' => 15]);
+
+        $this->actingAs($this->admin())->put(route('document-types.update', $type), $this->payload([
+            'name' => $type->name,
+            'min_age' => '',
+        ]));
+
+        $this->assertNull($type->fresh()->min_age);
+    }
+
+    #[Test]
+    public function the_page_sends_each_types_minimum_age(): void
+    {
+        $this->type('id_card_copy')->update(['min_age' => 15]);
+
+        $types = $this->actingAs($this->admin())->get(route('document-types.index'))
+            ->assertOk()->viewData('page')['props']['documentTypes'];
+
+        $this->assertSame(15, collect($types)->firstWhere('code', 'id_card_copy')['min_age']);
+    }
+
+    #[Test]
     public function a_type_can_be_deactivated_and_reactivated(): void
     {
         $type = $this->type('school_certificate');

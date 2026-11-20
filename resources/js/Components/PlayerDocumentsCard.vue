@@ -13,6 +13,7 @@ import { useCan } from '@/Composables/useCan';
 import { router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { ageRangeLabel } from '@/lib/documentAge';
 import { localToday } from '@/lib/localDate';
 
 const props = defineProps({
@@ -24,6 +25,8 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
+
+const ageLabel = (type) => ageRangeLabel(t, type);
 const { can } = useCan();
 
 // Image types make phone browsers offer the camera. No `capture` attribute, so
@@ -216,7 +219,7 @@ function confirmRemoveFile() {
                         <p class="flex flex-wrap items-center gap-2 text-sm font-medium text-slate-900 dark:text-slate-100">
                             {{ item.type.name }}
                             <span v-if="item.type.is_required" class="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-normal text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('doc_required') }}</span>
-                            <span v-if="item.type.max_age" class="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-normal text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('doc_up_to_age', { age: item.type.max_age }) }}</span>
+                            <span v-if="ageLabel(item.type)" class="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-normal text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ ageLabel(item.type) }}</span>
                             <span v-if="item.type.copies > 1" class="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-normal text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('doc_copies_count', { count: item.type.copies }) }}</span>
                             <span v-if="item.state === 'incomplete'" class="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-800 dark:bg-amber-500/15 dark:text-amber-200">{{ t('doc_copies_of', { received: item.document.copies_received, total: item.type.copies }) }}</span>
                             <span v-if="!item.type.is_active" class="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-normal text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('doc_inactive_type') }}</span>

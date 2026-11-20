@@ -212,10 +212,12 @@ const csvName = (title) => `${title} ${season.value}`;
 
                 <!-- KPIs -->
                 <section data-help="fin-tiles" class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" :aria-label="t('finance')">
-                    <StatTile :label="t('finance.opening_balance')" :value="detail.opening_balance" format="money" icon="money" tone="neutral" />
-                    <StatTile :label="t('total_income')" :value="detail.income" format="money" icon="arrow" tone="positive" :delta="detail.deltas?.income" :period-label="vsPrevious" />
-                    <StatTile :label="t('total_expense')" :value="detail.expense" format="money" icon="transactions" tone="negative" :delta="detail.deltas?.expense" :period-label="vsPrevious" />
-                    <StatTile :label="t('net_balance')" :value="detail.net" format="money" icon="check" :tone="detail.net >= 0 ? 'primary' : 'negative'" :delta="detail.deltas?.net" :period-label="vsPrevious" />
+                    <!-- Each figure says what it counts: an opening balance typed on a
+                         caisse was once read as income, and the net as the cash on hand. -->
+                    <StatTile :label="t('finance.opening_balance')" :meta="t('finance.hint_opening')" :value="detail.opening_balance" format="money" icon="money" tone="neutral" />
+                    <StatTile :label="t('total_income')" :meta="t('finance.hint_income')" :value="detail.income" format="money" icon="arrow" tone="positive" :delta="detail.deltas?.income" :period-label="vsPrevious" />
+                    <StatTile :label="t('total_expense')" :meta="t('finance.hint_expense')" :value="detail.expense" format="money" icon="transactions" tone="negative" :delta="detail.deltas?.expense" :period-label="vsPrevious" />
+                    <StatTile :label="t('finance.season_net')" :meta="t('finance.hint_net')" :value="detail.net" format="money" icon="check" :tone="detail.net >= 0 ? 'primary' : 'negative'" :delta="detail.deltas?.net" :period-label="vsPrevious" />
                 </section>
 
                 <!-- Trend + balances -->
@@ -236,8 +238,9 @@ const csvName = (title) => `${title} ${season.value}`;
                     </ChartCard>
 
                     <div data-help="fin-current-balance" class="card p-5">
-                        <p class="mb-3 text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('current_balance') }}</p>
+                        <p class="mb-3 text-sm font-bold text-slate-700 dark:text-slate-200">{{ t('finance.cash_in_safes') }}</p>
                         <p class="figure text-3xl font-extrabold text-primary-700 dark:text-primary-300">{{ formatMoney(currentBalance) }}</p>
+                        <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">{{ t('finance.hint_cash') }}</p>
                         <ul class="mt-4 space-y-2">
                             <li v-for="a in accounts" :key="a.id" class="flex items-center justify-between text-sm">
                                 <span class="flex min-w-0 items-center gap-2 text-slate-600 dark:text-slate-300">

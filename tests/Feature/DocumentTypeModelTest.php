@@ -119,7 +119,41 @@ class DocumentTypeModelTest extends TestCase
         $type = $this->type('medical_certificate');
 
         $this->assertNull($type->earliestApplicableBirthdate());
+        $this->assertNull($type->latestApplicableBirthdate());
         $this->assertTrue($type->appliesTo(new Player(['birthdate' => '1950-01-01'])));
+        $this->assertTrue($type->appliesTo(new Player(['birthdate' => '2026-01-01'])));
+    }
+
+    #[Test]
+    public function a_type_with_a_minimum_age_applies_from_that_birthday_on(): void
+    {
+        Carbon::setTestNow('2026-09-23');
+        $type = $this->type('id_card_copy');
+        $type->update(['min_age' => 15]);
+
+        $this->assertSame('2011-09-23', $type->latestApplicableBirthdate()->toDateString());
+
+        // 15 today: asked from now on.
+        $this->assertTrue($type->appliesTo(new Player(['birthdate' => '2011-09-23'])));
+        // 15 tomorrow: not asked yet.
+        $this->assertFalse($type->appliesTo(new Player(['birthdate' => '2011-09-24'])));
+        // An adult.
+        $this->assertTrue($type->appliesTo(new Player(['birthdate' => '1990-01-01'])));
+        // Owner decision: no birth date means "not limited".
+        $this->assertTrue($type->appliesTo(new Player(['birthdate' => null])));
+    }
+
+    #[Test]
+    public function a_type_with_both_ages_applies_only_inside_the_range(): void
+    {
+        Carbon::setTestNow('2026-09-23');
+        $type = $this->type('parental_authorization'); // max_age 17
+        $type->update(['min_age' => 15]);
+
+        $this->assertFalse($type->appliesTo(new Player(['birthdate' => '2011-09-24']))); // 14
+        $this->assertTrue($type->appliesTo(new Player(['birthdate' => '2011-09-23'])));  // 15 today
+        $this->assertTrue($type->appliesTo(new Player(['birthdate' => '2008-09-24'])));  // 17, 18 tomorrow
+        $this->assertFalse($type->appliesTo(new Player(['birthdate' => '2008-09-23']))); // 18 today
     }
 
     #[Test]

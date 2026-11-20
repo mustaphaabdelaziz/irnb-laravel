@@ -36,7 +36,8 @@ use Illuminate\Support\Facades\DB;
  * because SQLite keeps these columns as "Y-m-d 00:00:00" text and a closed
  * comparison (<=) would miss the boundary day. The PHP side uses the same
  * boundaries: expired = valid_until < today; expires soon = valid_until <
- * today + 31 days; applies = birthdate >= DocumentType::earliestApplicableBirthdate().
+ * today + 31 days; applies = birthdate >= DocumentType::earliestApplicableBirthdate()
+ * (maximum age) and birthdate < latestApplicableBirthdate() + 1 day (minimum age).
  */
 final class DocumentChecklist
 {
@@ -411,20 +412,35 @@ final class DocumentChecklist
     }
 
     /**
-     * The age test of the terms (DocumentType::earliestApplicableBirthdate), no
-     * birth date = not limited.
+     * The age test of the terms (DocumentType::earliestApplicableBirthdate and
+     * latestApplicableBirthdate), no birth date = not limited. The minimum age is
+     * half-open like every date here: born BEFORE the day after the latest date.
      *
      * @return array{0: list<string>, 1: list<mixed>}
      */
     private static function ageConditions(DocumentType $type, CarbonImmutable $today): array
     {
         $earliest = $type->earliestApplicableBirthdate($today);
+        $latest = $type->latestApplicableBirthdate($today);
 
-        if ($earliest === null) {
+        $range = [];
+        $bindings = [];
+
+        if ($earliest !== null) {
+            $range[] = 'players.birthdate >= ?';
+            $bindings[] = $earliest->toDateString();
+        }
+
+        if ($latest !== null) {
+            $range[] = 'players.birthdate < ?';
+            $bindings[] = $latest->addDay()->toDateString();
+        }
+
+        if ($range === []) {
             return [[], []];
         }
 
-        return [['(players.birthdate IS NULL OR players.birthdate >= ?)'], [$earliest->toDateString()]];
+        return [['(players.birthdate IS NULL OR ('.implode(' AND ', $range).'))'], $bindings];
     }
 
     /** @return array<string, mixed> */
@@ -437,6 +453,7 @@ final class DocumentChecklist
                 'name' => $type->localized_name,
                 'is_required' => $type->is_required,
                 'validity' => $type->validity,
+                'min_age' => $type->min_age,
                 'max_age' => $type->max_age,
                 'copies' => $type->copies,
                 'is_active' => $type->is_active,

@@ -137,6 +137,7 @@ function submit() {
             <label data-help="caisse-opening" class="block text-sm">
                 <span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('finance.opening_balance') }}</span>
                 <input v-model="form.opening_balance" type="number" step="0.01" class="w-full rounded-lg border-slate-200 bg-white text-sm tabular-nums dark:border-slate-700 dark:bg-slate-800" />
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('caisses.opening_balance_hint') }}</p>
                 <InputError :message="form.errors.opening_balance" class="mt-1" />
             </label>
 

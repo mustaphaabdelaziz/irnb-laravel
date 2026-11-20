@@ -150,6 +150,62 @@ class StatusHistory
         ];
     }
 
+    /**
+     * The registration's status changes in order: its stored lines, plus its current
+     * leave day when no line records it (a bulk departure). Needs statusChanges loaded.
+     *
+     * @return Collection<int, object{id: ?int, from: ?int, to: ?int, on: string}>
+     */
+    public function timeline(BranchRegistration $registration, ?int $leftId): Collection
+    {
+        $entries = $registration->statusChanges->map(fn (RegistrationStatusChange $change) => (object) [
+            'id' => $change->id,
+            'from' => $change->from_status_id,
+            'to' => $change->to_status_id,
+            'on' => $change->changed_on->toDateString(),
+        ]);
+
+        $leftAt = $registration->left_at?->toDateString();
+        if ($leftId !== null && (int) $registration->status_id === $leftId && $leftAt !== null
+            && ! $entries->contains(fn ($e) => (int) $e->to === $leftId && $e->on === $leftAt)) {
+            $entries->push((object) ['id' => null, 'from' => null, 'to' => $leftId, 'on' => $leftAt]);
+        }
+
+        return $entries
+            ->sortBy(fn ($e) => $e->on.'#'.str_pad((string) ($e->id ?? PHP_INT_MAX), 20, '0', STR_PAD_LEFT))
+            ->values();
+    }
+
+    /**
+     * Whether the registration was a member that day: joined by then and not left.
+     * An unknown status counts as a member; a left row with no date never does.
+     */
+    public function wasMemberOn(BranchRegistration $registration, string $day, ?int $leftId): bool
+    {
+        $joined = $registration->join_date?->toDateString();
+        if ($joined !== null && $joined > $day) {
+            return false;
+        }
+        if ($joined === null && $registration->legacy_join_year !== null && $registration->legacy_join_year > (int) substr($day, 0, 4)) {
+            return false;
+        }
+        if ($leftId === null) {
+            return true;
+        }
+
+        $timeline = $this->timeline($registration, $leftId);
+        $before = $timeline->filter(fn ($e) => $e->on <= $day)->last();
+        if ($before !== null) {
+            return (int) $before->to !== $leftId;
+        }
+        $after = $timeline->first();
+        if ($after !== null) {
+            return $after->from === null || (int) $after->from !== $leftId;
+        }
+
+        return (int) $registration->status_id !== $leftId;
+    }
+
     private static function cleanNote(?string $note): ?string
     {
         $note = $note === null ? null : trim($note);

@@ -39,6 +39,7 @@ const { can } = useCan();
 const props = defineProps({
     player: Object,
     mainBranchId: { type: Number, default: null },
+    playerStatuses: { type: Array, default: () => [] },
     totalDebt: Number,
     transactions: { type: Array, default: () => [] },
     availableSubscriptions: { type: Array, default: () => [] },
@@ -506,7 +507,7 @@ function formatPlainDate(val) {
                             <span v-else>—</span>
                         </PlayerFieldRow>
                     </dl>
-                    <RegistrationsSection data-help="player-registrations" :registrations="player.registrations" :other-positions="player.other_positions || []" :format-date="formatPlainDate" />
+                    <RegistrationsSection data-help="player-registrations" :registrations="player.registrations" :other-positions="player.other_positions || []" :format-date="formatPlainDate" :player-id="player.id" :player-statuses="playerStatuses" />
 
                     <div v-if="player.emergency_contacts?.length || player.health_medical_conditions" class="mt-5 border-t border-slate-100 pt-4 dark:border-slate-800">
                         <template v-if="player.emergency_contacts?.length">

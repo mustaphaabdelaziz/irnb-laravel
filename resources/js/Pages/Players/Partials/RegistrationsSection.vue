@@ -1,7 +1,14 @@
 <script setup>
+import { ref } from 'vue';
+import { router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
+import ConfirmModal from '@/Components/ConfirmModal.vue';
+import IconButton from '@/Components/IconButton.vue';
+import StatusChangeModal from '@/Pages/Players/Partials/StatusChangeModal.vue';
+import { useCan } from '@/Composables/useCan';
 
 const { t } = useI18n();
+const { can } = useCan();
 
 const props = defineProps({
     registrations: { type: Array, default: () => [] },
@@ -9,6 +16,9 @@ const props = defineProps({
     otherPositions: { type: Array, default: () => [] },
     /** The page's own date formatter, so dates read the same everywhere. */
     formatDate: { type: Function, required: true },
+    /** For the status history: the player and the statuses a hand-typed line may use. */
+    playerId: { type: Number, default: null },
+    playerStatuses: { type: Array, default: () => [] },
 });
 
 const named = (item) => item?.localized_name || item?.name || '—';
@@ -18,9 +28,27 @@ const othersFor = (registration, index) => props.otherPositions.filter((position
         ? index === 0
         : Number(position.branch_id) === Number(registration.branch_id)
 ));
+
+// The history: only the edit right may change it, and only the past.
+const canEditHistory = () => props.playerId !== null && can('players', 'edit');
+const modal = ref({ show: false, registration: null, line: null });
+const openAdd = (registration) => { modal.value = { show: true, registration, line: null }; };
+const openEdit = (line) => { modal.value = { show: true, registration: null, line }; };
+const deleting = ref(null);
+
+function confirmDelete() {
+    router.delete(route('players.status-changes.destroy', [props.playerId, deleting.value.id]), {
+        preserveScroll: true,
+        onFinish: () => { deleting.value = null; },
+    });
+}
+
+const recordedOn = (line) => (line.recorded_at ? props.formatDate(line.recorded_at) : '');
 </script>
 
 <template>
+    <!-- One root, so the page's data-help lands on it. -->
+    <div>
     <ul v-if="registrations.length" class="mt-5 space-y-3 border-t border-slate-100 pt-4 dark:border-slate-800">
         <li v-for="(registration, index) in registrations" :key="registration.id" class="rounded-xl border border-slate-200 p-3 dark:border-slate-700">
             <div class="flex flex-wrap items-center justify-between gap-2">
@@ -52,6 +80,55 @@ const othersFor = (registration, index) => props.otherPositions.filter((position
                 <div v-if="registration.left_at"><dt class="inline text-slate-500 dark:text-slate-400">{{ t('left_at') }}:</dt> <dd class="ms-1 inline">{{ formatDate(registration.left_at) }}</dd></div>
                 <div v-if="registration.sporting_status"><dt class="inline text-slate-500 dark:text-slate-400">{{ t('sporting_status') }}:</dt> <dd class="ms-1 inline">{{ named(registration.sporting_status) }}</dd></div>
             </dl>
+
+            <section v-if="registration.status_history" class="mt-3 border-t border-slate-100 pt-3 dark:border-slate-800" data-help="player-status-history">
+                <div class="flex items-center justify-between gap-2">
+                    <h4 class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('status_history.title') }}</h4>
+                    <IconButton v-if="canEditHistory()" icon="plus" :label="t('status_history.add')" plain size="sm" @click="openAdd(registration)" />
+                </div>
+                <ol class="mt-2 space-y-1.5 border-s-2 border-slate-200 ps-3 text-sm dark:border-slate-700">
+                    <li class="text-slate-600 dark:text-slate-300">
+                        <span class="font-medium text-slate-800 dark:text-slate-100">{{ t('status_history.joined') }}</span>
+                        <span class="ms-1">
+                            <template v-if="registration.join_date">{{ formatDate(registration.join_date) }}</template>
+                            <template v-else-if="registration.legacy_join_year">{{ t('join_year_only', { year: registration.legacy_join_year }) }}</template>
+                            <template v-else>—</template>
+                        </span>
+                    </li>
+                    <li v-for="line in registration.status_history" :key="line.id" class="flex items-start justify-between gap-2 text-slate-600 dark:text-slate-300">
+                        <div class="min-w-0">
+                            <span class="font-medium text-slate-800 dark:text-slate-100">{{ line.to_status ? named(line.to_status) : t('status_history.removed_status') }}</span>
+                            <span class="ms-1">{{ formatDate(line.changed_on) }}</span>
+                            <span v-if="line.note" class="ms-1 text-slate-500 dark:text-slate-400">— {{ line.note }}</span>
+                            <span v-if="line.user" class="ms-1 text-xs text-slate-400 dark:text-slate-500">({{ t('status_history.by', { name: line.user }) }}<template v-if="recordedOn(line)"> · {{ recordedOn(line) }}</template>)</span>
+                        </div>
+                        <div v-if="canEditHistory()" class="flex shrink-0 items-center gap-1">
+                            <IconButton icon="pencil" :label="t('status_history.edit')" plain size="sm" icon-only @click="openEdit(line)" />
+                            <IconButton icon="trash" :label="t('status_history.delete')" variant="danger" plain size="sm" icon-only @click="deleting = line" />
+                        </div>
+                    </li>
+                </ol>
+                <p v-if="!registration.status_history.length" class="mt-1 text-xs text-slate-400 dark:text-slate-500">{{ t('status_history.empty') }}</p>
+                <p v-if="canEditHistory()" class="mt-1 text-xs text-slate-400 dark:text-slate-500">{{ t('status_history.hint') }}</p>
+            </section>
         </li>
     </ul>
+
+    <StatusChangeModal
+        v-if="playerId !== null"
+        :show="modal.show"
+        :player-id="playerId"
+        :registration="modal.registration"
+        :line="modal.line"
+        :player-statuses="playerStatuses"
+        @close="modal.show = false"
+    />
+    <ConfirmModal
+        :show="deleting !== null"
+        :title="t('status_history.delete')"
+        :message="t('status_history.delete_confirm')"
+        @confirm="confirmDelete"
+        @cancel="deleting = null"
+    />
+    </div>
 </template>

@@ -80,6 +80,12 @@ class TransactionCorrectionLinkTest extends TestCase
 
         $this->assertSame(2, Transaction::where('archived', false)->count());
         $this->assertSame(2, Transaction::where('replaces_transaction_id', $original->id)->count());
+
+        // The original was paid alone: its empty group must not wipe the one
+        // the two new rows were just given.
+        $groups = Transaction::where('replaces_transaction_id', $original->id)->pluck('payment_group');
+        $this->assertNotNull($groups->first());
+        $this->assertCount(1, $groups->unique());
     }
 
     #[Test]

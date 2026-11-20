@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\FinanceAccount;
 use App\Models\FinanceCategory;
+use App\Models\Player;
 use App\Models\Transaction;
 use App\Services\Finance\TransactionChanges;
 use App\Support\FinanceAccountLabel;
@@ -98,6 +99,44 @@ class TransactionChangesTest extends TestCase
             'old' => $caisseA->id, 'new' => $caisseB->id,
             'old_label' => FinanceAccountLabel::for($caisseA), 'new_label' => FinanceAccountLabel::for($caisseB),
         ], $changes['finance_account_id']);
+    }
+
+    #[Test]
+    public function the_linked_player_is_tracked_with_both_names(): void
+    {
+        $karim = $this->player('8100000001', 'Karim', 'Bensalah');
+        $sami = $this->player('8100000002', 'Sami', 'Haddad');
+        $tx = $this->tx();
+
+        $this->assertSame(
+            ['related_entity_id' => ['old' => null, 'new' => $karim->id]],
+            $this->changesAfter($tx, ['related_entity_type' => 'Player', 'related_entity_id' => $karim->id]),
+        );
+
+        $changes = TransactionChanges::withLabels($this->changesAfter($tx, ['related_entity_id' => $sami->id]));
+
+        $this->assertSame([
+            'related_entity_id' => [
+                'old' => $karim->id, 'new' => $sami->id,
+                'old_label' => $karim->fullname, 'new_label' => $sami->fullname,
+            ],
+        ], $changes);
+    }
+
+    #[Test]
+    public function a_link_to_anything_but_a_player_is_no_player(): void
+    {
+        $tx = $this->tx(['related_entity_type' => 'Sponsor', 'related_entity_id' => 7]);
+
+        $this->assertNull(TransactionChanges::snapshot($tx)['related_entity_id']);
+    }
+
+    private function player(string $membershipId, string $firstname, string $lastname): Player
+    {
+        return Player::create([
+            'membership_id' => $membershipId, 'firstname' => $firstname, 'lastname' => $lastname,
+            'is_student' => true, 'outstanding_debt' => 0,
+        ]);
     }
 
     #[Test]

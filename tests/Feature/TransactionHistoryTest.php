@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\ActivityLog;
 use App\Models\FinanceCategory;
 use App\Models\Player;
 use App\Models\PlayerSubscription;
@@ -202,6 +203,156 @@ class TransactionHistoryTest extends TestCase
         $amount = collect($new[0]['changes'])->firstWhere('field', 'amount');
         $this->assertEquals(800, $amount['old']);
         $this->assertEquals(500, $amount['new']);
+    }
+
+    private function player(string $membershipId = '8000000003', string $firstname = 'Flow', string $lastname = 'Test'): Player
+    {
+        return Player::create([
+            'membership_id' => $membershipId, 'firstname' => $firstname, 'lastname' => $lastname,
+            'is_student' => true, 'outstanding_debt' => 0,
+        ]);
+    }
+
+    private function line(Player $player, float $owed): PlayerSubscription
+    {
+        $line = PlayerSubscription::create([
+            'player_id' => $player->id, 'subscription_id' => null, 'transaction_id' => null,
+            'year' => (int) now()->year, 'status_at_time' => 'student',
+            'is_mandatory' => true, 'amount_owed' => $owed, 'amount_paid' => 0,
+        ]);
+        app(RecalculatePlayerDebtService::class)->forPlayer($player->fresh());
+
+        return $line;
+    }
+
+    /** A 500 payment on a 500 line corrected to 800: 500 on the line, 300 as a donation. */
+    private function splitCorrection(Player $player, ?User $member = null): Transaction
+    {
+        $this->actingAs($this->admin)->post(route('players.transactions.store', $player), [
+            'player_subscription_id' => $this->line($player, 500)->id, 'category' => 'subscription', 'amount' => 500, 'payment_method' => 'cash',
+        ])->assertSessionHasNoErrors();
+        $original = Transaction::latest('id')->firstOrFail();
+
+        $request = $member
+            ? $this->actingAs($member)->withSession([Impersonation::SESSION_KEY => $this->admin->id])
+            : $this->actingAs($this->admin);
+        $request->put(route('players.transactions.update', [$player, $original]), ['amount' => 800, 'payment_method' => 'cash'])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(2, Transaction::where('replaces_transaction_id', $original->id)->count());
+
+        return $original;
+    }
+
+    #[Test]
+    public function a_player_change_shows_both_players_by_name(): void
+    {
+        $karim = $this->player('8000000004', 'Karim', 'Bensalah');
+        $sami = $this->player('8000000005', 'Sami', 'Haddad');
+        $linked = ['related_entity_type' => 'Player', 'related_entity_id' => $karim->id];
+        $this->actingAs($this->admin)->post(route('transactions.store'), $this->payload($linked))->assertSessionHasNoErrors();
+        $tx = Transaction::latest('id')->firstOrFail();
+
+        $this->actingAs($this->admin)
+            ->put(route('transactions.update', $tx), $this->payload(['related_entity_id' => $sami->id] + $linked))
+            ->assertSessionHasNoErrors();
+
+        $edited = collect(TransactionHistory::entries($tx->fresh()))->firstWhere('type', 'edited');
+
+        $this->assertSame([['field' => 'related_entity_id', 'old' => $karim->fullname, 'new' => $sami->fullname]], $edited['changes']);
+    }
+
+    #[Test]
+    public function a_grouped_sibling_recorded_while_logged_in_as_someone_names_the_real_person(): void
+    {
+        $member = User::factory()->admin()->create(['name' => 'Karim Desk']);
+        $player = $this->player();
+        $a = $this->line($player, 1000);
+        $b = $this->line($player, 500);
+
+        $this->actingAs($member)
+            ->withSession([Impersonation::SESSION_KEY => $this->admin->id])
+            ->post(route('players.transactions.store', $player), [
+                'category' => 'subscription', 'payment_method' => 'cash', 'amount' => 1500,
+                'payables' => [['player_subscription_id' => $a->id], ['player_subscription_id' => $b->id]],
+            ])
+            ->assertSessionHasNoErrors();
+
+        $payments = Transaction::where('related_entity_id', $player->id)->orderBy('id')->get();
+        $this->assertCount(2, $payments);
+        $this->assertCount(1, $payments->pluck('payment_group')->unique()->filter());
+
+        foreach ($payments as $payment) {
+            $entry = TransactionHistory::entries($payment)[0];
+            $this->assertSame('Cashier One', $entry['user'], "transaction #{$payment->id}");
+            $this->assertSame('Karim Desk', $entry['as_user'], "transaction #{$payment->id}");
+        }
+    }
+
+    #[Test]
+    public function every_row_of_a_split_correction_made_logged_in_as_someone_names_the_real_person(): void
+    {
+        $member = User::factory()->admin()->create(['name' => 'Karim Desk']);
+        $original = $this->splitCorrection($this->player(), $member);
+
+        foreach (Transaction::where('replaces_transaction_id', $original->id)->orderBy('id')->get() as $row) {
+            $entry = TransactionHistory::entries($row)[0];
+            $this->assertSame('Cashier One', $entry['user'], "transaction #{$row->id}");
+            $this->assertSame('Karim Desk', $entry['as_user'], "transaction #{$row->id}");
+        }
+
+        $replaced = collect(TransactionHistory::entries($original->fresh()))->firstWhere('type', 'replaced');
+        $this->assertSame('Cashier One', $replaced['user']);
+        $this->assertSame('Karim Desk', $replaced['as_user']);
+    }
+
+    #[Test]
+    public function each_row_of_a_split_correction_links_to_the_original_without_changes(): void
+    {
+        $original = $this->splitCorrection($this->player());
+
+        foreach (Transaction::where('replaces_transaction_id', $original->id)->orderBy('id')->get() as $row) {
+            $first = TransactionHistory::entries($row)[0];
+            $this->assertSame('correction', $first['type']);
+            $this->assertSame([['id' => $original->id]], $first['links']);
+            $this->assertSame([], $first['changes']);
+        }
+    }
+
+    #[Test]
+    public function an_edit_whose_log_row_is_gone_still_shows_its_values(): void
+    {
+        $tx = $this->tx();
+        $log = ActivityRecorder::record($this->admin, ActivityAction::TRANSACTION_UPDATED, $tx);
+        TransactionRevision::create([
+            'transaction_id' => $tx->id,
+            'activity_log_id' => $log->id,
+            'diff' => ['amount' => ['old' => 1000, 'new' => 1200]],
+        ]);
+
+        ActivityLog::whereKey($log->id)->delete();
+
+        $entries = TransactionHistory::entries($tx);
+        $this->assertNull(TransactionRevision::sole()->activity_log_id);
+        $this->assertSame(['recorded', 'edited'], $this->types($entries));
+        $this->assertNull($entries[1]['user']);
+        $this->assertNull($entries[1]['as_user']);
+        $this->assertEquals([['field' => 'amount', 'old' => 1000, 'new' => 1200]], $entries[1]['changes']);
+    }
+
+    #[Test]
+    public function a_log_older_than_the_transaction_belongs_to_an_earlier_row_with_the_same_id(): void
+    {
+        $tx = $this->tx();
+        $before = ActivityRecorder::record($this->admin, ActivityAction::TRANSACTION_CANCELLED, $tx);
+        $after = ActivityRecorder::record($this->admin, ActivityAction::TRANSACTION_CANCELLED, $tx);
+        ActivityLog::whereKey($before->id)->update(['occurred_at' => $tx->created_at->copy()->subDay()]);
+        ActivityLog::whereKey($after->id)->update(['occurred_at' => $tx->created_at->copy()->addHour()]);
+
+        $entries = TransactionHistory::entries($tx);
+
+        $this->assertSame(['recorded', 'cancelled'], $this->types($entries));
+        $this->assertSame($tx->created_at->copy()->addHour()->format('Y-m-d H:i'), $entries[1]['at']);
     }
 
     #[Test]

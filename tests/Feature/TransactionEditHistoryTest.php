@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\ActivityLog;
 use App\Models\FinanceCategory;
 use App\Models\FiscalYear;
+use App\Models\Player;
 use App\Models\Transaction;
 use App\Models\TransactionRevision;
 use App\Models\User;
@@ -122,6 +123,49 @@ class TransactionEditHistoryTest extends TestCase
         $this->assertSame($other->id, $change['new']);
         $this->assertSame($other->fresh()->localized_name, $change['new_label']);
         $this->assertNotNull($change['old_label']);
+    }
+
+    #[Test]
+    public function changing_only_the_linked_player_is_recorded(): void
+    {
+        $karim = $this->player('8200000001', 'Karim', 'Bensalah');
+        $sami = $this->player('8200000002', 'Sami', 'Haddad');
+        $linked = ['related_entity_type' => 'Player', 'related_entity_id' => $karim->id];
+        $this->actingAs($this->admin)->post(route('transactions.store'), $this->payload($linked))->assertSessionHasNoErrors();
+        $tx = Transaction::latest('id')->firstOrFail();
+
+        $this->actingAs($this->admin)
+            ->put(route('transactions.update', $tx), $this->payload(['related_entity_id' => $sami->id] + $linked))
+            ->assertSessionHasNoErrors();
+
+        $log = ActivityLog::where('action', ActivityAction::TRANSACTION_UPDATED)->sole();
+        $this->assertSame($tx->id, $log->subject_id);
+        $this->assertEquals([
+            'related_entity_id' => [
+                'old' => $karim->id, 'new' => $sami->id,
+                'old_label' => $karim->fullname, 'new_label' => $sami->fullname,
+            ],
+        ], TransactionRevision::where('activity_log_id', $log->id)->sole()->diff);
+
+        // A player linked to a transaction that had none.
+        $unlinked = $this->stored();
+        $this->actingAs($this->admin)
+            ->put(route('transactions.update', $unlinked), $this->payload($linked))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(2, $this->edits());
+        $this->assertEquals(
+            ['related_entity_id' => ['old' => null, 'new' => $karim->id, 'old_label' => null, 'new_label' => $karim->fullname]],
+            TransactionRevision::where('transaction_id', $unlinked->id)->sole()->diff,
+        );
+    }
+
+    private function player(string $membershipId, string $firstname, string $lastname): Player
+    {
+        return Player::create([
+            'membership_id' => $membershipId, 'firstname' => $firstname, 'lastname' => $lastname,
+            'is_student' => true, 'outstanding_debt' => 0,
+        ]);
     }
 
     #[Test]

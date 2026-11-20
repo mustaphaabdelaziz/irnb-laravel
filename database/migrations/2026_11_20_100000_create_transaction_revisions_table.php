@@ -19,6 +19,10 @@ return new class extends Migration
             $table->foreignId('activity_log_id')->nullable()->constrained('activity_logs')->nullOnDelete();
             $table->json('diff');
             $table->timestamp('created_at')->nullable();
+
+            // SQLite does not index a foreign key column; the page and every
+            // transaction delete look revisions up by it.
+            $table->index('transaction_id');
         });
     }
 

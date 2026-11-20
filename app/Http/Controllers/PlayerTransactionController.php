@@ -164,11 +164,14 @@ class PlayerTransactionController extends Controller
             // Each new row points at the one it corrects. It is also still part of
             // the payment that one was taken with: the grouped receipt keeps listing it.
             if ($created !== []) {
-                Transaction::whereKey(array_map(fn (Transaction $t) => $t->id, $created))
-                    ->update(array_filter([
-                        'replaces_transaction_id' => $transaction->id,
-                        'payment_group' => $transaction->payment_group,
-                    ]));
+                $link = ['replaces_transaction_id' => $transaction->id];
+                // Only a real group: an original paid alone must not wipe the
+                // group a split correction has just given its new rows.
+                if ($transaction->payment_group) {
+                    $link['payment_group'] = $transaction->payment_group;
+                }
+
+                Transaction::whereKey(array_map(fn (Transaction $t) => $t->id, $created))->update($link);
             }
 
             // One event for the edit: the archive-and-recreate is not a

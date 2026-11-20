@@ -5,6 +5,7 @@ namespace App\Services\Finance;
 use App\Models\ActivityLog;
 use App\Models\FinanceAccount;
 use App\Models\FinanceCategory;
+use App\Models\Player;
 use App\Models\ReceiptPrint;
 use App\Models\Transaction;
 use App\Models\TransactionRevision;
@@ -42,7 +43,7 @@ final class TransactionHistory
     private const ORDER = ['recorded' => 0, 'correction' => 0, 'edited' => 1, 'printed' => 2, 'cancelled' => 3, 'replaced' => 3];
 
     /** The fields whose stored value is an id shown by its name. */
-    private const NAMED = ['finance_category_id', 'finance_account_id'];
+    private const NAMED = ['finance_category_id', 'finance_account_id', 'related_entity_id'];
 
     /** @return list<array<string, mixed>> oldest first */
     public static function entries(Transaction $transaction): array
@@ -75,7 +76,7 @@ final class TransactionHistory
                 'replaced',
                 $first->created_at,
                 $first->recordedBy,
-                self::recordingLog(self::logsFor($first))?->impersonator,
+                self::mainRowLog($first)?->impersonator,
                 links: $replacements->modelKeys(),
             );
         }
@@ -174,7 +175,7 @@ final class TransactionHistory
     /** The row itself: recorded, or recorded as the correction of another payment. */
     private static function firstEntry(Transaction $transaction, Collection $logs): array
     {
-        $log = self::recordingLog($logs);
+        $log = self::recordingLog($logs) ?? self::mainRowLog($transaction);
         $original = $transaction->replaces_transaction_id
             ? Transaction::find($transaction->replaces_transaction_id)
             : null;
@@ -202,16 +203,54 @@ final class TransactionHistory
         );
     }
 
-    /** @return Collection<int, ActivityLog> */
+    /**
+     * The transaction's own logs. A log older than the row belongs to an
+     * earlier transaction that had the same id: finance reset deletes
+     * transactions but keeps the activity log, and SQLite can reuse the id.
+     *
+     * @return Collection<int, ActivityLog>
+     */
     private static function logsFor(Transaction $transaction): Collection
     {
         return ActivityLog::query()
             ->with(['user:'.self::USER, 'impersonator:'.self::USER, 'revision'])
             ->where('subject_type', $transaction->getMorphClass())
             ->where('subject_id', $transaction->id)
+            ->when($transaction->created_at, fn ($query, $createdAt) => $query->where('occurred_at', '>=', $createdAt))
             ->orderBy('occurred_at')
             ->orderBy('id')
             ->get();
+    }
+
+    /**
+     * One request records one event, on its main row. The other rows it
+     * created (the rest of a grouped payment, the rows of a split correction)
+     * read who did it — and whether they were logged in as someone — there.
+     */
+    private static function mainRowLog(Transaction $transaction): ?ActivityLog
+    {
+        if ($transaction->replaces_transaction_id) {
+            $actions = [ActivityAction::PAYMENT_EDITED];
+            $siblings = Transaction::query()->select('id')->where('replaces_transaction_id', $transaction->replaces_transaction_id);
+        } elseif ($transaction->payment_group) {
+            $actions = [ActivityAction::PAYMENT_RECORDED, ActivityAction::TRANSACTION_RECORDED];
+            $siblings = Transaction::query()->select('id')
+                ->where('payment_group', $transaction->payment_group)
+                ->whereNull('replaces_transaction_id');
+        } else {
+            return null;
+        }
+
+        return ActivityLog::query()
+            ->with(['user:'.self::USER, 'impersonator:'.self::USER])
+            ->where('subject_type', $transaction->getMorphClass())
+            ->whereIn('subject_id', $siblings)
+            ->whereIn('action', $actions)
+            // Recorded once every row of the request exists.
+            ->when($transaction->created_at, fn ($query, $createdAt) => $query->where('occurred_at', '>=', $createdAt))
+            ->orderBy('occurred_at')
+            ->orderBy('id')
+            ->first();
     }
 
     private static function recordingLog(Collection $logs): ?ActivityLog
@@ -245,8 +284,8 @@ final class TransactionHistory
     }
 
     /**
-     * Stored diffs become display rows: a category or register is shown by
-     * its name — today's when it still exists, else the one kept at edit time.
+     * Stored diffs become display rows: a category, register or player is shown
+     * by its name — today's when it still exists, else the one kept at edit time.
      *
      * @param  list<array<string, mixed>>  $entries
      * @return list<array<string, mixed>>
@@ -285,7 +324,7 @@ final class TransactionHistory
     }
 
     /**
-     * Today's names of every category and register the entries mention: one query per kind.
+     * Today's names of every category, register and player the entries mention: one query per kind.
      *
      * @param  list<array<string, mixed>>  $entries
      * @return array<string, array<int, string>>
@@ -303,12 +342,15 @@ final class TransactionHistory
 
         $categories = $ids('finance_category_id');
         $accounts = $ids('finance_account_id');
+        $players = $ids('related_entity_id');
 
         return [
             'finance_category_id' => $categories === [] ? [] : FinanceCategory::whereIn('id', $categories)->get()
                 ->mapWithKeys(fn (FinanceCategory $category) => [$category->id => $category->localized_name])->all(),
             'finance_account_id' => $accounts === [] ? [] : FinanceAccount::with(['branch', 'category'])->whereIn('id', $accounts)->get()
                 ->mapWithKeys(fn (FinanceAccount $account) => [$account->id => FinanceAccountLabel::for($account)])->all(),
+            'related_entity_id' => $players === [] ? [] : Player::whereIn('id', $players)->get(['id', ...Player::NAME_COLUMNS])
+                ->mapWithKeys(fn (Player $player) => [$player->id => $player->fullname])->all(),
         ];
     }
 }

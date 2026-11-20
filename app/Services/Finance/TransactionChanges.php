@@ -4,6 +4,7 @@ namespace App\Services\Finance;
 
 use App\Models\FinanceAccount;
 use App\Models\FinanceCategory;
+use App\Models\Player;
 use App\Models\Transaction;
 use App\Support\FinanceAccountLabel;
 
@@ -24,6 +25,8 @@ final class TransactionChanges
         'transaction_type' => 'text',
         'finance_category_id' => 'id',
         'finance_account_id' => 'id',
+        // The linked player: "player X" or "no player".
+        'related_entity_id' => 'id',
         'payment_method' => 'text',
         'payment_account' => 'text',
         'payment_ccp_key' => 'text',
@@ -41,6 +44,10 @@ final class TransactionChanges
 
         foreach (self::FIELDS as $field => $kind) {
             $raw = $transaction->getAttribute($field);
+            // A link counts only when it points at a player.
+            if ($field === 'related_entity_id' && $transaction->related_entity_type !== 'Player') {
+                $raw = null;
+            }
             $empty = $raw === null || $raw === '';
 
             $values[$field] = match ($kind) {
@@ -78,8 +85,8 @@ final class TransactionChanges
     }
 
     /**
-     * Names the category and register on both sides, as they are called now:
-     * the history can still say which one it was after it is deleted.
+     * Names the category, register and player on both sides, as they are
+     * called now: the history can still say which one it was after it is deleted.
      *
      * @param  array<string, array<string, mixed>>  $changes
      * @return array<string, array<string, mixed>>
@@ -101,6 +108,14 @@ final class TransactionChanges
                 ->mapWithKeys(fn (FinanceAccount $account) => [$account->id => FinanceAccountLabel::for($account)]);
 
             $changes['finance_account_id'] = self::labelled($changes['finance_account_id'], $names->all());
+        }
+
+        if (isset($changes['related_entity_id'])) {
+            $names = Player::whereIn('id', self::ids($changes['related_entity_id']))
+                ->get(['id', ...Player::NAME_COLUMNS])
+                ->mapWithKeys(fn (Player $player) => [$player->id => $player->fullname]);
+
+            $changes['related_entity_id'] = self::labelled($changes['related_entity_id'], $names->all());
         }
 
         return $changes;

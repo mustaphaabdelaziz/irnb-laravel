@@ -6,6 +6,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Icon from '@/Components/Icon.vue';
 import IconButton from '@/Components/IconButton.vue';
 import InputError from '@/Components/InputError.vue';
+import GroupsCard from '@/Pages/Attendance/Partials/GroupsCard.vue';
 import { categoriesForBranch } from '@/lib/categoryPicker';
 import { localToday } from '@/lib/localDate';
 
@@ -13,6 +14,8 @@ const props = defineProps({
     branches: { type: Array, default: () => [] },
     categories: { type: Array, default: () => [] },
     schedules: { type: Array, default: () => [] },
+    groups: { type: Array, default: () => [] }, // [{ id, branch_id, category_id, name, key, members, in_use }]
+    groupRosters: { type: [Object, Array], default: () => ({}) }, // [] when there is no group
     closures: { type: Array, default: () => [] },
     targets: { type: Array, default: () => [] },
     seasons: { type: Array, default: () => [] },
@@ -31,6 +34,7 @@ const today = localToday();
 const weekdayName = (n) => new Date(Date.UTC(2024, 0, n)).toLocaleDateString(lang.value, { weekday: 'long', timeZone: 'UTC' });
 const branchName = (id) => props.branches.find((b) => b.id === id)?.name ?? '';
 const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? '';
+const groupName = (id) => props.groups.find((g) => g.id === id)?.name ?? '';
 
 const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900';
 const card = 'rounded-xl bg-white p-4 ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800';
@@ -40,16 +44,25 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
 // ---- Weekly schedule ----
 const editingId = ref(null);
 const firstOf = (branchId) => categoriesForBranch(props.categories, branchId)[0]?.id ?? null;
-const scheduleForm = useForm({ branch_id: props.branches[0]?.id ?? null, category_id: firstOf(props.branches[0]?.id ?? null), weekday: 1, start_time: '18:00', end_time: '19:30', valid_from: today, valid_to: '' });
+const scheduleForm = useForm({ branch_id: props.branches[0]?.id ?? null, category_id: firstOf(props.branches[0]?.id ?? null), group_id: null, weekday: 1, start_time: '18:00', end_time: '19:30', valid_from: today, valid_to: '' });
 const scheduleCategories = computed(() => categoriesForBranch(props.categories, scheduleForm.branch_id, [scheduleForm.category_id]));
+// The groups of the chosen branch + category; none = the select is not shown.
+const scheduleGroups = computed(() => props.groups.filter((g) => (g.branch_id ?? null) === (scheduleForm.branch_id ?? null) && g.category_id === scheduleForm.category_id));
 watch(() => scheduleForm.branch_id, (branchId) => {
     if (!categoriesForBranch(props.categories, branchId).some((c) => c.id === scheduleForm.category_id)) scheduleForm.category_id = firstOf(branchId);
+});
+// A group belongs to one branch + category: another choice drops it.
+watch(() => [scheduleForm.branch_id, scheduleForm.category_id], () => {
+    if (!scheduleGroups.value.some((g) => g.id === scheduleForm.group_id)) scheduleForm.group_id = null;
 });
 function editSchedule(s) {
     editingId.value = s.id;
     Object.assign(scheduleForm, { branch_id: s.branch_id, category_id: s.category_id, weekday: s.weekday, start_time: s.start_time, end_time: s.end_time, valid_from: s.valid_from, valid_to: s.valid_to ?? '' });
-    // The branch watch runs after both are set; keep a stored category selectable.
-    nextTick(() => { scheduleForm.category_id = s.category_id; });
+    // The watches run after the fields are set; keep a stored category selectable, then its group.
+    nextTick(() => {
+        scheduleForm.category_id = s.category_id;
+        nextTick(() => { scheduleForm.group_id = s.group_id ?? null; });
+    });
 }
 function resetSchedule() {
     editingId.value = null;
@@ -58,7 +71,7 @@ function resetSchedule() {
 }
 function submitSchedule() {
     const opts = { preserveScroll: true, onSuccess: resetSchedule };
-    scheduleForm.transform((d) => ({ ...d, valid_to: d.valid_to || null }));
+    scheduleForm.transform((d) => ({ ...d, group_id: d.group_id || null, valid_to: d.valid_to || null }));
     editingId.value ? scheduleForm.put(route('attendance.schedules.update', editingId.value), opts) : scheduleForm.post(route('attendance.schedules.store'), opts);
 }
 function destroy(name, id) {
@@ -153,6 +166,9 @@ function destroyCustom(s) {
         </template>
 
         <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <!-- Training groups -->
+            <GroupsCard class="lg:col-span-2" :branches="branches" :categories="categories" :groups="groups" :rosters="groupRosters" />
+
             <!-- Weekly schedule -->
             <section data-help="set-schedules" :class="[card, 'lg:col-span-2']">
                 <h2 class="mb-3 font-bold text-slate-900 dark:text-slate-100">{{ t('att.schedules') }}</h2>
@@ -163,6 +179,12 @@ function destroyCustom(s) {
                     <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.category') }}
                         <select v-model="scheduleForm.category_id" :class="[input, 'block']"><option v-for="c in scheduleCategories" :key="c.id" :value="c.id">{{ c.name }}</option></select>
                     </label>
+                    <label v-if="scheduleGroups.length" class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.group') }}
+                        <select v-model="scheduleForm.group_id" :class="[input, 'block']">
+                            <option :value="null">{{ t('att.group_whole') }}</option>
+                            <option v-for="g in scheduleGroups" :key="g.id" :value="g.id">{{ g.name }}</option>
+                        </select>
+                    </label>
                     <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.weekday') }}
                         <select v-model="scheduleForm.weekday" :class="[input, 'block']"><option v-for="n in 7" :key="n" :value="n">{{ weekdayName(n) }}</option></select>
                     </label>
@@ -172,12 +194,12 @@ function destroyCustom(s) {
                     <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.valid_to') }}<input v-model="scheduleForm.valid_to" type="date" :class="[input, 'block']" /></label>
                     <button data-help="set-schedule-add" type="submit" :disabled="scheduleForm.processing" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">{{ editingId ? t('att.save') : t('att.add') }}</button>
                     <button v-if="editingId" type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:ring-slate-700 dark:text-slate-400" @click="resetSchedule">{{ t('att.close') }}</button>
-                    <div class="w-full"><InputError v-for="(e, k) in scheduleForm.errors" :key="k" :message="e" /></div>
+                    <div class="w-full"><InputError v-for="(e, k) in scheduleForm.errors" :key="k" :message="tr(e)" /></div>
                 </form>
                 <table class="w-full text-sm">
                     <tbody>
                         <tr v-for="s in schedules" :key="s.id" class="border-t border-slate-100 dark:border-slate-800">
-                            <td class="py-2 font-medium">{{ [branchName(s.branch_id), categoryName(s.category_id)].filter(Boolean).join(' · ') }}</td>
+                            <td class="py-2 font-medium">{{ [branchName(s.branch_id), categoryName(s.category_id), groupName(s.group_id)].filter(Boolean).join(' · ') }}</td>
                             <td>{{ weekdayName(s.weekday) }}</td>
                             <td dir="ltr" class="text-start">{{ s.start_time }}–{{ s.end_time }}</td>
                             <td class="text-slate-500 dark:text-slate-400">{{ s.valid_from }} → {{ s.valid_to ?? '…' }}</td>

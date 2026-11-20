@@ -1,6 +1,41 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cardFromRegistration, cardPayload, newCard, withFreshIds, withoutCard } from '../../resources/js/lib/registrationCards.js';
+import { cardFromRegistration, cardPayload, newCard, statusChanged, withFreshIds, withoutCard } from '../../resources/js/lib/registrationCards.js';
+
+test('a saved card remembers the status it was opened with and starts unchanged', () => {
+    const card = cardFromRegistration({ branch_id: 1, status_id: 4 });
+    assert.equal(card.saved_status_id, 4);
+    assert.equal(card.status_changed_on, '');
+    assert.equal(card.status_note, '');
+    assert.equal(statusChanged(card), false);
+    card.status_id = '3';
+    assert.equal(statusChanged(card), true);
+});
+
+test('a new card never counts as a status change', () => {
+    const card = newCard(1, {}, true, 4);
+    assert.equal(statusChanged(card), false);
+});
+
+test('a changed status sends its date and note, and a departure takes that date as the leave date', () => {
+    const card = { ...cardFromRegistration({ branch_id: 1, status_id: 4 }), status_id: 3, status_changed_on: '2025-06-15', status_note: 'moved', left_at: '2020-01-01' };
+    const payload = cardPayload(card, 3);
+    assert.equal(payload.status_changed_on, '2025-06-15');
+    assert.equal(payload.status_note, 'moved');
+    assert.equal(payload.left_at, '2025-06-15');
+
+    const other = cardPayload({ ...card, status_id: 5, status_note: '' }, 3);
+    assert.equal(other.status_changed_on, '2025-06-15');
+    assert.equal(other.status_note, null);
+    assert.equal(other.left_at, null);
+});
+
+test('an unchanged status sends neither a date of change nor a note', () => {
+    const payload = cardPayload({ ...cardFromRegistration({ branch_id: 1, status_id: 3, left_at: '2025-06-15' }), status_note: 'x' }, 3);
+    assert.equal('status_changed_on' in payload, false);
+    assert.equal('status_note' in payload, false);
+    assert.equal(payload.left_at, '2025-06-15');
+});
 
 test('an existing registration keeps its plain date and its branch\'s other positions', () => {
     const card = cardFromRegistration(

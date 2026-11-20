@@ -24,9 +24,18 @@ export function cardFromRegistration(registration, otherPositions = [], isFirst 
         other_position_ids: otherPositionsFor(registration.branch_id, otherPositions, isFirst),
         licence_number: registration.licence_number || '',
         status_id: registration.status_id || '',
+        // The status the form opened with: changing it asks for a date and a note.
+        saved_status_id: registration.status_id || '',
+        status_changed_on: '',
+        status_note: '',
         left_at: registration.left_at || '',
         sporting_status_id: registration.sporting_status_id || '',
     };
+}
+
+/** A saved card whose status differs from the one it was opened with. */
+export function statusChanged(card) {
+    return card.is_new === false && String(card.status_id || '') !== String(card.saved_status_id || '');
 }
 
 const hasNoBranch = (position) => position.branch_id === null || position.branch_id === undefined;
@@ -55,6 +64,9 @@ export function newCard(branchId, player = {}, isFirst = false, defaultStatusId 
             .map((position) => position.id),
         licence_number: isFirst ? (player.licence_number || '') : '',
         status_id: isFirst ? (player.status_id || defaultStatusId) : defaultStatusId,
+        saved_status_id: '',
+        status_changed_on: '',
+        status_note: '',
         left_at: isFirst ? (player.left_at || '') : '',
         sporting_status_id: '',
     };
@@ -85,7 +97,8 @@ export function withoutCard(cards, id, positions = []) {
 export function cardPayload(card, leftStatusId = null) {
     const isLeft = leftStatusId !== null && leftStatusId !== undefined
         && Number(card.status_id) === Number(leftStatusId);
-    return {
+    const changing = statusChanged(card);
+    const payload = {
         branch_id: card.branch_id,
         join_date: card.join_date || null,
         category_id: card.category_id || null,
@@ -93,9 +106,15 @@ export function cardPayload(card, leftStatusId = null) {
         other_position_ids: card.other_position_ids?.length ? card.other_position_ids : '',
         licence_number: card.licence_number || null,
         status_id: card.status_id || null,
-        left_at: isLeft ? (card.left_at || null) : null,
+        // Leaving now: the leave date is the date of the change.
+        left_at: isLeft ? ((changing ? card.status_changed_on : card.left_at) || null) : null,
         sporting_status_id: card.sporting_status_id || null,
     };
+    if (changing) {
+        payload.status_changed_on = card.status_changed_on || null;
+        payload.status_note = card.status_note || null;
+    }
+    return payload;
 }
 
 /**

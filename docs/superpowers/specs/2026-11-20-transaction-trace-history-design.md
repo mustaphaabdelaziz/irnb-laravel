@@ -61,15 +61,21 @@ without a database query.
 `diff` shape: `{ "<field>": { "old": …, "new": … } }`.
 
 Tracked fields: `title`, `amount`, `transaction_date`, `transaction_type`,
-`finance_category_id`, `finance_account_id`, `payment_method`,
-`payment_account`, `payment_ccp_key`, `payment_bank_name`, `payment_holder`,
-`payment_reference`, `status`, `description`.
+`finance_category_id`, `finance_account_id`, `related_entity_id` (the linked
+player), `payment_method`, `payment_account`, `payment_ccp_key`,
+`payment_bank_name`, `payment_holder`, `payment_reference`, `status`,
+`description`.
 
 Special cases:
 
 - `finance_category_id` and `finance_account_id` also store `old_label` and
   `new_label` (the name at edit time). The page shows the live localized name
   while the row exists and the stored label once it is deleted.
+- `related_entity_id` is the linked player: its value counts only when
+  `related_entity_type` is `Player`, otherwise it is null ("player X" or "no
+  player"). It also stores `old_label` and `new_label` (the player's
+  `fullname` at edit time); the page shows the live `fullname` while the
+  player exists, else the stored label, else `#id`.
 - A replaced receipt file is recorded as `"receipt": { "replaced": true }` —
   never a file name.
 - `transaction_date` is compared and stored by day (`Y-m-d`).
@@ -134,7 +140,7 @@ Sources:
 
 | Entry | Built from |
 |---|---|
-| `recorded` | The row itself: `created_at` + `recordedBy`. The impersonator comes from the matching log event (`transaction_recorded`, `payment_recorded`, `payment_edited`) when one exists. Imported rows and grouped-payment siblings have no log event and still get this line. |
+| `recorded` | The row itself: `created_at` + `recordedBy`. The impersonator comes from the matching log event (`transaction_recorded`, `payment_recorded`, `payment_edited`) when one exists. Imported rows and grouped-payment siblings have no log event of their own and still get this line; a sibling reads the impersonator from its request's main row (see below). |
 | `correction` | Replaces `recorded` when `replaces_transaction_id` is set. Links to the original. When the original has exactly one replacement, `changes` lists amount, payment method, register and description compared with it; a split into several rows gets the link only. |
 | `edited` | Each `transaction_updated` log on the transaction, with its revision's changes. Logs from before this feature have no revision: shown as edited, with user and time, no detail. |
 | `cancelled` | Each `transaction_cancelled` log on the transaction. |
@@ -145,8 +151,22 @@ Impersonation: the log stores the account acted as in `user_id` and the admin
 in `impersonator_id`. The entry's `user` is the admin, `as_user` the account —
 shown as «{admin} بصفة {account}».
 
+Only logs with `occurred_at >= created_at` of the transaction are its own:
+finance reset deletes transactions but keeps `activity_logs`, and SQLite can
+reuse an id, so an older log belongs to an earlier row with the same id.
+Recorded logs are never older than their row (live events are written after
+the row is saved; the activity backfill dated them at the row's `created_at`).
+
+Main-row fallback: a request records one event, on its main row. A row with no
+recording log of its own reads it from the request's main row — when
+`replaces_transaction_id` is set, the `payment_edited` log whose subject has the
+same `replaces_transaction_id`; otherwise, when `payment_group` is set, the
+`payment_recorded` / `transaction_recorded` log whose subject is a row of that
+group with no `replaces_transaction_id`. One extra query, only for rows without
+their own log. The `replaced` entry reads its impersonator the same way.
+
 The service loads the logs with their revision and users in one query each (no
-N+1), and resolves category and register names in one query per kind.
+N+1), and resolves category, register and player names in one query per kind.
 
 `show()` also passes:
 
@@ -209,6 +229,8 @@ Formatting:
 - Edits made before this ships show as «عُدّلت» with user and time, no values.
 - Past player-payment corrections show no link between old and new.
 - Receipt prints do not record an impersonator; print lines show the account.
+- A row with no log of its own and no group or correction link (an imported
+  row) shows the account when the recording was made logged in as someone.
 
 ## Out of scope
 

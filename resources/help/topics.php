@@ -10,7 +10,7 @@ return [
         'players' => ['icon' => 'players', 'module' => 'players', 'articles' => ['add-player', 'find-player', 'player-page', 'edit-player', 'documents', 'branch-registrations']],
         'subscriptions' => ['icon' => 'subscriptions', 'module' => 'subscriptions', 'articles' => ['create-annual', 'create-exceptional', 'assign-players', 'take-payment', 'fix-payment', 'previous-debt', 'receipts']],
         'attendance' => ['icon' => 'calendar', 'module' => 'attendance', 'articles' => ['take-attendance', 'add-session', 'month-grid', 'cancel-delete-session', 'timetable', 'codes-rules', 'stats-ranking', 'alerts-injuries']],
-        'finance' => ['icon' => 'money', 'module' => 'transactions', 'articles' => ['record-transaction', 'find-export-import', 'cancel-transaction', 'move-money', 'caisses', 'season', 'dashboard-report']],
+        'finance' => ['icon' => 'money', 'module' => 'transactions', 'articles' => ['record-transaction', 'find-export-import', 'cancel-transaction', 'transaction-history', 'move-money', 'caisses', 'season', 'dashboard-report']],
         'settings' => ['icon' => 'settings', 'module' => null, 'articles' => ['club-identity', 'add-branch', 'add-category', 'branch-documents', 'create-user', 'roles-rights', 'manage-users', 'log-in-as-activity']],
         'equipment' => ['icon' => 'equipment', 'module' => 'equipment', 'articles' => ['equipment-lists', 'add-catalog', 'receive-stock', 'lend-assign', 'return-equipment', 'damage-repair-lost', 'import-export', 'stock-take', 'inventory-report']],
         'board' => ['icon' => 'board', 'module' => 'board', 'articles' => ['roles-committees', 'terms', 'add-member', 'committee-seats', 'former-remove-member', 'schedule-meeting', 'meeting-minutes', 'cancel-delete-meeting']],

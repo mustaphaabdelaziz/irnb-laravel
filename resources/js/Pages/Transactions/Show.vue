@@ -73,9 +73,9 @@ const paymentDetails = computed(() => [
         <div class="space-y-6">
             <!-- Cancelled, or corrected and replaced: said first, with who and when -->
             <div v-if="cancellation" data-help="tx-cancelled" class="rounded-2xl bg-rose-50 p-4 text-sm text-rose-800 ring-1 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-200 dark:ring-rose-500/30">
-                <p class="font-semibold">{{ cancellation.replaced_by.length ? t('tx_show.corrected_banner') : t('tx_show.cancelled_banner') }}</p>
+                <p class="font-semibold">{{ cancellation.replaced_by?.length ? t('tx_show.corrected_banner') : t('tx_show.cancelled_banner') }}</p>
                 <p class="mt-1"><bdi>{{ actorLabel(t, cancellation) }}</bdi> · <bdi>{{ formatDateTime(cancellation.at) }}</bdi></p>
-                <p v-if="cancellation.replaced_by.length" class="mt-1">
+                <p v-if="cancellation.replaced_by?.length" class="mt-1">
                     {{ t('tx_show.corrected_by') }}
                     <Link v-for="id in cancellation.replaced_by" :key="id" :href="route('transactions.show', id)" class="ms-1 font-semibold underline" dir="ltr">#{{ id }}</Link>
                 </p>
@@ -136,11 +136,12 @@ const paymentDetails = computed(() => [
                     </div>
                     <div v-for="row in paymentDetails" :key="row.label">
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ row.label }}</p>
-                        <p class="mt-1 text-sm text-slate-900 [overflow-wrap:anywhere] dark:text-slate-100">{{ row.value }}</p>
+                        <!-- Isolated: an account number's digit groups keep their order in Arabic. -->
+                        <p class="mt-1 text-sm text-slate-900 [overflow-wrap:anywhere] dark:text-slate-100"><bdi>{{ row.value }}</bdi></p>
                     </div>
                     <div v-if="transaction.receipt_url">
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('tx_show.attached_receipt') }}</p>
-                        <a :href="transaction.receipt_url" target="_blank" class="mt-1 inline-block text-sm font-medium text-primary-600 hover:underline dark:text-primary-300">{{ t('view') }} ↗</a>
+                        <a :href="transaction.receipt_url" target="_blank" rel="noopener" class="mt-1 inline-block text-sm font-medium text-primary-600 hover:underline dark:text-primary-300">{{ t('view') }} <span aria-hidden="true">↗</span></a>
                     </div>
                     <div v-if="transaction.description" class="sm:col-span-2 lg:col-span-3">
                         <p class="text-xs font-medium uppercase text-slate-500 dark:text-slate-400">{{ t('description') }}</p>

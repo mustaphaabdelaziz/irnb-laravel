@@ -32,6 +32,7 @@ const fieldLabel = (field) => ({
     transaction_type: t('type'),
     finance_category_id: t('category'),
     finance_account_id: t('tx_history.field_register'),
+    related_entity_id: t('receipts.field.player_id'),
     payment_method: t('payment_method'),
     payment_account: t('tx_history.field_account'),
     payment_ccp_key: t('ccp_key'),
@@ -43,8 +44,8 @@ const fieldLabel = (field) => ({
     receipt: t('tx_show.attached_receipt'),
 }[field] ?? field);
 
-// A stored value as the page writes it everywhere else. Categories and
-// registers arrive already named by the server.
+// A stored value as the page writes it everywhere else. Categories,
+// registers and players arrive already named by the server.
 const shown = (field, value) => {
     if (value === null || value === undefined || value === '') return '—';
 
@@ -58,7 +59,8 @@ const shown = (field, value) => {
     }
 };
 
-// Amounts keep their digit order in Arabic too.
+// Amounts keep their digit order in Arabic too; every other value is
+// isolated (<bdi>) so an account number's digit groups stay in order.
 const isNumber = (field) => field === 'amount';
 </script>
 
@@ -84,16 +86,16 @@ const isNumber = (field) => field === 'amount';
                 <span v-if="entry.print" class="font-mono text-xs text-slate-500 dark:text-slate-400" dir="ltr">{{ entry.print.code }}</span>
             </div>
 
-            <div v-if="entry.changes.length" class="mt-2 space-y-1 rounded-lg bg-slate-50 px-3 py-2 text-xs dark:bg-slate-950">
+            <div v-if="entry.changes?.length" class="mt-2 space-y-1 rounded-lg bg-slate-50 px-3 py-2 text-xs dark:bg-slate-950">
                 <div v-for="change in entry.changes" :key="change.field" class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                     <span class="font-medium text-slate-500 dark:text-slate-400">{{ fieldLabel(change.field) }}</span>
                     <template v-if="change.field === 'receipt'">
                         <span class="text-slate-900 dark:text-slate-100">{{ t('tx_history.receipt_replaced') }}</span>
                     </template>
                     <template v-else>
-                        <span class="text-slate-500 line-through [overflow-wrap:anywhere] dark:text-slate-400" :dir="isNumber(change.field) ? 'ltr' : null">{{ shown(change.field, change.old) }}</span>
+                        <span class="text-slate-500 line-through [overflow-wrap:anywhere] dark:text-slate-400" :dir="isNumber(change.field) ? 'ltr' : null"><template v-if="isNumber(change.field)">{{ shown(change.field, change.old) }}</template><bdi v-else>{{ shown(change.field, change.old) }}</bdi></span>
                         <span aria-hidden="true" class="text-slate-400 rtl:rotate-180">→</span>
-                        <span class="font-medium text-slate-900 [overflow-wrap:anywhere] dark:text-slate-100" :dir="isNumber(change.field) ? 'ltr' : null">{{ shown(change.field, change.new) }}</span>
+                        <span class="font-medium text-slate-900 [overflow-wrap:anywhere] dark:text-slate-100" :dir="isNumber(change.field) ? 'ltr' : null"><template v-if="isNumber(change.field)">{{ shown(change.field, change.new) }}</template><bdi v-else>{{ shown(change.field, change.new) }}</bdi></span>
                     </template>
                 </div>
             </div>

@@ -2392,7 +2392,6 @@
     "receipts.format.a4": "A4",
     "receipts.format.thermal": "80mm ticket",
     "receipts.history": "Printed receipts",
-    "receipts.never_printed": "No receipt printed yet.",
     "receipts.now": "Now",
     "receipts.number": "Receipt No.",
     "receipts.on_paper": "On the paper",

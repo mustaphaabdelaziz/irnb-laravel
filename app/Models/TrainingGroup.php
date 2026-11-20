@@ -6,6 +6,7 @@ use App\Models\Concerns\SerializesClubDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 /**
  * A named group of players inside one branch + category (e.g. Swimming ·
@@ -44,6 +45,23 @@ class TrainingGroup extends Model
     public function members(): HasMany
     {
         return $this->hasMany(TrainingGroupMember::class);
+    }
+
+    /**
+     * The groups as a picker lists them (the branch cards of the player form,
+     * the add-session and Edit dialogs), by name. With a category, only its groups.
+     *
+     * @return Collection<int, array{id: int, branch_id: ?int, category_id: int, name: string}>
+     */
+    public static function options(?int $categoryId = null): Collection
+    {
+        return static::query()
+            ->when($categoryId !== null, fn ($groups) => $groups->where('category_id', $categoryId))
+            ->orderBy('name')->orderBy('id')
+            ->get(['id', 'branch_id', 'category_id', 'name'])
+            ->toBase()
+            ->map(fn (TrainingGroup $group) => ['id' => $group->id, 'branch_id' => $group->branch_id, 'category_id' => $group->category_id, 'name' => $group->name])
+            ->values();
     }
 
     /** A schedule line or a session points at it: deleting it would change their rosters. */

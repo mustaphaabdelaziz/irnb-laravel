@@ -52,7 +52,12 @@ final class GroupMembership
         DB::transaction(function () use ($group, $playerId, $from) {
             $own = TrainingGroupMember::where('player_id', $playerId)->where('training_group_id', $group->id);
 
-            $from === null ? $own->delete() : $this->close($own->get(), $from);
+            if ($from === null) {
+                $own->delete();
+
+                return;
+            }
+            $this->close($own->get(), $from);
         });
     }
 
@@ -80,6 +85,21 @@ final class GroupMembership
             ->orderBy('id')
             ->get(['player_id', 'training_group_id'])
             ->mapWithKeys(fn (TrainingGroupMember $m) => [$m->player_id => $m->training_group_id])
+            ->all();
+    }
+
+    /**
+     * The group the player is a member of on $date, in each branch (the player
+     * form's branch cards, the player page).
+     *
+     * @return array<int, TrainingGroup> by branch id (0 = the club-wide groups)
+     */
+    public function groupsOf(int $playerId, string $date): array
+    {
+        return TrainingGroup::whereIn('id', TrainingGroupMember::where('player_id', $playerId)->activeOn($date)->select('training_group_id'))
+            ->orderBy('id')
+            ->get()
+            ->keyBy(fn (TrainingGroup $group) => (int) $group->branch_id)
             ->all();
     }
 

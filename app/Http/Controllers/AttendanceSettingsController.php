@@ -15,6 +15,7 @@ use App\Models\TrainingGroup;
 use App\Models\TrainingSchedule;
 use App\Models\TrainingSession;
 use App\Services\Attendance\AttendanceCode;
+use App\Services\Attendance\GroupBoard;
 use App\Support\AttendanceSettings;
 use App\Support\CategoryOwnership;
 use App\Support\Season;
@@ -28,9 +29,10 @@ use Inertia\Response;
 
 class AttendanceSettingsController extends Controller
 {
-    public function index(): Response
+    public function index(GroupBoard $board): Response
     {
         $current = Season::current();
+        $groups = $board->build(now()->toDateString());
 
         return Inertia::render('Attendance/Settings', [
             'categories' => Category::orderBy('id')->get()
@@ -38,6 +40,9 @@ class AttendanceSettingsController extends Controller
             'branches' => Branch::orderBy('id')->get()->map(fn (Branch $b) => ['id' => $b->id, 'name' => $b->localized_name])->values(),
             'schedules' => TrainingSchedule::orderBy('branch_id')->orderBy('category_id')->orderBy('weekday')->orderBy('start_time')
                 ->get(['id', 'branch_id', 'category_id', 'group_id', 'weekday', 'start_time', 'end_time', 'valid_from', 'valid_to']),
+            'groups' => $groups['groups'],
+            // Keyed by GroupBoard::key(). Empty, it reaches the page as [] (the Vue prop accepts both).
+            'groupRosters' => $groups['rosters'],
             'closures' => ClubClosure::orderByDesc('start_date')->get(['id', 'start_date', 'end_date', 'reason']),
             'targets' => PreseasonTarget::get(['branch_id', 'category_id', 'season_start_year', 'target_count']),
             'seasons' => collect([$current, Season::forStartYear($current->startYear + 1)])

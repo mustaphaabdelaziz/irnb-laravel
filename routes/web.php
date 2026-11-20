@@ -9,6 +9,7 @@ use App\Http\Controllers\AttendanceCalendarController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceCustomStatusController;
 use App\Http\Controllers\AttendanceGridController;
+use App\Http\Controllers\AttendanceGroupController;
 use App\Http\Controllers\AttendanceInjuryController;
 use App\Http\Controllers\AttendancePlayerController;
 use App\Http\Controllers\AttendanceRankingController;
@@ -486,6 +487,11 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
         Route::post('/attendance/schedules', [AttendanceSettingsController::class, 'storeSchedule'])->name('attendance.schedules.store');
         Route::put('/attendance/schedules/{schedule}', [AttendanceSettingsController::class, 'updateSchedule'])->name('attendance.schedules.update');
         Route::delete('/attendance/schedules/{schedule}', [AttendanceSettingsController::class, 'destroySchedule'])->name('attendance.schedules.destroy');
+        // Training groups inside a category; every write needs attendance/edit (config/permissions.php).
+        Route::post('/attendance/groups', [AttendanceGroupController::class, 'store'])->name('attendance.groups.store');
+        Route::put('/attendance/groups/{group}', [AttendanceGroupController::class, 'update'])->name('attendance.groups.update');
+        Route::delete('/attendance/groups/{group}', [AttendanceGroupController::class, 'destroy'])->name('attendance.groups.destroy');
+        Route::put('/attendance/groups/{group}/members', [AttendanceGroupController::class, 'members'])->name('attendance.groups.members.update');
         Route::post('/attendance/closures', [AttendanceSettingsController::class, 'storeClosure'])->name('attendance.closures.store');
         Route::delete('/attendance/closures/{closure}', [AttendanceSettingsController::class, 'destroyClosure'])->name('attendance.closures.destroy');
         Route::post('/attendance/preseason-targets', [AttendanceSettingsController::class, 'storeTarget'])->name('attendance.preseason-targets.store');

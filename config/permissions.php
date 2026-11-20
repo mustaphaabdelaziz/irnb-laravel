@@ -101,6 +101,10 @@ return [
         'attendance.closures.store' => ['attendance', 'edit'],
         'attendance.closures.destroy' => ['attendance', 'edit'],
         'attendance.preseason-targets.store' => ['attendance', 'edit'],
+        // Training groups decide who each session lists: settings, like the schedule lines.
+        'attendance.groups.store' => ['attendance', 'edit'],
+        'attendance.groups.destroy' => ['attendance', 'edit'],
+        'attendance.groups.members.update' => ['attendance', 'edit'],
         // Custom codes are settings too: adding or deleting one changes how every mark reads.
         'attendance.custom-statuses.store' => ['attendance', 'edit'],
         'attendance.custom-statuses.destroy' => ['attendance', 'edit'],

@@ -63,7 +63,6 @@ $routes = [
     'jobs.destroy' => ActivityAction::JOB_DELETED,
 
     // money
-    'transactions.update' => ActivityAction::TRANSACTION_UPDATED,
     'subscriptions.update' => ActivityAction::SUBSCRIPTION_UPDATED,
     'players.subscriptions.update' => ActivityAction::SUBSCRIPTION_UPDATED,
     'subscriptions.destroy' => ActivityAction::SUBSCRIPTION_DELETED,

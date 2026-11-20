@@ -10,12 +10,14 @@ use App\Models\Player;
 use App\Models\PlayerSubscription;
 use App\Models\ReceiptPrint;
 use App\Models\Transaction;
+use App\Models\TransactionRevision;
 use App\Models\WebsiteConfig;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
 use App\Services\Dashboard\ModuleStats;
 use App\Services\Finance\DefaultRegisterResolver;
 use App\Services\Finance\RecalculatePlayerDebtService;
+use App\Services\Finance\TransactionChanges;
 use App\Services\FinanceService;
 use App\Services\Storage\FileStorageService;
 use App\Services\Storage\PrivateFileStorage;
@@ -249,7 +251,31 @@ class TransactionController extends Controller
         }
 
         try {
-            $transaction->update($validated);
+            DB::transaction(function () use ($request, $transaction, $validated) {
+                $before = TransactionChanges::snapshot($transaction);
+
+                $transaction->update($validated);
+
+                $changes = TransactionChanges::between($before, TransactionChanges::snapshot($transaction));
+
+                if ($request->hasFile('receipt')) {
+                    // The fact only: file names never reach the history.
+                    $changes['receipt'] = ['replaced' => true];
+                }
+
+                // The form saved as it was: not an edit.
+                if ($changes === []) {
+                    return;
+                }
+
+                $log = ActivityRecorder::record($request->user(), ActivityAction::TRANSACTION_UPDATED, $transaction);
+
+                TransactionRevision::create([
+                    'transaction_id' => $transaction->id,
+                    'activity_log_id' => $log->id,
+                    'diff' => TransactionChanges::withLabels($changes),
+                ]);
+            });
         } catch (Throwable $e) {
             // Rejected (e.g. closed season): keep the old file, drop the new upload.
             $receipts->delete($validated['receipt_filename'] ?? null);

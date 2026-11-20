@@ -73,7 +73,7 @@ const print = () => window.print();
                             <td class="whitespace-nowrap p-2">
                                 <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full" :class="KIND_DOT[s.kind]"></span>{{ t(`att.kind.${s.kind}`) }}</span>
                             </td>
-                            <td class="p-2">{{ s.categories.map((c) => c.name).join(' · ') }}</td>
+                            <td class="p-2">{{ [s.categories.map((c) => c.name).join(' · '), s.group].filter(Boolean).join(' · ') }}</td>
                             <td class="max-w-[16rem] truncate p-2 print:max-w-none print:overflow-visible print:whitespace-normal" :title="s.title ?? ''">{{ s.title }}</td>
                             <td class="whitespace-nowrap p-2" :class="stateClass[s.state]" :title="s.cancel_reason ?? ''">{{ t(`att.state.${s.state}`) }}</td>
                             <td class="whitespace-nowrap p-2 text-end" :title="summaryText(s.summary)">{{ s.marked ? t('att.marked', { n: s.marked }) : '—' }}</td>

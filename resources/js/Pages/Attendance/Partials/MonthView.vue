@@ -46,7 +46,7 @@ const chip = {
     held: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300',
     cancelled: 'bg-slate-200 text-slate-500 line-through dark:bg-slate-700 dark:text-slate-400',
 };
-const chipTitle = (s) => [t(`att.kind.${s.kind}`), t(`att.state.${s.state}`), s.categories.map((c) => c.name).join(', '), s.title, summaryText(s.summary)]
+const chipTitle = (s) => [t(`att.kind.${s.kind}`), t(`att.state.${s.state}`), s.categories.map((c) => c.name).join(', '), s.group, s.title, summaryText(s.summary)]
     .filter(Boolean).join(' · ');
 
 const preseasonLabel = computed(() => {
@@ -92,6 +92,7 @@ const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg
                         <span class="h-1.5 w-1.5 shrink-0 rounded-full" :class="KIND_DOT[s.kind]"></span>
                         <span dir="ltr">{{ s.start_time }}</span>
                         <span v-if="s.categories.length > 1" class="shrink-0 rounded bg-amber-200/70 px-1 text-[10px] text-amber-900 dark:bg-amber-500/30 dark:text-amber-100">+{{ s.categories.length - 1 }}</span>
+                        <span v-if="s.group" class="min-w-0 truncate">{{ s.group }}</span>
                         <span v-if="s.title" class="min-w-0 truncate">{{ s.title }}</span>
                         <span v-if="s.state === 'held'" class="ms-auto">✓</span>
                     </span>

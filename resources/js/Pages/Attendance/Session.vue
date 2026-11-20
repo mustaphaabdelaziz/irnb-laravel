@@ -180,7 +180,7 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                     <div>
                         <h1 class="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-slate-100">
                             <img v-if="session.branch?.logo_url" :src="session.branch.logo_url" alt="" class="h-6 w-6 rounded object-contain" />
-                            <span>{{ [session.branch?.name, session.category].filter(Boolean).join(' · ') }} · {{ t(`att.kind.${session.kind}`) }}</span>
+                            <span>{{ [session.branch?.name, session.category, session.group].filter(Boolean).join(' · ') }} · {{ t(`att.kind.${session.kind}`) }}</span>
                         </h1>
                         <p class="text-sm capitalize text-slate-500 dark:text-slate-400">{{ dateLabel }} · <span dir="ltr">{{ session.start_time }}–{{ session.end_time }}</span> · <span data-help="att-state">{{ t(`att.state.${session.state}`) }}</span></p>
                         <p v-if="session.moved_from" class="text-xs text-slate-400">{{ t('att.moved_from', { date: session.moved_from }) }}</p>

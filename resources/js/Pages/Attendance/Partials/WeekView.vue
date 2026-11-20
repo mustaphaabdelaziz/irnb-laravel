@@ -65,7 +65,7 @@ function blockStyle({ session, lane, lanes }) {
     const tall = Math.max(22, ((toMinutes(session.end_time) - toMinutes(session.start_time)) / 60) * HOUR_PX);
     return { top: `${top}px`, height: `${tall}px`, insetInlineStart: `${(lane * 100) / lanes}%`, width: `calc(${100 / lanes}% - 2px)` };
 }
-const blockTitle = (s) => [`${s.start_time}–${s.end_time}`, t(`att.kind.${s.kind}`), t(`att.state.${s.state}`), s.categories.map((c) => c.name).join(', '), s.title]
+const blockTitle = (s) => [`${s.start_time}–${s.end_time}`, t(`att.kind.${s.kind}`), t(`att.state.${s.state}`), s.categories.map((c) => c.name).join(', '), s.group, s.title]
     .filter(Boolean).join(' · ');
 const go = (date) => emit('navigate', { date });
 </script>
@@ -108,7 +108,7 @@ const go = (date) => emit('navigate', { date });
                         :title="blockTitle(b.session)"
                     >
                         <div class="font-semibold"><span dir="ltr">{{ b.session.start_time }}–{{ b.session.end_time }}</span><span v-if="b.session.state === 'held'" class="ms-1">✓</span></div>
-                        <div class="truncate">{{ b.session.categories.map((c) => c.name).join(' · ') }}</div>
+                        <div class="truncate">{{ [b.session.categories.map((c) => c.name).join(' · '), b.session.group].filter(Boolean).join(' · ') }}</div>
                         <div v-if="b.session.title" class="truncate opacity-80">{{ b.session.title }}</div>
                     </Link>
                 </div>

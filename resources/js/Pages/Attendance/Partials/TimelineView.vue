@@ -118,7 +118,7 @@ watch(() => [props.from, props.to], () => {
                                     <span>{{ t(`att.kind.${e.kind}`) }}</span>
                                     <span class="ms-auto">{{ t(`att.state.${e.state}`) }}</span>
                                 </div>
-                                <div class="mt-1 font-semibold text-slate-900 dark:text-slate-100" :class="{ 'line-through': e.state === 'cancelled' }">{{ e.categories.map((c) => c.name).join(' · ') }}</div>
+                                <div class="mt-1 font-semibold text-slate-900 dark:text-slate-100" :class="{ 'line-through': e.state === 'cancelled' }">{{ [e.categories.map((c) => c.name).join(' · '), e.group].filter(Boolean).join(' · ') }}</div>
                                 <div v-if="e.title" class="text-sm text-slate-600 dark:text-slate-300">{{ e.title }}</div>
                                 <div v-if="e.state === 'held' && e.summary" class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-600 dark:text-slate-300">
                                     <span v-for="p in summaryParts(e)" :key="p.status" class="inline-flex items-center gap-1">

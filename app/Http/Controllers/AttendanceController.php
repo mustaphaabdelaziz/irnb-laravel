@@ -42,6 +42,8 @@ class AttendanceController extends Controller
                 'kind' => $session->kind->value, 'state' => $session->state->value, 'cancel_reason' => $session->cancel_reason,
                 'moved_from' => $session->moved_from, 'coach' => $session->coach, 'title' => $session->title, 'notes' => $session->notes,
                 'category' => $categories->implode(' · '),
+                // The training group whose members make the list; null = the whole category.
+                'group' => $session->group?->name,
                 'category_id' => $session->category_id,
                 'branch_id' => $session->branch_id,
                 'roster_status_ids' => $roster->statusIdsFor($session),

@@ -68,6 +68,7 @@ use App\Http\Controllers\PlayerImportController;
 use App\Http\Controllers\PlayerPrintController;
 use App\Http\Controllers\PlayerStatusController;
 use App\Http\Controllers\RegistrationController;
+use App\Http\Controllers\RegistrationStatusChangeController;
 use App\Http\Controllers\PlayerSubscriptionController;
 use App\Http\Controllers\PlayerTransactionController;
 use App\Http\Controllers\PositionController;
@@ -215,6 +216,10 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
     // Players
     Route::resource('players', PlayerController::class);
     Route::delete('/players/{player}/registrations/{registration}', [RegistrationController::class, 'destroy'])->name('players.registrations.destroy');
+    // Status history lines typed by hand: Players → edit for all three (config/permissions.php).
+    Route::post('/players/{player}/registrations/{registration}/status-changes', [RegistrationStatusChangeController::class, 'store'])->name('players.status-changes.store');
+    Route::put('/players/{player}/status-changes/{statusChange}', [RegistrationStatusChangeController::class, 'update'])->name('players.status-changes.update');
+    Route::delete('/players/{player}/status-changes/{statusChange}', [RegistrationStatusChangeController::class, 'destroy'])->name('players.status-changes.destroy');
     Route::put('/players/{player}/restore', [PlayerController::class, 'restore'])->name('players.restore');
     Route::delete('/players/{player}/force', [PlayerController::class, 'forceDelete'])->name('players.forceDelete');
 

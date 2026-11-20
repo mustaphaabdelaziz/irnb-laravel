@@ -66,6 +66,9 @@ return [
         // deriveAction()'s default and is only gated as 'edit'.
         'jobs.merge' => ['jobs', 'delete'],
         'players.transactions.update' => ['players', 'edit'],
+        // Status history lines are part of editing a player, whatever the verb.
+        'players.status-changes.store' => ['players', 'edit'],
+        'players.status-changes.destroy' => ['players', 'edit'],
         'players.transactions.destroy' => ['players', 'delete'],
         'players.card' => ['players', 'view'],
         // "academic-report" is not a view verb, so without this printing would need edit rights.

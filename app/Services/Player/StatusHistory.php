@@ -6,6 +6,8 @@ use App\Models\BranchRegistration;
 use App\Models\Player;
 use App\Models\RegistrationStatusChange;
 use App\Models\User;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The past statuses of a branch registration: one dated line per change. The
@@ -70,6 +72,82 @@ class StatusHistory
             ->where('to_status_id', (int) $registration->status_id)
             ->whereDate('changed_on', substr($oldRaw, 0, 10))
             ->update(['changed_on' => $new, 'updated_at' => now()]);
+    }
+
+    /**
+     * Correct a line by hand: date and note on any line, the statuses on a manual one.
+     * The leave date and its line are one fact: moving the line of the current
+     * departure moves the registration's leave date with it.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function correct(RegistrationStatusChange $line, array $data): void
+    {
+        DB::transaction(function () use ($line, $data) {
+            $oldDay = $line->changed_on->toDateString();
+            $line->changed_on = $data['changed_on'];
+            if (array_key_exists('note', $data)) {
+                $line->note = self::cleanNote($data['note']);
+            }
+            if ($line->origin === RegistrationStatusChange::ORIGIN_MANUAL) {
+                if (array_key_exists('to_status_id', $data)) {
+                    $line->to_status_id = $data['to_status_id'];
+                }
+                if (array_key_exists('from_status_id', $data)) {
+                    $line->from_status_id = $data['from_status_id'];
+                }
+            }
+            $line->save();
+
+            $registration = $line->registration;
+            if (Player::isLeftStatus($registration->status_id)
+                && (int) $line->to_status_id === (int) $registration->status_id
+                && $registration->left_at?->toDateString() === $oldDay) {
+                $registration->forceFill(['left_at' => $line->changed_on->toDateString()])->saveQuietly();
+                app(RegistrationService::class)->refreshMirror($registration->player);
+            }
+        });
+    }
+
+    /**
+     * Give each registration its lines for the player page, as `status_history`,
+     * in one query. Users go out as a name only.
+     *
+     * @param  Collection<int, BranchRegistration>  $registrations
+     */
+    public function attachTo(Collection $registrations): void
+    {
+        $lines = RegistrationStatusChange::query()
+            ->whereIn('branch_registration_id', $registrations->modelKeys())
+            ->with(['fromStatus', 'toStatus', 'user:id,name,firstname,lastname'])
+            ->orderBy('changed_on')
+            ->orderBy('id')
+            ->get()
+            ->groupBy('branch_registration_id');
+
+        $registrations->each(fn (BranchRegistration $registration) => $registration->setAttribute(
+            'status_history',
+            ($lines[$registration->id] ?? collect())->map(fn (RegistrationStatusChange $line) => $this->present($line))->values()->all(),
+        ));
+    }
+
+    /** @return array<string, mixed> */
+    private function present(RegistrationStatusChange $line): array
+    {
+        $status = fn ($s) => $s === null ? null : ['id' => $s->id, 'code' => $s->code, 'localized_name' => $s->localized_name];
+
+        return [
+            'id' => $line->id,
+            'from_status_id' => $line->from_status_id,
+            'to_status_id' => $line->to_status_id,
+            'from_status' => $status($line->fromStatus),
+            'to_status' => $status($line->toStatus),
+            'changed_on' => $line->changed_on->toDateString(),
+            'note' => $line->note,
+            'origin' => $line->origin,
+            'user' => $line->user?->fullname,
+            'recorded_at' => $line->created_at?->toIso8601String(),
+        ];
     }
 
     private static function cleanNote(?string $note): ?string

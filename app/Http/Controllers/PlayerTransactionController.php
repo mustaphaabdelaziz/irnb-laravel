@@ -161,10 +161,14 @@ class PlayerTransactionController extends Controller
                 $created = [$this->payments->playerLevel($player, $transaction->category, (float) $validated['amount'], $method, $description, $userId, $financeAccountId, $date)];
             }
 
-            // Still part of the payment it was taken with: the grouped receipt keeps listing it.
-            if ($transaction->payment_group && $created !== []) {
+            // Each new row points at the one it corrects. It is also still part of
+            // the payment that one was taken with: the grouped receipt keeps listing it.
+            if ($created !== []) {
                 Transaction::whereKey(array_map(fn (Transaction $t) => $t->id, $created))
-                    ->update(['payment_group' => $transaction->payment_group]);
+                    ->update(array_filter([
+                        'replaces_transaction_id' => $transaction->id,
+                        'payment_group' => $transaction->payment_group,
+                    ]));
             }
 
             // One event for the edit: the archive-and-recreate is not a

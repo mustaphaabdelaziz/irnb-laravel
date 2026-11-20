@@ -221,6 +221,7 @@ class MultiSubscriptionPaymentTest extends TestCase
         $replacement = Transaction::where('archived', false)->latest('id')->first();
         $this->assertNotSame($second->id, $replacement->id);
         $this->assertSame($second->payment_group, $replacement->payment_group);
+        $this->assertSame($second->id, $replacement->replaces_transaction_id);
         $this->assertCount(2, $replacement->receiptLines());
     }
 

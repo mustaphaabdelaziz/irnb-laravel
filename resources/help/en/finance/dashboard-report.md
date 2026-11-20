@@ -44,5 +44,5 @@ Go back to the top of the page. To go back up, roll the mouse wheel away from yo
 :::
 
 :::tip
-The report prints the season chosen in the buttons. Choose the season before you click the print button. The report holds income, expenses, donations, net balance, and a breakdown by category.
+The report prints the season chosen in the buttons. Choose the season before you click the print button. The report holds income, expenses, donations, season net, and a breakdown by category.
 :::

@@ -44,5 +44,5 @@ Remontez en haut de la page. Pour remonter, tournez la molette de la souris loin
 :::
 
 :::tip
-Le rapport imprime la saison choisie dans les boutons. Choisissez la saison avant de cliquer sur le bouton d'impression. Le rapport contient les revenus, les dépenses, les dons, le solde net et le détail par catégorie.
+Le rapport imprime la saison choisie dans les boutons. Choisissez la saison avant de cliquer sur le bouton d'impression. Le rapport contient les revenus, les dépenses, les dons, le net de la saison et le détail par catégorie.
 :::

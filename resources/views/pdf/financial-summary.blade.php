@@ -26,7 +26,7 @@
             <td><div class="k">{{ __('Total Income') }}</div><div class="v pos">{{ number_format($totalIncome, 2) }}</div></td>
             <td><div class="k">{{ __('Total Expense') }}</div><div class="v neg">{{ number_format($totalExpense, 2) }}</div></td>
             <td><div class="k">{{ __('Donations') }}</div><div class="v">{{ number_format($totalDonations, 2) }}</div></td>
-            <td><div class="k">{{ __('Net Balance') }}</div><div class="v {{ $netBalance >= 0 ? 'pos' : 'neg' }}">{{ number_format($netBalance, 2) }}</div></td>
+            <td><div class="k">{{ __('Season net') }}</div><div class="v {{ $netBalance >= 0 ? 'pos' : 'neg' }}">{{ number_format($netBalance, 2) }}</div></td>
         </tr>
     </table>
 

@@ -190,6 +190,14 @@ class BranchRegistration extends Pivot
         return $this->hasMany(PlayerDocument::class, 'branch_registration_id');
     }
 
+    /** The registration's past statuses, oldest first. */
+    public function statusChanges(): HasMany
+    {
+        return $this->hasMany(RegistrationStatusChange::class, 'branch_registration_id')
+            ->orderBy('changed_on')
+            ->orderBy('id');
+    }
+
     public function sportingStatus(): BelongsTo
     {
         return $this->belongsTo(SportingStatus::class);

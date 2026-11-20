@@ -57,6 +57,8 @@ final class ValidationAttributes
         'registrations.*.status_id' => 'membership_status',
         'registrations.*.left_at' => 'left_at',
         'registrations.*.sporting_status_id' => 'sporting_status',
+        'registrations.*.status_changed_on' => 'status_change.date',
+        'registrations.*.status_note' => 'status_change.note',
         'left_at' => 'left_at',
         'is_student' => 'student',
         'member_job_id' => 'job',

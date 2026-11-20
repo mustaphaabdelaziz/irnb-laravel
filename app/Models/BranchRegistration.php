@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\SerializesClubDates;
+use App\Services\Attendance\GroupMembership;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -79,6 +80,14 @@ class BranchRegistration extends Pivot
                 $registration->left_at = null;
             } elseif ($registration->left_at === null) {
                 $registration->left_at = now()->toDateString();
+            }
+        });
+
+        // A training group belongs to one category: leaving the category ends the membership
+        // the day before. One place for every writer (player form, bulk edit).
+        static::updated(function (BranchRegistration $registration) {
+            if ($registration->wasChanged('category_id')) {
+                app(GroupMembership::class)->closeInBranch((int) $registration->player_id, (int) $registration->branch_id, now()->toDateString());
             }
         });
     }

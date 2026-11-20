@@ -10,6 +10,7 @@ use App\Models\Player;
 use App\Models\PreseasonTarget;
 use App\Models\Team;
 use App\Models\WebsiteConfig;
+use App\Models\TrainingGroup;
 use App\Models\TrainingSchedule;
 use App\Models\TrainingSession;
 use App\Services\Player\RegistrationService;
@@ -156,6 +157,9 @@ class BranchController extends Controller
                 DB::table('deleted_session_slots')->where('branch_id', $branch->id)->delete();
                 // Only stale details can remain: a branch with sessions is refused above.
                 DB::table('injury_notes')->where('branch_id', $branch->id)->delete();
+                // Only unused groups can remain (a branch with sessions or schedules is refused above);
+                // each() runs the model's deleting event, which removes the memberships.
+                TrainingGroup::where('branch_id', $branch->id)->get()->each->delete();
 
                 $categories = Category::where('branch_id', $branch->id)->get();
                 // Generation marks are per category (no branch column) and cascade with it.

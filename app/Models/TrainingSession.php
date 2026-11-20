@@ -25,14 +25,14 @@ class TrainingSession extends Model
     use SerializesClubDates;
 
     protected $fillable = [
-        'branch_id', 'category_id', 'schedule_id', 'date', 'start_time', 'end_time', 'kind', 'state',
+        'branch_id', 'category_id', 'group_id', 'schedule_id', 'date', 'start_time', 'end_time', 'kind', 'state',
         'cancel_reason', 'moved_from', 'coach', 'title', 'notes', 'roster_status_ids',
     ];
 
     protected function casts(): array
     {
         // roster_status_ids: player_statuses ids of the expected roster; null = the settings' default (see Roster).
-        return ['kind' => SessionKind::class, 'state' => SessionState::class, 'roster_status_ids' => 'array'];
+        return ['kind' => SessionKind::class, 'state' => SessionState::class, 'roster_status_ids' => 'array', 'group_id' => 'integer'];
     }
 
     protected static function booted(): void
@@ -76,6 +76,12 @@ class TrainingSession extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    /** The training group whose members make the roster; null = the whole category. */
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(TrainingGroup::class, 'group_id');
     }
 
     public function category(): BelongsTo

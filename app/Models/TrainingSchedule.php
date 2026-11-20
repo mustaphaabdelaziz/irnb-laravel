@@ -12,11 +12,11 @@ class TrainingSchedule extends Model
 {
     use SerializesClubDates;
 
-    protected $fillable = ['branch_id', 'category_id', 'weekday', 'start_time', 'end_time', 'valid_from', 'valid_to'];
+    protected $fillable = ['branch_id', 'category_id', 'group_id', 'weekday', 'start_time', 'end_time', 'valid_from', 'valid_to'];
 
     protected function casts(): array
     {
-        return ['weekday' => 'integer'];
+        return ['weekday' => 'integer', 'group_id' => 'integer'];
     }
 
     protected static function booted(): void
@@ -34,6 +34,12 @@ class TrainingSchedule extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    /** The training group this slot is for; null = the whole category. */
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(TrainingGroup::class, 'group_id');
     }
 
     public function category(): BelongsTo

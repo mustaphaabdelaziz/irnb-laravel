@@ -32,18 +32,18 @@ final class GroupBoard
             ...TrainingSchedule::whereNotNull('group_id')->distinct()->pluck('group_id')->all(),
             ...TrainingSession::whereNotNull('group_id')->distinct()->pluck('group_id')->all(),
         ]);
-        $current = $this->membership->currentGroupIds($groups->modelKeys(), $date);
 
         $rosters = [];
         $counts = [];
         foreach ($groups->groupBy(fn (TrainingGroup $g) => self::key($g->branch_id, $g->category_id)) as $key => $siblings) {
             $first = $siblings->first();
-            $own = array_flip($siblings->modelKeys());
+            // Read per section: a player may hold one group in each branch.
+            $current = $this->membership->currentGroupIds($siblings->modelKeys(), $date);
 
             $rosters[$key] = $this->roster->expected($first->category_id, $date, null, $first->branch_id)
-                ->map(function (Player $player) use ($current, $own, &$counts) {
-                    // A membership left over from another category does not count here.
-                    $groupId = isset($current[$player->id], $own[$current[$player->id]]) ? $current[$player->id] : null;
+                ->map(function (Player $player) use ($current, &$counts) {
+                    // Only this section's own groups were read.
+                    $groupId = $current[$player->id] ?? null;
                     if ($groupId !== null) {
                         $counts[$groupId] = ($counts[$groupId] ?? 0) + 1;
                     }

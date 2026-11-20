@@ -76,4 +76,15 @@ class TrainingGroupSchemaTest extends TestCase
         $this->assertModelMissing($group);
         $this->assertModelMissing($minime);
     }
+
+    #[Test]
+    public function the_first_branch_adopts_club_wide_training_groups(): void
+    {
+        $category = Category::create(['name' => 'Minime']);
+        $group = TrainingGroup::create(['branch_id' => null, 'category_id' => $category->id, 'name' => 'G1']);
+
+        $branch = Branch::create(['name' => 'Swim']);
+
+        $this->assertSame($branch->id, $group->fresh()->branch_id);
+    }
 }

@@ -77,6 +77,34 @@ class AttendanceGroupsTest extends TestCase
     }
 
     #[Test]
+    public function a_player_with_a_group_in_two_branches_counts_and_shows_in_both(): void
+    {
+        Carbon::setTestNow('2026-11-21');
+        $foot = Branch::create(['name' => 'Foot']);
+        $u13 = Category::create(['name' => 'U13', 'branch_id' => $foot->id]);
+        $s1 = $this->group('S1');
+        $f1 = TrainingGroup::create(['branch_id' => $foot->id, 'category_id' => $u13->id, 'name' => 'F1']);
+
+        $player = $this->swimmer();
+        $foot->players()->attach($player->id);
+        \App\Models\BranchRegistration::where('player_id', $player->id)->where('branch_id', $foot->id)->sole()
+            ->forceFill(['category_id' => $u13->id])->save();
+
+        $membership = app(GroupMembership::class);
+        $membership->add($s1, $player->id, null);
+        $membership->add($f1, $player->id, null);
+
+        $swimKey = \App\Services\Attendance\GroupBoard::key($this->swim->id, $this->minime->id);
+        $footKey = \App\Services\Attendance\GroupBoard::key($foot->id, $u13->id);
+
+        $this->actingAs($this->admin())->get(route('attendance.settings'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('groups.0.members', 1)->where('groups.1.members', 1)
+                ->where("groupRosters.{$swimKey}.0.group_id", $s1->id)
+                ->where("groupRosters.{$footKey}.0.group_id", $f1->id));
+    }
+
+    #[Test]
     public function a_group_in_use_cannot_be_deleted_and_an_unused_one_goes_with_its_members(): void
     {
         $admin = $this->admin();

@@ -28,7 +28,7 @@ class BranchObserver
         // (2026_11_06_100001_split_categories_by_branch).
         if (Branch::count() === 1) {
             WebsiteConfig::singleton()->update(['main_branch_id' => $branch->id]);
-            foreach (['training_sessions', 'training_schedules', 'deleted_session_slots', 'preseason_targets', 'injury_notes', 'categories'] as $table) {
+            foreach (['training_sessions', 'training_schedules', 'deleted_session_slots', 'preseason_targets', 'injury_notes', 'categories', 'training_groups'] as $table) {
                 DB::table($table)->whereNull('branch_id')->update(['branch_id' => $branch->id]);
             }
         }

@@ -4,6 +4,7 @@ namespace App\Services\Attendance;
 
 use App\Models\Player;
 use App\Models\PlayerStatus;
+use App\Models\TrainingGroupMember;
 use App\Models\TrainingSession;
 use App\Services\Player\RegistrationDisplay;
 use App\Support\AttendanceSettings;
@@ -25,6 +26,10 @@ use Illuminate\Support\Collection;
  * When the set holds the registered status, players with no status (older
  * records) and players marked `left` after the session date (members on
  * that date) count as registered too.
+ *
+ * A session of a training group (`group_id`) adds one condition: the player
+ * is a member of that group on the session date. A player of the category
+ * with no group is in no group session.
  */
 final class Roster
 {
@@ -42,9 +47,10 @@ final class Roster
      * @param  int|array<int, int>  $categoryIds
      * @param  list<int>|null  $statusIds  the roster set; null = the settings' default
      * @param  int|null  $branchId  only this branch's registrations; null = any registration
+     * @param  int|null  $groupId  only members of this training group on the date; null = the whole category
      * @return Collection<int, Player>
      */
-    public function expected(int|array $categoryIds, string $date, ?array $statusIds = null, ?int $branchId = null): Collection
+    public function expected(int|array $categoryIds, string $date, ?array $statusIds = null, ?int $branchId = null, ?int $groupId = null): Collection
     {
         $statusIds ??= $this->defaultStatusIds();
 
@@ -54,6 +60,14 @@ final class Roster
             also: fn ($row, string $status, string $leftAt) => $this->onRoster($row, $status, $leftAt, $date, $statusIds),
         )
             ->where('archived', false)
+            ->when($groupId !== null, fn ($players) => $players->whereExists(
+                fn ($members) => TrainingGroupMember::constrainActiveOn(
+                    $members->selectRaw('1')->from('training_group_members')
+                        ->whereColumn('training_group_members.player_id', 'players.id')
+                        ->where('training_group_members.training_group_id', $groupId),
+                    $date,
+                )
+            ))
             ->orderBy('lastname')->orderBy('firstname')
             ->get(self::COLUMNS);
     }
@@ -90,7 +104,7 @@ final class Roster
     public function forSession(TrainingSession $session): Collection
     {
         if (! $session->attendances()->exists()) {
-            return $this->expected($session->categoryIds(), $session->date, $this->statusIdsFor($session), $session->branch_id);
+            return $this->expected($session->categoryIds(), $session->date, $this->statusIdsFor($session), $session->branch_id, $session->group_id);
         }
 
         return Player::whereIn('id', $session->attendances()->select('player_id'))

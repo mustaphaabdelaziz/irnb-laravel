@@ -48,7 +48,7 @@ The button is next to the box. The result appears under it.
 ::figure receipt-verify-result ring=receipt-result
 :::
 
-At the top of each receipt, the word “ORIGINAL” marks the first print. Every print after it says “DUPLICATE No. 2”, then 3, and so on. أحمد's ticket is the original, so the A4 receipt says “DUPLICATE No. 2”. If you reopen the same receipt within a minute, no new copy is counted. On the payment's page, under “Printed receipts”, you find every copy and its code.
+At the top of each receipt, the word “ORIGINAL” marks the first print. Every print after it says “DUPLICATE No. 2”, then 3, and so on. أحمد's ticket is the original, so the A4 receipt says “DUPLICATE No. 2”. If you reopen the same receipt within a minute, no new copy is counted. On the payment's page, in “Transaction history”, you find every copy and its code.
 
 The other results:
 

@@ -48,7 +48,7 @@ Le ticket de أحمد est « Valide » : il a été imprimé par l'application e
 ::figure receipt-verify-result ring=receipt-result
 :::
 
-En haut de chaque reçu, le mot « ORIGINAL » marque la première impression. Chaque impression suivante porte « DUPLICATA N° 2 », puis 3, et ainsi de suite. Le ticket de أحمد est l'original, donc le reçu A4 porte « DUPLICATA N° 2 ». Si vous rouvrez le même reçu dans la minute, aucune nouvelle copie n'est comptée. Sur la page du paiement, sous « Reçus imprimés », vous trouvez chaque copie et son code.
+En haut de chaque reçu, le mot « ORIGINAL » marque la première impression. Chaque impression suivante porte « DUPLICATA N° 2 », puis 3, et ainsi de suite. Le ticket de أحمد est l'original, donc le reçu A4 porte « DUPLICATA N° 2 ». Si vous rouvrez le même reçu dans la minute, aucune nouvelle copie n'est comptée. Sur la page du paiement, dans « Historique de la transaction », vous trouvez chaque copie et son code.
 
 Les autres résultats :
 

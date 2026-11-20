@@ -458,7 +458,14 @@ export default [
         name: 'receipt-tx-show',
         url: '/players/1',
         targets: ['tx-print-ticket', 'tx-print-a4', 'tx-prints'],
-        before: openAhmedTransaction,
+        before: openAhmedTransactionScrolled,
+    },
+    {
+        // أحمد's payment page: the trace line under the first card, then «سجل المعاملة».
+        name: 'fin-tx-history',
+        url: '/players/1',
+        targets: ['tx-trace', 'tx-prints'],
+        before: openAhmedTransactionScrolled,
     },
     // The page as it opens: the code field already has the focus.
     { name: 'receipt-verify', url: '/receipts/verify', targets: ['nav-receipts-verify', 'receipt-code'] },
@@ -2831,7 +2838,13 @@ async function openAhmedTransaction(page) {
     await page.goto(new URL(`/transactions/${id}`, page.url()).href, { waitUntil: 'networkidle' });
 }
 
-/** The demo ticket's code, read in clear in «الوصولات المطبوعة» of أحمد's payment page ("1234 5678 9012"). */
+/** The same page, scrolled so the history card ends at the bottom edge (it is below the fold). */
+async function openAhmedTransactionScrolled(page) {
+    await openAhmedTransaction(page);
+    await page.locator('[data-help="tx-prints"]').evaluate((el) => el.scrollIntoView({ block: 'end', behavior: 'instant' }));
+}
+
+/** The demo ticket's code, read in clear in «سجل المعاملة» of أحمد's payment page ("1234 5678 9012"). */
 async function ahmedReceiptCode(page) {
     await openAhmedTransaction(page);
     return (await page.locator('[data-help="tx-prints"] li .font-mono').first().textContent()).trim();

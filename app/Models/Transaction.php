@@ -137,6 +137,24 @@ class Transaction extends Model
         return $this->hasMany(PlayerSubscription::class);
     }
 
+    /** Every recorded edit of this transaction (TransactionController::update). */
+    public function revisions(): HasMany
+    {
+        return $this->hasMany(TransactionRevision::class);
+    }
+
+    /** The archived payment this one corrects (PlayerTransactionController::update). */
+    public function replaces(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'replaces_transaction_id');
+    }
+
+    /** The payment(s) recorded in place of this one when it was corrected. */
+    public function replacements(): HasMany
+    {
+        return $this->hasMany(self::class, 'replaces_transaction_id');
+    }
+
     /**
      * The payments one receipt prints: this one, or its whole payment group by id.
      * A cancelled payment prints with the group's cancelled lines, a live one with

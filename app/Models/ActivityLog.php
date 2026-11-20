@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\SerializesClubDates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class ActivityLog extends Model
@@ -45,5 +46,11 @@ class ActivityLog extends Model
     public function subject(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    /** What a `transaction_updated` event changed; older events have none. */
+    public function revision(): HasOne
+    {
+        return $this->hasOne(TransactionRevision::class);
     }
 }

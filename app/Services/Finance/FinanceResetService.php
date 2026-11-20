@@ -79,6 +79,7 @@ class FinanceResetService
             DB::table('player_subscriptions')->delete();
             // The print log only describes the payments being wiped.
             DB::table('receipt_prints')->delete();
+            DB::table('transaction_revisions')->delete();
             DB::table('transactions')->delete();
             DB::table('subscription_cost_lines')->delete();
             DB::table('subscription_tarifications')->delete();

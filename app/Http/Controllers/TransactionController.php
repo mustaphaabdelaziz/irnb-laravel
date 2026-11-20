@@ -8,7 +8,6 @@ use App\Models\FinanceCategory;
 use App\Models\FiscalYear;
 use App\Models\Player;
 use App\Models\PlayerSubscription;
-use App\Models\ReceiptPrint;
 use App\Models\Transaction;
 use App\Models\TransactionRevision;
 use App\Models\WebsiteConfig;
@@ -18,6 +17,7 @@ use App\Services\Dashboard\ModuleStats;
 use App\Services\Finance\DefaultRegisterResolver;
 use App\Services\Finance\RecalculatePlayerDebtService;
 use App\Services\Finance\TransactionChanges;
+use App\Services\Finance\TransactionHistory;
 use App\Services\FinanceService;
 use App\Services\Storage\FileStorageService;
 use App\Services\Storage\PrivateFileStorage;
@@ -150,8 +150,8 @@ class TransactionController extends Controller
         // Eager-load the transaction relation too: PlayerSubscription appends
         // remaining_amount/payment_status accessors that read ->transaction (else N+1).
         $transaction->load([
-            'recordedBy',
-            'receivedBy',
+            // Name columns only: the trace shows who, the page needs nothing else of the account.
+            'recordedBy:id,name,firstname,lastname',
             'financeCategory',
             ...TransactionTitle::RELATIONS,
             ...Transaction::FINANCE_ACCOUNT_LABEL,
@@ -161,21 +161,38 @@ class TransactionController extends Controller
 
         TransactionTitle::decorate($transaction);
 
+        $history = TransactionHistory::entries($transaction);
+
         return Inertia::render('Transactions/Show', [
             'transaction' => $transaction,
-            'prints' => ReceiptPrint::with('printedBy:id,name')
-                ->where('transaction_number', $transaction->id)
-                ->orderBy('copy_number')
-                ->get()
-                ->map(fn (ReceiptPrint $print) => [
-                    'id' => $print->id,
-                    'copy_number' => $print->copy_number,
-                    'format' => $print->format,
-                    'code' => $print->displayCode(),
-                    'printed_at' => $print->created_at?->format('Y-m-d H:i'),
-                    'printed_by' => $print->printedBy?->name,
-                ]),
+            // Recorded, edited, cancelled, printed: one list, oldest first.
+            'history' => $history,
+            'trace' => TransactionHistory::trace($history),
+            'cancellation' => TransactionHistory::cancellation($transaction, $history),
+            'group' => TransactionHistory::group($transaction),
+            'season' => $this->season($transaction),
         ]);
+    }
+
+    /**
+     * The season a transaction is booked in and whether it is closed. Read
+     * with a query, not the fiscalYear relation: once loaded, the relation
+     * would be serialized over the `fiscal_year` column of the same name.
+     *
+     * @return ?array{label: string, closed: bool}
+     */
+    private function season(Transaction $transaction): ?array
+    {
+        if (! $transaction->fiscal_year) {
+            return null;
+        }
+
+        $key = (int) $transaction->fiscal_year;
+
+        return [
+            'label' => FiscalPeriod::label($key),
+            'closed' => FiscalYear::where('year', $key)->where('status', 'closed')->exists(),
+        ];
     }
 
     public function create(): Response

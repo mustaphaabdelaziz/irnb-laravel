@@ -223,9 +223,10 @@ class ReceiptPrintTest extends TestCase
 
         $this->actingAs($this->admin)->get(route('transactions.show', $transaction))
             ->assertInertia(fn (Assert $page) => $page
-                ->has('prints', 1)
-                ->where('prints.0.copy_number', 1)
-                ->where('prints.0.code', $print->displayCode())
-                ->where('prints.0.printed_by', 'Cashier One'));
+                ->has('history', 2)
+                ->where('history.1.type', 'printed')
+                ->where('history.1.print.copy_number', 1)
+                ->where('history.1.print.code', $print->displayCode())
+                ->where('history.1.user', 'Cashier One'));
     }
 }

@@ -3,7 +3,7 @@ title: Comment lire le tableau de bord financier et imprimer le rapport de la sa
 summary: Lisez les chiffres de la saison et comparez-les à la saison passée, suivez le budget, puis imprimez le rapport de la saison en PDF.
 module: finance
 pages: [finance.index]
-keywords: [tableau de bord financier, rapport financier, rapport de la saison, bilan financier, imprimer, PDF, revenus, dépenses, solde net, budget vs réel, toutes les années, comparer les saisons]
+keywords: [tableau de bord financier, rapport financier, rapport de la saison, bilan financier, imprimer, PDF, revenus, dépenses, net de la saison, solde net, argent dans les caisses, budget vs réel, toutes les années, comparer les saisons]
 related: [finance/season, finance/record-transaction]
 ---
 
@@ -24,7 +24,7 @@ Le bouton en couleur est la saison affichée. Une saison clôturée porte une co
 :::
 
 :::step Lisez les quatre cartes
-D'abord « Solde initial », puis « Revenus totaux », « Dépenses totales » et « Solde net ». Le petit pourcentage avec une flèche compare le chiffre à la saison passée. Il répond à la question de la comparaison.
+D'abord « Solde initial », puis « Revenus totaux », « Dépenses totales » et « Net de la saison ». Sous chaque chiffre, une petite ligne dit ce qu'il compte. Le petit pourcentage avec une flèche compare le chiffre à la saison passée. Il répond à la question de la comparaison. « Net de la saison » ne compte que la saison choisie. « Argent dans les caisses », à côté du graphique, est ce qui reste dans tous les coffres et caisses, toutes saisons confondues.
 ::figure fin-dashboard ring=fin-tiles
 :::
 

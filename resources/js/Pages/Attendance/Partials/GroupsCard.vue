@@ -74,17 +74,18 @@ const shown = computed(() => {
     const q = query.value.trim().toLowerCase();
     return q ? roster.value.filter((p) => p.name.toLowerCase().includes(q)) : roster.value;
 });
-const membersBefore = () => roster.value.filter((p) => p.group_id === open.value.id).map((p) => p.id);
+const before = ref([]); // the group's members when the dialog opened: what the ticks are compared with
 function openPlayers(group) {
     open.value = group;
     query.value = '';
     memberError.value = '';
     ticked.value = (props.rosters[group.key] ?? []).filter((p) => p.group_id === group.id).map((p) => p.id);
+    before.value = [...ticked.value];
     // An empty group is a first setup: from the beginning. Later changes default to today.
     from.value = group.members ? today : '';
 }
 function savePlayers() {
-    const { add, remove } = memberChanges(membersBefore(), ticked.value);
+    const { add, remove } = memberChanges(before.value, ticked.value);
     if (!add.length && !remove.length) {
         open.value = null;
         return;
@@ -121,7 +122,7 @@ function savePlayers() {
 
         <p v-if="!groups.length" class="text-sm text-slate-500 dark:text-slate-400">{{ t('att.group_none') }}</p>
 
-        <div v-for="s in sections" :key="s.key" class="border-t border-slate-100 py-2 dark:border-slate-800">
+        <div v-for="(s, i) in sections" :key="s.key" :data-help="i === 0 ? 'set-group-list' : null" class="border-t border-slate-100 py-2 dark:border-slate-800">
             <div class="flex flex-wrap items-center gap-2">
                 <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ [branchName(s.branch_id), categoryName(s.category_id)].filter(Boolean).join(' · ') }}</h3>
                 <button
@@ -143,7 +144,11 @@ function savePlayers() {
                         <td class="whitespace-nowrap text-end">
                             <IconButton data-help="set-group-players" icon="players" :label="t('att.group_players')" plain size="sm" @click="openPlayers(g)" />
                             <IconButton icon="pencil" :label="t('att.edit')" plain size="sm" @click="edit(g)" />
-                            <IconButton icon="trash" :label="t('att.delete')" variant="danger" plain size="sm" :disabled="g.in_use" :title="g.in_use ? t('flash.training_group_in_use') : t('att.delete')" @click="destroy(g)" />
+                            <!-- A disabled IconButton takes no pointer events, so its own tooltip never shows: the span carries the reason. -->
+                            <span v-if="g.in_use" class="inline-flex cursor-not-allowed" :title="t('flash.training_group_in_use')">
+                                <IconButton icon="trash" :label="t('att.delete')" variant="danger" plain size="sm" disabled />
+                            </span>
+                            <IconButton v-else icon="trash" :label="t('att.delete')" variant="danger" plain size="sm" @click="destroy(g)" />
                         </td>
                     </tr>
                 </tbody>
@@ -153,13 +158,13 @@ function savePlayers() {
         <Modal :show="!!open" max-width="md" @close="open = null">
             <form v-if="open" class="space-y-3 p-5" @submit.prevent="savePlayers">
                 <h2 class="font-bold text-slate-900 dark:text-slate-100">{{ t('att.group_players') }} · {{ open.name }}</h2>
-                <label class="block text-sm">{{ t('att.group_from') }}
+                <label data-help="group-players-from" class="block text-sm">{{ t('att.group_from') }}
                     <input v-model="from" type="date" :class="[input, 'mt-1 block']" />
                     <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">{{ t('att.group_from_help') }}</span>
                 </label>
                 <input v-model="query" type="text" :placeholder="t('att.group_find')" :aria-label="t('att.group_find')" :class="[input, 'block w-full']" />
                 <p v-if="!roster.length" class="text-sm text-slate-500 dark:text-slate-400">{{ t('att.group_no_players') }}</p>
-                <ul class="max-h-80 space-y-1 overflow-y-auto text-sm">
+                <ul data-help="group-players-list" class="max-h-80 space-y-1 overflow-y-auto text-sm">
                     <li v-for="p in shown" :key="p.id">
                         <label class="flex items-center gap-2">
                             <input v-model="ticked" type="checkbox" :value="p.id" class="rounded border-slate-300 text-primary-600 dark:border-slate-700 dark:bg-slate-900" />
@@ -171,7 +176,7 @@ function savePlayers() {
                 <InputError :message="memberError" />
                 <div class="flex justify-end gap-2">
                     <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:text-slate-400 dark:ring-slate-700" @click="open = null">{{ t('att.close') }}</button>
-                    <button type="submit" :disabled="saving" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">{{ t('att.save') }}</button>
+                    <button data-help="group-players-save" type="submit" :disabled="saving" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">{{ t('att.save') }}</button>
                 </div>
             </form>
         </Modal>

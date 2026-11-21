@@ -10,6 +10,8 @@ use App\Models\Category;
 use App\Models\ClubClosure;
 use App\Models\Player;
 use App\Models\PreseasonTarget;
+use App\Models\TrainingGroup;
+use App\Models\TrainingSchedule;
 use App\Models\TrainingSession;
 use Database\Seeders\HelpDemoAttendanceSeeder as Demo;
 use Database\Seeders\HelpDemoSeeder;
@@ -80,5 +82,31 @@ class HelpDemoAttendanceSeederTest extends TestCase
         $this->assertSame(Demo::CLOSURE_REASON, ClubClosure::sole()->reason);
         $this->assertSame('2026-12-08', ClubClosure::sole()->start_date);
         $this->assertSame(Demo::PRESEASON_TARGET, (int) PreseasonTarget::sole()->target_count);
+
+        // Training groups (the training-groups article): «أصاغر» also trains on Saturday in two
+        // groups from the seed day on. Their sessions stay planned, so no statistic above moves.
+        $swimId = Branch::where('name', 'Swimming')->value('id');
+        $groups = TrainingGroup::orderBy('id')->get();
+        $this->assertSame([Demo::GROUP_ONE, Demo::GROUP_TWO], $groups->pluck('name')->all());
+        $this->assertSame([[$swimId, 11], [$swimId, 11]], $groups->map(fn (TrainingGroup $g) => [$g->branch_id, $g->category_id])->all());
+        $members = fn (TrainingGroup $group) => $group->members()->orderBy('player_id')->pluck('player_id')->all();
+        $this->assertSame([12, 13, 17], $members($groups[0]));
+        $this->assertSame([18, 22], $members($groups[1]));
+        $this->assertSame(['سارة', 'إيناس', 'يوسف', 'لينا', 'شيماء'], Player::whereIn('id', [12, 13, 17, 18, 22])->orderBy('id')->pluck('firstname')->all());
+
+        $lines = TrainingSchedule::whereNotNull('group_id')->orderBy('start_time')->get()
+            ->map(fn (TrainingSchedule $s) => [$s->group_id, $s->weekday, $s->start_time, $s->end_time, $s->valid_from])->all();
+        $this->assertSame([
+            [$groups[0]->id, 6, '09:30', '11:00', '2026-11-18'],
+            [$groups[1]->id, 6, '11:00', '12:30', '2026-11-18'],
+        ], $lines);
+
+        $grouped = TrainingSession::whereNotNull('group_id')->orderBy('date')->orderBy('start_time')->get();
+        $this->assertSame([['2026-11-21', '09:30', $groups[0]->id], ['2026-11-21', '11:00', $groups[1]->id]],
+            $grouped->take(2)->map(fn (TrainingSession $s) => [$s->date, $s->start_time, $s->group_id])->values()->all());
+        $this->assertTrue($grouped->every(fn (TrainingSession $s) => $s->state === SessionState::Planned && $s->date >= '2026-11-18'));
+        $this->assertSame(0, Attendance::whereIn('training_session_id', $grouped->modelKeys())->count());
+        // The Tuesday and Thursday sessions keep no group: the month grid lists them under «كل الفئة».
+        $this->assertSame(0, TrainingSession::where('category_id', 11)->whereNotNull('group_id')->whereIn('start_time', ['17:00'])->count());
     }
 }

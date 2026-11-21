@@ -179,7 +179,7 @@ function destroyCustom(s) {
                     <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.category') }}
                         <select v-model="scheduleForm.category_id" :class="[input, 'block']"><option v-for="c in scheduleCategories" :key="c.id" :value="c.id">{{ c.name }}</option></select>
                     </label>
-                    <label v-if="scheduleGroups.length" class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.group') }}
+                    <label v-if="scheduleGroups.length" data-help="set-schedule-group" class="text-xs text-slate-500 dark:text-slate-400">{{ t('att.group') }}
                         <select v-model="scheduleForm.group_id" :class="[input, 'block']">
                             <option :value="null">{{ t('att.group_whole') }}</option>
                             <option v-for="g in scheduleGroups" :key="g.id" :value="g.id">{{ g.name }}</option>

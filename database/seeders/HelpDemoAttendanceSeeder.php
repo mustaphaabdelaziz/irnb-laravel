@@ -9,9 +9,11 @@ use App\Models\Category;
 use App\Models\ClubClosure;
 use App\Models\Player;
 use App\Models\PreseasonTarget;
+use App\Models\TrainingGroup;
 use App\Models\TrainingSchedule;
 use App\Models\TrainingSession;
 use App\Models\User;
+use App\Services\Attendance\GroupMembership;
 use App\Services\Attendance\MarkRecorder;
 use App\Services\Attendance\SessionGenerator;
 use App\Support\Season;
@@ -23,7 +25,7 @@ use Illuminate\Support\Collection;
 /**
  * Attendance for the Help Center demo club, relative to the day it runs: three
  * weeks of held sessions, the next sessions planned. Called from HelpDemoSeeder.
- * Sessions the articles open by id are created first (ids 1–3 on the fresh DB).
+ * Sessions the articles open by id are created first (ids 1–3 on the fresh DB). The training groups come last, so nothing before them changes.
  */
 class HelpDemoAttendanceSeeder extends Seeder
 {
@@ -38,6 +40,10 @@ class HelpDemoAttendanceSeeder extends Seeder
     public const PRESEASON_TITLE = 'جري 7.2 كم في 40 دقيقة';
 
     public const PRESEASON_TARGET = 12;
+
+    public const GROUP_ONE = 'الفوج 1';
+
+    public const GROUP_TWO = 'الفوج 2';
 
     public function run(): void
     {
@@ -117,6 +123,44 @@ class HelpDemoAttendanceSeeder extends Seeder
                 default => ['player_id' => $p->id, 'status' => 'present'],
             }, $swimmers), $demo, $log);
         }
+
+        // Last, so no id and no mark above changes: «أصاغر» also trains on Saturday in two groups.
+        $this->groups($swim, $cadets, $today, [
+            [self::GROUP_ONE, [$players[11], $players[12], $players[16]], '09:30', '11:00'],
+            [self::GROUP_TWO, [$players[17], $players[21]], '11:00', '12:30'],
+        ]);
+    }
+
+    /**
+     * Training groups of one category, each with its members (from the beginning) and a
+     * Saturday line that starts today: only planned sessions, so no statistic moves. The
+     * category's other lines keep no group.
+     *
+     * @param  list<array{0: string, 1: array<int, Player>, 2: string, 3: string}>  $groups  name, members, start, end
+     */
+    private function groups(Branch $branch, Category $category, CarbonImmutable $today, array $groups): void
+    {
+        $membership = app(GroupMembership::class);
+
+        foreach ($groups as [$name, $members, $start, $end]) {
+            $group = TrainingGroup::create(['branch_id' => $branch->id, 'category_id' => $category->id, 'name' => $name]);
+            foreach ($members as $player) {
+                $membership->add($group, $player->id, null);
+            }
+            TrainingSchedule::create([
+                'branch_id' => $branch->id,
+                'category_id' => $category->id,
+                'group_id' => $group->id,
+                'weekday' => 6,
+                'start_time' => $start,
+                'end_time' => $end,
+                'valid_from' => $today->toDateString(),
+                'valid_to' => null,
+            ]);
+        }
+
+        // The new lines' sessions, as opening the calendar would generate them (idempotent).
+        app(SessionGenerator::class)->forRange($today->toDateString(), $today->addDays(35)->toDateString());
     }
 
     /** @return array<int, TrainingSchedule> keyed by ISO weekday */

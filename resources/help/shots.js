@@ -106,7 +106,7 @@ const U17 = 'branch_id=2&category_id=7';
 // the one before it, whichever holds the cell.
 const gridMonth = ym(new Date(Date.now() - 7 * 86400000));
 // Swimming «أصاغر» (branch 1, category 11): its next sessions after the cancelled session 3.
-const cadetsGrid = (month) => `/attendance/grid?branch_id=1&category_id=11&month=${month}`;
+const cadetsGrid = (month) => `/attendance/grid?branch_id=1&category_id=11&group_id=0&month=${month}`;
 export default [
     { name: 'login', url: '/login', guest: true, targets: ['login-username', 'login-password', 'login-submit', 'login-help'] },
     { name: 'help-center', url: '/help', targets: ['help-search', 'help-button'] },

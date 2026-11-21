@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Player;
 use App\Services\Attendance\AttendanceStats;
 use App\Services\Attendance\BranchChoice;
+use App\Services\Attendance\GroupChoice;
 use App\Services\Attendance\PlayerNames;
 use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
@@ -26,7 +27,10 @@ use Symfony\Component\HttpFoundation\Response as FileResponse;
  * the certificates printed from it. Players are ranked by
  * AttendanceStats::ranked() — the statistics page's rules — over the marks
  * attributed to the category, as the statistics page does when filtered on
- * it. Only reads (attendance/view, see config/permissions.php).
+ * it. A category split into training groups can be ranked one group at a
+ * time (GroupChoice): the pool, the minimum and the ranks then come from
+ * that group's sessions only, and the certificates name the group.
+ * Only reads (attendance/view, see config/permissions.php).
  */
 class AttendanceRankingController extends Controller
 {
@@ -48,10 +52,12 @@ class AttendanceRankingController extends Controller
             ->values()->all();
         $asked = $request->filled('category_id') ? (int) $request->query('category_id') : null;
         $categoryId = $asked !== null && ! CategoryOwnership::outside($asked, array_filter([$branchId])) ? $asked : ($categories[0]['id'] ?? null);
+        // The category's training groups in this branch, and the one asked for (null = all groups).
+        ['options' => $groups, 'selected' => $groupId] = GroupChoice::fromRequest($request, $categoryId, $branchId);
         $period = $this->period($request);
         ['rows' => $rows, 'unranked' => $unranked] = $categoryId === null
             ? ['rows' => [], 'unranked' => 0]
-            : $this->ranking($categoryId, $period, $branchId);
+            : $this->ranking($categoryId, $period, $branchId, $groupId);
         $current = Season::current();
 
         return Inertia::render('Attendance/Ranking', [
@@ -59,6 +65,9 @@ class AttendanceRankingController extends Controller
             'categoryId' => $categoryId,
             'branches' => BranchChoice::options(),
             'branchId' => $branchId,
+            // The Group select ([] = none to offer) and the group ranked (null = all groups).
+            'groups' => $groups,
+            'groupId' => $groupId,
             'period' => $period,
             'seasons' => array_map(function (int $back) use ($current): array {
                 $season = Season::forStartYear($current->startYear - $back);
@@ -93,17 +102,21 @@ class AttendanceRankingController extends Controller
         $category = Category::findOrFail($data['category_id']);
         $branchId = BranchChoice::fromRequest($request);
         $branch = $branchId === null ? null : Branch::find($branchId);
+        ['options' => $groups, 'selected' => $groupId] = GroupChoice::fromRequest($request, $category->id, $branchId);
+        $groupName = $groupId === null ? null : collect($groups)->firstWhere('id', $groupId)['name'];
         $period = $this->period($request);
-        ['rows' => $rows] = $this->ranking($category->id, $period, $branchId);
-        $branchKey = $branchId === null ? '' : "-b{$branchId}";
+        ['rows' => $rows] = $this->ranking($category->id, $period, $branchId, $groupId);
+        // "-b2", then "-g7" when the ranking was narrowed to a training group.
+        $branchKey = ($branchId === null ? '' : "-b{$branchId}").($groupId === null ? '' : "-g{$groupId}");
 
         if (isset($data['player_id'])) {
             $playerId = (int) $data['player_id'];
             $row = collect($rows)->firstWhere('player_id', $playerId);
             if ($row === null) {
-                $own = $this->stats->players($period['from'], $period['to'], $category->id, $playerId, $branchId)[$playerId] ?? null;
+                $own = $this->stats->players($period['from'], $period['to'], $category->id, $playerId, $branchId, $groupId)[$playerId] ?? null;
                 // Neither expected in the branch's category over the period nor in it now: no certificate "for" it.
-                $inItNow = Player::whereKey($playerId)
+                // A training group's certificate is about its sessions: without a mark in them, none either.
+                $inItNow = $groupId === null && Player::whereKey($playerId)
                     ->registeredWhere(branches: $branchId, categories: [$category->id], active: true)
                     ->exists();
                 abort_if(($own['expected'] ?? 0) === 0 && ! $inItNow, 404);
@@ -121,8 +134,8 @@ class AttendanceRankingController extends Controller
 
         $html = view('pdf.attendance-certificates', [
             'club' => ClubHeader::data(),
-            // The certificate line's {category}: "Branch · Category" once the club has branches.
-            'category' => $branch === null ? $category->localized_name : $branch->localized_name.' · '.$category->localized_name,
+            // The certificate line's {category}: "Branch · Category" once the club has branches, then the training group.
+            'category' => implode(' · ', array_filter([$branch?->localized_name, $category->localized_name, $groupName])),
             'periodLabel' => $period['label'],
             'date' => now()->format('d/m/Y'),
             'certificates' => array_map(fn (array $row): array => [
@@ -174,7 +187,7 @@ class AttendanceRankingController extends Controller
     }
 
     /**
-     * The category's ranked players in the branch, with names, and how many active
+     * The category's ranked players in the branch (in one training group, when given), with names, and how many active
      * players with marks had too few sessions to be ranked. A departed or
      * archived player (PlayerNames' `active` flag) is dropped before
      * ranking: no rank, no medal, and not counted among the unranked
@@ -182,9 +195,9 @@ class AttendanceRankingController extends Controller
      *
      * @return array{rows: list<array<string, mixed>>, unranked: int}
      */
-    private function ranking(int $categoryId, array $period, ?int $branchId = null): array
+    private function ranking(int $categoryId, array $period, ?int $branchId = null, ?int $groupId = null): array
     {
-        $rows = $this->stats->players($period['from'], $period['to'], $categoryId, null, $branchId);
+        $rows = $this->stats->players($period['from'], $period['to'], $categoryId, null, $branchId, $groupId);
         $active = array_values(array_filter($this->names->attach($rows, $branchId), fn (array $row) => $row['active']));
         $ranked = AttendanceStats::ranked($active);
 

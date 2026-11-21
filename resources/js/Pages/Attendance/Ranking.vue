@@ -12,12 +12,15 @@ import { pct } from '@/lib/attendanceStats';
  * One category's attendance ranking for a month or a season
  * (AttendanceStats::ranked on the server: score %, then fewer unexcused,
  * then fewer lates). Players under the minimum are counted, not ranked.
+ * A category split into training groups can be ranked one group at a time.
  */
 const props = defineProps({
     categories: { type: Array, default: () => [] },
     categoryId: { type: Number, default: null },
     branches: { type: Array, default: () => [] },
     branchId: { type: Number, default: null },
+    groups: { type: Array, default: () => [] }, // the category's training groups in this branch: [{ id, name }]
+    groupId: { type: Number, default: null }, // null = all groups
     period: { type: Object, required: true }, // { type, month, season, from, to, label }
     seasons: { type: Array, default: () => [] }, // [{ start_year, label }]
     rows: { type: Array, default: () => [] },
@@ -29,7 +32,9 @@ const { can } = useCan();
 
 // The page's filters as they travel in a URL; `changes` overrides them.
 function query(changes = {}) {
-    const q = { category_id: props.categoryId, ...(props.branchId ? { branch_id: props.branchId } : {}), type: props.period.type, ...changes };
+    const q = { category_id: props.categoryId, ...(props.branchId ? { branch_id: props.branchId } : {}), group_id: props.groupId, type: props.period.type, ...changes };
+    // A training group belongs to one branch + category: another one starts on all groups. No group = no parameter.
+    if ('category_id' in changes || 'branch_id' in changes || !q.group_id) delete q.group_id;
     if (q.type === 'season') q.season = changes.season ?? props.period.season;
     else q.month = changes.month ?? props.period.month;
     return q;
@@ -71,6 +76,10 @@ const th = 'p-2 font-semibold';
                 <BranchSwitch :branches="branches" :branch-id="branchId" @switch="(id) => visit({ branch_id: id })" />
                 <select data-help="ranking-category" :value="categoryId ?? ''" :class="input" :aria-label="t('att.category')" @change="visit({ category_id: Number($event.target.value) })">
                     <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
+                </select>
+                <select v-if="groups.length" data-help="ranking-group" :value="groupId ?? ''" :class="input" :aria-label="t('att.group')" @change="visit({ group_id: Number($event.target.value) || null })">
+                    <option value="">{{ t('att.all_groups') }}</option>
+                    <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
                 </select>
                 <select data-help="ranking-type" :value="period.type" :class="input" :aria-label="t('activity.period_label')" @change="visit({ type: $event.target.value })">
                     <option value="month">{{ t('att.ranking.type.month') }}</option>

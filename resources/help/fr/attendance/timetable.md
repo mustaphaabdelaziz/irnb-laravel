@@ -3,7 +3,7 @@ title: Comment régler l'horaire hebdomadaire et les fermetures
 summary: Saisissez une seule fois les jours et les heures d'entraînement : les séances apparaissent seules dans le calendrier. Ajoutez aussi les jours de fermeture du club.
 pages: [attendance.settings]
 keywords: [horaire hebdomadaire, planning d'entraînement, jours d'entraînement, horaire, vacances, fermeture du club, fermetures, vacances scolaires, préparation, nombre de séances, groupes, groupe, réglages des présences]
-related: [attendance/take-attendance, attendance/codes-rules]
+related: [attendance/take-attendance, attendance/codes-rules, attendance/training-groups]
 ---
 
 Saisissez les jours et les heures d'entraînement de chaque catégorie dans « Réglages des présences ». L'application place les séances dans le calendrier, semaine après semaine.
@@ -47,7 +47,7 @@ Une fermeture ne supprime pas une séance dont les présences sont saisies, ni u
 
 Au bout de chaque ligne de « Horaire hebdomadaire », un bouton crayon modifie la ligne, et un bouton corbeille la supprime. Dans les deux cas, ses séances à venir sans présences saisies sont supprimées. Après une modification, l'application place les séances de la nouvelle ligne.
 
-Une catégorie s'entraîne en plusieurs groupes ? Dans la carte « Groupes », sur la même page, ajoutez un groupe pour chacun. Puis appuyez sur le bouton « Joueurs du groupe » de sa ligne et cochez ses joueurs. Le choix « Groupe » apparaît alors dans la carte « Horaire hebdomadaire » : choisissez le groupe de chaque ligne. La séance d'un groupe n'affiche que ses joueurs. Un joueur qui n'est dans aucun groupe n'apparaît pas dans les séances des groupes ; la carte vous rappelle combien de joueurs sont sans groupe.
+Une catégorie s'entraîne en plusieurs groupes ? Dans la carte « Groupes », sur la même page, ajoutez un groupe pour chacun. Puis appuyez sur le bouton « Joueurs du groupe » de sa ligne et cochez ses joueurs. Le choix « Groupe » apparaît alors dans la carte « Horaire hebdomadaire » : choisissez le groupe de chaque ligne. La séance d'un groupe n'affiche que ses joueurs. Un joueur qui n'est dans aucun groupe n'apparaît pas dans les séances des groupes ; la carte vous rappelle combien de joueurs sont sans groupe. Le pas-à-pas est dans « Comment répartir une catégorie en groupes ».
 
 Supprimer une fermeture avec le bouton corbeille remet les séances de ces jours dans le calendrier.
 

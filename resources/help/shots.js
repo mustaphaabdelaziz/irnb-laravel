@@ -106,7 +106,12 @@ const U17 = 'branch_id=2&category_id=7';
 // the one before it, whichever holds the cell.
 const gridMonth = ym(new Date(Date.now() - 7 * 86400000));
 // Swimming «أصاغر» (branch 1, category 11): its next sessions after the cancelled session 3.
-const cadetsGrid = (month) => `/attendance/grid?branch_id=1&category_id=11&group_id=0&month=${month}`;
+// The category has two training groups (HelpDemoAttendanceSeeder): group_id=0 keeps the grid on
+// its Tuesday and Thursday sessions, which have no group, as before the groups existed.
+const CADETS = 'branch_id=1&category_id=11';
+const cadetsGrid = (month) => `/attendance/grid?${CADETS}&group_id=0&month=${month}`;
+// The two groups train on Saturday from the seed day on: the month of the first Saturday from today.
+const groupMonth = ym(nextDay([6]));
 export default [
     { name: 'login', url: '/login', guest: true, targets: ['login-username', 'login-password', 'login-submit', 'login-help'] },
     { name: 'help-center', url: '/help', targets: ['help-search', 'help-button'] },
@@ -240,6 +245,19 @@ export default [
         targets: ['player-branch-card-2'],
         before: async (page) => {
             await addBranch(page, 'السباحة', 'player-branch-card-2', 'أصاغر', '2026-11-01');
+        },
+    },
+    {
+        // The training-groups example: سارة بن يوسف (player 12, «الفوج 1») moved to «الفوج 2» on her
+        // swimming card. The «تُطبَّق التغييرات من» date appears, with today. Never saved.
+        name: 'player-edit-group',
+        url: '/players/12/edit',
+        targets: ['player-branch-card', 'player-group', 'player-group-from'],
+        before: async (page) => {
+            await page.locator('[data-help="player-group"] select').selectOption({ label: 'الفوج 2' });
+            await page.locator('[data-help="player-group-from"]').waitFor();
+            await blur(page);
+            await centre(page, 'player-branch-card');
         },
     },
     // The list is longer than the screen: the first row carries the ring.
@@ -554,6 +572,23 @@ export default [
             await blur(page);
         },
     },
+    {
+        // The Group field of «حصة إضافية»: Swimming · «أصاغر» has two groups; «الفوج 1» is chosen.
+        // The dialog is only filled in, never sent.
+        name: 'att-add-extra-group',
+        url: `/attendance?view=month&${CADETS}&month=${groupMonth}`,
+        targets: ['add-category', 'add-group'],
+        before: async (page) => {
+            await page.locator('[data-help="att-add-extra"]').click();
+            const group = page.locator('[data-help="add-group"] select');
+            await group.waitFor();
+            await group.selectOption({ label: 'الفوج 1' });
+            await blur(page);
+        },
+    },
+    // The month grid of a category split into groups: it opens on the first group («الفوج 1»),
+    // with its Saturday sessions and its three swimmers only.
+    { name: 'att-grid-groups', url: `/attendance/grid?${CADETS}&month=${groupMonth}`, targets: ['grid-groups', 'grid-print'] },
     // The month-grid example: the coach's sheet has أمين «R15» in one column. The Vue page
     // tags the first cell (row 1 = بلعيد, rows sort by last name), so grid-cell-first is
     // moved onto أمين's cell in the column where the demo saved his «R15» (the
@@ -637,7 +672,7 @@ export default [
             await choose(form.locator('select').nth(1), 'أقل من 17 سنة');
             await form.locator('select').nth(2).selectOption('5');
             await blur(page);
-            await centre(page, 'set-schedules');
+            await underHeader(page, 'set-schedules');
         },
     },
     {
@@ -694,6 +729,62 @@ export default [
             await form.locator('select').selectOption('absent_excused');
             await blur(page);
             await centre(page, 'set-custom');
+        },
+    },
+    // The training-groups example: Swimming · «أصاغر» in two Saturday groups. The demo already
+    // holds both groups, their players and their two lines (HelpDemoAttendanceSeeder); each shot
+    // puts the page back in the reader's state at that step. Forms are only filled, never sent.
+    {
+        // «الفوج 1» typed in the Groups card. The list of groups is taken off (DOM only): the
+        // reader has not pressed «إضافة» yet.
+        name: 'set-group-typed',
+        url: '/attendance/settings',
+        targets: ['set-groups', 'set-group-form', 'set-group-add'],
+        before: async (page) => {
+            const form = page.locator('[data-help="set-group-form"]');
+            await choose(form.locator('select').nth(0), 'السباحة');
+            await choose(form.locator('select').nth(1), 'أصاغر');
+            await form.locator('input[type="text"]').fill('الفوج 1');
+            await page.locator('[data-help="set-group-list"]').evaluate((el) => el.remove());
+            await blur(page);
+            await underHeader(page, 'set-groups');
+        },
+    },
+    // After both were added: the two groups listed, each with its «لاعبو الفوج» button.
+    { name: 'set-group-list', url: '/attendance/settings', targets: ['set-groups', 'set-group-list', 'set-group-players'], before: (page) => underHeader(page, 'set-groups') },
+    {
+        // «لاعبو الفوج» of «الفوج 1»: its three swimmers ticked. The date is emptied, as it is
+        // the first time (a group that has members opens on today).
+        name: 'set-group-dialog',
+        url: '/attendance/settings',
+        targets: ['group-players-from', 'group-players-list', 'group-players-save'],
+        before: async (page) => {
+            await page.locator('[data-help="set-group-players"]').first().click();
+            await page.locator('[data-help="group-players-save"]').waitFor();
+            await page.locator('[data-help="group-players-from"] input').fill('');
+            await blur(page);
+        },
+    },
+    {
+        // The Saturday 09:30–11:00 line of «الفوج 1» typed in the weekly schedule. The demo's own
+        // two Saturday lines are taken off the list (DOM only): the reader has not added them yet.
+        name: 'set-schedule-group',
+        url: '/attendance/settings',
+        targets: ['set-schedules', 'set-schedule-form', 'set-schedule-group', 'set-schedule-add'],
+        before: async (page) => {
+            const form = page.locator('[data-help="set-schedule-form"]');
+            await choose(form.locator('select').nth(0), 'السباحة');
+            await choose(form.locator('select').nth(1), 'أصاغر');
+            const group = page.locator('[data-help="set-schedule-group"] select');
+            await group.waitFor();
+            await group.selectOption({ label: 'الفوج 1' });
+            // The Group field sits between the category and the day: the day is the fourth select.
+            await form.locator('select').nth(3).selectOption('6');
+            await form.locator('input[type="time"]').nth(0).fill('09:30');
+            await form.locator('input[type="time"]').nth(1).fill('11:00');
+            await page.locator('[data-help="set-schedules"] tbody tr', { hasText: 'الفوج' }).evaluateAll((rows) => rows.forEach((row) => row.remove()));
+            await blur(page);
+            await underHeader(page, 'set-schedules');
         },
     },
     // The stats-ranking and alerts-injuries examples. The calendar's «الإحصائيات» button carries no filter: the
@@ -2910,6 +3001,27 @@ async function centre(page, name) {
         await settle(page);
         if ((await page.evaluate(() => window.scrollY)) === y) return;
     }
+}
+
+/**
+ * Brings the element's top just under whatever sticks to the top of the page (the top
+ * bar), so the card above it is out of the shot instead of cut in half. Falls back to
+ * centre() when the element is then too tall for the screen.
+ */
+async function underHeader(page, name) {
+    const el = page.locator(`[data-help="${name}"]`).first();
+    await settle(page);
+    const fits = await el.evaluate((node) => {
+        node.scrollIntoView({ block: 'start', behavior: 'instant' });
+        let bar = document.elementFromPoint(window.innerWidth / 2, 1);
+        while (bar && !['sticky', 'fixed'].includes(getComputedStyle(bar).position)) bar = bar.parentElement;
+        const covered = bar ? bar.getBoundingClientRect().bottom : 0;
+        window.scrollBy({ top: -(covered + 12), behavior: 'instant' });
+        const box = node.getBoundingClientRect();
+        return box.top >= covered && box.bottom <= window.innerHeight;
+    });
+    await settle(page);
+    if (!fits) await centre(page, name);
 }
 
 /** Waits until the page has not scrolled for 20 frames (about a third of a second), at most 300 frames. */

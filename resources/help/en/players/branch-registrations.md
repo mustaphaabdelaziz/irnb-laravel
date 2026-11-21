@@ -3,7 +3,7 @@ title: How do I register a player in a second branch
 summary: Add a second branch to a registered player, with its join date and category, and fill in missing dates.
 pages: [players.show, players.edit, players.join-dates.index]
 keywords: [second branch, two branches, branch registration, add branch, join date, membership number, missing dates]
-related: [players/add-player, players/edit-player, players/player-page, players/status-history]
+related: [players/add-player, players/edit-player, players/player-page, players/status-history, attendance/training-groups]
 ---
 
 A player stays one player, however many branches they have. Each branch has its own card, with its category, join date and membership number.
@@ -46,6 +46,8 @@ Some old registrations only have a year, with no day. To complete them, click th
 Next to each player, choose their join day in the date field. Then click “Save” on the same row. The row disappears from the list.
 ::figure join-dates ring=join-dates-row
 :::
+
+Is the branch's category split into groups? A “Group” field appears in the branch card. Choose the player's group there. To change it later, read “How do I split a category into training groups”.
 
 :::warning
 The player left a branch? Do not delete their card. Change its “Membership status” to “Left the team”. Deleting is only for fixing a typing mistake.

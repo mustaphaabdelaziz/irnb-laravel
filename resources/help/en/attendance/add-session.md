@@ -3,7 +3,7 @@ title: How do I add an extra session or a pre-season session
 summary: Add a session outside the weekly schedule, or a pre-season session that counts toward the season's target.
 pages: [attendance.index]
 keywords: [extra session, pre-season, new session, add session, preparation, season target, running, unscheduled session, fitness]
-related: [attendance/take-attendance]
+related: [attendance/take-attendance, attendance/training-groups]
 ---
 
 The app creates the weekly schedule's sessions by itself. Add the other sessions yourself: an extra session or a pre-season session.
@@ -41,6 +41,9 @@ Leave “Player statuses on the list” as it is, and click “Save”. The mess
 Record attendance like for any session, and click “Save”: the session becomes “Held”. Next to the month name, the orange badge counts the pre-season sessions held out of the season's target. It showed 1/12; now it shows 2/12.
 ::figure att-calendar ring=att-preseason-chip zoom=att-preseason-chip
 :::
+
+Is the category split into groups? The “Extra session” window shows a “Group” field. Choose the group so the session lists only its players, or leave “Whole category”. A pre-season session has no group.
+::figure att-add-extra-group ring=add-group
 
 You don't see the two buttons? You need the “Add” permission for “Attendance”. Ask the club administrator for it.
 

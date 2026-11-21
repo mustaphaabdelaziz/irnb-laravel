@@ -1,0 +1,24 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "group-players-from": {
+      "x": 34.06,
+      "y": 10.4,
+      "w": 31.87,
+      "h": 10.25
+    },
+    "group-players-list": {
+      "x": 34.06,
+      "y": 28.4,
+      "w": 31.87,
+      "h": 14.5
+    },
+    "group-players-save": {
+      "x": 34.06,
+      "y": 44.4,
+      "w": 4.71,
+      "h": 4.5
+    }
+  }
+}

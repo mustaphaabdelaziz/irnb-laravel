@@ -3,7 +3,7 @@ title: Comment inscrire un joueur dans une deuxième section
 summary: Ajoutez une deuxième section à un joueur déjà inscrit, avec sa date d'adhésion et sa catégorie, et complétez les dates manquantes.
 pages: [players.show, players.edit, players.join-dates.index]
 keywords: [deuxième section, deux sections, inscription section, ajouter une section, date d'adhésion, numéro d'adhésion, dates manquantes]
-related: [players/add-player, players/edit-player, players/player-page, players/status-history]
+related: [players/add-player, players/edit-player, players/player-page, players/status-history, attendance/training-groups]
 ---
 
 Un joueur reste un seul joueur, quel que soit son nombre de sections. Chaque section a sa propre carte, avec sa catégorie, sa date d'adhésion et son numéro d'adhésion.
@@ -46,6 +46,8 @@ Certaines anciennes inscriptions n'ont que l'année, sans le jour. Pour les comp
 À côté de chaque joueur, choisissez son jour d'adhésion dans le champ de date. Puis cliquez sur « Enregistrer » sur la même ligne. La ligne disparaît de la liste.
 ::figure join-dates ring=join-dates-row
 :::
+
+La catégorie de la section est répartie en groupes ? Le champ « Groupe » apparaît dans la carte de la section. Choisissez-y le groupe du joueur. Pour le changer plus tard, lisez « Comment répartir une catégorie en groupes ».
 
 :::warning
 Le joueur a quitté une section ? Ne supprimez pas sa carte. Changez-y le « Statut d'adhésion » en « A quitté l'équipe ». La suppression sert seulement à corriger une erreur de saisie.

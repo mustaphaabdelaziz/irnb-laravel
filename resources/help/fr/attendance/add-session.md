@@ -3,7 +3,7 @@ title: Comment ajouter une séance supplémentaire ou une séance de préparatio
 summary: Ajoutez une séance hors de l'horaire hebdomadaire, ou une séance de préparation comptée dans l'objectif de la saison.
 pages: [attendance.index]
 keywords: [séance supplémentaire, préparation physique, nouvelle séance, ajouter une séance, préparation, objectif de la saison, course, séance hors horaire]
-related: [attendance/take-attendance]
+related: [attendance/take-attendance, attendance/training-groups]
 ---
 
 L'application crée seule les séances de l'horaire hebdomadaire. Ajoutez vous-même les autres séances : une séance supplémentaire ou une séance de préparation.
@@ -41,6 +41,9 @@ Laissez « Statuts des joueurs sur la liste » tel quel, puis cliquez sur « Enr
 Enregistrez les présences comme pour toute séance, puis cliquez sur « Enregistrer » : la séance devient « Effectuée ». À côté du nom du mois, le badge orange compte les séances de préparation effectuées sur l'objectif de la saison. Il affichait 1/12, il affiche maintenant 2/12.
 ::figure att-calendar ring=att-preseason-chip zoom=att-preseason-chip
 :::
+
+Une catégorie répartie en groupes ? La fenêtre « Séance supplémentaire » affiche le champ « Groupe ». Choisissez le groupe pour que la séance n'affiche que ses joueurs, ou laissez « Toute la catégorie ». Une séance de préparation n'a pas de groupe.
+::figure att-add-extra-group ring=add-group
 
 Vous ne voyez pas les deux boutons ? Il vous faut le droit « Ajouter » dans « Présence ». Demandez-le à l'administrateur du club.
 

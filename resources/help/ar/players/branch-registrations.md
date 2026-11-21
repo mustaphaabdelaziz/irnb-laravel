@@ -3,7 +3,7 @@ title: كيف أسجّل لاعباً في فرع ثانٍ
 summary: أضف فرعًا ثانيًا للاعب مسجّل، بتاريخ انضمامه وفئته، وأكمل التواريخ الناقصة.
 pages: [players.show, players.edit, players.join-dates.index]
 keywords: [فرع ثان, فرعين, تسجيل في فرع, تاريخ الانضمام, رقم العضوية]
-related: [players/add-player, players/edit-player, players/player-page, players/status-history]
+related: [players/add-player, players/edit-player, players/player-page, players/status-history, attendance/training-groups]
 ---
 
 اللاعب واحد مهما كان عدد فروعه. لكل فرع بطاقة خاصة، بفئتها وتاريخ انضمامها ورقم عضويتها.
@@ -46,6 +46,8 @@ related: [players/add-player, players/edit-player, players/player-page, players/
 بجانب كل لاعب، اختر يوم انضمامه في خانة التاريخ. ثم اضغط «حفظ» في السطر نفسه. يختفي السطر من القائمة.
 ::figure join-dates ring=join-dates-row
 :::
+
+فئة الفرع مقسّمة إلى أفواج؟ تظهر خانة «الفوج» في بطاقة الفرع. اختر فيها فوج اللاعب. لتغيير الفوج لاحقًا، اقرأ «كيف أقسّم فئة إلى أفواج».
 
 :::warning
 غادر اللاعب فرعًا؟ لا تحذف بطاقته. غيّر «حالة العضوية» فيها إلى «غادر الفريق». الحذف لتصحيح خطأ في الإدخال فقط.

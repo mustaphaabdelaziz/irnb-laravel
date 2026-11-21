@@ -2,8 +2,8 @@
 title: How do I enter a whole month of attendance from the paper sheet
 summary: Copy the codes from the attendance sheet into the month grid, one player per row and one session per column, then save.
 pages: [attendance.grid]
-keywords: [month grid, attendance sheet, codes, enter attendance, whole month, coach sheet, R15, AN, print sheet, grid, paper]
-related: [attendance/take-attendance, attendance/cancel-delete-session]
+keywords: [month grid, attendance sheet, codes, enter attendance, whole month, coach sheet, R15, AN, print sheet, grid, groups, group, paper]
+related: [attendance/take-attendance, attendance/cancel-delete-session, attendance/training-groups]
 ---
 
 Does the coach write attendance on a sheet at the pitch? Copy the sheet into the app, in “Month grid”.
@@ -50,6 +50,9 @@ At the top of the page, click “Save”. The app saves only the columns you cha
 An unknown code? Its cell gets a red border, and no column is saved. Fix it, then click “Save” again.
 
 “AE” is saved with the reason “Other”, unless the player already had a saved reason. To choose the reason, click the session's date at the top of the grid: its page opens.
+
+Is the category split into groups? Above the grid, a bar shows the name of each group. Click a group to see only its sessions and its players. “Whole category” shows the sessions with no group. The printer button prints the sheet of the group on screen, with its name at the top.
+::figure att-grid-groups ring=grid-groups
 
 The cell “—” means the player is not on that session's list. A cancelled session does not show in the grid. For another month, change the month in the calendar, then open the grid.
 

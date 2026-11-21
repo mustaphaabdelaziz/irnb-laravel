@@ -2,8 +2,8 @@
 title: Comment saisir les présences d'un mois entier depuis la feuille
 summary: Recopiez les codes de la feuille de présence dans la grille du mois, un joueur par ligne et une séance par colonne, puis enregistrez.
 pages: [attendance.grid]
-keywords: [grille du mois, feuille de présence, codes, saisir les présences, mois entier, feuille de l'entraîneur, R15, AN, imprimer la feuille, grille]
-related: [attendance/take-attendance, attendance/cancel-delete-session]
+keywords: [grille du mois, feuille de présence, codes, saisir les présences, mois entier, feuille de l'entraîneur, R15, AN, imprimer la feuille, groupes, groupe, grille]
+related: [attendance/take-attendance, attendance/cancel-delete-session, attendance/training-groups]
 ---
 
 L'entraîneur note les présences sur une feuille au terrain ? Recopiez la feuille dans l'application, dans « Grille du mois ».
@@ -50,6 +50,9 @@ En haut de la page, cliquez sur « Enregistrer ». L'application enregistre seul
 Un code inconnu ? Sa case est entourée de rouge, et aucune colonne n'est enregistrée. Corrigez-le, puis cliquez à nouveau sur « Enregistrer ».
 
 « AE » est enregistré avec le motif « Autre », sauf si le joueur avait déjà un motif enregistré. Pour choisir le motif, cliquez sur la date de la séance en haut de la grille : sa page s'ouvre.
+
+Une catégorie répartie en groupes ? Au-dessus de la grille, une barre porte le nom de chaque groupe. Cliquez sur un groupe pour voir seulement ses séances et ses joueurs. « Toute la catégorie » affiche les séances sans groupe. Le bouton imprimante imprime la feuille du groupe affiché, avec son nom en haut.
+::figure att-grid-groups ring=grid-groups
 
 La case « — » signifie que le joueur n'est pas sur la liste de cette séance. Une séance annulée n'apparaît pas dans la grille. Pour un autre mois, changez le mois dans le calendrier, puis ouvrez la grille.
 

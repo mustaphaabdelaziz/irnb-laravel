@@ -3,7 +3,7 @@ title: How do I set the weekly schedule and closures
 summary: Enter the training days and hours once, and the sessions appear in the calendar by themselves. Also add the days the club is closed.
 pages: [attendance.settings]
 keywords: [weekly schedule, training schedule, training days, timetable, holiday, club closure, closures, school holidays, pre-season, number of sessions, groups, group, attendance settings]
-related: [attendance/take-attendance, attendance/codes-rules]
+related: [attendance/take-attendance, attendance/codes-rules, attendance/training-groups]
 ---
 
 Enter each category's training days and hours in “Attendance settings”. The app puts the sessions in the calendar, week after week.
@@ -47,7 +47,7 @@ A closure does not delete a session whose attendance is recorded, nor a session 
 
 At the end of each “Weekly schedule” row, a pencil button changes the row, and a bin button deletes it. Either way, its upcoming sessions with no recorded attendance are deleted. After a change, the app puts in the new row's sessions.
 
-Does a category train in more than one group? In the “Groups” card, on the same page, add a group for each one. Then press the “Group players” button on its line and tick its players. The “Group” choice then appears in the “Weekly schedule” card: choose the group of each line. A group's session lists only its players. A player who is in no group does not appear in group sessions; the card reminds you how many players are without a group.
+Does a category train in more than one group? In the “Groups” card, on the same page, add a group for each one. Then press the “Group players” button on its line and tick its players. The “Group” choice then appears in the “Weekly schedule” card: choose the group of each line. A group's session lists only its players. A player who is in no group does not appear in group sessions; the card reminds you how many players are without a group. The step-by-step guide is “How do I split a category into training groups”.
 
 Deleting a closure with the bin button puts those days' sessions back in the calendar.
 

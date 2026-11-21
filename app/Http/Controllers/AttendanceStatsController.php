@@ -7,6 +7,7 @@ use App\Services\Activity\ActivityPeriod;
 use App\Services\Attendance\AttendanceStats;
 use App\Services\Attendance\AttendanceStatusCatalog;
 use App\Services\Attendance\BranchChoice;
+use App\Services\Attendance\GroupChoice;
 use App\Services\Attendance\PlayerNames;
 use App\Services\Dashboard\Support\DeltaCalculator;
 use App\Services\Pdf\ClubHeader;
@@ -22,7 +23,10 @@ use Symfony\Component\HttpFoundation\Response as FileResponse;
 /**
  * Club-wide attendance statistics (`attendance.stats`, view): a period (this
  * month by default, the season, or a custom range), an optional category, and
- * one branch (BranchChoice, shared with the calendar). Every number comes from
+ * one branch (BranchChoice, shared with the calendar). A category split into
+ * training groups can be narrowed to one of them (GroupChoice): the numbers
+ * then come from that group's sessions only, except the table of categories,
+ * which always compares whole categories. Every number comes from
  * AttendanceStats.
  */
 class AttendanceStatsController extends Controller
@@ -56,9 +60,12 @@ class AttendanceStatsController extends Controller
             ? collect($data['categories'])->firstWhere('id', $data['categoryId'])['name']
             : UiLang::get('att.all_categories');
         $branchName = $data['branchId'] !== null ? collect($data['branches'])->firstWhere('id', $data['branchId'])['name'] : null;
+        // A chosen training group follows the category wherever the report is named.
+        $groupName = $data['groupId'] !== null ? collect($data['groups'])->firstWhere('id', $data['groupId'])['name'] : null;
         $filename = 'attendance-stats-'.$from.'-'.$to
             .($data['branchId'] !== null ? '-b'.$data['branchId'] : '')
-            .($data['categoryId'] !== null ? '-'.$data['categoryId'] : '');
+            .($data['categoryId'] !== null ? '-'.$data['categoryId'] : '')
+            .($data['groupId'] !== null ? '-g'.$data['groupId'] : '');
         $catalog = app(AttendanceStatusCatalog::class);
         // A hidden custom code only gets a column while the data has marks for it.
         $labels = $catalog->labels(null, $catalog->withMarks($data['totals']['counts'], ...array_column($data['categoryRows'], 'counts')));
@@ -67,7 +74,7 @@ class AttendanceStatsController extends Controller
             $html = view('pdf.attendance-stats', [
                 ...$data,
                 'club' => ClubHeader::data(),
-                'categoryName' => $categoryName,
+                'categoryName' => $groupName === null ? $categoryName : $categoryName.' · '.$groupName,
                 'branchName' => $branchName,
                 'labels' => $labels,
                 'codes' => $catalog->codes(),
@@ -92,12 +99,12 @@ class AttendanceStatsController extends Controller
         }, $data['players']);
 
         return Export::download(Export::format($request), $filename, $headers, $rows,
-            implode(' — ', array_filter([UiLang::get('att.stats_title'), $data['period']['label'], $branchName, $categoryName])));
+            implode(' — ', array_filter([UiLang::get('att.stats_title'), $data['period']['label'], $branchName, $categoryName, $groupName])));
     }
 
     /**
      * Held sessions, late minutes, missed hours and the score against the
-     * window before (same length, same category and branch). Counts only, no
+     * window before (same length, same category, branch and group). Counts only, no
      * names: summarize() over the previous rows plus the held sessions.
      *
      * @return array{held: ?array, late_minutes: ?array, missed_hours: ?array, score_pct: ?array}
@@ -105,8 +112,8 @@ class AttendanceStatsController extends Controller
     private function deltas(Request $request, array $data): array
     {
         ['from' => $from, 'to' => $to] = ActivityPeriod::fromRequest($request)->previous()->toArray();
-        $totals = $this->stats->summarize($this->stats->players($from, $to, $data['categoryId'], null, $data['branchId']));
-        $held = array_sum($this->stats->sessionsByMonth($from, $to, $data['categoryId'], $data['branchId'])['held']);
+        $totals = $this->stats->summarize($this->stats->players($from, $to, $data['categoryId'], null, $data['branchId'], $data['groupId']));
+        $held = array_sum($this->stats->sessionsByMonth($from, $to, $data['categoryId'], $data['branchId'], $data['groupId'])['held']);
         $now = $data['totals'];
 
         return [
@@ -129,12 +136,14 @@ class AttendanceStatsController extends Controller
         if (CategoryOwnership::outside($categoryId, array_filter([$branchId]))) {
             $categoryId = null;
         }
+        // The category's training groups in this branch, and the one asked for (null = all groups).
+        ['options' => $groups, 'selected' => $groupId] = GroupChoice::fromRequest($request, $categoryId, $branchId);
         $period = ActivityPeriod::fromRequest($request);
         ['from' => $from, 'to' => $to] = $period->toArray();
 
-        $rows = $this->stats->players($from, $to, $categoryId, null, $branchId);
+        $rows = $this->stats->players($from, $to, $categoryId, null, $branchId, $groupId);
         $players = $this->withNames($rows, $branchId);
-        $sessions = $this->stats->sessionsByMonth($from, $to, $categoryId, $branchId);
+        $sessions = $this->stats->sessionsByMonth($from, $to, $categoryId, $branchId, $groupId);
 
         return [
             'period' => $period->toArray(),
@@ -144,13 +153,17 @@ class AttendanceStatsController extends Controller
                 ->values()->all(),
             'branches' => BranchChoice::options(),
             'branchId' => $branchId,
+            // The Group select ([] = none to offer) and the group shown (null = all groups).
+            'groups' => $groups,
+            'groupId' => $groupId,
             'totals' => [
                 ...$this->stats->summarize($rows),
                 'held' => array_sum($sessions['held']),
                 'cancelled' => array_sum($sessions['cancelled']),
             ],
-            'monthly' => $this->stats->monthly($from, $to, $categoryId, null, $branchId),
+            'monthly' => $this->stats->monthly($from, $to, $categoryId, null, $branchId, $groupId),
             'sessionsByMonth' => $sessions,
+            // Whole categories, whatever the category or the group chosen above.
             'categoryRows' => $this->stats->categories($from, $to, $branchId),
             'players' => $players,
             // The table stays historical (departed/archived players included); the owner

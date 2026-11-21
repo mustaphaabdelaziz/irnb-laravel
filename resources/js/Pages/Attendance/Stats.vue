@@ -23,8 +23,9 @@ import StatsPlayerTable from './Partials/StatsPlayerTable.vue';
 import StatsRanking from './Partials/StatsRanking.vue';
 
 /**
- * Club-wide attendance statistics for a period (URL: period, from, to) and an
- * optional category (category_id). Every number is computed by
+ * Club-wide attendance statistics for a period (URL: period, from, to), an
+ * optional category (category_id) and, when that category is split into
+ * training groups, an optional group (group_id). Every number is computed by
  * AttendanceStats on the server; this page lays it out. Status names and
  * colours come from the configured codes.
  */
@@ -34,6 +35,8 @@ const props = defineProps({
     categories: { type: Array, default: () => [] },
     branches: { type: Array, default: () => [] },
     branchId: { type: Number, default: null },
+    groups: { type: Array, default: () => [] }, // the chosen category's training groups in this branch: [{ id, name }]
+    groupId: { type: Number, default: null }, // null = all groups
     totals: { type: Object, required: true },
     deltas: { type: Object, default: () => ({}) },
     monthly: { type: Object, required: true },
@@ -50,19 +53,24 @@ const { themeVersion } = useChartTheme();
 const statuses = computed(() => withMarks([props.totals?.counts, ...(props.categoryRows ?? []).map((r) => r.counts)]));
 const rtl = computed(() => locale.value === 'ar');
 
-// The filters every link and visit keeps: category and branch.
+// The filters the period control and the export keep: category, training group and branch.
 const branchQuery = computed(() => (props.branchId ? { branch_id: props.branchId } : {}));
-const keep = computed(() => ({ ...(props.categoryId ? { category_id: props.categoryId } : {}), ...branchQuery.value }));
+const categoryQuery = computed(() => (props.categoryId ? { category_id: props.categoryId } : {}));
+const keep = computed(() => ({ ...categoryQuery.value, ...(props.groupId ? { group_id: props.groupId } : {}), ...branchQuery.value }));
 const exportHref = computed(() => route('attendance.stats.export', { ...periodQuery(props.period), ...keep.value }));
+// A training group belongs to one branch + category: another category or branch starts on all groups.
 function pickCategory(value) {
     router.get(route('attendance.stats'), { ...periodQuery(props.period), ...branchQuery.value, ...(value ? { category_id: Number(value) } : {}) }, { preserveScroll: true, replace: true });
 }
+function pickGroup(value) {
+    router.get(route('attendance.stats'), { ...periodQuery(props.period), ...branchQuery.value, ...categoryQuery.value, ...(value ? { group_id: Number(value) } : {}) }, { preserveScroll: true, replace: true });
+}
 function switchBranch(id) {
-    router.get(route('attendance.stats'), { ...periodQuery(props.period), ...keep.value, branch_id: id }, { preserveScroll: true, replace: true });
+    router.get(route('attendance.stats'), { ...periodQuery(props.period), ...categoryQuery.value, branch_id: id }, { preserveScroll: true, replace: true });
 }
 
 // The branch is a choice (always set, never cleared), not a filter, so it is not counted and Reset keeps it.
-const activeCount = computed(() => (props.period.period !== 'month' ? 1 : 0) + (props.categoryId ? 1 : 0));
+const activeCount = computed(() => (props.period.period !== 'month' ? 1 : 0) + (props.categoryId ? 1 : 0) + (props.groupId ? 1 : 0));
 function resetFilters() {
     router.get(route('attendance.stats'), { ...branchQuery.value }, { preserveScroll: true, replace: true });
 }
@@ -146,6 +154,10 @@ const card = 'rounded-xl bg-white ring-1 ring-slate-200 dark:bg-slate-900 dark:r
                 <select :value="categoryId ?? ''" :class="input" :aria-label="t('att.category')" @change="pickCategory($event.target.value)">
                     <option value="">{{ t('att.all_categories') }}</option>
                     <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
+                </select>
+                <select v-if="groups.length" :value="groupId ?? ''" :class="input" :aria-label="t('att.group')" @change="pickGroup($event.target.value)">
+                    <option value="">{{ t('att.all_groups') }}</option>
+                    <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
                 </select>
             </StatsToolbar>
 

@@ -9,9 +9,11 @@ use App\Models\Player;
 use App\Models\PlayerStatus;
 use App\Models\Position;
 use App\Models\RegistrationStatusChange;
+use App\Models\TrainingGroup;
 use App\Models\User;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
+use App\Services\Attendance\GroupMembership;
 use App\Support\ValidationAttributes;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -36,6 +38,11 @@ class RegistrationService
     public function sync(Player $player, array $cards, ?User $user = null): void
     {
         DB::transaction(function () use ($player, $cards, $user) {
+            // Read before any card is saved: a category change ends the membership the day before
+            // (BranchRegistration). Null when no card speaks of its group: nothing is read or written.
+            $groupsBefore = collect($cards)->contains(fn (array $card) => array_key_exists('group_id', $card))
+                ? app(GroupMembership::class)->groupsOf($player->id, now()->toDateString())
+                : null;
             $existing = $player->registrations()->get()->keyBy('branch_id');
             // The position a player with no registration holds: a branch's card can't
             // carry it unless it is the first one, so it must not vanish between them.
@@ -55,7 +62,42 @@ class RegistrationService
             $this->syncOtherPositions($player, $cards);
             $this->keepHeldPosition($player, $held);
             $this->refreshMirror($player);
+            if ($groupsBefore !== null) {
+                $this->applyGroups($player, $cards, $groupsBefore);
+            }
         });
+    }
+
+    /**
+     * The Group field of the branch cards. A card speaks only when it carries
+     * `group_id` (the form sends it when the choice changed). `group_from` is the
+     * day the change applies from; none = from the beginning, which is also how a
+     * first assignment is saved. Memberships are written by GroupMembership alone.
+     *
+     * @param  list<array<string, mixed>>  $cards
+     * @param  array<int, TrainingGroup>  $before  branch id => the group held before the cards were saved
+     */
+    private function applyGroups(Player $player, array $cards, array $before): void
+    {
+        $membership = app(GroupMembership::class);
+
+        foreach ($cards as $card) {
+            if (! array_key_exists('group_id', $card)) {
+                continue;
+            }
+            $held = $before[(int) $card['branch_id']] ?? null;
+            $chosenId = empty($card['group_id']) ? null : (int) $card['group_id'];
+            if ($held?->id === $chosenId) {
+                continue;
+            }
+            $from = $held === null || empty($card['group_from']) ? null : (string) $card['group_from'];
+
+            if ($chosenId === null) {
+                $membership->remove($held, $player->id, $from);
+            } else {
+                $membership->add(TrainingGroup::findOrFail($chosenId), $player->id, $from);
+            }
+        }
     }
 
     /** A main position a branch owns and no card took waits among the other positions. */

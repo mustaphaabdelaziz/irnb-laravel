@@ -184,6 +184,7 @@ return [
     'position_other_branch' => 'Ce poste appartient à une autre section.',
     'category_other_branch' => 'Cette catégorie appartient à une autre section.',
     'category_not_in_branch' => 'La catégorie « :name » n\'existe pas dans cette section.',
+    'group_other_category' => 'Ce groupe appartient à une autre section ou à une autre catégorie.',
 
     'join_date_needed' => 'La date ou l\'année d\'adhésion est requise.',
     'branch_required' => 'Veuillez choisir au moins une section.',

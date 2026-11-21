@@ -20,11 +20,13 @@ use App\Models\PlayerStatus;
 use App\Models\Position;
 use App\Models\SportingStatus;
 use App\Models\Subscription;
+use App\Models\TrainingGroup;
 use App\Models\Transaction;
 use App\Models\WebsiteConfig;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
 use App\Services\Attendance\AttendanceStatusCatalog;
+use App\Services\Attendance\GroupMembership;
 use App\Services\Dashboard\ModuleStats;
 use App\Services\Finance\DefaultRegisterResolver;
 use App\Services\FinanceService;
@@ -273,6 +275,8 @@ class PlayerController extends Controller
             'playerStatuses' => PlayerStatus::orderBy('sort_order')->get(),
             // The tab the page opens on, and the ID it shows first.
             'mainBranchId' => RegistrationDisplay::make()->main($player)?->branch_id,
+            // The training group of each branch card today, by branch id ({} when none).
+            'playerGroups' => (object) $this->groupsByBranch($player),
             'transactions' => $transactions,
             'availableSubscriptions' => $this->availableSubscriptions($player, $registers),
             'totalDebt' => $player->calculateTotalDebt(),
@@ -391,6 +395,27 @@ class PlayerController extends Controller
         return $map;
     }
 
+    /**
+     * The training group each of the player's registrations is in today, by branch id.
+     * A membership left in a group of another category does not count: a group
+     * belongs to one category.
+     *
+     * @return array<int, array{id: int, name: string}>
+     */
+    private function groupsByBranch(Player $player): array
+    {
+        $groups = app(GroupMembership::class)->groupsOf($player->id, now()->toDateString());
+        $shown = [];
+        foreach ($player->registrations as $registration) {
+            $group = $groups[(int) $registration->branch_id] ?? null;
+            if ($group !== null && $group->category_id === (int) $registration->category_id) {
+                $shown[(int) $registration->branch_id] = ['id' => $group->id, 'name' => $group->name];
+            }
+        }
+
+        return $shown;
+    }
+
     public function create(): Response
     {
         $geo = $this->algeriaGeo();
@@ -402,6 +427,8 @@ class PlayerController extends Controller
             'sportingStatuses' => SportingStatus::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'jobs' => MemberJob::orderBy('name')->get(),
             'branches' => Branch::orderBy('name')->get(),
+            // The Group field of the branch cards.
+            'trainingGroups' => TrainingGroup::options(),
             'wilayas' => $geo['wilayas'],
             'communes' => $geo['communes'],
             'nextSequenceByYear' => $this->nextSequenceByYear(),
@@ -479,6 +506,9 @@ class PlayerController extends Controller
             'sportingStatuses' => SportingStatus::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
             'jobs' => MemberJob::orderBy('name')->get(),
             'branches' => Branch::orderBy('name')->get(),
+            // The Group field of the branch cards, and the group each card holds today.
+            'trainingGroups' => TrainingGroup::options(),
+            'playerGroups' => (object) $this->groupsByBranch($player),
             'wilayas' => $geo['wilayas'],
             'communes' => $geo['communes'],
             'nextSequenceByYear' => $this->nextSequenceByYear(),

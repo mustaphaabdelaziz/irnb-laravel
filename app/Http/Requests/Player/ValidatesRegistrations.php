@@ -6,6 +6,7 @@ use App\Models\Branch;
 use App\Models\Category;
 use App\Models\Player;
 use App\Models\Position;
+use App\Models\TrainingGroup;
 use App\Support\ValidationAttributes;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -21,6 +22,10 @@ trait ValidatesRegistrations
             'registrations.*.branch_id' => ['required', 'integer', 'distinct', 'exists:branches,id'],
             'registrations.*.join_date' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today', 'after:1900-01-01'],
             'registrations.*.category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            // The training group of the card's branch + category, and the day a change applies from
+            // (none = from the beginning). Sent only when the choice changed (see registrationCards.js).
+            'registrations.*.group_id' => ['nullable', 'integer', 'exists:training_groups,id'],
+            'registrations.*.group_from' => ['nullable', 'date_format:Y-m-d'],
             'registrations.*.position_id' => ['nullable', 'integer', 'exists:positions,id'],
             'registrations.*.other_position_ids' => ['nullable', 'array'],
             'registrations.*.other_position_ids.*' => ['integer', 'exists:positions,id'],
@@ -40,6 +45,7 @@ trait ValidatesRegistrations
             $existing = $player ? $player->registrations()->get()->keyBy('branch_id') : collect();
             $branchOf = Position::query()->pluck('branch_id', 'id');
             $categoryOwner = Category::query()->pluck('branch_id', 'id');
+            $groups = TrainingGroup::query()->get(['id', 'branch_id', 'category_id'])->keyBy('id');
             $birthdate = $this->input('birthdate') ?: $player?->birthdate?->toDateString();
 
             foreach ((array) $this->input('registrations', []) as $i => $card) {
@@ -73,6 +79,11 @@ trait ValidatesRegistrations
                 $categoryBranch = $categoryOwner[$category] ?? null;
                 if ($category && ! $keepsCategory && $categoryBranch !== null && (int) $categoryBranch !== $branchId) {
                     $validator->errors()->add("registrations.$i.category_id", __('validation.category_other_branch'));
+                }
+                // A training group belongs to one branch + category: the card's own.
+                $group = empty($card['group_id']) ? null : $groups->get((int) $card['group_id']);
+                if ($group !== null && ((int) $group->branch_id !== $branchId || (int) $group->category_id !== (int) $category)) {
+                    $validator->errors()->add("registrations.$i.group_id", __('validation.group_other_category'));
                 }
 
                 $main = $card['position_id'] ?? null;

@@ -14,7 +14,9 @@ use App\Models\Branch;
  *    current one is reported beside it).
  * A threshold of 0 turns its rule off. Every number comes from AttendanceStats,
  * over one branch's sessions ($branchId; null = no branch condition, a club
- * without branches): a two-sport player is judged per sport.
+ * without branches): a two-sport player is judged per sport. The page's list
+ * can also be read over one training group's sessions ($groupId, GroupScope);
+ * the dashboard card and the profile card never are.
  */
 final class AtRisk
 {
@@ -62,15 +64,17 @@ final class AtRisk
      * in one branch, worst first: lowest score % (none last), then longest
      * streak, then name. $categoryId keeps the players now in that category in the branch;
      * their numbers still cover all their marks in the branch, since the
-     * risk is the person's. Six queries whatever the roster (the custom
+     * risk is the person's. $groupId keeps only the marks of that training
+     * group's sessions: both rules are then judged on them alone.
+     * Six queries whatever the roster (the custom
      * codes: 1, players(): 2, the streak scan: 1, names: 2), four when
      * nobody is at risk.
      *
      * @return list<array<string, mixed>>
      */
-    public function list(string $from, string $to, ?int $categoryId = null, ?int $branchId = null): array
+    public function list(string $from, string $to, ?int $categoryId = null, ?int $branchId = null, ?int $groupId = null): array
     {
-        return $this->named($this->flagged($from, $to, $branchId), $categoryId, $branchId);
+        return $this->named($this->flagged($from, $to, $branchId, $groupId), $categoryId, $branchId);
     }
 
     /**
@@ -127,18 +131,18 @@ final class AtRisk
     }
 
     /**
-     * The flagged players of one branch (null: no branch condition), without
+     * The flagged players of one branch (null: no branch condition), over one training group's sessions when given, without
      * names. Three queries (players(): 2, the streak scan: 1).
      *
      * @return list<array<string, mixed>>
      */
-    private function flagged(string $from, string $to, ?int $branchId): array
+    private function flagged(string $from, string $to, ?int $branchId, ?int $groupId = null): array
     {
         $thresholds = $this->thresholds();
-        $streaks = $this->stats->unexcusedStreaks($from, $to, null, $branchId);
+        $streaks = $this->stats->unexcusedStreaks($from, $to, null, $branchId, $groupId);
 
         $flagged = [];
-        foreach ($this->stats->players($from, $to, null, null, $branchId) as $playerId => $row) {
+        foreach ($this->stats->players($from, $to, null, null, $branchId, $groupId) as $playerId => $row) {
             $streak = $streaks[$playerId] ?? self::NO_STREAK;
             $flags = self::evaluate($row, $streak, $thresholds);
             if (! $flags['at_risk']) {

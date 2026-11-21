@@ -14,7 +14,8 @@ import { pct, periodQuery } from '@/lib/attendanceStats';
 /**
  * Players at risk (AtRisk on the server) for a period, the current season by
  * default, and an optional category (the players' current one). A player is
- * listed for a low score, an unexcused streak, or both.
+ * listed for a low score, an unexcused streak, or both. A category split
+ * into training groups can be judged on one group's sessions.
  */
 const props = defineProps({
     period: { type: Object, required: true },
@@ -23,13 +24,17 @@ const props = defineProps({
     thresholds: { type: Object, required: true }, // { min_score_pct, unexcused_streak, min_expected }
     branches: { type: Array, default: () => [] },
     branchId: { type: Number, default: null },
+    groups: { type: Array, default: () => [] }, // the chosen category's training groups in this branch: [{ id, name }]
+    groupId: { type: Number, default: null }, // null = all groups
     rows: { type: Array, default: () => [] },
 });
 const { t } = useI18n();
 const { can } = useCan();
 
 const branchQuery = computed(() => (props.branchId ? { branch_id: props.branchId } : {}));
-const keep = computed(() => ({ ...(props.categoryId ? { category_id: props.categoryId } : {}), ...branchQuery.value }));
+const categoryQuery = computed(() => (props.categoryId ? { category_id: props.categoryId } : {}));
+// What the period control and the export keep: category, training group and branch.
+const keep = computed(() => ({ ...categoryQuery.value, ...(props.groupId ? { group_id: props.groupId } : {}), ...branchQuery.value }));
 const exportHref = computed(() => route('attendance.alerts.export', { ...periodQuery(props.period), ...keep.value }));
 // The letter and the profile for the page's branch.
 const letterHref = (row) => route('attendance.players.letter', { player: row.player_id, ...periodQuery(props.period), ...branchQuery.value });
@@ -37,8 +42,12 @@ const profileHref = (row) => route('players.show', { player: row.player_id, ...(
 function pickCategory(value) {
     router.get(route('attendance.alerts'), { ...periodQuery(props.period), ...branchQuery.value, ...(value ? { category_id: Number(value) } : {}) }, { preserveScroll: true, replace: true });
 }
+// A training group belongs to one branch + category: another category or branch starts on all groups.
+function pickGroup(value) {
+    router.get(route('attendance.alerts'), { ...periodQuery(props.period), ...branchQuery.value, ...categoryQuery.value, ...(value ? { group_id: Number(value) } : {}) }, { preserveScroll: true, replace: true });
+}
 function switchBranch(id) {
-    router.get(route('attendance.alerts'), { ...periodQuery(props.period), ...keep.value, branch_id: id }, { preserveScroll: true, replace: true });
+    router.get(route('attendance.alerts'), { ...periodQuery(props.period), ...categoryQuery.value, branch_id: id }, { preserveScroll: true, replace: true });
 }
 
 // The two rules as configured; a rule set to 0 reads "off".
@@ -76,6 +85,10 @@ const th = 'p-2 font-semibold';
                 <select :value="categoryId ?? ''" :class="input" :aria-label="t('att.category')" @change="pickCategory($event.target.value)">
                     <option value="">{{ t('att.all_categories') }}</option>
                     <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
+                </select>
+                <select v-if="groups.length" :value="groupId ?? ''" :class="input" :aria-label="t('att.group')" @change="pickGroup($event.target.value)">
+                    <option value="">{{ t('att.all_groups') }}</option>
+                    <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
                 </select>
             </div>
 

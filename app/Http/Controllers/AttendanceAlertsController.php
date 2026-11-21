@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Services\Activity\ActivityPeriod;
 use App\Services\Attendance\AtRisk;
 use App\Services\Attendance\BranchChoice;
+use App\Services\Attendance\GroupChoice;
 use App\Support\CategoryOwnership;
 use App\Support\Export;
 use App\Support\UiLang;
@@ -17,7 +18,9 @@ use Symfony\Component\HttpFoundation\Response as FileResponse;
 /**
  * Players at risk (`attendance.alerts`, view): a period, the current season
  * by default, one branch (BranchChoice, shared with the calendar) and an
- * optional category (the players' current one). The rules and every number
+ * optional category (the players' current one). A category split into
+ * training groups can be narrowed to one of them (GroupChoice): the rules
+ * are then judged on that group's sessions only. The rules and every number
  * come from AtRisk / AttendanceStats, over that branch's sessions.
  */
 class AttendanceAlertsController extends Controller
@@ -38,6 +41,8 @@ class AttendanceAlertsController extends Controller
             ? collect($data['categories'])->firstWhere('id', $data['categoryId'])['name']
             : UiLang::get('att.all_categories');
         $branchName = $data['branchId'] !== null ? collect($data['branches'])->firstWhere('id', $data['branchId'])['name'] : null;
+        // A chosen training group follows the category wherever the list is named.
+        $groupName = $data['groupId'] !== null ? collect($data['groups'])->firstWhere('id', $data['groupId'])['name'] : null;
 
         $headers = [
             UiLang::get('col.member'), UiLang::get('col.membership_id'), UiLang::get('att.category'),
@@ -58,10 +63,11 @@ class AttendanceAlertsController extends Controller
             Export::format($request),
             'attendance-at-risk-'.$from.'-'.$to
                 .($data['branchId'] !== null ? '-b'.$data['branchId'] : '')
-                .($data['categoryId'] !== null ? '-'.$data['categoryId'] : ''),
+                .($data['categoryId'] !== null ? '-'.$data['categoryId'] : '')
+                .($data['groupId'] !== null ? '-g'.$data['groupId'] : ''),
             $headers,
             $rows,
-            implode(' — ', array_filter([UiLang::get('att.risk.title'), $data['period']['label'], $branchName, $categoryName])),
+            implode(' — ', array_filter([UiLang::get('att.risk.title'), $data['period']['label'], $branchName, $categoryName, $groupName])),
         );
     }
 
@@ -75,6 +81,8 @@ class AttendanceAlertsController extends Controller
         if (CategoryOwnership::outside($categoryId, array_filter([$branchId]))) {
             $categoryId = null;
         }
+        // The category's training groups in this branch, and the one asked for (null = all groups).
+        ['options' => $groups, 'selected' => $groupId] = GroupChoice::fromRequest($request, $categoryId, $branchId);
         $period = ActivityPeriod::fromRequestOrSeason($request);
         ['from' => $from, 'to' => $to] = $period->toArray();
 
@@ -86,8 +94,11 @@ class AttendanceAlertsController extends Controller
                 ->values()->all(),
             'branches' => BranchChoice::options(),
             'branchId' => $branchId,
+            // The Group select ([] = none to offer) and the group judged on (null = all groups).
+            'groups' => $groups,
+            'groupId' => $groupId,
             'thresholds' => $this->risk->thresholds(),
-            'rows' => $this->risk->list($from, $to, $categoryId, $branchId),
+            'rows' => $this->risk->list($from, $to, $categoryId, $branchId, $groupId),
         ];
     }
 }

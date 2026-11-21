@@ -50,7 +50,7 @@ class AttendanceStatsController extends Controller
 
     /**
      * The player table as XLSX (default) or CSV, or the whole page as a PDF
-     * (`format=pdf`), for the same period, branch and category as the page.
+     * (`format=pdf`), for the same period, branch, category and group as the page.
      */
     public function export(Request $request): FileResponse
     {

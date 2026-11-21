@@ -131,8 +131,8 @@ final class AtRisk
     }
 
     /**
-     * The flagged players of one branch (null: no branch condition), over one training group's sessions when given, without
-     * names. Three queries (players(): 2, the streak scan: 1).
+     * The flagged players of one branch (null: no branch condition), over one training group's sessions when
+     * given, without names. Three queries (players(): 2, the streak scan: 1).
      *
      * @return list<array<string, mixed>>
      */

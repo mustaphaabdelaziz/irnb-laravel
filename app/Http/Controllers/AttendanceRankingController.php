@@ -187,11 +187,10 @@ class AttendanceRankingController extends Controller
     }
 
     /**
-     * The category's ranked players in the branch (in one training group, when given), with names, and how many active
-     * players with marks had too few sessions to be ranked. A departed or
-     * archived player (PlayerNames' `active` flag) is dropped before
-     * ranking: no rank, no medal, and not counted among the unranked
-     * either — they simply are not in the pool being ranked.
+     * The category's ranked players in the branch (in one training group, when given), with names, and how many
+     * active players with marks had too few sessions to be ranked. A departed or archived player (PlayerNames'
+     * `active` flag) is dropped before ranking: no rank, no medal, and not counted among the unranked either —
+     * they simply are not in the pool being ranked.
      *
      * @return array{rows: list<array<string, mixed>>, unranked: int}
      */

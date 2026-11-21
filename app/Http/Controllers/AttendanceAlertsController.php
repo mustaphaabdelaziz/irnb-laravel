@@ -32,7 +32,7 @@ class AttendanceAlertsController extends Controller
         return Inertia::render('Attendance/Alerts', $this->data($request));
     }
 
-    /** The list as XLSX (default) or CSV, for the same period, branch and category as the page. */
+    /** The list as XLSX (default) or CSV, for the same period, branch, category and group as the page. */
     public function export(Request $request): FileResponse
     {
         $data = $this->data($request);

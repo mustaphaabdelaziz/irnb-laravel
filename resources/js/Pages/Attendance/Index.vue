@@ -32,6 +32,7 @@ const props = defineProps({
     events: { type: Array, default: () => [] }, // timeline events
     playerStatuses: { type: Array, default: null }, // add-session dialog: roster status checkboxes (optional prop, loaded on first open)
     rosterStatusIds: { type: Array, default: null },
+    groups: { type: Array, default: null }, // add-session dialog: every training group (optional prop, loaded with playerStatuses)
 });
 const { t } = useI18n();
 const { can } = useCan();
@@ -78,7 +79,7 @@ function openCreate(kind, date = today) {
     createDate.value = date;
     // The roster status checkboxes are an optional prop: fetched once, before the dialog opens.
     if (props.playerStatuses === null) {
-        router.reload({ only: ['playerStatuses', 'rosterStatusIds'], onSuccess: () => (showCreate.value = true) });
+        router.reload({ only: ['playerStatuses', 'rosterStatusIds', 'groups'], onSuccess: () => (showCreate.value = true) });
         return;
     }
     showCreate.value = true;
@@ -120,6 +121,6 @@ function openCreate(kind, date = today) {
             <TimelineView v-else-if="view === 'timeline'" :categories="branchCategories" :category-id="categoryId" :kind="kind" :from="from" :to="to" :events="events" @navigate="navigate" />
         </div>
 
-        <AddSessionModal :show="showCreate" :kind="createKind" :categories="categories" :category-id="categoryId" :branches="branches" :branch-id="branchId" :date="createDate" :player-statuses="playerStatuses ?? []" :roster-status-ids="rosterStatusIds ?? []" @close="showCreate = false" />
+        <AddSessionModal :show="showCreate" :kind="createKind" :categories="categories" :category-id="categoryId" :branches="branches" :branch-id="branchId" :groups="groups ?? []" :date="createDate" :player-statuses="playerStatuses ?? []" :roster-status-ids="rosterStatusIds ?? []" @close="showCreate = false" />
     </AuthenticatedLayout>
 </template>

@@ -9,6 +9,7 @@ import Modal from '@/Components/Modal.vue';
 import InputError from '@/Components/InputError.vue';
 import { useCan } from '@/Composables/useCan';
 import { categoriesForBranch } from '@/lib/categoryPicker';
+import { groupsFor } from '@/lib/groupPicker';
 import { useAttendanceCodes } from '@/Composables/useAttendanceCodes';
 
 const props = defineProps({
@@ -23,6 +24,7 @@ const props = defineProps({
     allCategories: { type: Array, default: () => [] },
     branches: { type: Array, default: () => [] },
     playerStatuses: { type: Array, default: () => [] },
+    groups: { type: Array, default: () => [] }, // the training groups of the session's category: [{ id, branch_id, category_id, name }]
 });
 const { t, locale } = useI18n();
 const { can } = useCan();
@@ -109,10 +111,12 @@ const submitDelete = () => {
         router.delete(route('attendance.sessions.destroy', props.session.id), options);
     }
 };
-// ---- Edit: details any time; branch, roster, categories and kind until marks are first saved ----
+// ---- Edit: details any time; branch, group, roster, categories and kind until marks are first saved ----
 const handAdded = computed(() => props.session.kind !== 'regular');
 const showEdit = ref(false);
-const editForm = useForm({ title: '', date: '', start_time: '', end_time: '', coach: '', notes: '', branch_id: null, roster_status_ids: [], kind: 'extra', category_ids: [] });
+const editForm = useForm({ title: '', date: '', start_time: '', end_time: '', coach: '', notes: '', branch_id: null, group_id: null, roster_status_ids: [], kind: 'extra', category_ids: [] });
+// The training groups of the chosen branch and the session's category; none = the field is not shown.
+const editGroups = computed(() => groupsFor(props.groups, editForm.branch_id, props.session.category_id));
 // The session's own categories stay listed until they are changed.
 const editCategories = computed(() => categoriesForBranch(props.allCategories, editForm.branch_id, props.session.categories.map((c) => c.id)));
 // A different branch offers different categories: drop the ticked ones that no longer fit.
@@ -120,6 +124,8 @@ watch(() => editForm.branch_id, (branchId, before) => {
     if (before === null || branchId === before) return; // null: the dialog is being filled
     const fits = categoriesForBranch(props.allCategories, branchId);
     editForm.category_ids = editForm.category_ids.filter((id) => fits.some((c) => c.id === id));
+    // A group belongs to one branch: it does not follow the session to another.
+    if (!editGroups.value.some((g) => g.id === editForm.group_id)) editForm.group_id = null;
 });
 const sortedKey = (ids) => [...ids].sort((a, b) => a - b).join(',');
 let prefilledStatusKey = '';
@@ -129,7 +135,7 @@ function openEdit() {
     Object.assign(editForm, {
         // Title, coach and notes come from the side panel, so text typed there is not lost.
         title: log.title, date: s.date, start_time: s.start_time, end_time: s.end_time, coach: log.coach, notes: log.notes,
-        branch_id: s.branch_id, roster_status_ids: [...(s.roster_status_ids ?? [])], kind: s.kind, category_ids: s.categories.map((c) => c.id),
+        branch_id: s.branch_id, group_id: s.group_id ?? null, roster_status_ids: [...(s.roster_status_ids ?? [])], kind: s.kind, category_ids: s.categories.map((c) => c.id),
     });
     editForm.clearErrors();
     showEdit.value = true;
@@ -143,6 +149,8 @@ function editPayload(d) {
         if (props.playerStatuses.length && sortedKey(d.roster_status_ids) !== prefilledStatusKey) out.roster_status_ids = d.roster_status_ids;
         if (handAdded.value && d.kind !== s.kind) out.kind = d.kind;
         if (handAdded.value && props.branches.length && d.branch_id !== s.branch_id) out.branch_id = d.branch_id;
+        // A pre-season session never has a group: the server clears it with the kind.
+        if (handAdded.value && d.kind !== 'preseason' && (d.group_id ?? null) !== (s.group_id ?? null)) out.group_id = d.group_id ?? null;
         if (d.kind === 'preseason' && sortedKey(d.category_ids) !== sortedKey(s.categories.map((c) => c.id))) out.category_ids = d.category_ids;
     }
     return out;
@@ -154,7 +162,7 @@ function submitEdit() {
     // Before the first save the roster also depends on the date (players who left by then drop out).
     // The side-panel text is not lost either way: the dialog was filled from it and saves it.
     const reshapesRoster = (!props.saved && payload.date !== props.session.date)
-        || ['branch_id', 'kind', 'category_ids', 'roster_status_ids'].some((f) => f in payload);
+        || ['branch_id', 'group_id', 'kind', 'category_ids', 'roster_status_ids'].some((f) => f in payload);
     if (reshapesRoster && marksUnsaved.value && !window.confirm(t('att.edit_discard_confirm'))) return;
     editForm.transform(() => payload).put(route('attendance.sessions.update', props.session.id), {
         preserveScroll: true,
@@ -320,6 +328,12 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                         <select v-model="editForm.branch_id" :class="[input, 'mt-1 block w-full']">
                             <option :value="null" disabled>{{ t('select') }}</option>
                             <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}</option>
+                        </select>
+                    </label>
+                    <label v-if="handAdded && editForm.kind !== 'preseason' && editGroups.length" class="block text-sm">{{ t('att.group') }}
+                        <select v-model="editForm.group_id" :class="[input, 'mt-1 block w-full']">
+                            <option :value="null">{{ t('att.group_whole') }}</option>
+                            <option v-for="g in editGroups" :key="g.id" :value="g.id">{{ g.name }}</option>
                         </select>
                     </label>
                     <fieldset v-if="editForm.kind === 'preseason'" class="text-sm">

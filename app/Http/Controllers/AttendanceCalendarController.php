@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\SessionKind;
 use App\Models\Category;
 use App\Models\PlayerStatus;
+use App\Models\TrainingGroup;
 use App\Models\TrainingSchedule;
 use App\Services\Attendance\AttendanceStatusCatalog;
 use App\Services\Attendance\BranchChoice;
@@ -104,6 +105,8 @@ class AttendanceCalendarController extends Controller
             // set: optional, fetched only when the dialog first opens (see Index.vue openCreate()).
             'playerStatuses' => Inertia::optional(fn () => PlayerStatus::options()),
             'rosterStatusIds' => Inertia::optional(fn () => AttendanceSettings::rosterStatusIds()),
+            // The add-session dialog's Group select: optional too, fetched with the two above.
+            'groups' => Inertia::optional(fn () => TrainingGroup::options()),
             ...$props,
         ]);
     }

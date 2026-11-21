@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n';
 import Modal from '@/Components/Modal.vue';
 import InputError from '@/Components/InputError.vue';
 import { categoriesForBranch } from '@/lib/categoryPicker';
+import { groupsFor } from '@/lib/groupPicker';
 
 const props = defineProps({
     show: { type: Boolean, default: false },
@@ -13,6 +14,7 @@ const props = defineProps({
     categoryId: { type: Number, default: null }, // pre-selected primary category
     branches: { type: Array, default: () => [] },
     branchId: { type: Number, default: null }, // pre-selected (the calendar's switch)
+    groups: { type: Array, default: () => [] }, // every training group: [{ id, branch_id, category_id, name }]
     date: { type: String, required: true }, // 'Y-m-d'
     playerStatuses: { type: Array, default: () => [] }, // [{ id, name }]
     rosterStatusIds: { type: Array, default: () => [] }, // the settings' default roster set
@@ -20,8 +22,14 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 const { t } = useI18n();
 
-const form = useForm({ branch_id: null, category_id: null, category_ids: [], kind: 'extra', date: '', start_time: '18:00', end_time: '19:30', title: '', roster_status_ids: [] });
+const form = useForm({ branch_id: null, category_id: null, group_id: null, category_ids: [], kind: 'extra', date: '', start_time: '18:00', end_time: '19:30', title: '', roster_status_ids: [] });
 const offered = computed(() => categoriesForBranch(props.categories, form.branch_id));
+// The training groups of the chosen branch + category; none = the field is not shown.
+const groupOptions = computed(() => groupsFor(props.groups, form.branch_id, form.category_id));
+// A group belongs to one branch + category: another choice drops it.
+watch(() => [form.branch_id, form.category_id], () => {
+    if (!groupOptions.value.some((g) => g.id === form.group_id)) form.group_id = null;
+});
 
 watch(() => props.show, (open) => {
     if (!open) return;
@@ -53,6 +61,8 @@ function submit() {
             ...d,
             category_ids: d.kind === 'preseason' ? [d.category_id, ...d.category_ids.filter((id) => id !== d.category_id)] : [],
             title: d.title || null,
+            // A pre-season session never has a group.
+            group_id: d.kind === 'preseason' ? null : d.group_id,
             // No player status defined at all: left out, the roster takes the default.
             roster_status_ids: props.playerStatuses.length ? d.roster_status_ids : undefined,
         }))
@@ -81,6 +91,12 @@ const input = 'rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg
                     <option v-for="c in offered" :key="c.id" :value="c.id">{{ c.name }}</option>
                 </select>
                 <InputError :message="form.errors.category_id" class="mt-1" />
+            </label>
+            <label v-if="form.kind !== 'preseason' && groupOptions.length" data-help="add-group" class="block text-sm">{{ t('att.group') }}
+                <select v-model="form.group_id" :class="[input, 'mt-1 block w-full']">
+                    <option :value="null">{{ t('att.group_whole') }}</option>
+                    <option v-for="g in groupOptions" :key="g.id" :value="g.id">{{ g.name }}</option>
+                </select>
             </label>
             <fieldset v-if="form.kind === 'preseason' && others.length" data-help="add-other-categories" class="text-sm">
                 <legend class="mb-1">{{ t('att.other_categories') }}</legend>

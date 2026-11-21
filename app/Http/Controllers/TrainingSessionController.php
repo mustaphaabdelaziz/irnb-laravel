@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\SessionKind;
 use App\Enums\SessionState;
 use App\Models\Branch;
+use App\Models\TrainingGroup;
 use App\Models\TrainingSession;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
@@ -35,6 +36,8 @@ class TrainingSessionController extends Controller
             'category_ids.*' => ['exclude_unless:kind,preseason', 'integer', 'distinct', 'exists:categories,id'],
             'kind' => ['required', Rule::in([SessionKind::Extra->value, SessionKind::Preseason->value])],
             'title' => ['nullable', 'string', 'max:150'],
+            // The training group whose members make the list; a pre-season session never has one.
+            'group_id' => ['exclude_if:kind,preseason', 'nullable', 'integer'],
             // The player statuses its roster is drawn from (the dialog pre-checks the settings' default).
             'roster_status_ids' => ['nullable', 'array', 'min:1'],
             'roster_status_ids.*' => ['integer', 'distinct', 'exists:player_statuses,id'],
@@ -48,6 +51,11 @@ class TrainingSessionController extends Controller
             : [(int) $data['category_id']];
         $branchId = isset($data['branch_id']) ? (int) $data['branch_id'] : null;
         CategoryOwnership::assertIn('category_id', $categoryIds, $branchId);
+        // Always present, so the session is created with a group or with none.
+        $data['group_id'] = isset($data['group_id']) ? (int) $data['group_id'] : null;
+        if ($data['group_id'] !== null && ! $this->groupFits($data['group_id'], $branchId, (int) $data['category_id'])) {
+            throw ValidationException::withMessages(['group_id' => 'att.error.group_other_category']);
+        }
         $this->assertSlotFree($branchId, $categoryIds, $data['date'], $data['start_time']);
 
         try {
@@ -70,10 +78,12 @@ class TrainingSessionController extends Controller
      * The session page's Edit dialog. Title, coach, notes, date and times can
      * always change (a new date or start keeps the first original date in
      * `moved_from`, so the generator never recreates the old slot). Branch,
-     * roster statuses, categories and kind shape the roster, which is frozen
-     * once marks are saved, so they change only before that; branch and kind
-     * only on a session added by hand (a regular one follows its weekly
-     * schedule). Fields left out of the request stay as they are.
+     * training group, roster statuses, categories and kind shape the roster,
+     * which is frozen once marks are saved, so they change only before that;
+     * branch, group and kind only on a session added by hand (a regular one
+     * follows its weekly schedule line). Fields left out of the request stay
+     * as they are, except the group: a pre-season session never has one, and
+     * a group that was not re-sent does not follow the session to another branch.
      */
     public function update(Request $request, TrainingSession $session): RedirectResponse
     {
@@ -89,6 +99,7 @@ class TrainingSessionController extends Controller
             'start_time' => ['required_with:end_time', 'date_format:H:i'],
             'end_time' => ['required_with:start_time', 'date_format:H:i', 'after:start_time'],
             'branch_id' => ['sometimes', Rule::requiredIf(fn () => Branch::exists()), 'nullable', 'integer', 'exists:branches,id'],
+            'group_id' => ['sometimes', 'nullable', 'integer'],
             'roster_status_ids' => ['sometimes', 'nullable', 'array', 'min:1'],
             'roster_status_ids.*' => ['integer', 'distinct', 'exists:player_statuses,id'],
             'kind' => ['sometimes', 'string'],
@@ -99,6 +110,11 @@ class TrainingSessionController extends Controller
         $handAdded = $session->kind !== SessionKind::Regular;
         $kind = isset($data['kind']) ? SessionKind::tryFrom($data['kind']) : $session->kind;
         $branchId = array_key_exists('branch_id', $data) ? ($data['branch_id'] === null ? null : (int) $data['branch_id']) : $session->branch_id;
+        $groupSent = array_key_exists('group_id', $data);
+        $groupId = $groupSent ? ($data['group_id'] === null ? null : (int) $data['group_id']) : $session->group_id;
+        if ($kind === SessionKind::Preseason || (! $groupSent && $branchId !== $session->branch_id)) {
+            $groupId = null;
+        }
         $storedIds = $this->sortedIds($session->roster_status_ids);
         $statusIds = array_key_exists('roster_status_ids', $data) ? $this->sortedIds($data['roster_status_ids']) : $storedIds;
         // The set the dialog pre-fills is the effective one; sending it back is no change, so a default is never pinned.
@@ -127,12 +143,22 @@ class TrainingSessionController extends Controller
         if (! $handAdded && $branchId !== $session->branch_id) {
             $errors['branch_id'] = 'att.error.not_hand_added';
         }
+        // The primary category the session ends with (see `category_id` below): a group belongs to it.
+        $primaryId = in_array($session->category_id, $categoryIds, true) ? $session->category_id : $categoryIds[0];
+        if ($groupId !== $session->group_id) {
+            if (! $handAdded) {
+                $errors['group_id'] = 'att.error.group_follows_schedule';
+            } elseif ($groupId !== null && ! $this->groupFits($groupId, $branchId, (int) $primaryId)) {
+                $errors['group_id'] = 'att.error.group_other_category';
+            }
+        }
         if ($chosenIds !== null && $kind !== SessionKind::Preseason && $chosenIds !== [$session->category_id]) {
             $errors['category_ids'] = 'att.error.not_preseason';
         }
         if ($session->attendances()->exists()) {
             $changed = [
                 'branch_id' => $branchId !== $session->branch_id,
+                'group_id' => $groupId !== $session->group_id,
                 'roster_status_ids' => $statusIds !== $storedIds,
                 'kind' => $kind !== $session->kind,
                 'category_ids' => $sortedCategoryIds !== $currentIds,
@@ -151,6 +177,7 @@ class TrainingSessionController extends Controller
 
         $attributes = Arr::only($data, ['title', 'coach', 'notes', 'date', 'start_time', 'end_time']) + [
             'branch_id' => $branchId,
+            'group_id' => $groupId,
             'kind' => $kind,
             // If the primary category is dropped, the first chosen one becomes primary.
             'category_id' => in_array($session->category_id, $categoryIds, true) ? $session->category_id : $categoryIds[0],
@@ -257,6 +284,15 @@ class TrainingSessionController extends Controller
         });
 
         return back()->with('success', 'flash.training_session_reset');
+    }
+
+    /** A training group belongs to one branch + category. */
+    private function groupFits(int $groupId, ?int $branchId, int $categoryId): bool
+    {
+        return TrainingGroup::whereKey($groupId)
+            ->where('branch_id', $branchId) // null → whereNull
+            ->where('category_id', $categoryId)
+            ->exists();
     }
 
     private function slotRules(): array

@@ -34,7 +34,7 @@ In the “Weekly schedule” card, choose “Swimming”, then “أصاغر”.
 :::
 
 :::step Open each group's sheet
-On the “Attendance” page, choose “Swimming”, then “أصاغر”, and open the “Month grid”. Above the grid, a bar shows the name of each group. Click “الفوج 1”: the grid shows only its sessions and its players. The printer button, “Print sheet”, prints this group's sheet, with its name at the top.
+On the “Attendance” page, choose “Swimming”, then “أصاغر”. At the top of the page, click the button with three lines. Its name, “Month grid”, shows when you hover the mouse over it. Above the grid, a bar shows the name of each group. Click “الفوج 1”: the grid shows only its sessions and its players. The printer button, “Print sheet”, prints this group's sheet, with its name at the top.
 ::figure att-grid-groups ring=grid-groups,grid-print
 :::
 

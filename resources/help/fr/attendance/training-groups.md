@@ -34,7 +34,7 @@ Dans la carte « Horaire hebdomadaire », choisissez « Natation » puis «�
 :::
 
 :::step Ouvrez la feuille de chaque groupe
-Sur la page « Présence », choisissez « Natation » puis « أصاغر », et ouvrez la « Grille du mois ». Au-dessus de la grille, une barre porte le nom de chaque groupe. Cliquez sur « الفوج 1 » : la grille n'affiche que ses séances et ses joueurs. Le bouton imprimante « Imprimer la feuille » imprime la feuille de ce groupe, avec son nom en haut.
+Sur la page « Présence », choisissez « Natation » puis « أصاغر ». En haut de la page, cliquez sur le bouton avec trois lignes. Son nom « Grille du mois » s'affiche quand vous passez la souris dessus. Au-dessus de la grille, une barre porte le nom de chaque groupe. Cliquez sur « الفوج 1 » : la grille n'affiche que ses séances et ses joueurs. Le bouton imprimante « Imprimer la feuille » imprime la feuille de ce groupe, avec son nom en haut.
 ::figure att-grid-groups ring=grid-groups,grid-print
 :::
 

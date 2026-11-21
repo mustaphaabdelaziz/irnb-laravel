@@ -2,8 +2,8 @@
 title: How do I follow alerts and injuries
 summary: Spot the players at risk, print a letter to their parents, follow the injured players and add the injury details.
 pages: [attendance.alerts, attendance.injuries]
-keywords: [alert, alerts, players at risk, unexcused streak, low score, parent letter, parents, injury, injuries, injured, currently injured, injury details, return]
-related: [attendance/stats-ranking, attendance/codes-rules]
+keywords: [alert, alerts, players at risk, unexcused streak, low score, parent letter, parents, injury, injuries, injured, currently injured, injury details, groups, group, return]
+related: [attendance/stats-ranking, attendance/codes-rules, attendance/training-groups]
 ---
 
 Two pages warn you: “Players at risk” and “Injuries”. You open them from “Attendance statistics”.
@@ -48,6 +48,8 @@ Under “Currently injured”, click رياض's name. His page opens. The name i
 The “Injuries” part is at the bottom of the “Attendance” card. Scroll down to it with the mouse wheel or the touchpad. On a phone, swipe the screen up. On the row of his injury, click the button with a pencil. Its name, “Add details”, shows when you hover the mouse over it. A window opens with “Body part”, “Details” and “Back on”. A return date up to today ends the injury. Only those with the “Edit” permission for “Attendance” see the button.
 ::figure att-injury-details ring=injury-add-details zoom=injury-add-details
 :::
+
+Is the category split into groups? In “Players at risk”, choose the category: a “Group” field appears. Choose a group so the alert is worked out from its sessions only. The “Parent letter” and the player's page keep the figures of the whole branch. The “Injuries” page does not change.
 
 :::tip
 The alert thresholds are set in “Alerts”, in “Attendance settings”. See “How do I change attendance codes, discipline rules and alerts”.

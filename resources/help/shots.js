@@ -797,6 +797,11 @@ export default [
     // after «موسم» the season, where the 21-day window is complete.
     { name: 'att-ranking-month', url: `/attendance/ranking?${U17}`, targets: ['ranking-category', 'ranking-type'] },
     { name: 'att-ranking', url: `/attendance/ranking?${U17}&type=season`, targets: ['ranking-category', 'ranking-type', 'ranking-print-top3', 'ranking-certificate-first'] },
+    // A category split into training groups (Swimming «أصاغر», HelpDemoAttendanceSeeder): the
+    // ranking gains the «الفوج» field, on «كل الأفواج». The demo's group sessions are planned only,
+    // so a chosen group would rank nobody: the shot stays on all groups, where the five swimmers
+    // have their six Tuesday and Thursday sessions.
+    { name: 'att-ranking-group', url: `/attendance/ranking?${CADETS}&type=season`, targets: ['ranking-group'] },
     // Alerts and injuries open from the statistics with no category and the current season.
     // عبد الرحمن is the only football player at risk, so his row is the first.
     { name: 'att-alerts', url: '/attendance/alerts?branch_id=2', targets: ['alerts-rules'] },

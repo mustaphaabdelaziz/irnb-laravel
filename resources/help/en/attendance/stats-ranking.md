@@ -2,8 +2,8 @@
 title: How do I track attendance and print certificates
 summary: Read the attendance statistics, rank a category's players by attendance, and print the top players' certificates.
 pages: [attendance.stats, attendance.ranking]
-keywords: [statistics, attendance statistics, score, ranking, attendance ranking, regular attendance, certificate, certificates, top 3, top players, award]
-related: [attendance/alerts-injuries, attendance/codes-rules]
+keywords: [statistics, attendance statistics, score, ranking, attendance ranking, regular attendance, certificate, certificates, top 3, top players, groups, group, award]
+related: [attendance/alerts-injuries, attendance/codes-rules, attendance/training-groups]
 ---
 
 “Attendance statistics” gathers the figures of held sessions. From there you open “Attendance ranking” for one category, and print the top players' certificates.
@@ -38,6 +38,9 @@ In the field next to the category, choose “Season”. The current season's ran
 At the top of the page, click the button with a printer. Its name, “Print top 3 certificates”, shows when you hover the mouse over it. The certificates open in a new window, one certificate per page. At the end of each row, a small printer button prints one player's certificate. Its name, “Certificate”, shows when you hover the mouse over it.
 ::figure att-ranking ring=ranking-print-top3,ranking-certificate-first zoom=ranking-certificate-first
 :::
+
+Is the category split into groups? When you choose it, a “Group” field appears next to the category, in “Attendance statistics” and in “Attendance ranking”. “All groups” shows the whole category's figures. Choose a group to see the figures of its sessions only. The certificates carry the group's name. A player who changed group appears in both groups, each with its own sessions.
+::figure att-ranking-group ring=ranking-group
 
 :::tip
 Each status's points and the discipline rules are set in “Attendance settings”. See “How do I change attendance codes, discipline rules and alerts”.

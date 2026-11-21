@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Enums\AttendanceStatus;
+use App\Models\Branch;
 use App\Models\Category;
 use App\Models\TrainingGroup;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -147,5 +149,50 @@ class AttendanceGroupRankingTest extends TestCase
         $this->assertSame("certificates-{$minime->id}-b{$swim->id}-season-2026.pdf", $seen['filename']);
         $this->assertStringContainsString('Swimming · Minime', $seen['html']);
         $this->assertStringNotContainsString('Minime · G', $seen['html']);
+    }
+
+    #[Test]
+    public function a_group_of_another_branch_is_ignored_and_a_group_name_is_escaped_in_the_certificates(): void
+    {
+        $swim = Branch::create(['name' => 'Swimming']);
+        $judo = Branch::create(['name' => 'Judo']);
+        $open = Category::create(['name' => 'Open']);          // club-wide: branch_id null
+        $foreign = TrainingGroup::create(['branch_id' => $judo->id, 'category_id' => $open->id, 'name' => '<b>G</b>']);
+        $player = $this->player($open);
+        $swim->players()->attach($player->id, ['membership_id' => $player->membership_id]);
+        foreach (['2026-09-05', '2026-09-12', '2026-09-19', '2026-09-26', '2026-10-03'] as $date) {
+            $this->branchMark($this->branchSession($swim, $open, $date), $player, AttendanceStatus::Present);
+        }
+        $admin = $this->admin();
+        $query = ['type' => 'season', 'season' => 2026, 'branch_id' => $swim->id, 'category_id' => $open->id, 'group_id' => $foreign->id];
+
+        // The group belongs to the other branch: the swimming page offers none and does not use it.
+        $this->actingAs($admin)->get(route('attendance.ranking', $query))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('groups', [])->where('groupId', null));
+
+        $seen = $this->spyPdf();
+        $this->actingAs($admin)->get(route('attendance.certificates', $query))->assertOk();
+        $this->assertSame("certificates-{$open->id}-b{$swim->id}-season-2026.pdf", $seen['filename']);
+        $this->assertStringNotContainsString('G</b>', $seen['html']);
+        $this->assertStringNotContainsString('G&lt;/b&gt;', $seen['html']);
+
+    }
+
+    #[Test]
+    public function a_group_name_is_escaped_in_the_certificates(): void
+    {
+        $swim = Branch::create(['name' => 'Swimming']);
+        $open = Category::create(['name' => 'Open']);
+        $player = $this->player($open);
+        $swim->players()->attach($player->id, ['membership_id' => $player->membership_id]);
+        $own = TrainingGroup::create(['branch_id' => $swim->id, 'category_id' => $open->id, 'name' => '<b>G</b>']);
+        foreach (['2026-10-10', '2026-10-17', '2026-10-24', '2026-10-31', '2026-11-07'] as $date) {
+            $this->branchMark($this->branchSession($swim, $open, $date, ['group_id' => $own->id]), $player, AttendanceStatus::Present);
+        }
+        $seen = $this->spyPdf();
+        $this->actingAs($this->admin())->get(route('attendance.certificates', ['type' => 'season', 'season' => 2026, 'branch_id' => $swim->id, 'category_id' => $open->id, 'group_id' => $own->id]))->assertOk();
+        $this->assertStringContainsString('&lt;b&gt;G&lt;/b&gt;', $seen['html']);
+        $this->assertStringNotContainsString('<b>G</b>', $seen['html']);
     }
 }

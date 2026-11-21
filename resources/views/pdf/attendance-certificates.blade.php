@@ -38,7 +38,7 @@
                     <div class="title">{{ $L('att.cert.title') }}</div>
                     <div class="awarded">{{ $L('att.cert.awarded_to') }}</div>
                     <div class="name">{{ $certificate['name'] }}</div>
-                    <div class="line">{{ strtr($L('att.cert.line'), ['{category}' => $category, '{period}' => $periodLabel]) }}</div>
+                    <div class="line">{!! strtr(e($L('att.cert.line')), ['{category}' => '<span>'.e($category).'</span>', '{period}' => e($periodLabel)]) !!}</div>
                     @if ($certificate['rank'] !== null)
                         <div class="rank">{{ $L('att.cert.rank_'.$certificate['rank']) }}</div>
                     @endif

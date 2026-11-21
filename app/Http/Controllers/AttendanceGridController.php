@@ -31,7 +31,8 @@ use Inertia\Response;
  * save). A joint pre-season session shows in the grid of each of its
  * categories with its whole roster, since saving a column replaces the
  * session's full set of marks. Like the calendar, the grid shows one
- * branch (BranchChoice).
+ * branch (BranchChoice). A category split into training groups shows one
+ * group at a time (MonthSheet::groupSwitch()).
  */
 class AttendanceGridController extends Controller
 {
@@ -41,16 +42,23 @@ class AttendanceGridController extends Controller
             'category_id' => ['required', 'integer', 'exists:categories,id'],
             'month' => ['required', 'date_format:Y-m'],
             'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
+            // A training group of the category, or 0 = its sessions with no group (MonthSheet::NO_GROUP).
+            // An unknown value falls back to the first group; a category without groups ignores it.
+            'group_id' => ['nullable', 'integer', 'min:0'],
         ]);
         $category = Category::findOrFail($data['category_id']);
         $branch = Branch::find(BranchChoice::resolve($request, $data['branch_id'] ?? null));
         $anchor = CarbonImmutable::createFromFormat('!Y-m', $data['month']);
-        ['sessions' => $sessions, 'cells' => $cells, 'players' => $players] = $sheet->build($category->id, $anchor->year, $anchor->month, $branch?->id);
+        $switch = $sheet->groupSwitch($category->id, $anchor->year, $anchor->month, $branch?->id, isset($data['group_id']) ? (int) $data['group_id'] : null);
+        ['sessions' => $sessions, 'cells' => $cells, 'players' => $players] = $sheet->build($category->id, $anchor->year, $anchor->month, $branch?->id, $switch['selected']);
 
         return Inertia::render('Attendance/Grid', [
             'category' => ['id' => $category->id, 'name' => $category->localized_name],
             'month' => $anchor->format('Y-m'),
             'branch' => $branch ? ['id' => $branch->id, 'name' => $branch->localized_name] : null,
+            // The group switch ([] = the category has no groups) and the entry shown.
+            'groups' => $switch['options'],
+            'groupId' => $switch['selected'],
             'sessions' => $sessions->map(fn (TrainingSession $s) => [
                 'id' => $s->id, 'date' => $s->date, 'start_time' => $s->start_time, 'kind' => $s->kind->value, 'state' => $s->state->value,
             ])->values(),

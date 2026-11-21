@@ -431,6 +431,7 @@
     "att.grid": "Month grid",
     "att.grid_help": "Codes: P present · R15 late 15 min · D10 left early 10 min · B present, not training · AE absent excused · AN absent unexcused. An empty cell counts as present when the column is saved.",
     "att.grid_help_codes": "Type one code per cell; add the minutes after the late and left-early codes, e.g. {late}15. An empty cell counts as present when the column is saved.",
+    "att.grid_unsaved_confirm": "The grid has unsaved codes: they will be lost. Continue?",
     "att.group": "Group",
     "att.group_count": "Players: {n}",
     "att.group_find": "Find a player",

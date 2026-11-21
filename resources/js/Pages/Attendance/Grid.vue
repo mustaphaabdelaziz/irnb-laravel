@@ -16,6 +16,8 @@ const props = defineProps({
     sessions: { type: Array, default: () => [] },
     rows: { type: Array, default: () => [] },
     cells: { type: Object, default: () => ({}) }, // { playerId: { sessionId: code } }
+    groups: { type: Array, default: () => [] }, // the group switch: [{ id, name }]; id 0 (name null) = the sessions with no group
+    groupId: { type: Number, default: null }, // the entry shown; null = the category has no groups
 });
 const { t, locale } = useI18n();
 const { can } = useCan();
@@ -42,8 +44,18 @@ const monthLabel = computed(() => new Date(`${props.month}-01T00:00:00`).toLocal
 
 // Paper sheets for this branch, category and month: blank, or with the codes already recorded.
 const branchParam = computed(() => (props.branch ? { branch_id: props.branch.id } : {}));
-const sheetHref = computed(() => route('attendance.sheets.month', { category_id: props.category.id, month: props.month, ...branchParam.value }));
-const filledSheetHref = computed(() => route('attendance.sheets.month', { category_id: props.category.id, month: props.month, filled: 1, ...branchParam.value }));
+// A category split into training groups shows (and prints) one group at a time. 0 is an entry too.
+const groupParam = computed(() => (props.groupId === null ? {} : { group_id: props.groupId }));
+const groupName = (g) => g.name ?? t('att.group_whole');
+const shownGroup = computed(() => props.groups.find((g) => g.id === props.groupId) ?? null);
+const sheetHref = computed(() => route('attendance.sheets.month', { category_id: props.category.id, month: props.month, ...branchParam.value, ...groupParam.value }));
+const filledSheetHref = computed(() => route('attendance.sheets.month', { category_id: props.category.id, month: props.month, filled: 1, ...branchParam.value, ...groupParam.value }));
+// A full visit: the page is rebuilt for the other group's sessions, so typed codes would be lost.
+function switchGroup(id) {
+    if (id === props.groupId) return;
+    if (dirty.size && !window.confirm(t('att.grid_unsaved_confirm'))) return;
+    router.get(route('attendance.grid', { category_id: props.category.id, month: props.month, ...branchParam.value, group_id: id }));
+}
 
 // The legend comes from the configured codes: late / left early show a sample with minutes.
 const legendCode = (s) => code(s) + (takesMinutes(s) ? '15' : '');
@@ -110,7 +122,7 @@ function save() {
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
                     <Link :href="route('attendance.index', { category_id: category.id, month, ...branchParam })" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 rtl:rotate-180 dark:hover:text-slate-300"><Icon name="back" /></Link>
-                    <h1 class="text-lg font-bold capitalize text-slate-900 dark:text-slate-100">{{ t('att.grid') }}<template v-if="branch"> · {{ branch.name }}</template> · {{ category.name }} · {{ monthLabel }}</h1>
+                    <h1 class="text-lg font-bold capitalize text-slate-900 dark:text-slate-100">{{ t('att.grid') }}<template v-if="branch"> · {{ branch.name }}</template> · {{ category.name }}<template v-if="shownGroup"> · {{ groupName(shownGroup) }}</template> · {{ monthLabel }}</h1>
                 </div>
                 <div class="flex flex-wrap items-center gap-2 print:hidden">
                     <IconButton data-help="grid-print" :href="sheetHref" external target="_blank" :title="t('att.sheet.print_hint')" icon="print" :label="t('att.sheet.print')" />
@@ -120,6 +132,20 @@ function save() {
             </div>
         </template>
 
+        <div v-if="groups.length" class="mb-3 print:hidden">
+            <div data-help="grid-groups" role="tablist" :aria-label="t('att.group')" class="inline-flex flex-wrap rounded-lg bg-slate-100 p-0.5 dark:bg-slate-800">
+                <button
+                    v-for="g in groups"
+                    :key="g.id"
+                    type="button"
+                    role="tab"
+                    :aria-selected="groupId === g.id"
+                    class="rounded-md px-3 py-1 text-sm font-semibold"
+                    :class="groupId === g.id ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'"
+                    @click="switchGroup(g.id)"
+                >{{ groupName(g) }}</button>
+            </div>
+        </div>
         <div data-help="grid-legend" class="mb-2 flex flex-wrap gap-2 text-xs">
             <span v-for="s in activeStatuses" :key="s" class="inline-flex items-center gap-1 rounded-full px-2 py-0.5" :style="chipStyle(s)">
                 <b class="font-mono" dir="ltr">{{ legendCode(s) }}</b>{{ label(s) }}

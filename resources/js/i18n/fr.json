@@ -431,6 +431,7 @@
     "att.grid": "Grille du mois",
     "att.grid_help": "Codes : P présent · R15 retard 15 min · D10 parti 10 min plus tôt · B présent sans entraînement · AE absent justifié · AN absent non justifié. Une case vide compte comme présent à l’enregistrement de la colonne.",
     "att.grid_help_codes": "Saisissez un code par case ; ajoutez les minutes après les codes de retard et de départ anticipé, ex. {late}15. Une case vide compte comme présent à l’enregistrement de la colonne.",
+    "att.grid_unsaved_confirm": "La grille contient des codes non enregistrés : ils seront perdus. Continuer ?",
     "att.group": "Groupe",
     "att.group_count": "Joueurs : {n}",
     "att.group_find": "Chercher un joueur",

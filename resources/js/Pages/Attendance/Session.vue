@@ -356,7 +356,7 @@ const tr = (e) => (typeof e === 'string' && e.startsWith('att.') ? t(e) : e);
                         </div>
                     </fieldset>
                 </div>
-                <p v-else-if="saved" class="rounded-lg bg-slate-50 p-2 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t('att.edit_locked_hint') }}</p>
+                <p v-else-if="saved" class="rounded-lg bg-slate-50 p-2 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ t(groups.length ? 'att.edit_locked_hint_groups' : 'att.edit_locked_hint') }}</p>
 
                 <InputError v-for="(e, k) in editForm.errors" :key="k" :message="tr(e)" />
                 <div class="flex justify-end gap-2">

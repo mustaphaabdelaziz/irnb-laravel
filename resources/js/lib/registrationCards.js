@@ -111,6 +111,18 @@ function groupPayload(card) {
 }
 
 /**
+ * The group a card holds once its category changed: the current choice while the new
+ * category still offers it; else the group the form opened with when it is offered
+ * again (back in its own category: nothing changed, nothing is sent); else none.
+ */
+export function groupAfterCategoryChange(card, options = []) {
+    const offered = (id) => !!id && options.some((group) => Number(group.id) === Number(id));
+    if (offered(card.group_id)) return card.group_id;
+
+    return offered(card.original_group_id) ? card.original_group_id : '';
+}
+
+/**
  * What reaches the server. '' keeps an emptied list present: forceFormData drops empty arrays.
  * Left-ness comes from the status alone, so a card never holds a flag of its own.
  */

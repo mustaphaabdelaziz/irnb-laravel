@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cardFromRegistration, cardPayload, newCard, statusChanged, withFreshIds, withoutCard } from '../../resources/js/lib/registrationCards.js';
+import { cardFromRegistration, cardPayload, groupAfterCategoryChange, newCard, statusChanged, withFreshIds, withoutCard } from '../../resources/js/lib/registrationCards.js';
 
 test('a saved card remembers the status it was opened with and starts unchanged', () => {
     const card = cardFromRegistration({ branch_id: 1, status_id: 4 });
@@ -201,4 +201,29 @@ test('a cleared group is sent as null with its day', () => {
     const payload = cardPayload({ branch_id: 1, group_id: '', original_group_id: 7, group_from: '2026-11-20' });
     assert.equal(payload.group_id, null);
     assert.equal(payload.group_from, '2026-11-20');
+});
+
+test('a category round trip brings the saved group back and sends nothing', () => {
+    const card = cardFromRegistration({ branch_id: 1 }, [], true, 7);
+    card.group_id = groupAfterCategoryChange(card, []);
+    assert.equal(card.group_id, '');
+    card.group_id = groupAfterCategoryChange(card, [{ id: 7 }, { id: 8 }]);
+    assert.equal(card.group_id, 7);
+    assert.equal('group_id' in cardPayload(card), false);
+});
+
+test('another category with its own groups does not offer the saved group', () => {
+    const card = cardFromRegistration({ branch_id: 1 }, [], true, 7);
+    assert.equal(groupAfterCategoryChange(card, [{ id: 9 }]), '');
+});
+
+test('a choice the new category still offers is kept', () => {
+    const card = cardFromRegistration({ branch_id: 1 }, [], true, 7);
+    card.group_id = 8;
+    assert.equal(groupAfterCategoryChange(card, [{ id: 7 }, { id: 8 }]), 8);
+});
+
+test('a new card with no saved group gets none', () => {
+    const card = newCard(1);
+    assert.equal(groupAfterCategoryChange(card, [{ id: 7 }]), '');
 });

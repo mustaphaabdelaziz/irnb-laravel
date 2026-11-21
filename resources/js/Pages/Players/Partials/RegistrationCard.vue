@@ -9,7 +9,7 @@ import { useI18n } from 'vue-i18n';
 import { localToday } from '@/lib/localDate';
 import { categoriesForBranch } from '@/lib/categoryPicker';
 import { groupsFor } from '@/lib/groupPicker';
-import { statusChanged } from '@/lib/registrationCards';
+import { groupAfterCategoryChange, statusChanged } from '@/lib/registrationCards';
 import { useCan } from '@/Composables/useCan';
 
 const { t } = useI18n();
@@ -43,9 +43,10 @@ const branchCategories = computed(() => categoriesForBranch(props.categories, pr
 
 // The training groups of this card's branch + category; none = the field is not shown.
 const groupOptions = computed(() => groupsFor(props.groups, props.branch.id, props.card.category_id));
-// A group belongs to one category: another category drops the choice.
+// A group belongs to one category: another category drops the choice; back in the saved
+// category the saved group returns (a round trip changes nothing and sends nothing).
 watch(() => props.card.category_id, () => {
-    if (!groupOptions.value.some((group) => Number(group.id) === Number(props.card.group_id))) props.card.group_id = '';
+    props.card.group_id = groupAfterCategoryChange(props.card, groupOptions.value);
 });
 // The "from" day shows only when a saved group changes: a first assignment has no start date.
 const groupMoved = computed(() => !!props.card.original_group_id

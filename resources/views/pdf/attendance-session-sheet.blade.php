@@ -4,7 +4,9 @@
     $L = fn (string $key) => \App\Support\UiLang::get($key);
     $statuses = array_keys($labels);
     $code = fn (string $status) => AttendanceCode::normalise($codes[$status]['code']);
-    $footer = (!empty($session['branch']) ? $session['branch'].' · ' : '').implode(' · ', $session['categories']).' · '.$session['date'].' — '.strtr($L('att.sheet.page'), ['{page}' => '{PAGENO}', '{pages}' => '{nbpg}']);
+    // The categories, then the training group when the session has one (`Minime · الفوج 1`).
+    $named = implode(' · ', array_filter([...$session['categories'], $session['group'] ?? null]));
+    $footer = (!empty($session['branch']) ? $session['branch'].' · ' : '').$named.' · '.$session['date'].' — '.strtr($L('att.sheet.page'), ['{page}' => '{PAGENO}', '{pages}' => '{nbpg}']);
 @endphp
 <!DOCTYPE html>
 <html>
@@ -36,7 +38,7 @@
     @include('pdf.partials.header')
 
     <div class="title">{{ $L('att.sheet.session_title') }}</div>
-    <div class="sub">@if (!empty($session['branch'])){{ $L('branch') }}: <b>{{ $session['branch'] }}</b> &middot; @endif<b>{{ implode(' · ', $session['categories']) }}</b> &middot; {{ $L('att.kind.'.$session['kind']) }} &middot; {{ $session['dateLabel'] }} &middot; <bdi dir="ltr">{{ $session['time'] }}</bdi></div>
+    <div class="sub">@if (!empty($session['branch'])){{ $L('branch') }}: <b>{{ $session['branch'] }}</b> &middot; @endif<b>{{ $named }}</b> &middot; {{ $L('att.kind.'.$session['kind']) }} &middot; {{ $session['dateLabel'] }} &middot; <bdi dir="ltr">{{ $session['time'] }}</bdi></div>
     @if ($session['title'])
         <div class="sub">{{ $L('att.title_goal') }}: <b>{{ $session['title'] }}</b></div>
     @endif

@@ -8,7 +8,8 @@
     $legendCode = fn (string $status) => $code($status).((AttendanceStatus::tryFrom($status)?->takesMinutes() ?? false) ? '15' : '');
     $marks = ['preseason' => $L('att.sheet.kind_mark.preseason'), 'extra' => $L('att.sheet.kind_mark.extra')];
     $branch ??= null; // the sport, when the club has branches
-    $footer = ($branch ? $branch.' · ' : '').$category['name'].' · '.$monthLabel.' — '.strtr($L('att.sheet.page'), ['{page}' => '{PAGENO}', '{pages}' => '{nbpg}']);
+    $trainingGroup ??= null; // the training group printed, when the category has groups ($groups = the column chunks)
+    $footer = ($branch ? $branch.' · ' : '').$category['name'].($trainingGroup ? ' · '.$trainingGroup : '').' · '.$monthLabel.' — '.strtr($L('att.sheet.page'), ['{page}' => '{PAGENO}', '{pages}' => '{nbpg}']);
 @endphp
 <!DOCTYPE html>
 <html>
@@ -40,7 +41,7 @@
     @if ($groups === [])
         @include('pdf.partials.header')
         <div class="title">{{ $L('att.sheet.month_title') }}</div>
-        <div class="sub">@if ($branch){{ $L('branch') }}: <b>{{ $branch }}</b> &middot; @endif{{ $L('att.category') }}: <b>{{ $category['name'] }}</b> &middot; {{ $L('att.sheet.month') }}: <b>{{ $monthLabel }}</b> &middot; {{ $L('att.season') }}: <b><bdi dir="ltr">{{ $season }}</bdi></b></div>
+        <div class="sub">@if ($branch){{ $L('branch') }}: <b>{{ $branch }}</b> &middot; @endif{{ $L('att.category') }}: <b>{{ $category['name'] }}</b>@if ($trainingGroup) &middot; {{ $L('att.group') }}: <b>{{ $trainingGroup }}</b>@endif &middot; {{ $L('att.sheet.month') }}: <b>{{ $monthLabel }}</b> &middot; {{ $L('att.season') }}: <b><bdi dir="ltr">{{ $season }}</bdi></b></div>
         <div class="muted">{{ $L('att.no_sessions') }}</div>
     @endif
 
@@ -51,7 +52,7 @@
         @include('pdf.partials.header')
         <div class="title">{{ $L('att.sheet.month_title') }}</div>
         <div class="sub">
-            @if ($branch){{ $L('branch') }}: <b>{{ $branch }}</b> &middot; @endif{{ $L('att.category') }}: <b>{{ $category['name'] }}</b> &middot; {{ $L('att.sheet.month') }}: <b>{{ $monthLabel }}</b> &middot; {{ $L('att.season') }}: <b><bdi dir="ltr">{{ $season }}</bdi></b>
+            @if ($branch){{ $L('branch') }}: <b>{{ $branch }}</b> &middot; @endif{{ $L('att.category') }}: <b>{{ $category['name'] }}</b>@if ($trainingGroup) &middot; {{ $L('att.group') }}: <b>{{ $trainingGroup }}</b>@endif &middot; {{ $L('att.sheet.month') }}: <b>{{ $monthLabel }}</b> &middot; {{ $L('att.season') }}: <b><bdi dir="ltr">{{ $season }}</bdi></b>
             @if (count($groups) > 1)
                 &middot; {{ strtr($L('att.sheet.part'), ['{from}' => $group['from'], '{to}' => $group['to'], '{total}' => $total]) }}
             @endif

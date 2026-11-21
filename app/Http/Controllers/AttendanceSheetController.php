@@ -15,6 +15,7 @@ use App\Services\Attendance\Roster;
 use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
 use App\Support\Season;
+use App\Support\UiLang;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -47,12 +48,19 @@ class AttendanceSheetController extends Controller
             'month' => ['required', 'date_format:Y-m'],
             'filled' => ['nullable', 'boolean'],
             'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
+            // As on the month grid: a training group, or 0 = the sessions with no group; none = the first group.
+            'group_id' => ['nullable', 'integer', 'min:0'],
         ]);
         $category = Category::findOrFail($data['category_id']);
         $branch = Branch::find(BranchChoice::resolve($request, $data['branch_id'] ?? null));
         $anchor = CarbonImmutable::createFromFormat('!Y-m', $data['month']);
         $locale = app()->getLocale();
-        ['sessions' => $sessions, 'cells' => $cells, 'players' => $players] = $sheet->build($category->id, $anchor->year, $anchor->month, $branch?->id);
+        $switch = $sheet->groupSwitch($category->id, $anchor->year, $anchor->month, $branch?->id, isset($data['group_id']) ? (int) $data['group_id'] : null);
+        ['sessions' => $sessions, 'cells' => $cells, 'players' => $players] = $sheet->build($category->id, $anchor->year, $anchor->month, $branch?->id, $switch['selected']);
+        // What the header prints: the group's name, «whole category» for the sessions with no group,
+        // nothing for a category without groups.
+        $shown = collect($switch['options'])->firstWhere('id', $switch['selected']);
+        $trainingGroup = $shown === null ? null : ($shown['name'] ?? UiLang::get('att.group_whole'));
 
         $columns = $sessions->map(fn (TrainingSession $s) => [
             'id' => $s->id,
@@ -89,6 +97,7 @@ class AttendanceSheetController extends Controller
             'club' => ClubHeader::data(),
             'category' => ['id' => $category->id, 'name' => $category->localized_name],
             'branch' => $branch?->localized_name,
+            'trainingGroup' => $trainingGroup,
             'monthLabel' => $anchor->locale($locale)->translatedFormat('F Y'),
             'season' => Season::forDate($anchor)->label(),
             'groups' => $groups,
@@ -104,7 +113,10 @@ class AttendanceSheetController extends Controller
             'codes' => $catalog->codes(),
         ])->render();
 
-        return $this->pdf->stream($html, "attendance-sheet-{$category->id}-{$anchor->format('Y-m')}.pdf", $locale === 'ar', true);
+        // One file name per group: a downloaded sheet of another group is never mistaken for this one.
+        $suffix = $switch['selected'] === null ? '' : "-g{$switch['selected']}";
+
+        return $this->pdf->stream($html, "attendance-sheet-{$category->id}-{$anchor->format('Y-m')}{$suffix}.pdf", $locale === 'ar', true);
     }
 
     /**
@@ -117,7 +129,7 @@ class AttendanceSheetController extends Controller
         $request->validate(['filled' => ['nullable', 'boolean']]);
         $filled = $request->boolean('filled');
         $locale = app()->getLocale();
-        $session->loadMissing('categories', 'branch');
+        $session->loadMissing('categories', 'branch', 'group');
         $players = $roster->forSession($session);
         // Primary category first, then the others of a joint pre-season session.
         $categories = $session->orderedCategories()->mapWithKeys(fn (Category $c) => [$c->id => $c->localized_name]);
@@ -137,6 +149,8 @@ class AttendanceSheetController extends Controller
                 // The sport, when the club has branches (null = a club-wide session).
                 'branch' => $session->branch?->localized_name,
                 'categories' => $categories->values()->all(),
+                // The training group whose members make the list; null = the whole category.
+                'group' => $session->group?->name,
                 'coach' => $session->coach,
                 'title' => $session->title,
                 'notes' => $session->notes,

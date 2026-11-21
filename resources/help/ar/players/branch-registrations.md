@@ -34,7 +34,7 @@ related: [players/add-player, players/edit-player, players/player-page, players/
 
 :::step تحقّق في صفحة اللاعب
 تعود إلى صفحة أحمد. في أسفل «المعلومات الأساسية» صار له مربعان: «كرة القدم» و«السباحة». هكذا تبدو صفحة ياسين بوزيد، المسجّل في الفرعين أيضًا.
-::figure player-show-2 ring=player-registrations
+::figure player-show-2-cards ring=player-registrations
 :::
 
 :::step افتح «استكمال تواريخ الانضمام»

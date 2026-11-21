@@ -14,14 +14,17 @@ Chaque section a son propre historique du statut. Chaque changement du « Statut
 
 :::step Ouvrez la page « Modifier le joueur »
 Sur la page d'Ahmed, cliquez sur le bouton avec un crayon, nommé « Modifier le joueur ».
+::figure player-show ring=player-edit zoom=player-edit
 :::
 
 :::step Changez le « Statut d'adhésion »
 Dans la carte « كرة القدم », choisissez « A quitté le club ». Deux champs apparaissent : « Date du changement » et « Note ».
+::figure player-edit-status ring=player-status
 :::
 
 :::step Indiquez la date et la raison
 Dans « Date du changement », choisissez le 15/06/2025. Dans « Note », écrivez la raison si vous voulez. Puis cliquez sur « Enregistrer les modifications ».
+::figure player-edit-status ring=player-status-date zoom=player-status-date
 :::
 
 :::step Notez le retour de la même façon
@@ -30,10 +33,12 @@ Le jour de son retour, remettez le « Statut d'adhésion » sur le statut d'insc
 
 :::step Lisez l'« Historique du statut »
 Sur la page du joueur, sous chaque section, l'« Historique du statut » montre la date d'adhésion, puis chaque changement avec sa date, sa note et son auteur.
+::figure player-status-history ring=player-status-history
 :::
 
 :::step Ajoutez ce qui s'est passé avant
 Pour noter un ancien départ, cliquez sur « Ajouter une ligne passée » dans l'« Historique du statut ». Pour corriger une ligne, cliquez sur le crayon à côté.
+::figure player-status-history ring=player-status-add zoom=player-status-edit
 :::
 
 :::warning

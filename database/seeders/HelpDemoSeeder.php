@@ -6,6 +6,8 @@ use App\Models\Branch;
 use App\Models\Category;
 use App\Models\DocumentType;
 use App\Models\Player;
+use App\Models\PlayerStatus;
+use App\Models\RegistrationStatusChange;
 use App\Models\User;
 use App\Models\WebsiteConfig;
 use App\Services\Player\MembershipNumber;
@@ -183,5 +185,37 @@ class HelpDemoSeeder extends Seeder
         $this->call(HelpDemoBoardSeeder::class);
         $this->call(HelpDemoCompetitionsSeeder::class);
         $this->call(HelpDemoSocialSeeder::class);
+
+        $this->seedStatusHistory();
+    }
+
+    /**
+     * The status-history article's example: أحمد left football on 15/06/2025 and came back on
+     * 01/09/2026, both recorded by the demo user on the day. Written as plain lines (the article
+     * shows what the player form would have kept); his current status stays «منخرط».
+     */
+    private function seedStatusHistory(): void
+    {
+        $registration = Player::query()->orderBy('id')->firstOrFail()->registrations()->firstOrFail();
+        $statuses = PlayerStatus::query()->whereIn('code', ['registered', 'left'])->pluck('id', 'code');
+        $userId = User::where('username', self::USERNAME)->value('id');
+
+        foreach ([
+            ['registered', 'left', '2025-06-15', 'انتقل إلى مدينة أخرى'],
+            ['left', 'registered', '2026-09-01', null],
+        ] as [$from, $to, $day, $note]) {
+            $line = new RegistrationStatusChange([
+                'branch_registration_id' => $registration->id,
+                'from_status_id' => $statuses[$from],
+                'to_status_id' => $statuses[$to],
+                'changed_on' => $day,
+                'note' => $note,
+                'user_id' => $userId,
+                'origin' => RegistrationStatusChange::ORIGIN_FORM,
+            ]);
+            // Recorded on the day, so the shots don't change with the seed day.
+            $line->created_at = $line->updated_at = $day.' 10:00:00';
+            $line->save();
+        }
     }
 }

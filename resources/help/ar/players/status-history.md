@@ -14,14 +14,17 @@ related: [players/branch-registrations, players/edit-player, players/player-page
 
 :::step افتح صفحة «تعديل اللاعب»
 في صفحة أحمد، اضغط على الزر الذي عليه رسم قلم، واسمه «تعديل اللاعب».
+::figure player-show ring=player-edit zoom=player-edit
 :::
 
 :::step غيّر «حالة العضوية»
 في بطاقة «كرة القدم»، اختر «غادر الفريق». تظهر خانتان: «تاريخ التغيير» و«ملاحظة».
+::figure player-edit-status ring=player-status
 :::
 
 :::step اكتب التاريخ والسبب
 في «تاريخ التغيير»، اختر 15/06/2025. في «ملاحظة»، اكتب السبب إن شئت. ثم اضغط «حفظ التغييرات».
+::figure player-edit-status ring=player-status-date zoom=player-status-date
 :::
 
 :::step سجّل العودة بالطريقة نفسها
@@ -30,10 +33,12 @@ related: [players/branch-registrations, players/edit-player, players/player-page
 
 :::step اقرأ «سجل الحالة»
 في صفحة اللاعب، تحت كل فرع، يظهر «سجل الحالة»: تاريخ الانضمام، ثم كل تغيير بتاريخه وملاحظته ومن سجّله.
+::figure player-status-history ring=player-status-history
 :::
 
 :::step أضف ما حدث قبل اليوم
 لتسجيل مغادرة قديمة، اضغط «إضافة سطر سابق» في «سجل الحالة». لتصحيح سطر، اضغط زر القلم بجانبه.
+::figure player-status-history ring=player-status-add zoom=player-status-edit
 :::
 
 :::warning

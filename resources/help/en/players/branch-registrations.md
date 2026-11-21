@@ -34,7 +34,7 @@ The button is at the bottom of the page. To get there, roll the mouse wheel towa
 
 :::step Check on the player's page
 You are back on the player's page. At the bottom of “Basic Information” there are now two boxes: “Football” and “Swimming”. This is the page of ياسين بوزيد, who is also in both branches.
-::figure player-show-2 ring=player-registrations
+::figure player-show-2-cards ring=player-registrations
 :::
 
 :::step Open “Join dates to complete”

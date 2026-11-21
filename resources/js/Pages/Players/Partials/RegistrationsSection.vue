@@ -46,6 +46,10 @@ function confirmDelete() {
 }
 
 const recordedOn = (line) => (line.recorded_at ? props.formatDate(line.recorded_at) : '');
+
+// "by {name}" split around the name, so the name sits in its own <bdi>: an Arabic name in the
+// French or English sentence would otherwise reorder the date and brackets around it.
+const byParts = () => t('status_history.by', { name: '\u0000' }).split('\u0000');
 </script>
 
 <template>
@@ -83,10 +87,10 @@ const recordedOn = (line) => (line.recorded_at ? props.formatDate(line.recorded_
                 <div v-if="registration.sporting_status"><dt class="inline text-slate-500 dark:text-slate-400">{{ t('sporting_status') }}:</dt> <dd class="ms-1 inline">{{ named(registration.sporting_status) }}</dd></div>
             </dl>
 
-            <section v-if="registration.status_history" class="mt-3 border-t border-slate-100 pt-3 dark:border-slate-800" data-help="player-status-history">
+            <section v-if="registration.status_history" class="mt-3 border-t border-slate-100 pt-3 dark:border-slate-800" :data-help="index === 0 ? 'player-status-history' : undefined">
                 <div class="flex items-center justify-between gap-2">
                     <h4 class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('status_history.title') }}</h4>
-                    <IconButton v-if="canEditHistory()" icon="plus" :label="t('status_history.add')" plain size="sm" @click="openAdd(registration)" />
+                    <IconButton v-if="canEditHistory()" icon="plus" :label="t('status_history.add')" plain size="sm" :data-help="index === 0 ? 'player-status-add' : undefined" @click="openAdd(registration)" />
                 </div>
                 <ol class="mt-2 space-y-1.5 border-s-2 border-slate-200 ps-3 text-sm dark:border-slate-700">
                     <li class="text-slate-600 dark:text-slate-300">
@@ -97,15 +101,15 @@ const recordedOn = (line) => (line.recorded_at ? props.formatDate(line.recorded_
                             <template v-else>—</template>
                         </span>
                     </li>
-                    <li v-for="line in registration.status_history" :key="line.id" class="flex items-start justify-between gap-2 text-slate-600 dark:text-slate-300">
+                    <li v-for="(line, lineIndex) in registration.status_history" :key="line.id" class="flex items-start justify-between gap-2 text-slate-600 dark:text-slate-300">
                         <div class="min-w-0">
                             <span class="font-medium text-slate-800 dark:text-slate-100">{{ line.to_status ? named(line.to_status) : t('status_history.removed_status') }}</span>
                             <span class="ms-1">{{ formatDate(line.changed_on) }}</span>
                             <span v-if="line.note" class="ms-1 text-slate-500 dark:text-slate-400">— {{ line.note }}</span>
-                            <span v-if="line.user" class="ms-1 text-xs text-slate-400 dark:text-slate-500">({{ t('status_history.by', { name: line.user }) }}<template v-if="recordedOn(line)"> · {{ recordedOn(line) }}</template>)</span>
+                            <span v-if="line.user" class="ms-1 text-xs text-slate-400 dark:text-slate-500">({{ byParts()[0] }}<bdi>{{ line.user }}</bdi>{{ byParts()[1] ?? '' }}<template v-if="recordedOn(line)"> · {{ recordedOn(line) }}</template>)</span>
                         </div>
                         <div v-if="canEditHistory()" class="flex shrink-0 items-center gap-1">
-                            <IconButton icon="pencil" :label="t('status_history.edit')" plain size="sm" icon-only @click="openEdit(line)" />
+                            <IconButton icon="pencil" :label="t('status_history.edit')" plain size="sm" icon-only :data-help="index === 0 && lineIndex === 0 ? 'player-status-edit' : undefined" @click="openEdit(line)" />
                             <IconButton icon="trash" :label="t('status_history.delete')" variant="danger" plain size="sm" icon-only @click="deleting = line" />
                         </div>
                     </li>

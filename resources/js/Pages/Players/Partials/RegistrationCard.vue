@@ -173,7 +173,7 @@ const dateRequired = computed(() => props.card.is_new || props.card.had_date);
                 <TextInput v-model="card.licence_number" class="mt-1 w-full" maxlength="50" dir="ltr" />
                 <InputError :message="fieldError('licence_number')" class="mt-1" />
             </div>
-            <div>
+            <div :data-help="index === 0 ? 'player-status' : undefined">
                 <InputLabel :value="t('membership_status')" />
                 <select v-model="card.status_id" :class="selectClass">
                     <option value="">-</option>
@@ -182,12 +182,12 @@ const dateRequired = computed(() => props.card.is_new || props.card.had_date);
                 <InputError :message="fieldError('status_id')" class="mt-1" />
             </div>
             <template v-if="changing">
-                <div>
+                <div :data-help="index === 0 ? 'player-status-date' : undefined">
                     <InputLabel :value="t('status_change.date') + ' *'" />
                     <TextInput v-model="card.status_changed_on" type="date" class="mt-1 w-full" :max="today" required />
                     <InputError :message="fieldError('status_changed_on')" class="mt-1" />
                 </div>
-                <div>
+                <div :data-help="index === 0 ? 'player-status-note' : undefined">
                     <InputLabel :value="t('status_change.note')" />
                     <TextInput v-model="card.status_note" class="mt-1 w-full" maxlength="255" :placeholder="t('status_change.note_hint')" />
                     <InputError :message="fieldError('status_note')" class="mt-1" />

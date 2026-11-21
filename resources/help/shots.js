@@ -42,6 +42,8 @@ const DATA = {
     'السباحة': { fr: 'Natation', en: 'Swimming' },
     // Built-in role (RoleSeeder).
     'مدرب': { fr: 'Entraîneur', en: 'Coach' },
+    // Built-in membership status (create_player_statuses_table migration).
+    'غادر الفريق': { fr: 'A quitté le club', en: 'Left the club' },
 };
 // Built-in finance categories: 'base name' => ['fr', 'ar'] (App\Support\FinanceCategoryTranslations);
 // English shows the base name.
@@ -196,7 +198,15 @@ export default [
     },
     { name: 'player-show', url: '/players/1', targets: ['player-header', 'player-registrations', 'player-actions', 'player-edit'] },
     // Player 2 (ياسين بوزيد) plays football and swims: two cards, and the branch tabs.
-    { name: 'player-show-2', url: '/players/2', targets: ['player-tabs', 'player-registrations'] },
+    { name: 'player-show-2', url: '/players/2', targets: ['player-tabs'] },
+    // Each card carries its «سجل الحالة»: the two cards end below the screen (and the tabs above
+    // it once they show), so they have their own shot, scrolled to them.
+    {
+        name: 'player-show-2-cards',
+        url: '/players/2',
+        targets: ['player-registrations'],
+        before: async (page) => { await centre(page, 'player-registrations'); },
+    },
     {
         name: 'player-documents',
         url: '/players/1',
@@ -259,6 +269,27 @@ export default [
             await blur(page);
             await centre(page, 'player-branch-card');
         },
+    },
+    {
+        // The status-history example: أحمد leaves football. «غادر الفريق» on his card brings the
+        // «تاريخ التغيير» and «ملاحظة» fields; 15/06/2025 and the reason are typed. Never saved.
+        name: 'player-edit-status',
+        url: '/players/1/edit',
+        targets: ['player-branch-card', 'player-status', 'player-status-date', 'player-status-note'],
+        before: async (page) => {
+            await choose(page.locator('[data-help="player-status"] select'), 'غادر الفريق');
+            await page.locator('[data-help="player-status-date"] input').fill('2025-06-15');
+            await page.locator('[data-help="player-status-note"] input').fill('انتقل إلى مدينة أخرى');
+            await blur(page);
+            await centre(page, 'player-status');
+        },
+    },
+    {
+        // أحمد's football history (HelpDemoSeeder::seedStatusHistory): left 15/06/2025, back 01/09/2026.
+        name: 'player-status-history',
+        url: '/players/1',
+        targets: ['player-status-history', 'player-status-add', 'player-status-edit'],
+        before: async (page) => { await centre(page, 'player-status-history'); },
     },
     // The list is longer than the screen: the first row carries the ring.
     { name: 'join-dates', url: '/players/join-dates', targets: ['join-dates-row'] },

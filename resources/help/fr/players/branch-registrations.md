@@ -34,7 +34,7 @@ Le bouton est en bas de la page. Pour y descendre, tournez la molette de la sour
 
 :::step Vérifiez sur la page du joueur
 Vous revenez sur la page du joueur. En bas des « Informations de base », il a maintenant deux encadrés : « Football » et « Natation ». Voici la page de ياسين بوزيد, lui aussi inscrit dans les deux sections.
-::figure player-show-2 ring=player-registrations
+::figure player-show-2-cards ring=player-registrations
 :::
 
 :::step Ouvrez « Dates d'adhésion à compléter »

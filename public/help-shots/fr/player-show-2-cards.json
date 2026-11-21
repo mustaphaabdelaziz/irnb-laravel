@@ -1,0 +1,12 @@
+{
+  "width": 1280,
+  "height": 800,
+  "targets": {
+    "player-registrations": {
+      "x": 24.38,
+      "y": 20.75,
+      "w": 45.63,
+      "h": 58.38
+    }
+  }
+}

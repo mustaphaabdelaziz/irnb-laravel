@@ -10,7 +10,7 @@ function otherPositionsFor(branchId, otherPositions, isFirst) {
         .map((position) => position.id);
 }
 
-export function cardFromRegistration(registration, otherPositions = [], isFirst = false) {
+export function cardFromRegistration(registration, otherPositions = [], isFirst = false, groupId = null) {
     return {
         id: registration.id,
         branch_id: registration.branch_id,
@@ -30,6 +30,10 @@ export function cardFromRegistration(registration, otherPositions = [], isFirst 
         status_note: '',
         left_at: registration.left_at || '',
         sporting_status_id: registration.sporting_status_id || '',
+        // The training group today, and the one the form opened with (see groupPayload).
+        group_id: groupId || '',
+        original_group_id: groupId || '',
+        group_from: '',
     };
 }
 
@@ -69,6 +73,9 @@ export function newCard(branchId, player = {}, isFirst = false, defaultStatusId 
         status_note: '',
         left_at: isFirst ? (player.left_at || '') : '',
         sporting_status_id: '',
+        group_id: '',
+        original_group_id: '',
+        group_from: '',
     };
 }
 
@@ -91,6 +98,19 @@ export function withoutCard(cards, id, positions = []) {
 }
 
 /**
+ * The Group field travels only when it changed, so an untouched card never
+ * rewrites a membership. The "from" day counts only when a saved group changes:
+ * a first assignment has no start date. No day = from the beginning.
+ */
+function groupPayload(card) {
+    const before = Number(card.original_group_id || 0);
+    const now = Number(card.group_id || 0);
+    if (before === now) return {};
+
+    return { group_id: now || null, group_from: before ? (card.group_from || null) : null };
+}
+
+/**
  * What reaches the server. '' keeps an emptied list present: forceFormData drops empty arrays.
  * Left-ness comes from the status alone, so a card never holds a flag of its own.
  */
@@ -109,6 +129,7 @@ export function cardPayload(card, leftStatusId = null) {
         // Leaving now: the leave date is the date of the change.
         left_at: isLeft ? ((changing ? card.status_changed_on : card.left_at) || null) : null,
         sporting_status_id: card.sporting_status_id || null,
+        ...groupPayload(card),
     };
     if (changing) {
         payload.status_changed_on = card.status_changed_on || null;

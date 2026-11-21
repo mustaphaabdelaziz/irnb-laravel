@@ -30,6 +30,8 @@ const props = defineProps({
     sportingStatuses: { type: Array, default: () => [] },
     jobs: { type: Array, default: () => [] },
     branches: { type: Array, default: () => [] },
+    trainingGroups: { type: Array, default: () => [] }, // every training group, for the cards' Group field
+    playerGroups: { type: [Object, Array], default: () => ({}) }, // branch id => { id, name } held today
     wilayas: { type: Array, default: () => [] },
     communes: { type: Object, default: () => ({}) },
     nextSequenceByYear: { type: Object, default: () => ({}) },
@@ -64,7 +66,7 @@ const form = useForm({
     position_id: p.position_id || '',
     other_position_ids: (p.other_positions || []).map((pos) => pos.id),
     member_job_id: p.member_job_id || '',
-    registrations: (p.registrations || []).map((registration, index) => cardFromRegistration(registration, p.other_positions || [], index === 0)),
+    registrations: (p.registrations || []).map((registration, index) => cardFromRegistration(registration, p.other_positions || [], index === 0, props.playerGroups?.[registration.branch_id]?.id ?? null)),
     join_year: p.join_year || props.defaultJoinYear,
     picture: null,
     health_medical_conditions: p.health_medical_conditions || '',
@@ -439,6 +441,7 @@ const cancelHref = computed(() => (isEdit ? route('players.show', p.id) : route(
                         :data-help="['player-branch-card', 'player-branch-card-2'][index] ?? null"
                         :branch="branchesById[card.branch_id] || { id: card.branch_id, name: `#${card.branch_id}` }"
                         :categories="categories"
+                        :groups="trainingGroups"
                         :positions="positions"
                         :player-statuses="playerStatuses"
                         :sporting-statuses="sportingStatuses"

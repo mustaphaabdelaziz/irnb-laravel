@@ -8,6 +8,7 @@ import { computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { localToday } from '@/lib/localDate';
 import { categoriesForBranch } from '@/lib/categoryPicker';
+import { groupsFor } from '@/lib/groupPicker';
 import { statusChanged } from '@/lib/registrationCards';
 import { useCan } from '@/Composables/useCan';
 
@@ -19,6 +20,7 @@ const props = defineProps({
     index: { type: Number, required: true },
     branch: { type: Object, required: true },
     categories: { type: Array, default: () => [] },
+    groups: { type: Array, default: () => [] }, // every training group: [{ id, branch_id, category_id, name }]
     positions: { type: Array, default: () => [] },
     playerStatuses: { type: Array, default: () => [] },
     sportingStatuses: { type: Array, default: () => [] },
@@ -38,6 +40,18 @@ const selectClass = 'mt-1 w-full rounded-lg border-slate-300 dark:border-slate-7
 
 // Only this branch's categories, plus the stored one until it is changed.
 const branchCategories = computed(() => categoriesForBranch(props.categories, props.branch.id, [props.card.category_id]));
+
+// The training groups of this card's branch + category; none = the field is not shown.
+const groupOptions = computed(() => groupsFor(props.groups, props.branch.id, props.card.category_id));
+// A group belongs to one category: another category drops the choice.
+watch(() => props.card.category_id, () => {
+    if (!groupOptions.value.some((group) => Number(group.id) === Number(props.card.group_id))) props.card.group_id = '';
+});
+// The "from" day shows only when a saved group changes: a first assignment has no start date.
+const groupMoved = computed(() => !!props.card.original_group_id
+    && Number(props.card.group_id || 0) !== Number(props.card.original_group_id));
+// Today by default; it can be emptied = from the beginning.
+watch(groupMoved, (moved) => { props.card.group_from = moved ? localToday() : ''; });
 
 // A stored position from another branch stays selectable until it is changed.
 const branchPositions = computed(() => props.positions.filter((position) => Number(position.branch_id) === Number(props.branch.id)
@@ -110,6 +124,20 @@ const dateRequired = computed(() => props.card.is_new || props.card.had_date);
                     <option v-for="category in branchCategories" :key="category.id" :value="category.id">{{ category.localized_name || category.name }}</option>
                 </select>
                 <InputError :message="fieldError('category_id')" class="mt-1" />
+            </div>
+            <div v-if="groupOptions.length" data-help="player-group">
+                <InputLabel :value="t('att.group')" />
+                <select v-model="card.group_id" :class="selectClass">
+                    <option value="">-</option>
+                    <option v-for="group in groupOptions" :key="group.id" :value="group.id">{{ group.name }}</option>
+                </select>
+                <InputError :message="fieldError('group_id')" class="mt-1" />
+            </div>
+            <div v-if="groupOptions.length && groupMoved" data-help="player-group-from">
+                <InputLabel :value="t('att.group_from')" />
+                <TextInput v-model="card.group_from" type="date" class="mt-1 w-full" />
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('att.group_from_help') }}</p>
+                <InputError :message="fieldError('group_from')" class="mt-1" />
             </div>
             <div v-if="hasPositions">
                 <InputLabel :value="t('main_position')" />

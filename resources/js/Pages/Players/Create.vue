@@ -12,6 +12,7 @@ defineProps({
     sportingStatuses: { type: Array, default: () => [] },
     jobs: Array,
     branches: { type: Array, default: () => [] },
+    trainingGroups: { type: Array, default: () => [] },
     wilayas: { type: Array, default: () => [] },
     communes: { type: Object, default: () => ({}) },
     nextSequenceByYear: { type: Object, default: () => ({}) },
@@ -30,6 +31,6 @@ defineProps({
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('new_player') }}</h1>
             </div>
         </template>
-        <PlayerForm :categories="categories" :positions="positions" :player-statuses="playerStatuses" :sporting-statuses="sportingStatuses" :jobs="jobs" :branches="branches" :wilayas="wilayas" :communes="communes" :next-sequence-by-year="nextSequenceByYear" :default-join-year="defaultJoinYear" />
+        <PlayerForm :categories="categories" :positions="positions" :player-statuses="playerStatuses" :sporting-statuses="sportingStatuses" :jobs="jobs" :branches="branches" :training-groups="trainingGroups" :wilayas="wilayas" :communes="communes" :next-sequence-by-year="nextSequenceByYear" :default-join-year="defaultJoinYear" />
     </AuthenticatedLayout>
 </template>

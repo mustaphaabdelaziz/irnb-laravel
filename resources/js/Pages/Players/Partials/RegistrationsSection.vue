@@ -12,6 +12,8 @@ const { can } = useCan();
 
 const props = defineProps({
     registrations: { type: Array, default: () => [] },
+    /** The training group each registration is in today: branch id => { id, name }. */
+    groups: { type: [Object, Array], default: () => ({}) },
     /** The player's other positions: each belongs under its branch's entry, and those with no branch under the first. */
     otherPositions: { type: Array, default: () => [] },
     /** The page's own date formatter, so dates read the same everywhere. */
@@ -67,7 +69,7 @@ const recordedOn = (line) => (line.recorded_at ? props.formatDate(line.recorded_
                         <template v-else>—</template>
                     </dd>
                 </div>
-                <div><dt class="inline text-slate-500 dark:text-slate-400">{{ t('category') }}:</dt> <dd class="ms-1 inline">{{ named(registration.category) }}</dd></div>
+                <div><dt class="inline text-slate-500 dark:text-slate-400">{{ t('category') }}:</dt> <dd class="ms-1 inline">{{ named(registration.category) }}<template v-if="groups[registration.branch_id]"> · {{ groups[registration.branch_id].name }}</template></dd></div>
                 <div v-if="registration.position"><dt class="inline text-slate-500 dark:text-slate-400">{{ t('main_position') }}:</dt> <dd class="ms-1 inline">{{ registration.position.name }}</dd></div>
                 <div v-if="othersFor(registration, index).length">
                     <dt class="inline text-slate-500 dark:text-slate-400">{{ t('other_positions') }}:</dt>

@@ -167,3 +167,38 @@ test('a card picks up the ID the server gave its registration after a delete', (
     assert.equal(fresh[1].membership_id, '');
     assert.equal(fresh[2].membership_id, '');
 });
+
+test('a saved card remembers the group it opened with, a new card has none', () => {
+    const card = cardFromRegistration({ branch_id: 1 }, [], true, 7);
+    assert.equal(card.group_id, 7);
+    assert.equal(card.original_group_id, 7);
+    assert.equal(card.group_from, '');
+    assert.equal(cardFromRegistration({ branch_id: 1 }).group_id, '');
+    assert.equal(newCard(1).group_id, '');
+    assert.equal(newCard(1).original_group_id, '');
+});
+
+test('an untouched group is not sent', () => {
+    assert.equal('group_id' in cardPayload({ branch_id: 1, group_id: 7, original_group_id: 7, group_from: '' }), false);
+    assert.equal('group_id' in cardPayload({ branch_id: 1, group_id: '', original_group_id: '' }), false);
+    assert.equal('group_id' in cardPayload({ branch_id: 1 }), false);
+});
+
+test('a first group is sent with no start date', () => {
+    const payload = cardPayload({ branch_id: 1, group_id: 7, original_group_id: '', group_from: '2026-11-20' });
+    assert.equal(payload.group_id, 7);
+    assert.equal(payload.group_from, null);
+});
+
+test('a changed group is sent with its day, or none for from the beginning', () => {
+    const dated = cardPayload({ branch_id: 1, group_id: '8', original_group_id: 7, group_from: '2026-11-20' });
+    assert.equal(dated.group_id, 8);
+    assert.equal(dated.group_from, '2026-11-20');
+    assert.equal(cardPayload({ branch_id: 1, group_id: 8, original_group_id: 7, group_from: '' }).group_from, null);
+});
+
+test('a cleared group is sent as null with its day', () => {
+    const payload = cardPayload({ branch_id: 1, group_id: '', original_group_id: 7, group_from: '2026-11-20' });
+    assert.equal(payload.group_id, null);
+    assert.equal(payload.group_from, '2026-11-20');
+});

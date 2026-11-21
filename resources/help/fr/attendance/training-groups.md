@@ -47,6 +47,8 @@ Avant le jour du changement, سارة reste sur la liste de « الفوج 1 »
 
 Vous vous êtes trompé de groupe dès le début ? Effacez la date de « Changements appliqués à partir du » avant d'enregistrer : le changement s'applique depuis le début.
 
+Vous avez changé la catégorie du joueur ? Il quitte son groupe à partir de la date « Changements appliqués à partir du ». Ici, la date ne peut pas rester vide, pour garder son passage dans l'ancien groupe.
+
 Un joueur de la catégorie n'est dans aucun groupe ? Il n'apparaît pas dans les séances des groupes. La carte « Groupes » affiche un badge « Sans groupe » avec leur nombre : cliquez dessus pour voir les noms. Vous pouvez aussi choisir le « Groupe » dans la carte de la section, à l'inscription du joueur.
 
 Une ligne de l'horaire laissée sur « Toute la catégorie » affiche tous les joueurs de la catégorie dans ses séances. Dans la « Grille du mois », ces séances sont sous « Toute la catégorie ».

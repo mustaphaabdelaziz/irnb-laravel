@@ -47,6 +47,8 @@ Before the day of the move, سارة stays on the “الفوج 1” list in the
 
 Was the group wrong from the start? Clear the “Changes apply from” date before saving: the change applies from the beginning.
 
+Changed the player's category? They leave their group from the “Changes apply from” date. Here the date cannot stay empty, so their time in the old group is kept.
+
 Is a player of the category in no group? They do not appear in group sessions. The “Groups” card shows a “Without group” badge with how many they are: click it to see the names. You can also choose the “Group” in the branch card when you register the player.
 
 A schedule line left on “Whole category” lists every player of the category in its sessions. In the “Month grid”, these sessions are under “Whole category”.

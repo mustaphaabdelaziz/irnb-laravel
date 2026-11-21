@@ -112,6 +112,25 @@ class AttendanceGroupGridTest extends TestCase
     }
 
     #[Test]
+    public function the_switch_opens_on_the_first_entry_with_sessions_this_month(): void
+    {
+        $sheet = app(MonthSheet::class);
+        $switch = fn (int $month) => $sheet->groupSwitch($this->minime->id, 2026, $month, $this->swim->id)['selected'];
+
+        // A month with no session at all: the first group.
+        $this->assertSame($this->g1->id, $switch(9));
+
+        // A month from before the groups: only «whole category» sessions.
+        $this->sessionOf(null, '2026-10-03', '09:30');
+        $this->assertSame(MonthSheet::NO_GROUP, $switch(10));
+
+        // Only the second group trains this month.
+        $this->sessionOf($this->g2, '2026-11-21', '11:00');
+        $this->sessionOf(null, '2026-11-24', '17:00');
+        $this->assertSame($this->g2->id, $switch(11));
+    }
+
+    #[Test]
     public function a_category_without_groups_has_no_switch_and_shows_every_session(): void
     {
         $u15 = Category::create(['name' => 'U15', 'branch_id' => $this->swim->id]);

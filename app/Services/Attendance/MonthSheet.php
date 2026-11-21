@@ -38,7 +38,8 @@ final class MonthSheet
      * The group switch of the month grid and the printed month sheet: one entry
      * per training group of the branch + category (by name), plus NO_GROUP when
      * the month has sessions with no group. `selected` is $requested when it is
-     * one of the entries, else the first group. A category without groups has
+     * one of the entries, else the first entry with sessions this month, else
+     * the first group. A category without groups has
      * no switch: no options, nothing selected, and build() shows every session.
      *
      * @return array{options: list<array{id: int, name: ?string}>, selected: ?int}
@@ -56,13 +57,20 @@ final class MonthSheet
         // Generated first, like build(): a month nobody opened yet has no session to look at.
         $this->generator->forMonth($categoryId, $year, $month);
 
+        // The entries that have sessions this month (null group = NO_GROUP).
+        $withSessions = $this->monthSessions($categoryId, $year, $month, $branchId)
+            ->distinct()->pluck('group_id')
+            ->map(fn ($id) => $id === null ? self::NO_GROUP : (int) $id)->all();
+
         $options = $groups->toBase()->map(fn (TrainingGroup $group) => ['id' => $group->id, 'name' => $group->name])->values()->all();
-        if ($this->monthSessions($categoryId, $year, $month, $branchId)->whereNull('group_id')->exists()) {
+        if (in_array(self::NO_GROUP, $withSessions, true)) {
             $options[] = ['id' => self::NO_GROUP, 'name' => null];
         }
         $ids = array_column($options, 'id');
+        // Default: the first entry with sessions this month (owner decision 2026-11-21), else the first group.
+        $default = collect($ids)->first(fn (int $id) => in_array($id, $withSessions, true)) ?? $ids[0];
 
-        return ['options' => $options, 'selected' => in_array($requested, $ids, true) ? $requested : $ids[0]];
+        return ['options' => $options, 'selected' => in_array($requested, $ids, true) ? $requested : $default];
     }
 
     /**

@@ -185,6 +185,7 @@ return [
     'category_other_branch' => 'Cette catégorie appartient à une autre section.',
     'category_not_in_branch' => 'La catégorie « :name » n\'existe pas dans cette section.',
     'group_other_category' => 'Ce groupe appartient à une autre section ou à une autre catégorie.',
+    'group_from_category_change' => 'La catégorie a changé : indiquez le jour où le joueur quitte son groupe.',
 
     'join_date_needed' => 'La date ou l\'année d\'adhésion est requise.',
     'branch_required' => 'Veuillez choisir au moins une section.',

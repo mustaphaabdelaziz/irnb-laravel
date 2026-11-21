@@ -53,6 +53,15 @@ const groupMoved = computed(() => !!props.card.original_group_id
     && Number(props.card.group_id || 0) !== Number(props.card.original_group_id));
 // Today by default; it can be emptied = from the beginning.
 watch(groupMoved, (moved) => { props.card.group_from = moved ? localToday() : ''; });
+// Leaving the saved group because the category changed needs the day: "from the beginning"
+// would erase the old group's history, so the server refuses an empty one.
+const leftByCategory = computed(() => {
+    const saved = props.groups.find((group) => Number(group.id) === Number(props.card.original_group_id));
+    return !!saved && Number(saved.category_id) !== Number(props.card.category_id || 0);
+});
+watch(leftByCategory, (left) => {
+    if (left && !props.card.group_from) props.card.group_from = localToday();
+});
 
 // A stored position from another branch stays selectable until it is changed.
 const branchPositions = computed(() => props.positions.filter((position) => Number(position.branch_id) === Number(props.branch.id)
@@ -135,9 +144,9 @@ const dateRequired = computed(() => props.card.is_new || props.card.had_date);
                 <InputError :message="fieldError('group_id')" class="mt-1" />
             </div>
             <div v-if="groupOptions.length && groupMoved" data-help="player-group-from">
-                <InputLabel :value="t('att.group_from')" />
-                <TextInput v-model="card.group_from" type="date" class="mt-1 w-full" />
-                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('att.group_from_help') }}</p>
+                <InputLabel :value="t('att.group_from') + (leftByCategory ? ' *' : '')" />
+                <TextInput v-model="card.group_from" type="date" class="mt-1 w-full" :required="leftByCategory" />
+                <p v-if="!leftByCategory" class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('att.group_from_help') }}</p>
                 <InputError :message="fieldError('group_from')" class="mt-1" />
             </div>
             <div v-if="hasPositions">

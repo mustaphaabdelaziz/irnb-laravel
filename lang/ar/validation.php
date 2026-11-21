@@ -185,6 +185,7 @@ return [
     'category_other_branch' => 'هذه الفئة تابعة لفرع آخر.',
     'category_not_in_branch' => 'الفئة «:name» غير موجودة في هذا الفرع.',
     'group_other_category' => 'هذا الفوج تابع لفرع آخر أو لفئة أخرى.',
+    'group_from_category_change' => 'تغيّرت الفئة: أدخل تاريخ خروج اللاعب من فوجه.',
 
     'join_date_needed' => 'تاريخ الانضمام أو سنته مطلوب.',
     'branch_required' => 'يرجى اختيار فرع واحد على الأقل.',

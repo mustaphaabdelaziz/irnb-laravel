@@ -22,6 +22,7 @@ return [
     'category_other_branch' => 'This category belongs to another branch.',
     'category_not_in_branch' => 'The category ":name" does not exist in this branch.',
     'group_other_category' => 'This group belongs to another branch or category.',
+    'group_from_category_change' => 'The category changed: enter the day the player leaves their group.',
 
     'join_date_needed' => 'A join date or year is required.',
     'branch_required' => 'Please choose at least one branch.',

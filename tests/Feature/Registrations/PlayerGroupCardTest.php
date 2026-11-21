@@ -152,6 +152,31 @@ class PlayerGroupCardTest extends TestCase
     }
 
     #[Test]
+    public function a_category_change_needs_the_date_so_the_old_group_history_stays(): void
+    {
+        app(GroupMembership::class)->add($this->g1, $this->player->id, null);
+
+        foreach ([$this->c1->id, null] as $groupId) {
+            $this->put(route('players.update', $this->player), $this->formWith([
+                'category_id' => $this->cadet->id, 'group_id' => $groupId, 'group_from' => null,
+            ]))->assertSessionHasErrors('registrations.0.group_from');
+        }
+
+        $this->assertSame($this->minime->id, $this->player->registrations()->sole()->category_id);
+        $this->assertSame([[$this->g1->id, null, null]], $this->memberships());
+    }
+
+    #[Test]
+    public function a_category_change_with_no_group_held_needs_no_date(): void
+    {
+        $this->put(route('players.update', $this->player), $this->formWith([
+            'category_id' => $this->cadet->id, 'group_id' => $this->c1->id, 'group_from' => null,
+        ]))->assertSessionHasNoErrors();
+
+        $this->assertSame([[$this->c1->id, null, null]], $this->memberships());
+    }
+
+    #[Test]
     public function a_new_player_can_start_in_a_group(): void
     {
         $this->post(route('players.store'), [

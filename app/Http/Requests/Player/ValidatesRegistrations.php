@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Player;
 use App\Models\Position;
 use App\Models\TrainingGroup;
+use App\Services\Attendance\GroupMembership;
 use App\Support\ValidationAttributes;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -47,6 +48,11 @@ trait ValidatesRegistrations
             $categoryOwner = Category::query()->pluck('branch_id', 'id');
             $groups = TrainingGroup::query()->get(['id', 'branch_id', 'category_id'])->keyBy('id');
             $birthdate = $this->input('birthdate') ?: $player?->birthdate?->toDateString();
+            // Read once, and only when a card needs it.
+            $held = null;
+            $heldGroups = function () use (&$held, $player): array {
+                return $held ??= $player ? app(GroupMembership::class)->groupsOf($player->id, now()->toDateString()) : [];
+            };
 
             foreach ((array) $this->input('registrations', []) as $i => $card) {
                 $branchId = (int) ($card['branch_id'] ?? 0);
@@ -84,6 +90,12 @@ trait ValidatesRegistrations
                 $group = empty($card['group_id']) ? null : $groups->get((int) $card['group_id']);
                 if ($group !== null && ((int) $group->branch_id !== $branchId || (int) $group->category_id !== (int) $category)) {
                     $validator->errors()->add("registrations.$i.group_id", __('validation.group_other_category'));
+                }
+                // Leaving a held group because the category changed needs the day: "from the
+                // beginning" would erase the old group's history (owner decision 2026-11-21).
+                if ($saved !== null && ! $keepsCategory && array_key_exists('group_id', $card) && empty($card['group_from'])
+                    && isset($heldGroups()[$branchId])) {
+                    $validator->errors()->add("registrations.$i.group_from", __('validation.group_from_category_change'));
                 }
 
                 $main = $card['position_id'] ?? null;

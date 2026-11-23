@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { groupSections, memberChanges } from '../../resources/js/lib/groupMembers.js';
+import { groupSections, memberChanges, memberSave, tickAll } from '../../resources/js/lib/groupMembers.js';
 
 test('memberChanges reports who was ticked and who was unticked', () => {
     assert.deepEqual(memberChanges([1, 2, 3], [2, 3, 4]), { add: [4], remove: [1] });
@@ -30,4 +30,20 @@ test('groupSections gathers the groups of one branch + category with the players
         ['1:11', [1, 2], [6]],
         ['2:7', [3], []],
     ]);
+});
+
+test('memberSave sends every ticked player, so the date also reaches those already in the group', () => {
+    assert.deepEqual(memberSave([1, 2, 3], [2, 3, 4]), { add: [2, 3, 4], remove: [1], changed: true });
+});
+
+test('memberSave marks an untouched tick list as unchanged', () => {
+    assert.deepEqual(memberSave([1, 2], ['2', 1]), { add: [2, 1], remove: [], changed: false });
+});
+
+test('tickAll adds every shown player and keeps the ones ticked out of view', () => {
+    assert.deepEqual(tickAll([9], [1, 2, 9], true), [9, 1, 2]);
+});
+
+test('tickAll unticks only the shown players', () => {
+    assert.deepEqual(tickAll([1, 2, 9], ['1', 2], false), [9]);
 });

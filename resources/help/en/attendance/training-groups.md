@@ -23,7 +23,7 @@ In the “Groups” card, choose “Swimming” in “Branch”, and “أصاغ
 :::
 
 :::step Tick the players of each group
-On the “الفوج 1” row, click the button with a drawing of two people. Its name, “Group players”, shows when you hover the mouse over it. The list of the category's players appears. Tick سارة, إيناس and يوسف. The first time, the date field is empty: leave it empty. Click “Save”. The message “Group players saved.” appears. Do the same for “الفوج 2”.
+On the “الفوج 1” row, click the button with a drawing of two people. Its name, “Group players”, shows when you hover the mouse over it. The list of the category's players appears. Tick سارة, إيناس and يوسف. The whole category in this group? Tick “Select all” at the top of the list. The first time, the date field is empty: leave it empty. Click “Save”. The message “Group players saved.” appears. Do the same for “الفوج 2”.
 ::figure set-group-list ring=set-group-players zoom=set-group-players
 ::figure set-group-dialog ring=group-players-list,group-players-save
 :::
@@ -46,6 +46,8 @@ Open سارة's page, and click the “Edit Player” button. In the “Swimming
 Before the day of the move, سارة stays on the “الفوج 1” list in the sessions whose attendance is not saved yet. From that day on, she appears with “الفوج 2”. A session whose attendance is saved never changes.
 
 Was the group wrong from the start? Clear the “Changes apply from” date before saving: the change applies from the beginning.
+
+Added players to a group that already had some, with today's date? They don't show in the sessions before today. To fix it, open “Group players”, clear the date or pick an earlier day, then click “Save”. The date applies to every ticked player.
 
 Changed the player's category? They leave their group from the “Changes apply from” date. Here the date cannot stay empty, so their time in the old group is kept.
 

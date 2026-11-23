@@ -23,7 +23,7 @@ Dans la carte « Groupes », choisissez « Natation » dans « Section »,
 :::
 
 :::step Cochez les joueurs de chaque groupe
-Sur la ligne de « الفوج 1 », cliquez sur le bouton avec le dessin de deux personnes. Son nom « Joueurs du groupe » s'affiche quand vous passez la souris dessus. La liste des joueurs de la catégorie s'affiche. Cochez سارة, إيناس et يوسف. La première fois, le champ de date est vide : laissez-le ainsi. Cliquez sur « Enregistrer ». Le message « Joueurs du groupe enregistrés. » s'affiche. Faites de même pour « الفوج 2 ».
+Sur la ligne de « الفوج 1 », cliquez sur le bouton avec le dessin de deux personnes. Son nom « Joueurs du groupe » s'affiche quand vous passez la souris dessus. La liste des joueurs de la catégorie s'affiche. Cochez سارة, إيناس et يوسف. Toute la catégorie dans ce groupe ? Cochez « Tout sélectionner » en haut de la liste. La première fois, le champ de date est vide : laissez-le ainsi. Cliquez sur « Enregistrer ». Le message « Joueurs du groupe enregistrés. » s'affiche. Faites de même pour « الفوج 2 ».
 ::figure set-group-list ring=set-group-players zoom=set-group-players
 ::figure set-group-dialog ring=group-players-list,group-players-save
 :::
@@ -46,6 +46,8 @@ Ouvrez la page de سارة, et cliquez sur le bouton « Modifier le joueur ».
 Avant le jour du changement, سارة reste sur la liste de « الفوج 1 » dans les séances dont les présences ne sont pas enregistrées. À partir de ce jour, elle apparaît avec « الفوج 2 ». Une séance dont les présences sont enregistrées ne change jamais.
 
 Vous vous êtes trompé de groupe dès le début ? Effacez la date de « Changements appliqués à partir du » avant d'enregistrer : le changement s'applique depuis le début.
+
+Vous avez ajouté des joueurs à un groupe qui en avait déjà, avec la date du jour ? Ils n'apparaissent pas dans les séances d'avant ce jour. Pour corriger, ouvrez « Joueurs du groupe », effacez la date ou choisissez un jour plus ancien, puis cliquez sur « Enregistrer ». La date s'applique à chaque joueur coché.
 
 Vous avez changé la catégorie du joueur ? Il quitte son groupe à partir de la date « Changements appliqués à partir du ». Ici, la date ne peut pas rester vide, pour garder son passage dans l'ancien groupe.
 

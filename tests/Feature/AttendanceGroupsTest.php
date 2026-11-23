@@ -149,6 +149,35 @@ class AttendanceGroupsTest extends TestCase
     }
 
     #[Test]
+    public function saving_every_ticked_player_moves_a_late_start_back_and_keeps_an_earlier_one(): void
+    {
+        // The owner's case: players added with today's date when the group already existed.
+        $this->travelTo('2026-11-23 10:00:00');
+        $admin = $this->admin();
+        $group = $this->group();
+        [$early, $late] = [$this->swimmer(), $this->swimmer()];
+        $membership = app(GroupMembership::class);
+        $membership->add($group, $early->id, null);
+        $membership->add($group, $late->id, '2026-11-22');
+        $rows = fn () => TrainingGroupMember::orderBy('player_id')->get()->map(fn ($m) => [$m->player_id, $m->from_date, $m->to_date])->all();
+
+        // Today's date (the dialog's default) changes nobody already in the group.
+        $this->actingAs($admin)->put(route('attendance.groups.members.update', $group), ['from' => '2026-11-23', 'add' => [$early->id, $late->id], 'remove' => []])
+            ->assertSessionHasNoErrors();
+        $this->assertSame([[$early->id, null, null], [$late->id, '2026-11-22', null]], $rows());
+
+        // An earlier date moves the late start back; the earlier one stays.
+        $this->actingAs($admin)->put(route('attendance.groups.members.update', $group), ['from' => '2026-11-17', 'add' => [$early->id, $late->id], 'remove' => []])
+            ->assertSessionHasNoErrors();
+        $this->assertSame([[$early->id, null, null], [$late->id, '2026-11-17', null]], $rows());
+
+        // No date: everyone ticked is in the group from the beginning.
+        $this->actingAs($admin)->put(route('attendance.groups.members.update', $group), ['from' => null, 'add' => [$early->id, $late->id], 'remove' => []])
+            ->assertSessionHasNoErrors();
+        $this->assertSame([[$early->id, null, null], [$late->id, null, null]], $rows());
+    }
+
+    #[Test]
     public function a_player_of_another_category_cannot_be_ticked(): void
     {
         $cadet = Category::create(['name' => 'Cadet', 'branch_id' => $this->swim->id]);

@@ -6,7 +6,7 @@ import IconButton from '@/Components/IconButton.vue';
 import InputError from '@/Components/InputError.vue';
 import Modal from '@/Components/Modal.vue';
 import { categoriesForBranch } from '@/lib/categoryPicker';
-import { groupSections, memberChanges } from '@/lib/groupMembers';
+import { groupSections, memberSave, tickAll } from '@/lib/groupMembers';
 import { localToday } from '@/lib/localDate';
 
 const props = defineProps({
@@ -62,7 +62,7 @@ function destroy(group) {
 const sections = computed(() => groupSections(props.groups, props.rosters));
 const waitingOpen = ref(null); // the section key whose waiting names are shown
 
-// ---- Players of one group: a tick list, saved as changes from a date ----
+// ---- Players of one group: a tick list, saved from a date ----
 const open = ref(null); // the group being edited
 const ticked = ref([]);
 const from = ref('');
@@ -75,6 +75,13 @@ const shown = computed(() => {
     return q ? roster.value.filter((p) => p.name.toLowerCase().includes(q)) : roster.value;
 });
 const before = ref([]); // the group's members when the dialog opened: what the ticks are compared with
+const openedFrom = ref(''); // the date the dialog opened with: a changed date alone is worth a save
+// «Select all» ticks or unticks the players shown (the search narrows it).
+const allShown = computed(() => shown.value.length > 0 && shown.value.every((p) => ticked.value.includes(p.id)));
+const someShown = computed(() => !allShown.value && shown.value.some((p) => ticked.value.includes(p.id)));
+function toggleAll(on) {
+    ticked.value = tickAll(ticked.value, shown.value.map((p) => p.id), on);
+}
 function openPlayers(group) {
     open.value = group;
     query.value = '';
@@ -83,10 +90,12 @@ function openPlayers(group) {
     before.value = [...ticked.value];
     // An empty group is a first setup: from the beginning. Later changes default to today.
     from.value = group.members ? today : '';
+    openedFrom.value = from.value;
 }
 function savePlayers() {
-    const { add, remove } = memberChanges(before.value, ticked.value);
-    if (!add.length && !remove.length) {
+    // Every ticked player is sent, so the date reaches the ones already in the group too.
+    const { add, remove, changed } = memberSave(before.value, ticked.value);
+    if (!changed && from.value === openedFrom.value) {
         open.value = null;
         return;
     }
@@ -164,6 +173,10 @@ function savePlayers() {
                 </label>
                 <input v-model="query" type="text" :placeholder="t('att.group_find')" :aria-label="t('att.group_find')" :class="[input, 'block w-full']" />
                 <p v-if="!roster.length" class="text-sm text-slate-500 dark:text-slate-400">{{ t('att.group_no_players') }}</p>
+                <label v-if="shown.length" data-help="group-players-all" class="flex items-center gap-2 border-b border-slate-100 pb-1 text-sm font-medium dark:border-slate-800">
+                    <input type="checkbox" :checked="allShown" :indeterminate="someShown" class="rounded border-slate-300 text-primary-600 dark:border-slate-700 dark:bg-slate-900" @change="toggleAll($event.target.checked)" />
+                    {{ t('select_all') }}
+                </label>
                 <ul data-help="group-players-list" class="max-h-80 space-y-1 overflow-y-auto text-sm">
                     <li v-for="p in shown" :key="p.id">
                         <label class="flex items-center gap-2">

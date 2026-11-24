@@ -38,6 +38,9 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class SubscriptionController extends Controller
 {
+    /** The assignee list's payment status filter; "paid" takes in exempt, like the tab. */
+    private const PAYMENT_FILTERS = ['paid', 'partial', 'unpaid'];
+
     public function index(Request $request): Response
     {
         $query = Subscription::query()->with(['categories', 'branches']);
@@ -704,7 +707,11 @@ class SubscriptionController extends Controller
             'logo' => Media::localFile($branch?->logo_url) ?? $club['logo'],
             'subscription' => $subscription->designation,
             'currency' => $club['currency'] ?? null,
-            'tab' => $filter === 'all' ? null : $filter,
+            // What the sheet is narrowed to by payment: the tab, then the checked statuses.
+            'payments' => array_values(array_unique(array_filter([
+                $filter === 'all' ? null : $filter,
+                ...ListFilter::get($request, 'payment_status', self::PAYMENT_FILTERS),
+            ]))),
             'categories' => $categories,
             'stats' => [
                 'total' => $total,
@@ -722,8 +729,8 @@ class SubscriptionController extends Controller
 
     /**
      * The assignee list as the page shows it, A→Z: the search, the tab
-     * (all | paid | unpaid | partial), and the categories and player statuses
-     * checked in its filters. Each item pairs the obligation with the values
+     * (all | paid | unpaid | partial), and the payment statuses, categories
+     * and player statuses checked in its filters. Each item pairs the obligation with the values
      * the page shows for its player (that branch's registration, else the
      * main one).
      *
@@ -741,6 +748,7 @@ class SubscriptionController extends Controller
 
         $categories = ListFilter::get($request, 'category_id', 'ids|none');
         $statuses = ListFilter::get($request, 'status_id', 'ids|none');
+        $payments = ListFilter::get($request, 'payment_status', self::PAYMENT_FILTERS);
         $display = RegistrationDisplay::make();
         $branchId = $this->pageBranch($subscription);
         $none = ['membership_id' => null, 'category' => null, 'status_id' => null];
@@ -752,6 +760,9 @@ class SubscriptionController extends Controller
                 'partial' => $ps->payment_status === 'partial',
                 default => true,
             })
+            // Several payment statuses at once (unpaid + partial…); exempt counts as paid, like the tab.
+            ->filter(fn (PlayerSubscription $ps) => $payments === []
+                || in_array($ps->payment_status === 'exempt' ? 'paid' : $ps->payment_status, $payments, true))
             ->map(fn (PlayerSubscription $ps) => [
                 'ps' => $ps,
                 'shown' => $ps->player ? $this->shownValues($ps->player, $branchId, $display) : $none,

@@ -71,6 +71,10 @@ const searchTokens = computed(() =>
 // Options are the values present in the list; "none" stands for a row without one.
 const categoryFilter = ref([]);
 const statusFilter = ref([]);
+// Several payment statuses at once (unpaid + partial…); exempt counts as paid, like the tab.
+const paymentFilter = ref([]);
+const paymentOptions = computed(() => ['paid', 'partial', 'unpaid'].map(value => ({ value, label: t(value) })));
+const paymentGroup = (ps) => (ps.payment_status === 'exempt' ? 'paid' : ps.payment_status);
 
 const categoryOptions = computed(() => {
     const seen = new Map();
@@ -98,6 +102,7 @@ const checked = (list, id) => !list.length || list.includes(id == null ? 'none' 
 const searchedList = computed(() => props.playerSubscriptions.filter((ps) => {
     if (!checked(categoryFilter.value, ps.player?.category?.id)) return false;
     if (!checked(statusFilter.value, ps.player?.status_id)) return false;
+    if (paymentFilter.value.length && !paymentFilter.value.includes(paymentGroup(ps))) return false;
     if (!searchTokens.value.length) return true;
     const haystack = `${ps.player?.fullname ?? ''} ${ps.player?.membership_id ?? ''}`.toLowerCase();
     return searchTokens.value.every(w => haystack.includes(w));
@@ -182,6 +187,7 @@ const listParams = computed(() => ({
     ...(searchTokens.value.length ? { search: search.value.trim() } : {}),
     ...(categoryFilter.value.length ? { category_id: categoryFilter.value } : {}),
     ...(statusFilter.value.length ? { status_id: statusFilter.value } : {}),
+    ...(paymentFilter.value.length ? { payment_status: paymentFilter.value } : {}),
 }));
 // ExportMenu adds the format.
 const exportHref = computed(() => route('subscriptions.export', listParams.value));
@@ -307,6 +313,8 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
                     </button>
                     <!-- Search + export current tab -->
                     <div class="no-print ml-auto flex flex-wrap items-center gap-2 px-4 py-2">
+                        <MultiSelectFilter v-model="paymentFilter" :options="paymentOptions" collapse-all
+                            :label="t('subscription_payment_filter')" :placeholder="t('subscription_payment_filter_all')" class="w-44" />
                         <MultiSelectFilter v-if="categoryOptions.length > 1" v-model="categoryFilter" :options="categoryOptions"
                             :label="t('category')" :placeholder="t('all_categories')" class="w-44" />
                         <MultiSelectFilter v-if="statusOptions.length > 1" v-model="statusFilter" :options="statusOptions"

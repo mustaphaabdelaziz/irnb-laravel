@@ -2,7 +2,7 @@
     $L = fn (string $key) => \App\Support\UiLang::get($key);
     // The Arabic club name, then the short name at its end.
     $title = trim($clubName.' '.$shortName);
-    $scope = array_filter([implode(' · ', $categories), $tab ? $L($tab) : null]);
+    $scope = array_filter([implode(' · ', $categories), implode(' · ', array_map($L, $payments))]);
     $footer = $title.' — '.strtr($L('att.sheet.page'), ['{page}' => '{PAGENO}', '{pages}' => '{nbpg}']);
     $money = fn (float $value) => number_format($value, 2);
     // The currency once, in the amount headers.

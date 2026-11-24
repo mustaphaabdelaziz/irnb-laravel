@@ -131,6 +131,28 @@ class SubscriptionPrintListTest extends TestCase
     }
 
     #[Test]
+    public function several_payment_statuses_print_together(): void
+    {
+        $this->assignee('Amrani', $this->cadets, 0);
+        $this->assignee('Benali', $this->cadets, 400);
+        $this->assignee('Chikhi', $this->cadets, 1000);
+
+        $html = $this->capturePdfHtml();
+        $this->actingAs($this->admin())
+            ->get(route('subscriptions.print-list', [$this->sub, 'payment_status' => ['unpaid', 'partial']]))
+            ->assertOk();
+
+        $this->assertStringContainsString('Amrani', $html());
+        $this->assertStringContainsString('Benali', $html());
+        $this->assertStringNotContainsString('Chikhi', $html(), 'paid');
+
+        $csv = $this->get(route('subscriptions.export', [$this->sub, 'format' => 'csv', 'payment_status' => ['paid']]))
+            ->assertOk()->streamedContent();
+        $this->assertStringContainsString('Chikhi', $csv);
+        $this->assertStringNotContainsString('Amrani', $csv);
+    }
+
+    #[Test]
     public function the_export_follows_the_same_category_filter(): void
     {
         $this->assignee('Amrani', $this->cadets, 0);

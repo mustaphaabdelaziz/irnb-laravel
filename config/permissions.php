@@ -75,6 +75,8 @@ return [
         'players.academic-report' => ['players', 'view'],
         // "print-list" is not a view verb: printing the filtered list only reads.
         'players.print-list' => ['players', 'view'],
+        // Missing-document details are the documents right (the controller also asks players → view).
+        'players.print-documents' => ['documents', 'view'],
         'subscriptions.print-list' => ['subscriptions', 'view'],
         'players.board-table' => ['players', 'view'],
         'players.academic-results' => ['players', 'view'],

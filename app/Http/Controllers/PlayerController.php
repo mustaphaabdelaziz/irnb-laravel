@@ -35,6 +35,7 @@ use App\Services\Pdf\PdfService;
 use App\Services\Player\DocumentChecklist;
 use App\Services\Player\DocumentStats;
 use App\Services\Player\MembershipNumber;
+use App\Services\Player\MissingDocuments;
 use App\Services\Player\PlayerDocumentService;
 use App\Services\Player\RegisterPlayerService;
 use App\Services\Player\RegistrationCounts;
@@ -814,6 +815,61 @@ class PlayerController extends Controller
         ])->render();
 
         return $pdf->stream($html, 'players-'.now()->format('Y-m-d').'.pdf', app()->getLocale() === 'ar');
+    }
+
+    /**
+     * The filtered list as an A4 sheet of what each player still owes, laid out
+     * like printList(): every listed player, complete ones included, with the
+     * figures and the count per document type above the table. The route needs
+     * documents → view; the list itself needs players → view too.
+     */
+    public function printDocuments(Request $request, PdfService $pdf): SymfonyResponse
+    {
+        abort_unless($request->user()?->hasPermission('players', 'view'), 403);
+
+        $query = Player::query();
+        $this->applyPlayerFilters($query, $request);
+        $shownBranch = $this->selectedBranch($request);
+        $this->withShownRegistration($query, $shownBranch);
+        $display = RegistrationDisplay::make();
+        $players = $query->orderBy('lastname')->orderBy('firstname')->get()
+            ->loadMissing(MissingDocuments::WITH)
+            ->each(fn (Player $player) => $display->overlay($player, $shownBranch));
+
+        $spec = $this->filterSpecs();
+        $ids = fn (string $key) => array_values(array_map('intval', array_filter(ListFilter::get($request, $key, $spec[$key]), 'ctype_digit')));
+        $branchIds = $ids('branch_id');
+        $categoryIds = $ids('category_id');
+
+        $missing = new MissingDocuments;
+        $rows = $players->map(fn (Player $player) => [
+            'membership_id' => $player->membership_id,
+            // Player::fullname, minus the nickname.
+            'name' => Player::fullnameOf($player->lastname, $player->firstname, null, $player->father, $player->grandfather, $player->gender),
+            'category' => $player->category?->localized_name,
+            'groups' => $missing->of($player, $branchIds ?: null, $categoryIds ?: null),
+        ]);
+
+        $branch = $shownBranch === null ? null : Branch::find($shownBranch);
+        $categories = $categoryIds === [] ? [] : Category::whereIn('id', $categoryIds)->get()
+            ->map(fn (Category $c) => $c->localized_name ?: $c->name)->all();
+
+        $club = ClubHeader::data();
+        $config = WebsiteConfig::singleton();
+        $names = ClubIdentity::name($config);
+
+        $html = view('pdf.missing-documents', [
+            'clubName' => $names['ar'] ?? reset($names),
+            'shortName' => trim((string) $config->club_short_name),
+            'logo' => Media::localFile($branch?->logo_url) ?? $club['logo'],
+            'branch' => $branch?->localized_name,
+            'categories' => $categories,
+            'figures' => $missing->figures($rows->pluck('groups')),
+            'rows' => $rows->map(fn (array $row) => [...$row, 'lines' => MissingDocuments::lines($row['groups'])])->all(),
+            'printedOn' => now()->format('d/m/Y'),
+        ])->render();
+
+        return $pdf->stream($html, 'missing-documents-'.now()->format('Y-m-d').'.pdf', app()->getLocale() === 'ar');
     }
 
     /**

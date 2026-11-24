@@ -24,6 +24,7 @@ use App\Reports\Players\PlayerBirthdays;
 use App\Reports\Players\PlayerDemographics;
 use App\Reports\Players\PlayerDirectory;
 use App\Reports\Players\PlayerDocuments;
+use App\Reports\Players\PlayerMissingDocuments;
 use App\Reports\Players\PlayerMovement;
 
 /**
@@ -50,6 +51,7 @@ final class ReportRegistry
         PlayerDemographics::class,
         PlayerMovement::class,
         PlayerDocuments::class,
+        PlayerMissingDocuments::class,
         PlayerBirthdays::class,
         FinanceSummary::class,
         TransactionsJournal::class,

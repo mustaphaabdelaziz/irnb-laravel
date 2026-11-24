@@ -174,6 +174,8 @@ const documentOptions = computed(() => [
 const exportHref = computed(() => route('players.export', filterParams.value));
 // The same filters as the export, printed as an A4 list (PDF).
 const printListHref = computed(() => route('players.print-list', filterParams.value));
+// The same list as an A4 sheet of each player's missing documents (documents → view).
+const printDocumentsHref = computed(() => route('players.print-documents', filterParams.value));
 
 // The strip's "missing" link: the current list, narrowed to players missing a
 // document. It replaces the documents filter, which would widen a narrower
@@ -338,6 +340,7 @@ function runBulk() {
                     <ExportMenu :href="route('players.import.template')" :label="t('template')" icon="document" />
                     <ExportMenu :href="exportHref" :label="t('export')" />
                     <IconButton :href="printListHref" external target="_blank" icon="print" :label="t('print_players_list')" />
+                    <IconButton v-if="can('documents', 'view')" :href="printDocumentsHref" external target="_blank" icon="clipboard" :label="t('missing_docs.print')" />
 
                     <ExportMenu v-if="singleCategory" :href="route('players.board-table', { category_id: singleCategory })"
                         :label="t('print_board_table')" :formats="['pdf', 'xlsx', 'csv']" icon="print" />

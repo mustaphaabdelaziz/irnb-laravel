@@ -6,8 +6,10 @@ use App\Http\Requests\Subscription\StoreSubscriptionRequest;
 use App\Models\Branch;
 use App\Models\Category;
 use App\Models\Player;
+use App\Models\PlayerStatus;
 use App\Models\PlayerSubscription;
 use App\Models\Subscription;
+use App\Models\WebsiteConfig;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
 use App\Services\Dashboard\ModuleStats;
@@ -15,9 +17,13 @@ use App\Services\Finance\PruneOutOfBranchObligations;
 use App\Services\Finance\RecalculatePlayerDebtService;
 use App\Services\Finance\SaveSubscriptionTarification;
 use App\Services\Finance\TarificationData;
+use App\Services\Pdf\ClubHeader;
+use App\Services\Pdf\PdfService;
 use App\Services\Player\RegistrationDisplay;
+use App\Support\ClubIdentity;
 use App\Support\Export;
 use App\Support\ListFilter;
+use App\Support\Media;
 use App\Support\UiLang;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -281,6 +287,8 @@ class SubscriptionController extends Controller
             'subscription' => $subscription,
             'playerSubscriptions' => $rows,
             'categories' => Category::with('branch:id,name,name_ar,name_fr,name_en')->orderBy('name')->get(),
+            // Names for the player status filter; the page offers only those in the list.
+            'playerStatuses' => PlayerStatus::orderBy('sort_order')->get(['id', 'name', 'name_ar', 'name_fr', 'name_en', 'code']),
             'availablePlayers' => $this->unassignedPlayers($subscription),
             // Active members of its branches it doesn't otherwise apply to (a footballer
             // of category A who also swims in B), loaded when the add dialog asks.
@@ -307,15 +315,18 @@ class SubscriptionController extends Controller
      * What the page and export show for a player: that branch's registration, else
      * the main one. A player with no registration shows their own values.
      *
-     * @return array{membership_id: ?string, category: ?Category}
+     * @return array{membership_id: ?string, category: ?Category, status_id: ?int}
      */
     private function shownValues(Player $player, ?int $branchId, RegistrationDisplay $display): array
     {
         $row = $display->shown($player, $branchId);
+        // That branch's status, else the player's overall one (left only when left everywhere).
+        $status = $display->values($player, $branchId)['status_id'];
 
         return [
             'membership_id' => $row === null ? $player->membership_id : $row->membership_id,
             'category' => $row ? $row->category : $player->category,
+            'status_id' => $status === null ? null : (int) $status,
         ];
     }
 
@@ -391,6 +402,7 @@ class SubscriptionController extends Controller
                         'lastname' => $player->lastname,
                         'fullname' => $player->fullname,
                         'category' => $category($shown['category']),
+                        'status_id' => $shown['status_id'],
                     ],
                 ];
             })
@@ -598,7 +610,7 @@ class SubscriptionController extends Controller
             // Only what the page and the export show: the full player row (contact,
             // health…) of every assignee made this page seconds slow and megabytes big.
             ->with([
-                'player' => fn ($player) => $player->select(['id', 'membership_id', 'category_id', ...Player::NAME_COLUMNS]),
+                'player' => fn ($player) => $player->select(['id', 'membership_id', 'category_id', 'status_id', 'left_at', ...Player::NAME_COLUMNS]),
                 'player.category',
                 'player.registrations.category',
             ]);
@@ -606,22 +618,8 @@ class SubscriptionController extends Controller
 
     public function export(Request $request, Subscription $subscription): SymfonyResponse
     {
-        $search = trim((string) $request->query('search', ''));
-        $playerSubscriptions = $this->assignedPlayers($subscription, $search !== '' ? $search : null);
-
-        // all | paid | unpaid | partial; anything else (an array, a path…) → all.
-        $filter = $request->query('filter', 'all');
-        if (! in_array($filter, ['all', 'paid', 'unpaid', 'partial'], true)) {
-            $filter = 'all';
-        }
-
-        if ($filter === 'paid') {
-            $playerSubscriptions = $playerSubscriptions->filter(fn ($ps) => in_array($ps->payment_status, ['paid', 'exempt']));
-        } elseif ($filter === 'unpaid') {
-            $playerSubscriptions = $playerSubscriptions->filter(fn ($ps) => $ps->payment_status === 'unpaid');
-        } elseif ($filter === 'partial') {
-            $playerSubscriptions = $playerSubscriptions->filter(fn ($ps) => $ps->payment_status === 'partial');
-        }
+        [$listed, $filter] = $this->listedAssignees($request, $subscription);
+        $playerSubscriptions = $listed->pluck('ps');
 
         // The tab label the page uses (t(tab)).
         $title = $subscription->designation.' ('.UiLang::get($filter, ucfirst($filter)).')';
@@ -629,15 +627,11 @@ class SubscriptionController extends Controller
             'col.membership_id', 'col.player_name', 'col.category', 'col.amount_owed', 'col.amount_paid', 'col.status',
         ])];
 
-        $display = RegistrationDisplay::make();
-        $branchId = $this->pageBranch($subscription);
-
         $rows = [];
         $rowNum = 1;
-        foreach ($playerSubscriptions as $ps) {
+        foreach ($listed as ['ps' => $ps, 'shown' => $shown]) {
             $player = $ps->player;
             $name = $player ? $player->fullname : 'N/A';
-            $shown = $player ? $this->shownValues($player, $branchId, $display) : ['membership_id' => null, 'category' => null];
 
             $rows[] = [
                 $rowNum++,
@@ -662,5 +656,121 @@ class SubscriptionController extends Controller
         $filename = 'subscription_'.str_replace([' ', '/', '\\'], '_', $subscription->designation).'_'.$filter;
 
         return Export::download(Export::format($request), $filename, $headers, $rows, $title);
+    }
+
+    /**
+     * The listed assignees as an A4 sheet, laid out like the players list:
+     * the branch logo (the club's when the rows span several branches or
+     * none), the Arabic club name, then the subscription and its figures.
+     */
+    public function printList(Request $request, Subscription $subscription, PdfService $pdf): SymfonyResponse
+    {
+        [$listed, $filter] = $this->listedAssignees($request, $subscription);
+
+        $branchIds = $listed->map(fn (array $item) => $item['shown']['category']?->branch_id)->filter()->unique();
+        $branch = $branchIds->count() === 1 ? Branch::find($branchIds->first()) : null;
+
+        $categoryIds = ListFilter::ids($request, 'category_id');
+        $categories = $categoryIds === [] ? [] : Category::whereIn('id', $categoryIds)->orderBy('name')->get()
+            ->map(fn (Category $c) => $c->localized_name ?: $c->name)->all();
+
+        $rows = $listed->map(function (array $item) {
+            $money = $item['ps']->money();
+            $player = $item['ps']->player;
+
+            return [
+                'membership_id' => $item['shown']['membership_id'],
+                // Player::fullname, minus the nickname, like the players list.
+                'name' => $player === null ? '-' : Player::fullnameOf($player->lastname, $player->firstname, null, $player->father, $player->grandfather, $player->gender),
+                'owed' => (float) $item['ps']->amount_owed,
+                'paid' => (float) $item['ps']->amount_paid,
+                'remaining' => (float) $money['remaining'],
+                'status' => $money['status'],
+            ];
+        });
+
+        $counts = array_count_values($rows->pluck('status')->all());
+        $total = $rows->count();
+        $paid = ($counts['paid'] ?? 0) + ($counts['exempt'] ?? 0);
+
+        $club = ClubHeader::data();
+        $config = WebsiteConfig::singleton();
+        // The header always reads the Arabic club name, whatever the app language.
+        $names = ClubIdentity::name($config);
+
+        $html = view('pdf.subscription-list', [
+            'clubName' => $names['ar'] ?? reset($names),
+            'shortName' => trim((string) $config->club_short_name),
+            'logo' => Media::localFile($branch?->logo_url) ?? $club['logo'],
+            'subscription' => $subscription->designation,
+            'currency' => $club['currency'] ?? null,
+            'tab' => $filter === 'all' ? null : $filter,
+            'categories' => $categories,
+            'stats' => [
+                'total' => $total,
+                'paid' => $paid,
+                'partial' => $counts['partial'] ?? 0,
+                'unpaid' => $counts['unpaid'] ?? 0,
+                'percent' => $total > 0 ? round($paid / $total * 100, 1) : 0,
+            ],
+            'rows' => $rows,
+            'printedOn' => now()->format('d/m/Y'),
+        ])->render();
+
+        return $pdf->stream($html, 'subscription-'.$subscription->id.'-'.now()->format('Y-m-d').'.pdf', app()->getLocale() === 'ar');
+    }
+
+    /**
+     * The assignee list as the page shows it, A→Z: the search, the tab
+     * (all | paid | unpaid | partial), and the categories and player statuses
+     * checked in its filters. Each item pairs the obligation with the values
+     * the page shows for its player (that branch's registration, else the
+     * main one).
+     *
+     * @return array{0: Collection<int, array{ps: PlayerSubscription, shown: array{membership_id: ?string, category: ?Category, status_id: ?int}}>, 1: string}
+     */
+    private function listedAssignees(Request $request, Subscription $subscription): array
+    {
+        $search = trim((string) $request->query('search', ''));
+
+        // all | paid | unpaid | partial; anything else (an array, a path…) → all.
+        $filter = $request->query('filter', 'all');
+        if (! in_array($filter, ['all', 'paid', 'unpaid', 'partial'], true)) {
+            $filter = 'all';
+        }
+
+        $categories = ListFilter::get($request, 'category_id', 'ids|none');
+        $statuses = ListFilter::get($request, 'status_id', 'ids|none');
+        $display = RegistrationDisplay::make();
+        $branchId = $this->pageBranch($subscription);
+        $none = ['membership_id' => null, 'category' => null, 'status_id' => null];
+
+        $listed = $this->assignedPlayers($subscription, $search !== '' ? $search : null)
+            ->filter(fn (PlayerSubscription $ps) => match ($filter) {
+                'paid' => in_array($ps->payment_status, ['paid', 'exempt'], true),
+                'unpaid' => $ps->payment_status === 'unpaid',
+                'partial' => $ps->payment_status === 'partial',
+                default => true,
+            })
+            ->map(fn (PlayerSubscription $ps) => [
+                'ps' => $ps,
+                'shown' => $ps->player ? $this->shownValues($ps->player, $branchId, $display) : $none,
+            ])
+            ->filter(fn (array $item) => self::checked($categories, $item['shown']['category']?->id)
+                && self::checked($statuses, $item['shown']['status_id']))
+            ->values();
+
+        return [$listed, $filter];
+    }
+
+    /**
+     * Whether a value passes a multi-select: nothing checked, its id checked,
+     * or "none" checked for a row without one.
+     *
+     * @param  list<string>  $checked
+     */
+    private static function checked(array $checked, ?int $id): bool
+    {
+        return $checked === [] || in_array($id === null ? 'none' : (string) $id, $checked, true);
     }
 }

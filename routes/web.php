@@ -262,6 +262,7 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
     Route::post('/subscriptions/{subscription}/assign', [SubscriptionController::class, 'assign'])->name('subscriptions.assign');
     Route::post('/subscriptions/{subscription}/assign-one', [SubscriptionController::class, 'assignOne'])->name('subscriptions.assignOne');
     Route::get('/subscriptions/{subscription}/export', [SubscriptionController::class, 'export'])->name('subscriptions.export');
+    Route::get('/subscriptions/{subscription}/print-list', [SubscriptionController::class, 'printList'])->name('subscriptions.print-list');
 
     // Transactions (export/import declared before the resource so the static paths win)
     Route::get('/transactions/export', [TransactionController::class, 'export'])->name('transactions.export');

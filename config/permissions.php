@@ -75,6 +75,7 @@ return [
         'players.academic-report' => ['players', 'view'],
         // "print-list" is not a view verb: printing the filtered list only reads.
         'players.print-list' => ['players', 'view'],
+        'subscriptions.print-list' => ['subscriptions', 'view'],
         'players.board-table' => ['players', 'view'],
         'players.academic-results' => ['players', 'view'],
         // "grid" is not a view verb: opening the month grid must not need edit rights.

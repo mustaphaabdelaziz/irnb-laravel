@@ -2892,6 +2892,7 @@
     "subscription_kind_exceptional": "استثنائي",
     "subscription_kind_exceptional_hint": "مبلغ لمرة واحدة بدون موسم، مثل قميص النادي.",
     "subscription_outside_category": "فئة أخرى",
+    "subscription_paid_rate": "نسبة الدفع",
     "subscription_show_outside_category": "إظهار لاعبي فروعه من فئات أخرى أيضًا",
     "subscriptions": "الاشتراكات",
     "super_admin": "المدير العام",

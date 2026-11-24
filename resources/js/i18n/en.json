@@ -2892,6 +2892,7 @@
     "subscription_kind_exceptional": "Exceptional",
     "subscription_kind_exceptional_hint": "One-off charge with no season, e.g. a club t-shirt.",
     "subscription_outside_category": "Other category",
+    "subscription_paid_rate": "Payment rate",
     "subscription_show_outside_category": "Also show players of its branches from other categories",
     "subscriptions": "Subscriptions",
     "super_admin": "Super Admin",

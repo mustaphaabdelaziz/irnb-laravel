@@ -66,7 +66,7 @@ class SubscriptionShowPayloadTest extends TestCase
                 $this->assertEquals([0, 0, 600], array_column($rows, 'remaining_amount'));
                 $this->assertSame('400.00', $rows[2]['amount_paid']);
                 $this->assertSame(
-                    ['id', 'membership_id', 'lastname', 'fullname', 'category'],
+                    ['id', 'membership_id', 'lastname', 'fullname', 'category', 'status_id'],
                     array_keys($rows[0]['player']),
                 );
                 $this->assertSame($category->id, $rows[0]['player']['category']['id']);

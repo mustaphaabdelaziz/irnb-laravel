@@ -2892,6 +2892,7 @@
     "subscription_kind_exceptional": "Exceptionnelle",
     "subscription_kind_exceptional_hint": "Achat ponctuel sans saison, ex. un t-shirt du club.",
     "subscription_outside_category": "Autre catégorie",
+    "subscription_paid_rate": "Taux de paiement",
     "subscription_show_outside_category": "Afficher aussi les joueurs de ses sections d'autres catégories",
     "subscriptions": "Abonnements",
     "super_admin": "Super Admin",

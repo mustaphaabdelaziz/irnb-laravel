@@ -4,6 +4,7 @@ import Badge from '@/Components/Badge.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import ExportMenu from '@/Components/ExportMenu.vue';
 import IconButton from '@/Components/IconButton.vue';
+import MultiSelectFilter from '@/Components/MultiSelectFilter.vue';
 import StatTile from '@/Components/Dashboard/StatTile.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
@@ -23,6 +24,7 @@ const props = defineProps({
     subscription: Object,
     playerSubscriptions: Array,
     categories: Array,
+    playerStatuses: { type: Array, default: () => [] },
     availablePlayers: Array,
     outsidePlayers: { type: Array, default: null },
     stats: Object,
@@ -65,13 +67,41 @@ const searchTokens = computed(() =>
     search.value.trim().toLowerCase().split(/\s+/).filter(w => w && w !== 'بن' && w !== 'بنت')
 );
 
-const searchedList = computed(() => {
-    if (!searchTokens.value.length) return props.playerSubscriptions;
-    return props.playerSubscriptions.filter((ps) => {
-        const haystack = `${ps.player?.fullname ?? ''} ${ps.player?.membership_id ?? ''}`.toLowerCase();
-        return searchTokens.value.every(w => haystack.includes(w));
-    });
+// ── Category + player status filters (several of each) ───────────────
+// Options are the values present in the list; "none" stands for a row without one.
+const categoryFilter = ref([]);
+const statusFilter = ref([]);
+
+const categoryOptions = computed(() => {
+    const seen = new Map();
+    let none = false;
+    for (const ps of props.playerSubscriptions) {
+        const c = ps.player?.category;
+        if (c) seen.set(String(c.id), c.localized_name || c.name);
+        else none = true;
+    }
+    const options = [...seen].map(([value, label]) => ({ value, label }))
+        .sort((a, b) => a.label.localeCompare(b.label));
+    return none ? [...options, { value: 'none', label: t('uncategorized') }] : options;
 });
+
+const statusOptions = computed(() => {
+    const present = new Set(props.playerSubscriptions.map(ps => ps.player?.status_id ?? null));
+    const options = props.playerStatuses
+        .filter(s => present.has(s.id))
+        .map(s => ({ value: String(s.id), label: s.localized_name || s.name }));
+    return present.has(null) ? [...options, { value: 'none', label: t('filter.no_status') }] : options;
+});
+
+const checked = (list, id) => !list.length || list.includes(id == null ? 'none' : String(id));
+
+const searchedList = computed(() => props.playerSubscriptions.filter((ps) => {
+    if (!checked(categoryFilter.value, ps.player?.category?.id)) return false;
+    if (!checked(statusFilter.value, ps.player?.status_id)) return false;
+    if (!searchTokens.value.length) return true;
+    const haystack = `${ps.player?.fullname ?? ''} ${ps.player?.membership_id ?? ''}`.toLowerCase();
+    return searchTokens.value.every(w => haystack.includes(w));
+}));
 
 // ── Tabs ─────────────────────────────────────────────────────────────
 const activeTab = ref('all'); // all | paid | unpaid | partial
@@ -144,18 +174,19 @@ function addSinglePlayer() {
         .post(route('subscriptions.assignOne', props.subscription.id), { onSuccess: closeAddPlayer });
 }
 
-// ── Export ────────────────────────────────────────────────────────────
-// The current tab's list (search included); ExportMenu adds the format.
-const exportHref = computed(() => route('subscriptions.export', {
+// ── Export + print ────────────────────────────────────────────────────
+// The list as shown: tab, search, categories and statuses.
+const listParams = computed(() => ({
     subscription: props.subscription.id,
     filter: activeTab.value,
     ...(searchTokens.value.length ? { search: search.value.trim() } : {}),
+    ...(categoryFilter.value.length ? { category_id: categoryFilter.value } : {}),
+    ...(statusFilter.value.length ? { status_id: statusFilter.value } : {}),
 }));
-
-// ── Print ─────────────────────────────────────────────────────────────
-function printList() {
-    window.print();
-}
+// ExportMenu adds the format.
+const exportHref = computed(() => route('subscriptions.export', listParams.value));
+// The same list as an A4 sheet (PDF), laid out like the players list.
+const printListHref = computed(() => route('subscriptions.print-list', listParams.value));
 
 // ── Helpers ───────────────────────────────────────────────────────────
 // Counted from the searched list, so the badges follow the search.
@@ -187,7 +218,7 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
                     <!-- Export (current tab) -->
                     <ExportMenu :href="exportHref" :label="t('export')" />
                     <!-- Print -->
-                    <IconButton icon="print" :label="t('print')" @click="printList" />
+                    <IconButton :href="printListHref" external target="_blank" icon="print" :label="t('print')" />
                     <IconButton :href="route('subscriptions.edit', subscription.id)" icon="pencil" :label="t('edit')" />
                 </div>
             </div>
@@ -275,17 +306,16 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
                         </span>
                     </button>
                     <!-- Search + export current tab -->
-                    <div class="no-print ml-auto flex items-center pr-4 gap-2">
+                    <div class="no-print ml-auto flex flex-wrap items-center gap-2 px-4 py-2">
+                        <MultiSelectFilter v-if="categoryOptions.length > 1" v-model="categoryFilter" :options="categoryOptions"
+                            :label="t('category')" :placeholder="t('all_categories')" class="w-44" />
+                        <MultiSelectFilter v-if="statusOptions.length > 1" v-model="statusFilter" :options="statusOptions"
+                            :label="t('player_status')" :placeholder="t('all_statuses')" class="w-44" />
                         <input v-model="search" type="search" :placeholder="t('search_name_or_id')" :aria-label="t('search')"
                             class="w-44 sm:w-56 rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-900 px-3 py-1.5 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500" />
                         <ExportMenu :href="exportHref" :label="`${t('export')} ${t(activeTab)}`" />
+                        <IconButton :href="printListHref" external target="_blank" icon="print" :label="`${t('print')} ${t(activeTab)}`" />
                     </div>
-                </div>
-
-                <!-- Print header (only shown when printing) -->
-                <div class="hidden px-5 py-4 print:block">
-                    <h2 class="text-lg font-bold">{{ subscription.name }} — {{ periodLabel }}</h2>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">{{ t(activeTab) }} — {{ new Date().toLocaleDateString() }}</p>
                 </div>
 
                 <div v-if="!filteredList.length" class="px-5 py-8 text-center text-sm text-slate-500 dark:text-slate-400">

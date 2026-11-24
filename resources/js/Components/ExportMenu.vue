@@ -15,6 +15,7 @@ const props = defineProps({
     // Icon-only trigger; the label slides open on hover (see IconButton).
     icon: { type: String, default: 'download' },
     collapse: { type: Boolean, default: false }, // legacy, trigger is always compact now
+    iconOnly: { type: Boolean, default: false }, // never slide the label open (crowded rows that would wrap)
 });
 
 const { t } = useI18n();
@@ -29,7 +30,7 @@ const items = computed(() => props.formats.map((format) => {
 <template>
     <Dropdown :align="align" width="48">
         <template #trigger>
-            <IconButton :icon="icon" :label="label">
+            <IconButton :icon="icon" :label="label" :icon-only="iconOnly">
                 <svg class="ms-0.5 h-3.5 w-3.5 opacity-60" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 111.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg>
             </IconButton>
         </template>

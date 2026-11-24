@@ -321,8 +321,9 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
                             :label="t('player_status')" :placeholder="t('all_statuses')" class="w-44" />
                         <input v-model="search" type="search" :placeholder="t('search_name_or_id')" :aria-label="t('search')"
                             class="w-44 sm:w-56 rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-900 px-3 py-1.5 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500" />
-                        <ExportMenu :href="exportHref" :label="`${t('export')} ${t(activeTab)}`" />
-                        <IconButton :href="printListHref" external target="_blank" icon="print" :label="`${t('print')} ${t(activeTab)}`" />
+                        <!-- Icon-only: a sliding label wraps this full row, moving the button away from the pointer. -->
+                        <ExportMenu :href="exportHref" :label="`${t('export')} ${t(activeTab)}`" icon-only />
+                        <IconButton :href="printListHref" external target="_blank" icon="print" :label="`${t('print')} ${t(activeTab)}`" icon-only />
                     </div>
                 </div>
 

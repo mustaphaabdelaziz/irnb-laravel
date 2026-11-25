@@ -58,8 +58,7 @@ class StoreTransactionRequest extends FormRequest
         ];
     }
 
-    /** The caisse the transaction being updated is booked on (route-bound), if any. */
-    // An entry already stored with a free-text method (old import, player payment) keeps it on edit.
+    /** An entry already stored with a free-text method (old import, player payment) keeps it on edit. */
     private function currentPaymentMethod(): ?string
     {
         $transaction = $this->route('transaction');
@@ -67,6 +66,7 @@ class StoreTransactionRequest extends FormRequest
         return $transaction instanceof Transaction ? $transaction->payment_method : null;
     }
 
+    /** The caisse the transaction being updated is booked on (route-bound), if any. */
     private function currentFinanceAccountId(): ?int
     {
         $transaction = $this->route('transaction');

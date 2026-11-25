@@ -147,6 +147,19 @@ class PaymentOrderHttpTest extends TestCase
     }
 
     #[Test]
+    public function the_show_page_does_not_leak_account_balances_to_a_view_only_user(): void
+    {
+        $order = app(PaymentOrderService::class)->create($this->payload(), User::factory()->admin()->create());
+        $viewer = $this->userWith(['payment_orders' => ['view']]);
+
+        $this->actingAs($viewer)->get(route('payment-orders.show', $order))
+            ->assertInertia(fn (Assert $page) => $page->component('PaymentOrders/Show')
+                ->has('order.finance_account.name')
+                ->missing('order.finance_account.current_balance')
+                ->missing('order.finance_account.opening_balance'));
+    }
+
+    #[Test]
     public function an_expense_gets_its_order_from_the_expense_page(): void
     {
         $admin = User::factory()->admin()->create();

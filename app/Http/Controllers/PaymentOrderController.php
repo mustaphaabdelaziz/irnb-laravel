@@ -32,15 +32,16 @@ class PaymentOrderController extends Controller
             'q' => ['nullable', 'string', 'max:100'],
         ]);
 
+        $like = '%'.addcslashes((string) ($filters['q'] ?? ''), '%_\\').'%';
         $query = PaymentOrder::query()
             ->when($filters['year'] ?? null, fn ($q, $year) => $q->where('year', $year))
             ->when($filters['status'] ?? null, fn ($q, $status) => $q->where('status', $status))
             ->when($filters['method'] ?? null, fn ($q, $method) => $q->where('payment_method', $method))
             ->when($filters['supplier'] ?? null, fn ($q, $id) => $q->where('beneficiary_type', 'supplier')->where('beneficiary_id', $id))
-            ->when($filters['q'] ?? null, fn ($q, $text) => $q->where(function ($q) use ($text) {
-                $q->where('subject', 'like', "%{$text}%")
-                    ->orWhere('beneficiary_name', 'like', "%{$text}%")
-                    ->orWhere('legacy_reference', 'like', "%{$text}%");
+            ->when($filters['q'] ?? null, fn ($q, $text) => $q->where(function ($q) use ($text, $like) {
+                $q->where('subject', 'like', $like)
+                    ->orWhere('beneficiary_name', 'like', $like)
+                    ->orWhere('legacy_reference', 'like', $like);
                 // "7" or "07/2026" finds order number 7 (of 2026).
                 if (preg_match('/^0*(\d+)(?:\/(\d{4}))?$/', trim($text), $m)) {
                     $q->orWhere(fn ($q) => $q->where('number', (int) $m[1])
@@ -88,7 +89,7 @@ class PaymentOrderController extends Controller
     public function show(Request $request, PaymentOrder $paymentOrder): Response
     {
         $paymentOrder->load([
-            'financeCategory', 'financeAccount', 'boardMeeting:id,title,meeting_date,pv_number', 'transaction:id,amount,transaction_date',
+            'financeCategory:id,name,name_ar,name_fr,name_en', 'financeAccount:id,name', 'boardMeeting:id,title,meeting_date,pv_number', 'transaction:id,amount,transaction_date',
             'createdBy:id,name,firstname,lastname', 'approvedBy:id,name,firstname,lastname', 'cancelledBy:id,name,firstname,lastname',
         ]);
         $user = $request->user();

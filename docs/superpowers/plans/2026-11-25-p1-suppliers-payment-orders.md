@@ -3882,7 +3882,7 @@ git commit -m "feat(payment-orders): print payment, bank transfer and cash order
 **Interfaces:**
 - Consumes: `Supplier`, `PaymentOrder`.
 - Produces:
-  - JSON format `irnb-access-v1`: `{ "format": "irnb-access-v1", "suppliers": [{name, bank, rib}], "payment_orders": [{source: "transfer"|"cash"|"payment", reference, date: "Y-m-d"|null, subject, amount, beneficiary, bank, rib, payment_reference, nature}] }` — later packages add `mail`, `missions`, `purchase_orders` keys.
+  - JSON format `access-legacy-v1`: `{ "format": "access-legacy-v1", "suppliers": [{name, bank, rib}], "payment_orders": [{source: "transfer"|"cash"|"payment", reference, date: "Y-m-d"|null, subject, amount, beneficiary, bank, rib, payment_reference, nature}] }` — later packages add `mail`, `missions`, `purchase_orders` keys.
   - `LegacyAccessImporter::import(array $data, User $by): array{suppliers: array{created:int, skipped:int}, payment_orders: array{created:int, skipped:int, merged:int}}`.
   - Routes `legacy-import.index` GET `/legacy-import`, `legacy-import.store` POST `/legacy-import` (superadmin middleware).
 
@@ -3890,7 +3890,7 @@ git commit -m "feat(payment-orders): print payment, bank transfer and cash order
 
 ```json
 {
-    "format": "irnb-access-v1",
+    "format": "access-legacy-v1",
     "suppliers": [
         { "name": "Test Journal", "bank": "BNA 611", "rib": "00100000000000001234" },
         { "name": "TEST JOURNAL", "bank": "", "rib": "" },
@@ -4032,14 +4032,14 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
- * Imports the export of the club's old MS Access app (format irnb-access-v1,
+ * Imports the export of the club's old MS Access app (format access-legacy-v1,
  * made by scripts/legacy/export-access.ps1). History only: imported payment
  * orders are paid, read-only and create no transaction, so finance totals do
  * not move. Running it again creates nothing (every row is matched first).
  */
 final class LegacyAccessImporter
 {
-    public const FORMAT = 'irnb-access-v1';
+    public const FORMAT = 'access-legacy-v1';
 
     private const METHOD_BY_SOURCE = ['transfer' => 'bank', 'cash' => 'cash', 'payment' => null];
 
@@ -4309,7 +4309,7 @@ const submit = () => form.post(route('legacy-import.store'), { forceFormData: tr
 
 ```powershell
 <#
-  Exports the old MS Access app's tables to the irnb-access-v1 JSON that
+  Exports the old MS Access app's tables to the access-legacy-v1 JSON that
   Settings → Old software import reads. Needs the Microsoft ACE OLEDB 16.0
   provider (64-bit). The output holds names and bank numbers: keep it out of git.
 
@@ -4374,7 +4374,7 @@ foreach ($row in (Read-Table 'SELECT * FROM [الامر بالدفع]').Rows) {
 $connection.Close()
 
 $document = [ordered]@{
-    format = 'irnb-access-v1'
+    format = 'access-legacy-v1'
     exported_at = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss')
     suppliers = @($suppliers.Values)
     payment_orders = @($orders)

@@ -1,5 +1,5 @@
 {
-    "format": "irnb-access-v1",
+    "format": "access-legacy-v1",
     "suppliers": [
         { "name": "Test Journal", "bank": "BNA 611", "rib": "00100000000000001234" },
         { "name": "TEST JOURNAL", "bank": "", "rib": "" },

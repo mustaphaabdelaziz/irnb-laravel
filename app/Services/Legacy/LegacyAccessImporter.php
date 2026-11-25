@@ -12,14 +12,14 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
- * Imports the export of the club's old MS Access app (format irnb-access-v1,
+ * Imports the export of the club's old MS Access app (format access-legacy-v1,
  * made by scripts/legacy/export-access.ps1). History only: imported payment
  * orders are paid, read-only and create no transaction, so finance totals do
  * not move. Running it again creates nothing (every row is matched first).
  */
 final class LegacyAccessImporter
 {
-    public const FORMAT = 'irnb-access-v1';
+    public const FORMAT = 'access-legacy-v1';
 
     private const METHOD_BY_SOURCE = ['transfer' => 'bank', 'cash' => 'cash', 'payment' => null];
 

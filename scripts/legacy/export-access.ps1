@@ -1,5 +1,5 @@
 ﻿<#
-  Exports the old MS Access app's tables to the irnb-access-v1 JSON that
+  Exports the old MS Access app's tables to the access-legacy-v1 JSON that
   Settings → Old software import reads. Needs the Microsoft ACE OLEDB 16.0
   provider (64-bit). The output holds names and bank numbers: keep it out of git.
 
@@ -64,7 +64,7 @@ foreach ($row in (Read-Table 'SELECT * FROM [الامر بالدفع]').Rows) {
 $connection.Close()
 
 $document = [ordered]@{
-    format = 'irnb-access-v1'
+    format = 'access-legacy-v1'
     exported_at = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss')
     suppliers = @($suppliers.Values)
     payment_orders = @($orders)

@@ -104,7 +104,7 @@ class LegacyAccessImportTest extends TestCase
     public function rows_with_no_supplier_name_or_an_unknown_source_count_as_skipped(): void
     {
         $result = app(LegacyAccessImporter::class)->import([
-            'format' => 'irnb-access-v1',
+            'format' => 'access-legacy-v1',
             'suppliers' => [['name' => '  ', 'rib' => '123'], ['name' => 'Kept']],
             'payment_orders' => [
                 ['source' => 'invoice', 'reference' => '01/2021', 'date' => '2021-06-01', 'subject' => 'X', 'amount' => 100],
@@ -122,7 +122,7 @@ class LegacyAccessImportTest extends TestCase
     public function a_malformed_file_never_crashes_and_good_rows_still_import(): void
     {
         $payload = [
-            'format' => 'irnb-access-v1',
+            'format' => 'access-legacy-v1',
             'suppliers' => 'oops',
             'payment_orders' => [
                 'not-a-row',

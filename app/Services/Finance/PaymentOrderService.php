@@ -12,6 +12,7 @@ use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
 use App\Services\Documents\YearlySequence;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -21,13 +22,20 @@ use Illuminate\Support\Str;
  */
 final class PaymentOrderService
 {
+    /** State columns only the service itself sets, never a form. */
+    private const STATE_COLUMNS = [
+        'year', 'number', 'status', 'transaction_id', 'is_legacy', 'legacy_reference', 'legacy_source',
+        'created_by', 'approved_by', 'approved_at', 'paid_at', 'cancelled_by', 'cancelled_at', 'cancel_reason',
+        'beneficiary_name',
+    ];
+
     /** @param array<string, mixed> $data validated form fields */
     public function create(array $data, User $by): PaymentOrder
     {
         return YearlySequence::retrying(fn () => DB::transaction(function () use ($data, $by) {
             $year = Carbon::parse($data['order_date'])->year;
             $order = PaymentOrder::create([
-                ...$data,
+                ...Arr::except($data, self::STATE_COLUMNS),
                 'year' => $year,
                 'number' => YearlySequence::next('payment_orders', $year),
                 'status' => PaymentOrder::DRAFT,
@@ -52,7 +60,7 @@ final class PaymentOrderService
         }
 
         return DB::transaction(function () use ($order, $data, $by) {
-            $order->update($data);
+            $order->update(Arr::except($data, self::STATE_COLUMNS));
             ActivityRecorder::record($by, ActivityAction::PAYMENT_ORDER_UPDATED, $order, ['reference' => $order->reference]);
 
             return $order->fresh();
@@ -70,14 +78,19 @@ final class PaymentOrderService
 
         return DB::transaction(function () use ($order, $by) {
             $supplier = $order->beneficiary_type === 'supplier' ? Supplier::find($order->beneficiary_id) : null;
-            $order->update([
-                'status' => PaymentOrder::APPROVED,
-                'beneficiary_name' => $order->liveBeneficiaryName() ?? $order->beneficiary_name,
-                'beneficiary_bank' => $order->beneficiary_bank ?: $supplier?->bank_name,
-                'beneficiary_rib' => $order->beneficiary_rib ?: $supplier?->rib,
-                'approved_by' => $by->id,
-                'approved_at' => now(),
-            ]);
+            $claimed = PaymentOrder::whereKey($order->id)
+                ->where('status', PaymentOrder::DRAFT)->where('is_legacy', false)
+                ->update([
+                    'status' => PaymentOrder::APPROVED,
+                    'beneficiary_name' => $order->liveBeneficiaryName() ?? $order->beneficiary_name,
+                    'beneficiary_bank' => $order->beneficiary_bank ?: $supplier?->bank_name,
+                    'beneficiary_rib' => $order->beneficiary_rib ?: $supplier?->rib,
+                    'approved_by' => $by->id,
+                    'approved_at' => now(),
+                ]);
+            if ($claimed === 0) {
+                throw new PaymentOrderException('flash.payment_order_not_draft');
+            }
             ActivityRecorder::record($by, ActivityAction::PAYMENT_ORDER_APPROVED, $order, [
                 'amount' => (float) $order->amount, 'reference' => $order->reference,
             ]);
@@ -98,6 +111,13 @@ final class PaymentOrderService
 
         return DB::transaction(function () use ($order, $by, $paymentDate, $category) {
             $date = $paymentDate ?? ($order->payment_date?->format('Y-m-d')) ?? now()->format('Y-m-d');
+            $claimed = PaymentOrder::whereKey($order->id)
+                ->where('status', PaymentOrder::APPROVED)->whereNull('transaction_id')
+                ->update(['status' => PaymentOrder::PAID, 'payment_date' => $date, 'paid_at' => now()]);
+            if ($claimed === 0) {
+                throw new PaymentOrderException('flash.payment_order_not_approved');
+            }
+
             $transaction = Transaction::create([
                 'title' => Str::limit($order->subject, 150, ''),
                 'amount' => $order->amount,
@@ -124,12 +144,7 @@ final class PaymentOrderService
                 'amount' => (float) $transaction->amount, 'type' => 'expense',
             ]);
 
-            $order->update([
-                'status' => PaymentOrder::PAID,
-                'transaction_id' => $transaction->id,
-                'payment_date' => $date,
-                'paid_at' => now(),
-            ]);
+            PaymentOrder::whereKey($order->id)->update(['transaction_id' => $transaction->id]);
             ActivityRecorder::record($by, ActivityAction::PAYMENT_ORDER_PAID, $order, [
                 'amount' => (float) $order->amount, 'reference' => $order->reference,
             ]);
@@ -145,12 +160,17 @@ final class PaymentOrderService
         }
 
         return DB::transaction(function () use ($order, $by, $reason) {
-            $order->update([
-                'status' => PaymentOrder::CANCELLED,
-                'cancelled_by' => $by->id,
-                'cancelled_at' => now(),
-                'cancel_reason' => Str::limit(trim($reason), 500, ''),
-            ]);
+            $claimed = PaymentOrder::whereKey($order->id)
+                ->whereIn('status', [PaymentOrder::DRAFT, PaymentOrder::APPROVED])->where('is_legacy', false)
+                ->update([
+                    'status' => PaymentOrder::CANCELLED,
+                    'cancelled_by' => $by->id,
+                    'cancelled_at' => now(),
+                    'cancel_reason' => Str::limit(trim($reason), 500, ''),
+                ]);
+            if ($claimed === 0) {
+                throw new PaymentOrderException('flash.payment_order_cannot_cancel');
+            }
             ActivityRecorder::record($by, ActivityAction::PAYMENT_ORDER_CANCELLED, $order, ['reference' => $order->reference]);
 
             return $order->fresh();
@@ -162,6 +182,9 @@ final class PaymentOrderService
     {
         if ($transaction->transaction_type !== 'expense') {
             throw new PaymentOrderException('flash.payment_order_not_expense');
+        }
+        if ($transaction->archived) {
+            throw new PaymentOrderException('flash.payment_order_expense_cancelled');
         }
         if (PaymentOrder::where('transaction_id', $transaction->id)->exists()) {
             throw new PaymentOrderException('flash.payment_order_exists');

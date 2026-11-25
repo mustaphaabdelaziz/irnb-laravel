@@ -205,6 +205,69 @@ class PaymentOrderServiceTest extends TestCase
     }
 
     #[Test]
+    public function a_stale_model_cannot_pay_twice(): void
+    {
+        $order = $this->service->approve($this->service->create($this->data(), $this->user), $this->user);
+        $a = $order->fresh();
+        $b = $order->fresh();
+
+        $this->service->markPaid($a, $this->user);
+
+        try {
+            $this->service->markPaid($b, $this->user);
+            $this->fail('The second payment should be refused.');
+        } catch (PaymentOrderException $e) {
+            $this->assertSame('flash.payment_order_not_approved', $e->flashKey);
+        }
+        $this->assertSame(1, Transaction::count());
+    }
+
+    #[Test]
+    public function approving_a_non_draft_is_refused(): void
+    {
+        $order = $this->service->approve($this->service->create($this->data(), $this->user), $this->user);
+
+        $this->expectExceptionObject(new PaymentOrderException('flash.payment_order_not_draft'));
+        $this->service->approve($order, $this->user);
+    }
+
+    #[Test]
+    public function a_legacy_order_refuses_every_change(): void
+    {
+        $legacy = PaymentOrder::create([
+            'year' => 2022, 'number' => null, 'legacy_reference' => '01/2022', 'is_legacy' => true,
+            'status' => PaymentOrder::PAID, 'order_date' => '2022-03-01', 'subject' => 'Ancien', 'amount' => 100,
+        ]);
+
+        foreach ([
+            'flash.payment_order_locked' => fn () => $this->service->update($legacy, $this->data(['order_date' => '2022-03-02']), $this->user),
+            'flash.payment_order_not_draft' => fn () => $this->service->approve($legacy, $this->user),
+            'flash.payment_order_cannot_cancel' => fn () => $this->service->cancel($legacy, $this->user, 'x'),
+        ] as $key => $call) {
+            try {
+                $call();
+                $this->fail("Expected {$key}.");
+            } catch (PaymentOrderException $e) {
+                $this->assertSame($key, $e->flashKey);
+            }
+        }
+    }
+
+    #[Test]
+    public function a_cancelled_expense_gets_no_payment_order(): void
+    {
+        $transaction = Transaction::create([
+            'title' => 'Annulée', 'amount' => 500, 'transaction_date' => '2026-10-12',
+            'transaction_type' => 'expense', 'finance_category_id' => $this->category->id, 'category' => 'equipment',
+            'finance_account_id' => $this->account->id, 'status' => 'Paid',
+        ]);
+        $transaction->forceFill(['archived' => true])->save();
+
+        $this->expectExceptionObject(new PaymentOrderException('flash.payment_order_expense_cancelled'));
+        $this->service->fromExpense($transaction->fresh(), $this->user);
+    }
+
+    #[Test]
     public function an_income_never_gets_a_payment_order(): void
     {
         $transaction = Transaction::create([

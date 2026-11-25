@@ -835,6 +835,7 @@
     "flash.payment_order_cannot_cancel": "لا يمكن إلغاء أمر مدفوع: صحّح النفقة.",
     "flash.payment_order_created": "تم إنشاء أمر الدفع.",
     "flash.payment_order_exists": "لهذه النفقة أمر دفع من قبل.",
+    "flash.payment_order_expense_cancelled": "هذه النفقة ملغاة: لا يمكن إنشاء أمر دفع لها.",
     "flash.payment_order_locked": "لا يمكن تعديل أمر دفع بعد المصادقة عليه.",
     "flash.payment_order_missing_finance": "حدد فئة النفقة والصندوق قبل الدفع.",
     "flash.payment_order_no_beneficiary": "اختر المستفيد قبل المصادقة.",

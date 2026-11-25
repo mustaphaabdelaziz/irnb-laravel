@@ -835,6 +835,7 @@
     "flash.payment_order_cannot_cancel": "Un ordre payé ne s'annule pas : corrigez la dépense.",
     "flash.payment_order_created": "Ordre de paiement créé.",
     "flash.payment_order_exists": "Cette dépense a déjà un ordre de paiement.",
+    "flash.payment_order_expense_cancelled": "Cette dépense est annulée : aucun ordre de paiement possible.",
     "flash.payment_order_locked": "Un ordre approuvé ne se modifie plus.",
     "flash.payment_order_missing_finance": "Indiquez la catégorie de dépense et la caisse avant de payer.",
     "flash.payment_order_no_beneficiary": "Choisissez le bénéficiaire avant d'approuver.",

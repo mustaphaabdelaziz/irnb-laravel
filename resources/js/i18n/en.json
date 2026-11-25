@@ -835,6 +835,7 @@
     "flash.payment_order_cannot_cancel": "A paid order cannot be cancelled: correct the expense.",
     "flash.payment_order_created": "Payment order created.",
     "flash.payment_order_exists": "This expense already has a payment order.",
+    "flash.payment_order_expense_cancelled": "This expense is cancelled: no payment order can be made for it.",
     "flash.payment_order_locked": "An approved order can no longer be edited.",
     "flash.payment_order_missing_finance": "Set the expense category and register before paying.",
     "flash.payment_order_no_beneficiary": "Choose the beneficiary before approving.",

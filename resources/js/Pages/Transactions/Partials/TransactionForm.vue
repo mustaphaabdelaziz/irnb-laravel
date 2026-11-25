@@ -21,6 +21,8 @@ const props = defineProps({
     clubCcp: { type: Object, default: null },
     defaultFinanceAccountId: { type: Number, default: null },
     lockedAccount: { type: Object, default: null },
+    suppliers: { type: Array, default: () => [] },
+    boardMeetings: { type: Array, default: () => [] },
 });
 
 const isEdit = !!props.transaction;
@@ -42,6 +44,11 @@ const form = useForm({
     payment_bank_name: props.transaction?.payment_bank_name || '',
     payment_holder: props.transaction?.payment_holder || '',
     payment_reference: props.transaction?.payment_reference || '',
+    supplier_id: props.transaction?.supplier_id || '',
+    invoice_number: props.transaction?.invoice_number || '',
+    invoice_date: props.transaction?.invoice_date ? String(props.transaction.invoice_date).slice(0, 10) : '',
+    cheque_date: props.transaction?.cheque_date ? String(props.transaction.cheque_date).slice(0, 10) : '',
+    board_meeting_id: props.transaction?.board_meeting_id || '',
     // The resolver's caisse (TransactionController::formOptions), never the Fonds Initial.
     finance_account_id: props.transaction?.finance_account_id || props.defaultFinanceAccountId || '',
     status: props.transaction?.status || 'Paid',
@@ -58,6 +65,8 @@ const playerOptions = computed(() => props.players.map((p) => ({
     description: [p.membership_id, p.category, p.birth_year].filter(Boolean).join(' · '),
     keywords: p.fullname,
 })));
+const supplierOptions = computed(() => props.suppliers.map((s) => ({ value: s.id, label: s.name, description: s.rib || '' })));
+const meetingLabel = (m) => [m.pv_number, m.title, String(m.meeting_date).slice(0, 10)].filter(Boolean).join(' · ');
 const selectedPlayer = computed(() => props.players.find((p) => String(p.id) === String(form.related_entity_id)) || null);
 const { formatMoney } = useFormatMoney();
 const { accountLabel } = useFinanceAccountLabel();
@@ -86,6 +95,8 @@ function submit() {
     form.transform((data) => ({
         ...data,
         related_entity_id: data.related_entity_id || null,
+        supplier_id: data.supplier_id || null,
+        board_meeting_id: data.board_meeting_id || null,
         related_entity_type: data.related_entity_id ? 'Player' : null,
         ...(isEdit ? { _method: 'put' } : {}),
     })).post(isEdit ? route('transactions.update', props.transaction.id) : route('transactions.store'), { forceFormData: true });
@@ -156,6 +167,7 @@ function submit() {
                         <option value="bank">{{ t('bank_transfer') }}</option>
                         <option value="ccp">CCP</option>
                         <option value="baridimob">BaridiMob</option>
+                        <option value="cheque">{{ t('cheque') }}</option>
                         <option value="other">{{ t('other') }}</option>
                     </select>
                 </div>
@@ -192,6 +204,34 @@ function submit() {
                     <div><InputLabel :value="t('account_number')" /><TextInput v-model="form.payment_account" class="mt-1 w-full" /></div>
                     <div><InputLabel :value="t('holder')" /><TextInput v-model="form.payment_holder" class="mt-1 w-full" /></div>
                     <div><InputLabel :value="t('reference')" /><TextInput v-model="form.payment_reference" class="mt-1 w-full" /></div>
+                </div>
+            </div>
+
+            <!-- Cheque details: the number is the payment reference -->
+            <div v-if="form.payment_method === 'cheque'" class="rounded-xl bg-slate-50 dark:bg-slate-950 p-4">
+                <p class="mb-3 text-sm font-semibold text-slate-600 dark:text-slate-300">{{ t('tx.cheque_details') }}</p>
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div><InputLabel :value="t('tx.cheque_number')" /><TextInput v-model="form.payment_reference" dir="ltr" class="mt-1 w-full" /></div>
+                    <div><InputLabel :value="t('tx.cheque_date')" /><TextInput v-model="form.cheque_date" type="date" class="mt-1 w-full" /><InputError :message="form.errors.cheque_date" class="mt-1" /></div>
+                </div>
+            </div>
+
+            <!-- Expense paperwork: who was paid, their invoice, the meeting that approved it -->
+            <div v-if="form.transaction_type === 'expense'" class="grid grid-cols-1 gap-4 sm:grid-cols-2" data-help="txf-paperwork">
+                <div class="sm:col-span-2">
+                    <InputLabel :value="t('tx.supplier')" />
+                    <SearchableSelect v-model="form.supplier_id" :options="supplierOptions" :placeholder="t('tx.supplier_placeholder')" />
+                    <InputError :message="form.errors.supplier_id" class="mt-1" />
+                </div>
+                <div><InputLabel :value="t('tx.invoice_number')" /><TextInput v-model="form.invoice_number" dir="ltr" class="mt-1 w-full" /><InputError :message="form.errors.invoice_number" class="mt-1" /></div>
+                <div><InputLabel :value="t('tx.invoice_date')" /><TextInput v-model="form.invoice_date" type="date" class="mt-1 w-full" /><InputError :message="form.errors.invoice_date" class="mt-1" /></div>
+                <div class="sm:col-span-2">
+                    <InputLabel :value="t('tx.board_meeting')" />
+                    <select v-model="form.board_meeting_id" class="mt-1 w-full rounded-lg border-slate-300 dark:border-slate-700 shadow-sm">
+                        <option value="">—</option>
+                        <option v-for="m in boardMeetings" :key="m.id" :value="m.id">{{ meetingLabel(m) }}</option>
+                    </select>
+                    <InputError :message="form.errors.board_meeting_id" class="mt-1" />
                 </div>
             </div>
 

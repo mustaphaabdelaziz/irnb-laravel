@@ -43,7 +43,7 @@ final class TransactionHistory
     private const ORDER = ['recorded' => 0, 'correction' => 0, 'edited' => 1, 'printed' => 2, 'cancelled' => 3, 'replaced' => 3];
 
     /** The fields whose stored value is an id shown by its name. */
-    private const NAMED = ['finance_category_id', 'finance_account_id', 'related_entity_id'];
+    private const NAMED = ['finance_category_id', 'finance_account_id', 'related_entity_id', 'supplier_id', 'board_meeting_id'];
 
     /** @return list<array<string, mixed>> oldest first */
     public static function entries(Transaction $transaction): array

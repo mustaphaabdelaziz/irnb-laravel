@@ -40,6 +40,11 @@ class Transaction extends Model
         'payment_bank_name',
         'payment_holder',
         'payment_reference',
+        'supplier_id',
+        'invoice_number',
+        'invoice_date',
+        'cheque_date',
+        'board_meeting_id',
         'related_entity_type',
         'related_entity_id',
         'player_subscription_id',
@@ -81,6 +86,8 @@ class Transaction extends Model
         return [
             'amount' => 'decimal:2',
             'transaction_date' => 'datetime:Y-m-d',
+            'invoice_date' => 'date:Y-m-d',
+            'cheque_date' => 'date:Y-m-d',
             'archived' => 'boolean',
             'fiscal_year' => 'integer',
         ];
@@ -100,6 +107,16 @@ class Transaction extends Model
     public function fiscalYear(): BelongsTo
     {
         return $this->belongsTo(FiscalYear::class);
+    }
+
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class);
+    }
+
+    public function boardMeeting(): BelongsTo
+    {
+        return $this->belongsTo(BoardMeeting::class);
     }
 
     public function financeCategory(): BelongsTo

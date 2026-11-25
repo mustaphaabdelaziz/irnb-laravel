@@ -13,6 +13,8 @@ defineProps({
     clubCcp: { type: Object, default: null },
     defaultFinanceAccountId: { type: Number, default: null },
     lockedAccount: { type: Object, default: null },
+    suppliers: { type: Array, default: () => [] },
+    boardMeetings: { type: Array, default: () => [] },
 });
 </script>
 
@@ -25,6 +27,6 @@ defineProps({
                 <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ t('add_transaction') }}</h1>
             </div>
         </template>
-        <TransactionForm :finance-categories="financeCategories" :finance-accounts="financeAccounts" :players="players" :club-ccp="clubCcp" :default-finance-account-id="defaultFinanceAccountId" :locked-account="lockedAccount" />
+        <TransactionForm :finance-categories="financeCategories" :finance-accounts="financeAccounts" :players="players" :club-ccp="clubCcp" :default-finance-account-id="defaultFinanceAccountId" :locked-account="lockedAccount" :suppliers="suppliers" :board-meetings="boardMeetings" />
     </AuthenticatedLayout>
 </template>

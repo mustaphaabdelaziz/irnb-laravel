@@ -50,7 +50,7 @@ class TransactionImportController extends Controller
     private const STATUSES = ['Paid' => 'paid', 'Partial' => 'partial', 'Unpaid' => 'unpaid', 'Exempt' => 'exempt'];
 
     /** The codes the transaction form offers => UI label key (see resources/js/lib/statusLabels.js). */
-    private const PAYMENT_METHODS = ['cash' => 'cash', 'bank' => 'bank_transfer', 'ccp' => 'ccp', 'baridimob' => 'baridimob', 'other' => 'other'];
+    private const PAYMENT_METHODS = ['cash' => 'cash', 'bank' => 'bank_transfer', 'ccp' => 'ccp', 'baridimob' => 'baridimob', 'cheque' => 'cheque', 'other' => 'other'];
 
     public function template(Request $request): SymfonyResponse
     {

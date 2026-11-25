@@ -175,6 +175,7 @@ class BoardMeetingController extends Controller
             'type' => ['required', Rule::in(['ordinary', 'extraordinary', 'general_assembly'])],
             'meeting_date' => ['required', 'date'],
             'location' => ['nullable', 'string', 'max:200'],
+            'pv_number' => ['nullable', 'string', 'max:50'],
             'agenda' => ['nullable', 'array'],
             'agenda.*' => ['nullable', 'string', 'max:500'],
             // 'cancelled' is reached only through cancel(), which records who and why.

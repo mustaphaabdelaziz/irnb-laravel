@@ -39,6 +39,11 @@ const fieldLabel = (field) => ({
     payment_bank_name: t('bank_name'),
     payment_holder: t('holder'),
     payment_reference: t('reference'),
+    supplier_id: t('tx.supplier'),
+    invoice_number: t('tx.invoice_number'),
+    invoice_date: t('tx.invoice_date'),
+    cheque_date: t('tx.cheque_date'),
+    board_meeting_id: t('tx.board_meeting'),
     status: t('status'),
     description: t('description'),
     receipt: t('tx_show.attached_receipt'),
@@ -51,7 +56,9 @@ const shown = (field, value) => {
 
     switch (field) {
         case 'amount': return formatMoney(value);
-        case 'transaction_date': return formatDate(value);
+        case 'transaction_date':
+        case 'invoice_date':
+        case 'cheque_date': return formatDate(value);
         case 'transaction_type': return value === 'income' ? t('income') : t('expense');
         case 'status': return statusLabel('payment', value);
         case 'payment_method': return statusLabel('payment_method', value);

@@ -8,7 +8,7 @@
  */
 export const STATUS_KEYS = {
     payment: { paid: 'paid', partial: 'partial', unpaid: 'unpaid', exempt: 'exempt' },
-    payment_method: { cash: 'cash', bank: 'bank_transfer', ccp: 'ccp', baridimob: 'baridimob', other: 'other' },
+    payment_method: { cash: 'cash', bank: 'bank_transfer', ccp: 'ccp', baridimob: 'baridimob', cheque: 'cheque', other: 'other' },
     equipment: {
         available: 'available',
         rented: 'rented',

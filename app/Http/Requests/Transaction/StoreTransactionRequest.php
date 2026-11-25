@@ -28,12 +28,17 @@ class StoreTransactionRequest extends FormRequest
                     ->where('type', $this->input('transaction_type')),
             ],
             'sub_category' => ['nullable', 'string', 'max:255'],
-            'payment_method' => ['nullable', 'string', 'max:255'],
+            'payment_method' => ['nullable', 'in:cash,bank,ccp,baridimob,cheque,other'],
             'payment_account' => ['nullable', 'string', 'max:255'],
             'payment_ccp_key' => ['nullable', 'string', 'max:255'],
             'payment_bank_name' => ['nullable', 'string', 'max:255'],
             'payment_holder' => ['nullable', 'string', 'max:255'],
             'payment_reference' => ['nullable', 'string', 'max:255'],
+            'supplier_id' => ['nullable', 'integer', Rule::exists('suppliers', 'id')],
+            'invoice_number' => ['nullable', 'string', 'max:100'],
+            'invoice_date' => ['nullable', 'date'],
+            'cheque_date' => ['nullable', 'date'],
+            'board_meeting_id' => ['nullable', 'integer', Rule::exists('board_meetings', 'id')],
             // An active caisse — or the one the entry already sits on, so an entry
             // whose caisse was deactivated later can still be edited.
             'finance_account_id' => [

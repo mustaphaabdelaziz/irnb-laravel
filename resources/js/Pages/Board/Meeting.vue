@@ -53,6 +53,7 @@ const form = useForm({
     type: props.meeting.type,
     meeting_date: toLocalInput(props.meeting.meeting_date),
     location: props.meeting.location || '',
+    pv_number: props.meeting.pv_number || '',
     // 'cancelled' is shown (disabled option) but never sent: the form is locked and the server refuses.
     status: props.meeting.status,
     agenda: props.meeting.agenda?.length ? [...props.meeting.agenda] : [''],
@@ -174,6 +175,8 @@ const attStyle = {
                             <input v-model="form.meeting_date" type="datetime-local" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
                         <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('location') }}</span>
                             <input v-model="form.location" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
+                        <label class="block text-sm"><span class="mb-1 block font-medium text-slate-600 dark:text-slate-300">{{ t('meeting.pv_number') }}</span>
+                            <input v-model="form.pv_number" dir="ltr" class="w-full rounded-lg border-slate-200 bg-white text-sm dark:border-slate-700 dark:bg-slate-800" /></label>
                     </div>
                     <div>
                         <span class="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">{{ t('agenda') }}</span>

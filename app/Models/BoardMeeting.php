@@ -14,7 +14,7 @@ class BoardMeeting extends Model
     use SerializesClubDates;
 
     protected $fillable = [
-        'title', 'type', 'meeting_date', 'location', 'agenda', 'status',
+        'title', 'type', 'meeting_date', 'location', 'pv_number', 'agenda', 'status',
         'quorum_required', 'minutes', 'decisions', 'attachment_url',
         'attachment_filename', 'attachment_name', 'created_by_user_id',
         'cancelled_at', 'cancelled_by_user_id', 'cancel_reason',

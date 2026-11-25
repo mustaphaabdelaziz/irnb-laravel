@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\SerializesClubDates;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Who the club pays: shops, printers, leagues, coaches under contract.
@@ -26,9 +27,14 @@ class Supplier extends Model
         $query->where('is_active', true);
     }
 
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
     /** A supplier something points at stays (deactivate it instead). */
     public function isInUse(): bool
     {
-        return false;
+        return $this->transactions()->exists();
     }
 }

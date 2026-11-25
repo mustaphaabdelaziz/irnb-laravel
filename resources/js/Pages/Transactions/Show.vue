@@ -49,6 +49,11 @@ const paymentDetails = computed(() => [
     { label: t('bank_name'), value: props.transaction.payment_bank_name },
     { label: t('holder'), value: props.transaction.payment_holder },
     { label: t('reference'), value: props.transaction.payment_reference },
+    { label: t('tx.supplier'), value: props.transaction.supplier?.name },
+    { label: t('tx.cheque_date'), value: props.transaction.cheque_date ? formatDate(props.transaction.cheque_date) : null },
+    { label: t('tx.invoice_number'), value: props.transaction.invoice_number },
+    { label: t('tx.invoice_date'), value: props.transaction.invoice_date ? formatDate(props.transaction.invoice_date) : null },
+    { label: t('tx.board_meeting'), value: props.transaction.board_meeting ? [props.transaction.board_meeting.pv_number, props.transaction.board_meeting.title].filter(Boolean).join(' · ') : null },
 ].filter((row) => row.value));
 </script>
 

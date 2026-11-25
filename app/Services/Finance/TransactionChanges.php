@@ -2,9 +2,11 @@
 
 namespace App\Services\Finance;
 
+use App\Models\BoardMeeting;
 use App\Models\FinanceAccount;
 use App\Models\FinanceCategory;
 use App\Models\Player;
+use App\Models\Supplier;
 use App\Models\Transaction;
 use App\Support\FinanceAccountLabel;
 
@@ -33,6 +35,11 @@ final class TransactionChanges
         'payment_bank_name' => 'text',
         'payment_holder' => 'text',
         'payment_reference' => 'text',
+        'supplier_id' => 'id',
+        'invoice_number' => 'text',
+        'invoice_date' => 'date',
+        'cheque_date' => 'date',
+        'board_meeting_id' => 'id',
         'status' => 'text',
         'description' => 'text',
     ];
@@ -116,6 +123,17 @@ final class TransactionChanges
                 ->mapWithKeys(fn (Player $player) => [$player->id => $player->fullname]);
 
             $changes['related_entity_id'] = self::labelled($changes['related_entity_id'], $names->all());
+        }
+
+        if (isset($changes['supplier_id'])) {
+            $names = Supplier::whereIn('id', self::ids($changes['supplier_id']))->pluck('name', 'id');
+            $changes['supplier_id'] = self::labelled($changes['supplier_id'], $names->all());
+        }
+
+        if (isset($changes['board_meeting_id'])) {
+            $names = BoardMeeting::whereIn('id', self::ids($changes['board_meeting_id']))->get(['id', 'title', 'pv_number'])
+                ->mapWithKeys(fn (BoardMeeting $m) => [$m->id => trim(($m->pv_number ? $m->pv_number.' · ' : '').$m->title)]);
+            $changes['board_meeting_id'] = self::labelled($changes['board_meeting_id'], $names->all());
         }
 
         return $changes;

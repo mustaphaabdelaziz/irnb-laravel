@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Transaction\StoreTransactionRequest;
+use App\Models\BoardMeeting;
 use App\Models\FinanceAccount;
 use App\Models\FinanceCategory;
 use App\Models\FiscalYear;
 use App\Models\Player;
 use App\Models\PlayerSubscription;
+use App\Models\Supplier;
 use App\Models\Transaction;
 use App\Models\TransactionRevision;
 use App\Models\WebsiteConfig;
@@ -153,6 +155,7 @@ class TransactionController extends Controller
             // Name columns only: the trace shows who, the page needs nothing else of the account.
             'recordedBy:id,name,firstname,lastname',
             'financeCategory',
+            'supplier:id,name', 'boardMeeting:id,title,meeting_date,pv_number',
             ...TransactionTitle::RELATIONS,
             ...Transaction::FINANCE_ACCOUNT_LABEL,
             'playerSubscriptions.player',
@@ -558,6 +561,17 @@ class TransactionController extends Controller
                     ->when($transaction?->finance_category_id, fn (Builder $q, $id) => $q->orWhere('id', $id)))
                 ->orderBy('type')->orderBy('sort_order')->orderBy('name')
                 ->get(['id', 'type', 'name', 'name_ar', 'name_fr', 'name_en', 'color']),
+            // Active suppliers, plus the entry's own one if it was deactivated since.
+            'suppliers' => Supplier::query()
+                ->where(fn (Builder $q) => $q->where('is_active', true)
+                    ->when($transaction?->supplier_id, fn (Builder $q, $id) => $q->orWhere('id', $id)))
+                ->orderBy('name')
+                ->get(['id', 'name', 'bank_name', 'rib']),
+            'boardMeetings' => BoardMeeting::query()
+                ->whereNull('cancelled_at')
+                ->orderByDesc('meeting_date')
+                ->limit(200)
+                ->get(['id', 'title', 'meeting_date', 'pv_number']),
             'clubCcp' => WebsiteConfig::query()->first()?->banking_info['ccp'] ?? null,
             'players' => Player::query()
                 ->where(fn (Builder $q) => $q->where('archived', false)

@@ -2,6 +2,8 @@
     $L = fn (string $key) => \App\Support\UiLang::get($key);
     $money = fn ($value) => number_format((float) $value, 2, ',', ' ').' '.$club['currency'];
     $supplier = $order->supplier;
+    // Free text without Arabic letters keeps its own left-to-right order inside the RTL page.
+    $T = fn (?string $v) => new \Illuminate\Support\HtmlString(preg_match('/\p{Arabic}/u', (string) $v) === 0 ? '<bdo dir="ltr">'.nl2br(e($v)).'</bdo>' : nl2br(e($v)));
 @endphp
 <!DOCTYPE html>
 <html>
@@ -27,26 +29,26 @@
 <body dir="{{ $rtl ? 'rtl' : 'ltr' }}">
     @include('pdf.partials.header')
 
-    @if ($order->status === 'draft')
-        <div class="draft">{{ $L('po.pdf.draft') }}</div>
+    @if ($order->status === \App\Models\PurchaseOrder::DRAFT)
+        <div class="draft">{{ $L('pur.pdf.draft') }}</div>
     @endif
 
     <div class="title">{{ $L('pur.pdf.title') }}</div>
     <div class="ref">{{ $L('po.number') }} <bdo dir="ltr">{{ $order->reference }}</bdo> — <bdo dir="ltr">{{ $order->order_date->format('d/m/Y') }}</bdo></div>
 
     <table class="info">
-        <tr><td class="label">{{ $L('pur.supplier') }}</td><td>{{ $supplier?->name ?? '—' }}</td></tr>
+        <tr><td class="label">{{ $L('pur.supplier') }}</td><td>{{ $T($supplier?->name ?? '—') }}</td></tr>
         @if ($supplier?->address)
-            <tr><td class="label">{{ $L('supplier.field.address') }}</td><td>{{ $supplier->address }}</td></tr>
+            <tr><td class="label">{{ $L('supplier.field.address') }}</td><td>{{ $T($supplier->address) }}</td></tr>
         @endif
         @if ($supplier?->phone)
             <tr><td class="label">{{ $L('supplier.field.phone') }}</td><td><bdo dir="ltr">{{ $supplier->phone }}</bdo></td></tr>
         @endif
         @if ($order->requested_by)
-            <tr><td class="label">{{ $L('pur.requested_by') }}</td><td>{{ $order->requested_by }}</td></tr>
+            <tr><td class="label">{{ $L('pur.requested_by') }}</td><td>{{ $T($order->requested_by) }}</td></tr>
         @endif
         @if ($order->delivery_mode)
-            <tr><td class="label">{{ $L('pur.delivery_mode') }}</td><td>{{ $order->delivery_mode }}</td></tr>
+            <tr><td class="label">{{ $L('pur.delivery_mode') }}</td><td>{{ $T($order->delivery_mode) }}</td></tr>
         @endif
         <tr><td class="label">{{ $L('pur.payment_mode') }}</td><td>{{ $method }}</td></tr>
     </table>
@@ -65,7 +67,7 @@
             @foreach ($order->lines as $i => $line)
                 <tr>
                     <td class="num"><bdo dir="ltr">{{ $i + 1 }}</bdo></td>
-                    <td>{{ $line->designation }}</td>
+                    <td>{{ $T($line->designation) }}</td>
                     <td class="num"><bdo dir="ltr">{{ $line->quantity }}</bdo></td>
                     <td class="num">@if ($line->unit_price !== null)<bdo dir="ltr">{{ $money($line->unit_price) }}</bdo>@endif</td>
                     <td class="num">@if ($line->amount !== null)<bdo dir="ltr">{{ $money($line->amount) }}</bdo>@endif</td>
@@ -86,7 +88,7 @@
 
     @if ($order->observation)
         <table class="info">
-            <tr><td class="label">{{ $L('po.observation') }}</td><td>{!! nl2br(e($order->observation)) !!}</td></tr>
+            <tr><td class="label">{{ $L('po.observation') }}</td><td>{{ $T($order->observation) }}</td></tr>
         </table>
     @endif
 

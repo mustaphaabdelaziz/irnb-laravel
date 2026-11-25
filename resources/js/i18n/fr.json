@@ -2530,6 +2530,7 @@
     "provisional": "provisoire",
     "pur.delivery_mode": "Mode de livraison",
     "pur.payment_mode": "Mode de paiement",
+    "pur.pdf.draft": "BROUILLON — ne vaut pas commande",
     "pur.pdf.title": "BON DE COMMANDE",
     "pur.requested_by": "Demandé par",
     "pur.supplier": "Fournisseur",

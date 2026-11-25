@@ -2530,6 +2530,7 @@
     "provisional": "مؤقت",
     "pur.delivery_mode": "طريقة التسليم",
     "pur.payment_mode": "طريقة الدفع",
+    "pur.pdf.draft": "مسودة — ليس طلبًا نهائيًا",
     "pur.pdf.title": "سند طلب",
     "pur.requested_by": "الجهة الطالبة",
     "pur.supplier": "المورد",

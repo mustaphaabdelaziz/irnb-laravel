@@ -101,7 +101,7 @@ class PurchaseOrderPrintTest extends TestCase
         ] as $text) {
             $this->assertStringContainsString($text, $seen['html'], $text);
         }
-        $this->assertStringNotContainsString(UiLang::get('po.pdf.draft', null, 'fr'), $seen['html']);
+        $this->assertStringNotContainsString(UiLang::get('pur.pdf.draft', null, 'fr'), $seen['html']);
     }
 
     #[Test]
@@ -111,7 +111,7 @@ class PurchaseOrderPrintTest extends TestCase
 
         $this->actingAs($this->user('fr'))->get(route('purchase-orders.print', $this->order(PurchaseOrder::DRAFT)))->assertOk();
 
-        $this->assertStringContainsString(UiLang::get('po.pdf.draft', null, 'fr'), $seen['html']);
+        $this->assertStringContainsString(UiLang::get('pur.pdf.draft', null, 'fr'), $seen['html']);
     }
 
     #[Test]
@@ -127,6 +127,20 @@ class PurchaseOrderPrintTest extends TestCase
         $this->assertStringContainsString('600,00', $seen['html']);
         $this->assertStringNotContainsString(UiLang::get('po.pdf.amount_words', null, 'fr'), $seen['html']);
         $this->assertStringNotContainsString(AmountInWords::format(600.0, 'fr'), $seen['html']);
+        $this->assertMatchesRegularExpression('#Caméra de surveillance.*?</td>\s*<td class="num"><bdo dir="ltr">1</bdo></td>\s*<td class="num"></td>\s*<td class="num"></td>#s', $seen['html']);
+    }
+
+    #[Test]
+    public function the_arabic_print_keeps_latin_free_text_left_to_right_and_banners_the_draft(): void
+    {
+        $seen = $this->spyPdf();
+
+        $this->actingAs($this->user('ar'))->get(route('purchase-orders.print', $this->order(PurchaseOrder::DRAFT, [['كرة قدم', 4, 100.0]])))->assertOk();
+
+        $this->assertTrue($seen['rtl']);
+        $this->assertStringContainsString('<bdo dir="ltr">12 rue des Sports, Testville</bdo>', $seen['html']);
+        $this->assertStringContainsString('<td>كرة قدم</td>', $seen['html']);
+        $this->assertStringContainsString(UiLang::get('pur.pdf.draft', null, 'ar'), $seen['html']);
     }
 
     #[Test]

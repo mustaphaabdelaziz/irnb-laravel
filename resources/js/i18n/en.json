@@ -2530,6 +2530,7 @@
     "provisional": "provisional",
     "pur.delivery_mode": "Delivery",
     "pur.payment_mode": "Payment mode",
+    "pur.pdf.draft": "DRAFT — not a final order",
     "pur.pdf.title": "PURCHASE ORDER",
     "pur.requested_by": "Requested by",
     "pur.supplier": "Supplier",

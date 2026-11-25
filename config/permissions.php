@@ -17,6 +17,7 @@ return [
         'subscriptions' => 'subscriptions',
         'transactions' => 'transactions',
         'payment-orders' => 'payment_orders',
+        'purchase-orders' => 'purchase_orders',
         'finance' => 'finance',
         'reports' => 'reports',
         'equipment' => 'equipment',
@@ -133,6 +134,13 @@ return [
         'payment-orders.print' => ['payment_orders', 'view'],
         // Made from the expense page, but it creates a payment order.
         'transactions.payment-order.store' => ['payment_orders', 'add'],
+        // Purchase orders have no approve step (money is controlled at the payment order).
+        // Sending, receiving, cancelling and making the payment order are edits; printing reads.
+        'purchase-orders.send' => ['purchase_orders', 'edit'],
+        'purchase-orders.receive' => ['purchase_orders', 'edit'],
+        'purchase-orders.cancel' => ['purchase_orders', 'edit'],
+        'purchase-orders.payment-order.store' => ['purchase_orders', 'edit'],
+        'purchase-orders.print' => ['purchase_orders', 'view'],
         'reports.financial' => ['reports', 'view'],
         'finance.index' => ['finance', 'view'],
         'finance.settings' => ['finance', 'edit'],

@@ -23,7 +23,7 @@ class Role extends Model
     public const MODULE_GROUPS = [
         'members' => ['players', 'documents', 'attendance', 'subscriptions'],
         'competitions' => ['teams', 'competitions', 'games'],
-        'finance' => ['transactions', 'payment_orders', 'finance', 'reports'],
+        'finance' => ['transactions', 'payment_orders', 'purchase_orders', 'finance', 'reports'],
         'equipment' => ['equipment', 'inventory'],
         'board' => ['board'],
         'social' => ['activities', 'literary_reports'],
@@ -39,7 +39,7 @@ class Role extends Model
     public const MODULES = [
         'players', 'documents', 'attendance', 'subscriptions',
         'teams', 'competitions', 'games',
-        'transactions', 'payment_orders', 'finance', 'reports',
+        'transactions', 'payment_orders', 'purchase_orders', 'finance', 'reports',
         'equipment', 'inventory',
         'board',
         'activities', 'literary_reports',

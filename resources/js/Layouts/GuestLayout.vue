@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n';
 import ThemeToggle from '@/Components/ThemeToggle.vue';
 import FlashMessages from '@/Components/FlashMessages.vue';
 import { useClubIdentity } from '@/Composables/useClubIdentity';
-import { PRODUCT_LOGO, PRODUCT_MARK, PRODUCT_NAME } from '@/lib/productBrand';
+import { PRODUCT_LOGO, PRODUCT_MARK, PRODUCT_NAME, versionLabel } from '@/lib/productBrand';
 
 const { t } = useI18n();
 const page = usePage();
@@ -14,7 +14,7 @@ const { appName, appShortName } = useClubIdentity();
 // A club that set neither a logo nor a name gets the full ASIREM logo instead
 // of a letter tile over the product name; the footer would then repeat it.
 const productOnly = computed(() => !appLogo.value && appShortName.value === PRODUCT_NAME);
-const appVersion = computed(() => (page.props.appVersion ? `v ${page.props.appVersion}` : null));
+const appVersion = computed(() => versionLabel(page.props.appVersion));
 </script>
 
 <template>

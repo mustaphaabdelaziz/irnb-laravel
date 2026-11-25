@@ -19,6 +19,14 @@ export const PRODUCT_MARK = {
 };
 
 /**
+ * The release line under the product name — "v 3.11.0" — from the shared
+ * `appVersion` prop (NATIVEPHP_APP_VERSION); null when none is set.
+ */
+export function versionLabel(version) {
+    return version ? `v ${version}` : null;
+}
+
+/**
  * Tab (and desktop window) title: page, club, product — "Players - FCB · ASIREM".
  * A club that never set a name already reads ASIREM, so it is not said twice.
  */

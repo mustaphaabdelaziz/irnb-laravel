@@ -23,7 +23,7 @@ import { useSidebarState } from '@/Composables/useSidebarState.js';
 import { isActive } from '@/lib/navigation';
 import { useCan } from '@/Composables/useCan.js';
 import { useClubIdentity } from '@/Composables/useClubIdentity';
-import { PRODUCT_MARK, PRODUCT_NAME } from '@/lib/productBrand';
+import { PRODUCT_MARK, PRODUCT_NAME, versionLabel } from '@/lib/productBrand';
 import FlashMessages from '@/Components/FlashMessages.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
@@ -106,7 +106,7 @@ const isDesktop = computed(() => page.props.isDesktop ?? false);
 const currentLocale = computed(() => page.props.locale || 'en');
 const { appName, appShortName } = useClubIdentity();
 const appLogo = computed(() => page.props.branding?.logo ?? null);
-const appVersion = computed(() => (page.props.appVersion ? `v ${page.props.appVersion}` : null));
+const appVersion = computed(() => versionLabel(page.props.appVersion));
 
 const userInitial = computed(() => (user.value?.firstname || user.value?.name || '?').charAt(0).toUpperCase());
 const userRole = computed(() => (isAdmin.value ? t('administrator') : t('user')));

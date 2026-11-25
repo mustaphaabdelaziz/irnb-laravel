@@ -4,7 +4,7 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Icon from '@/Components/Icon.vue';
 import ThemeToggle from '@/Components/ThemeToggle.vue';
-import { PRODUCT_MARK, PRODUCT_NAME } from '@/lib/productBrand';
+import { PRODUCT_MARK, PRODUCT_NAME, versionLabel } from '@/lib/productBrand';
 
 const { t } = useI18n();
 const page = usePage();
@@ -156,6 +156,7 @@ const socialMeta = {
                 <img :src="PRODUCT_MARK.dark" alt="" class="hidden h-6 w-6 object-contain dark:block" />
                 <span>© {{ new Date().getFullYear() }} <span class="font-bold text-slate-700 dark:text-slate-200">{{ PRODUCT_NAME }}</span></span>
             </p>
+            <p v-if="versionLabel(page.props.appVersion)" dir="ltr" class="mt-1 text-xs tabular-nums text-slate-400 dark:text-slate-500">{{ versionLabel(page.props.appVersion) }}</p>
         </footer>
     </div>
 </template>

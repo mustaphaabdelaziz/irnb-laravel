@@ -117,6 +117,10 @@ class ClubIdentityTest extends TestCase
 
         $this->get(route('login'))
             ->assertInertia(fn (AssertableInertia $page) => $page->where('appVersion', '10.1.2'));
+
+        // The public home page footer shows it too.
+        $this->get('/')
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('appVersion', '10.1.2'));
     }
 
     #[Test]

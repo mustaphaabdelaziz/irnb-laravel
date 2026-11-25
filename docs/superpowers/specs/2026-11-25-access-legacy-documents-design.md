@@ -41,6 +41,14 @@ them), copies and leftover tables.
 | Signatures | President + Treasurer names from current board members, blank line to sign |
 | Purchase order | Draft → sent → received, or cancelled; on received: optional stock receive + prefilled payment order |
 | Purchase lines | Equipment catalog item **or** free text |
+| Purchase approval | No approve step (money is controlled at the payment order) |
+| Purchase "requested by" | Free text (Access `service`) |
+| Purchase prices | Optional; every line needs a price before a payment order can be made; prices stay editable after sent until a payment order is linked |
+| Purchase delivery | Whole order received at once (no partial deliveries) |
+| Purchase payment mode | Same list as payment orders (transfer / cheque / cash) |
+| Purchase supplier | Required (legacy order may have none) |
+| Purchase print | President + Treasurer signatures |
+| Equipment ↔ expense | When the linked payment order is paid, the order's received equipment points to that expense |
 | Mail register | Outgoing **and** incoming |
 | Outgoing letter | Register entry + optional letter body printed on letterhead |
 | Auto mail reference | Mission orders, purchase orders, absence letters, match convocations |
@@ -120,7 +128,7 @@ them), copies and leftover tables.
 - Expense page shows its order (number + link); order page shows its expense.
 
 ### Prints (`PaymentOrderPrintController`)
-- **Payment order** (all statuses except cancelled, draft printed with a "DRAFT" watermark).
+- **Payment order** (all statuses except cancelled, draft printed with a "DRAFT" banner).
 - **Bank transfer order** when method is bank or ccp: beneficiary bank + RIB, club account
   (`WebsiteConfig.banking_info`) as debit account, amount in figures and words.
 - **Cash order** when method is cash: who receives, amount in figures and words.
@@ -142,20 +150,82 @@ them), copies and leftover tables.
 
 ## P2 — Purchase orders
 
-- `purchase_orders`: `year`, `number`, legacy fields, `status` draft / sent / received /
-  cancelled, `order_date`, `supplier_id`, `delivery_mode`, `payment_mode`, `observation`,
-  audit columns. Own `NN/YYYY` sequence. Its mail reference (P3) is found through the mail
-  entry's `source_*` columns, no FK here.
-- `purchase_order_lines`: `equipment_catalog_id` nullable, `designation`, `quantity`,
-  `unit_price`, `amount` (computed server-side), `sort_order`.
-- Sent: locks lines; print available from draft (watermark) onward.
-- **Received** dialog, both optional:
-  - receive catalog lines into stock through `EquipmentStockService::receive` with
-    `record_expense = false` (no expense here);
-  - create a draft payment order prefilled (supplier, total, subject, `purchase_order_id`).
-- Money is recorded once, when that payment order is marked paid.
-- Payment order form can link an existing purchase order of the same supplier.
-- Import: the single 2021 order as legacy.
+Mirrors P1: own `PurchaseOrder` model, `purchase_order_lines`, `PurchaseOrderService`
+(atomic conditional claims for state changes), `PurchaseOrderException` flash pattern.
+
+### Data
+
+- `purchase_orders`: `year`, `number` (given at creation via `YearlySequence`, own `NN/YYYY`
+  sequence, unique `(year, number)`), legacy fields (`is_legacy`, `legacy_reference`,
+  `legacy_source`), `status` draft / sent / received / cancelled, `order_date`,
+  `supplier_id` (required; null only on legacy rows), `requested_by` (free text, ≤ 200),
+  `delivery_mode` (free text, ≤ 200), `payment_mode` (`PaymentOrder::METHODS`: transfer /
+  cheque / cash), `observation`, `sent_at`, `received_at`, `cancelled_at`, audit columns
+  (`created_by`, `sent_by`, `received_by`, `cancelled_by`). Its mail reference (P3) is found
+  through the mail entry's `source_*` columns, no FK here.
+- `purchase_order_lines`: `purchase_order_id` (cascade delete), `equipment_catalog_id`
+  nullable, `designation` (required; prefilled from the catalog name), `quantity` (≥ 1),
+  `unit_price` nullable, `amount` nullable (quantity × unit_price, computed server-side),
+  `sort_order`. At least one line per order.
+- FK added on `payment_orders.purchase_order_id` (nullOnDelete).
+- `equipment_items.purchase_order_id` nullable (nullOnDelete): set on items received from
+  the order.
+
+### Behaviour
+
+- **Draft**: everything editable. Print available with the "DRAFT" banner.
+- **Send** (draft → sent): supplier, designations, catalog links and quantities lock.
+  **Unit prices stay editable** (sent or received) until an active payment order is linked.
+- **Cancel**: from draft or sent; keeps its number. Received orders cannot be cancelled.
+- **Receive** (sent → received), whole order at once. Dialog: received date (default
+  today) and two optional ticks:
+  - *Put catalog lines into stock*: shown when the order has catalog lines and the user may
+    receive equipment stock. Each catalog line → `EquipmentStockService::receive` with
+    `quantity`, line `unit_price` (may be null), `designation` from the line, condition
+    New, `received_via = purchase`, `record_expense = false`, `purchase_date` = received
+    date, and `purchase_order_id` on every created item. Free-text lines never go to stock.
+  - *Create payment order*: shown when every line has a price and the user has
+    `payment_orders.create`. Draft payment order with beneficiary = the supplier (bank,
+    RIB from the supplier), amount = order total, subject "Purchase order NN/YYYY",
+    method = the order's payment mode, `purchase_order_id`.
+  Both run in the same transaction as the status change.
+- A received order with no active (non-cancelled) payment order shows a **Create payment
+  order** button (same prefill, same price rule). **At most one active payment order per
+  purchase order**; a second is refused.
+- **Payment order form**: optional link to a received purchase order of the same supplier
+  with no active payment order. Changing supplier clears the link.
+- **Paid**: when `PaymentOrderService::markPaid` creates the expense for an order linked to
+  a purchase order, it sets `purchase_transaction_id` on that purchase order's equipment
+  items where it is still null. Money is recorded once, at payment.
+- Order page shows its lines, total, linked payment order (with status) and received
+  equipment count; payment order page links back to the purchase order.
+- Finance reset leaves purchase orders untouched (their payment orders stay too, see P1).
+
+### Print (`PurchaseOrderPrintController`)
+
+One form "Bon de commande" / «سند طلب», UI language, letterhead, number, date, supplier
+name / address / phone, requested by, delivery mode, payment mode, lines table
+(designation, quantity, unit price, amount; unpriced cells blank), total and amount in
+words only when every line has a price, observation, signatures partial (President +
+Treasurer). Draft prints carry the "DRAFT" banner.
+
+### Rights and menu
+
+Module `purchase_orders` in the finance group (view / create / edit; no approve). Print
+route → view. Send / receive / cancel / create-payment-order → edit. Grant migration:
+system roles full, others none. Menu: under Finance next to payment orders. Activity
+codes: `PURCHASE_ORDER_CREATED`, `_UPDATED`, `_SENT`, `_RECEIVED`, `_CANCELLED`,
+`_PRINTED` (ids, references, totals only).
+
+### Import
+
+The single 2021 camera order → legacy, read-only, status received, no supplier, one
+free-text line (designation, quantity 1, no price), `legacy_reference` "01/2021",
+old "N° Ordre" kept in observation (not linked: P1's legacy 01/2021 is another expense).
+Idempotent like the P1 sections. `scripts/legacy/export-access.ps1` gains an optional
+`purchase_orders` section from `bon de commande` (format id stays `access-legacy-v1`; a file
+without the section still imports). Claude re-exports `D:\BACKUPS\irnb-access-legacy.json`.
+Stock-receive right in the dialog = the `equipment.stock.receive` route permission.
 
 ## P3 — Mail register
 

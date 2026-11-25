@@ -80,6 +80,32 @@ class PaymentOrderHttpTest extends TestCase
     }
 
     #[Test]
+    public function validation_refuses_an_inactive_register_and_the_opening_fund(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $inactive = FinanceAccount::create([
+            'name' => 'Ancienne caisse', 'type' => 'cash', 'opening_balance' => 0, 'current_balance' => 0, 'currency' => 'DZD', 'is_active' => false,
+        ]);
+        $opening = FinanceAccount::create([
+            'name' => 'Fonds initial', 'type' => 'cash', 'opening_balance' => 0, 'current_balance' => 0, 'currency' => 'DZD',
+            'is_active' => true, 'is_opening_fund' => true,
+        ]);
+
+        $this->actingAs($admin)->post(route('payment-orders.store'), $this->payload(['finance_account_id' => $inactive->id]))
+            ->assertSessionHasErrors('finance_account_id');
+        $this->post(route('payment-orders.store'), $this->payload(['finance_account_id' => $opening->id]))
+            ->assertSessionHasErrors('finance_account_id');
+        $this->assertSame(0, PaymentOrder::count());
+
+        // A draft whose register was deactivated later can still be edited.
+        $order = app(PaymentOrderService::class)->create($this->payload(), $admin);
+        $this->account->update(['is_active' => false]);
+        $this->put(route('payment-orders.update', $order), $this->payload(['subject' => 'Ballons U17']))
+            ->assertSessionHasNoErrors();
+        $this->assertSame('Ballons U17', $order->fresh()->subject);
+    }
+
+    #[Test]
     public function approving_needs_the_approve_right(): void
     {
         $order = app(PaymentOrderService::class)->create($this->payload(), User::factory()->admin()->create());

@@ -28,13 +28,22 @@ class SavePaymentOrderRequest extends FormRequest
             'board_member' => 'board_members',
             default => null,
         };
+        $order = $this->route('paymentOrder');
+        $current = $order instanceof PaymentOrder ? $order->finance_account_id : null;
 
         return [
             'order_date' => ['required', 'date'],
             'subject' => ['required', 'string', 'max:150'],
             'amount' => ['required', 'numeric', 'gt:0', 'max:9999999999'],
             'finance_category_id' => ['nullable', 'integer', Rule::exists('finance_categories', 'id')->where('type', 'expense')],
-            'finance_account_id' => ['nullable', 'integer', Rule::exists('finance_accounts', 'id')],
+            // An active register other than the opening fund — or the one the order already
+            // sits on, so an order whose register was deactivated later can still be edited.
+            'finance_account_id' => [
+                'nullable', 'integer',
+                Rule::exists('finance_accounts', 'id')
+                    ->where(fn ($query) => $query->where(fn ($query) => $query->where('is_active', true)->where('is_opening_fund', false)
+                        ->when($current, fn ($query, $id) => $query->orWhere('id', $id)))),
+            ],
             'payment_method' => ['nullable', Rule::in(PaymentOrder::METHODS)],
             'beneficiary_type' => ['nullable', Rule::in(PaymentOrder::BENEFICIARY_TYPES)],
             'beneficiary_id' => ['nullable', 'required_with:beneficiary_type', 'integer', ...($table ? [Rule::exists($table, 'id')] : [])],

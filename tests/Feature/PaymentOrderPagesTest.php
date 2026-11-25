@@ -2,6 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\BoardMember;
+use App\Models\BoardRole;
+use App\Models\BoardTerm;
+use App\Models\FinanceAccount;
 use App\Models\FinanceCategory;
 use App\Models\Transaction;
 use App\Models\User;
@@ -45,5 +49,30 @@ class PaymentOrderPagesTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->component('PaymentOrders/Create')
                 ->has('financeCategories')->has('financeAccounts')->has('suppliers')
                 ->has('users')->has('boardMembers')->has('boardMeetings'));
+    }
+
+    #[Test]
+    public function the_form_shows_role_labels_and_hides_register_balances(): void
+    {
+        BoardRole::updateOrCreate(['name' => 'media_officer'], ['label' => 'Chargé de communication', 'level' => 'member', 'sort_order' => 50]);
+        $termId = BoardTerm::current()?->id;
+        BoardMember::create(['board_term_id' => $termId, 'name' => 'Amine', 'role' => 'media_officer', 'status' => 'active', 'sort_order' => 1]);
+        BoardMember::create(['board_term_id' => $termId, 'name' => 'Karim', 'role' => 'president', 'status' => 'active', 'sort_order' => 2]);
+        FinanceAccount::create([
+            'name' => 'Caisse', 'type' => 'cash', 'opening_balance' => 100, 'current_balance' => 250, 'currency' => 'DZD', 'is_active' => true,
+        ]);
+        $admin = User::factory()->admin()->create(['preferred_lng' => 'fr']);
+
+        $this->actingAs($admin)->get(route('payment-orders.create'))
+            ->assertInertia(function (Assert $page) {
+                $roles = collect($page->toArray()['props']['boardMembers'])->pluck('role', 'name');
+                $this->assertSame('Chargé de communication', $roles['Amine']);
+                $this->assertNotSame('president', $roles['Karim']);
+                foreach ($page->toArray()['props']['financeAccounts'] as $account) {
+                    $this->assertArrayNotHasKey('current_balance', $account);
+                    $this->assertArrayNotHasKey('opening_balance', $account);
+                }
+                $this->assertNotEmpty($page->toArray()['props']['financeAccounts']);
+            });
     }
 }

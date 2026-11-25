@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\PaymentOrder\SavePaymentOrderRequest;
 use App\Models\BoardMeeting;
 use App\Models\BoardMember;
+use App\Models\BoardRole;
 use App\Models\FinanceAccount;
 use App\Models\FinanceCategory;
 use App\Models\PaymentOrder;
@@ -12,6 +13,7 @@ use App\Models\Supplier;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\Finance\PaymentOrderService;
+use App\Support\UiLang;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -169,18 +171,31 @@ class PaymentOrderController extends Controller
         ]));
     }
 
+    /** @param \Illuminate\Support\Collection<string, string> $labels */
+    private static function roleLabel(?string $role, $labels): ?string
+    {
+        if ($role === null || $role === '') {
+            return null;
+        }
+
+        return $labels[$role] ?? UiLang::get($role, $role);
+    }
+
     /** @return array<string, mixed> */
     private function formOptions(): array
     {
+        // A role's typed label first (custom roles), else its built-in translation — never the raw name.
+        $roleLabels = BoardRole::query()->whereNotNull('label')->where('label', '!=', '')->pluck('label', 'name');
+
         return [
             'financeCategories' => FinanceCategory::query()->where('type', 'expense')->where('is_active', true)
                 ->orderBy('sort_order')->orderBy('name')->get(['id', 'name', 'name_ar', 'name_fr', 'name_en']),
-            'financeAccounts' => FinanceAccount::selectable()->get(),
+            'financeAccounts' => FinanceAccount::selectable()->get()->makeHidden(['current_balance', 'opening_balance']),
             'suppliers' => Supplier::active()->orderBy('name')->get(['id', 'name', 'bank_name', 'rib']),
             'users' => User::query()->where('is_active', true)->orderBy('lastname')->orderBy('firstname')->get(['id', 'name', 'firstname', 'lastname'])
                 ->map(fn (User $u) => ['id' => $u->id, 'name' => $u->name]),
             'boardMembers' => BoardMember::query()->withPlayer()->inCurrentTerm()->orderBy('sort_order')->get()
-                ->map(fn (BoardMember $m) => ['id' => $m->id, 'name' => $m->name, 'role' => $m->role]),
+                ->map(fn (BoardMember $m) => ['id' => $m->id, 'name' => $m->name, 'role' => self::roleLabel($m->role, $roleLabels)]),
             'boardMeetings' => BoardMeeting::query()->whereNull('cancelled_at')->orderByDesc('meeting_date')->limit(200)
                 ->get(['id', 'title', 'meeting_date', 'pv_number']),
         ];

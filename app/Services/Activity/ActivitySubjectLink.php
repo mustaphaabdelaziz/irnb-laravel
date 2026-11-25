@@ -19,6 +19,7 @@ use App\Models\PaymentOrder;
 use App\Models\Player;
 use App\Models\PlayerAcademicRecord;
 use App\Models\PlayerDocument;
+use App\Models\PurchaseOrder;
 use App\Models\Role;
 use App\Models\Subscription;
 use App\Models\Team;
@@ -60,6 +61,7 @@ final class ActivitySubjectLink
         PlayerDocument::class => ['documents', 'players'],
         Transaction::class => ['transactions'],
         PaymentOrder::class => ['payment_orders'],
+        PurchaseOrder::class => ['purchase_orders'],
         FinanceTransfer::class => ['finance'],
         Subscription::class => ['subscriptions'],
         MemberJob::class => ['jobs'],
@@ -183,6 +185,11 @@ final class ActivitySubjectLink
             $subject instanceof PaymentOrder => [
                 $subject->reference.' · '.$subject->subject,
                 route('payment-orders.show', $subject),
+            ],
+            // The route comes with the controller (Task 5); a link is only built when a log is displayed.
+            $subject instanceof PurchaseOrder => [
+                UiLang::get('pur.title').' '.$subject->reference,
+                route('purchase-orders.show', $subject),
             ],
             $subject instanceof FinanceTransfer => [
                 self::amount($subject->amount).(self::filled($subject->reference) !== null ? ' · '.$subject->reference : ''),

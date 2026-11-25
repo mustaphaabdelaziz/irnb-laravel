@@ -96,6 +96,7 @@ class EquipmentStockService
                 // Coalesced because an in-memory parent may not have the
                 // column's database default loaded.
                 'received_via' => $item->received_via ?? 'purchase',
+                'purchase_order_id' => $item->purchase_order_id,
                 'notes' => $notes,
             ]);
 
@@ -169,6 +170,7 @@ class EquipmentStockService
                 'location' => $item->location,
                 'status' => 'Lost',
                 'received_via' => $item->received_via ?? 'purchase',
+                'purchase_order_id' => $item->purchase_order_id,
             ]);
 
             $lost->branches()->sync($item->branches()->pluck('branches.id')->all());
@@ -301,6 +303,8 @@ class EquipmentStockService
             'notes' => $data['notes'] ?? null,
             'received_via' => $data['received_via'] ?? 'purchase',
             'purchase_transaction_id' => $transactionId,
+            // Set only by a purchase order's reception (the Receive Stock form never sends it).
+            'purchase_order_id' => $data['purchase_order_id'] ?? null,
             'status' => 'Available',
         ]);
 

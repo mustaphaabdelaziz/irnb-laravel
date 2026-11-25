@@ -180,6 +180,18 @@ class ActivityAction
 
     const PAYMENT_ORDER_PRINTED = 'payment_order_printed';
 
+    const PURCHASE_ORDER_CREATED = 'purchase_order_created';
+
+    const PURCHASE_ORDER_UPDATED = 'purchase_order_updated';
+
+    const PURCHASE_ORDER_SENT = 'purchase_order_sent';
+
+    const PURCHASE_ORDER_RECEIVED = 'purchase_order_received';
+
+    const PURCHASE_ORDER_CANCELLED = 'purchase_order_cancelled';
+
+    const PURCHASE_ORDER_PRINTED = 'purchase_order_printed';
+
     const LEGACY_DATA_IMPORTED = 'legacy_data_imported';
 
     const FINANCE_RESET = 'finance_reset';
@@ -340,6 +352,12 @@ class ActivityAction
         self::PAYMENT_ORDER_PAID,
         self::PAYMENT_ORDER_CANCELLED,
         self::PAYMENT_ORDER_PRINTED,
+        self::PURCHASE_ORDER_CREATED,
+        self::PURCHASE_ORDER_UPDATED,
+        self::PURCHASE_ORDER_SENT,
+        self::PURCHASE_ORDER_RECEIVED,
+        self::PURCHASE_ORDER_CANCELLED,
+        self::PURCHASE_ORDER_PRINTED,
         self::LEGACY_DATA_IMPORTED,
         self::FINANCE_RESET,
         self::EQUIPMENT_UPDATED,
@@ -450,6 +468,12 @@ class ActivityAction
             self::PAYMENT_ORDER_PAID,
             self::PAYMENT_ORDER_CANCELLED,
             self::PAYMENT_ORDER_PRINTED,
+            self::PURCHASE_ORDER_CREATED,
+            self::PURCHASE_ORDER_UPDATED,
+            self::PURCHASE_ORDER_SENT,
+            self::PURCHASE_ORDER_RECEIVED,
+            self::PURCHASE_ORDER_CANCELLED,
+            self::PURCHASE_ORDER_PRINTED,
             self::LEGACY_DATA_IMPORTED,
         ],
         'equipment' => [

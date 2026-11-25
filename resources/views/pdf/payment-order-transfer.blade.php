@@ -32,7 +32,7 @@
     <div class="section">{{ $L('po.pdf.debit') }}</div>
     <table class="info">
         <tr><td class="label">{{ $L('po.pdf.account_holder') }}</td><td>{{ $club['name'] }}</td></tr>
-        <tr><td class="label">{{ $L('supplier.field.rib') }}</td><td><bdo dir="ltr">{{ $clubRib ?? '' }}</bdo></td></tr>
+        <tr><td class="label">{{ $L('supplier.field.rib') }}</td><td>@if (filled($clubRib))<bdo dir="ltr">{{ $clubRib }}</bdo>@else—@endif</td></tr>
     </table>
 
     <div class="section">{{ $L('po.pdf.credit') }}</div>

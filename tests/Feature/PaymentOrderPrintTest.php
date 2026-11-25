@@ -80,6 +80,17 @@ class PaymentOrderPrintTest extends TestCase
     }
 
     #[Test]
+    public function the_transfer_order_shows_a_dash_without_a_club_rib_and_draws_sign_lines(): void
+    {
+        $seen = $this->spyPdf();
+
+        $this->actingAs($this->user())->get(route('payment-orders.print', ['paymentOrder' => $this->order(), 'form' => 'transfer']))->assertOk();
+
+        $this->assertStringContainsString('<td>—</td>', $seen['html']);
+        $this->assertSame(2, substr_count($seen['html'], 'border-bottom:1px solid #94a3b8'));
+    }
+
+    #[Test]
     public function the_transfer_order_needs_a_bank_or_ccp_method(): void
     {
         $this->actingAs($this->user())->get(route('payment-orders.print', ['paymentOrder' => $this->order(['payment_method' => 'cash']), 'form' => 'transfer']))

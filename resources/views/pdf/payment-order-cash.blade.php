@@ -14,7 +14,6 @@
         table.info { width: 100%; border-collapse: collapse; }
         table.info td { padding: 7px 6px; border: 1px solid #cbd5e1; }
         table.info td.label { background: #f8fafc; color: #475569; width: 35%; font-weight: bold; }
-        .received { margin-top: 24px; }
     </style>
 </head>
 <body dir="{{ $rtl ? 'rtl' : 'ltr' }}">
@@ -38,7 +37,10 @@
     </table>
 
     <table style="width:100%; margin-top:30px; text-align:center;">
-        <tr><td style="width:50%;"></td><td style="width:50%;"><b>{{ $L('po.pdf.received_by') }}</b><div style="margin-top:50px; border-top:1px solid #94a3b8; width:70%; margin-left:auto; margin-right:auto;"></div></td></tr>
+        <tr>
+            <td style="width:50%;"></td>
+            <td style="width:50%; vertical-align:top;"><b>{{ $L('po.pdf.received_by') }}</b>@include('pdf.partials.sign-line')</td>
+        </tr>
     </table>
 
     @include('pdf.partials.signatures')

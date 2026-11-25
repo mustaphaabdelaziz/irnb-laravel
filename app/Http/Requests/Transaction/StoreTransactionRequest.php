@@ -8,6 +8,8 @@ use Illuminate\Validation\Rule;
 
 class StoreTransactionRequest extends FormRequest
 {
+    private const METHODS = ['cash', 'bank', 'ccp', 'baridimob', 'cheque', 'other'];
+
     public function authorize(): bool
     {
         return true;
@@ -28,7 +30,7 @@ class StoreTransactionRequest extends FormRequest
                     ->where('type', $this->input('transaction_type')),
             ],
             'sub_category' => ['nullable', 'string', 'max:255'],
-            'payment_method' => ['nullable', 'in:cash,bank,ccp,baridimob,cheque,other'],
+            'payment_method' => ['nullable', 'string', 'max:255', Rule::in(array_values(array_filter([...self::METHODS, $this->currentPaymentMethod()])))],
             'payment_account' => ['nullable', 'string', 'max:255'],
             'payment_ccp_key' => ['nullable', 'string', 'max:255'],
             'payment_bank_name' => ['nullable', 'string', 'max:255'],
@@ -57,6 +59,14 @@ class StoreTransactionRequest extends FormRequest
     }
 
     /** The caisse the transaction being updated is booked on (route-bound), if any. */
+    // An entry already stored with a free-text method (old import, player payment) keeps it on edit.
+    private function currentPaymentMethod(): ?string
+    {
+        $transaction = $this->route('transaction');
+
+        return $transaction instanceof Transaction ? $transaction->payment_method : null;
+    }
+
     private function currentFinanceAccountId(): ?int
     {
         $transaction = $this->route('transaction');

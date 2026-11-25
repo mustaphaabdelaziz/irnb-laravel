@@ -104,6 +104,26 @@ class TransactionDocumentFieldsTest extends TestCase
     }
 
     #[Test]
+    public function an_entry_with_a_free_text_method_can_still_be_edited(): void
+    {
+        $admin = $this->admin();
+        $this->actingAs($admin)->post(route('transactions.store'), $this->payload());
+        $transaction = Transaction::latest('id')->first();
+        $transaction->forceFill(['payment_method' => 'Virement'])->save();
+
+        $this->put(route('transactions.update', $transaction), $this->payload(['payment_method' => 'Virement']))
+            ->assertSessionHasNoErrors();
+        $this->assertSame('Virement', $transaction->fresh()->payment_method);
+    }
+
+    #[Test]
+    public function a_new_entry_cannot_use_a_free_text_method(): void
+    {
+        $this->actingAs($this->admin())->post(route('transactions.store'), $this->payload(['payment_method' => 'Virement']))
+            ->assertSessionHasErrors('payment_method');
+    }
+
+    #[Test]
     public function a_meeting_keeps_its_pv_number(): void
     {
         $meeting = $this->meeting();

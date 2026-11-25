@@ -65,6 +65,7 @@ const playerOptions = computed(() => props.players.map((p) => ({
     description: [p.membership_id, p.category, p.birth_year].filter(Boolean).join(' · '),
     keywords: p.fullname,
 })));
+const legacyMethod = ['cash', 'bank', 'ccp', 'baridimob', 'cheque', 'other'].includes(props.transaction?.payment_method) ? null : (props.transaction?.payment_method || null);
 const supplierOptions = computed(() => props.suppliers.map((s) => ({ value: s.id, label: s.name, description: s.rib || '' })));
 const meetingLabel = (m) => [m.pv_number, m.title, String(m.meeting_date).slice(0, 10)].filter(Boolean).join(' · ');
 const selectedPlayer = computed(() => props.players.find((p) => String(p.id) === String(form.related_entity_id)) || null);
@@ -169,6 +170,7 @@ function submit() {
                         <option value="baridimob">BaridiMob</option>
                         <option value="cheque">{{ t('cheque') }}</option>
                         <option value="other">{{ t('other') }}</option>
+                        <option v-if="legacyMethod" :value="legacyMethod">{{ legacyMethod }}</option>
                     </select>
                 </div>
                 <div>

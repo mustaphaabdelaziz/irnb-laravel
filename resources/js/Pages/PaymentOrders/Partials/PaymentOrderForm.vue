@@ -60,7 +60,12 @@ watch(() => form.beneficiary_id, (id) => {
         form.beneficiary_rib = supplier.rib || '';
     }
 });
-watch(() => form.beneficiary_type, () => { form.beneficiary_id = ''; });
+// Another kind of beneficiary: the previous one's bank details must not stay behind.
+watch(() => form.beneficiary_type, () => {
+    form.beneficiary_id = '';
+    form.beneficiary_bank = '';
+    form.beneficiary_rib = '';
+});
 
 function submit() {
     form.transform((data) => Object.fromEntries(Object.entries(data).map(([k, v]) => [k, v === '' ? null : v])));

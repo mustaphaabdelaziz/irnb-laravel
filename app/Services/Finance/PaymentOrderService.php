@@ -8,6 +8,7 @@ use App\Models\PaymentOrder;
 use App\Models\Supplier;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Models\WebsiteConfig;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
 use App\Services\Documents\YearlySequence;
@@ -162,6 +163,24 @@ final class PaymentOrderService
         return $category;
     }
 
+    /** Is this account number the club's own CCP or bank account (digits compared)? */
+    private static function isClubAccount(?string $account): bool
+    {
+        $digits = preg_replace('/\D/', '', (string) $account);
+        if ($digits === '') {
+            return false;
+        }
+        $banking = WebsiteConfig::singleton()->banking_info ?? [];
+        $ccp = $banking['ccp'] ?? [];
+        $ccpNumber = $ccp['account_number'] ?? $ccp['accountNumber'] ?? '';
+        $club = array_filter(array_map(
+            fn ($value) => preg_replace('/\D/', '', (string) $value),
+            [$ccpNumber, $ccpNumber.($ccp['key'] ?? ''), $banking['rib'] ?? '', $banking['account_number'] ?? ''],
+        ));
+
+        return in_array($digits, $club, true);
+    }
+
     public function cancel(PaymentOrder $order, User $by, string $reason): PaymentOrder
     {
         if (! in_array($order->status, [PaymentOrder::DRAFT, PaymentOrder::APPROVED], true) || $order->is_legacy) {
@@ -202,7 +221,10 @@ final class PaymentOrderService
         return YearlySequence::retrying(fn () => DB::transaction(function () use ($transaction, $by) {
             $date = $transaction->transaction_date ?? now();
             $year = $date->year;
-            $supplierId = $transaction->supplier_id;
+            $supplier = $transaction->supplier_id ? Supplier::find($transaction->supplier_id) : null;
+            $supplierId = $supplier?->id;
+            // Without a supplier the expense's account may be the club's own (the paying side): never freeze that.
+            $payeeAccount = $supplier === null && ! self::isClubAccount($transaction->payment_account);
             $order = PaymentOrder::create([
                 'year' => $year,
                 'number' => YearlySequence::next('payment_orders', $year),
@@ -215,9 +237,9 @@ final class PaymentOrderService
                 'payment_method' => $transaction->payment_method,
                 'beneficiary_type' => $supplierId ? 'supplier' : null,
                 'beneficiary_id' => $supplierId,
-                'beneficiary_name' => $supplierId ? Supplier::whereKey($supplierId)->value('name') : $transaction->payment_holder,
-                'beneficiary_bank' => $transaction->payment_bank_name,
-                'beneficiary_rib' => $transaction->payment_account,
+                'beneficiary_name' => $supplier?->name ?? ($payeeAccount ? $transaction->payment_holder : null),
+                'beneficiary_bank' => $supplier ? ($supplier->bank_name ?: $transaction->payment_bank_name) : ($payeeAccount ? $transaction->payment_bank_name : null),
+                'beneficiary_rib' => $supplier ? ($supplier->rib ?: $transaction->payment_account) : ($payeeAccount ? $transaction->payment_account : null),
                 'payment_reference' => $transaction->payment_reference,
                 'payment_date' => $date->format('Y-m-d'),
                 'invoice_number' => $transaction->invoice_number,

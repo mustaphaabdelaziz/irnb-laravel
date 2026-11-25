@@ -9,6 +9,7 @@ use App\Models\PaymentOrder;
 use App\Models\Supplier;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Models\WebsiteConfig;
 use App\Services\Activity\ActivityAction;
 use App\Services\Finance\PaymentOrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -227,6 +228,55 @@ class PaymentOrderServiceTest extends TestCase
 
         $this->expectExceptionObject(new PaymentOrderException('flash.payment_order_exists'));
         $this->service->fromExpense($transaction, $this->user);
+    }
+
+    private function expense(array $extra = []): Transaction
+    {
+        return Transaction::create(array_merge([
+            'title' => 'Impression', 'amount' => 5000, 'transaction_date' => '2026-10-12',
+            'transaction_type' => 'expense', 'finance_category_id' => $this->category->id, 'category' => 'equipment',
+            'finance_account_id' => $this->account->id, 'payment_method' => 'ccp', 'status' => 'Paid',
+        ], $extra));
+    }
+
+    #[Test]
+    public function an_order_from_an_expense_takes_the_suppliers_bank_details(): void
+    {
+        $withRib = Supplier::create(['name' => 'Printer', 'bank_name' => 'CPA', 'rib' => '00400111000123456789']);
+        $withoutRib = Supplier::create(['name' => 'Garage']);
+
+        $order = $this->service->fromExpense($this->expense([
+            'supplier_id' => $withRib->id, 'payment_bank_name' => 'Algérie Poste', 'payment_account' => '0012345678 90',
+        ]), $this->user);
+        $this->assertSame('CPA', $order->beneficiary_bank);
+        $this->assertSame('00400111000123456789', $order->beneficiary_rib);
+
+        $fallback = $this->service->fromExpense($this->expense([
+            'supplier_id' => $withoutRib->id, 'payment_bank_name' => 'BADR', 'payment_account' => '00300222000987654321',
+        ]), $this->user);
+        $this->assertSame('Garage', $fallback->beneficiary_name);
+        $this->assertSame('BADR', $fallback->beneficiary_bank);
+        $this->assertSame('00300222000987654321', $fallback->beneficiary_rib);
+    }
+
+    #[Test]
+    public function an_order_from_an_expense_never_freezes_the_clubs_own_account(): void
+    {
+        $config = WebsiteConfig::singleton();
+        $config->update(['banking_info' => ['rib' => '007 00000 0000000056 78', 'ccp' => ['account_number' => '0012345678', 'key' => '90']]]);
+
+        $ccp = $this->service->fromExpense($this->expense(['payment_account' => '0012345678 90', 'payment_holder' => 'IRNB']), $this->user);
+        $this->assertNull($ccp->beneficiary_rib);
+        $this->assertNull($ccp->beneficiary_name);
+
+        $rib = $this->service->fromExpense($this->expense(['payment_account' => '00700000000000005678', 'payment_holder' => 'IRNB']), $this->user);
+        $this->assertNull($rib->beneficiary_rib);
+        $this->assertNull($rib->beneficiary_name);
+
+        $payee = $this->service->fromExpense($this->expense(['payment_account' => '0098765432 11', 'payment_holder' => 'Ali Mansouri']), $this->user);
+        $this->assertSame('0098765432 11', $payee->beneficiary_rib);
+        $this->assertSame('Ali Mansouri', $payee->beneficiary_name);
+        $this->assertNull($payee->beneficiary_type);
     }
 
     #[Test]

@@ -30,6 +30,8 @@ return new class extends Migration
             $table->string('delivery_mode', 200)->nullable();
             $table->string('payment_mode', 20)->nullable();
             $table->text('observation')->nullable();
+            // Bumped by every payment-order claim so the claim always changes a row (MySQL counts changed rows only).
+            $table->unsignedInteger('lock_version')->default(0);
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('sent_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('sent_at')->nullable();

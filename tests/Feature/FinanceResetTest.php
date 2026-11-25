@@ -2,7 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\EquipmentCatalog;
+use App\Models\EquipmentItem;
 use App\Models\PaymentOrder;
+use App\Models\PurchaseOrder;
+use App\Models\Supplier;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\Finance\FinanceResetService;
@@ -164,9 +168,6 @@ class FinanceResetTest extends TestCase
         $this->assertSame($purchaseOrder->id, $item->fresh()->purchase_order_id);
         $this->assertNull($item->fresh()->purchase_transaction_id);
     }
-
-    #[Test]
-    public function the_command_changes_nothing_without_the_typed_word(): void
 
     #[Test]
     public function the_command_changes_nothing_without_the_typed_word(): void

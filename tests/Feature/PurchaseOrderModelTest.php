@@ -181,6 +181,20 @@ class PurchaseOrderModelTest extends TestCase
     }
 
     #[Test]
+    public function consecutive_claims_in_the_same_second_each_succeed_and_bump_the_lock_version(): void
+    {
+        $this->travelTo(now()->startOfSecond());
+        $received = $this->order(['status' => PurchaseOrder::RECEIVED]);
+
+        $this->assertTrue(PurchaseOrder::claimForPaymentOrder($received->id, $received->supplier_id));
+        $this->assertTrue(PurchaseOrder::claimForPaymentOrder($received->id, $received->supplier_id));
+        $this->assertSame(2, (int) DB::table('purchase_orders')->where('id', $received->id)->value('lock_version'));
+
+        $this->assertFalse(PurchaseOrder::claimForPaymentOrder($received->id, $received->supplier_id + 99));
+        $this->assertSame(2, (int) DB::table('purchase_orders')->where('id', $received->id)->value('lock_version'));
+    }
+
+    #[Test]
     public function a_supplier_with_a_purchase_order_is_in_use(): void
     {
         $supplier = $this->supplier();

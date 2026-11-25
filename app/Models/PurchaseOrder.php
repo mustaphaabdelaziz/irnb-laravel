@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 /**
  * A purchase order to a supplier (سند طلب): draft → sent → received, or
@@ -112,7 +113,7 @@ class PurchaseOrder extends Model
     public static function claimForPaymentOrder(int $id, int $supplierId, ?int $exceptPaymentOrderId = null): bool
     {
         return self::query()->whereKey($id)->linkable($supplierId, $exceptPaymentOrderId)
-            ->update(['updated_at' => now()]) === 1;
+            ->update(['lock_version' => DB::raw('lock_version + 1'), 'updated_at' => now()]) === 1;
     }
 
     public function supplier(): BelongsTo

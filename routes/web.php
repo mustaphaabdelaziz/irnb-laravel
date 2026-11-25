@@ -90,6 +90,7 @@ use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\TransactionImportController;
 use App\Http\Controllers\UserActivityController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\VenueController;
 use App\Http\Controllers\WebsiteConfigController;
 use App\Reports\ReportRegistry;
@@ -375,6 +376,7 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
         // Competitions & matches — configuration lists
         Route::resource('opponents', OpponentController::class)->except(['show', 'create', 'edit']);
         Route::resource('venues', VenueController::class)->except(['show', 'create', 'edit']);
+        Route::resource('suppliers', SupplierController::class)->except(['show', 'create', 'edit']);
         Route::resource('activity-types', ActivityTypeController::class)->except(['show', 'create', 'edit']);
         Route::resource('game-formats', GameFormatController::class)->except(['show', 'create', 'edit']);
 

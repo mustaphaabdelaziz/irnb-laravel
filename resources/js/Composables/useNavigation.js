@@ -81,6 +81,7 @@ export function useNavigation() {
                 { label: t('opponents'), href: '/opponents', icon: 'flag', prefix: '/opponents', module: 'opponents' },
                 { label: t('venues'), href: '/venues', icon: 'location', prefix: '/venues', module: 'venues' },
                 { label: t('activity_types'), href: '/activity-types', icon: 'heart', prefix: '/activity-types', module: 'activity_types' },
+                { label: t('suppliers'), href: '/suppliers', icon: 'transactions', prefix: '/suppliers', module: 'suppliers' },
             ] },
             { key: 'system', label: t('nav.system'), icon: 'settings', items: [
                 { label: t('users'), href: '/users', icon: 'members', prefix: '/users', match: /^\/users(?!\/(\d+\/)?activity)/, badge: pendingApprovals, module: 'users' },

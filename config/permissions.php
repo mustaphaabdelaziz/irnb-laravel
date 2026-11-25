@@ -40,6 +40,7 @@ return [
         'opponents' => 'opponents',
         'venues' => 'venues',
         'activity-types' => 'activity_types',
+        'suppliers' => 'suppliers',
         'settings' => 'settings',
     ],
 

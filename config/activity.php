@@ -39,6 +39,7 @@ $settingLists = [
     'opponents' => 'opponents',
     'game-formats' => 'game_formats',
     'venues' => 'venues',
+    'suppliers' => 'suppliers',
     'activity-types' => 'activity_types',
 ];
 

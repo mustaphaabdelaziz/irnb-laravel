@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, ref } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import Icon from '@/Components/Icon.vue';
 
@@ -57,12 +57,41 @@ const SIZES = {
     md: 'h-9 min-w-9 px-2.5 text-sm',
 };
 
-const pressedClass = 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200 dark:bg-slate-700 dark:text-white dark:ring-slate-600';
+// Opening the name makes the button wider. In a tight row that can wrap the
+// row, the button jumps out from under the pointer, the hover ends, the row
+// snaps back, and it loops — a jitter. If the button's top moves while its
+// name opens, it stays icon-only from then on (the title still names it).
+const root = ref(null);
+const locked = ref(false);
+let probe = null;
+
+function onEnter() {
+    if (props.iconOnly || locked.value) return;
+    const node = root.value?.$el ?? root.value;
+    if (!node?.getBoundingClientRect) return;
+    const top = node.getBoundingClientRect().top;
+    clearTimeout(probe);
+    // Sample through the 200 ms opening: the wrap can land mid-transition.
+    let checks = 0;
+    const check = () => {
+        if (Math.abs(node.getBoundingClientRect().top - top) > 2) {
+            locked.value = true;
+            return;
+        }
+        if (++checks < 6) probe = setTimeout(check, 50);
+    };
+    probe = setTimeout(check, 30);
+}
+
+onBeforeUnmount(() => clearTimeout(probe));
+
+const pressedClass ='bg-white text-slate-900 shadow-sm ring-1 ring-slate-200 dark:bg-slate-700 dark:text-white dark:ring-slate-600';
 </script>
 
 <template>
     <component
         :is="tag"
+        ref="root"
         :href="href || undefined"
         :method="!external && href ? method || undefined : undefined"
         :as="!external && href ? as || undefined : undefined"
@@ -72,10 +101,11 @@ const pressedClass = 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200 da
         :aria-pressed="pressed === null ? undefined : pressed"
         class="group/ib inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-lg font-medium transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1 disabled:pointer-events-none disabled:cursor-not-allowed disabled:grayscale disabled:opacity-50 dark:focus-visible:ring-offset-slate-900"
         :class="[SIZES[size] ?? SIZES.md, pressed ? pressedClass : colorClass]"
+        @mouseenter="onEnter"
     >
         <Icon :name="icon" class="text-[1.1em]" :class="iconClass" />
         <span
-            v-if="!iconOnly"
+            v-if="!iconOnly && !locked"
             class="grid grid-cols-[0fr] opacity-0 transition-all duration-200 ease-out group-hover/ib:grid-cols-[1fr] group-hover/ib:opacity-100 group-focus-visible/ib:grid-cols-[1fr] group-focus-visible/ib:opacity-100 motion-reduce:transition-none"
             aria-hidden="true"
         >

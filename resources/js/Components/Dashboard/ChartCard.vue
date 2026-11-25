@@ -82,6 +82,7 @@ function download() {
                     :label="t('stats.download_csv')"
                     variant="ghost"
                     size="sm"
+                    icon-only
                     @click="download"
                 />
                 <div

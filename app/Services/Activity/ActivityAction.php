@@ -168,6 +168,20 @@ class ActivityAction
 
     const BUDGET_UPDATED = 'budget_updated';
 
+    const PAYMENT_ORDER_CREATED = 'payment_order_created';
+
+    const PAYMENT_ORDER_UPDATED = 'payment_order_updated';
+
+    const PAYMENT_ORDER_APPROVED = 'payment_order_approved';
+
+    const PAYMENT_ORDER_PAID = 'payment_order_paid';
+
+    const PAYMENT_ORDER_CANCELLED = 'payment_order_cancelled';
+
+    const PAYMENT_ORDER_PRINTED = 'payment_order_printed';
+
+    const LEGACY_DATA_IMPORTED = 'legacy_data_imported';
+
     const FINANCE_RESET = 'finance_reset';
 
     const EQUIPMENT_UPDATED = 'equipment_updated';
@@ -320,6 +334,13 @@ class ActivityAction
         self::SUBSCRIPTION_UPDATED,
         self::SUBSCRIPTION_DELETED,
         self::BUDGET_UPDATED,
+        self::PAYMENT_ORDER_CREATED,
+        self::PAYMENT_ORDER_UPDATED,
+        self::PAYMENT_ORDER_APPROVED,
+        self::PAYMENT_ORDER_PAID,
+        self::PAYMENT_ORDER_CANCELLED,
+        self::PAYMENT_ORDER_PRINTED,
+        self::LEGACY_DATA_IMPORTED,
         self::FINANCE_RESET,
         self::EQUIPMENT_UPDATED,
         self::EQUIPMENT_DELETED,
@@ -423,6 +444,13 @@ class ActivityAction
             self::SUBSCRIPTION_DELETED,
             self::BUDGET_UPDATED,
             self::FINANCE_RESET,
+            self::PAYMENT_ORDER_CREATED,
+            self::PAYMENT_ORDER_UPDATED,
+            self::PAYMENT_ORDER_APPROVED,
+            self::PAYMENT_ORDER_PAID,
+            self::PAYMENT_ORDER_CANCELLED,
+            self::PAYMENT_ORDER_PRINTED,
+            self::LEGACY_DATA_IMPORTED,
         ],
         'equipment' => [
             self::STOCK_RECEIVED,

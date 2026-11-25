@@ -17,6 +17,7 @@ use App\Models\LiteraryReport;
 use App\Models\MemberJob;
 use App\Models\Player;
 use App\Models\PlayerAcademicRecord;
+use App\Models\PaymentOrder;
 use App\Models\PlayerDocument;
 use App\Models\Role;
 use App\Models\Subscription;
@@ -58,6 +59,7 @@ final class ActivitySubjectLink
         PlayerAcademicRecord::class => ['players'],
         PlayerDocument::class => ['documents', 'players'],
         Transaction::class => ['transactions'],
+        PaymentOrder::class => ['payment_orders'],
         FinanceTransfer::class => ['finance'],
         Subscription::class => ['subscriptions'],
         MemberJob::class => ['jobs'],
@@ -177,6 +179,10 @@ final class ActivitySubjectLink
             $subject instanceof Transaction => [
                 self::filled($subject->title) ?? self::amount($subject->amount),
                 route('transactions.show', $subject),
+            ],
+            $subject instanceof PaymentOrder => [
+                $subject->reference.' · '.$subject->subject,
+                route('payment-orders.show', $subject),
             ],
             $subject instanceof FinanceTransfer => [
                 self::amount($subject->amount).(self::filled($subject->reference) !== null ? ' · '.$subject->reference : ''),

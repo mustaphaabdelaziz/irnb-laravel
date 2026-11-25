@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Exceptions\ClosedFiscalYearException;
 use App\Exceptions\PaymentOrderException;
 use App\Models\FinanceAccount;
 use App\Models\FinanceCategory;
+use App\Models\FiscalYear;
 use App\Models\PaymentOrder;
 use App\Models\Supplier;
 use App\Models\Transaction;
@@ -12,6 +14,7 @@ use App\Models\User;
 use App\Models\WebsiteConfig;
 use App\Services\Activity\ActivityAction;
 use App\Services\Finance\PaymentOrderService;
+use App\Support\FiscalPeriod;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use PHPUnit\Framework\Attributes\Test;
@@ -166,6 +169,26 @@ class PaymentOrderServiceTest extends TestCase
 
         $this->expectExceptionObject(new PaymentOrderException('flash.payment_order_missing_finance'));
         $this->service->markPaid($order->fresh(), $this->user);
+    }
+
+    #[Test]
+    public function paying_into_a_closed_season_changes_nothing(): void
+    {
+        $order = $this->service->approve($this->service->create($this->data(), $this->user), $this->user);
+        FiscalYear::firstOrCreate(['year' => FiscalPeriod::keyForDate('2026-11-26')])->update(['status' => 'closed']);
+        $before = Transaction::count();
+
+        try {
+            $this->service->markPaid($order, $this->user, '2026-11-26');
+            $this->fail('Paying into a closed season should be refused.');
+        } catch (ClosedFiscalYearException) {
+        }
+
+        $order->refresh();
+        $this->assertSame(PaymentOrder::APPROVED, $order->status);
+        $this->assertNull($order->transaction_id);
+        $this->assertNull($order->paid_at);
+        $this->assertSame($before, Transaction::count());
     }
 
     #[Test]

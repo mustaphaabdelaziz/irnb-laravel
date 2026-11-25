@@ -78,6 +78,10 @@ const cancel = () => cancelForm.post(route('payment-orders.cancel', props.order.
                         <dd class="mt-1 text-sm text-slate-900 dark:text-slate-100"><bdi :dir="row.ltr ? 'ltr' : undefined">{{ row.value }}</bdi></dd>
                     </div>
                 </dl>
+                <p v-if="order.purchase_order" class="mt-5 text-sm">
+                    {{ t('pur.linked_purchase_order') }}
+                    <Link :href="route('purchase-orders.show', order.purchase_order.id)" class="font-semibold text-primary-600 hover:underline dark:text-primary-300"><bdi dir="ltr">{{ order.purchase_order.reference }}</bdi></Link>
+                </p>
                 <p v-if="order.transaction" class="mt-5 text-sm">
                     {{ t('po.expense_link') }}
                     <Link :href="route('transactions.show', order.transaction.id)" class="font-semibold text-primary-600 hover:underline dark:text-primary-300"><bdi dir="ltr">#{{ order.transaction.id }}</bdi></Link>

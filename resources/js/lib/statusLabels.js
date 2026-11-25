@@ -9,6 +9,7 @@
 export const STATUS_KEYS = {
     payment: { paid: 'paid', partial: 'partial', unpaid: 'unpaid', exempt: 'exempt' },
     payment_order: { draft: 'po.status.draft', approved: 'po.status.approved', paid: 'po.status.paid', cancelled: 'po.status.cancelled' },
+    purchase_order: { draft: 'pur.status.draft', sent: 'pur.status.sent', received: 'pur.status.received', cancelled: 'pur.status.cancelled' },
     payment_method: { cash: 'cash', bank: 'bank_transfer', ccp: 'ccp', baridimob: 'baridimob', cheque: 'cheque', other: 'other' },
     equipment: {
         available: 'available',

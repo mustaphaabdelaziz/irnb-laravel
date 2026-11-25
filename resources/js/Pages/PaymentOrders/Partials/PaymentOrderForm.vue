@@ -9,6 +9,7 @@ import { Link, useForm } from '@inertiajs/vue3';
 import { computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useFinanceAccountLabel } from '@/Composables/useFinanceAccountLabel';
+import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { localToday } from '@/lib/localDate';
 
 const { t, locale } = useI18n();
@@ -20,8 +21,11 @@ const props = defineProps({
     users: { type: Array, default: () => [] },
     boardMembers: { type: Array, default: () => [] },
     boardMeetings: { type: Array, default: () => [] },
+    // Received purchase orders without an active payment order: [{ id, reference, supplier_id, total }].
+    purchaseOrders: { type: Array, default: () => [] },
 });
 const { accountLabel } = useFinanceAccountLabel();
+const { formatMoney } = useFormatMoney();
 const isEdit = !!props.order;
 const day = (value) => (value ? String(value).slice(0, 10) : '');
 
@@ -42,6 +46,7 @@ const form = useForm({
     invoice_date: day(props.order?.invoice_date),
     board_meeting_id: props.order?.board_meeting_id || '',
     observation: props.order?.observation || '',
+    purchase_order_id: props.order?.purchase_order_id || '',
 });
 
 const categoryName = (c) => c[`name_${locale.value}`] || c.name;
@@ -65,6 +70,17 @@ watch(() => form.beneficiary_type, () => {
     form.beneficiary_id = '';
     form.beneficiary_bank = '';
     form.beneficiary_rib = '';
+});
+
+// The chosen supplier's received purchase orders that have no payment order yet.
+const purchaseOrderOptions = computed(() => (form.beneficiary_type === 'supplier' && form.beneficiary_id
+    ? props.purchaseOrders.filter((p) => String(p.supplier_id) === String(form.beneficiary_id))
+    : []));
+// Another supplier (or another kind of beneficiary): the previous one's purchase order no longer applies.
+watch(() => [form.beneficiary_type, form.beneficiary_id], () => {
+    if (form.purchase_order_id && !purchaseOrderOptions.value.some((p) => String(p.id) === String(form.purchase_order_id))) {
+        form.purchase_order_id = '';
+    }
 });
 
 function submit() {
@@ -116,6 +132,14 @@ function submit() {
                 </div>
                 <div><InputLabel :value="t('supplier.field.bank_name')" /><TextInput v-model="form.beneficiary_bank" class="mt-1 w-full" /></div>
                 <div class="sm:col-span-2"><InputLabel :value="t('supplier.field.rib')" /><TextInput v-model="form.beneficiary_rib" dir="ltr" class="mt-1 w-full font-mono" /><InputError :message="form.errors.beneficiary_rib" class="mt-1" /></div>
+                <div v-if="purchaseOrderOptions.length || form.errors.purchase_order_id" class="sm:col-span-3">
+                    <InputLabel :value="t('pur.purchase_order_field')" />
+                    <select v-model="form.purchase_order_id" class="mt-1 w-full rounded-lg border-slate-300 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                        <option value="">—</option>
+                        <option v-for="p in purchaseOrderOptions" :key="p.id" :value="p.id">{{ p.reference }} · {{ formatMoney(p.total) }}</option>
+                    </select>
+                    <InputError :message="form.errors.purchase_order_id" class="mt-1" />
+                </div>
             </div>
         </div>
 

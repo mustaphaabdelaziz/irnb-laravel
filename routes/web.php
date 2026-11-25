@@ -64,6 +64,7 @@ use App\Http\Controllers\OpponentController;
 use App\Http\Controllers\PaymentOrderController;
 use App\Http\Controllers\PaymentOrderPrintController;
 use App\Http\Controllers\PurchaseOrderController;
+use App\Http\Controllers\PurchaseOrderPrintController;
 use App\Http\Controllers\PlayerAcademicRecordController;
 use App\Http\Controllers\PlayerAcademicYearController;
 use App\Http\Controllers\JoinDateController;
@@ -299,6 +300,7 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
     Route::post('/purchase-orders/{purchaseOrder}/receive', [PurchaseOrderController::class, 'receive'])->name('purchase-orders.receive');
     Route::post('/purchase-orders/{purchaseOrder}/cancel', [PurchaseOrderController::class, 'cancel'])->name('purchase-orders.cancel');
     Route::post('/purchase-orders/{purchaseOrder}/payment-order', [PurchaseOrderController::class, 'paymentOrder'])->name('purchase-orders.payment-order.store');
+    Route::get('/purchase-orders/{purchaseOrder}/print', [PurchaseOrderPrintController::class, 'show'])->name('purchase-orders.print');
 
     // Finance — year-grouped dashboard (view open to approved members)
     Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');

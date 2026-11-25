@@ -3,6 +3,8 @@
 namespace App\Services\Legacy;
 
 use App\Models\PaymentOrder;
+use App\Models\PurchaseOrder;
+use App\Models\PurchaseOrderLine;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\Activity\ActivityAction;
@@ -14,8 +16,9 @@ use Illuminate\Support\Str;
 /**
  * Imports the export of the club's old MS Access app (format access-legacy-v1,
  * made by scripts/legacy/export-access.ps1). History only: imported payment
- * orders are paid, read-only and create no transaction, so finance totals do
- * not move. Running it again creates nothing (every row is matched first).
+ * orders are paid, the imported purchase order is received; both are
+ * read-only and create no transaction, so finance totals do not move.
+ * Running it again creates nothing (every row is matched first).
  */
 final class LegacyAccessImporter
 {
@@ -33,10 +36,13 @@ final class LegacyAccessImporter
             $result = [
                 'suppliers' => $this->suppliers(is_array($data['suppliers'] ?? null) ? $data['suppliers'] : []),
                 'payment_orders' => $this->paymentOrders(is_array($data['payment_orders'] ?? null) ? $data['payment_orders'] : []),
+                // Optional section (P2): an older export without it still imports.
+                'purchase_orders' => $this->purchaseOrders(is_array($data['purchase_orders'] ?? null) ? $data['purchase_orders'] : []),
             ];
             ActivityRecorder::record($by, ActivityAction::LEGACY_DATA_IMPORTED, null, [
                 'suppliers' => $result['suppliers']['created'],
                 'payment_orders' => $result['payment_orders']['created'],
+                'purchase_orders' => $result['purchase_orders']['created'],
             ]);
 
             return $result;
@@ -169,6 +175,118 @@ final class LegacyAccessImporter
         }
 
         return ['created' => $created, 'skipped' => $skipped, 'merged' => $merged];
+    }
+
+    /**
+     * Old `bon de commande` rows → legacy purchase orders: received, read-only,
+     * no number. A supplier is linked only when its name matches a known one;
+     * otherwise the old name and address stay readable in the observation, with
+     * the old "N° Ordre" (never linked to a payment order).
+     *
+     * @param  list<array<string, mixed>>  $rows
+     */
+    private function purchaseOrders(array $rows): array
+    {
+        $created = $skipped = 0;
+        foreach ($rows as $row) {
+            if (! is_array($row)) {
+                $skipped++;
+
+                continue;
+            }
+            $reference = Str::limit(trim(preg_replace('/\s+/', ' ', self::plain($row['reference'] ?? null))), 50, '');
+            $date = self::date($row['date'] ?? null);
+            $lines = array_values(array_filter(array_map(
+                fn ($line) => self::purchaseLine($line),
+                is_array($row['lines'] ?? null) ? $row['lines'] : [],
+            )));
+            if ($reference === '' || $date === null || $lines === []) {
+                $skipped++;
+
+                continue;
+            }
+            if (PurchaseOrder::where('is_legacy', true)->where('legacy_source', 'purchase')
+                ->where('legacy_reference', $reference)->whereDate('order_date', $date)->exists()) {
+                $skipped++;
+
+                continue;
+            }
+
+            $supplierName = self::text($row['supplier'] ?? null, 200);
+            $supplierId = $supplierName === null ? null
+                : Supplier::whereRaw('LOWER(name) = ?', [mb_strtolower($supplierName)])->value('id');
+            $orderNumber = self::text($row['order_number'] ?? null, 50);
+            $address = self::text($row['address'] ?? null, 255);
+            $observation = implode("\n", array_filter([
+                self::text($row['observation'] ?? null, 2000),
+                $orderNumber !== null ? 'N° Ordre : '.$orderNumber : null,
+                $supplierName !== null && $supplierId === null ? 'Fournisseur : '.$supplierName : null,
+                $address !== null && $supplierId === null ? 'Adresse : '.$address : null,
+            ]));
+
+            $order = PurchaseOrder::create([
+                'year' => (int) substr($date, 0, 4),
+                'number' => null,
+                'legacy_reference' => $reference,
+                'is_legacy' => true,
+                'legacy_source' => 'purchase',
+                'status' => PurchaseOrder::RECEIVED,
+                'order_date' => $date,
+                'supplier_id' => $supplierId,
+                'requested_by' => self::text($row['requested_by'] ?? null, 200),
+                'delivery_mode' => self::text($row['delivery_mode'] ?? null, 200),
+                'payment_mode' => self::paymentMode(self::plain($row['payment_mode'] ?? null)),
+                'observation' => $observation === '' ? null : $observation,
+                'received_at' => $date,
+            ]);
+            foreach ($lines as $index => $line) {
+                PurchaseOrderLine::create([...$line, 'purchase_order_id' => $order->id, 'sort_order' => $index + 1]);
+            }
+            $created++;
+        }
+
+        return ['created' => $created, 'skipped' => $skipped];
+    }
+
+    /**
+     * One old order line: a designation (or its article reference), a quantity
+     * of at least 1 and a price when one was typed.
+     *
+     * @return array{designation: string, quantity: int, unit_price: ?float, amount: ?float}|null
+     */
+    private static function purchaseLine(mixed $line): ?array
+    {
+        if (! is_array($line)) {
+            return null;
+        }
+        $designation = self::text($line['designation'] ?? null, 255) ?? self::text($line['reference'] ?? null, 255);
+        if ($designation === null) {
+            return null;
+        }
+        $quantity = is_numeric($line['quantity'] ?? null) ? max(1, (int) round((float) $line['quantity'])) : 1;
+        $price = is_numeric($line['unit_price'] ?? null) && (float) $line['unit_price'] > 0 ? round((float) $line['unit_price'], 2) : null;
+
+        return [
+            'designation' => $designation,
+            'quantity' => $quantity,
+            'unit_price' => $price,
+            'amount' => PurchaseOrderLine::amountFor($quantity, $price),
+        ];
+    }
+
+    /** The old free-text payment mode as one of PaymentOrder::METHODS, or null when unclear. */
+    private static function paymentMode(string $text): ?string
+    {
+        $text = mb_strtolower(trim($text));
+
+        return match (true) {
+            $text === '' => null,
+            str_contains($text, 'vir') || str_contains($text, 'تحويل') => 'bank',
+            str_contains($text, 'ccp') => 'ccp',
+            str_contains($text, 'chè') || str_contains($text, 'cheq') || str_contains($text, 'chq') || str_contains($text, 'شيك') => 'cheque',
+            str_contains($text, 'esp') || str_contains($text, 'cash') || str_contains($text, 'نقد') => 'cash',
+            default => null,
+        };
     }
 
     /** "01/2021" stays; a bare "01" (Arabic orders) gets its year: from the cash reference or the date. */

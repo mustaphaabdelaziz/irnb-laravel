@@ -10,5 +10,10 @@
         { "source": "payment", "reference": "01", "date": "2022-10-17", "subject": "Matériel natation", "amount": 45470, "beneficiary": "", "bank": "", "rib": "", "payment_reference": "", "nature": "" },
         { "source": "cash", "reference": "01", "date": "2022-10-17", "subject": "Matériel natation", "amount": 45470, "beneficiary": "Test Trésorier", "bank": "", "rib": "", "payment_reference": "01/2022", "nature": "" },
         { "source": "cash", "reference": "03", "date": "2023-12-23", "subject": "Cotisation des membres", "amount": 20000, "beneficiary": "Test Trésorier", "bank": "", "rib": "", "payment_reference": "01/2023", "nature": "" }
+    ],
+    "purchase_orders": [
+        { "reference": "01/2021", "date": "2021-03-14", "supplier": "", "address": "", "requested_by": "Section football", "delivery_mode": "Sur place", "payment_mode": "Chèque", "order_number": "12", "observation": "", "lines": [
+            { "designation": "Caméra de surveillance", "reference": "", "quantity": 1, "unit_price": null }
+        ] }
     ]
 }

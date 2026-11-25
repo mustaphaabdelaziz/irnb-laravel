@@ -923,6 +923,7 @@
     "legacy_import.result": "Résultat",
     "legacy_import.run": "Importer",
     "legacy_import.section.payment_orders": "Ordres de paiement",
+    "legacy_import.section.purchase_orders": "Bons de commande",
     "legacy_import.section.suppliers": "Fournisseurs",
     "legacy_import.skipped": "déjà présents",
     "legacy_import.title": "Import de l'ancien logiciel",

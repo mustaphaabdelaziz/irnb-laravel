@@ -61,6 +61,38 @@ foreach ($row in (Read-Table 'SELECT * FROM [الامر بالدفع]').Rows) {
     })
 }
 
+# Optional: the old purchase orders ("bon de commande"). One row per ordered
+# item, grouped by the order reference N°1 ("01/2021"). A database without the
+# table still exports (the importer treats the section as optional).
+$purchaseOrders = [ordered]@{}
+try {
+    $purchaseRows = (Read-Table 'SELECT * FROM [bon de commande]').Rows
+} catch {
+    $purchaseRows = @()
+    Write-Warning 'No [bon de commande] table: purchase orders skipped'
+}
+foreach ($row in $purchaseRows) {
+    $reference = Get-Text $row['N°1']
+    if ($reference -eq '') { $reference = Get-Text $row['N°'] }
+    if ($reference -eq '') { continue }
+    if (-not $purchaseOrders.Contains($reference)) {
+        $purchaseOrders[$reference] = [ordered]@{
+            reference = $reference; date = (Get-Day $row['Date'])
+            supplier = (Get-Text $row['Fournisseur']); address = (Get-Text $row['Adresse'])
+            requested_by = (Get-Text $row['service']); delivery_mode = (Get-Text $row['Mode de livraison'])
+            payment_mode = (Get-Text $row['mode de paiement']); order_number = (Get-Text $row['N° Ordre'])
+            observation = (Get-Text $row['Observation'])
+            lines = (New-Object System.Collections.ArrayList)
+        }
+    }
+    $price = Get-Amount $row['PU']
+    [void]$purchaseOrders[$reference].lines.Add([ordered]@{
+        designation = (Get-Text $row['Désignation']); reference = (Get-Text $row['Ref'])
+        quantity = (Get-Amount $row['Quantité'])
+        unit_price = $(if ($price -gt 0) { $price } else { $null })
+    })
+}
+
 $connection.Close()
 
 $document = [ordered]@{
@@ -68,7 +100,8 @@ $document = [ordered]@{
     exported_at = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss')
     suppliers = @($suppliers.Values)
     payment_orders = @($orders)
+    purchase_orders = @($purchaseOrders.Values)
 }
-$json = $document | ConvertTo-Json -Depth 5
+$json = $document | ConvertTo-Json -Depth 6
 [System.IO.File]::WriteAllText($Out, $json, (New-Object System.Text.UTF8Encoding($false)))
-Write-Output ("Wrote {0} suppliers, {1} payment orders to {2}" -f $suppliers.Count, $orders.Count, $Out)
+Write-Output ("Wrote {0} suppliers, {1} payment orders, {2} purchase orders to {3}" -f $suppliers.Count, $orders.Count, $purchaseOrders.Count, $Out)

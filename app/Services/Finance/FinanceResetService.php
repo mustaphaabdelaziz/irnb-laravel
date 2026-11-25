@@ -76,6 +76,9 @@ class FinanceResetService
             DB::table('equipment_items')->whereNotNull('purchase_transaction_id')
                 ->update(['purchase_transaction_id' => null]);
 
+            // Payment orders stay as history (owner, 2026-11-25); only their link to the wiped expense goes.
+            DB::table('payment_orders')->whereNotNull('transaction_id')->update(['transaction_id' => null]);
+
             DB::table('player_subscriptions')->delete();
             // The print log only describes the payments being wiped.
             DB::table('receipt_prints')->delete();

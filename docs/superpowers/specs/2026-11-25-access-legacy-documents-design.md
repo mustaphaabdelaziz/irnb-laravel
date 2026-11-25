@@ -48,6 +48,8 @@ them), copies and leftover tables.
 | Mission travelers | One or more people (user / board member / player or typed), one sheet each |
 | Import | Suppliers, 141 letters, ~60 old payment orders (history), 2 missions |
 | Menu | Payment + purchase orders under Finance; Suppliers in App Configuration; new **Secretariat** (الأمانة) section: Mail register, Mission orders |
+| Finance reset | Keeps all payment orders as history (status unchanged, link to the wiped expense cleared) |
+| Draft print | A "DRAFT" banner at the top is enough (no watermark) |
 | Build order | P1 suppliers + payment orders → P2 purchase orders → P3 mail register → P4 mission orders |
 
 ## Shared rules

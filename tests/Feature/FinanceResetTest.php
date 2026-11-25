@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\PaymentOrder;
+use App\Models\Transaction;
 use App\Models\User;
 use App\Services\Finance\FinanceResetService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -103,6 +105,33 @@ class FinanceResetTest extends TestCase
             ->assertSuccessful();
 
         $this->assertWiped();
+    }
+
+    #[Test]
+    public function payment_orders_survive_the_reset_as_history_with_their_link_cleared(): void
+    {
+        $tx = Transaction::create([
+            'amount' => 100, 'transaction_date' => '2026-03-01', 'transaction_type' => 'expense',
+            'category' => 'other', 'fiscal_year' => 2026,
+        ]);
+        $order = PaymentOrder::create([
+            'year' => 2026, 'number' => 1, 'status' => 'paid', 'order_date' => '2026-03-01',
+            'subject' => 'X', 'amount' => 100, 'transaction_id' => $tx->id,
+        ]);
+        $legacy = PaymentOrder::create([
+            'year' => 2021, 'is_legacy' => true, 'number' => null, 'legacy_reference' => '01/2021',
+            'status' => 'paid', 'order_date' => '2021-02-01', 'subject' => 'Old', 'amount' => 50,
+        ]);
+
+        app(FinanceResetService::class)->reset();
+
+        $this->assertSame(0, DB::table('transactions')->count());
+        foreach ([$order, $legacy] as $o) {
+            $fresh = PaymentOrder::find($o->id);
+            $this->assertNotNull($fresh);
+            $this->assertSame('paid', $fresh->status);
+            $this->assertNull($fresh->transaction_id);
+        }
     }
 
     #[Test]

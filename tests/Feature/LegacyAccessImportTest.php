@@ -59,7 +59,7 @@ class LegacyAccessImportTest extends TestCase
         $second = $importer->import($this->data(), $admin);
 
         $this->assertSame(['created' => 0, 'skipped' => 3], $second['suppliers']);
-        $this->assertSame(0, $second['payment_orders']['created']);
+        $this->assertSame(['created' => 0, 'skipped' => 4, 'merged' => 0], $second['payment_orders']);
         $this->assertSame(2, Supplier::count());
         $this->assertSame(3, PaymentOrder::count());
     }
@@ -94,5 +94,30 @@ class LegacyAccessImportTest extends TestCase
         $this->actingAs(User::factory()->create(['privileges' => ['superadmin']]))
             ->post(route('legacy-import.store'), ['file' => $file])
             ->assertSessionHasErrors('file');
+    }
+    #[Test]
+    public function a_malformed_file_never_crashes_and_good_rows_still_import(): void
+    {
+        $payload = [
+            'format' => 'irnb-access-v1',
+            'suppliers' => 'oops',
+            'payment_orders' => [
+                'not-a-row',
+                ['source' => 'transfer', 'reference' => '05/2021', 'date' => '31/02/2021x', 'subject' => 'Bad date', 'amount' => 100],
+                ['source' => 'transfer', 'reference' => '06/2021', 'date' => '2021-06-01', 'subject' => 'Bad amount', 'amount' => 'abc'],
+                ['source' => 'transfer', 'reference' => '07/2021', 'date' => '2021-06-02', 'subject' => 'Good', 'amount' => 500, 'beneficiary' => ['x']],
+            ],
+        ];
+        $file = UploadedFile::fake()->createWithContent('bad.json', json_encode($payload));
+
+        $this->actingAs(User::factory()->create(['privileges' => ['superadmin']]))
+            ->post(route('legacy-import.store'), ['file' => $file])
+            ->assertSessionHas('legacyResult')
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(1, PaymentOrder::count());
+        $result = session('legacyResult');
+        $this->assertSame(['created' => 0, 'skipped' => 0], $result['suppliers']);
+        $this->assertSame(['created' => 1, 'skipped' => 3, 'merged' => 0], $result['payment_orders']);
     }
 }

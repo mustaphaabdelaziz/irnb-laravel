@@ -31,8 +31,8 @@ final class LegacyAccessImporter
     {
         return DB::transaction(function () use ($data, $by) {
             $result = [
-                'suppliers' => $this->suppliers($data['suppliers'] ?? []),
-                'payment_orders' => $this->paymentOrders($data['payment_orders'] ?? []),
+                'suppliers' => $this->suppliers(is_array($data['suppliers'] ?? null) ? $data['suppliers'] : []),
+                'payment_orders' => $this->paymentOrders(is_array($data['payment_orders'] ?? null) ? $data['payment_orders'] : []),
             ];
             ActivityRecorder::record($by, ActivityAction::LEGACY_DATA_IMPORTED, null, [
                 'suppliers' => $result['suppliers']['created'],
@@ -48,7 +48,12 @@ final class LegacyAccessImporter
     {
         $created = $skipped = 0;
         foreach ($rows as $row) {
-            $name = trim((string) ($row['name'] ?? ''));
+            if (! is_array($row)) {
+                $skipped++;
+
+                continue;
+            }
+            $name = trim(is_scalar($row['name'] ?? null) ? (string) $row['name'] : '');
             if ($name === '') {
                 continue;
             }
@@ -56,7 +61,7 @@ final class LegacyAccessImporter
             if ($existing) {
                 // Fill a missing bank detail from a later row, never overwrite one.
                 $existing->update(array_filter([
-                    'bank_name' => $existing->bank_name ?: self::text($row['bank'] ?? null),
+                    'bank_name' => $existing->bank_name ?: self::text($row['bank'] ?? null, 150),
                     'rib' => $existing->rib ?: self::rib($row['rib'] ?? null),
                 ]));
                 $skipped++;
@@ -65,7 +70,7 @@ final class LegacyAccessImporter
             }
             Supplier::create([
                 'name' => Str::limit($name, 200, ''),
-                'bank_name' => self::text($row['bank'] ?? null),
+                'bank_name' => self::text($row['bank'] ?? null, 150),
                 'rib' => self::rib($row['rib'] ?? null),
                 'notes' => 'Ancien logiciel (Access)',
             ]);
@@ -80,17 +85,24 @@ final class LegacyAccessImporter
     {
         $created = $skipped = $merged = 0;
         // The Arabic payment order first: its cash-order twin merges into it.
-        usort($rows, fn ($a, $b) => (($a['source'] ?? '') === 'payment' ? 0 : 1) <=> (($b['source'] ?? '') === 'payment' ? 0 : 1));
+
+        $rows = array_values($rows);
+        usort($rows, fn ($a, $b) => ((is_array($a) ? ($a['source'] ?? '') : '') === 'payment' ? 0 : 1) <=> ((is_array($b) ? ($b['source'] ?? '') : '') === 'payment' ? 0 : 1));
 
         foreach ($rows as $row) {
-            $source = (string) ($row['source'] ?? '');
+            if (! is_array($row)) {
+                $skipped++;
+
+                continue;
+            }
+            $source = is_string($row['source'] ?? null) ? $row['source'] : '';
             if (! array_key_exists($source, self::METHOD_BY_SOURCE)) {
                 continue;
             }
-            $date = ! empty($row['date']) ? Carbon::parse($row['date'])->format('Y-m-d') : null;
-            $amount = round((float) ($row['amount'] ?? 0), 2);
-            $reference = self::reference((string) ($row['reference'] ?? ''), $date, (string) ($row['payment_reference'] ?? ''));
-            if ($date === null) {
+            $date = self::date($row['date'] ?? null);
+            $amount = is_numeric($row['amount'] ?? null) ? round((float) $row['amount'], 2) : 0.0;
+            $reference = Str::limit(self::reference(self::plain($row['reference'] ?? null), $date, self::plain($row['payment_reference'] ?? null)), 50, '');
+            if ($date === null || $amount <= 0) {
                 $skipped++;
 
                 continue;
@@ -108,12 +120,17 @@ final class LegacyAccessImporter
                 $twin = PaymentOrder::where('is_legacy', true)->where('legacy_source', 'payment')
                     ->whereDate('order_date', $date)->where('amount', $amount)->first();
                 if ($twin) {
-                    $twin->update([
+                    $twin->fill([
                         'payment_method' => $twin->payment_method ?? 'cash',
-                        'beneficiary_name' => $twin->beneficiary_name ?: self::text($row['beneficiary'] ?? null),
-                        'payment_reference' => $twin->payment_reference ?: self::text($row['payment_reference'] ?? null),
+                        'beneficiary_name' => $twin->beneficiary_name ?: self::text($row['beneficiary'] ?? null, 200),
+                        'payment_reference' => $twin->payment_reference ?: self::text($row['payment_reference'] ?? null, 100),
                     ]);
-                    $merged++;
+                    if ($twin->isDirty()) {
+                        $twin->save();
+                        $merged++;
+                    } else {
+                        $skipped++;
+                    }
 
                     continue;
                 }
@@ -127,15 +144,15 @@ final class LegacyAccessImporter
                 'legacy_source' => $source,
                 'status' => PaymentOrder::PAID,
                 'order_date' => $date,
-                'subject' => Str::limit(trim((string) ($row['subject'] ?? '')) ?: '—', 150, ''),
+                'subject' => Str::limit(trim(self::plain($row['subject'] ?? null)) ?: '—', 150, ''),
                 'amount' => $amount,
                 'payment_method' => self::METHOD_BY_SOURCE[$source],
-                'beneficiary_name' => self::text($row['beneficiary'] ?? null),
-                'beneficiary_bank' => self::text($row['bank'] ?? null),
+                'beneficiary_name' => self::text($row['beneficiary'] ?? null, 200),
+                'beneficiary_bank' => self::text($row['bank'] ?? null, 150),
                 'beneficiary_rib' => self::rib($row['rib'] ?? null),
-                'payment_reference' => self::text($row['payment_reference'] ?? null),
+                'payment_reference' => self::text($row['payment_reference'] ?? null, 100),
                 'payment_date' => $date,
-                'observation' => self::text($row['nature'] ?? null),
+                'observation' => self::text($row['nature'] ?? null, 5000),
             ]);
             $created++;
         }
@@ -155,16 +172,33 @@ final class LegacyAccessImporter
         return $year !== '' ? sprintf('%s/%s', str_pad($reference, 2, '0', STR_PAD_LEFT), $year) : $reference;
     }
 
-    private static function text(mixed $value): ?string
+    private static function plain(mixed $value): string
     {
-        $value = trim((string) $value);
+        return is_scalar($value) ? (string) $value : '';
+    }
 
-        return $value === '' ? null : $value;
+    private static function date(mixed $value): ?string
+    {
+        if (! is_string($value) || trim($value) === '') {
+            return null;
+        }
+        try {
+            return Carbon::parse($value)->format('Y-m-d');
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private static function text(mixed $value, int $limit = 255): ?string
+    {
+        $value = trim(self::plain($value));
+
+        return $value === '' ? null : Str::limit($value, $limit, '');
     }
 
     private static function rib(mixed $value): ?string
     {
-        $digits = preg_replace('/\D+/', '', (string) $value);
+        $digits = preg_replace('/\D+/', '', self::plain($value));
 
         return $digits === '' ? null : substr($digits, 0, 30);
     }

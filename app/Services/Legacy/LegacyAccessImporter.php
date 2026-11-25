@@ -55,6 +55,8 @@ final class LegacyAccessImporter
             }
             $name = trim(is_scalar($row['name'] ?? null) ? (string) $row['name'] : '');
             if ($name === '') {
+                $skipped++;
+
                 continue;
             }
             $existing = Supplier::whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->first();
@@ -84,8 +86,8 @@ final class LegacyAccessImporter
     private function paymentOrders(array $rows): array
     {
         $created = $skipped = $merged = 0;
-        // The Arabic payment order first: its cash-order twin merges into it.
 
+        // The Arabic payment order first: its cash-order twin merges into it.
         $rows = array_values($rows);
         usort($rows, fn ($a, $b) => ((is_array($a) ? ($a['source'] ?? '') : '') === 'payment' ? 0 : 1) <=> ((is_array($b) ? ($b['source'] ?? '') : '') === 'payment' ? 0 : 1));
 
@@ -97,6 +99,8 @@ final class LegacyAccessImporter
             }
             $source = is_string($row['source'] ?? null) ? $row['source'] : '';
             if (! array_key_exists($source, self::METHOD_BY_SOURCE)) {
+                $skipped++;
+
                 continue;
             }
             $date = self::date($row['date'] ?? null);
@@ -136,6 +140,11 @@ final class LegacyAccessImporter
                 }
             }
 
+            $beneficiary = self::text($row['beneficiary'] ?? null, 200);
+            // A beneficiary that is a known supplier is linked, so the order shows under that supplier.
+            $supplierId = $beneficiary === null ? null
+                : Supplier::whereRaw('LOWER(name) = ?', [mb_strtolower($beneficiary)])->value('id');
+
             PaymentOrder::create([
                 'year' => (int) substr($date, 0, 4),
                 'number' => null,
@@ -147,7 +156,9 @@ final class LegacyAccessImporter
                 'subject' => Str::limit(trim(self::plain($row['subject'] ?? null)) ?: '—', 150, ''),
                 'amount' => $amount,
                 'payment_method' => self::METHOD_BY_SOURCE[$source],
-                'beneficiary_name' => self::text($row['beneficiary'] ?? null, 200),
+                'beneficiary_type' => $supplierId ? 'supplier' : null,
+                'beneficiary_id' => $supplierId,
+                'beneficiary_name' => $beneficiary,
                 'beneficiary_bank' => self::text($row['bank'] ?? null, 150),
                 'beneficiary_rib' => self::rib($row['rib'] ?? null),
                 'payment_reference' => self::text($row['payment_reference'] ?? null, 100),

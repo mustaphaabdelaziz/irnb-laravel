@@ -38,6 +38,10 @@ class LegacyAccessImportTest extends TestCase
         $this->assertSame('bank', $order->payment_method);
         $this->assertSame('PUBLICATION DU BUREAU', $order->observation);
         $this->assertSame('01/2021', $order->reference);
+        // Its beneficiary is a known supplier: the order is linked to it.
+        $this->assertSame('supplier', $order->beneficiary_type);
+        $this->assertSame(Supplier::where('name', 'Test Journal')->value('id'), $order->beneficiary_id);
+        $this->assertSame('Test Journal', $order->beneficiaryLabel());
 
         // The Arabic payment order and the cash order of the same expense are one order.
         $merged = PaymentOrder::whereDate('order_date', '2022-10-17')->get();
@@ -95,6 +99,25 @@ class LegacyAccessImportTest extends TestCase
             ->post(route('legacy-import.store'), ['file' => $file])
             ->assertSessionHasErrors('file');
     }
+
+    #[Test]
+    public function rows_with_no_supplier_name_or_an_unknown_source_count_as_skipped(): void
+    {
+        $result = app(LegacyAccessImporter::class)->import([
+            'format' => 'irnb-access-v1',
+            'suppliers' => [['name' => '  ', 'rib' => '123'], ['name' => 'Kept']],
+            'payment_orders' => [
+                ['source' => 'invoice', 'reference' => '01/2021', 'date' => '2021-06-01', 'subject' => 'X', 'amount' => 100],
+                ['source' => 'cash', 'reference' => '02', 'date' => '2021-06-02', 'subject' => 'Y', 'amount' => 200, 'beneficiary' => 'Nobody'],
+            ],
+        ], User::factory()->admin()->create());
+
+        $this->assertSame(['created' => 1, 'skipped' => 1], $result['suppliers']);
+        $this->assertSame(['created' => 1, 'skipped' => 1, 'merged' => 0], $result['payment_orders']);
+        // A beneficiary that is no known supplier stays a plain name.
+        $this->assertNull(PaymentOrder::firstOrFail()->beneficiary_type);
+    }
+
     #[Test]
     public function a_malformed_file_never_crashes_and_good_rows_still_import(): void
     {

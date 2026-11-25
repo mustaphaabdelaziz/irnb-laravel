@@ -88,6 +88,7 @@ export function useNavigation() {
                 { label: t('users'), href: '/users', icon: 'members', prefix: '/users', match: /^\/users(?!\/(\d+\/)?activity)/, badge: pendingApprovals, module: 'users' },
                 { label: t('activity.title'), href: '/users/activity', icon: 'task', prefix: '/users/activity', match: /^\/users\/(\d+\/)?activity/, module: 'users' },
                 { label: t('roles'), href: '/roles', icon: 'flag', prefix: '/roles', superadminOnly: true },
+                { label: t('legacy_import.title'), href: '/legacy-import', icon: 'archive', prefix: '/legacy-import', superadminOnly: true },
                 { label: t('settings'), href: '/settings', icon: 'settings', prefix: '/settings', module: 'settings' },
                 { label: t('backup'), href: '/backups', icon: 'archive', prefix: '/backups', superadminOnly: true, desktopOnly: true },
             ] },

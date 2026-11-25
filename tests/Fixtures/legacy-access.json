@@ -1,0 +1,14 @@
+{
+    "format": "irnb-access-v1",
+    "suppliers": [
+        { "name": "Test Journal", "bank": "BNA 611", "rib": "00100000000000001234" },
+        { "name": "TEST JOURNAL", "bank": "", "rib": "" },
+        { "name": "Test Ligue", "bank": "", "rib": "00700000000000005678" }
+    ],
+    "payment_orders": [
+        { "source": "transfer", "reference": "01/2021", "date": "2021-05-09", "subject": "PUBLICATION", "amount": 2000, "beneficiary": "Test Journal", "bank": "BNA 611", "rib": "00100000000000001234", "payment_reference": "01/2021", "nature": "PUBLICATION DU BUREAU" },
+        { "source": "payment", "reference": "01", "date": "2022-10-17", "subject": "Matériel natation", "amount": 45470, "beneficiary": "", "bank": "", "rib": "", "payment_reference": "", "nature": "" },
+        { "source": "cash", "reference": "01", "date": "2022-10-17", "subject": "Matériel natation", "amount": 45470, "beneficiary": "Test Trésorier", "bank": "", "rib": "", "payment_reference": "01/2022", "nature": "" },
+        { "source": "cash", "reference": "03", "date": "2023-12-23", "subject": "Cotisation des membres", "amount": 20000, "beneficiary": "Test Trésorier", "bank": "", "rib": "", "payment_reference": "01/2023", "nature": "" }
+    ]
+}

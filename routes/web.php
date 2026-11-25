@@ -55,6 +55,7 @@ use App\Http\Controllers\HelpController;
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LanguageController;
+use App\Http\Controllers\LegacyImportController;
 use App\Http\Controllers\LiteraryReportController;
 use App\Http\Controllers\MemberJobController;
 use App\Http\Controllers\MembershipIdController;
@@ -569,6 +570,10 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
         Route::get('/membership-ids', [MembershipIdController::class, 'index'])->name('membership-ids.index');
         Route::post('/membership-ids/convert', [MembershipIdController::class, 'convert'])->name('membership-ids.convert');
         Route::post('/membership-ids/undo', [MembershipIdController::class, 'undo'])->name('membership-ids.undo');
+
+        // One-time import of the old Access app's export (suppliers, payment orders; mail and missions later).
+        Route::get('/legacy-import', [LegacyImportController::class, 'index'])->name('legacy-import.index');
+        Route::post('/legacy-import', [LegacyImportController::class, 'store'])->name('legacy-import.store');
     });
 
     // Database backup & restore — desktop app only, superadmin only.

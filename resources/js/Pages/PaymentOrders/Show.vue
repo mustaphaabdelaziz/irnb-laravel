@@ -10,12 +10,14 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useCan } from '@/Composables/useCan';
 import { useFormatMoney } from '@/Composables/useFormatMoney';
 import { useFormatDate } from '@/Composables/useFormatDate';
 import { useStatusLabel } from '@/Composables/useStatusLabel';
 import { localToday } from '@/lib/localDate';
 
 const { t } = useI18n();
+const { can: userCan } = useCan();
 const { formatMoney } = useFormatMoney();
 const { formatDate } = useFormatDate();
 const { statusLabel } = useStatusLabel();
@@ -80,7 +82,8 @@ const cancel = () => cancelForm.post(route('payment-orders.cancel', props.order.
                 </dl>
                 <p v-if="order.purchase_order" class="mt-5 text-sm">
                     {{ t('pur.linked_purchase_order') }}
-                    <Link :href="route('purchase-orders.show', order.purchase_order.id)" class="font-semibold text-primary-600 hover:underline dark:text-primary-300"><bdi dir="ltr">{{ order.purchase_order.reference }}</bdi></Link>
+                    <Link v-if="userCan('purchase_orders', 'view')" :href="route('purchase-orders.show', order.purchase_order.id)" class="font-semibold text-primary-600 hover:underline dark:text-primary-300"><bdi dir="ltr">{{ order.purchase_order.reference }}</bdi></Link>
+                    <bdi v-else dir="ltr" class="font-semibold">{{ order.purchase_order.reference }}</bdi>
                 </p>
                 <p v-if="order.transaction" class="mt-5 text-sm">
                     {{ t('po.expense_link') }}

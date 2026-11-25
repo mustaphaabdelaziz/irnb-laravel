@@ -51,7 +51,12 @@ const receive = () => receiveForm.post(route('purchase-orders.receive', props.or
 const cancel = () => router.post(route('purchase-orders.cancel', props.order.id), {}, {
     preserveScroll: true, onFinish: () => { cancelOpen.value = false; },
 });
-const createPaymentOrder = () => router.post(route('purchase-orders.payment-order.store', props.order.id));
+const creatingPaymentOrder = ref(false);
+const createPaymentOrder = () => {
+    if (creatingPaymentOrder.value) return;
+    creatingPaymentOrder.value = true;
+    router.post(route('purchase-orders.payment-order.store', props.order.id), {}, { onFinish: () => { creatingPaymentOrder.value = false; } });
+};
 </script>
 
 <template>
@@ -69,7 +74,7 @@ const createPaymentOrder = () => router.post(route('purchase-orders.payment-orde
                     <IconButton v-if="can.edit" :href="route('purchase-orders.edit', order.id)" icon="pencil" :label="t('edit')" />
                     <IconButton v-if="can.send" icon="send" :label="t('pur.send')" variant="primary" @click="send" />
                     <IconButton v-if="can.receive" icon="check" :label="t('pur.receive')" variant="primary" @click="receiveOpen = true" />
-                    <IconButton v-if="can.create_payment_order" icon="money" :label="t('pur.create_payment_order')" variant="primary" @click="createPaymentOrder" />
+                    <IconButton v-if="can.create_payment_order" :disabled="creatingPaymentOrder" icon="money" :label="t('pur.create_payment_order')" variant="primary" @click="createPaymentOrder" />
                     <IconButton v-if="can.cancel" icon="xcircle" :label="t('pur.cancel_order')" variant="danger" @click="cancelOpen = true" />
                 </div>
             </div>

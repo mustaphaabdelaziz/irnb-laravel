@@ -27,10 +27,10 @@
     <div class="ref">{{ $L('po.number') }} <bdo dir="ltr">{{ $order->reference }}</bdo> — <bdo dir="ltr">{{ $order->order_date->format('d/m/Y') }}</bdo></div>
 
     <table class="info">
-        <tr><td class="label">{{ $L('po.pdf.paid_to') }}</td><td>{{ $beneficiary }}</td></tr>
+        <tr><td class="label">{{ $L('po.pdf.paid_to') }}</td><td>{{ \App\Support\PdfText::ltrIfLatin($beneficiary) }}</td></tr>
         <tr><td class="label">{{ $L('amount') }}</td><td><bdo dir="ltr">{{ $money($order->amount) }}</bdo></td></tr>
         <tr><td class="label">{{ $L('po.pdf.amount_words') }}</td><td>{{ $words }}</td></tr>
-        <tr><td class="label">{{ $L('po.subject') }}</td><td>{{ $order->subject }}</td></tr>
+        <tr><td class="label">{{ $L('po.subject') }}</td><td>{{ \App\Support\PdfText::ltrIfLatin($order->subject) }}</td></tr>
         @if ($order->payment_reference)
             <tr><td class="label">{{ $L('po.payment_reference') }}</td><td><bdo dir="ltr">{{ $order->payment_reference }}</bdo></td></tr>
         @endif

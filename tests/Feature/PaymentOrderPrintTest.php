@@ -80,6 +80,17 @@ class PaymentOrderPrintTest extends TestCase
     }
 
     #[Test]
+    public function latin_free_text_is_kept_left_to_right_in_the_arabic_print(): void
+    {
+        $seen = $this->spyPdf();
+        $order = $this->order(['beneficiary_type' => null, 'beneficiary_id' => null, 'beneficiary_name' => '12 Test Sport Shop']);
+
+        $this->actingAs($this->user('ar'))->get(route('payment-orders.print', ['paymentOrder' => $order, 'form' => 'payment']))->assertOk();
+
+        $this->assertStringContainsString('<bdo dir="ltr">12 Test Sport Shop</bdo>', $seen['html']);
+    }
+
+    #[Test]
     public function the_transfer_order_shows_a_dash_without_a_club_rib_and_draws_sign_lines(): void
     {
         $seen = $this->spyPdf();

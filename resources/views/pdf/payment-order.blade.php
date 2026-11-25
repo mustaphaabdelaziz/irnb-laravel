@@ -28,12 +28,12 @@
     <div class="ref">{{ $L('po.number') }} <bdo dir="ltr">{{ $order->reference }}</bdo> — <bdo dir="ltr">{{ $order->order_date->format('d/m/Y') }}</bdo></div>
 
     <table class="info">
-        <tr><td class="label">{{ $L('po.subject') }}</td><td>{{ $order->subject }}</td></tr>
+        <tr><td class="label">{{ $L('po.subject') }}</td><td>{{ \App\Support\PdfText::ltrIfLatin($order->subject) }}</td></tr>
         <tr><td class="label">{{ $L('amount') }}</td><td class="amount"><bdo dir="ltr">{{ $money($order->amount) }}</bdo></td></tr>
         <tr><td class="label">{{ $L('po.pdf.amount_words') }}</td><td>{{ $words }}</td></tr>
-        <tr><td class="label">{{ $L('po.beneficiary') }}</td><td>{{ $beneficiary }}</td></tr>
+        <tr><td class="label">{{ $L('po.beneficiary') }}</td><td>{{ \App\Support\PdfText::ltrIfLatin($beneficiary) }}</td></tr>
         @if ($order->beneficiary_bank)
-            <tr><td class="label">{{ $L('supplier.field.bank_name') }}</td><td>{{ $order->beneficiary_bank }}</td></tr>
+            <tr><td class="label">{{ $L('supplier.field.bank_name') }}</td><td>{{ \App\Support\PdfText::ltrIfLatin($order->beneficiary_bank) }}</td></tr>
         @endif
         @if ($order->beneficiary_rib)
             <tr><td class="label">{{ $L('supplier.field.rib') }}</td><td><bdo dir="ltr">{{ $order->beneficiary_rib }}</bdo></td></tr>
@@ -49,7 +49,7 @@
             <tr><td class="label">{{ $L('po.pdf.meeting') }}</td><td>@if ($order->boardMeeting->pv_number)<bdo dir="ltr">{{ $order->boardMeeting->pv_number }}</bdo> — @endif<bdo dir="ltr">{{ $order->boardMeeting->meeting_date?->format('d/m/Y') }}</bdo></td></tr>
         @endif
         @if ($order->observation)
-            <tr><td class="label">{{ $L('po.observation') }}</td><td>{!! nl2br(e($order->observation)) !!}</td></tr>
+            <tr><td class="label">{{ $L('po.observation') }}</td><td>{{ \App\Support\PdfText::ltrIfLatin($order->observation) }}</td></tr>
         @endif
     </table>
 

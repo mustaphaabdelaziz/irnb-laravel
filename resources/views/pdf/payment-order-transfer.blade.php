@@ -31,21 +31,21 @@
 
     <div class="section">{{ $L('po.pdf.debit') }}</div>
     <table class="info">
-        <tr><td class="label">{{ $L('po.pdf.account_holder') }}</td><td>{{ $club['name'] }}</td></tr>
+        <tr><td class="label">{{ $L('po.pdf.account_holder') }}</td><td>{{ \App\Support\PdfText::ltrIfLatin($club["name"]) }}</td></tr>
         <tr><td class="label">{{ $L('supplier.field.rib') }}</td><td>@if (filled($clubRib))<bdo dir="ltr">{{ $clubRib }}</bdo>@else—@endif</td></tr>
     </table>
 
     <div class="section">{{ $L('po.pdf.credit') }}</div>
     <table class="info">
-        <tr><td class="label">{{ $L('po.beneficiary') }}</td><td>{{ $beneficiary }}</td></tr>
-        <tr><td class="label">{{ $L('supplier.field.bank_name') }}</td><td>{{ $order->beneficiary_bank }}</td></tr>
+        <tr><td class="label">{{ $L('po.beneficiary') }}</td><td>{{ \App\Support\PdfText::ltrIfLatin($beneficiary) }}</td></tr>
+        <tr><td class="label">{{ $L('supplier.field.bank_name') }}</td><td>{{ \App\Support\PdfText::ltrIfLatin($order->beneficiary_bank) }}</td></tr>
         <tr><td class="label">{{ $L('supplier.field.rib') }}</td><td><bdo dir="ltr">{{ $order->beneficiary_rib }}</bdo></td></tr>
     </table>
 
     <table class="info">
         <tr><td class="label">{{ $L('amount') }}</td><td><bdo dir="ltr">{{ $money($order->amount) }}</bdo></td></tr>
         <tr><td class="label">{{ $L('po.pdf.amount_words') }}</td><td>{{ $words }}</td></tr>
-        <tr><td class="label">{{ $L('po.subject') }}</td><td>{{ $order->subject }}</td></tr>
+        <tr><td class="label">{{ $L('po.subject') }}</td><td>{{ \App\Support\PdfText::ltrIfLatin($order->subject) }}</td></tr>
         @if ($order->payment_reference)
             <tr><td class="label">{{ $L('po.payment_reference') }}</td><td><bdo dir="ltr">{{ $order->payment_reference }}</bdo></td></tr>
         @endif

@@ -7,6 +7,7 @@ use App\Models\BoardMeeting;
 use App\Models\FinanceAccount;
 use App\Models\FinanceCategory;
 use App\Models\FiscalYear;
+use App\Models\PaymentOrder;
 use App\Models\Player;
 use App\Models\PlayerSubscription;
 use App\Models\Supplier;
@@ -174,6 +175,10 @@ class TransactionController extends Controller
             'cancellation' => TransactionHistory::cancellation($transaction, $history),
             'group' => TransactionHistory::group($transaction),
             'season' => $this->season($transaction),
+            // Its payment order (الأمر بالدفع), if one was made.
+            'paymentOrder' => ($order = PaymentOrder::where('transaction_id', $transaction->id)->first(['id', 'year', 'number', 'is_legacy', 'legacy_reference']))
+                ? ['id' => $order->id, 'reference' => $order->reference]
+                : null,
         ]);
     }
 

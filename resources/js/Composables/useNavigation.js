@@ -35,6 +35,7 @@ export function useNavigation() {
             ] },
             { key: 'finance', label: t('nav_finance'), icon: 'money', items: [
                 { label: t('transactions'), href: '/transactions', icon: 'transactions', prefix: '/transactions', module: 'transactions' },
+                { label: t('payment_orders'), href: '/payment-orders', icon: 'document', prefix: '/payment-orders', module: 'payment_orders' },
                 { label: t('receipts.verify_title'), href: '/receipts/verify', icon: 'check', prefix: '/receipts/verify', module: 'transactions' },
                 { label: t('cash_registers'), href: '/finance/registers', icon: 'wallet', prefix: '/finance/registers', module: 'finance' },
                 // Not highlighted on the Caisses page, which has its own entry.

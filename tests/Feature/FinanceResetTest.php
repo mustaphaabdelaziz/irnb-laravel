@@ -135,6 +135,40 @@ class FinanceResetTest extends TestCase
     }
 
     #[Test]
+    public function purchase_orders_and_their_equipment_links_survive_the_reset(): void
+    {
+        $supplier = Supplier::create(['name' => 'Test Sport Shop']);
+        $purchaseOrder = PurchaseOrder::create([
+            'year' => 2026, 'number' => 1, 'status' => 'received', 'order_date' => '2026-03-01', 'supplier_id' => $supplier->id,
+        ]);
+        $purchaseOrder->lines()->create(['designation' => 'Ballon', 'quantity' => 2, 'unit_price' => 50, 'amount' => 100, 'sort_order' => 1]);
+        $tx = Transaction::create([
+            'amount' => 100, 'transaction_date' => '2026-03-02', 'transaction_type' => 'expense',
+            'category' => 'other', 'fiscal_year' => 2026,
+        ]);
+        $payment = PaymentOrder::create([
+            'year' => 2026, 'number' => 1, 'status' => 'paid', 'order_date' => '2026-03-02', 'subject' => 'Bon', 'amount' => 100,
+            'transaction_id' => $tx->id, 'purchase_order_id' => $purchaseOrder->id,
+        ]);
+        $catalog = EquipmentCatalog::create(['name' => 'Ballon', 'category' => 'Balls']);
+        $item = EquipmentItem::create([
+            'catalog_id' => $catalog->id, 'purchase_date' => '2026-03-01', 'quantity' => 2,
+            'purchase_order_id' => $purchaseOrder->id, 'purchase_transaction_id' => $tx->id,
+        ]);
+
+        app(FinanceResetService::class)->reset();
+
+        $this->assertSame('received', $purchaseOrder->fresh()->status);
+        $this->assertSame(1, $purchaseOrder->fresh()->lines()->count());
+        $this->assertSame($purchaseOrder->id, $payment->fresh()->purchase_order_id);
+        $this->assertSame($purchaseOrder->id, $item->fresh()->purchase_order_id);
+        $this->assertNull($item->fresh()->purchase_transaction_id);
+    }
+
+    #[Test]
+    public function the_command_changes_nothing_without_the_typed_word(): void
+
+    #[Test]
     public function the_command_changes_nothing_without_the_typed_word(): void
     {
         $this->seedFinance();

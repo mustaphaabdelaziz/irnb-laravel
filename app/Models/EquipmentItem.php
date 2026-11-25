@@ -30,6 +30,7 @@ class EquipmentItem extends Model
         'condition',
         'location',
         'purchase_transaction_id',
+        'purchase_order_id',
         'notes',
     ];
 
@@ -50,6 +51,12 @@ class EquipmentItem extends Model
     public function purchaseTransaction(): BelongsTo
     {
         return $this->belongsTo(Transaction::class, 'purchase_transaction_id');
+    }
+
+    /** The purchase order this lot was received from, if any. */
+    public function purchaseOrder(): BelongsTo
+    {
+        return $this->belongsTo(PurchaseOrder::class);
     }
 
     public function rentals(): HasMany

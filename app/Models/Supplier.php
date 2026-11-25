@@ -32,9 +32,14 @@ class Supplier extends Model
         return $this->hasMany(Transaction::class);
     }
 
+    public function paymentOrders(): HasMany
+    {
+        return $this->hasMany(PaymentOrder::class, 'beneficiary_id')->where('beneficiary_type', 'supplier');
+    }
+
     /** A supplier something points at stays (deactivate it instead). */
     public function isInUse(): bool
     {
-        return $this->transactions()->exists();
+        return $this->transactions()->exists() || $this->paymentOrders()->exists();
     }
 }

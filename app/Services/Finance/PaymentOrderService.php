@@ -11,8 +11,8 @@ use App\Models\User;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
 use App\Services\Documents\YearlySequence;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -75,6 +75,7 @@ final class PaymentOrderService
         if ($order->beneficiary_type === null || $order->beneficiary_id === null) {
             throw new PaymentOrderException('flash.payment_order_no_beneficiary');
         }
+        $this->expenseCategoryOrFail($order);
 
         return DB::transaction(function () use ($order, $by) {
             $supplier = $order->beneficiary_type === 'supplier' ? Supplier::find($order->beneficiary_id) : null;
@@ -104,10 +105,7 @@ final class PaymentOrderService
         if ($order->status !== PaymentOrder::APPROVED || $order->transaction_id !== null) {
             throw new PaymentOrderException('flash.payment_order_not_approved');
         }
-        $category = $order->finance_category_id ? FinanceCategory::find($order->finance_category_id) : null;
-        if ($category === null || $category->type !== 'expense' || $order->finance_account_id === null) {
-            throw new PaymentOrderException('flash.payment_order_missing_finance');
-        }
+        $category = $this->expenseCategoryOrFail($order);
 
         return DB::transaction(function () use ($order, $by, $paymentDate, $category) {
             $date = $paymentDate ?? ($order->payment_date?->format('Y-m-d')) ?? now()->format('Y-m-d');
@@ -151,6 +149,17 @@ final class PaymentOrderService
 
             return $order->fresh();
         });
+    }
+
+    /** An order is approved and paid only with an expense category and a register. */
+    private function expenseCategoryOrFail(PaymentOrder $order): FinanceCategory
+    {
+        $category = $order->finance_category_id ? FinanceCategory::find($order->finance_category_id) : null;
+        if ($category === null || $category->type !== 'expense' || $order->finance_account_id === null) {
+            throw new PaymentOrderException('flash.payment_order_missing_finance');
+        }
+
+        return $category;
     }
 
     public function cancel(PaymentOrder $order, User $by, string $reason): PaymentOrder

@@ -99,7 +99,9 @@ class PaymentOrderController extends Controller
             'prints' => self::printsFor($paymentOrder),
             'can' => [
                 'edit' => $paymentOrder->isEditable() && $user->hasPermission('payment_orders', 'edit'),
-                'approve' => $paymentOrder->status === PaymentOrder::DRAFT && ! $paymentOrder->is_legacy && $user->hasPermission('payment_orders', 'approve'),
+                'approve' => $paymentOrder->status === PaymentOrder::DRAFT && ! $paymentOrder->is_legacy
+                    && $paymentOrder->finance_category_id !== null && $paymentOrder->finance_account_id !== null
+                    && $user->hasPermission('payment_orders', 'approve'),
                 'pay' => $paymentOrder->status === PaymentOrder::APPROVED && $user->hasPermission('payment_orders', 'edit'),
                 'cancel' => in_array($paymentOrder->status, [PaymentOrder::DRAFT, PaymentOrder::APPROVED], true) && ! $paymentOrder->is_legacy && $user->hasPermission('payment_orders', 'edit'),
             ],

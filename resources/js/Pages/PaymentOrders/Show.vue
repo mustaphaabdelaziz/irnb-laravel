@@ -82,7 +82,10 @@ const cancel = () => cancelForm.post(route('payment-orders.cancel', props.order.
                     {{ t('po.expense_link') }}
                     <Link :href="route('transactions.show', order.transaction.id)" class="font-semibold text-primary-600 hover:underline dark:text-primary-300"><bdi dir="ltr">#{{ order.transaction.id }}</bdi></Link>
                 </p>
-                <p v-if="order.status === 'draft'" class="mt-5 rounded-lg bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-500/10 dark:text-amber-200">{{ t('po.draft_hint') }}</p>
+                <p v-if="order.status === 'draft'" class="mt-5 rounded-lg bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-500/10 dark:text-amber-200">
+                    {{ t('po.draft_hint') }}
+                    <span v-if="!order.is_legacy && (!order.finance_category_id || !order.finance_account_id)" class="mt-1 block font-semibold">{{ t('po.approve_needs_finance') }}</span>
+                </p>
             </div>
         </div>
 

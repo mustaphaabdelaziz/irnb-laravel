@@ -147,6 +147,21 @@ class PaymentOrderHttpTest extends TestCase
     }
 
     #[Test]
+    public function the_approve_button_waits_for_the_category_and_register(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $service = app(PaymentOrderService::class);
+        $ready = $service->create($this->payload(), $admin);
+        $missing = $service->create($this->payload(['finance_account_id' => null]), $admin);
+
+        $this->actingAs($admin)->get(route('payment-orders.show', $ready))
+            ->assertInertia(fn (Assert $page) => $page->where('can.approve', true));
+        $this->get(route('payment-orders.show', $missing))
+            ->assertInertia(fn (Assert $page) => $page->where('can.approve', false));
+        $this->post(route('payment-orders.approve', $missing))->assertSessionHas('error', 'flash.payment_order_missing_finance');
+    }
+
+    #[Test]
     public function the_show_page_does_not_leak_account_balances_to_a_view_only_user(): void
     {
         $order = app(PaymentOrderService::class)->create($this->payload(), User::factory()->admin()->create());

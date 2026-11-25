@@ -160,10 +160,35 @@ class PaymentOrderServiceTest extends TestCase
     #[Test]
     public function paying_needs_a_category_and_a_register(): void
     {
-        $order = $this->service->approve($this->service->create($this->data(['finance_account_id' => null]), $this->user), $this->user);
+        $order = $this->service->approve($this->service->create($this->data(), $this->user), $this->user);
+        PaymentOrder::whereKey($order->id)->update(['finance_account_id' => null]);
 
         $this->expectExceptionObject(new PaymentOrderException('flash.payment_order_missing_finance'));
-        $this->service->markPaid($order, $this->user);
+        $this->service->markPaid($order->fresh(), $this->user);
+    }
+
+    #[Test]
+    public function approving_needs_a_register(): void
+    {
+        $order = $this->service->create($this->data(['finance_account_id' => null]), $this->user);
+
+        try {
+            $this->service->approve($order, $this->user);
+            $this->fail('Approval without a register should be refused.');
+        } catch (PaymentOrderException $e) {
+            $this->assertSame('flash.payment_order_missing_finance', $e->flashKey);
+        }
+        $this->assertSame(PaymentOrder::DRAFT, $order->fresh()->status);
+    }
+
+    #[Test]
+    public function approving_needs_an_expense_category(): void
+    {
+        $income = FinanceCategory::updateOrCreate(['type' => 'income', 'name' => 'Dons'], ['is_active' => true]);
+        $order = $this->service->create($this->data(['finance_category_id' => $income->id]), $this->user);
+
+        $this->expectExceptionObject(new PaymentOrderException('flash.payment_order_missing_finance'));
+        $this->service->approve($order, $this->user);
     }
 
     #[Test]

@@ -130,8 +130,10 @@ them), copies and leftover tables.
   buttons.
 
 ### Import (shared button, see Import)
-- Suppliers: distinct `Fonctionnement.Fournisseur` with `BANQUE F`, `N° COMPTE (RIB) F`, plus
-  names from the other two tables; dedupe by normalized name.
+- Suppliers: distinct `Fonctionnement.Fournisseur` with `BANQUE F`, `N° COMPTE (RIB) F`;
+  dedupe by normalized name. As built, supplier names come from the transfer orders only — the
+  other two tables name mostly the treasurer, so their beneficiaries stay plain names (an
+  imported order is linked to a supplier when its beneficiary matches one).
 - Orders: `Fonctionnement` rows → legacy transfer orders; `الامر بالدفع` and `order de
   versement` merged on (date, amount) → one legacy order (source `payment` or `cash`).
   Status paid, no transaction created (history only — finance totals untouched).

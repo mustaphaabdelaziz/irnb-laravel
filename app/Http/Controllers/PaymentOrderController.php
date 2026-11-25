@@ -91,7 +91,7 @@ class PaymentOrderController extends Controller
     public function show(Request $request, PaymentOrder $paymentOrder): Response
     {
         $paymentOrder->load([
-            'financeCategory:id,name,name_ar,name_fr,name_en', 'financeAccount:id,name', 'boardMeeting:id,title,meeting_date,pv_number', 'transaction:id,amount,transaction_date',
+            'financeCategory:id,name,name_ar,name_fr,name_en', 'financeAccount:id,name', 'boardMeeting:id,title,meeting_date,pv_number', 'transaction:id,amount,transaction_date,archived',
             'createdBy:id,name,firstname,lastname', 'approvedBy:id,name,firstname,lastname', 'cancelledBy:id,name,firstname,lastname',
         ]);
         $user = $request->user();

@@ -81,6 +81,8 @@ const cancel = () => cancelForm.post(route('payment-orders.cancel', props.order.
                 <p v-if="order.transaction" class="mt-5 text-sm">
                     {{ t('po.expense_link') }}
                     <Link :href="route('transactions.show', order.transaction.id)" class="font-semibold text-primary-600 hover:underline dark:text-primary-300"><bdi dir="ltr">#{{ order.transaction.id }}</bdi></Link>
+                    <span class="ms-2 tabular-nums text-slate-600 dark:text-slate-300"><bdi dir="ltr">{{ formatMoney(order.transaction.amount) }}</bdi></span>
+                    <Badge v-if="order.transaction.archived" :label="t('po.expense_cancelled')" color="rose" class="ms-2" />
                 </p>
                 <p v-if="order.status === 'draft'" class="mt-5 rounded-lg bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-500/10 dark:text-amber-200">
                     {{ t('po.draft_hint') }}

@@ -39,6 +39,16 @@ class PaymentOrderPagesTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->where('paymentOrder.id', $order->id)
                 ->where('paymentOrder.reference', $order->reference));
+
+        // The order page shows the expense's amount, and says when the expense was cancelled.
+        $this->get(route('payment-orders.show', $order))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('order.transaction.id', $transaction->id)
+                ->where('order.transaction.amount', '12300.00')
+                ->where('order.transaction.archived', false));
+        $transaction->forceFill(['archived' => true])->save();
+        $this->get(route('payment-orders.show', $order))
+            ->assertInertia(fn (Assert $page) => $page->where('order.transaction.archived', true));
     }
 
     #[Test]

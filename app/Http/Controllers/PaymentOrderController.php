@@ -9,6 +9,7 @@ use App\Models\BoardRole;
 use App\Models\FinanceAccount;
 use App\Models\FinanceCategory;
 use App\Models\PaymentOrder;
+use App\Models\PurchaseOrder;
 use App\Models\Supplier;
 use App\Models\Transaction;
 use App\Models\User;
@@ -92,6 +93,7 @@ class PaymentOrderController extends Controller
     {
         $paymentOrder->load([
             'financeCategory:id,name,name_ar,name_fr,name_en', 'financeAccount:id,name', 'boardMeeting:id,title,meeting_date,pv_number', 'transaction:id,amount,transaction_date,archived',
+            'purchaseOrder:id,year,number,is_legacy,legacy_reference',
             'createdBy:id,name,firstname,lastname', 'approvedBy:id,name,firstname,lastname', 'cancelledBy:id,name,firstname,lastname',
         ]);
         $user = $request->user();
@@ -116,7 +118,7 @@ class PaymentOrderController extends Controller
             return redirect()->route('payment-orders.show', $paymentOrder)->with('error', 'flash.payment_order_locked');
         }
 
-        return Inertia::render('PaymentOrders/Edit', ['order' => $paymentOrder, ...$this->formOptions()]);
+        return Inertia::render('PaymentOrders/Edit', ['order' => $paymentOrder, ...$this->formOptions($paymentOrder)]);
     }
 
     public function update(SavePaymentOrderRequest $request, PaymentOrder $paymentOrder): RedirectResponse
@@ -184,7 +186,7 @@ class PaymentOrderController extends Controller
     }
 
     /** @return array<string, mixed> */
-    private function formOptions(): array
+    private function formOptions(?PaymentOrder $current = null): array
     {
         // A role's typed label first (custom roles), else its built-in translation — never the raw name.
         $roleLabels = BoardRole::query()->whereNotNull('label')->where('label', '!=', '')->pluck('label', 'name');
@@ -200,6 +202,14 @@ class PaymentOrderController extends Controller
                 ->map(fn (BoardMember $m) => ['id' => $m->id, 'name' => $m->name, 'role' => self::roleLabel($m->role, $roleLabels)]),
             'boardMeetings' => BoardMeeting::query()->whereNull('cancelled_at')->orderByDesc('meeting_date')->limit(200)
                 ->get(['id', 'title', 'meeting_date', 'pv_number']),
+            // Received purchase orders still free for a payment order (plus the one this draft holds).
+            'purchaseOrders' => PurchaseOrder::query()->linkable(null, $current?->id)
+                ->with('lines:id,purchase_order_id,amount,unit_price')
+                ->orderByDesc('year')->orderByDesc('number')->limit(200)
+                ->get(['id', 'year', 'number', 'is_legacy', 'legacy_reference', 'supplier_id'])
+                ->map(fn (PurchaseOrder $po) => [
+                    'id' => $po->id, 'reference' => $po->reference, 'supplier_id' => $po->supplier_id, 'total' => $po->total(),
+                ])->values(),
         ];
     }
 }

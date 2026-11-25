@@ -844,6 +844,7 @@
     "flash.payment_order_not_draft": "المصادقة ممكنة على المسودات فقط.",
     "flash.payment_order_not_expense": "أوامر الدفع للنفقات فقط.",
     "flash.payment_order_paid": "تم تسجيل الدفع وإنشاء النفقة.",
+    "flash.payment_order_purchase_order_unavailable": "سند الطلب هذا غير متاح: يجب أن يكون مستلَمًا، من نفس المورد، وبلا أمر دفع آخر.",
     "flash.payment_order_updated": "تم تحديث أمر الدفع.",
     "flash.payment_order_year_locked": "يبقى تاريخ الأمر في سنة ترقيمه.",
     "flash.status_change_deleted": "تم حذف السطر.",

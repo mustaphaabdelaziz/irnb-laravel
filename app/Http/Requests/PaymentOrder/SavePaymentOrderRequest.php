@@ -3,6 +3,8 @@
 namespace App\Http\Requests\PaymentOrder;
 
 use App\Models\PaymentOrder;
+use App\Models\PurchaseOrder;
+use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -55,6 +57,16 @@ class SavePaymentOrderRequest extends FormRequest
             'invoice_date' => ['nullable', 'date'],
             'board_meeting_id' => ['nullable', 'integer', Rule::exists('board_meetings', 'id')],
             'observation' => ['nullable', 'string', 'max:2000'],
+            // A received purchase order of the same supplier with no other active payment order.
+            'purchase_order_id' => ['nullable', 'integer', function (string $attribute, mixed $value, Closure $fail) use ($order) {
+                $supplierId = $this->input('beneficiary_type') === 'supplier' ? (int) $this->input('beneficiary_id') : 0;
+                $linkable = PurchaseOrder::query()->whereKey((int) $value)
+                    ->linkable($supplierId, $order instanceof PaymentOrder ? $order->id : null)
+                    ->exists();
+                if (! $linkable) {
+                    $fail(__('validation.purchase_order_unavailable'));
+                }
+            }],
         ];
     }
 }

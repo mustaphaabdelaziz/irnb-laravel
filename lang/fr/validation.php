@@ -175,6 +175,7 @@ return [
     'branch_code_locked' => "Ce code ne peut plus changer : des numéros d'adhérent l'utilisent.",
     'equipment_expense_needs_price' => 'Saisissez le prix unitaire pour enregistrer la dépense.',
     'equipment_source_required' => 'Choisissez la provenance.',
+    'purchase_order_unavailable' => "Ce bon de commande n'est pas disponible : il doit être reçu, du même fournisseur, sans autre ordre de paiement.",
     'branch_code_needs_latin' => "Saisissez le code de la section en lettres latines (ex. HB) : le nom n'en contient aucune.",
     'category_code_needs_latin' => "Saisissez le code de la catégorie en lettres latines (ex. BALL) : le nom n'en contient aucune.",
 

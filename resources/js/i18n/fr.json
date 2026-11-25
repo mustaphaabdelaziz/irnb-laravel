@@ -844,6 +844,7 @@
     "flash.payment_order_not_draft": "Seul un brouillon peut être approuvé.",
     "flash.payment_order_not_expense": "Les ordres de paiement concernent les dépenses.",
     "flash.payment_order_paid": "Paiement enregistré, dépense créée.",
+    "flash.payment_order_purchase_order_unavailable": "Ce bon de commande n'est pas disponible : il doit être reçu, du même fournisseur, sans autre ordre de paiement.",
     "flash.payment_order_updated": "Ordre de paiement mis à jour.",
     "flash.payment_order_year_locked": "La date reste dans l'année de numérotation de l'ordre.",
     "flash.status_change_deleted": "Ligne supprimée.",

@@ -12,6 +12,7 @@ return [
     'branch_code_locked' => "This code can't change: membership IDs already use it.",
     'equipment_expense_needs_price' => 'Enter the unit price to record the expense.',
     'equipment_source_required' => 'Choose where the stock came from.',
+    'purchase_order_unavailable' => 'This purchase order is not available: it must be received, from the same supplier, with no other payment order.',
     'branch_code_needs_latin' => 'Type the branch code in Latin letters (e.g. HB): the name has none.',
     'category_code_needs_latin' => 'Type the category code in Latin letters (e.g. BALL): the name has none.',
 

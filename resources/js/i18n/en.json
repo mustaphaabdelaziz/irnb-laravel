@@ -844,6 +844,7 @@
     "flash.payment_order_not_draft": "Only a draft can be approved.",
     "flash.payment_order_not_expense": "Payment orders are for expenses only.",
     "flash.payment_order_paid": "Payment recorded, expense created.",
+    "flash.payment_order_purchase_order_unavailable": "This purchase order is not available: it must be received, from the same supplier, with no other payment order.",
     "flash.payment_order_updated": "Payment order updated.",
     "flash.payment_order_year_locked": "The date must stay in the order's numbering year.",
     "flash.status_change_deleted": "Line deleted.",

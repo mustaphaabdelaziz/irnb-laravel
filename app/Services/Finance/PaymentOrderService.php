@@ -3,8 +3,10 @@
 namespace App\Services\Finance;
 
 use App\Exceptions\PaymentOrderException;
+use App\Models\EquipmentItem;
 use App\Models\FinanceCategory;
 use App\Models\PaymentOrder;
+use App\Models\PurchaseOrder;
 use App\Models\Supplier;
 use App\Models\Transaction;
 use App\Models\User;
@@ -35,6 +37,7 @@ final class PaymentOrderService
     {
         return YearlySequence::retrying(fn () => DB::transaction(function () use ($data, $by) {
             $year = Carbon::parse($data['order_date'])->year;
+            self::claimPurchaseOrder($data, null);
             $order = PaymentOrder::create([
                 ...Arr::except($data, self::STATE_COLUMNS),
                 'year' => $year,
@@ -61,6 +64,7 @@ final class PaymentOrderService
         }
 
         return DB::transaction(function () use ($order, $data, $by) {
+            self::claimPurchaseOrder($data, $order->id);
             $order->update(Arr::except($data, self::STATE_COLUMNS));
             ActivityRecorder::record($by, ActivityAction::PAYMENT_ORDER_UPDATED, $order, ['reference' => $order->reference]);
 
@@ -144,12 +148,39 @@ final class PaymentOrderService
             ]);
 
             PaymentOrder::whereKey($order->id)->update(['transaction_id' => $transaction->id]);
+            // Money is recorded once, here: the equipment received from the linked
+            // purchase order now points to this expense (lots already linked stay).
+            if ($order->purchase_order_id !== null) {
+                EquipmentItem::where('purchase_order_id', $order->purchase_order_id)
+                    ->whereNull('purchase_transaction_id')
+                    ->update(['purchase_transaction_id' => $transaction->id]);
+            }
             ActivityRecorder::record($by, ActivityAction::PAYMENT_ORDER_PAID, $order, [
                 'amount' => (float) $order->amount, 'reference' => $order->reference,
             ]);
 
             return $order->fresh();
         });
+    }
+
+    /**
+     * A payment order may name a received purchase order of its own supplier
+     * that has no other active payment order. The claim is atomic, so two
+     * orders saved at the same instant cannot both take it.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private static function claimPurchaseOrder(array $data, ?int $exceptPaymentOrderId): void
+    {
+        $purchaseOrderId = $data['purchase_order_id'] ?? null;
+        if ($purchaseOrderId === null || $purchaseOrderId === '') {
+            return;
+        }
+        $supplierId = ($data['beneficiary_type'] ?? null) === 'supplier' ? (int) ($data['beneficiary_id'] ?? 0) : 0;
+
+        if (! PurchaseOrder::claimForPaymentOrder((int) $purchaseOrderId, $supplierId, $exceptPaymentOrderId)) {
+            throw new PaymentOrderException('flash.payment_order_purchase_order_unavailable');
+        }
     }
 
     /** An order is approved and paid only with an expense category and a register. */

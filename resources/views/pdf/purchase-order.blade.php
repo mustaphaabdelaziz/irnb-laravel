@@ -3,7 +3,11 @@
     $money = fn ($value) => number_format((float) $value, 2, ',', ' ').' '.$club['currency'];
     $supplier = $order->supplier;
     // Free text without Arabic letters keeps its own left-to-right order inside the RTL page.
-    $T = fn (?string $v) => new \Illuminate\Support\HtmlString(preg_match('/\p{Arabic}/u', (string) $v) === 0 ? '<bdo dir="ltr">'.nl2br(e($v)).'</bdo>' : nl2br(e($v)));
+    // Line breaks stay outside the bdo (mPDF does not grow the row for a <br> inside it), so each line is wrapped on its own.
+    $T = fn (?string $v) => new \Illuminate\Support\HtmlString(implode('<br />', array_map(
+        fn (string $line) => preg_match('/\p{Arabic}/u', $line) === 0 ? '<bdo dir="ltr">'.e($line).'</bdo>' : e($line),
+        preg_split('/\r\n|\r|\n/', (string) $v)
+    )));
 @endphp
 <!DOCTYPE html>
 <html>

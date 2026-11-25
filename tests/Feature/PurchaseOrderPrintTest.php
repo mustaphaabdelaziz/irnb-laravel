@@ -97,7 +97,7 @@ class PurchaseOrderPrintTest extends TestCase
             UiLang::get('pur.pdf.title', null, 'fr'), '03/2026', '25/11/2026', 'Test Sport Shop', '12 rue des Sports, Testville', '0550000000',
             'Section football', 'Livraison au club', UiLang::get('cheque', null, 'fr'), 'Ballon taille 5', 'Gonfleur',
             '1 500,00', '15 000,00', '16 500,00', AmountInWords::format(16500.0, 'fr'),
-            'Livrer avant le match<br />', 'Président Test', 'Trésorier Test',
+            'Livrer avant le match</bdo><br /><bdo dir="ltr">Appeler la veille','Président Test', 'Trésorier Test',
         ] as $text) {
             $this->assertStringContainsString($text, $seen['html'], $text);
         }
@@ -140,6 +140,7 @@ class PurchaseOrderPrintTest extends TestCase
         $this->assertTrue($seen['rtl']);
         $this->assertStringContainsString('<bdo dir="ltr">12 rue des Sports, Testville</bdo>', $seen['html']);
         $this->assertStringContainsString('<td>كرة قدم</td>', $seen['html']);
+        $this->assertStringContainsString('<bdo dir="ltr">Livrer avant le match</bdo><br /><bdo dir="ltr">Appeler la veille</bdo>', $seen['html']);
         $this->assertStringContainsString(UiLang::get('pur.pdf.draft', null, 'ar'), $seen['html']);
     }
 

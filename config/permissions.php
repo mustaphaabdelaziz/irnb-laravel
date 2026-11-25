@@ -16,6 +16,7 @@ return [
         'games' => 'games',
         'subscriptions' => 'subscriptions',
         'transactions' => 'transactions',
+        'payment-orders' => 'payment_orders',
         'finance' => 'finance',
         'reports' => 'reports',
         'equipment' => 'equipment',
@@ -124,6 +125,12 @@ return [
         // Printing a ticket or checking a paper receipt only reads (the print log is a side record).
         'transactions.ticket' => ['transactions', 'view'],
         'receipts.verify' => ['transactions', 'view'],
+        // Approving is its own right (Role::EXTRA_ACTIONS); paying and cancelling are edits.
+        'payment-orders.approve' => ['payment_orders', 'approve'],
+        'payment-orders.pay' => ['payment_orders', 'edit'],
+        'payment-orders.cancel' => ['payment_orders', 'edit'],
+        // Made from the expense page, but it creates a payment order.
+        'transactions.payment-order.store' => ['payment_orders', 'add'],
         'reports.financial' => ['reports', 'view'],
         'finance.index' => ['finance', 'view'],
         'finance.settings' => ['finance', 'edit'],

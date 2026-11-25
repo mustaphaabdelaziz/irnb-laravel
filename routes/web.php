@@ -71,6 +71,7 @@ use App\Http\Controllers\PlayerStatusController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\RegistrationStatusChangeController;
 use App\Http\Controllers\PlayerSubscriptionController;
+use App\Http\Controllers\PaymentOrderController;
 use App\Http\Controllers\PlayerTransactionController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProfileController;
@@ -279,6 +280,13 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
     Route::get('/receipts/verify', [ReceiptController::class, 'verify'])->name('receipts.verify');
     // The uploaded receipt file — private: this (auth + transactions/view) is the only way to read it.
     Route::get('/transactions/{transaction}/receipt-file', [TransactionController::class, 'receiptFile'])->name('transactions.receipt-file.show');
+
+    // Payment orders (الأمر بالدفع): never deleted — cancelled instead, so the routes have no destroy.
+    Route::resource('payment-orders', PaymentOrderController::class)->except(['destroy'])->parameters(['payment-orders' => 'paymentOrder']);
+    Route::post('/payment-orders/{paymentOrder}/approve', [PaymentOrderController::class, 'approve'])->name('payment-orders.approve');
+    Route::post('/payment-orders/{paymentOrder}/pay', [PaymentOrderController::class, 'pay'])->name('payment-orders.pay');
+    Route::post('/payment-orders/{paymentOrder}/cancel', [PaymentOrderController::class, 'cancel'])->name('payment-orders.cancel');
+    Route::post('/transactions/{transaction}/payment-order', [PaymentOrderController::class, 'fromExpense'])->name('transactions.payment-order.store');
 
     // Finance — year-grouped dashboard (view open to approved members)
     Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');

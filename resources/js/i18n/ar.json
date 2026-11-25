@@ -872,7 +872,7 @@
     "flash.status_change_saved": "تم حفظ السطر.",
     "flash.supplier_created": "تمت إضافة المورد.",
     "flash.supplier_deleted": "تم حذف المورد.",
-    "flash.supplier_in_use": "هذا المورد مستعمل في عمليات أو أوامر دفع: عطّله بدل حذفه.",
+    "flash.supplier_in_use": "هذا المورد مستعمل في عمليات أو أوامر دفع أو سندات طلب: عطّله بدل حذفه.",
     "flash.supplier_updated": "تم تحديث المورد.",
     "flash.training_group_deleted": "تم حذف الفوج.",
     "flash.training_group_in_use": "لا يمكن حذف هذا الفوج: يستعمله سطر في التوقيت الأسبوعي أو حصة.",

@@ -872,7 +872,7 @@
     "flash.status_change_saved": "Ligne enregistrée.",
     "flash.supplier_created": "Fournisseur ajouté.",
     "flash.supplier_deleted": "Fournisseur supprimé.",
-    "flash.supplier_in_use": "Ce fournisseur est utilisé par des opérations ou des ordres de paiement : désactivez-le plutôt.",
+    "flash.supplier_in_use": "Ce fournisseur est utilisé par des opérations, des ordres de paiement ou des bons de commande : désactivez-le plutôt.",
     "flash.supplier_updated": "Fournisseur mis à jour.",
     "flash.training_group_deleted": "Groupe supprimé.",
     "flash.training_group_in_use": "Ce groupe ne peut pas être supprimé : une ligne de l'horaire hebdomadaire ou une séance l'utilise.",

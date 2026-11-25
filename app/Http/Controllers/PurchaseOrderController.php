@@ -160,7 +160,7 @@ class PurchaseOrderController extends Controller
     public function receive(Request $request, PurchaseOrder $purchaseOrder): RedirectResponse
     {
         $data = $request->validate([
-            'received_date' => ['required', 'date'],
+            'received_date' => ['required', 'date', 'after_or_equal:'.$purchaseOrder->order_date->toDateString(), 'before_or_equal:today'],
             'to_stock' => ['boolean'],
             'payment_order' => ['boolean'],
         ]);

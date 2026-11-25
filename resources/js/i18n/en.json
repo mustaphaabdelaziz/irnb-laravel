@@ -872,7 +872,7 @@
     "flash.status_change_saved": "Line saved.",
     "flash.supplier_created": "Supplier added.",
     "flash.supplier_deleted": "Supplier deleted.",
-    "flash.supplier_in_use": "This supplier is used by transactions or payment orders: deactivate it instead.",
+    "flash.supplier_in_use": "This supplier is used by transactions, payment orders or purchase orders: deactivate it instead.",
     "flash.supplier_updated": "Supplier updated.",
     "flash.training_group_deleted": "Group deleted.",
     "flash.training_group_in_use": "This group cannot be deleted: a weekly schedule line or a session uses it.",

@@ -35,6 +35,8 @@ class PurchaseOrder extends Model
         'created_by', 'sent_by', 'sent_at', 'received_by', 'received_at', 'cancelled_by', 'cancelled_at',
     ];
 
+    protected $hidden = ['lock_version'];
+
     protected $appends = ['reference'];
 
     protected function casts(): array
@@ -99,6 +101,10 @@ class PurchaseOrder extends Model
         $query->where('purchase_orders.status', self::RECEIVED)
             ->where('purchase_orders.is_legacy', false)
             ->whereNotNull('purchase_orders.supplier_id')
+            // Every line priced and a positive total: no payment order for an unpriced order.
+            ->whereHas('lines')
+            ->whereDoesntHave('lines', fn (Builder $q) => $q->whereNull('purchase_order_lines.unit_price'))
+            ->whereRaw('(select coalesce(sum(pol.amount), 0) from purchase_order_lines pol where pol.purchase_order_id = purchase_orders.id) > 0')
             ->when($supplierId !== null, fn (Builder $q) => $q->where('purchase_orders.supplier_id', $supplierId))
             ->whereDoesntHave('paymentOrders', fn (Builder $q) => $q
                 ->where('payment_orders.status', '!=', PaymentOrder::CANCELLED)

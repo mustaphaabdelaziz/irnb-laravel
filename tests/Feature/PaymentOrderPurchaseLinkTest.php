@@ -194,6 +194,27 @@ class PaymentOrderPurchaseLinkTest extends TestCase
     }
 
     #[Test]
+    public function an_unpriced_received_purchase_order_cannot_be_linked(): void
+    {
+        $unpriced = $this->purchaseOrder(PurchaseOrder::RECEIVED, null, 1);
+        $unpriced->lines()->create(['designation' => 'Chasuble', 'quantity' => 5, 'unit_price' => null, 'amount' => null, 'sort_order' => 2]);
+        $empty = PurchaseOrder::create(['year' => 2026, 'number' => 2, 'status' => PurchaseOrder::RECEIVED, 'order_date' => '2026-11-20', 'supplier_id' => $this->supplier->id]);
+        $zero = PurchaseOrder::create(['year' => 2026, 'number' => 3, 'status' => PurchaseOrder::RECEIVED, 'order_date' => '2026-11-20', 'supplier_id' => $this->supplier->id]);
+        $zero->lines()->create(['designation' => 'Offert', 'quantity' => 2, 'unit_price' => 0, 'amount' => 0, 'sort_order' => 1]);
+
+        $this->actingAs($this->admin)->get(route('payment-orders.create'))
+            ->assertInertia(fn (Assert $page) => $page->has('purchaseOrders', 0));
+
+        foreach ([$unpriced, $empty, $zero] as $order) {
+            $this->post(route('payment-orders.store'), $this->data(['purchase_order_id' => $order->id]))
+                ->assertSessionHasErrors('purchase_order_id');
+            $this->assertUnavailable(fn () => $this->service->create($this->data(['purchase_order_id' => $order->id]), $this->admin));
+            $this->assertFalse(PurchaseOrder::claimForPaymentOrder($order->id, $this->supplier->id));
+        }
+        $this->assertSame(0, PaymentOrder::count());
+    }
+
+    #[Test]
     public function the_payment_order_page_links_back_to_its_purchase_order(): void
     {
         $purchaseOrder = $this->purchaseOrder();

@@ -158,9 +158,9 @@ class PurchaseOrderHttpTest extends TestCase
         $draft = $this->draft();
         $sent = $this->sent();
 
-        $this->actingAs($admin)->post(route('purchase-orders.receive', $draft), ['received_date' => '2026-11-27'])
+        $this->actingAs($admin)->post(route('purchase-orders.receive', $draft), ['received_date' => '2026-11-25'])
             ->assertSessionHas('error', 'flash.purchase_order_not_sent');
-        $this->post(route('purchase-orders.receive', $sent), ['received_date' => '2026-11-27'])
+        $this->post(route('purchase-orders.receive', $sent), ['received_date' => '2026-11-25'])
             ->assertSessionHas('success', 'flash.purchase_order_received');
         $this->assertSame(PurchaseOrder::RECEIVED, $sent->fresh()->status);
 
@@ -170,17 +170,34 @@ class PurchaseOrderHttpTest extends TestCase
     }
 
     #[Test]
+    public function the_received_date_stays_between_the_order_date_and_today(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $sent = $this->sent();
+
+        $this->actingAs($admin)->post(route('purchase-orders.receive', $sent), ['received_date' => '2026-11-24'])
+            ->assertSessionHasErrors('received_date');
+        $this->post(route('purchase-orders.receive', $sent), ['received_date' => '2026-11-26'])
+            ->assertSessionHasErrors('received_date');
+        $this->assertSame(PurchaseOrder::SENT, $sent->fresh()->status);
+
+        $this->post(route('purchase-orders.receive', $sent), ['received_date' => '2026-11-25'])
+            ->assertSessionHasNoErrors();
+        $this->assertSame(PurchaseOrder::RECEIVED, $sent->fresh()->status);
+    }
+
+    #[Test]
     public function receiving_into_stock_needs_the_equipment_receive_right(): void
     {
         $order = $this->sent();
         $buyer = $this->userWith(['purchase_orders' => ['view', 'edit']]);
         $storekeeper = $this->userWith(['purchase_orders' => ['view', 'edit'], 'equipment' => ['view', 'edit']]);
 
-        $this->actingAs($buyer)->post(route('purchase-orders.receive', $order), ['received_date' => '2026-11-27', 'to_stock' => true])
+        $this->actingAs($buyer)->post(route('purchase-orders.receive', $order), ['received_date' => '2026-11-25', 'to_stock' => true])
             ->assertForbidden();
         $this->assertSame(PurchaseOrder::SENT, $order->fresh()->status);
 
-        $this->actingAs($storekeeper)->post(route('purchase-orders.receive', $order), ['received_date' => '2026-11-27', 'to_stock' => true])
+        $this->actingAs($storekeeper)->post(route('purchase-orders.receive', $order), ['received_date' => '2026-11-25', 'to_stock' => true])
             ->assertSessionHas('success', 'flash.purchase_order_received');
         $this->assertSame(1, EquipmentItem::where('purchase_order_id', $order->id)->count());
     }
@@ -192,10 +209,10 @@ class PurchaseOrderHttpTest extends TestCase
         $buyer = $this->userWith(['purchase_orders' => ['view', 'edit']]);
         $treasurer = $this->userWith(['purchase_orders' => ['view', 'edit'], 'payment_orders' => ['view', 'add']]);
 
-        $this->actingAs($buyer)->post(route('purchase-orders.receive', $order), ['received_date' => '2026-11-27', 'payment_order' => true])
+        $this->actingAs($buyer)->post(route('purchase-orders.receive', $order), ['received_date' => '2026-11-25', 'payment_order' => true])
             ->assertForbidden();
 
-        $this->actingAs($treasurer)->post(route('purchase-orders.receive', $order), ['received_date' => '2026-11-27', 'payment_order' => true])
+        $this->actingAs($treasurer)->post(route('purchase-orders.receive', $order), ['received_date' => '2026-11-25', 'payment_order' => true])
             ->assertSessionHas('success', 'flash.purchase_order_received');
         $this->assertSame($order->id, PaymentOrder::firstOrFail()->purchase_order_id);
     }

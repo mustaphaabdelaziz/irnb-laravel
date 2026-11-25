@@ -32,7 +32,7 @@ class PaymentOrderController extends Controller
             'q' => ['nullable', 'string', 'max:100'],
         ]);
 
-        $like = '%'.addcslashes((string) ($filters['q'] ?? ''), '%_\\').'%';
+        $like = '%'.($filters['q'] ?? '').'%';
         $query = PaymentOrder::query()
             ->when($filters['year'] ?? null, fn ($q, $year) => $q->where('year', $year))
             ->when($filters['status'] ?? null, fn ($q, $status) => $q->where('status', $status))

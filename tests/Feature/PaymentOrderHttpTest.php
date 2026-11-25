@@ -134,6 +134,25 @@ class PaymentOrderHttpTest extends TestCase
     }
 
     #[Test]
+    public function the_register_search_matches_text_and_order_numbers(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $service = app(PaymentOrderService::class);
+        foreach (range(1, 7) as $n) {
+            $service->create($this->payload(['subject' => $n === 3 ? 'Maillots U15' : 'Ballons '.str_repeat('x', $n)]), $admin);
+        }
+
+        $this->actingAs($admin)->get(route('payment-orders.index', ['q' => 'maillots']))
+            ->assertInertia(fn (Assert $page) => $page->has('orders.data', 1)->where('orders.data.0.reference', '03/2026'));
+        $this->get(route('payment-orders.index', ['q' => '7']))
+            ->assertInertia(fn (Assert $page) => $page->has('orders.data', 1)->where('orders.data.0.reference', '07/2026'));
+        $this->get(route('payment-orders.index', ['q' => '07/2026']))
+            ->assertInertia(fn (Assert $page) => $page->has('orders.data', 1)->where('orders.data.0.reference', '07/2026'));
+        $this->get(route('payment-orders.index', ['q' => '07/2025']))
+            ->assertInertia(fn (Assert $page) => $page->has('orders.data', 0));
+    }
+
+    #[Test]
     public function the_show_page_tells_what_the_viewer_may_do(): void
     {
         $order = app(PaymentOrderService::class)->create($this->payload(), User::factory()->admin()->create());

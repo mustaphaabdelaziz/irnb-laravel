@@ -58,10 +58,7 @@ const cancel = () => cancelForm.post(route('payment-orders.cancel', props.order.
                     <Badge :label="statusLabel('payment_order', order.status)" :color="STATUS_COLOR[order.status]" />
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
-                    <!-- The print route arrives with the PDFs; hidden until it exists. -->
-                    <template v-if="route().has('payment-orders.print')">
-                        <IconButton v-for="p in prints" :key="p" :href="route('payment-orders.print', { paymentOrder: order.id, form: p })" external target="_blank" icon="print" :label="t('po.print.' + p)" />
-                    </template>
+                    <IconButton v-for="p in prints" :key="p" :href="route('payment-orders.print', { paymentOrder: order.id, form: p })" external target="_blank" icon="print" :label="t('po.print.' + p)" />
                     <IconButton v-if="can.edit" :href="route('payment-orders.edit', order.id)" icon="pencil" :label="t('edit')" />
                     <IconButton v-if="can.approve" icon="check" :label="t('perm_approve')" variant="primary" @click="approve" />
                     <IconButton v-if="can.pay" icon="money" :label="t('po.mark_paid')" variant="primary" @click="payOpen = true" />

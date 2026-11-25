@@ -129,6 +129,8 @@ return [
         'payment-orders.approve' => ['payment_orders', 'approve'],
         'payment-orders.pay' => ['payment_orders', 'edit'],
         'payment-orders.cancel' => ['payment_orders', 'edit'],
+        // Printing an order only reads it.
+        'payment-orders.print' => ['payment_orders', 'view'],
         // Made from the expense page, but it creates a payment order.
         'transactions.payment-order.store' => ['payment_orders', 'add'],
         'reports.financial' => ['reports', 'view'],

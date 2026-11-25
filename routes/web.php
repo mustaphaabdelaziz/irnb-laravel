@@ -72,6 +72,7 @@ use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\RegistrationStatusChangeController;
 use App\Http\Controllers\PlayerSubscriptionController;
 use App\Http\Controllers\PaymentOrderController;
+use App\Http\Controllers\PaymentOrderPrintController;
 use App\Http\Controllers\PlayerTransactionController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProfileController;
@@ -286,6 +287,8 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
     Route::post('/payment-orders/{paymentOrder}/approve', [PaymentOrderController::class, 'approve'])->name('payment-orders.approve');
     Route::post('/payment-orders/{paymentOrder}/pay', [PaymentOrderController::class, 'pay'])->name('payment-orders.pay');
     Route::post('/payment-orders/{paymentOrder}/cancel', [PaymentOrderController::class, 'cancel'])->name('payment-orders.cancel');
+    Route::get('/payment-orders/{paymentOrder}/print/{form}', [PaymentOrderPrintController::class, 'show'])
+        ->whereIn('form', ['payment', 'transfer', 'cash'])->name('payment-orders.print');
     Route::post('/transactions/{transaction}/payment-order', [PaymentOrderController::class, 'fromExpense'])->name('transactions.payment-order.store');
 
     // Finance — year-grouped dashboard (view open to approved members)

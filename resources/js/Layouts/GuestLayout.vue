@@ -14,6 +14,7 @@ const { appName, appShortName } = useClubIdentity();
 // A club that set neither a logo nor a name gets the full ASIREM logo instead
 // of a letter tile over the product name; the footer would then repeat it.
 const productOnly = computed(() => !appLogo.value && appShortName.value === PRODUCT_NAME);
+const appVersion = computed(() => (page.props.appVersion ? `v ${page.props.appVersion}` : null));
 </script>
 
 <template>
@@ -56,6 +57,7 @@ const productOnly = computed(() => !appLogo.value && appShortName.value === PROD
                 <img :src="PRODUCT_MARK.dark" alt="" class="hidden h-5 w-5 object-contain dark:block" />
                 <span><span class="font-bold text-slate-700 dark:text-slate-200">{{ PRODUCT_NAME }}</span> · {{ t('product_tagline') }}</span>
             </p>
+            <p v-if="appVersion" dir="ltr" class="text-center text-[0.7rem] tabular-nums text-slate-400 dark:text-slate-500" :class="productOnly ? 'mt-6' : 'mt-1'">{{ appVersion }}</p>
         </div>
     </div>
 </template>

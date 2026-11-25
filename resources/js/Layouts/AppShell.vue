@@ -106,6 +106,7 @@ const isDesktop = computed(() => page.props.isDesktop ?? false);
 const currentLocale = computed(() => page.props.locale || 'en');
 const { appName, appShortName } = useClubIdentity();
 const appLogo = computed(() => page.props.branding?.logo ?? null);
+const appVersion = computed(() => (page.props.appVersion ? `v ${page.props.appVersion}` : null));
 
 const userInitial = computed(() => (user.value?.firstname || user.value?.name || '?').charAt(0).toUpperCase());
 const userRole = computed(() => (isAdmin.value ? t('administrator') : t('user')));
@@ -274,11 +275,15 @@ function switchLocale(code) {
                     </button>
                 </div>
                 <!-- The product under the club's own name. -->
-                <p class="flex items-center justify-center gap-1.5 text-[0.65rem] font-bold tracking-wider text-slate-400 dark:text-slate-500" :title="compact ? PRODUCT_NAME : null">
-                    <img :src="PRODUCT_MARK.light" alt="" class="h-4 w-4 object-contain dark:hidden" />
-                    <img :src="PRODUCT_MARK.dark" alt="" class="hidden h-4 w-4 object-contain dark:block" />
-                    <span v-if="!compact">{{ PRODUCT_NAME }}</span>
-                </p>
+                <div class="text-center" :title="compact ? [PRODUCT_NAME, appVersion].filter(Boolean).join(' ') : null">
+                    <p class="flex items-center justify-center gap-1.5 text-[0.65rem] font-bold tracking-wider text-slate-400 dark:text-slate-500">
+                        <img :src="PRODUCT_MARK.light" alt="" class="h-4 w-4 object-contain dark:hidden" />
+                        <img :src="PRODUCT_MARK.dark" alt="" class="hidden h-4 w-4 object-contain dark:block" />
+                        <span v-if="!compact">{{ PRODUCT_NAME }}</span>
+                    </p>
+                    <!-- Always shown, the narrow sidebar included, so anyone can read off the release. -->
+                    <p v-if="appVersion" dir="ltr" class="mt-0.5 whitespace-nowrap tabular-nums text-slate-400 dark:text-slate-500" :class="compact ? 'text-[0.55rem]' : 'text-[0.6rem]'">{{ compact ? page.props.appVersion : appVersion }}</p>
+                </div>
             </div>
         </aside>
 

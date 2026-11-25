@@ -51,6 +51,8 @@ class HandleInertiaRequests extends Middleware
             'currency' => fn () => ['code' => ClubCurrency::code(), 'symbol' => ClubCurrency::symbol()],
             // Gates desktop-only UI (the Backup page) — there is no folder picker on the web.
             'isDesktop' => (bool) config('nativephp-internal.running'),
+            // The release number, shown under the product name (NATIVEPHP_APP_VERSION).
+            'appVersion' => config('nativephp.version'),
             'appName' => ClubIdentity::name($config),
             'appShortName' => ClubIdentity::shortName($config),
             'branding' => $config->branding,

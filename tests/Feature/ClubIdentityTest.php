@@ -105,6 +105,21 @@ class ClubIdentityTest extends TestCase
     }
 
     #[Test]
+    public function every_page_gets_the_release_number_shown_under_the_product_name(): void
+    {
+        config(['nativephp.version' => '10.1.2']);
+
+        $this->actingAs($this->admin())
+            ->get(route('dashboard'))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('appVersion', '10.1.2'));
+
+        auth()->logout();
+
+        $this->get(route('login'))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('appVersion', '10.1.2'));
+    }
+
+    #[Test]
     public function the_server_rendered_title_uses_the_club_name_not_the_technical_app_name(): void
     {
         // config('app.name') names the desktop app's data folder and reads

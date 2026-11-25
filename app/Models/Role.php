@@ -23,14 +23,14 @@ class Role extends Model
     public const MODULE_GROUPS = [
         'members' => ['players', 'documents', 'attendance', 'subscriptions'],
         'competitions' => ['teams', 'competitions', 'games'],
-        'finance' => ['transactions', 'finance', 'reports'],
+        'finance' => ['transactions', 'payment_orders', 'finance', 'reports'],
         'equipment' => ['equipment', 'inventory'],
         'board' => ['board'],
         'social' => ['activities', 'literary_reports'],
         'config' => [
             'categories', 'branches', 'positions', 'player_statuses', 'document_types', 'jobs',
             'board_roles', 'board_committees', 'equipment_categories', 'storage_locations',
-            'game_formats', 'opponents', 'venues', 'activity_types',
+            'game_formats', 'opponents', 'venues', 'activity_types', 'suppliers',
         ],
         'system' => ['users', 'settings'],
     ];
@@ -39,18 +39,33 @@ class Role extends Model
     public const MODULES = [
         'players', 'documents', 'attendance', 'subscriptions',
         'teams', 'competitions', 'games',
-        'transactions', 'finance', 'reports',
+        'transactions', 'payment_orders', 'finance', 'reports',
         'equipment', 'inventory',
         'board',
         'activities', 'literary_reports',
         'categories', 'branches', 'positions', 'player_statuses', 'document_types', 'jobs',
         'board_roles', 'board_committees', 'equipment_categories', 'storage_locations',
-        'game_formats', 'opponents', 'venues', 'activity_types',
+        'game_formats', 'opponents', 'venues', 'activity_types', 'suppliers',
         'users', 'settings',
     ];
 
     /** Canonical actions per module. */
     public const ACTIONS = ['view', 'add', 'edit', 'delete'];
+
+    /**
+     * Actions only some modules have, after the canonical four. Approving a
+     * payment order is a separate right from editing it (owner, 2026-11-25):
+     * the accountant prepares, the president or treasurer approves.
+     */
+    public const EXTRA_ACTIONS = [
+        'payment_orders' => ['approve'],
+    ];
+
+    /** @return list<string> The actions a module can be granted. */
+    public static function actionsFor(string $module): array
+    {
+        return [...self::ACTIONS, ...(self::EXTRA_ACTIONS[$module] ?? [])];
+    }
 
     protected function casts(): array
     {
@@ -63,10 +78,15 @@ class Role extends Model
         ];
     }
 
-    /** Full matrix: every module granted every action. */
+    /** Full matrix: every module granted every action it has. */
     public static function allPermissions(): array
     {
-        return array_fill_keys(self::MODULES, self::ACTIONS);
+        $all = [];
+        foreach (self::MODULES as $module) {
+            $all[$module] = self::actionsFor($module);
+        }
+
+        return $all;
     }
 
     public function users(): HasMany

@@ -18,6 +18,7 @@ const props = defineProps({
     roles: { type: Array, default: () => [] },
     moduleGroups: { type: Object, default: () => ({}) },
     actions: { type: Array, default: () => [] },
+    extraActions: { type: Object, default: () => ({}) },
     canManageAccess: { type: Boolean, default: false },
 });
 
@@ -144,7 +145,7 @@ const hasErrors = computed(() => Object.keys(form.errors).length > 0);
                         </button>
 
                         <div v-if="showAdvanced" class="mt-3">
-                            <PermissionGrid v-model="form.permission_overrides.grant" data-help="ue-overrides-grid" :groups="moduleGroups" :actions="actions" />
+                            <PermissionGrid v-model="form.permission_overrides.grant" data-help="ue-overrides-grid" :groups="moduleGroups" :actions="actions" :extra-actions="extraActions" />
                             <p class="p-2 text-xs text-slate-400">{{ t('overrides_hint') }}</p>
                         </div>
                     </div>

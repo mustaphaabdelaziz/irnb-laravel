@@ -17,6 +17,7 @@ class RoleController extends Controller
             'roles' => Role::query()->withCount('users')->orderByDesc('is_system')->orderBy('key')->get(),
             'moduleGroups' => Role::MODULE_GROUPS,
             'actions' => Role::ACTIONS,
+            'extraActions' => Role::EXTRA_ACTIONS,
         ]);
     }
 
@@ -79,8 +80,8 @@ class RoleController extends Controller
                 if ($unknownModules !== []) {
                     $fail('Unknown module in permissions: '.implode(', ', $unknownModules));
                 }
-                foreach ((array) $value as $actions) {
-                    if (array_diff((array) $actions, Role::ACTIONS) !== []) {
+                foreach ((array) $value as $module => $actions) {
+                    if (array_diff((array) $actions, Role::actionsFor((string) $module)) !== []) {
                         $fail('Unknown action in permissions.');
                     }
                 }
@@ -96,7 +97,7 @@ class RoleController extends Controller
             if (! in_array($module, Role::MODULES, true)) {
                 continue;
             }
-            $actions = array_values(array_intersect(Role::ACTIONS, (array) $actions));
+            $actions = array_values(array_intersect(Role::actionsFor($module), (array) $actions));
             if ($actions !== []) {
                 $clean[$module] = $actions;
             }

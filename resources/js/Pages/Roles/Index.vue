@@ -15,6 +15,7 @@ const props = defineProps({
     roles: { type: Array, default: () => [] },
     moduleGroups: { type: Object, default: () => ({}) },
     actions: { type: Array, default: () => [] },
+    extraActions: { type: Object, default: () => ({}) },
 });
 
 const editing = ref(null);
@@ -91,7 +92,7 @@ function roleName(role) {
                 <InputError :message="form.errors.name || form.errors['name.en'] || form.errors['name.fr'] || form.errors['name.ar']" class="mt-1" />
                 <InputError :message="form.errors.permissions" class="mt-1" />
 
-                <PermissionGrid v-model="form.permissions" data-help="role-grid" :groups="moduleGroups" :actions="actions" class="mt-4" />
+                <PermissionGrid v-model="form.permissions" data-help="role-grid" :groups="moduleGroups" :actions="actions" :extra-actions="extraActions" class="mt-4" />
                 <label v-if="!editing?.is_system" data-help="role-own-teams" class="mt-4 flex items-start gap-2 text-sm text-slate-700 dark:text-slate-200">
                     <input v-model="form.own_teams_only" type="checkbox" class="mt-0.5 rounded border-slate-300 dark:border-slate-700" />
                     <span>

@@ -1,4 +1,5 @@
 <script setup>
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 /**
@@ -11,10 +12,15 @@ const props = defineProps({
     // Role::MODULE_GROUPS: { section: [module, …] }
     groups: { type: Object, default: () => ({}) },
     actions: { type: Array, default: () => [] },
+    // Role::EXTRA_ACTIONS: { module: ['approve'] } — rights only some modules have.
+    extraActions: { type: Object, default: () => ({}) },
 });
 const emit = defineEmits(['update:modelValue']);
 
 const { t } = useI18n();
+
+const hasExtras = computed(() => Object.keys(props.extraActions).length > 0);
+const columnCount = computed(() => props.actions.length + 1 + (hasExtras.value ? 1 : 0));
 
 // Section keys → the sidebar's own labels.
 const SECTION_LABELS = {
@@ -49,11 +55,12 @@ function toggle(module, action) {
                 <tr class="text-start text-slate-500 dark:text-slate-400">
                     <th class="p-2 text-start">{{ t('module') }}</th>
                     <th v-for="a in actions" :key="a" class="p-2 text-center">{{ t(a) }}</th>
+                    <th v-if="hasExtras" class="p-2 text-center">{{ t('perm_other') }}</th>
                 </tr>
             </thead>
             <tbody v-for="(modules, section) in groups" :key="section">
                 <tr class="bg-slate-50 dark:bg-slate-800/60">
-                    <th :colspan="actions.length + 1" class="px-2 py-1.5 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <th :colspan="columnCount" class="px-2 py-1.5 text-start text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                         {{ t(SECTION_LABELS[section] ?? section) }}
                     </th>
                 </tr>
@@ -62,6 +69,13 @@ function toggle(module, action) {
                     <td v-for="a in actions" :key="a" class="p-2 text-center">
                         <input type="checkbox" :checked="has(m, a)" :aria-label="`${t(m)} — ${t(a)}`" @change="toggle(m, a)"
                             class="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+                    </td>
+                    <td v-if="hasExtras" class="p-2 text-center">
+                        <label v-for="a in (extraActions[m] ?? [])" :key="a" class="inline-flex items-center gap-1 text-xs">
+                            <input type="checkbox" :checked="has(m, a)" :aria-label="`${t(m)} — ${t('perm_' + a)}`" @change="toggle(m, a)"
+                                class="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+                            {{ t('perm_' + a) }}
+                        </label>
                     </td>
                 </tr>
             </tbody>

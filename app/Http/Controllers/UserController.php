@@ -187,6 +187,7 @@ class UserController extends Controller
             'roles' => Role::orderByDesc('is_system')->orderBy('key')->get(['id', 'key', 'name', 'permissions']),
             'moduleGroups' => Role::MODULE_GROUPS,
             'actions' => Role::ACTIONS,
+            'extraActions' => Role::EXTRA_ACTIONS,
             'canManageAccess' => $request->user()->isSuperadmin(),
         ]);
     }

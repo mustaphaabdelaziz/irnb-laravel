@@ -152,6 +152,8 @@ class PaymentOrderController extends Controller
     /** "Create payment order" on an expense recorded without one. */
     public function fromExpense(Request $request, Transaction $transaction): RedirectResponse
     {
+        // The route checks payment_orders → add; the order copies the expense, so viewing it is needed too.
+        abort_unless($request->user()->hasPermission('transactions', 'view'), 403);
         $order = $this->orders->fromExpense($transaction, $request->user());
 
         return redirect()->route('payment-orders.show', $order)->with('success', 'flash.payment_order_created');

@@ -233,6 +233,23 @@ class PaymentOrderHttpTest extends TestCase
     }
 
     #[Test]
+    public function an_order_from_an_expense_needs_the_transactions_view_right_too(): void
+    {
+        $transaction = Transaction::create([
+            'title' => 'Impression', 'amount' => 12300, 'transaction_date' => '2026-10-12', 'transaction_type' => 'expense',
+            'finance_category_id' => $this->category->id, 'category' => 'equipment', 'status' => 'Paid',
+        ]);
+        $blind = $this->userWith(['payment_orders' => ['view', 'add']]);
+        $allowed = $this->userWith(['payment_orders' => ['view', 'add'], 'transactions' => ['view']]);
+
+        $this->actingAs($blind)->post(route('transactions.payment-order.store', $transaction))->assertForbidden();
+        $this->assertSame(0, PaymentOrder::count());
+
+        $this->actingAs($allowed)->post(route('transactions.payment-order.store', $transaction))
+            ->assertRedirect(route('payment-orders.show', PaymentOrder::firstOrFail()));
+    }
+
+    #[Test]
     public function there_is_no_delete_route(): void
     {
         $this->assertFalse(\Illuminate\Support\Facades\Route::has('payment-orders.destroy'));

@@ -72,8 +72,8 @@ const paymentDetails = computed(() => [
                 <div class="flex items-center gap-2">
                     <IconButton :href="route('transactions.ticket', transaction.id)" external target="_blank" icon="print" :label="t('receipts.print_ticket')" variant="primary" data-help="tx-print-ticket" />
                     <IconButton :href="route('transactions.receipt', transaction.id)" external target="_blank" icon="document" :label="t('receipts.print_a4')" data-help="tx-print-a4" />
-                    <IconButton v-if="paymentOrder" :href="route('payment-orders.show', paymentOrder.id)" icon="document" :label="t('po.title') + ' ' + paymentOrder.reference" data-help="tx-payment-order" />
-                    <IconButton v-else-if="transaction.transaction_type === 'expense' && can('payment_orders', 'add')" icon="plus" :label="t('po.create_from_expense')"
+                    <IconButton v-if="paymentOrder && can('payment_orders', 'view')" :href="route('payment-orders.show', paymentOrder.id)" icon="document" :label="t('po.title') + ' ' + paymentOrder.reference" data-help="tx-payment-order" />
+                    <IconButton v-else-if="!paymentOrder && transaction.transaction_type === 'expense' && !transaction.archived && can('payment_orders', 'add')" icon="plus" :label="t('po.create_from_expense')"
                         @click="router.post(route('transactions.payment-order.store', transaction.id))" data-help="tx-payment-order-create" />
                     <IconButton v-if="can('transactions', 'edit')" :href="route('transactions.edit', transaction.id)" icon="pencil" :label="t('edit')" />
                 </div>

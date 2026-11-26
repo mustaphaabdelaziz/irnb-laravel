@@ -116,7 +116,8 @@ used by both the month sheet and the period sheet.
 
 - Validation errors (bad dates, `from > to`, span over 13 months) return the
   usual 422 or redirect. The Grid dialog validates `from ≤ to` before opening.
-- An unknown `group_id` falls back to the group switch default, as on the month sheet.
+- An unknown `group_id` on the period sheet prints every group entry, matching «all groups» on the Stats page.
+  The month sheet keeps its own fallback (the group switch default).
 
 ## Testing
 

@@ -64,6 +64,7 @@ use App\Http\Controllers\MailSourceController;
 use App\Http\Controllers\MemberJobController;
 use App\Http\Controllers\MembershipIdController;
 use App\Http\Controllers\MissionOrderController;
+use App\Http\Controllers\MissionOrderPrintController;
 use App\Http\Controllers\OpenWhatsAppController;
 use App\Http\Controllers\OpponentController;
 use App\Http\Controllers\PaymentOrderController;
@@ -335,6 +336,10 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
     Route::post('/missions/{missionOrder}/cancel', [MissionOrderController::class, 'cancel'])->name('missions.cancel');
     // The Print buttons take the order's mail-register reference here; the PDF routes only look it up.
     Route::post('/missions/{missionOrder}/register', [MissionOrderController::class, 'register'])->name('missions.register');
+    // One sheet per traveler: every traveler in one PDF, or one traveler's sheet.
+    Route::get('/missions/{missionOrder}/print', [MissionOrderPrintController::class, 'all'])->name('missions.print');
+    Route::get('/missions/{missionOrder}/print/{traveler}', [MissionOrderPrintController::class, 'traveler'])
+        ->whereNumber('traveler')->name('missions.print-traveler');
 
     // Finance — year-grouped dashboard (view open to approved members)
     Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');

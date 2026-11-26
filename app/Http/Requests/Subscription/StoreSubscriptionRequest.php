@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Subscription;
 
+use App\Models\Player;
+use App\Models\PlayerStatus;
 use App\Models\Subscription;
 use App\Models\SubscriptionCostLine;
 use App\Support\CategoryOwnership;
@@ -55,8 +57,37 @@ class StoreSubscriptionRequest extends FormRequest
             'category_prices.*.amount_worker' => ['nullable', 'numeric', 'min:0'],
             'branch_ids' => ['nullable', 'array'],
             'branch_ids.*' => ['integer', 'exists:branches,id'],
+            // Absent: the statuses stay as they are. Sent: at least one, never `left`.
+            'status_ids' => ['sometimes', 'array', 'min:1'],
+            'status_ids.*' => ['integer', 'exists:player_statuses,id', Rule::notIn(array_filter([Player::leftStatusId()]))],
             ...$this->tarificationRules($exceptional),
         ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'status_ids.min' => __('validation.subscription_status_required'),
+            'status_ids.*.not_in' => __('validation.subscription_status_left'),
+        ];
+    }
+
+    /**
+     * The statuses to sync, or null when the form sent none. Every status but
+     * `left` ticked is stored as none, so a status added later is covered too.
+     *
+     * @return list<int>|null
+     */
+    public function statusSync(): ?array
+    {
+        if (! $this->has('status_ids')) {
+            return null;
+        }
+
+        $ticked = collect($this->validated('status_ids'))->map(fn ($id) => (int) $id)->unique()->sort()->values();
+        $all = PlayerStatus::query()->whereKeyNot(Player::leftStatusId() ?? 0)->orderBy('id')->pluck('id');
+
+        return $ticked->all() === $all->all() ? [] : $ticked->all();
     }
 
     /** A category must belong to a ticked branch, if any. One already saved stays until edited. */
@@ -104,7 +135,7 @@ class StoreSubscriptionRequest extends FormRequest
     public function subscriptionAttributes(): array
     {
         $data = collect($this->validated())
-            ->except(['category_ids', 'category_prices', 'branch_ids', 'tarification'])
+            ->except(['category_ids', 'category_prices', 'branch_ids', 'status_ids', 'tarification'])
             ->all();
 
         if ($data['kind'] === Subscription::KIND_EXCEPTIONAL) {

@@ -21,6 +21,8 @@ const props = defineProps({
     subscription: { type: Object, default: null },
     submitLabel: { type: String, required: true },
     tarification: { type: Object, default: null },
+    // Every status but "left": no subscription ever covers a player who left.
+    playerStatuses: { type: Array, default: () => [] },
 });
 
 const isEdit = !!props.subscription;
@@ -47,6 +49,8 @@ const form = useForm({
     category_ids: sub.categories?.map((c) => c.id) || [],
     category_prices: categoryPrices,
     branch_ids: sub.branches?.map((b) => b.id) || [],
+    // None saved means every status: all start ticked.
+    status_ids: sub.statuses?.length ? sub.statuses.map((s) => s.id) : props.playerStatuses.map((s) => s.id),
     // Absent for users without Finance → view, so their save sends no block.
     ...(props.tarification ? { tarification: JSON.parse(JSON.stringify(props.tarification.saved)) } : {}),
 });
@@ -190,6 +194,20 @@ const kinds = [
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Player statuses: who may be put on it. "Left" is never offered. -->
+                <div v-if="playerStatuses.length" data-help="sub-statuses">
+                    <InputLabel :value="t('subscription_statuses')" />
+                    <p class="mb-2 text-xs text-slate-500 dark:text-slate-400">{{ t('subscription_statuses_hint') }}</p>
+                    <div class="flex flex-wrap gap-3">
+                        <label v-for="s in playerStatuses" :key="s.id" class="flex items-center gap-2">
+                            <input type="checkbox" :value="s.id" v-model="form.status_ids"
+                                class="rounded border-gray-300 text-primary-600 shadow-sm focus:ring-primary-500" />
+                            <span class="text-sm">{{ s.name }}</span>
+                        </label>
+                    </div>
+                    <InputError :message="form.errors.status_ids || form.errors['status_ids.0']" class="mt-1" />
                 </div>
             </div>
         </div>

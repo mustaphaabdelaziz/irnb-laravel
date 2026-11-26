@@ -21,6 +21,8 @@ return [
     'status_change_before_join' => 'The date of change is before the join date.',
     'position_other_branch' => 'This position belongs to another branch.',
     'category_other_branch' => 'This category belongs to another branch.',
+    'subscription_status_required' => 'Tick at least one status.',
+    'subscription_status_left' => 'A subscription never applies to players who left the club.',
     'category_not_in_branch' => 'The category ":name" does not exist in this branch.',
     'group_other_category' => 'This group belongs to another branch or category.',
     'group_from_category_change' => 'The category changed: enter the day the player leaves their group.',

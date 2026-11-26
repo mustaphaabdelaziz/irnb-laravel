@@ -12,6 +12,7 @@ defineProps({
     seasons: { type: Array, default: () => [] },
     currentSeason: { type: Number, required: true },
     tarification: { type: Object, default: null },
+    playerStatuses: { type: Array, default: () => [] },
 });
 </script>
 
@@ -28,6 +29,6 @@ defineProps({
             </div>
         </template>
 
-        <SubscriptionForm :categories="categories" :branches="branches" :seasons="seasons" :current-season="currentSeason" :tarification="tarification" :submit-label="t('save')" />
+        <SubscriptionForm :categories="categories" :branches="branches" :seasons="seasons" :current-season="currentSeason" :tarification="tarification" :player-statuses="playerStatuses" :submit-label="t('save')" />
     </AuthenticatedLayout>
 </template>

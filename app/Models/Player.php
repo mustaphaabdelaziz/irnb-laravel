@@ -238,10 +238,15 @@ class Player extends Model
             default => $own,
         };
 
+        // Ticked statuses, plus a registration with none (see Subscription::coversStatus).
+        $statuses = $subscription->statuses->pluck('id');
+
         $query->registeredWhere(
             branches: $branches->isEmpty() ? null : $branches,
             categories: $categories,
+            statuses: $statuses->isEmpty() ? null : $statuses,
             active: true,
+            noStatus: $statuses->isNotEmpty(),
         );
     }
 

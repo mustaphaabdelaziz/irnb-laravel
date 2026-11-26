@@ -273,9 +273,9 @@ class SubscriptionController extends Controller
 
     public function show(Request $request, Subscription $subscription): Response
     {
-        $subscription->load(['categories', 'branches']);
+        $subscription->load(['categories', 'branches', 'statuses']);
 
-        $rows = $this->showRows($this->assignedQuery($subscription)->get(), $this->pageBranch($subscription));
+        $rows = $this->showRows($this->assignedQuery($subscription)->get(), $this->pageBranch($subscription), $subscription);
         $statuses = array_count_values(array_column($rows, 'payment_status'));
 
         // Calculate stats
@@ -369,7 +369,7 @@ class SubscriptionController extends Controller
      * @param  Collection<int, PlayerSubscription>  $playerSubscriptions
      * @return list<array<string, mixed>>
      */
-    private function showRows(Collection $playerSubscriptions, ?int $branchId): array
+    private function showRows(Collection $playerSubscriptions, ?int $branchId, Subscription $subscription): array
     {
         $categories = [];
         $category = function (?Category $category) use (&$categories): ?array {
@@ -387,7 +387,7 @@ class SubscriptionController extends Controller
         $display = RegistrationDisplay::make();
 
         return $playerSubscriptions
-            ->map(function (PlayerSubscription $ps) use ($category, $display, $branchId) {
+            ->map(function (PlayerSubscription $ps) use ($category, $display, $branchId, $subscription) {
                 $money = $ps->money();
                 $player = $ps->player;
                 $shown = $player === null ? null : $this->shownValues($player, $branchId, $display);
@@ -399,6 +399,8 @@ class SubscriptionController extends Controller
                     'amount_paid' => $ps->amount_paid,
                     'remaining_amount' => $money['remaining'],
                     'payment_status' => $money['status'],
+                    // On it although its status is no longer covered (left, or unticked since).
+                    'status_not_covered' => $shown !== null && ! $subscription->coversStatus($shown['status_id']),
                     'player' => $player === null ? null : [
                         'id' => $player->id,
                         'membership_id' => $shown['membership_id'],
@@ -421,8 +423,21 @@ class SubscriptionController extends Controller
             'currentSeason' => Subscription::currentSeasonEndYear(),
             'categories' => Category::with('branch:id,name,name_ar,name_fr,name_en')->orderBy('name')->get(),
             'branches' => Branch::orderBy('name')->get(),
+            'playerStatuses' => $this->tickableStatuses(),
             ...$this->tarificationProp($request),
         ]);
+    }
+
+    /**
+     * The statuses the form offers: all but `left`, which no subscription covers.
+     *
+     * @return list<array{id: int, name: string}>
+     */
+    private function tickableStatuses(): array
+    {
+        $left = Player::leftStatusId();
+
+        return array_values(array_filter(PlayerStatus::options(), fn (array $s) => $s['id'] !== $left));
     }
 
     public function store(StoreSubscriptionRequest $request): RedirectResponse
@@ -433,6 +448,7 @@ class SubscriptionController extends Controller
             $subscription = Subscription::create($request->subscriptionAttributes());
             $subscription->categories()->attach($request->categorySync());
             $subscription->branches()->attach($branchIds);
+            $subscription->statuses()->attach($request->statusSync() ?? []);
             $this->saveTarification($request, $subscription);
 
             ActivityRecorder::record($request->user(), ActivityAction::SUBSCRIPTION_CREATED, $subscription, [
@@ -448,7 +464,7 @@ class SubscriptionController extends Controller
 
     public function edit(Request $request, Subscription $subscription): Response
     {
-        $subscription->load(['categories', 'branches']);
+        $subscription->load(['categories', 'branches', 'statuses:id']);
 
         return Inertia::render('Subscriptions/Edit', [
             'subscription' => $subscription,
@@ -456,6 +472,7 @@ class SubscriptionController extends Controller
             'currentSeason' => Subscription::currentSeasonEndYear(),
             'categories' => Category::with('branch:id,name,name_ar,name_fr,name_en')->orderBy('name')->get(),
             'branches' => Branch::orderBy('name')->get(),
+            'playerStatuses' => $this->tickableStatuses(),
             ...$this->tarificationProp($request, $subscription),
         ]);
     }
@@ -474,6 +491,10 @@ class SubscriptionController extends Controller
             $subscription->update($attributes);
             $subscription->categories()->sync($request->categorySync());
             $subscription->branches()->sync($request->validated('branch_ids') ?? []);
+            // Narrowing the statuses keeps who is already on it (the page flags them).
+            if (($statusIds = $request->statusSync()) !== null) {
+                $subscription->statuses()->sync($statusIds);
+            }
             $this->saveTarification($request, $subscription);
 
             // Players outside the (new) branches lose the obligation while it is untouched.

@@ -42,6 +42,10 @@ In the “أشبال” row, type 2500 under “Student Pricing” and 4000 unde
 ::figure subscription-create-categories ring=sub-category-price zoom=sub-category-price
 :::
 
+:::tip
+Under the categories, “Player statuses” are all ticked: every player can be put on the subscription, except those who left the club. Untick a status (for example “معتزل”) to keep those players out.
+:::
+
 :::step Click “Save”
 The button is at the end of the page. Scroll down to it the same way, then click “Save”. The subscription page appears, with the message “Subscription created successfully.”.
 ::figure subscription-create-save ring=sub-save zoom=sub-save

@@ -42,6 +42,10 @@ related: [subscriptions/assign-players, subscriptions/create-exceptional]
 ::figure subscription-create-categories ring=sub-category-price zoom=sub-category-price
 :::
 
+:::tip
+تحت الفئات، «الحالات المعنية» كلها مؤشَّرة: يمكن إضافة كل لاعب إلى الاشتراك، إلا من غادر الفريق. أزل التأشير عن حالة (مثل «معتزل») لإبعاد أصحابها.
+:::
+
 :::step اضغط «حفظ»
 الزر في آخر الصفحة. انزل إليه بالطريقة نفسها، ثم اضغط «حفظ». تظهر صفحة الاشتراك وعبارة «تم إنشاء الاشتراك بنجاح.».
 ::figure subscription-create-save ring=sub-save zoom=sub-save

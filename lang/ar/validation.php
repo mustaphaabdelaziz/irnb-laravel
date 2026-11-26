@@ -184,6 +184,8 @@ return [
     'status_change_before_join' => 'تاريخ التغيير يسبق تاريخ الانضمام.',
     'position_other_branch' => 'هذا المركز تابع لفرع آخر.',
     'category_other_branch' => 'هذه الفئة تابعة لفرع آخر.',
+    'subscription_status_required' => 'اختر حالة واحدة على الأقل.',
+    'subscription_status_left' => 'لا يطبَّق الاشتراك على من غادر الفريق.',
     'category_not_in_branch' => 'الفئة «:name» غير موجودة في هذا الفرع.',
     'group_other_category' => 'هذا الفوج تابع لفرع آخر أو لفئة أخرى.',
     'group_from_category_change' => 'تغيّرت الفئة: أدخل تاريخ خروج اللاعب من فوجه.',

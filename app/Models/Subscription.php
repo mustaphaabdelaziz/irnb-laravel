@@ -65,6 +65,30 @@ class Subscription extends Model
         return $this->belongsToMany(Branch::class, 'branch_subscription');
     }
 
+    /** The player statuses it is limited to. None: every status but `left`. */
+    public function statuses(): BelongsToMany
+    {
+        return $this->belongsToMany(PlayerStatus::class, 'player_status_subscription');
+    }
+
+    /**
+     * Whether a player with this status may be charged: no status always,
+     * `left` never, otherwise any status when none is ticked, else a ticked one.
+     */
+    public function coversStatus(mixed $statusId): bool
+    {
+        if ($statusId === null || $statusId === '') {
+            return true;
+        }
+
+        // Once per subscription: the page asks for every assignee.
+        if ((int) $statusId === once(fn () => Player::leftStatusId())) {
+            return false;
+        }
+
+        return $this->statuses->isEmpty() || $this->statuses->contains('id', (int) $statusId);
+    }
+
     public function playerSubscriptions(): HasMany
     {
         return $this->hasMany(PlayerSubscription::class);
@@ -104,17 +128,18 @@ class Subscription extends Model
     /**
      * Subscriptions a player may be newly charged: open to the branch and the
      * category of one active registration. Left everywhere: none. A player with no
-     * registration at all has only their own category, and no branch.
+     * registration at all has only their own category, and no branch. The
+     * registration's status must be one the subscription covers (coversStatus).
      */
     public function scopeOpenTo(Builder $query, Player $player): Builder
     {
-        $rows = $player->registrations()->active()->get(['branch_id', 'category_id']);
+        $rows = $player->registrations()->active()->get(['branch_id', 'category_id', 'status_id']);
 
         if ($rows->isEmpty()) {
             if ($player->registrations()->exists() || Player::isLeftStatus($player->status_id)) {
                 return $query->whereRaw('1 = 0');
             }
-            $rows = collect([(object) ['branch_id' => null, 'category_id' => $player->category_id]]);
+            $rows = collect([(object) ['branch_id' => null, 'category_id' => $player->category_id, 'status_id' => $player->status_id]]);
         }
 
         return $query->where(function (Builder $any) use ($rows) {
@@ -127,7 +152,10 @@ class Subscription extends Model
                         if ($row->branch_id) {
                             $open->orWhereHas('branches', fn (Builder $sub) => $sub->where('branches.id', $row->branch_id));
                         }
-                    }));
+                    })
+                    ->when($row->status_id !== null, fn (Builder $covered) => $covered->where(fn (Builder $status) => $status
+                        ->whereDoesntHave('statuses')
+                        ->orWhereHas('statuses', fn (Builder $sub) => $sub->where('player_statuses.id', $row->status_id)))));
             }
         });
     }

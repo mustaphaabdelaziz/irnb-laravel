@@ -215,6 +215,9 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
                     <div v-if="subscription.branches?.length" class="flex flex-wrap gap-1">
                         <Badge v-for="b in subscription.branches" :key="b.id" :label="b.localized_name || b.name" color="emerald" />
                     </div>
+                    <div v-if="subscription.statuses?.length" class="flex flex-wrap gap-1" :title="t('subscription_statuses')">
+                        <Badge v-for="s in subscription.statuses" :key="s.id" :label="s.localized_name || s.name" color="slate" />
+                    </div>
                 </div>
                 <div class="no-print flex flex-wrap gap-2">
                     <!-- Add single player -->
@@ -351,6 +354,8 @@ const tabCount = (tab) => searchedList.value.filter(ps => inTab(tab, ps)).length
                                     <Link :href="route('players.show', ps.player_id)" class="text-sm font-medium text-primary-600 hover:text-primary-800 dark:text-primary-300 dark:hover:text-primary-200">
                                         {{ ps.player?.fullname }}
                                     </Link>
+                                    <Badge v-if="ps.status_not_covered" :label="t('subscription_status_not_covered')" color="amber" class="ms-2"
+                                        :title="t('subscription_status_not_covered_hint')" />
                                     <p class="text-xs text-slate-400 dark:text-slate-400">{{ ps.player?.membership_id }}</p>
                                 </td>
                                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{{ ps.player?.category?.localized_name || ps.player?.category?.name || '-' }}</td>

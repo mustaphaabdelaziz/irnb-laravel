@@ -42,6 +42,10 @@ Dans la ligne « أشبال », tapez 2500 sous « Tarification étudiant » et 
 ::figure subscription-create-categories ring=sub-category-price zoom=sub-category-price
 :::
 
+:::tip
+Sous les catégories, les « Statuts concernés » sont tous cochés : tout joueur peut recevoir l’abonnement, sauf ceux qui ont quitté le club. Décochez un statut (par exemple « معتزل ») pour écarter ces joueurs.
+:::
+
 :::step Cliquez sur « Enregistrer »
 Le bouton est en bas de la page. Descendez-y de la même façon, puis cliquez sur « Enregistrer ». La page de l'abonnement s'affiche, avec le message « Abonnement créé avec succès. ».
 ::figure subscription-create-save ring=sub-save zoom=sub-save

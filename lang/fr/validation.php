@@ -184,6 +184,8 @@ return [
     'status_change_before_join' => "La date du changement précède la date d'adhésion.",
     'position_other_branch' => 'Ce poste appartient à une autre section.',
     'category_other_branch' => 'Cette catégorie appartient à une autre section.',
+    'subscription_status_required' => 'Cochez au moins un statut.',
+    'subscription_status_left' => 'Un abonnement ne s\'applique jamais aux joueurs qui ont quitté le club.',
     'category_not_in_branch' => 'La catégorie « :name » n\'existe pas dans cette section.',
     'group_other_category' => 'Ce groupe appartient à une autre section ou à une autre catégorie.',
     'group_from_category_change' => 'La catégorie a changé : indiquez le jour où le joueur quitte son groupe.',

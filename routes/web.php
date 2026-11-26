@@ -60,6 +60,7 @@ use App\Http\Controllers\LegacyImportController;
 use App\Http\Controllers\LiteraryReportController;
 use App\Http\Controllers\MailEntryController;
 use App\Http\Controllers\MailEntryPrintController;
+use App\Http\Controllers\MailSourceController;
 use App\Http\Controllers\MemberJobController;
 use App\Http\Controllers\MembershipIdController;
 use App\Http\Controllers\OpenWhatsAppController;
@@ -306,6 +307,11 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
     Route::get('/purchase-orders/{purchaseOrder}/print', [PurchaseOrderPrintController::class, 'show'])->name('purchase-orders.print');
 
     // Secretariat → mail register (سجل البريد): never deleted — cancelled instead, so the routes have no destroy.
+    // The print tick box (absence letter, convocation, purchase order): look the document's entry up, or register it.
+    Route::get('/mail/sources/{type}/{id}', [MailSourceController::class, 'show'])
+        ->whereIn('type', ['absence-letter', 'game', 'purchase-order'])->whereNumber('id')->name('mail.sources.show');
+    Route::post('/mail/sources/{type}/{id}', [MailSourceController::class, 'store'])
+        ->whereIn('type', ['absence-letter', 'game', 'purchase-order'])->whereNumber('id')->name('mail.sources.store');
     Route::resource('mail', MailEntryController::class)->except(['destroy'])->parameters(['mail' => 'mailEntry']);
     Route::post('/mail/{mailEntry}/cancel', [MailEntryController::class, 'cancel'])->name('mail.cancel');
     // The scanned letter — private: this (auth + mail/view) is the only way to read it.

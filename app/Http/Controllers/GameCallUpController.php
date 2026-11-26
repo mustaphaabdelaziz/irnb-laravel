@@ -6,6 +6,7 @@ use App\Enums\GameStatus;
 use App\Models\Game;
 use App\Models\GameEvent;
 use App\Models\GamePlayer;
+use App\Models\MailEntry;
 use App\Models\User;
 use App\Services\Competitions\CallUpCandidates;
 use App\Services\Competitions\GameMinutes;
@@ -14,6 +15,8 @@ use App\Services\Competitions\TeamAccess;
 use App\Services\Competitions\TeamMembers;
 use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
+use App\Services\Secretariat\MailRegister;
+use App\Services\Secretariat\MailSources;
 use App\Support\CategoryLabels;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -143,7 +146,7 @@ class GameCallUpController extends Controller
     }
 
     /** The convocation sheet to post or share: match, meeting point and the called-up players. */
-    public function convocation(Game $game, PdfService $pdf): Response
+    public function convocation(Game $game, PdfService $pdf, MailRegister $mail): Response
     {
         $game->load(['team.category', 'competition', 'opponent', 'venue']);
         $locale = app()->getLocale();
@@ -166,6 +169,8 @@ class GameCallUpController extends Controller
 
         $html = view('pdf.game-convocation', [
             'club' => ClubHeader::data(),
+            // The game's mail-register reference, when it has one. Lookup only: printing never registers.
+            'mailReference' => $mail->find(MailEntry::SOURCE_GAME, $game->id, MailSources::GAME_KEY)?->reference,
             'game' => [
                 'team' => $game->team->labelWith(CategoryLabels::make()),
                 'opponent' => $game->opponent->name,

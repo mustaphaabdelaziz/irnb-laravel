@@ -4,23 +4,25 @@ namespace App\Http\Controllers;
 
 use App\Models\Branch;
 use App\Models\Category;
+use App\Models\MailEntry;
 use App\Models\Player;
 use App\Services\Activity\ActivityPeriod;
 use App\Services\Attendance\AtRisk;
 use App\Services\Attendance\AttendanceStats;
 use App\Services\Attendance\AttendanceStatusCatalog;
-use App\Services\Attendance\BranchChoice;
 use App\Services\Attendance\InjurySpells;
+use App\Services\Attendance\PlayerBranchTabs;
 use App\Services\Attendance\PreseasonProgress;
 use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
 use App\Services\Player\RegistrationDisplay;
+use App\Services\Secretariat\MailRegister;
+use App\Services\Secretariat\MailSources;
 use App\Support\AttendanceSettings;
 use App\Support\Media;
 use App\Support\UiLang;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -95,7 +97,7 @@ class AttendancePlayerController extends Controller
      * absences, lates and early departures, totals, and signature lines. A4
      * portrait, right-to-left in Arabic.
      */
-    public function letter(Request $request, Player $player): Response
+    public function letter(Request $request, Player $player, MailRegister $mail): Response
     {
         [$tabs, $branchId] = $this->branchTabs($request, $player);
         $shown = $this->shown($player, $branchId);
@@ -122,6 +124,8 @@ class AttendancePlayerController extends Controller
 
         $html = view('pdf.attendance-letter', [
             'club' => $club,
+            // The mail-register reference of this letter (same player, tab and period), when it has one. Lookup only.
+            'mailReference' => $mail->find(MailEntry::SOURCE_ABSENCE_LETTER, $player->id, MailSources::letterKey($player->id, $branchId, $from, $to))?->reference,
             'date' => now()->format('d/m/Y'),
             'recipient' => $contact ?: strtr(UiLang::get('att.letter.guardian_of'), ['{player}' => $player->fullname]),
             'subject' => $letter['subject'],
@@ -205,40 +209,14 @@ class AttendancePlayerController extends Controller
     }
 
     /**
-     * The card's branch tabs: every branch the player is a member of now or
-     * has a mark in (any date, so the tabs do not change with the period),
-     * by id; and the tab shown: the asked `branch_id` when it is one of
-     * them, else the remembered attendance branch (BranchChoice) when it is,
-     * else the first. No tab (a club without branches, or a player in none):
-     * null, and the numbers cover every session. The card never changes the
-     * remembered choice. One query.
+     * The card's branch tabs and the tab shown (see PlayerBranchTabs, shared
+     * with the mail register so a letter and its entry name the same tab).
      *
      * @return array{0: list<array{id: int, name: string}>, 1: ?int}
      */
     private function branchTabs(Request $request, Player $player): array
     {
-        $asked = $request->validate(['branch_id' => ['nullable', 'integer']])['branch_id'] ?? null;
-        $tabs = Branch::query()
-            ->whereIn('id', DB::table('branch_player')->select('branch_id')->where('player_id', $player->id))
-            ->orWhereIn('id', DB::table('attendances')
-                ->join('training_sessions', 'training_sessions.id', '=', 'attendances.training_session_id')
-                ->where('attendances.player_id', $player->id)
-                ->whereNotNull('training_sessions.branch_id')
-                ->select('training_sessions.branch_id'))
-            ->orderBy('id')
-            ->get()
-            ->map(fn (Branch $branch) => ['id' => $branch->id, 'name' => $branch->localized_name])
-            ->values()
-            ->all();
-        $ids = array_column($tabs, 'id');
-
-        foreach ([$asked === null ? null : (int) $asked, BranchChoice::remembered($request)] as $candidate) {
-            if ($candidate !== null && in_array($candidate, $ids, true)) {
-                return [$tabs, $candidate];
-            }
-        }
-
-        return [$tabs, $ids[0] ?? null];
+        return PlayerBranchTabs::resolve($request, $player);
     }
 
     /**

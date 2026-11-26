@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\MailEntry;
 use App\Models\PurchaseOrder;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
 use App\Services\Pdf\BoardSignatories;
 use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
+use App\Services\Secretariat\MailRegister;
+use App\Services\Secretariat\MailSources;
 use App\Support\AmountInWords;
 use App\Support\UiLang;
 use Illuminate\Http\Request;
@@ -19,7 +22,10 @@ class PurchaseOrderPrintController extends Controller
     /** The UI label key of a payment method (same map as resources/js/lib/statusLabels.js). */
     private const METHOD_KEYS = ['bank' => 'bank_transfer', 'cash' => 'cash', 'ccp' => 'ccp', 'baridimob' => 'baridimob', 'cheque' => 'cheque'];
 
-    public function __construct(private readonly PdfService $pdf) {}
+    public function __construct(
+        private readonly PdfService $pdf,
+        private readonly MailRegister $mail,
+    ) {}
 
     public function show(Request $request, PurchaseOrder $purchaseOrder): Response
     {
@@ -40,6 +46,8 @@ class PurchaseOrderPrintController extends Controller
             'words' => $priced ? AmountInWords::format($total, $locale) : null,
             'method' => $purchaseOrder->payment_mode ? UiLang::get(self::METHOD_KEYS[$purchaseOrder->payment_mode] ?? 'other') : '—',
             'signatories' => BoardSignatories::names(),
+            // The order's mail-register reference, when it has one. Lookup only: printing never registers.
+            'mailReference' => $this->mail->find(MailEntry::SOURCE_PURCHASE_ORDER, $purchaseOrder->id, MailSources::PURCHASE_ORDER_KEY)?->reference,
         ])->render();
 
         ActivityRecorder::record($request->user(), ActivityAction::PURCHASE_ORDER_PRINTED, $purchaseOrder, [

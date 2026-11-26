@@ -28,6 +28,9 @@
     @include('pdf.partials.header')
 
     <table class="meta">
+        @if (!empty($mailReference))
+            <tr><td class="label">{{ $L('mreg.pdf.ref') }}</td><td><bdo dir="ltr">{{ $mailReference }}</bdo></td></tr>
+        @endif
         <tr><td class="label">{{ $L('att.letter.date_label') }}</td><td><bdi dir="ltr">{{ $date }}</bdi></td></tr>
         <tr><td class="label">{{ $L('att.letter.to') }}</td><td>{{ $recipient }}</td></tr>
         @if (!empty($branch))

@@ -35,6 +35,9 @@
 
     <div class="title">{{ $L('pur.pdf.title') }}</div>
     <div class="ref">{{ $L('po.number') }} <bdo dir="ltr">{{ $order->reference }}</bdo> — <bdo dir="ltr">{{ $order->order_date->format('d/m/Y') }}</bdo></div>
+    @if (!empty($mailReference))
+        <div class="ref">{{ $L('mreg.pdf.ref') }} <bdo dir="ltr">{{ $mailReference }}</bdo></div>
+    @endif
 
     <table class="info">
         <tr><td class="label">{{ $L('pur.supplier') }}</td><td>{{ $T($supplier?->name ?? '—') }}</td></tr>

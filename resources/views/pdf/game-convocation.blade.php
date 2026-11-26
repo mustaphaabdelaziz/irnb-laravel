@@ -29,6 +29,9 @@
     @endif
 
     <table class="info">
+        @if (!empty($mailReference))
+            <tr><td class="label">{{ $L('mreg.pdf.ref') }}</td><td><bdo dir="ltr">{{ $mailReference }}</bdo></td></tr>
+        @endif
         <tr><td class="label">{{ $L('date') }}</td><td>{{ $game['dateLabel'] }}</td></tr>
         @if ($game['kickoff'])
             <tr><td class="label">{{ $L('comp.kickoff') }}</td><td><bdi dir="ltr">{{ $game['kickoff'] }}</bdi></td></tr>

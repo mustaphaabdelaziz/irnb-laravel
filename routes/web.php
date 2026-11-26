@@ -58,6 +58,7 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\LegacyImportController;
 use App\Http\Controllers\LiteraryReportController;
+use App\Http\Controllers\MailEntryController;
 use App\Http\Controllers\MemberJobController;
 use App\Http\Controllers\MembershipIdController;
 use App\Http\Controllers\OpenWhatsAppController;
@@ -302,6 +303,12 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
     Route::post('/purchase-orders/{purchaseOrder}/cancel', [PurchaseOrderController::class, 'cancel'])->name('purchase-orders.cancel');
     Route::post('/purchase-orders/{purchaseOrder}/payment-order', [PurchaseOrderController::class, 'paymentOrder'])->name('purchase-orders.payment-order.store');
     Route::get('/purchase-orders/{purchaseOrder}/print', [PurchaseOrderPrintController::class, 'show'])->name('purchase-orders.print');
+
+    // Secretariat → mail register (سجل البريد): never deleted — cancelled instead, so the routes have no destroy.
+    Route::resource('mail', MailEntryController::class)->except(['destroy'])->parameters(['mail' => 'mailEntry']);
+    Route::post('/mail/{mailEntry}/cancel', [MailEntryController::class, 'cancel'])->name('mail.cancel');
+    // The scanned letter — private: this (auth + mail/view) is the only way to read it.
+    Route::get('/mail/{mailEntry}/scan', [MailEntryController::class, 'scan'])->name('mail.scan');
 
     // Finance — year-grouped dashboard (view open to approved members)
     Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');

@@ -29,6 +29,8 @@ return [
         'literary-reports' => 'literary_reports',
         // Secretariat: the mail register (outgoing and incoming letters).
         'mail' => 'mail',
+        // Secretariat: mission orders (أمر بمهمة).
+        'missions' => 'missions',
         'users' => 'users',
         'categories' => 'categories',
         // Each App Configuration list is its own module (own row in the role editor).
@@ -190,6 +192,16 @@ return [
         'mail.scan' => ['mail', 'view'],
         'mail.sources.show' => ['mail', 'add'],
         'mail.sources.store' => ['mail', 'add'],
+        // Mission orders are never deleted, so the delete right is cancelling one.
+        // Printing (all sheets or one traveler) only reads; taking the order's
+        // mail-register reference at the first print is an edit. "Add a team"
+        // reads a team for the form: the controller also asks for missions
+        // add or edit, teams view and players view.
+        'missions.cancel' => ['missions', 'delete'],
+        'missions.print' => ['missions', 'view'],
+        'missions.print-traveler' => ['missions', 'view'],
+        'missions.team-members' => ['missions', 'view'],
+        'missions.register' => ['missions', 'edit'],
     ],
 
     // Route names that need no permission once authenticated.

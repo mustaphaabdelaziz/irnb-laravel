@@ -1060,6 +1060,7 @@
     "missing_docs.per_type": "Players missing each document",
     "missing_docs.print": "Print missing documents",
     "missing_docs.title": "Missing documents",
+    "missions": "Mission orders",
     "mreg.already_registered": "Already in the mail register as",
     "mreg.body": "Letter text",
     "mreg.body_hint": "Optional: when filled in, the letter prints on the club letterhead.",

@@ -1060,6 +1060,7 @@
     "missing_docs.per_type": "عدد اللاعبين الناقصة لديهم كل وثيقة",
     "missing_docs.print": "طباعة الوثائق الناقصة",
     "missing_docs.title": "الوثائق الناقصة",
+    "missions": "أوامر المهمة",
     "mreg.already_registered": "مسجّلة في سجل البريد تحت المرجع",
     "mreg.body": "نص الرسالة",
     "mreg.body_hint": "اختياري: إذا كُتب، تُطبع الرسالة على ورق النادي.",

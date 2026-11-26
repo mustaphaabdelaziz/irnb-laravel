@@ -11,7 +11,7 @@ const KEYS = [
     'nav.search', 'nav.search_placeholder', 'nav.no_results',
     'nav.collapse_sidebar', 'nav.expand_sidebar', 'nav.competitions',
     'teams', 'games', 'competitions',
-    'nav.secretariat', 'mail',
+    'nav.secretariat', 'mail', 'missions',
 ];
 
 test('every sidebar key resolves through t() in ar, en and fr', () => {

@@ -1060,6 +1060,7 @@
     "missing_docs.per_type": "Joueurs à qui manque chaque document",
     "missing_docs.print": "Imprimer les documents manquants",
     "missing_docs.title": "Documents manquants",
+    "missions": "Ordres de mission",
     "mreg.already_registered": "Déjà inscrite au registre sous la référence",
     "mreg.body": "Texte de la lettre",
     "mreg.body_hint": "Facultatif : s'il est rempli, la lettre s'imprime sur l'en-tête du club.",

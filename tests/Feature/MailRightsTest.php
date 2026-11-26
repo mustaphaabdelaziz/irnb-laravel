@@ -22,7 +22,7 @@ class MailRightsTest extends TestCase
     public function mail_is_the_secretariat_module_with_the_canonical_actions_only(): void
     {
         $this->assertContains('mail', Role::MODULES);
-        $this->assertSame(['mail'], Role::MODULE_GROUPS['secretariat']);
+        $this->assertSame(['mail', 'missions'], Role::MODULE_GROUPS['secretariat']);
         $this->assertSame(['view', 'add', 'edit', 'delete'], Role::allPermissions()['mail']);
         $this->assertArrayNotHasKey('mail', Role::EXTRA_ACTIONS);
     }

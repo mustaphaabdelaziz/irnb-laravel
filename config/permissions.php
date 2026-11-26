@@ -87,6 +87,8 @@ return [
         'players.duplicates.index' => ['players', 'merge'],
         'players.duplicates.dismiss' => ['players', 'merge'],
         'players.duplicates.restore' => ['players', 'merge'],
+        'players.duplicates.merge' => ['players', 'merge'],
+        'players.duplicates.merge.store' => ['players', 'merge'],
         // "grid" is not a view verb: opening the month grid must not need edit rights.
         'attendance.grid' => ['attendance', 'view'],
         // "stats" is not a view verb: reading the statistics must not need edit rights.

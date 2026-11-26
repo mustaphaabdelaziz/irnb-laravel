@@ -72,6 +72,7 @@ use App\Http\Controllers\PlayerDuplicateController;
 use App\Http\Controllers\PlayerController;
 use App\Http\Controllers\PlayerDocumentController;
 use App\Http\Controllers\PlayerImportController;
+use App\Http\Controllers\PlayerMergeController;
 use App\Http\Controllers\PlayerPrintController;
 use App\Http\Controllers\PlayerStatusController;
 use App\Http\Controllers\RegistrationController;
@@ -224,6 +225,8 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
     // Possible duplicate players (before the resource so the static path wins)
     Route::get('/players/duplicates', [PlayerDuplicateController::class, 'index'])->name('players.duplicates.index');
     Route::post('/players/duplicates/dismiss', [PlayerDuplicateController::class, 'dismiss'])->name('players.duplicates.dismiss');
+    Route::get('/players/duplicates/merge', [PlayerMergeController::class, 'show'])->name('players.duplicates.merge');
+    Route::post('/players/duplicates/merge', [PlayerMergeController::class, 'store'])->name('players.duplicates.merge.store');
     Route::delete('/players/duplicates/{decision}', [PlayerDuplicateController::class, 'restore'])->name('players.duplicates.restore');
 
     // Players

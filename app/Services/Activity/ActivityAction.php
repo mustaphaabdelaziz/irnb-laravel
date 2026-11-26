@@ -152,6 +152,8 @@ class ActivityAction
 
     const PLAYER_DELETED = 'player_deleted';
 
+    const PLAYERS_MERGED = 'players_merged';
+
     const ACADEMIC_RECORD_UPDATED = 'academic_record_updated';
 
     const ACADEMIC_RECORD_DELETED = 'academic_record_deleted';
@@ -338,6 +340,7 @@ class ActivityAction
         self::PLAYER_UPDATED,
         self::PLAYER_RESTORED,
         self::PLAYER_DELETED,
+        self::PLAYERS_MERGED,
         self::ACADEMIC_RECORD_UPDATED,
         self::ACADEMIC_RECORD_DELETED,
         self::JOB_UPDATED,
@@ -443,6 +446,7 @@ class ActivityAction
             self::PLAYER_UPDATED,
             self::PLAYER_RESTORED,
             self::PLAYER_DELETED,
+            self::PLAYERS_MERGED,
             self::ACADEMIC_RECORD_UPDATED,
             self::ACADEMIC_RECORD_DELETED,
             self::JOB_UPDATED,

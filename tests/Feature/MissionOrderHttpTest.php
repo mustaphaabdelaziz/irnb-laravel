@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\ActivityLog;
 use App\Models\MailEntry;
 use App\Models\MissionOrder;
+use App\Models\Player;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\Activity\ActivityAction;
@@ -12,6 +13,7 @@ use App\Services\Activity\ActivitySubjectLink;
 use App\Services\Secretariat\MissionOrders;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\Test;
@@ -336,5 +338,39 @@ class MissionOrderHttpTest extends TestCase
         $neutral = ActivitySubjectLink::for($log, $this->userWith(['players' => ['view']]));
         $this->assertNull($neutral['url']);
         $this->assertTrue($neutral['neutral']);
+    }
+
+    #[Test]
+    public function a_traveler_whose_person_was_deleted_stays_as_a_typed_name_on_edit(): void
+    {
+        $player = Player::create(['membership_id' => 'T000001', 'firstname' => 'Test', 'lastname' => 'Joueur']);
+        $order = $this->order(['travelers' => [
+            ['traveler_type' => 'player', 'traveler_id' => $player->id, 'name' => 'Test Joueur', 'function' => 'Joueur'],
+        ]]);
+        DB::table('players')->where('id', $player->id)->delete();
+
+        $this->actingAs($this->userWith(['missions' => ['view', 'edit']]))
+            ->put(route('missions.update', $order), $this->payload(['travelers' => [
+                ['traveler_type' => 'player', 'traveler_id' => $player->id, 'name' => 'Test Joueur', 'function' => 'Joueur'],
+            ]]))
+            ->assertRedirect(route('missions.show', $order))->assertSessionHasNoErrors();
+
+        $traveler = $order->travelers()->sole();
+        $this->assertNull($traveler->traveler_type);
+        $this->assertNull($traveler->traveler_id);
+        $this->assertSame('Test Joueur', $traveler->name);
+        $this->assertSame('Joueur', $traveler->function);
+    }
+
+    #[Test]
+    public function a_traveler_keyed_by_a_word_is_a_validation_error_not_a_crash(): void
+    {
+        $user = $this->userWith(['missions' => ['view', 'add']]);
+
+        $this->actingAs($user)->post(route('missions.store'), $this->payload(['travelers' => [
+            'a' => ['traveler_type' => 'player', 'traveler_id' => 99999, 'name' => 'Inconnu', 'function' => null],
+        ]]))->assertSessionHasErrors(['travelers.a.traveler_id']);
+
+        $this->assertSame(0, MissionOrder::count());
     }
 }

@@ -3,9 +3,11 @@
 namespace App\Services\Secretariat;
 
 use App\Exceptions\MissionOrderException;
+use App\Models\BoardMember;
 use App\Models\MailEntry;
 use App\Models\MissionOrder;
 use App\Models\MissionOrderTraveler;
+use App\Models\Player;
 use App\Models\User;
 use App\Services\Activity\ActivityAction;
 use App\Services\Activity\ActivityRecorder;
@@ -118,7 +120,7 @@ final class MissionOrders
         $entry = $this->mail->register(MailEntry::SOURCE_MISSION, $order->id, MailSources::MISSION_KEY, self::defaults($order), $by);
 
         // Cancelled in another tab between the check and the new number: that number must not stay active.
-        if ($entry->wasRecentlyCreated && ! MissionOrder::whereKey($order->id)->where('status', MissionOrder::ACTIVE)->exists()) {
+        if ($entry->wasRecentlyCreated && ! MissionOrder::whereKey($order->id)->where('status', MissionOrder::ACTIVE)->sharedLock()->exists()) {
             $this->mail->cancelSource(MailEntry::SOURCE_MISSION, $order->id, MailSources::MISSION_KEY, $by);
 
             throw new MissionOrderException('flash.mission_cannot_register');
@@ -193,6 +195,17 @@ final class MissionOrders
     private function writeTravelers(MissionOrder $order, array $rows): int
     {
         MissionOrderTraveler::where('mission_order_id', $order->id)->delete();
+        // A person deleted since the order was written stays as a typed name (the sheet keeps its name and function).
+        $alive = [];
+        foreach ([
+            MissionOrderTraveler::USER => User::class,
+            MissionOrderTraveler::BOARD_MEMBER => BoardMember::class,
+            MissionOrderTraveler::PLAYER => Player::class,
+        ] as $kind => $model) {
+            $ids = collect($rows)->filter(fn ($row) => is_array($row) && ($row['traveler_type'] ?? null) === $kind && is_numeric($row['traveler_id'] ?? null))
+                ->map(fn ($row) => (int) $row['traveler_id'])->unique()->values();
+            $alive[$kind] = $ids->isEmpty() ? [] : $model::query()->whereIn('id', $ids)->pluck('id')->map(fn ($id) => (int) $id)->all();
+        }
         $seen = [];
         $sort = 0;
         foreach ($rows as $row) {
@@ -202,6 +215,9 @@ final class MissionOrders
             }
             $type = in_array($row['traveler_type'] ?? null, MissionOrderTraveler::TYPES, true) ? $row['traveler_type'] : null;
             $id = $type !== null && is_numeric($row['traveler_id'] ?? null) ? (int) $row['traveler_id'] : null;
+            if ($id !== null && ! in_array($id, $alive[$type], true)) {
+                $id = null;
+            }
             if ($id === null) {
                 $type = null;
             } elseif (isset($seen[$type.'|'.$id])) {

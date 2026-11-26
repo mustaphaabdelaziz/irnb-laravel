@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Mission;
 
 use App\Models\BoardMember;
+use App\Models\MissionOrder;
 use App\Models\MissionOrderTraveler;
 use App\Models\Player;
 use App\Models\User;
@@ -56,6 +57,12 @@ class SaveMissionOrderRequest extends FormRequest
                 return;
             }
             $rows = collect($this->input('travelers', []));
+            // Editing: a person already on this order who no longer exists stays (the service keeps them as a typed name).
+            $order = $this->route('missionOrder');
+            $already = $order instanceof MissionOrder
+                ? $order->travelers()->whereNotNull('traveler_type')->get(['traveler_type', 'traveler_id'])
+                    ->map(fn ($t) => $t->traveler_type.'|'.$t->traveler_id)->all()
+                : [];
             foreach (self::MODELS as $type => $model) {
                 $mine = $rows->filter(fn ($row) => is_array($row) && ($row['traveler_type'] ?? null) === $type);
                 if ($mine->isEmpty()) {
@@ -64,8 +71,8 @@ class SaveMissionOrderRequest extends FormRequest
                 $found = $model::query()->whereIn('id', $mine->pluck('traveler_id')->map(fn ($id) => (int) $id)->unique()->values())
                     ->pluck('id')->map(fn ($id) => (int) $id)->all();
                 foreach ($mine as $index => $row) {
-                    if (! in_array((int) $row['traveler_id'], $found, true)) {
-                        $validator->errors()->add("travelers.{$index}.traveler_id", __('validation.exists', ['attribute' => '#'.($index + 1)]));
+                    if (! in_array((int) $row['traveler_id'], $found, true) && ! in_array($type.'|'.(int) $row['traveler_id'], $already, true)) {
+                        $validator->errors()->add("travelers.{$index}.traveler_id", __('validation.exists', ['attribute' => '#'.(is_int($index) ? $index + 1 : $index)]));
                     }
                 }
             }

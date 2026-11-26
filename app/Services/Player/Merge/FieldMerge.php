@@ -9,14 +9,15 @@ use App\Services\Player\Duplicates\DuplicateScorer;
  * The player's own columns in a merge (owner 2026-11-26): where only the
  * duplicate has a value it fills in by itself, where both differ the user
  * chooses, phones from both are kept, and the kept player stays active if
- * either was. Membership ID, status, category and debt stay the keeper's.
+ * either was. Membership ID, status, category and licence copy the primary
+ * registration after the merge; debt is recomputed from the subscriptions.
  */
 final class FieldMerge
 {
     public const FIELDS = [
         'firstname', 'lastname', 'nickname', 'father', 'grandfather', 'birthdate', 'gender', 'picture',
         'email', 'city', 'wilaya_id', 'is_student', 'member_job_id',
-        'health_medical_conditions', 'health_blood_group_rhesus', 'licence_number',
+        'health_medical_conditions', 'health_blood_group_rhesus',
     ];
 
     /** @return list<array{field:string, keeper:?string, duplicate:?string, mode:string}> */

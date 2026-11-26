@@ -8,6 +8,7 @@ use App\Models\PlayerDuplicateDecision;
 use App\Models\User;
 use App\Services\Finance\RecalculatePlayerDebtService;
 use App\Services\Player\Duplicates\DuplicateFinder;
+use App\Services\Player\RegistrationService;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -50,6 +51,7 @@ class PlayerMerger
         private MergeClashes $clashes,
         private DuplicateFinder $finder,
         private RecalculatePlayerDebtService $debts,
+        private RegistrationService $registrations,
     ) {}
 
     /** @param  array<string, string>  $choices  field => 'keeper' | 'duplicate' */
@@ -67,7 +69,7 @@ class PlayerMerger
         $attributes = $this->fields->resolve($keeper, $duplicate, $choices);
 
         return DB::transaction(function () use ($keeper, $k, $d, $a, $b, $pair, $snapshots, $attributes, $by) {
-            $this->settleClashes($this->clashes->find($k, $d));
+            $this->settleClashes($this->clashes->find($k, $d), $k);
             $this->movePivots($k, $d);
             $this->dropSameGroupSpells($k, $d);
             foreach (self::REPOINT as [$table, $column]) {
@@ -97,6 +99,8 @@ class PlayerMerger
             DB::table('players')->where('id', $d)->delete();
 
             $keeper->forceFill($attributes)->save();
+            // players.* copies the primary registration, which may now be one that moved over.
+            $this->registrations->refreshMirror($keeper);
             $keeper->refresh();
             BoardMember::where('player_id', $k)->update(['name' => $keeper->fullname]);
             $this->debts->forPlayer($keeper);
@@ -106,7 +110,7 @@ class PlayerMerger
     }
 
     /** Losers go; documents first (they follow registrations), then registrations, then the rest. */
-    private function settleClashes(array $clashes): void
+    private function settleClashes(array $clashes, int $k): void
     {
         foreach ($clashes as $clash) {
             if ($clash['kind'] !== 'document') {
@@ -118,6 +122,7 @@ class PlayerMerger
         }
 
         foreach ($this->clashes->registrationMap($clashes) as $loser => $winner) {
+            $this->keepLosingIdSearchable($loser, $winner, $k);
             DB::table('registration_status_changes')->where('branch_registration_id', $loser)->update(['branch_registration_id' => $winner]);
             DB::table('player_documents')->where('branch_registration_id', $loser)->update(['branch_registration_id' => $winner]);
             DB::table('branch_player')->where('id', $loser)->delete();
@@ -136,6 +141,24 @@ class PlayerMerger
             }
             DB::table(MergeClashes::TABLES[$clash['kind']])->where('id', $loser)->delete();
         }
+    }
+
+    /**
+     * The keeper's losing registration takes its membership ID with it: like
+     * RegistrationService::removeMistake, the winner keeps it as its old ID so
+     * it stays searchable. A winner that already holds an old ID keeps its own.
+     */
+    private function keepLosingIdSearchable(int $loser, int $winner, int $k): void
+    {
+        $lost = DB::table('branch_player')->where('id', $loser)->first(['player_id', 'membership_id']);
+        if ($lost === null || (int) $lost->player_id !== $k || blank($lost->membership_id)) {
+            return;
+        }
+
+        DB::table('branch_player')->where('id', $winner)
+            ->where(fn ($q) => $q->whereNull('legacy_membership_id')->orWhere('legacy_membership_id', ''))
+            ->where(fn ($q) => $q->whereNull('membership_id')->orWhere('membership_id', '!=', $lost->membership_id))
+            ->update(['legacy_membership_id' => $lost->membership_id]);
     }
 
     /** @return array{0:int, 1:int} [winner row, loser row] */

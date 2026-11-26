@@ -60,7 +60,8 @@ class PlayerMergePageTest extends TestCase
                 ->where('duplicate.id', $newer->id)
                 ->where('counts.branch_player', 1)
                 ->where('viewOnly', false)
-                ->has('fields', 16));
+                ->has('fields', 15)
+                ->where('fields', fn ($fields) => ! collect($fields)->contains('field', 'licence_number')));
     }
 
     #[Test]

@@ -105,6 +105,54 @@ class PlayerMergerTest extends TestCase
     }
 
     #[Test]
+    public function the_kept_players_copy_follows_a_moved_registration(): void
+    {
+        $keeper = $this->player(['membership_id' => 'T-OLD-1']);
+        $duplicate = $this->player();
+        $branch = $this->branch();
+        $category = $this->category($branch);
+        $status = DB::table('player_statuses')->insertGetId(['name' => 'Active', 'code' => 'active', 'created_at' => now(), 'updated_at' => now()]);
+        $this->registration($duplicate, $branch, ['membership_id' => 'FB-2021-00007', 'join_date' => '2021-09-01', 'category_id' => $category, 'status_id' => $status]);
+
+        $this->merge($keeper, $duplicate);
+
+        $row = DB::table('players')->where('id', $keeper->id)->first();
+        $this->assertSame('FB-2021-00007', $row->membership_id);
+        $this->assertSame($category, (int) $row->category_id);
+        $this->assertSame($status, (int) $row->status_id);
+        $this->assertSame(2021, (int) $row->join_year);
+    }
+
+    #[Test]
+    public function a_losing_keeper_registration_leaves_its_id_searchable_on_the_winner(): void
+    {
+        $keeper = $this->player(['membership_id' => 'FB-2024-00010']);
+        $duplicate = $this->player();
+        $branch = $this->branch();
+        $this->registration($keeper, $branch, ['membership_id' => 'FB-2024-00010', 'join_date' => '2024-09-01']);
+        $theirs = $this->registration($duplicate, $branch, ['membership_id' => 'FB-2021-00003', 'join_date' => '2021-09-01']);
+
+        $this->merge($keeper, $duplicate);
+
+        $this->assertSame('FB-2021-00003', DB::table('players')->where('id', $keeper->id)->value('membership_id'));
+        $this->assertSame('FB-2024-00010', DB::table('branch_player')->where('id', $theirs)->value('legacy_membership_id'));
+    }
+
+    #[Test]
+    public function a_winner_that_already_holds_an_old_id_keeps_its_own(): void
+    {
+        $keeper = $this->player(['membership_id' => 'FB-2024-00010']);
+        $duplicate = $this->player();
+        $branch = $this->branch();
+        $this->registration($keeper, $branch, ['membership_id' => 'FB-2024-00010', 'join_date' => '2024-09-01']);
+        $theirs = $this->registration($duplicate, $branch, ['membership_id' => 'FB-2021-00003', 'legacy_membership_id' => '202100003', 'join_date' => '2021-09-01']);
+
+        $this->merge($keeper, $duplicate);
+
+        $this->assertSame('202100003', DB::table('branch_player')->where('id', $theirs)->value('legacy_membership_id'));
+    }
+
+    #[Test]
     public function the_keeper_wins_session_ties_and_shared_pivots_are_not_doubled(): void
     {
         $keeper = $this->player();

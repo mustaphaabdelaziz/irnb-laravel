@@ -936,6 +936,7 @@
     "missing_docs.title": "الوثائق الناقصة",
     "payment_orders": "أوامر الدفع",
     "perm_approve": "المصادقة",
+    "perm_merge": "دمج المكررين",
     "perm_other": "حقوق أخرى",
     "po.all_methods": "كل طرق الدفع",
     "po.all_statuses": "كل الحالات",

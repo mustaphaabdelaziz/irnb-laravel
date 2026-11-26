@@ -936,6 +936,7 @@
     "missing_docs.title": "Missing documents",
     "payment_orders": "Payment orders",
     "perm_approve": "Approve",
+    "perm_merge": "Merge duplicates",
     "perm_other": "Other rights",
     "po.all_methods": "All methods",
     "po.all_statuses": "All statuses",

@@ -1058,6 +1058,7 @@
     "legacy_import.result": "النتيجة",
     "legacy_import.run": "استيراد",
     "legacy_import.section.mail": "سجل البريد",
+    "legacy_import.section.missions": "أوامر المهمة",
     "legacy_import.section.payment_orders": "أوامر الدفع",
     "legacy_import.section.purchase_orders": "سندات الطلب",
     "legacy_import.section.suppliers": "الموردون",

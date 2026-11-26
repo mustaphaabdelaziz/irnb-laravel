@@ -21,5 +21,10 @@
         { "reference": "2019/02", "correspondent": "Test Direction de la Jeunesse", "address": "1 rue Test, Testville", "date": null },
         { "reference": "2020/05", "correspondent": "Test Club Voisin", "address": "", "date": "2020-03-02" },
         { "reference": "", "correspondent": "", "address": "", "date": null }
+    ],
+    "missions": [
+        { "reference": "59", "date": "12/05/2018", "lastname": "Testeur", "firstname": "Karim", "function": "Entraîneur", "destination": "Testville", "reason": "Stage de formation", "departure_date": "13/05/2018", "return_date": "15/05/2018", "transport": "Bus" },
+        { "reference": "60", "date": "2018-06-02", "lastname": "Exemple", "firstname": "Samir", "function": "Entraîneur adjoint", "destination": "Autreville", "reason": "Séminaire", "departure_date": "pas une date", "return_date": "", "transport": "Voiture" },
+        { "reference": "", "date": "", "lastname": "", "firstname": "", "function": "", "destination": "", "reason": "", "departure_date": "", "return_date": "", "transport": "" }
     ]
 }

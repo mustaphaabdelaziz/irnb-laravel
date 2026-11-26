@@ -3,6 +3,8 @@
 namespace App\Services\Legacy;
 
 use App\Models\MailEntry;
+use App\Models\MissionOrder;
+use App\Models\MissionOrderTraveler;
 use App\Models\PaymentOrder;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderLine;
@@ -44,12 +46,15 @@ final class LegacyAccessImporter
                 'purchase_orders' => $this->purchaseOrders(is_array($data['purchase_orders'] ?? null) ? $data['purchase_orders'] : []),
                 // Optional section (P3): the old outgoing letters.
                 'mail' => $this->mail(is_array($data['mail'] ?? null) ? $data['mail'] : []),
+                // Optional section (P4): the old mission orders.
+                'missions' => $this->missions(is_array($data['missions'] ?? null) ? $data['missions'] : []),
             ];
             ActivityRecorder::record($by, ActivityAction::LEGACY_DATA_IMPORTED, null, [
                 'suppliers' => $result['suppliers']['created'],
                 'payment_orders' => $result['payment_orders']['created'],
                 'purchase_orders' => $result['purchase_orders']['created'],
                 'mail' => $result['mail']['created'],
+                'missions' => $result['missions']['created'],
             ]);
 
             return $result;
@@ -316,6 +321,92 @@ final class LegacyAccessImporter
         }
 
         return ['created' => $created, 'skipped' => $skipped];
+    }
+
+    /**
+     * Old `Ordre de Mission` rows → legacy mission orders: read-only, the old
+     * reference text kept, one typed traveler (Nom + Prénom, Fonction). No
+     * mail entry: the old letters are already in the imported mail register.
+     * Access kept every date as text: read day first (or Y-m-d); an
+     * unreadable date stays empty. A row is matched on (source, reference,
+     * order date), so importing again creates nothing.
+     *
+     * @param  list<array<string, mixed>>  $rows
+     */
+    private function missions(array $rows): array
+    {
+        $created = $skipped = 0;
+        foreach ($rows as $row) {
+            if (! is_array($row)) {
+                $skipped++;
+
+                continue;
+            }
+            $reference = self::text(preg_replace('/\s+/u', ' ', self::plain($row['reference'] ?? null)), 50);
+            $date = self::textDay($row['date'] ?? null);
+            $name = self::text(preg_replace('/\s+/u', ' ', self::plain($row['lastname'] ?? null).' '.self::plain($row['firstname'] ?? null)), 200);
+            $destination = self::text($row['destination'] ?? null, 200);
+            if ($reference === null && $name === null && $destination === null) {
+                $skipped++;
+
+                continue;
+            }
+
+            $exists = MissionOrder::where('is_legacy', true)->where('legacy_source', MissionOrder::LEGACY_SOURCE)
+                ->when($reference !== null, fn ($q) => $q->where('legacy_reference', $reference), fn ($q) => $q->whereNull('legacy_reference'))
+                ->when($date !== null, fn ($q) => $q->whereDate('order_date', $date), fn ($q) => $q->whereNull('order_date'))
+                ->exists();
+            if ($exists) {
+                $skipped++;
+
+                continue;
+            }
+
+            $order = MissionOrder::create([
+                'order_date' => $date,
+                'destination' => $destination,
+                'reason' => self::text($row['reason'] ?? null, 1000),
+                'departure_date' => self::textDay($row['departure_date'] ?? null),
+                'return_date' => self::textDay($row['return_date'] ?? null),
+                'transport' => self::text($row['transport'] ?? null, 100),
+                'status' => MissionOrder::ACTIVE,
+                'is_legacy' => true,
+                'legacy_reference' => $reference,
+                'legacy_source' => MissionOrder::LEGACY_SOURCE,
+            ]);
+            MissionOrderTraveler::create([
+                'mission_order_id' => $order->id,
+                'traveler_type' => null,
+                'traveler_id' => null,
+                'name' => $name ?? '—',
+                'function' => self::text($row['function'] ?? null, 200),
+                'sort_order' => 1,
+            ]);
+            $created++;
+        }
+
+        return ['created' => $created, 'skipped' => $skipped];
+    }
+
+    /**
+     * A day typed as text in Access: "15/03/2018", "15-03-2018", "15.03.18"
+     * (day first, as the club wrote them) or "2018-03-15" (with or without a
+     * time). An impossible or unreadable date → null. Carbon::parse() is not
+     * used: it reads "05/07/2018" month first.
+     */
+    private static function textDay(mixed $value): ?string
+    {
+        $text = trim(self::plain($value));
+        if (preg_match('/^(\d{4})-(\d{1,2})-(\d{1,2})(?!\d)/', $text, $m) === 1) {
+            [$year, $month, $day] = [(int) $m[1], (int) $m[2], (int) $m[3]];
+        } elseif (preg_match('#^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4}|\d{2})(?!\d)#', $text, $m) === 1) {
+            [$day, $month, $year] = [(int) $m[1], (int) $m[2], (int) $m[3]];
+            $year += $year < 100 ? 2000 : 0;
+        } else {
+            return null;
+        }
+
+        return checkdate($month, $day, $year) ? sprintf('%04d-%02d-%02d', $year, $month, $day) : null;
     }
 
     /** "2019/07" → 2019; anything else → null. */

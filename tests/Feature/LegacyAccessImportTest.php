@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\MailEntry;
+use App\Models\MissionOrder;
 use App\Models\PaymentOrder;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\Legacy\LegacyAccessImporter;
+use App\Services\Secretariat\MissionOrders;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use PHPUnit\Framework\Attributes\Test;
@@ -316,5 +318,91 @@ class LegacyAccessImportTest extends TestCase
         $this->assertSame(2018, $row->year);
         $this->assertNull($row->entry_date);
         $this->assertNull($row->correspondent);
+    }
+
+    #[Test]
+    public function the_old_mission_orders_are_imported_as_read_only_history(): void
+    {
+        $result = app(LegacyAccessImporter::class)->import($this->data(), User::factory()->admin()->create());
+
+        $this->assertSame(['created' => 2, 'skipped' => 1], $result['missions']);
+
+        $first = MissionOrder::where('legacy_reference', '59')->sole();
+        $this->assertTrue($first->is_legacy);
+        $this->assertSame(MissionOrder::LEGACY_SOURCE, $first->legacy_source);
+        $this->assertSame(MissionOrder::ACTIVE, $first->status);
+        $this->assertFalse($first->isEditable());
+        // Access kept the dates as text, day first.
+        $this->assertSame('2018-05-12', $first->order_date->toDateString());
+        $this->assertSame('2018-05-13', $first->departure_date->toDateString());
+        $this->assertSame('2018-05-15', $first->return_date->toDateString());
+        $this->assertSame('Testville', $first->destination);
+        $this->assertSame('Stage de formation', $first->reason);
+        $this->assertSame('Bus', $first->transport);
+        $traveler = $first->travelers()->sole();
+        $this->assertNull($traveler->traveler_type);
+        $this->assertSame('Testeur Karim', $traveler->name);
+        $this->assertSame('Entraîneur', $traveler->function);
+        $this->assertSame('59', app(MissionOrders::class)->reference($first));
+
+        $second = MissionOrder::where('legacy_reference', '60')->sole();
+        $this->assertSame('2018-06-02', $second->order_date->toDateString());
+        $this->assertNull($second->departure_date);
+        $this->assertNull($second->return_date);
+
+        // The old letters are already in the imported mail register: no entry for the missions.
+        $this->assertSame(0, MailEntry::where('source_type', MailEntry::SOURCE_MISSION)->count());
+        $this->assertDatabaseHas('activity_logs', ['action' => 'legacy_data_imported']);
+    }
+
+    #[Test]
+    public function importing_the_mission_orders_twice_changes_nothing(): void
+    {
+        $importer = app(LegacyAccessImporter::class);
+        $admin = User::factory()->admin()->create();
+        $importer->import($this->data(), $admin);
+
+        $second = $importer->import($this->data(), $admin);
+
+        $this->assertSame(['created' => 0, 'skipped' => 3], $second['missions']);
+        $this->assertSame(2, MissionOrder::count());
+    }
+
+    #[Test]
+    public function a_file_without_mission_orders_still_imports(): void
+    {
+        $data = $this->data();
+        unset($data['missions']);
+
+        $result = app(LegacyAccessImporter::class)->import($data, User::factory()->admin()->create());
+
+        $this->assertSame(['created' => 0, 'skipped' => 0], $result['missions']);
+        $this->assertSame(['created' => 3, 'skipped' => 1], $result['mail']);
+        $this->assertSame(0, MissionOrder::count());
+    }
+
+    #[Test]
+    public function odd_mission_rows_are_read_defensively(): void
+    {
+        $result = app(LegacyAccessImporter::class)->import([
+            'format' => 'access-legacy-v1',
+            'missions' => [
+                'oops',
+                // A reference alone still imports; an impossible date stays empty; a nameless traveler is a dash.
+                ['reference' => ' 61 ', 'date' => '31/02/2018'],
+                // Two-digit year and dots.
+                ['reference' => '62', 'date' => '05.07.18', 'lastname' => 'Test', 'destination' => 'Testville', 'departure_date' => '2018-07-06 00:00:00'],
+                ['reference' => '', 'date' => '', 'lastname' => '', 'firstname' => '', 'destination' => ''],
+            ],
+        ], User::factory()->admin()->create());
+
+        $this->assertSame(['created' => 2, 'skipped' => 2], $result['missions']);
+        $alone = MissionOrder::where('legacy_reference', '61')->sole();
+        $this->assertNull($alone->order_date);
+        $this->assertSame('—', $alone->travelers()->sole()->name);
+        $dotted = MissionOrder::where('legacy_reference', '62')->sole();
+        $this->assertSame('2018-07-05', $dotted->order_date->toDateString());
+        $this->assertSame('2018-07-06', $dotted->departure_date->toDateString());
+        $this->assertSame('Test', $dotted->travelers()->sole()->name);
     }
 }

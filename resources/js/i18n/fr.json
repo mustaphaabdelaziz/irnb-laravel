@@ -1058,6 +1058,7 @@
     "legacy_import.result": "Résultat",
     "legacy_import.run": "Importer",
     "legacy_import.section.mail": "Registre du courrier",
+    "legacy_import.section.missions": "Ordres de mission",
     "legacy_import.section.payment_orders": "Ordres de paiement",
     "legacy_import.section.purchase_orders": "Bons de commande",
     "legacy_import.section.suppliers": "Fournisseurs",

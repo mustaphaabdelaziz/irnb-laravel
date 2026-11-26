@@ -25,6 +25,8 @@ function Read-Table([string]$sql) {
 function Get-Text($value) { if ($value -is [DBNull] -or $null -eq $value) { '' } else { ("$value").Trim() } }
 function Get-Day($value) { if ($value -is [DateTime]) { $value.ToString('yyyy-MM-dd') } else { $null } }
 function Get-Amount($value) { if ($value -is [DBNull] -or $null -eq $value) { 0 } else { [double]$value } }
+# Dates the old app kept as text: exported as typed (the importer reads them day first); a real date as yyyy-MM-dd.
+function Get-DayText($value) { if ($value -is [DateTime]) { $value.ToString('yyyy-MM-dd') } else { Get-Text $value } }
 
 $suppliers = @{}
 $orders = New-Object System.Collections.ArrayList
@@ -111,6 +113,26 @@ foreach ($row in $mailRows) {
     })
 }
 
+# Optional: the old mission orders (Ordre de Mission), one traveler per row.
+# Every column but N° is text in Access, dates included. The N° column is the
+# Access row id and is not exported. A database without the table still exports.
+$missions = New-Object System.Collections.ArrayList
+try {
+    $missionRows = (Read-Table 'SELECT * FROM [Ordre de Mission]').Rows
+} catch {
+    $missionRows = @()
+    Write-Warning 'No [Ordre de Mission] table: missions skipped'
+}
+foreach ($row in $missionRows) {
+    [void]$missions.Add([ordered]@{
+        'reference' = (Get-Text $row['Réf']); 'date' = (Get-DayText $row['Date'])
+        'lastname' = (Get-Text $row['Nom']); 'firstname' = (Get-Text $row['Prénom']); 'function' = (Get-Text $row['Fonction'])
+        'destination' = (Get-Text $row['Départ Vers']); 'reason' = (Get-Text $row['السبب'])
+        'departure_date' = (Get-DayText $row['Date Départ']); 'return_date' = (Get-DayText $row['Date Retour'])
+        'transport' = (Get-Text $row['Moyen Transport'])
+    })
+}
+
 $connection.Close()
 
 $document = [ordered]@{
@@ -120,7 +142,8 @@ $document = [ordered]@{
     payment_orders = @($orders)
     purchase_orders = @($purchaseOrders.Values)
     mail = @($mail)
+    missions = @($missions)
 }
 $json = $document | ConvertTo-Json -Depth 6
 [System.IO.File]::WriteAllText($Out, $json, (New-Object System.Text.UTF8Encoding($false)))
-Write-Output ("Wrote {0} suppliers, {1} payment orders, {2} purchase orders, {3} letters to {4}" -f $suppliers.Count, $orders.Count, $purchaseOrders.Count, $mail.Count, $Out)
+Write-Output ("Wrote {0} suppliers, {1} payment orders, {2} purchase orders, {3} letters, {4} mission orders to {5}" -f $suppliers.Count, $orders.Count, $purchaseOrders.Count, $mail.Count, $missions.Count, $Out)

@@ -8,9 +8,9 @@ use RuntimeException;
 use Throwable;
 
 /**
- * A backup before every merge (owner 2026-11-26): the usual backup into the
- * chosen folder; without one, a copy of the SQLite file next to it. If no
- * backup can be written, the merge must not run.
+ * A backup before every merge (owner 2026-11-26): a full backup into the
+ * chosen folder's never-pruned pre-merge/ subfolder; without one, a copy of
+ * the SQLite file next to it. If no backup can be written, the merge must not run.
  */
 class PreMergeBackup
 {
@@ -20,15 +20,22 @@ class PreMergeBackup
     public function run(): string
     {
         try {
-            return $this->backups->create();
+            return $this->backups->preMerge();
         } catch (Throwable $e) {
             $config = config('database.connections.'.DB::getDefaultConnection());
             $path = (string) ($config['database'] ?? '');
             if (($config['driver'] ?? null) !== 'sqlite' || $path === '' || $path === ':memory:' || str_contains($path, 'mode=memory') || ! is_file($path)) {
-                throw $e;
+                throw $e; // the caller reports it
             }
 
-            $target = dirname($path).DIRECTORY_SEPARATOR.'database.pre-merge-'.now()->format('Ymd-His').'.sqlite';
+            // The fallback may work: keep the reason the real backup failed in the log.
+            report($e);
+
+            $base = dirname($path).DIRECTORY_SEPARATOR.'database.pre-merge-'.now()->format('Ymd-His');
+            $target = $base.'.sqlite';
+            for ($n = 2; file_exists($target); $n++) {
+                $target = $base.'-'.$n.'.sqlite';
+            }
 
             // Same as PreMigrationBackup: release the app's handle, let SQLite write one consistent copy.
             DB::disconnect();

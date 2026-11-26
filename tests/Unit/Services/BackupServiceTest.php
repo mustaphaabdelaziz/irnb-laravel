@@ -127,6 +127,35 @@ class BackupServiceTest extends TestCase
     }
 
     #[Test]
+    public function pre_merge_backups_get_their_own_never_pruned_folder_and_distinct_names(): void
+    {
+        $this->settings->put(['retention' => 1]);
+        $service = $this->service();
+        $existing = $this->destination.'/'.BackupService::PREFIX.'2026-07-01_100000.zip';
+        file_put_contents($existing, 'the owner backup');
+
+        $first = $service->preMerge();
+        $second = $service->preMerge();
+
+        $this->assertNotSame($first, $second);
+        $this->assertSame(realpath($this->destination.'/'.BackupService::PRE_MERGE_DIR), realpath(dirname($first)));
+        $this->assertFileExists($first);
+        $this->assertFileExists($second);
+        $zip = new ZipArchive;
+        $this->assertTrue($zip->open($second) === true);
+        $this->assertNotFalse($zip->locateName('database.sqlite'));
+        $zip->close();
+
+        // Neither listed, counted nor pruned with the owner's backups, and no "last backup" stamp.
+        $this->assertFileExists($existing);
+        $this->assertSame([basename($existing)], array_column($service->list(), 'name'));
+        $this->assertNull($this->settings->all()['last_run_at']);
+        $service->create();
+        $this->assertFileExists($first);
+        $this->assertFileExists($second);
+    }
+
+    #[Test]
     public function create_stamps_last_run_at(): void
     {
         $this->assertNull($this->settings->all()['last_run_at']);

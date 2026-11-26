@@ -69,6 +69,46 @@ class AttendanceSheetTotalsPdfTest extends TestCase
         $this->assertStringNotContainsString('class="total"', $this->monthHtml($u15));
     }
 
+    private function sessionHtml(TrainingSession $training, array $query = []): string
+    {
+        $seen = $this->spyPdf();
+        $this->actingAs(User::factory()->admin()->create(['preferred_lng' => 'fr']))
+            ->get(route('attendance.sheets.session', ['session' => $training->id] + $query))
+            ->assertOk();
+
+        return $seen['html'];
+    }
+
+    #[Test]
+    public function the_filled_session_sheet_prints_a_summary_line(): void
+    {
+        $u15 = $this->category('U15');
+        $a = $this->player($u15);
+        $b = $this->player($u15);
+        $c = $this->player($u15);
+        $training = $this->training($u15, '2026-10-05');
+        $this->markAs($training, $a, 'present');
+        $this->markAs($training, $b, 'late');
+        $this->markAs($training, $c, 'absent_excused');
+
+        $html = $this->sessionHtml($training, ['filled' => 1]);
+
+        $this->assertStringContainsString('class="summary"', $html);
+        $this->assertStringContainsString('Présents : 2 · Absents : 1', $html);
+        $this->assertStringContainsString('66.7%', $html);
+    }
+
+    #[Test]
+    public function the_blank_session_sheet_has_no_summary_line(): void
+    {
+        $u15 = $this->category('U15');
+        $a = $this->player($u15);
+        $training = $this->training($u15, '2026-10-05');
+        $this->markAs($training, $a, 'present');
+
+        $this->assertStringNotContainsString('class="summary"', $this->sessionHtml($training));
+    }
+
     #[Test]
     public function with_two_parts_the_totals_are_on_the_last_part_only(): void
     {

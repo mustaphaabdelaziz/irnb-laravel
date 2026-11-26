@@ -615,6 +615,7 @@
     "att.sheet.print_filled": "Imprimer avec les présences",
     "att.sheet.print_hint": "Feuille A4 vierge à remplir à la main sur le terrain.",
     "att.sheet.print_session": "Imprimer la feuille de séance",
+    "att.sheet.session_summary": "Présents : {present} · Absents : {absent} · Taux : {rate}",
     "att.sheet.session_title": "Feuille de présence de la séance",
     "att.sheet.signature": "Signature",
     "att.sheet.tick_help": "Cochez un statut par joueur et indiquez les minutes en cas de retard ou de départ anticipé.",

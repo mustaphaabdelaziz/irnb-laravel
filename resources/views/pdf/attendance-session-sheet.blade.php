@@ -26,6 +26,7 @@
         .code { font-size: 10px; font-weight: bold; }
         .guest { font-size: 7px; color: #64748b; }
         .help { font-size: 8px; color: #64748b; margin-top: 4px; }
+        .summary { font-size: 11px; font-weight: bold; margin-top: 4px; }
         table.log { width: 100%; margin-top: 8px; border-collapse: collapse; page-break-inside: avoid; }
         table.log td { border: 1px solid #94a3b8; padding: 4px; vertical-align: top; }
         table.log td.label { width: 28%; color: #64748b; font-size: 9px; }
@@ -94,6 +95,14 @@
             @endfor
         </tbody>
     </table>
+
+    @if (! empty($summary))
+        <div class="summary">{!! strtr(e($L('att.sheet.session_summary')), [
+            '{present}' => $summary['present'],
+            '{absent}' => $summary['absent'],
+            '{rate}' => '<bdi dir="ltr">'.e(\App\Services\Attendance\SheetTotals::rateLabel($summary['rate'])).'</bdi>',
+        ]) !!}</div>
+    @endif
 
     <div class="help">{{ $L('att.sheet.tick_help') }} {{ $L('att.sheet.blank_rows') }}</div>
     <div class="help"><b>{{ $L('att.reason') }}:</b>

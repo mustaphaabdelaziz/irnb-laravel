@@ -111,7 +111,7 @@ class AttendanceSheetController extends Controller
      * expected roster of every category taking part), a tick column per
      * status, minutes, reason, note, and the session log to fill in.
      */
-    public function session(Request $request, TrainingSession $session, Roster $roster, AttendanceStatusCatalog $catalog): Response
+    public function session(Request $request, TrainingSession $session, Roster $roster, AttendanceStatusCatalog $catalog, SheetTotals $totals): Response
     {
         $request->validate(['filled' => ['nullable', 'boolean']]);
         $filled = $request->boolean('filled');
@@ -125,6 +125,8 @@ class AttendanceSheetController extends Controller
         // Loaded once, always: the category tag needs the mark's frozen category_id
         // even on a blank sheet, only the status/minutes/reason/note stay gated by $filled.
         $marks = $session->attendances()->get()->keyBy('player_id');
+        // Present · Absent · Rate of the session, on the filled sheet of a marked session only.
+        $summary = $filled && $marks->isNotEmpty() ? $totals->of($marks->pluck('status')) : null;
 
         $html = view('pdf.attendance-session-sheet', [
             'club' => ClubHeader::data(),
@@ -161,6 +163,7 @@ class AttendanceSheetController extends Controller
             })->values()->all(),
             'blankRows' => self::BLANK_ROWS,
             'filled' => $filled,
+            'summary' => $summary,
             'labels' => $catalog->labels(null, $catalog->shown($filled ? $marks->pluck('status') : [])),
             'codes' => $catalog->codes(),
             'reasons' => AbsenceReason::values(),

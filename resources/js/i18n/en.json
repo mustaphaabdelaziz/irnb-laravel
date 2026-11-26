@@ -615,6 +615,7 @@
     "att.sheet.print_filled": "Print with marks",
     "att.sheet.print_hint": "Blank A4 sheet to fill in by hand on the pitch.",
     "att.sheet.print_session": "Print session sheet",
+    "att.sheet.session_summary": "Present: {present} · Absent: {absent} · Rate: {rate}",
     "att.sheet.session_title": "Session attendance sheet",
     "att.sheet.signature": "Signature",
     "att.sheet.tick_help": "Tick one status per player and write the minutes for a late arrival or an early departure.",

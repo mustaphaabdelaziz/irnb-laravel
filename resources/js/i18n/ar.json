@@ -615,6 +615,7 @@
     "att.sheet.print_filled": "طباعة مع الحضور المسجَّل",
     "att.sheet.print_hint": "ورقة A4 فارغة تُملأ يدويًا في الملعب.",
     "att.sheet.print_session": "طباعة ورقة الحصة",
+    "att.sheet.session_summary": "الحاضرون: {present} · الغائبون: {absent} · النسبة: {rate}",
     "att.sheet.session_title": "ورقة حضور الحصة",
     "att.sheet.signature": "التوقيع",
     "att.sheet.tick_help": "ضع علامة على حالة واحدة لكل لاعب، واكتب عدد الدقائق عند التأخر أو المغادرة المبكرة.",

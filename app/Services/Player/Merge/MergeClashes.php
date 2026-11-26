@@ -117,6 +117,7 @@ final class MergeClashes
         );
     }
 
+    /** competition_players holds only a `hidden` flag, so a row is never "empty": the keeper's row always wins. */
     private function competitions(int $keeper, int $duplicate): array
     {
         $names = DB::table('competitions')->pluck('name', 'id');
@@ -134,9 +135,12 @@ final class MergeClashes
     /** Same match: the keeper's row, unless it is empty (not called up, no minutes, no rating) and the duplicate's is not. */
     private function games(int $keeper, int $duplicate): array
     {
-        $rows = DB::table('game_players')->whereIn('player_id', [$keeper, $duplicate])->get(['id', 'player_id', 'game_id', 'called_up', 'minutes_played', 'rating', 'played']);
+        $rows = DB::table('game_players')->whereIn('player_id', [$keeper, $duplicate])->get(['id', 'player_id', 'game_id', 'called_up', 'played', 'minutes_played', 'rating', 'role', 'position_id', 'shirt_number', 'is_captain', 'is_mvp', 'coach_note']);
         $dates = DB::table('games')->whereIn('id', $rows->pluck('game_id')->unique())->pluck('date', 'id');
-        $empty = fn (object $row) => ! $row->called_up && ! $row->played && $row->minutes_played === null && $row->rating === null;
+        $empty = fn (object $row) => ! $row->called_up && ! $row->played
+            && $row->minutes_played === null && $row->rating === null
+            && ($row->role === null || $row->role === 'none') && $row->position_id === null && $row->shirt_number === null
+            && ! $row->is_captain && ! $row->is_mvp && blank($row->coach_note);
 
         return $this->pairUp(
             $rows,
@@ -181,13 +185,17 @@ final class MergeClashes
      */
     private function pairUp(Collection $rows, int $keeper, callable $slot, callable $duplicateWins, string $kind, callable $label): array
     {
-        $mine = $rows->filter(fn (object $row) => (int) $row->player_id === $keeper)->keyBy($slot);
+        // A slot can repeat within one player (documents with no registration): pair each slot once, with the keeper's first row; the rest just move.
+        $mine = $rows->filter(fn (object $row) => (int) $row->player_id === $keeper)->reverse()->keyBy($slot);
         $clashes = [];
+        $paired = [];
         foreach ($rows->filter(fn (object $row) => (int) $row->player_id !== $keeper) as $theirs) {
-            $ours = $mine->get($slot($theirs));
-            if ($ours === null) {
+            $key = $slot($theirs);
+            $ours = $mine->get($key);
+            if ($ours === null || isset($paired[$key])) {
                 continue;
             }
+            $paired[$key] = true;
             $clashes[] = [
                 'kind' => $kind,
                 'label' => $label($theirs),

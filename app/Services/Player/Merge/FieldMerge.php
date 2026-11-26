@@ -3,6 +3,7 @@
 namespace App\Services\Player\Merge;
 
 use App\Models\Player;
+use App\Services\Player\Duplicates\DuplicateScorer;
 
 /**
  * The player's own columns in a merge (owner 2026-11-26): where only the
@@ -54,10 +55,18 @@ final class FieldMerge
             }
         }
 
-        $attributes['phones'] = array_values(array_unique(array_filter(
-            [...($keeper->phones ?? []), ...($duplicate->phones ?? [])],
-            fn ($phone) => trim((string) $phone) !== '',
-        )));
+        $phones = [];
+        $seen = [];
+        foreach ([...($keeper->phones ?? []), ...($duplicate->phones ?? [])] as $phone) {
+            $raw = trim((string) $phone);
+            $key = DuplicateScorer::phone($raw) ?: $raw;
+            if ($key === '' || isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+            $phones[] = $phone;
+        }
+        $attributes['phones'] = $phones;
         $attributes['archived'] = (bool) $keeper->archived && (bool) $duplicate->archived;
 
         return $attributes;

@@ -2,7 +2,7 @@
 title: How do I enter a whole month of attendance from the paper sheet
 summary: Copy the codes from the attendance sheet into the month grid, one player per row and one session per column, then save.
 pages: [attendance.grid]
-keywords: [month grid, attendance sheet, codes, enter attendance, whole month, coach sheet, R15, AN, print sheet, grid, groups, group, paper]
+keywords: [month grid, attendance sheet, codes, enter attendance, whole month, coach sheet, R15, AN, print sheet, print a period, grid, groups, group, paper]
 related: [attendance/take-attendance, attendance/cancel-delete-session, attendance/training-groups]
 ---
 
@@ -59,5 +59,7 @@ The cell “—” means the player is not on that session's list. A cancelled s
 You can't type in the cells? You need the “Edit” permission for “Attendance”. Ask the club administrator for it.
 
 :::tip
-Print the blank sheet for the coach before the month starts. At the top of the grid, click the printer button. Its name, “Print sheet”, shows when you hover the mouse over it. It has the same players, sessions and codes. The button next to it, “Print with marks”, prints it with the saved codes.
+Print the blank sheet for the coach before the month starts. At the top of the grid, click the printer button. Its name, “Print sheet”, shows when you hover the mouse over it. It has the same players, sessions and codes. The button next to it, “Print with marks”, prints it with the saved codes. Each row ends with three columns: Present, Absent and Rate.
+
+To print more than one month, click the calendar button. Its name, “Print a period”, shows when you hover the mouse over it. Pick the two dates, then click “Print”. You get one page per month, then a summary page for the period. The “Print a period” button on “Attendance statistics” prints the period and category chosen on that page.
 :::

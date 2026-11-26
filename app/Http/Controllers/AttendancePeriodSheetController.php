@@ -47,6 +47,11 @@ class AttendancePeriodSheetController extends Controller
         $categoryId = isset($data['category_id']) ? (int) $data['category_id'] : null;
         $groupId = isset($data['group_id']) ? (int) $data['group_id'] : null;
         $locale = app()->getLocale();
+        // The data build and the render scale with months × categories × groups: lift the time
+        // limit as PdfService does (a process with no limit never gains one).
+        if ((int) ini_get('max_execution_time') > 0 && function_exists('set_time_limit')) {
+            set_time_limit(PdfService::RENDER_SECONDS);
+        }
         $sections = $sheet->build($data['from'], $data['to'], $branch?->id, $categoryId, $groupId);
 
         $used = collect($sections)->flatMap(fn (array $s) => collect($s['months'])

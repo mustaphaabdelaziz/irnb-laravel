@@ -86,6 +86,19 @@ class AttendancePeriodSheetTest extends TestCase
     }
 
     #[Test]
+    public function days_after_today_are_cut(): void
+    {
+        $u15 = $this->category('U15');
+        $this->player($u15);
+        $past = $this->training($u15, '2026-11-10');
+        $this->training($u15, '2026-11-28');
+
+        $sections = app(PeriodSheet::class)->build('2026-11-01', '2026-11-30', null, $u15->id);
+
+        $this->assertSame([$past->id], $sections[0]['months'][0]['sessions']->pluck('id')->all());
+    }
+
+    #[Test]
     public function all_categories_give_one_section_each_and_empty_ones_are_dropped(): void
     {
         $u15 = $this->category('U15');

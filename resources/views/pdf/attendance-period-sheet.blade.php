@@ -8,7 +8,7 @@
     $code = fn (string $status) => AttendanceCode::normalise($codes[$status]['code']);
     $legendCode = fn (string $status) => $code($status).((AttendanceStatus::tryFrom($status)?->takesMinutes() ?? false) ? '15' : '');
     $kindMarks = ['preseason' => $L('att.sheet.kind_mark.preseason'), 'extra' => $L('att.sheet.kind_mark.extra')];
-    $footer = ($branch ? $branch.' · ' : '').$periodLabel.' — '.strtr($L('att.sheet.page'), ['{page}' => '{PAGENO}', '{pages}' => '{nbpg}']);
+    $footer = ($branch ? e($branch).' · ' : '').'<bdi dir="ltr">'.e($periodLabel).'</bdi> — '.strtr($L('att.sheet.page'), ['{page}' => '{PAGENO}', '{pages}' => '{nbpg}']);
     $first = true;
 @endphp
 <!DOCTYPE html>
@@ -34,7 +34,7 @@
     </style>
 </head>
 <body>
-    <htmlpagefooter name="sheet"><div style="font-size:7px; color:#94a3b8; text-align:center;">{{ $footer }}</div></htmlpagefooter>
+    <htmlpagefooter name="sheet"><div style="font-size:7px; color:#94a3b8; text-align:center;">{!! $footer !!}</div></htmlpagefooter>
     <sethtmlpagefooter name="sheet" value="on" />
 
     @if ($sections === [])

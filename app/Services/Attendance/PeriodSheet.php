@@ -32,7 +32,12 @@ final class PeriodSheet
      */
     public function build(string $from, string $to, ?int $branchId, ?int $categoryId = null, ?int $groupId = null): array
     {
-        $months = $this->months($from, $to);
+        // Days after today hold no marks: cut them too, so they print no empty columns.
+        $today = CarbonImmutable::now()->toDateString();
+        if ($to > $today) {
+            $to = $today;
+        }
+        $months = $from > $to ? [] : $this->months($from, $to);
         if ($months === []) {
             return [];
         }

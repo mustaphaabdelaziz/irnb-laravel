@@ -9,6 +9,7 @@ import InputError from '@/Components/InputError.vue';
 import Modal from '@/Components/Modal.vue';
 import { useCan } from '@/Composables/useCan';
 import { useAttendanceCodes } from '@/Composables/useAttendanceCodes';
+import { periodTooLong } from '@/lib/attendanceStats';
 
 const props = defineProps({
     category: { type: Object, required: true },
@@ -54,7 +55,9 @@ const filledSheetHref = computed(() => route('attendance.sheets.month', { catego
 // Any period of this branch, category and group, from a small dialog (defaults to the grid's month).
 const showPeriod = ref(false);
 const period = reactive({ from: '', to: '' });
-const periodValid = computed(() => !!period.from && !!period.to && period.from <= period.to);
+const periodOrdered = computed(() => !!period.from && !!period.to && period.from <= period.to);
+const periodLong = computed(() => periodOrdered.value && periodTooLong(period.from, period.to));
+const periodValid = computed(() => periodOrdered.value && !periodLong.value);
 const periodSheetHref = computed(() => (periodValid.value
     ? route('attendance.sheets.period', { from: period.from, to: period.to, category_id: props.category.id, ...branchParam.value, ...groupParam.value })
     : null));
@@ -218,7 +221,7 @@ function save() {
                     <label class="block text-sm text-slate-700 dark:text-slate-300">{{ t('activity.from') }}<input v-model="period.from" type="date" :class="dateInput" /></label>
                     <label class="block text-sm text-slate-700 dark:text-slate-300">{{ t('activity.to') }}<input v-model="period.to" type="date" :class="dateInput" /></label>
                 </div>
-                <InputError :message="period.from && period.to && !periodValid ? t('att.sheet.period_order') : ''" />
+                <InputError :message="period.from && period.to && !periodOrdered ? t('att.sheet.period_order') : (periodLong ? t('att.sheet.period_too_long') : '')" />
                 <div class="flex justify-end gap-2">
                     <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:text-slate-400 dark:ring-slate-700" @click="showPeriod = false">{{ t('att.close') }}</button>
                     <a

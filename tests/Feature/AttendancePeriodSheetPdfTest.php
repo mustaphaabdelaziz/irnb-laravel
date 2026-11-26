@@ -84,6 +84,7 @@ class AttendancePeriodSheetPdfTest extends TestCase
 
         $this->assertStringContainsString('Feuille de présence de la période', $html);
         $this->assertStringContainsString('octobre 2026', $html);
+        $this->assertStringContainsString('<bdi dir="ltr">01/10/2026 → 30/11/2026</bdi>', $html);
         $this->assertStringContainsString('novembre 2026', $html);
         $this->assertStringContainsString('Récapitulatif de la période', $html);
         $this->assertStringContainsString('100.0%', $html); // October page

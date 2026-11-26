@@ -96,7 +96,7 @@ name → new right). Inertia page:
 - Preview: counts of records moving (subscriptions, transactions, attendance,
   documents, registrations, …) and each clash with its resolved outcome.
 - Confirm → backup → merge in one DB transaction → decision row `merged` + activity
-  log entry with the removed player's snapshot → redirect to keeper's page with flash.
+  log entry (ids + moved count only; the removed player's snapshot lives in the decision row) → redirect to keeper's page with flash.
 - Stale-pair guard: if either player no longer exists, redirect back with an error.
 
 ## Merge engine (`App\Services\Player\PlayerMerger`)

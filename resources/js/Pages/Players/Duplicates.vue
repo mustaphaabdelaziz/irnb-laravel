@@ -32,7 +32,7 @@ const statusClass = {
 function apply() {
     router.get(
         route('players.duplicates.index'),
-        { status: status.value, min_score: minScore.value || undefined, criteria: criteria.value },
+        { status: status.value, min_score: minScore.value, criteria: criteria.value },
         { preserveScroll: true, preserveState: true, replace: true },
     );
 }

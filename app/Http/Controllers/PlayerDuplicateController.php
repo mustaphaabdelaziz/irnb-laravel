@@ -22,6 +22,8 @@ class PlayerDuplicateController extends Controller
 
     private const MIN_SCORES = [0, 50, 100, 150, 200];
 
+    private const DEFAULT_MIN_SCORE = 100;
+
     public function index(Request $request, DuplicateFinder $finder): Response
     {
         $filters = $request->validate([
@@ -31,7 +33,8 @@ class PlayerDuplicateController extends Controller
             'criteria.*' => [Rule::in(array_keys(DuplicateScorer::CRITERIA))],
         ]);
         $status = $filters['status'] ?? 'pending';
-        $minScore = (int) ($filters['min_score'] ?? 0);
+        // Owner 2026-11-26: the list opens on strong matches; 0 ("All") stays selectable.
+        $minScore = (int) ($filters['min_score'] ?? self::DEFAULT_MIN_SCORE);
         $criteria = array_values($filters['criteria'] ?? []);
 
         $rows = $status === 'pending'

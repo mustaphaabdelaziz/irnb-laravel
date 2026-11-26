@@ -67,13 +67,29 @@ class PlayerDuplicatesPageTest extends TestCase
     }
 
     #[Test]
+    public function the_list_starts_at_score_100_and_all_scores_stay_selectable(): void
+    {
+        // Same name only: 80 points.
+        $this->player(['firstname' => 'Sami', 'lastname' => 'Amrani']);
+        $this->player(['firstname' => 'Sami', 'lastname' => 'Amrani']);
+
+        $this->actingAs($this->merger())
+            ->get(route('players.duplicates.index'))
+            ->assertInertia(fn (Assert $page) => $page->where('filters.min_score', 100)->where('total', 0));
+
+        $this->actingAs($this->merger())
+            ->get(route('players.duplicates.index', ['min_score' => 0]))
+            ->assertInertia(fn (Assert $page) => $page->where('filters.min_score', 0)->where('total', 1)->where('pairs.data.0.score', 80));
+    }
+
+    #[Test]
     public function criteria_filter_reaches_the_finder(): void
     {
         $this->player(['firstname' => 'Sami', 'lastname' => 'Amrani']);
         $this->player(['firstname' => 'Sami', 'lastname' => 'Amrani']);
 
         $this->actingAs($this->merger())
-            ->get(route('players.duplicates.index', ['criteria' => ['name', 'birthdate']]))
+            ->get(route('players.duplicates.index', ['criteria' => ['name', 'birthdate'], 'min_score' => 0]))
             ->assertInertia(fn (Assert $page) => $page->where('total', 0)->where('filters.criteria', ['name', 'birthdate']));
     }
 
@@ -94,9 +110,9 @@ class PlayerDuplicatesPageTest extends TestCase
         $this->assertSame(['same_name'], $decision->reasons);
         $this->assertSame($user->id, $decision->decided_by);
 
-        $this->actingAs($user)->get(route('players.duplicates.index'))
+        $this->actingAs($user)->get(route('players.duplicates.index', ['min_score' => 0]))
             ->assertInertia(fn (Assert $page) => $page->where('total', 0));
-        $this->actingAs($user)->get(route('players.duplicates.index', ['status' => 'dismissed']))
+        $this->actingAs($user)->get(route('players.duplicates.index', ['status' => 'dismissed', 'min_score' => 0]))
             ->assertInertia(fn (Assert $page) => $page->where('total', 1)->where('pairs.data.0.decision_id', $decision->id));
 
         $this->actingAs($user)
@@ -126,7 +142,7 @@ class PlayerDuplicatesPageTest extends TestCase
         ]);
 
         $this->actingAs($this->merger())->delete(route('players.duplicates.restore', $decision))->assertNotFound();
-        $this->actingAs($this->merger())->get(route('players.duplicates.index', ['status' => 'merged']))
+        $this->actingAs($this->merger())->get(route('players.duplicates.index', ['status' => 'merged', 'min_score' => 0]))
             ->assertInertia(fn (Assert $page) => $page->where('total', 1)->where('pairs.data.0.b.name', 'Gone'));
     }
 }

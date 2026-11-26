@@ -61,6 +61,13 @@ them), copies and leftover tables.
 | Mail scan | One file per entry, replaceable |
 | Entries made from a print | Correspondent, subject, notes, scan editable; source link and number fixed; can be cancelled |
 | Mission travelers | One or more people (user / board member / player or typed), one sheet each |
+| Mission number | None of its own: the mail-register reference (outgoing `YYYY/NN`) taken on first print, like the old Access refs (owner 2026-11-26) |
+| Mission after print | Editable; reprint keeps the same reference; cancel keeps it (also cancels the mail entry), never deleted |
+| Mission team add | "Add a team" adds the team's players of the season + its coaches, then untick who stays home |
+| Mission extra fields | None (same fields as the Access sheet) |
+| Mission signatures | President + Secretary General |
+| Mission costs | No link to money |
+| Mission printing | All sheets in one PDF + a print button per traveler (same reference) |
 | Import | Suppliers, 141 letters, ~60 old payment orders (history), 2 missions |
 | Menu | Payment + purchase orders under Finance; Suppliers in App Configuration; new **Secretariat** (الأمانة) section: Mail register, Mission orders |
 | Finance reset | Keeps all payment orders as history (status unchanged, link to the wiped expense cleared) |
@@ -305,15 +312,61 @@ Design approved by the owner 2026-11-26.
 
 ## P4 — Mission orders
 
-- `mission_orders`: `order_date`, `destination`, `reason`, `departure_date`, `return_date`,
-  `transport`, legacy fields, `created_by`. Mail reference through the mail entry's
-  `source_*` columns.
-- `mission_order_travelers`: `traveler_type` user / board_member / player / null (typed),
-  `traveler_id`, `name`, `function` (snapshot), `sort_order`.
-- Print: one A4 sheet per traveler in one PDF, mail reference on each, president signature.
-  First print takes the mail reference.
-- Secretariat → **Mission orders** list / form / show; module `missions`.
-- Import: the 2 missions of 2018 (refs 59, 60 as legacy references).
+Design approved by the owner 2026-11-26.
+
+### Data
+
+- `mission_orders`: `order_date`, `destination`, `reason`, `departure_date`, `return_date`
+  (dates only), `transport`, `status` active / cancelled (+ `cancelled_by`, `cancelled_at`),
+  `is_legacy`, `legacy_reference`, `legacy_source`, `created_by`, `lock_version`. No number
+  of its own: the reference is the active mail entry with source `mission_order` / order id /
+  key `order` (`MailRegister::find`), shown as its `reference`; legacy orders show
+  `legacy_reference`.
+- `mission_order_travelers`: `mission_order_id` (cascade), `traveler_type` user /
+  board_member / player / null (typed), `traveler_id`, `name`, `function` (both snapshots,
+  editable), `sort_order`.
+
+### Behaviour
+
+- Create / edit (active, non-legacy orders; also after printing). Cancel keeps the order and
+  cancels its active mail entry in the same transaction (number stays in the register);
+  never deleted. Legacy orders read-only.
+- Travelers: at least one. Add a person (user, board member, player) or a typed name;
+  function defaults: user → «مدرب» / coach label, board member → their board role label,
+  player → «لاعب — {category}»; editable. **Add a team**: the team's players of the current
+  season (`TeamMembers`) + its coaches for that season, each a traveler row the user can
+  untick before saving; duplicates (same type + id) are not added twice.
+- **Print takes the reference**: the Print buttons (all sheets, one traveler) POST
+  `missions.register` (needs `missions` edit) which calls `MailRegister::register('mission_order',
+  id, 'order', defaults)` — correspondent = travelers' names (first three, then «+N»),
+  subject = «أمر بمهمة — {destination}» (localized label) — then open the PDF. The PDF GET
+  routes only look up the reference. A user with view only prints directly (reference shown
+  when one exists). Cancelled and legacy orders print without registering.
+- The mail register shows the mission order as an entry's source (link when the viewer has
+  `missions` view); `MailSources` gains the type.
+
+### Print
+
+- One A4 sheet per traveler, all in one PDF (`missions.print`), or one traveler
+  (`missions.print-traveler`). Each sheet: letterhead, «أمر بمهمة / Ordre de mission»,
+  reference, date, name, function, destination, reason, departure and return dates,
+  transport, then President + Secretary General signatures (`BoardSignatories`). Page break
+  between sheets. Same mPDF rules (RTL, `PdfText`, tables).
+
+### Pages, rights, menu
+
+- Secretariat → **Mission orders**: list (year of order date, search by destination /
+  traveler / reference, status), create / edit / show, cancel, print buttons.
+- Module `missions` in the `secretariat` group, actions view / add / edit / delete
+  (delete = cancel); print → view; register → edit. Grant migration: system roles only.
+
+### Import
+
+- `Ordre de Mission` (2 rows, 2018, one traveler each) → legacy orders with
+  `legacy_reference` (refs 59, 60), one typed traveler (Nom + Prénom, Fonction). No mail
+  entries created (the old letters are already in the imported mail register). Export
+  script gains an optional `missions` section; idempotent by (`legacy_source`,
+  `legacy_reference`, order date).
 
 ## Import of old Access data
 

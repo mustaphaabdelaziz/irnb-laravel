@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializesClubDates;
 use App\Services\Player\Duplicates\PlayerCards;
 use Illuminate\Database\Eloquent\Model;
 
@@ -12,6 +13,8 @@ use Illuminate\Database\Eloquent\Model;
  */
 class PlayerDuplicateDecision extends Model
 {
+    use SerializesClubDates;
+
     public const DISMISSED = 'dismissed';
 
     public const MERGED = 'merged';

@@ -2868,7 +2868,8 @@ class MailSourceTest extends TestCase
         $entry = MailEntry::sole();
         $this->assertSame([MailEntry::OUT, MailEntry::SOURCE_GAME, $game->id, 'convocation'], [$entry->direction, $entry->source_type, $entry->source_id, $entry->source_key]);
         $this->assertSame('2026-10-20', $entry->entry_date->toDateString());
-        $this->assertSame('Rivals FC', $entry->correspondent);
+        // Addressed to the called-up players: the team's label, not the opponent.
+        $this->assertSame($game->team->fresh()->labelWith(\App\Support\CategoryLabels::make()), $entry->correspondent);
         $this->assertStringContainsString(UiLang::get('comp.convocation.title', null, 'fr'), $entry->subject);
         $this->assertStringContainsString('Rivals FC', $entry->subject);
         $this->assertStringContainsString('17/10/2026', $entry->subject);
@@ -3493,19 +3494,20 @@ with
         ];
     }
 
-    /** The convocation goes to the opponent's name by default (editable on the entry). */
+    /** The convocation goes to the called-up players: the team's label by default (editable on the entry). */
     private function game(Game $game): array
     {
         $opponent = $game->opponent?->name ?? '—';
+        $team = $game->team->labelWith(CategoryLabels::make());
 
         return [
             'type' => MailEntry::SOURCE_GAME,
             'id' => $game->id,
             'key' => self::GAME_KEY,
             'defaults' => [
-                'correspondent' => $opponent,
+                'correspondent' => $team,
                 'address' => null,
-                'subject' => UiLang::get('comp.convocation.title').' — '.$game->team->labelWith(CategoryLabels::make())
+                'subject' => UiLang::get('comp.convocation.title').' — '.$team
                     .' / '.$opponent.' — '.self::day((string) $game->date),
             ],
         ];
@@ -5056,7 +5058,7 @@ Hand-over notes for the owner (no server deploy — the app runs locally and on 
 | Existing active entry: dialog shows its reference; every print shows «Ref: …» | 6, 7 |
 | Defaults: ticked for convocations and sent / received orders; unticked for absence letters; hidden for draft / cancelled orders and users without the add right | 7 |
 | Source keys: letter `player:{id}|branch:{id or 0}|{from}|{to}`; convocation = the game; purchase order = the order | 4, 6 |
-| Default correspondent / subject from the document (guardian / contact, opponent, supplier) | 6 |
+| Default correspondent / subject from the document (guardian / contact, team for convocations, supplier) | 6 |
 | One scan per entry, private disk, replaceable, served behind login + mail view | 3, 4 |
 | Letter PDF: letterhead, reference, date, recipient, address, subject, body (line breaks + `PdfText` in ar), President + Secretary General, blank line when none; `BoardSignatories` gains the secretary | 5 |
 | «Ref: …» near the date on the absence letter, convocation and purchase order PDFs when the source has an active entry | 6 |

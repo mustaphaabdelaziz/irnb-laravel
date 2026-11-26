@@ -274,7 +274,7 @@ Design approved by the owner 2026-11-26.
   the add right (they print straight away).
 - Source keys: absence letter `player:{id}|branch:{id or 0}|{from}|{to}`; convocation the
   game; purchase order the order. Default correspondent / subject come from the document
-  (guardian / contact name, opponent or league, supplier).
+  (guardian / contact name, the team for a convocation, supplier).
 
 ### Pages, rights, menu
 

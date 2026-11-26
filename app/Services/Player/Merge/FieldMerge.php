@@ -93,6 +93,10 @@ final class FieldMerge
         if ($field === 'birthdate') {
             $value = substr($value, 0, 10);
         }
+        // PlayerController and the import write 'Unknown' when no city was given.
+        if ($field === 'city' && $value === 'Unknown') {
+            return null;
+        }
 
         return $value === '' ? null : $value;
     }

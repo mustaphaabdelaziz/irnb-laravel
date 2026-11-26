@@ -264,6 +264,18 @@ class PlayerMergeRulesTest extends TestCase
     }
 
     #[Test]
+    public function the_unknown_city_placeholder_counts_as_empty(): void
+    {
+        $keeper = $this->player(['city' => 'Unknown']);
+        $duplicate = $this->player(['city' => 'Oran']);
+        $merge = app(FieldMerge::class);
+
+        $this->assertSame('auto', collect($merge->diff($keeper, $duplicate))->firstWhere('field', 'city')['mode']);
+        $this->assertSame('Oran', $merge->resolve($keeper, $duplicate, [])['city']);
+        $this->assertSame('keep', collect($merge->diff($duplicate, $keeper))->firstWhere('field', 'city')['mode']);
+    }
+
+    #[Test]
     public function the_same_subscription_keeps_the_more_paid_row(): void
     {
         $keeper = $this->player();

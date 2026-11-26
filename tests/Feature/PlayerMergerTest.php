@@ -40,7 +40,16 @@ class PlayerMergerTest extends TestCase
         }
         $this->assertSame(0, DB::table('transactions')->where('related_entity_type', 'Player')->where('related_entity_id', $playerId)->count());
         $this->assertSame(0, DB::table('equipment_rentals')->where('rentable_type', Player::class)->where('rentable_id', $playerId)->count());
+        $this->assertSame(0, DB::table('inventory_session_participants')->where('participant_type', Player::class)->where('participant_id', $playerId)->count());
         $this->assertSame(0, DB::table('activity_logs')->where('subject_type', Player::class)->where('subject_id', $playerId)->count());
+    }
+
+    private function decision(?int $a, ?int $b, string $status, ?int $kept = null): int
+    {
+        return PlayerDuplicateDecision::create([
+            'player_a_id' => $a, 'player_b_id' => $b, 'status' => $status, 'kept_player_id' => $kept,
+            'player_a_snapshot' => [], 'player_b_snapshot' => [], 'decided_at' => now(),
+        ])->id;
     }
 
     #[Test]
@@ -232,6 +241,70 @@ class PlayerMergerTest extends TestCase
 
         $this->assertSame([$mine], DB::table('player_academic_years')->where('player_id', $keeper->id)->pluck('id')->all());
         $this->assertEquals(['t1' => 12, 't2' => 14], DB::table('player_academic_records')->where('player_academic_year_id', $mine)->pluck('gpa', 'period')->map(fn ($g) => (float) $g)->all());
+    }
+
+    #[Test]
+    public function loans_and_stock_take_lists_follow_the_kept_player_once(): void
+    {
+        $keeper = $this->player();
+        $duplicate = $this->player();
+        $catalog = DB::table('equipment_catalogs')->insertGetId(['name' => 'Ballon', 'category' => 'balls', 'created_at' => now(), 'updated_at' => now()]);
+        $item = DB::table('equipment_items')->insertGetId(['catalog_id' => $catalog, 'unique_identifier' => 'T-0001', 'purchase_date' => '2026-01-01', 'created_at' => now(), 'updated_at' => now()]);
+        $loan = DB::table('equipment_rentals')->insertGetId(['equipment_item_id' => $item, 'rentable_type' => Player::class, 'rentable_id' => $duplicate->id, 'created_at' => now(), 'updated_at' => now()]);
+        $both = DB::table('inventory_sessions')->insertGetId(['reference' => 'INV-1', 'session_date' => '2026-10-01', 'created_at' => now(), 'updated_at' => now()]);
+        $only = DB::table('inventory_sessions')->insertGetId(['reference' => 'INV-2', 'session_date' => '2026-10-02', 'created_at' => now(), 'updated_at' => now()]);
+        foreach ([[$both, $keeper], [$both, $duplicate], [$only, $duplicate]] as [$session, $player]) {
+            DB::table('inventory_session_participants')->insert(['inventory_session_id' => $session, 'participant_type' => Player::class, 'participant_id' => $player->id, 'created_at' => now(), 'updated_at' => now()]);
+        }
+
+        $this->merge($keeper, $duplicate);
+
+        $this->assertNothingPointsAt($duplicate->id);
+        $this->assertSame($keeper->id, (int) DB::table('equipment_rentals')->where('id', $loan)->value('rentable_id'));
+        $this->assertSame([$both, $only], DB::table('inventory_session_participants')->where('participant_type', Player::class)
+            ->where('participant_id', $keeper->id)->orderBy('inventory_session_id')->pluck('inventory_session_id')->map(fn ($id) => (int) $id)->all());
+    }
+
+    #[Test]
+    public function an_unpaid_subscription_that_moves_is_owed_by_the_kept_player(): void
+    {
+        $keeper = $this->player();
+        $duplicate = $this->player();
+        $this->playerSubscription($duplicate, $this->subscription(), ['amount_owed' => 1500]);
+        $this->playerSubscription($keeper, null, ['label' => 'Manual', 'amount_owed' => 200]);
+
+        $this->merge($keeper, $duplicate);
+
+        $this->assertEquals(1700, (float) $keeper->fresh()->outstanding_debt);
+    }
+
+    #[Test]
+    public function dismissed_pairs_with_a_deleted_side_go_too(): void
+    {
+        // The duplicate first, so it is side a of the merged pair; then the keeper first.
+        foreach ([true, false] as $duplicateFirst) {
+            [$duplicate, $keeper] = $duplicateFirst ? [$this->player(), $this->player()] : array_reverse([$this->player(), $this->player()]);
+            $blanked = $duplicateFirst
+                ? $this->decision($duplicate->id, null, PlayerDuplicateDecision::DISMISSED)
+                : $this->decision(null, $duplicate->id, PlayerDuplicateDecision::DISMISSED);
+
+            $this->merge($keeper, $duplicate);
+
+            $this->assertDatabaseMissing('player_duplicate_decisions', ['id' => $blanked]);
+        }
+        $this->assertSame(0, PlayerDuplicateDecision::where('status', PlayerDuplicateDecision::DISMISSED)->count());
+    }
+
+    #[Test]
+    public function an_earlier_merge_that_kept_the_duplicate_now_names_the_kept_player(): void
+    {
+        $keeper = $this->player();
+        $duplicate = $this->player();
+        $earlier = $this->decision($duplicate->id, null, PlayerDuplicateDecision::MERGED, $duplicate->id);
+
+        $this->merge($keeper, $duplicate);
+
+        $this->assertSame($keeper->id, (int) PlayerDuplicateDecision::find($earlier)->kept_player_id);
     }
 
     #[Test]

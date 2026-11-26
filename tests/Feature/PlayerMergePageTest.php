@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\ActivityLog;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\Activity\ActivityAction;
@@ -9,6 +10,7 @@ use App\Services\Player\Merge\PlayerMerger;
 use App\Services\Player\Merge\PreMergeBackup;
 use App\Support\PermissionMap;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Exceptions;
 use Inertia\Testing\AssertableInertia as Assert;
 use Mockery\MockInterface;
 use PHPUnit\Framework\Attributes\Test;
@@ -104,6 +106,28 @@ class PlayerMergePageTest extends TestCase
         $this->assertDatabaseHas('activity_logs', [
             'user_id' => $user->id, 'action' => ActivityAction::PLAYERS_MERGED, 'subject_id' => $keeper->id,
         ]);
+    }
+
+    #[Test]
+    public function a_failed_activity_log_does_not_hide_a_done_merge(): void
+    {
+        $keeper = $this->player();
+        $duplicate = $this->player();
+        $this->backupWorks();
+        Exceptions::fake();
+        ActivityLog::creating(function (ActivityLog $log) {
+            if ($log->action === ActivityAction::PLAYERS_MERGED) {
+                throw new RuntimeException('log down');
+            }
+        });
+
+        $this->actingAs($this->merger())
+            ->post(route('players.duplicates.merge.store'), ['a' => $keeper->id, 'b' => $duplicate->id, 'keeper' => $keeper->id])
+            ->assertRedirect(route('players.show', $keeper))
+            ->assertSessionHas('success', 'flash.dup.merged');
+
+        $this->assertDatabaseMissing('players', ['id' => $duplicate->id]);
+        Exceptions::assertReported(fn (RuntimeException $e) => $e->getMessage() === 'log down');
     }
 
     #[Test]

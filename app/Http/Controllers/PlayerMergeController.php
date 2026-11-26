@@ -83,10 +83,15 @@ class PlayerMergeController extends Controller
             return back()->with('error', 'flash.dup.merge_failed');
         }
 
-        ActivityRecorder::record($request->user(), ActivityAction::PLAYERS_MERGED, $keeper, [
-            'merged_player_id' => $duplicate->id,
-            'count' => $moved,
-        ]);
+        // The merge is done and committed: a failed log line must not report it as failed.
+        try {
+            ActivityRecorder::record($request->user(), ActivityAction::PLAYERS_MERGED, $keeper, [
+                'merged_player_id' => $duplicate->id,
+                'count' => $moved,
+            ]);
+        } catch (Throwable $e) {
+            report($e);
+        }
 
         return redirect()->route('players.show', $keeper)->with('success', 'flash.dup.merged');
     }

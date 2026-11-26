@@ -85,8 +85,11 @@ class PlayerMerger
             PlayerDuplicateDecision::query()
                 ->where('status', PlayerDuplicateDecision::DISMISSED)
                 ->where(fn ($q) => $q->where('player_a_id', $d)->orWhere('player_b_id', $d))
-                ->where(fn ($q) => $q->where('player_a_id', '!=', $a)->orWhere('player_b_id', '!=', $b))
+                // Every other pair, null-safe: a side blanked by a deleted player must not make the row look like this pair.
+                ->whereNot(fn ($q) => $q->whereNotNull('player_a_id')->whereNotNull('player_b_id')->where('player_a_id', $a)->where('player_b_id', $b))
                 ->delete();
+            // An earlier merge that kept the duplicate now names the player it lives on in.
+            DB::table('player_duplicate_decisions')->where('kept_player_id', $d)->update(['kept_player_id' => $k]);
             $decision = PlayerDuplicateDecision::updateOrCreate(
                 ['player_a_id' => $a, 'player_b_id' => $b],
                 [
@@ -225,7 +228,6 @@ class PlayerMerger
         $sessions = DB::table('inventory_session_participants')->where('participant_type', Player::class)->where('participant_id', $k)->pluck('inventory_session_id');
         DB::table('inventory_session_participants')->where('participant_type', Player::class)->where('participant_id', $d)->whereIn('inventory_session_id', $sessions)->delete();
         DB::table('inventory_session_participants')->where('participant_type', Player::class)->where('participant_id', $d)->update(['participant_id' => $k]);
-
 
         DB::table('transactions')->whereIn('related_entity_type', ['Player', Player::class])->where('related_entity_id', $d)->update(['related_entity_id' => $k]);
         DB::table('activity_logs')->where('subject_type', Player::class)->where('subject_id', $d)->update(['subject_id' => $k]);

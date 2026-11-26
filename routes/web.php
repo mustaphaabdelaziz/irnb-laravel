@@ -59,6 +59,7 @@ use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\LegacyImportController;
 use App\Http\Controllers\LiteraryReportController;
 use App\Http\Controllers\MailEntryController;
+use App\Http\Controllers\MailEntryPrintController;
 use App\Http\Controllers\MemberJobController;
 use App\Http\Controllers\MembershipIdController;
 use App\Http\Controllers\OpenWhatsAppController;
@@ -309,6 +310,8 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
     Route::post('/mail/{mailEntry}/cancel', [MailEntryController::class, 'cancel'])->name('mail.cancel');
     // The scanned letter — private: this (auth + mail/view) is the only way to read it.
     Route::get('/mail/{mailEntry}/scan', [MailEntryController::class, 'scan'])->name('mail.scan');
+    // An outgoing entry with a text, printed as a letter on the letterhead.
+    Route::get('/mail/{mailEntry}/print', MailEntryPrintController::class)->name('mail.print');
 
     // Finance — year-grouped dashboard (view open to approved members)
     Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');

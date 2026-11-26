@@ -64,7 +64,7 @@ class MissionOrderController extends Controller
             'reference' => $references[$order->id] ?? null,
             'order_date' => $order->order_date?->format('Y-m-d'),
             'destination' => $order->destination,
-            'travelers' => $order->travelers->pluck('name')->take(3)->implode(', '),
+            'travelers' => $order->travelers->pluck('name')->take(3)->implode(MissionOrders::listSeparator()),
             'travelers_count' => $order->travelers->count(),
             'departure_date' => $order->departure_date?->format('Y-m-d'),
             'return_date' => $order->return_date?->format('Y-m-d'),

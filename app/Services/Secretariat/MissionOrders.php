@@ -166,6 +166,12 @@ final class MissionOrders
         })->all();
     }
 
+    /** Between names in a list: the Arabic comma in Arabic. */
+    public static function listSeparator(): string
+    {
+        return app()->getLocale() === 'ar' ? '، ' : ', ';
+    }
+
     /**
      * A new mail entry's correspondent (the first three travelers, then "+N")
      * and subject («أمر بمهمة — destination», in the app language).
@@ -175,7 +181,7 @@ final class MissionOrders
     public static function defaults(MissionOrder $order): array
     {
         $names = $order->travelers->pluck('name')->filter()->values();
-        $named = $names->take(self::NAMED)->implode(app()->getLocale() === 'ar' ? '، ' : ', ');
+        $named = $names->take(self::NAMED)->implode(self::listSeparator());
         $rest = $names->count() - self::NAMED;
 
         return [

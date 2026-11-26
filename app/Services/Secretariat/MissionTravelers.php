@@ -56,9 +56,10 @@ final class MissionTravelers
         $season = Season::current()->startYear;
         $members = TeamMembers::of($team);
 
-        $coaches = $team->coachesFor($season)->orderBy('users.lastname')->orderBy('users.firstname')->get()
+        // Same people as the pickers: no inactive coach, no archived player.
+        $coaches = $team->coachesFor($season)->where('users.is_active', true)->orderBy('users.lastname')->orderBy('users.firstname')->get()
             ->map(fn (User $user) => self::row(MissionOrderTraveler::USER, $user->id, $user->fullname, self::coachFunction()));
-        $players = $team->rosterFor($season)->with(TeamMembers::RELATIONS)->get()
+        $players = $team->rosterFor($season)->where('players.archived', false)->with(TeamMembers::RELATIONS)->get()
             ->reject(fn (Player $player) => $members->hasLeft($player))
             ->map(fn (Player $player) => self::row(
                 MissionOrderTraveler::PLAYER, $player->id, $player->fullname,

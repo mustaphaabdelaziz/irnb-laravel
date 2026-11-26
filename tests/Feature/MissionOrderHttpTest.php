@@ -373,4 +373,14 @@ class MissionOrderHttpTest extends TestCase
 
         $this->assertSame(0, MissionOrder::count());
     }
+
+    #[Test]
+    public function the_list_joins_traveler_names_with_the_arabic_comma_in_arabic(): void
+    {
+        $admin = User::factory()->admin()->create(['preferred_lng' => 'ar']);
+        app(MissionOrders::class)->create($this->payload(['travelers' => [$this->typed('A'), $this->typed('B')]]), $admin);
+
+        $this->actingAs($admin)->get(route('missions.index'))
+            ->assertInertia(fn (Assert $page) => $page->where('orders.data.0.travelers', 'A، B'));
+    }
 }

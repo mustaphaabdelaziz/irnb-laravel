@@ -134,4 +134,23 @@ class MissionTravelersTest extends TestCase
         $this->assertSame('مدرب', MissionTravelers::coachFunction());
         $this->assertSame('لاعب — U17', MissionTravelers::playerFunction('U17'));
     }
+
+    #[Test]
+    public function adding_a_team_leaves_out_archived_players_and_inactive_coaches(): void
+    {
+        $u15 = $this->category('U15');
+        $team = $this->team($u15, ['name' => 'Cadets A']);
+        $kept = $this->player($u15);
+        $archived = $this->player($u15);
+        $this->onRoster($team, 2026, [$kept, $archived]);
+        $archived->update(['archived' => true]);
+        $active = User::factory()->create(['firstname' => 'Karim', 'lastname' => 'Coach']);
+        $inactive = User::factory()->create(['firstname' => 'Ancien', 'lastname' => 'Coach', 'is_active' => false]);
+        $this->assignCoach($team, $active, 2026);
+        $this->assignCoach($team, $inactive, 2026);
+
+        $rows = $this->travelers()->team($team);
+
+        $this->assertSame([$active->id, $kept->id], array_column($rows, 'traveler_id'));
+    }
 }

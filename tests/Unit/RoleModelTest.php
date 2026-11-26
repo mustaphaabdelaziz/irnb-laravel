@@ -30,7 +30,8 @@ class RoleModelTest extends TestCase
     public function all_permissions_covers_every_module_and_action(): void
     {
         $all = Role::allPermissions();
-        $this->assertCount(34, $all);
+        $this->assertCount(35, $all);
+        $this->assertArrayHasKey('mail', $all);
         $this->assertSame(['view', 'add', 'edit', 'delete'], $all['finance']);
         $this->assertArrayHasKey('settings', $all);
         $this->assertArrayHasKey('documents', $all);

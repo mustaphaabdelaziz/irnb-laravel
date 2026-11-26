@@ -18,6 +18,7 @@ class AttendanceSheetTranslationsTest extends TestCase
         'att.sheet.session_summary',
         'att.sheet.period_title', 'att.sheet.period', 'att.sheet.summary_title', 'att.sheet.total_expected',
         'att.sheet.period_too_long', 'att.sheet.no_sessions_period',
+        'att.sheet.print_period', 'att.sheet.print_period_hint', 'att.sheet.period_order',
     ];
 
     #[Test]

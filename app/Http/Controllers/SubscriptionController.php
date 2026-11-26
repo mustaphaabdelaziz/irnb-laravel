@@ -464,7 +464,8 @@ class SubscriptionController extends Controller
 
     public function edit(Request $request, Subscription $subscription): Response
     {
-        $subscription->load(['categories', 'branches', 'statuses:id']);
+        // Whole rows: PlayerStatus appends localized_name, which needs the name columns.
+        $subscription->load(['categories', 'branches', 'statuses']);
 
         return Inertia::render('Subscriptions/Edit', [
             'subscription' => $subscription,

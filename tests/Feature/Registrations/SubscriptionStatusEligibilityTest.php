@@ -158,4 +158,15 @@ class SubscriptionStatusEligibilityTest extends TestCase
                 ->where('playerSubscriptions.0.status_not_covered', true)
                 ->where('subscription.statuses.0.id', $this->registered->id));
     }
+
+    #[Test]
+    public function the_edit_page_opens_with_saved_statuses(): void
+    {
+        $sub = $this->sub([$this->foot], [$this->registered]);
+
+        $this->actingAs($this->admin())->get(route('subscriptions.edit', $sub))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('subscription.statuses.0.id', $this->registered->id));
+    }
 }

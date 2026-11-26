@@ -31,6 +31,9 @@ final class MailSources
     /** One registration per purchase order. */
     public const PURCHASE_ORDER_KEY = 'order';
 
+    /** One reference per mission order, taken at its first print; all its sheets share it. */
+    public const MISSION_KEY = 'order';
+
     /** The module guarding the page an entry links to. */
     public const LINK_MODULES = [
         MailEntry::SOURCE_ABSENCE_LETTER => 'players',

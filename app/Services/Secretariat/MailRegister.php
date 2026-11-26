@@ -117,22 +117,49 @@ final class MailRegister
     public function cancel(MailEntry $entry, User $by): MailEntry
     {
         return DB::transaction(function () use ($entry, $by) {
-            $claimed = MailEntry::whereKey($entry->id)
-                ->where('status', MailEntry::ACTIVE)->where('is_legacy', false)
-                ->update([
-                    'status' => MailEntry::CANCELLED,
-                    'cancelled_by' => $by->id,
-                    'cancelled_at' => now(),
-                    'source_lock' => null,
-                    'updated_at' => now(),
-                ]);
-            if ($claimed === 0) {
+            if (! $this->claimCancel($entry, $by)) {
                 throw new MailEntryException('flash.mail_cannot_cancel');
             }
-            ActivityRecorder::record($by, ActivityAction::MAIL_ENTRY_CANCELLED, $entry, self::properties($entry));
 
             return $entry->fresh();
         });
+    }
+
+    /**
+     * Cancels a printed document's active entry — null when it has none (or
+     * someone cancelled it first) — for a caller cancelling the document itself
+     * in its own transaction (a mission order). Safe inside that transaction:
+     * it nests as a savepoint, and unlike register() it takes no number
+     * (nothing to retry) and unlike update() it touches no file (nothing to
+     * clean up outside the transaction).
+     */
+    public function cancelSource(string $type, int $id, string $key, User $by): ?MailEntry
+    {
+        return DB::transaction(function () use ($type, $id, $key, $by) {
+            $entry = $this->find($type, $id, $key);
+
+            return $entry !== null && $this->claimCancel($entry, $by) ? $entry->fresh() : null;
+        });
+    }
+
+    /** The cancel claim: active and not imported → cancelled, number kept, document freed. */
+    private function claimCancel(MailEntry $entry, User $by): bool
+    {
+        $claimed = MailEntry::whereKey($entry->id)
+            ->where('status', MailEntry::ACTIVE)->where('is_legacy', false)
+            ->update([
+                'status' => MailEntry::CANCELLED,
+                'cancelled_by' => $by->id,
+                'cancelled_at' => now(),
+                'source_lock' => null,
+                'updated_at' => now(),
+            ]);
+        if ($claimed === 0) {
+            return false;
+        }
+        ActivityRecorder::record($by, ActivityAction::MAIL_ENTRY_CANCELLED, $entry, self::properties($entry));
+
+        return true;
     }
 
     /**

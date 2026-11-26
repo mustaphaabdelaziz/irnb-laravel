@@ -202,6 +202,14 @@ class ActivityAction
 
     const MAIL_ENTRY_REGISTERED = 'mail_entry_registered';
 
+    const MISSION_ORDER_CREATED = 'mission_order_created';
+
+    const MISSION_ORDER_UPDATED = 'mission_order_updated';
+
+    const MISSION_ORDER_CANCELLED = 'mission_order_cancelled';
+
+    const MISSION_ORDER_PRINTED = 'mission_order_printed';
+
     const LEGACY_DATA_IMPORTED = 'legacy_data_imported';
 
     const FINANCE_RESET = 'finance_reset';
@@ -389,6 +397,10 @@ class ActivityAction
         self::MAIL_ENTRY_UPDATED,
         self::MAIL_ENTRY_CANCELLED,
         self::MAIL_ENTRY_REGISTERED,
+        self::MISSION_ORDER_CREATED,
+        self::MISSION_ORDER_UPDATED,
+        self::MISSION_ORDER_CANCELLED,
+        self::MISSION_ORDER_PRINTED,
         self::DOCUMENT_UPDATED,
         self::DOCUMENT_UNEXEMPTED,
         self::DOCUMENT_FILE_DELETED,
@@ -525,6 +537,11 @@ class ActivityAction
             self::MAIL_ENTRY_UPDATED,
             self::MAIL_ENTRY_CANCELLED,
             self::MAIL_ENTRY_REGISTERED,
+            // The secretariat's mission orders.
+            self::MISSION_ORDER_CREATED,
+            self::MISSION_ORDER_UPDATED,
+            self::MISSION_ORDER_CANCELLED,
+            self::MISSION_ORDER_PRINTED,
         ],
         'social' => [
             self::ACTIVITY_CREATED,

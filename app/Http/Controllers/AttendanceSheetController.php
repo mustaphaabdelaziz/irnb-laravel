@@ -12,13 +12,14 @@ use App\Services\Attendance\AttendanceStatusCatalog;
 use App\Services\Attendance\BranchChoice;
 use App\Services\Attendance\MonthSheet;
 use App\Services\Attendance\Roster;
+use App\Services\Attendance\SheetColumns;
+use App\Services\Attendance\SheetTotals;
 use App\Services\Pdf\ClubHeader;
 use App\Services\Pdf\PdfService;
 use App\Support\Season;
 use App\Support\UiLang;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -30,10 +31,10 @@ use Symfony\Component\HttpFoundation\Response;
 class AttendanceSheetController extends Controller
 {
     /** Session columns per printed table; more continue in a second part on a new page. */
-    public const MAX_COLUMNS = 16;
+    public const MAX_COLUMNS = SheetColumns::MAX;
 
     /** Blank columns after the month's last session, for a session added on the day, when they fit. */
-    public const BLANK_COLUMNS = 2;
+    public const BLANK_COLUMNS = SheetColumns::BLANK;
 
     /** Blank rows at the end of the session sheet, for a player who came without being on the list. */
     public const BLANK_ROWS = 3;
@@ -41,7 +42,7 @@ class AttendanceSheetController extends Controller
     public function __construct(private readonly PdfService $pdf) {}
 
     /** One category's month in one branch (BranchChoice, as on the calendar): players × sessions, A4 landscape (right-to-left in Arabic). */
-    public function month(Request $request, MonthSheet $sheet, AttendanceStatusCatalog $catalog): Response
+    public function month(Request $request, MonthSheet $sheet, AttendanceStatusCatalog $catalog, SheetTotals $totals): Response
     {
         $data = $request->validate([
             'category_id' => ['required', 'integer', 'exists:categories,id'],
@@ -56,31 +57,22 @@ class AttendanceSheetController extends Controller
         $anchor = CarbonImmutable::createFromFormat('!Y-m', $data['month']);
         $locale = app()->getLocale();
         $switch = $sheet->groupSwitch($category->id, $anchor->year, $anchor->month, $branch?->id, isset($data['group_id']) ? (int) $data['group_id'] : null);
-        ['sessions' => $sessions, 'cells' => $cells, 'players' => $players] = $sheet->build($category->id, $anchor->year, $anchor->month, $branch?->id, $switch['selected']);
+        ['sessions' => $sessions, 'cells' => $cells, 'statuses' => $statuses, 'players' => $players] = $sheet->build($category->id, $anchor->year, $anchor->month, $branch?->id, $switch['selected']);
         // What the header prints: the group's name, «whole category» for the sessions with no group,
         // nothing for a category without groups.
         $shown = collect($switch['options'])->firstWhere('id', $switch['selected']);
         $trainingGroup = $shown === null ? null : ($shown['name'] ?? UiLang::get('att.group_whole'));
 
-        $columns = $sessions->map(fn (TrainingSession $s) => [
-            'id' => $s->id,
-            'day' => CarbonImmutable::createFromFormat('!Y-m-d', $s->date)->locale($locale)->translatedFormat('D'),
-            'date' => substr($s->date, 8, 2).'/'.substr($s->date, 5, 2),
-            'time' => $s->start_time,
-            'kind' => $s->kind->value,
-            'title' => $s->title ? Str::limit(self::wrapLongWords($s->title), 24) : null,
-        ])->values()->all();
+        $columns = SheetColumns::of($sessions, $locale);
+        $groups = SheetColumns::parts($columns);
 
-        $chunks = array_chunk($columns, self::MAX_COLUMNS);
-        $groups = [];
-        foreach ($chunks as $i => $chunk) {
-            $last = $i === count($chunks) - 1;
-            $groups[] = [
-                'columns' => $chunk,
-                'from' => $i * self::MAX_COLUMNS + 1,
-                'to' => $i * self::MAX_COLUMNS + count($chunk),
-                'blank' => $last && count($chunk) + self::BLANK_COLUMNS <= self::MAX_COLUMNS ? self::BLANK_COLUMNS : 0,
-            ];
+        // Present · Absent · Rate per player, on the filled sheet only (a blank sheet has nothing to count).
+        $rowTotals = null;
+        if ($request->boolean('filled')) {
+            $rowTotals = [];
+            foreach ($players as $player) {
+                $rowTotals[$player->id] = $totals->of($statuses[$player->id] ?? []);
+            }
         }
 
         // Players from another category carry its name (their CURRENT category, see guestCategories()
@@ -102,6 +94,7 @@ class AttendanceSheetController extends Controller
                 'category' => $guests[$p->id] ?? null,
             ])->values()->all(),
             'cells' => $cells,
+            'totals' => $rowTotals,
             'filled' => $request->boolean('filled'),
             'labels' => $catalog->labels(null, $catalog->shown($sessions->flatMap->attendances->pluck('status'))),
             'codes' => $catalog->codes(),
@@ -180,20 +173,5 @@ class AttendanceSheetController extends Controller
     private static function name(Player $player): string
     {
         return $player->fullname;
-    }
-
-    /**
-     * Breaks any word over $width characters into $width-character chunks
-     * joined by spaces, so mPDF can wrap a long session title instead of
-     * widening the whole month column to fit it. wordwrap() itself is
-     * byte-based and would cut a multibyte word (e.g. Arabic) mid-character;
-     * mb_str_split() counts characters, not bytes, so it never does.
-     */
-    private static function wrapLongWords(string $text, int $width = 10): string
-    {
-        return implode(' ', array_map(
-            fn (string $word) => mb_strlen($word) > $width ? implode(' ', mb_str_split($word, $width)) : $word,
-            explode(' ', $text)
-        ));
     }
 }

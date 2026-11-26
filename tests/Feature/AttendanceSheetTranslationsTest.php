@@ -14,6 +14,7 @@ class AttendanceSheetTranslationsTest extends TestCase
         'att.sheet.part', 'att.sheet.page', 'att.sheet.coach_name', 'att.sheet.signature',
         'att.sheet.entered_on', 'att.sheet.entered_by', 'att.sheet.filled_note',
         'att.sheet.print', 'att.sheet.print_filled', 'att.sheet.print_session', 'att.sheet.print_hint',
+        'att.sheet.total_present', 'att.sheet.total_absent', 'att.sheet.total_rate', 'att.sheet.totals_help',
     ];
 
     #[Test]

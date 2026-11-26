@@ -32,12 +32,13 @@ class AttendanceFollowupLinksTest extends TestCase
         $this->assertStringNotContainsString('@click="window', $source);
     }
 
+    // The three letter buttons are MailPrintButton: it opens the PDF in a new tab itself (plain link without the mail right, window.open after the dialog).
     public static function pdfLinks(): array
     {
         return [
-            'profile → letter' => ['Players/Partials/AttendanceSection.vue', "route('attendance.players.letter'", ':href="letterHref" target="_blank"'],
-            'at risk → letter' => ['Attendance/Alerts.vue', "route('attendance.players.letter'", ':href="letterHref(row)" target="_blank"'],
-            'stats table → letter' => ['Attendance/Partials/StatsPlayerTable.vue', "route('attendance.players.letter'", ':href="letterHref(row)" target="_blank"'],
+            'profile → letter' => ['Players/Partials/AttendanceSection.vue', "route('attendance.players.letter'", ':href="letterHref" :source="letterSource"'],
+            'at risk → letter' => ['Attendance/Alerts.vue', "route('attendance.players.letter'", ':href="letterHref(row)" :source="letterSource(row)"'],
+            'stats table → letter' => ['Attendance/Partials/StatsPlayerTable.vue', "route('attendance.players.letter'", ':href="letterHref(row)" :source="letterSource(row)"'],
             'ranking → podium' => ['Attendance/Ranking.vue', "route('attendance.certificates'", ':href="podiumHref" target="_blank"'],
             'ranking → one certificate' => ['Attendance/Ranking.vue', "route('attendance.certificates'", ':href="certificateHref(row)" target="_blank"'],
         ];

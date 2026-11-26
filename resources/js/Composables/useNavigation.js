@@ -54,6 +54,10 @@ export function useNavigation() {
                 { label: t('meetings'), href: '/board/meetings', icon: 'clipboard', prefix: '/board/meetings', module: 'board' },
                 { label: t('tasks'), href: '/board/tasks', icon: 'task', prefix: '/board/tasks', module: 'board' },
             ] },
+            // The board's secretariat (الأمانة): mail register now, mission orders in P4.
+            { key: 'secretariat', label: t('nav.secretariat'), icon: 'mail', items: [
+                { label: t('mail'), href: '/mail', icon: 'mail', prefix: '/mail', module: 'mail' },
+            ] },
             { key: 'social', label: t('nav.social'), icon: 'heart', items: [
                 { label: t('activities'), href: '/activities', icon: 'heart', prefix: '/activities', module: 'activities' },
                 { label: t('literary_reports'), href: '/literary-reports', icon: 'document', prefix: '/literary-reports', module: 'literary_reports' },

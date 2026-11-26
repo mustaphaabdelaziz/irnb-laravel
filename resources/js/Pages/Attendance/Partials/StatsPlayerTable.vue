@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
-import IconButton from '@/Components/IconButton.vue';
+import MailPrintButton from '@/Components/MailPrintButton.vue';
 import { useCan } from '@/Composables/useCan';
 import { useAttendanceCodes } from '@/Composables/useAttendanceCodes';
 import { hours, pct, periodQuery } from '@/lib/attendanceStats';
@@ -52,6 +52,8 @@ const sorted = computed(() => {
 const ariaSort = (key) => (sortKey.value !== key ? 'none' : sortDir.value === 'asc' ? 'ascending' : 'descending');
 // The parent letter, for the page's period.
 const letterHref = (row) => route('attendance.players.letter', { player: row.player_id, ...periodQuery(props.period), ...(props.branchId ? { branch_id: props.branchId } : {}) });
+// The same letter as a mail-register document: player, period and branch.
+const letterSource = (row) => ({ type: 'absence-letter', id: row.player_id, query: { ...periodQuery(props.period), ...(props.branchId ? { branch_id: props.branchId } : {}) } });
 // The profile opens its attendance card on the page's branch.
 const profileHref = (row) => route('players.show', { player: row.player_id, ...(props.branchId ? { attendance_branch: props.branchId } : {}) });
 
@@ -104,7 +106,7 @@ const columns = computed(() => [
                     <td class="p-2 text-end tabular-nums">{{ hours(row.missed_hours) }}</td>
                     <td class="p-2 text-end font-semibold tabular-nums"><bdi dir="ltr">{{ pct(row.score_pct) }}</bdi></td>
                     <td class="whitespace-nowrap p-2 text-end">
-                        <IconButton :href="letterHref(row)" external target="_blank" icon="mail" :label="t('att.letter.print')" plain size="sm" />
+                        <MailPrintButton :href="letterHref(row)" :source="letterSource(row)" icon="mail" :label="t('att.letter.print')" plain size="sm" />
                     </td>
                 </tr>
             </tbody>

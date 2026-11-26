@@ -7,6 +7,7 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import SearchableSelect from '@/Components/SearchableSelect.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
+import MailPrintButton from '@/Components/MailPrintButton.vue';
 import LineupBoard from '@/Components/Competitions/LineupBoard.vue';
 import MatchReport from '@/Components/Competitions/MatchReport.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
@@ -184,7 +185,7 @@ function destroy() {
                     <span data-help="game-callup-count" class="text-sm" :class="calledCount > game.format.max_called_up ? 'font-semibold text-rose-600 dark:text-rose-400' : 'text-slate-600 dark:text-slate-300'">
                         {{ t('comp.called_count', { n: calledCount, max: game.format.max_called_up }) }}
                     </span>
-                    <a :href="route('games.convocation', game.id)" data-help="game-callup-pdf" target="_blank" class="text-sm text-primary-600 hover:underline dark:text-primary-300">{{ t('comp.convocation_pdf') }}</a>
+                    <MailPrintButton :href="route('games.convocation', game.id)" :source="{ type: 'game', id: game.id }" ticked data-help="game-callup-pdf" icon="print" :label="t('comp.convocation_pdf')" size="sm" />
                 </div>
                 <table data-help="game-callup-table" class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
                     <thead class="text-xs uppercase text-slate-500 dark:text-slate-400">

@@ -8,6 +8,7 @@ import PeriodFilter from '@/Components/Activity/PeriodFilter.vue';
 import ExportMenu from '@/Components/ExportMenu.vue';
 import Icon from '@/Components/Icon.vue';
 import IconButton from '@/Components/IconButton.vue';
+import MailPrintButton from '@/Components/MailPrintButton.vue';
 import { useCan } from '@/Composables/useCan';
 import { pct, periodQuery } from '@/lib/attendanceStats';
 
@@ -38,6 +39,8 @@ const keep = computed(() => ({ ...categoryQuery.value, ...(props.groupId ? { gro
 const exportHref = computed(() => route('attendance.alerts.export', { ...periodQuery(props.period), ...keep.value }));
 // The letter and the profile for the page's branch.
 const letterHref = (row) => route('attendance.players.letter', { player: row.player_id, ...periodQuery(props.period), ...branchQuery.value });
+// The same letter as a mail-register document: player, period and branch.
+const letterSource = (row) => ({ type: 'absence-letter', id: row.player_id, query: { ...periodQuery(props.period), ...branchQuery.value } });
 const profileHref = (row) => route('players.show', { player: row.player_id, ...(props.branchId ? { attendance_branch: props.branchId } : {}) });
 function pickCategory(value) {
     router.get(route('attendance.alerts'), { ...periodQuery(props.period), ...branchQuery.value, ...(value ? { category_id: Number(value) } : {}) }, { preserveScroll: true, replace: true });
@@ -134,7 +137,7 @@ const th = 'p-2 font-semibold';
                             </td>
                             <td class="whitespace-nowrap p-2 text-end">
                                 <span class="inline-flex gap-1">
-                                    <IconButton :data-help="i === 0 ? 'alerts-letter-first' : undefined" :href="letterHref(row)" external target="_blank" icon="mail" :label="t('att.letter.print')" plain size="sm" />
+                                    <MailPrintButton :data-help="i === 0 ? 'alerts-letter-first' : undefined" :href="letterHref(row)" :source="letterSource(row)" icon="mail" :label="t('att.letter.print')" plain size="sm" />
                                     <IconButton v-if="can('players', 'view')" :href="profileHref(row)" icon="user" :label="t('att.risk.open_profile')" variant="primary" plain size="sm" />
                                 </span>
                             </td>

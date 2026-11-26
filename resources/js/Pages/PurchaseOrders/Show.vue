@@ -10,6 +10,7 @@ import Checkbox from '@/Components/Checkbox.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
+import MailPrintButton from '@/Components/MailPrintButton.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -28,6 +29,9 @@ const props = defineProps({ order: Object, can: Object });
 
 const STATUS_COLOR = { draft: 'slate', sent: 'blue', received: 'emerald', cancelled: 'rose' };
 const PAYMENT_COLOR = { draft: 'slate', approved: 'amber', paid: 'emerald', cancelled: 'rose' };
+// A sent or received order can go to the mail register when printed.
+const mailSource = computed(() => (['sent', 'received'].includes(props.order.status) && !props.order.is_legacy
+    ? { type: 'purchase-order', id: props.order.id } : null));
 const receiveOpen = ref(false);
 const cancelOpen = ref(false);
 const receiveForm = useForm({ received_date: localToday(), to_stock: false, payment_order: false });
@@ -70,7 +74,7 @@ const createPaymentOrder = () => {
                     <Badge v-if="order.is_legacy" :label="t('po.legacy')" color="slate" />
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
-                    <IconButton v-if="can.print" :href="route('purchase-orders.print', order.id)" external target="_blank" icon="print" :label="t('pur.print')" />
+                    <MailPrintButton v-if="can.print" :href="route('purchase-orders.print', order.id)" :source="mailSource" ticked icon="print" :label="t('pur.print')" />
                     <IconButton v-if="can.edit" :href="route('purchase-orders.edit', order.id)" icon="pencil" :label="t('edit')" />
                     <IconButton v-if="can.send" icon="send" :label="t('pur.send')" variant="primary" @click="send" />
                     <IconButton v-if="can.receive" icon="check" :label="t('pur.receive')" variant="primary" @click="receiveOpen = true" />

@@ -11,6 +11,7 @@ import StatTable from '@/Components/Stats/StatTable.vue';
 import StatDoughnut from '@/Components/StatDoughnut.vue';
 import Icon from '@/Components/Icon.vue';
 import IconButton from '@/Components/IconButton.vue';
+import MailPrintButton from '@/Components/MailPrintButton.vue';
 import InjuryList from './InjuryList.vue';
 import BranchSwitch from '@/Components/Attendance/BranchSwitch.vue';
 import { useAttendanceCodes } from '@/Composables/useAttendanceCodes';
@@ -113,6 +114,10 @@ const printQuery = computed(() => (data.value ? { player: props.player.id, ...pe
 const reportHref = computed(() => (printQuery.value ? route('attendance.players.report', printQuery.value) : null));
 // The parent letter, for the same period and branch.
 const letterHref = computed(() => (printQuery.value ? route('attendance.players.letter', printQuery.value) : null));
+// The same letter as a mail-register document: player, period and branch tab of the card.
+const letterSource = computed(() => (data.value
+    ? { type: 'absence-letter', id: props.player.id, query: { ...periodQuery(data.value.period), ...(data.value.branchId ? { branch_id: data.value.branchId } : {}) } }
+    : null));
 
 const preseasonText = computed(() => {
     const p = data.value?.preseason;
@@ -133,7 +138,7 @@ const th = 'p-2 text-start text-xs font-semibold text-slate-500 dark:text-slate-
                 <BranchSwitch :branches="data.branches" :branch-id="data.branchId" @switch="switchBranch" />
                 <PeriodFilter :period="data.period" @change="load" />
                 <IconButton :href="reportHref" external target="_blank" icon="print" :label="t('att.print_report')" size="sm" />
-                <IconButton :href="letterHref" external target="_blank" icon="mail" :label="t('att.letter.print')" size="sm" />
+                <MailPrintButton :href="letterHref" :source="letterSource" icon="mail" :label="t('att.letter.print')" size="sm" />
             </div>
         </div>
 

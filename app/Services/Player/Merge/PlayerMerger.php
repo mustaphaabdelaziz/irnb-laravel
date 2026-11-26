@@ -70,7 +70,7 @@ class PlayerMerger
         $attributes = $this->fields->resolve($keeper, $duplicate, $choices);
 
         return DB::transaction(function () use ($keeper, $k, $d, $a, $b, $pair, $snapshots, $attributes, $by) {
-            $paidAgain = $this->settleClashes($this->clashes->find($k, $d), $k);
+            $paidAgain = $this->settleClashes($this->clashes->find($k, $d));
             $this->movePivots($k, $d);
             $this->dropSameGroupSpells($k, $d);
             foreach (self::REPOINT as [$table, $column]) {
@@ -122,7 +122,7 @@ class PlayerMerger
      *
      * @return list<int> kept player_subscriptions whose paid total must be summed again
      */
-    private function settleClashes(array $clashes, int $k): array
+    private function settleClashes(array $clashes): array
     {
         $paidAgain = [];
 
@@ -136,7 +136,7 @@ class PlayerMerger
         }
 
         foreach ($this->clashes->registrationMap($clashes) as $loser => $winner) {
-            $this->keepLosingIdSearchable($loser, $winner, $k);
+            $this->keepLosingDetails($loser, $winner);
             DB::table('registration_status_changes')->where('branch_registration_id', $loser)->update(['branch_registration_id' => $winner]);
             DB::table('player_documents')->where('branch_registration_id', $loser)->update(['branch_registration_id' => $winner]);
             DB::table('branch_player')->where('id', $loser)->delete();
@@ -175,21 +175,30 @@ class PlayerMerger
     }
 
     /**
-     * The keeper's losing registration takes its membership ID with it: like
-     * RegistrationService::removeMistake, the winner keeps it as its old ID so
-     * it stays searchable. A winner that already holds an old ID keeps its own.
+     * A losing registration (keeper's or duplicate's) leaves what the winner
+     * lacks. Its membership ID: like RegistrationService::removeMistake, the
+     * winner keeps it as its old ID so it stays searchable; a winner that
+     * already holds an old ID keeps its own. Its licence number, when the
+     * winner has none.
      */
-    private function keepLosingIdSearchable(int $loser, int $winner, int $k): void
+    private function keepLosingDetails(int $loser, int $winner): void
     {
-        $lost = DB::table('branch_player')->where('id', $loser)->first(['player_id', 'membership_id']);
-        if ($lost === null || (int) $lost->player_id !== $k || blank($lost->membership_id)) {
+        $lost = DB::table('branch_player')->where('id', $loser)->first(['membership_id', 'licence_number']);
+        if ($lost === null) {
             return;
         }
 
-        DB::table('branch_player')->where('id', $winner)
-            ->where(fn ($q) => $q->whereNull('legacy_membership_id')->orWhere('legacy_membership_id', ''))
-            ->where(fn ($q) => $q->whereNull('membership_id')->orWhere('membership_id', '!=', $lost->membership_id))
-            ->update(['legacy_membership_id' => $lost->membership_id]);
+        if (filled($lost->membership_id)) {
+            DB::table('branch_player')->where('id', $winner)
+                ->where(fn ($q) => $q->whereNull('legacy_membership_id')->orWhere('legacy_membership_id', ''))
+                ->where(fn ($q) => $q->whereNull('membership_id')->orWhere('membership_id', '!=', $lost->membership_id))
+                ->update(['legacy_membership_id' => $lost->membership_id]);
+        }
+        if (filled($lost->licence_number)) {
+            DB::table('branch_player')->where('id', $winner)
+                ->where(fn ($q) => $q->whereNull('licence_number')->orWhere('licence_number', ''))
+                ->update(['licence_number' => $lost->licence_number]);
+        }
     }
 
     /** @return array{0:int, 1:int} [winner row, loser row] */

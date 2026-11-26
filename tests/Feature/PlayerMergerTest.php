@@ -162,6 +162,55 @@ class PlayerMergerTest extends TestCase
     }
 
     #[Test]
+    public function a_losing_duplicate_registration_leaves_its_id_on_the_keepers(): void
+    {
+        $keeper = $this->player(['membership_id' => 'FB-2020-00001']);
+        $duplicate = $this->player();
+        $branch = $this->branch();
+        $mine = $this->registration($keeper, $branch, ['membership_id' => 'FB-2020-00001', 'join_date' => '2020-09-01']);
+        $this->registration($duplicate, $branch, ['membership_id' => 'FB-2023-00042', 'join_date' => '2023-09-01']);
+
+        $this->merge($keeper, $duplicate);
+
+        $this->assertSame([$mine], DB::table('branch_player')->where('player_id', $keeper->id)->pluck('id')->all());
+        $this->assertSame('FB-2023-00042', DB::table('branch_player')->where('id', $mine)->value('legacy_membership_id'));
+    }
+
+    #[Test]
+    public function a_losing_registrations_licence_fills_an_empty_one_only(): void
+    {
+        $keeper = $this->player();
+        $duplicate = $this->player();
+        $football = $this->branch();
+        $handball = $this->branch('Handball');
+        $mine = $this->registration($keeper, $football, ['join_date' => '2020-09-01']);
+        $this->registration($duplicate, $football, ['join_date' => '2023-09-01', 'licence_number' => 'LIC-777']);
+        $kept = $this->registration($keeper, $handball, ['join_date' => '2020-09-01', 'licence_number' => 'LIC-001']);
+        $this->registration($duplicate, $handball, ['join_date' => '2023-09-01', 'licence_number' => 'LIC-999']);
+
+        $this->merge($keeper, $duplicate);
+
+        $this->assertSame('LIC-777', DB::table('branch_player')->where('id', $mine)->value('licence_number'));
+        $this->assertSame('LIC-001', DB::table('branch_player')->where('id', $kept)->value('licence_number'));
+    }
+
+    #[Test]
+    public function an_exempt_subscription_wins_a_paid_tie_and_is_not_owed(): void
+    {
+        $keeper = $this->player();
+        $duplicate = $this->player();
+        $subscription = $this->subscription();
+        $mine = $this->playerSubscription($keeper, $subscription);
+        $theirs = $this->playerSubscription($duplicate, $subscription, ['is_exempt' => true]);
+
+        $this->merge($keeper, $duplicate);
+
+        $this->assertSame([$theirs], DB::table('player_subscriptions')->where('player_id', $keeper->id)->pluck('id')->all());
+        $this->assertDatabaseMissing('player_subscriptions', ['id' => $mine]);
+        $this->assertEquals(0, (float) $keeper->fresh()->outstanding_debt);
+    }
+
+    #[Test]
     public function the_same_subscription_on_both_keeps_the_paid_one_and_is_owed_once(): void
     {
         $keeper = $this->player();

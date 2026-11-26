@@ -15,5 +15,11 @@
         { "reference": "01/2021", "date": "2021-03-14", "supplier": "", "address": "", "requested_by": "Section football", "delivery_mode": "Sur place", "payment_mode": "Chèque", "order_number": "12", "observation": "", "lines": [
             { "designation": "Caméra de surveillance", "reference": "", "quantity": 1, "unit_price": null }
         ] }
+    ],
+    "mail": [
+        { "reference": "2019/01", "correspondent": "Test Ligue de Wilaya", "address": "طبعت", "date": "2019-01-15" },
+        { "reference": "2019/02", "correspondent": "Test Direction de la Jeunesse", "address": "1 rue Test, Testville", "date": null },
+        { "reference": "2020/05", "correspondent": "Test Club Voisin", "address": "", "date": "2020-03-02" },
+        { "reference": "", "correspondent": "", "address": "", "date": null }
     ]
 }

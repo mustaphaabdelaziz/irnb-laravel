@@ -93,6 +93,24 @@ foreach ($row in $purchaseRows) {
     })
 }
 
+# Optional: the old outgoing mail register (Corresponds): reference text
+# ("YYYY/NN"), recipient, "address" (often the status «طبعت» = printed, moved
+# to the notes by the importer) and date (often empty). The N° column is the
+# Access row id and is not exported. A database without the table still exports.
+$mail = New-Object System.Collections.ArrayList
+try {
+    $mailRows = (Read-Table 'SELECT * FROM [Corresponds]').Rows
+} catch {
+    $mailRows = @()
+    Write-Warning 'No [Corresponds] table: mail skipped'
+}
+foreach ($row in $mailRows) {
+    [void]$mail.Add([ordered]@{
+        reference = (Get-Text $row['المرجع']); correspondent = (Get-Text $row['الى السيد:'])
+        address = (Get-Text $row['العنوان']); date = (Get-Day $row['التاريخ'])
+    })
+}
+
 $connection.Close()
 
 $document = [ordered]@{
@@ -101,7 +119,8 @@ $document = [ordered]@{
     suppliers = @($suppliers.Values)
     payment_orders = @($orders)
     purchase_orders = @($purchaseOrders.Values)
+    mail = @($mail)
 }
 $json = $document | ConvertTo-Json -Depth 6
 [System.IO.File]::WriteAllText($Out, $json, (New-Object System.Text.UTF8Encoding($false)))
-Write-Output ("Wrote {0} suppliers, {1} payment orders, {2} purchase orders to {3}" -f $suppliers.Count, $orders.Count, $purchaseOrders.Count, $Out)
+Write-Output ("Wrote {0} suppliers, {1} payment orders, {2} purchase orders, {3} letters to {4}" -f $suppliers.Count, $orders.Count, $purchaseOrders.Count, $mail.Count, $Out)

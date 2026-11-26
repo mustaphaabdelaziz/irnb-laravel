@@ -2,6 +2,7 @@
 
 namespace App\Services\Legacy;
 
+use App\Models\MailEntry;
 use App\Models\PaymentOrder;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderLine;
@@ -26,6 +27,9 @@ final class LegacyAccessImporter
 
     private const METHOD_BY_SOURCE = ['transfer' => 'bank', 'cash' => 'cash', 'payment' => null];
 
+    /** The status ("printed") the old mail register typed in its address column. */
+    private const PRINTED = 'طبعت';
+
     /**
      * @param  array<string, mixed>  $data
      * @return array<string, array<string, int>>
@@ -38,11 +42,14 @@ final class LegacyAccessImporter
                 'payment_orders' => $this->paymentOrders(is_array($data['payment_orders'] ?? null) ? $data['payment_orders'] : []),
                 // Optional section (P2): an older export without it still imports.
                 'purchase_orders' => $this->purchaseOrders(is_array($data['purchase_orders'] ?? null) ? $data['purchase_orders'] : []),
+                // Optional section (P3): the old outgoing letters.
+                'mail' => $this->mail(is_array($data['mail'] ?? null) ? $data['mail'] : []),
             ];
             ActivityRecorder::record($by, ActivityAction::LEGACY_DATA_IMPORTED, null, [
                 'suppliers' => $result['suppliers']['created'],
                 'payment_orders' => $result['payment_orders']['created'],
                 'purchase_orders' => $result['purchase_orders']['created'],
+                'mail' => $result['mail']['created'],
             ]);
 
             return $result;
@@ -246,6 +253,75 @@ final class LegacyAccessImporter
         }
 
         return ['created' => $created, 'skipped' => $skipped];
+    }
+
+    /**
+     * Old `Corresponds` rows → outgoing legacy mail entries: no number, the
+     * old reference text kept, an empty date left empty (the year then comes
+     * from a "YYYY/NN" reference), the recipient as correspondent. The old
+     * register typed the status «طبعت» (printed) in its address column: it
+     * moves to the notes. A row is matched on (source, reference, date,
+     * correspondent), so importing again creates nothing.
+     *
+     * @param  list<array<string, mixed>>  $rows
+     */
+    private function mail(array $rows): array
+    {
+        $created = $skipped = 0;
+        foreach ($rows as $row) {
+            if (! is_array($row)) {
+                $skipped++;
+
+                continue;
+            }
+            $reference = self::text(preg_replace('/\s+/u', ' ', self::plain($row['reference'] ?? null)), 50);
+            $date = self::date($row['date'] ?? null);
+            $correspondent = self::text($row['correspondent'] ?? null, 200);
+            $address = self::text($row['address'] ?? null, 255);
+            if ($reference === null && $correspondent === null && $date === null) {
+                $skipped++;
+
+                continue;
+            }
+            $notes = null;
+            if ($address === self::PRINTED) {
+                [$notes, $address] = [$address, null];
+            }
+
+            $exists = MailEntry::where('is_legacy', true)->where('legacy_source', 'corresponds')
+                ->when($reference !== null, fn ($q) => $q->where('legacy_reference', $reference), fn ($q) => $q->whereNull('legacy_reference'))
+                ->when($date !== null, fn ($q) => $q->whereDate('entry_date', $date), fn ($q) => $q->whereNull('entry_date'))
+                ->when($correspondent !== null, fn ($q) => $q->where('correspondent', $correspondent), fn ($q) => $q->whereNull('correspondent'))
+                ->exists();
+            if ($exists) {
+                $skipped++;
+
+                continue;
+            }
+
+            MailEntry::create([
+                'direction' => MailEntry::OUT,
+                'year' => $date !== null ? (int) substr($date, 0, 4) : self::yearOf($reference),
+                'number' => null,
+                'status' => MailEntry::ACTIVE,
+                'entry_date' => $date,
+                'correspondent' => $correspondent,
+                'address' => $address,
+                'notes' => $notes,
+                'is_legacy' => true,
+                'legacy_reference' => $reference,
+                'legacy_source' => 'corresponds',
+            ]);
+            $created++;
+        }
+
+        return ['created' => $created, 'skipped' => $skipped];
+    }
+
+    /** "2019/07" → 2019; anything else → null. */
+    private static function yearOf(?string $reference): ?int
+    {
+        return $reference !== null && preg_match('/^(\d{4})\s*\//', $reference, $m) === 1 ? (int) $m[1] : null;
     }
 
     /**

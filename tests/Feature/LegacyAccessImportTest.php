@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\MailEntry;
 use App\Models\PaymentOrder;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
@@ -233,5 +234,87 @@ class LegacyAccessImportTest extends TestCase
         $result = session('legacyResult');
         $this->assertSame(['created' => 0, 'skipped' => 0], $result['suppliers']);
         $this->assertSame(['created' => 1, 'skipped' => 3, 'merged' => 0], $result['payment_orders']);
+    }
+
+    #[Test]
+    public function the_old_letters_are_imported_as_outgoing_history(): void
+    {
+        $result = app(LegacyAccessImporter::class)->import($this->data(), User::factory()->admin()->create());
+
+        $this->assertSame(['created' => 3, 'skipped' => 1], $result['mail']);
+
+        $printed = MailEntry::where('legacy_reference', '2019/01')->sole();
+        $this->assertTrue($printed->is_legacy);
+        $this->assertSame('corresponds', $printed->legacy_source);
+        $this->assertSame(MailEntry::OUT, $printed->direction);
+        $this->assertSame(MailEntry::ACTIVE, $printed->status);
+        $this->assertNull($printed->number);
+        $this->assertSame(2019, $printed->year);
+        $this->assertSame('2019/01', $printed->reference);
+        $this->assertSame('2019-01-15', $printed->entry_date->toDateString());
+        $this->assertSame('Test Ligue de Wilaya', $printed->correspondent);
+        // «طبعت» (printed) was a status typed in the address column: it moves to the notes.
+        $this->assertNull($printed->address);
+        $this->assertSame('طبعت', $printed->notes);
+        // Read-only history: only notes (and a scan) can be added.
+        $this->assertSame(['notes'], $printed->editableFields());
+
+        $undated = MailEntry::where('legacy_reference', '2019/02')->sole();
+        $this->assertNull($undated->entry_date);
+        $this->assertSame(2019, $undated->year);
+        $this->assertSame('1 rue Test, Testville', $undated->address);
+        $this->assertNull($undated->notes);
+
+        // Old letters never take a sequence number.
+        $this->assertSame(0, MailEntry::whereNotNull('number')->count());
+        $this->assertSame(1, DB::transaction(fn () => YearlySequence::next('mail_entries', 2019, ['direction' => MailEntry::OUT])));
+        $this->assertDatabaseHas('activity_logs', ['action' => 'legacy_data_imported']);
+    }
+
+    #[Test]
+    public function importing_the_letters_twice_changes_nothing(): void
+    {
+        $importer = app(LegacyAccessImporter::class);
+        $admin = User::factory()->admin()->create();
+        $importer->import($this->data(), $admin);
+
+        $second = $importer->import($this->data(), $admin);
+
+        $this->assertSame(['created' => 0, 'skipped' => 4], $second['mail']);
+        $this->assertSame(3, MailEntry::count());
+    }
+
+    #[Test]
+    public function a_file_without_letters_still_imports(): void
+    {
+        $data = $this->data();
+        unset($data['mail']);
+
+        $result = app(LegacyAccessImporter::class)->import($data, User::factory()->admin()->create());
+
+        $this->assertSame(['created' => 0, 'skipped' => 0], $result['mail']);
+        $this->assertSame(['created' => 3, 'skipped' => 0, 'merged' => 1], $result['payment_orders']);
+        $this->assertSame(0, MailEntry::count());
+    }
+
+    #[Test]
+    public function bad_letter_rows_are_skipped_and_a_reference_alone_still_imports(): void
+    {
+        $result = app(LegacyAccessImporter::class)->import([
+            'format' => 'access-legacy-v1',
+            'mail' => [
+                'oops',
+                ['reference' => '  2018/7 ', 'correspondent' => '', 'address' => '', 'date' => 'not a date'],
+                // An address alone (here the "printed" status) is no letter.
+                ['reference' => '', 'correspondent' => '', 'address' => 'طبعت', 'date' => null],
+            ],
+        ], User::factory()->admin()->create());
+
+        $this->assertSame(['created' => 1, 'skipped' => 2], $result['mail']);
+        $row = MailEntry::sole();
+        $this->assertSame('2018/7', $row->legacy_reference);
+        $this->assertSame(2018, $row->year);
+        $this->assertNull($row->entry_date);
+        $this->assertNull($row->correspondent);
     }
 }

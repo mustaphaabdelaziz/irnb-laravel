@@ -192,6 +192,14 @@ class ActivityAction
 
     const PURCHASE_ORDER_PRINTED = 'purchase_order_printed';
 
+    const MAIL_ENTRY_CREATED = 'mail_entry_created';
+
+    const MAIL_ENTRY_UPDATED = 'mail_entry_updated';
+
+    const MAIL_ENTRY_CANCELLED = 'mail_entry_cancelled';
+
+    const MAIL_ENTRY_REGISTERED = 'mail_entry_registered';
+
     const LEGACY_DATA_IMPORTED = 'legacy_data_imported';
 
     const FINANCE_RESET = 'finance_reset';
@@ -374,6 +382,10 @@ class ActivityAction
         self::BOARD_MEMBER_ADDED,
         self::BOARD_MEMBER_UPDATED,
         self::BOARD_MEMBER_REMOVED,
+        self::MAIL_ENTRY_CREATED,
+        self::MAIL_ENTRY_UPDATED,
+        self::MAIL_ENTRY_CANCELLED,
+        self::MAIL_ENTRY_REGISTERED,
         self::DOCUMENT_UPDATED,
         self::DOCUMENT_UNEXEMPTED,
         self::DOCUMENT_FILE_DELETED,
@@ -504,6 +516,11 @@ class ActivityAction
             self::BOARD_MEMBER_ADDED,
             self::BOARD_MEMBER_UPDATED,
             self::BOARD_MEMBER_REMOVED,
+            // The secretariat's mail register (the secretary general is a board role).
+            self::MAIL_ENTRY_CREATED,
+            self::MAIL_ENTRY_UPDATED,
+            self::MAIL_ENTRY_CANCELLED,
+            self::MAIL_ENTRY_REGISTERED,
         ],
         'social' => [
             self::ACTIVITY_CREATED,

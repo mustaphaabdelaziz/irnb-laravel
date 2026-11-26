@@ -14,6 +14,7 @@ use App\Models\FinanceTransfer;
 use App\Models\Game;
 use App\Models\InventorySession;
 use App\Models\LiteraryReport;
+use App\Models\MailEntry;
 use App\Models\MemberJob;
 use App\Models\PaymentOrder;
 use App\Models\Player;
@@ -62,6 +63,7 @@ final class ActivitySubjectLink
         Transaction::class => ['transactions'],
         PaymentOrder::class => ['payment_orders'],
         PurchaseOrder::class => ['purchase_orders'],
+        MailEntry::class => ['mail'],
         FinanceTransfer::class => ['finance'],
         Subscription::class => ['subscriptions'],
         MemberJob::class => ['jobs'],
@@ -190,6 +192,11 @@ final class ActivitySubjectLink
             $subject instanceof PurchaseOrder => [
                 UiLang::get('pur.title').' '.$subject->reference,
                 route('purchase-orders.show', $subject),
+            ],
+            // The route comes with the controller (Task 4); a link is only built when a log is displayed.
+            $subject instanceof MailEntry => [
+                UiLang::get('mreg.title').' '.$subject->reference,
+                route('mail.show', $subject),
             ],
             $subject instanceof FinanceTransfer => [
                 self::amount($subject->amount).(self::filled($subject->reference) !== null ? ' · '.$subject->reference : ''),

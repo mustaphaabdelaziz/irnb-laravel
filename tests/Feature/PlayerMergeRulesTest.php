@@ -305,6 +305,33 @@ class PlayerMergeRulesTest extends TestCase
     }
 
     #[Test]
+    public function on_a_paid_tie_the_subscription_that_owes_less_wins(): void
+    {
+        $subscription = $this->subscription();
+
+        // Exempt owes nothing.
+        $keeper = $this->player();
+        $duplicate = $this->player();
+        $this->playerSubscription($keeper, $subscription);
+        $this->playerSubscription($duplicate, $subscription, ['is_exempt' => true]);
+        $this->assertSame('duplicate', $this->clash($keeper, $duplicate, 'subscription')['winner']);
+
+        // A discount owes less.
+        $keeper = $this->player();
+        $duplicate = $this->player();
+        $this->playerSubscription($keeper, $subscription, ['amount_paid' => 200, 'discount_type' => 'amount', 'discount_value' => 100]);
+        $this->playerSubscription($duplicate, $subscription, ['amount_paid' => 200, 'discount_type' => 'percent', 'discount_value' => 50]);
+        $this->assertSame('duplicate', $this->clash($keeper, $duplicate, 'subscription')['winner']);
+
+        // Owing the same: the keeper's.
+        $keeper = $this->player();
+        $duplicate = $this->player();
+        $this->playerSubscription($keeper, $subscription, ['discount_type' => 'percent', 'discount_value' => 10]);
+        $this->playerSubscription($duplicate, $subscription, ['discount_type' => 'amount', 'discount_value' => 100]);
+        $this->assertSame('keeper', $this->clash($keeper, $duplicate, 'subscription')['winner']);
+    }
+
+    #[Test]
     public function repeated_slots_within_one_player_pair_only_once(): void
     {
         $keeper = $this->player();

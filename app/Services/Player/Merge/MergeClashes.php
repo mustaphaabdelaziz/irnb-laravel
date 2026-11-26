@@ -3,6 +3,7 @@
 namespace App\Services\Player\Merge;
 
 use App\Models\PlayerDocument;
+use App\Models\PlayerSubscription;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -180,20 +181,27 @@ final class MergeClashes
 
     /**
      * Same subscription on both (owner 2026-11-26: "keep the paid one"): the row
-     * with more paid stays, a tie keeps the keeper's. Manual debts (no
-     * subscription) never clash: they just move.
+     * with more paid stays; on a paid tie the row that still owes less (exempt
+     * owes nothing, then the bigger discount), then the keeper's. Manual debts
+     * (no subscription) never clash: they just move.
      */
     private function subscriptions(int $keeper, int $duplicate): array
     {
         $rows = DB::table('player_subscriptions')->whereIn('player_id', [$keeper, $duplicate])->whereNotNull('subscription_id')
-            ->orderBy('id')->get(['id', 'player_id', 'subscription_id', 'amount_paid']);
+            ->orderBy('id')->get(['id', 'player_id', 'subscription_id', 'amount_owed', 'amount_paid', 'is_exempt', 'discount_type', 'discount_value']);
         $names = DB::table('subscriptions')->whereIn('id', $rows->pluck('subscription_id')->unique())->pluck('name', 'id');
+        // What the debt totals count as still owed for the row.
+        $owes = fn (object $row) => PlayerSubscription::moneyFor($row->amount_owed, $row->amount_paid, (bool) $row->is_exempt, $row->discount_type, $row->discount_value)['remaining'];
 
         return $this->pairUp(
             $rows,
             $keeper,
             fn (object $row) => (string) $row->subscription_id,
-            fn (object $mine, object $theirs) => (float) $theirs->amount_paid > (float) $mine->amount_paid,
+            fn (object $mine, object $theirs) => match ((float) $theirs->amount_paid <=> (float) $mine->amount_paid) {
+                1 => true,
+                -1 => false,
+                0 => $owes($theirs) < $owes($mine),
+            },
             'subscription',
             fn (object $row) => (string) ($names[$row->subscription_id] ?? ''),
         );

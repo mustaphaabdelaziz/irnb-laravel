@@ -40,7 +40,7 @@
     <div class="body">{{ $T($entry->body) }}</div>
 
     {{-- President + Secretary General (blank line when nobody holds the role). --}}
-    <table style="width:100%; margin-top:30px; text-align:center; font-size:12px;">
+    <table style="width:100%; margin-top:30px; text-align:center; font-size:12px; page-break-inside: avoid;">
         <tr>
             <td style="width:50%; vertical-align:top;">
                 <div style="font-weight:bold;">{{ $L('mreg.pdf.secretary') }}</div>

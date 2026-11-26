@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import IconButton from '@/Components/IconButton.vue';
 import Modal from '@/Components/Modal.vue';
@@ -36,6 +36,7 @@ const { can } = useCan();
 
 const asks = computed(() => props.source !== null && can('mail', 'add'));
 const open = ref(false);
+const mounted = ref(false);
 const loading = ref(false);
 const busy = ref(false);
 const entry = ref(null);
@@ -57,11 +58,13 @@ async function ask() {
         // The register cannot be reached: the dialog still prints.
         entry.value = null;
         lookupFailed.value = true;
-    } finally {
-        register.value = props.ticked;
-        loading.value = false;
-        open.value = true;
     }
+    register.value = props.ticked;
+    loading.value = false;
+    // The dialog mounts on the first click (one Modal per row is DOM volume); Modal opens from a watch on `show`, so show flips a tick later.
+    mounted.value = true;
+    await nextTick();
+    open.value = true;
 }
 
 async function print() {
@@ -94,7 +97,7 @@ async function print() {
     <IconButton v-if="!asks" v-bind="$attrs" :href="href" external target="_blank" :icon="icon" :label="label" :variant="variant" :size="size" :plain="plain" />
     <template v-else>
         <IconButton v-bind="$attrs" :icon="icon" :label="label" :variant="variant" :size="size" :plain="plain" :disabled="loading" @click="ask" />
-        <Modal :show="open" max-width="sm" @close="open = false">
+        <Modal v-if="mounted" :show="open" :closeable="!busy" max-width="sm" @close="open = false">
             <div class="space-y-4 p-6">
                 <h3 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ label }}</h3>
                 <p v-if="entry" class="text-sm text-slate-700 dark:text-slate-200">
@@ -106,7 +109,7 @@ async function print() {
                 </label>
                 <p v-if="lookupFailed || failed" class="text-xs text-rose-600 dark:text-rose-300">{{ t('mreg.register_failed') }}</p>
                 <div class="flex justify-end gap-2">
-                    <SecondaryButton type="button" @click="open = false">{{ t('cancel') }}</SecondaryButton>
+                    <SecondaryButton type="button" :disabled="busy" @click="open = false">{{ t('cancel') }}</SecondaryButton>
                     <PrimaryButton type="button" :disabled="busy" @click="print">{{ t('print') }}</PrimaryButton>
                 </div>
             </div>

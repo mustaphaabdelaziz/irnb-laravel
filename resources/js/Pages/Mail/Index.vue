@@ -91,7 +91,7 @@ watch(filters, () => {
             </div>
 
             <div v-if="entries.last_page > 1" class="flex flex-wrap justify-center gap-1">
-                <Link v-for="link in entries.links" :key="link.label" :href="link.url || ''" v-html="link.label" preserve-state
+                <Link v-for="(link, i) in entries.links" :key="i" :href="link.url || ''" v-html="link.label" preserve-state
                     :class="['rounded px-3 py-1 text-sm', link.active ? 'bg-primary-600 text-white' : 'text-slate-600 dark:text-slate-300', !link.url && 'pointer-events-none opacity-40']" />
             </div>
         </div>

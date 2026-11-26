@@ -24,7 +24,7 @@ const day = (value) => (value ? String(value).slice(0, 10) : '');
 
 const form = useForm({
     direction: props.entry?.direction ?? props.direction,
-    entry_date: day(props.entry?.entry_date) || localToday(),
+    entry_date: isEdit ? day(props.entry.entry_date) : localToday(),
     correspondent: props.entry?.correspondent ?? '',
     address: props.entry?.address ?? '',
     subject: props.entry?.subject ?? '',

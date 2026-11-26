@@ -23,6 +23,7 @@ final class MergeClashes
         'game' => 'game_players',
         'injury' => 'injury_notes',
         'academic_year' => 'player_academic_years',
+        'subscription' => 'player_subscriptions',
     ];
 
     /** @return list<array{kind:string, label:string, keeper_row:int, duplicate_row:int, winner:string}> */
@@ -39,6 +40,7 @@ final class MergeClashes
             ...$this->games($keeper, $duplicate),
             ...$this->injuries($keeper, $duplicate),
             ...$this->academicYears($keeper, $duplicate),
+            ...$this->subscriptions($keeper, $duplicate),
         ];
     }
 
@@ -173,6 +175,27 @@ final class MergeClashes
             fn () => false,
             'academic_year',
             fn (object $row) => (string) $row->academic_year,
+        );
+    }
+
+    /**
+     * Same subscription on both (owner 2026-11-26: "keep the paid one"): the row
+     * with more paid stays, a tie keeps the keeper's. Manual debts (no
+     * subscription) never clash: they just move.
+     */
+    private function subscriptions(int $keeper, int $duplicate): array
+    {
+        $rows = DB::table('player_subscriptions')->whereIn('player_id', [$keeper, $duplicate])->whereNotNull('subscription_id')
+            ->orderBy('id')->get(['id', 'player_id', 'subscription_id', 'amount_paid']);
+        $names = DB::table('subscriptions')->whereIn('id', $rows->pluck('subscription_id')->unique())->pluck('name', 'id');
+
+        return $this->pairUp(
+            $rows,
+            $keeper,
+            fn (object $row) => (string) $row->subscription_id,
+            fn (object $mine, object $theirs) => (float) $theirs->amount_paid > (float) $mine->amount_paid,
+            'subscription',
+            fn (object $row) => (string) ($names[$row->subscription_id] ?? ''),
         );
     }
 

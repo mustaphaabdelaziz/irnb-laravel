@@ -847,6 +847,7 @@
     "dup.clash.game": "مباراة يوم {name}",
     "dup.clash.injury": "إصابة تبدأ يوم {name}",
     "dup.clash.registration": "مسجلان في {name}",
+    "dup.clash.subscription": "اشتراك «{name}» عند الاثنين",
     "dup.clash.team": "في قائمة {name}",
     "dup.clashes_title": "سجلات موجودة عند الاثنين",
     "dup.col_actions": "الإجراءات",

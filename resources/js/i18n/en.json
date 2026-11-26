@@ -847,6 +847,7 @@
     "dup.clash.game": "Same match on {name}",
     "dup.clash.injury": "Injury starting {name}",
     "dup.clash.registration": "Both registered in {name}",
+    "dup.clash.subscription": "Same subscription: {name}",
     "dup.clash.team": "Both on the roster of {name}",
     "dup.clashes_title": "Records both players have",
     "dup.col_actions": "Actions",

@@ -63,4 +63,32 @@ trait BuildsDuplicatePlayers
             'code' => 'doc'.$this->dupSeq, 'name' => 'Photo '.$this->dupSeq, 'created_at' => now(), 'updated_at' => now(),
         ]);
     }
+
+    protected function subscription(string $name = 'Cotisation'): int
+    {
+        $this->dupSeq++;
+
+        return DB::table('subscriptions')->insertGetId([
+            'name' => $name.' '.$this->dupSeq, 'year' => 2026, 'amount_student' => 1000, 'amount_worker' => 1000,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+    }
+
+    protected function playerSubscription(Player $player, ?int $subscriptionId, array $extra = []): int
+    {
+        return DB::table('player_subscriptions')->insertGetId(array_merge([
+            'player_id' => $player->id, 'subscription_id' => $subscriptionId, 'year' => 2026,
+            'amount_owed' => 1000, 'amount_paid' => 0, 'created_at' => now(), 'updated_at' => now(),
+        ], $extra));
+    }
+
+    /** A subscription payment of the player, linked to the obligation it pays. */
+    protected function payment(Player $player, int $playerSubscriptionId, float $amount): int
+    {
+        return DB::table('transactions')->insertGetId([
+            'amount' => $amount, 'transaction_date' => '2026-10-01', 'transaction_type' => 'income', 'category' => 'subscription',
+            'related_entity_type' => 'Player', 'related_entity_id' => $player->id, 'player_subscription_id' => $playerSubscriptionId,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+    }
 }

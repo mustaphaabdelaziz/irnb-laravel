@@ -847,6 +847,7 @@
     "dup.clash.game": "Match du {name}",
     "dup.clash.injury": "Blessure débutant le {name}",
     "dup.clash.registration": "Inscrits tous deux en {name}",
+    "dup.clash.subscription": "Même cotisation : {name}",
     "dup.clash.team": "Dans l'effectif {name}",
     "dup.clashes_title": "Enregistrements présents chez les deux",
     "dup.col_actions": "Actions",

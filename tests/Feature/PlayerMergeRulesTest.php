@@ -264,6 +264,35 @@ class PlayerMergeRulesTest extends TestCase
     }
 
     #[Test]
+    public function the_same_subscription_keeps_the_more_paid_row(): void
+    {
+        $keeper = $this->player();
+        $duplicate = $this->player();
+        $subscription = $this->subscription('Cotisation');
+        $mine = $this->playerSubscription($keeper, $subscription, ['amount_paid' => 0]);
+        $theirs = $this->playerSubscription($duplicate, $subscription, ['amount_paid' => 1000]);
+
+        $clash = $this->clash($keeper, $duplicate, 'subscription');
+
+        $this->assertSame([$mine, $theirs, 'duplicate'], [$clash['keeper_row'], $clash['duplicate_row'], $clash['winner']]);
+        $this->assertSame(DB::table('subscriptions')->where('id', $subscription)->value('name'), $clash['label']);
+    }
+
+    #[Test]
+    public function a_subscription_paid_the_same_keeps_the_keepers_row_and_manual_debts_never_clash(): void
+    {
+        $keeper = $this->player();
+        $duplicate = $this->player();
+        $subscription = $this->subscription();
+        $this->playerSubscription($keeper, $subscription, ['amount_paid' => 500]);
+        $this->playerSubscription($duplicate, $subscription, ['amount_paid' => 500]);
+        $this->playerSubscription($keeper, null, ['label' => 'Manual']);
+        $this->playerSubscription($duplicate, null, ['label' => 'Manual']);
+
+        $this->assertSame('keeper', $this->clash($keeper, $duplicate, 'subscription')['winner']);
+    }
+
+    #[Test]
     public function repeated_slots_within_one_player_pair_only_once(): void
     {
         $keeper = $this->player();

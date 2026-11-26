@@ -5,6 +5,7 @@ namespace App\Services\Player\Merge;
 use App\Models\BoardMember;
 use App\Models\Player;
 use App\Models\PlayerDuplicateDecision;
+use App\Models\PlayerSubscription;
 use App\Models\User;
 use App\Services\Finance\RecalculatePlayerDebtService;
 use App\Services\Player\Duplicates\DuplicateFinder;
@@ -69,13 +70,17 @@ class PlayerMerger
         $attributes = $this->fields->resolve($keeper, $duplicate, $choices);
 
         return DB::transaction(function () use ($keeper, $k, $d, $a, $b, $pair, $snapshots, $attributes, $by) {
-            $this->settleClashes($this->clashes->find($k, $d), $k);
+            $paidAgain = $this->settleClashes($this->clashes->find($k, $d), $k);
             $this->movePivots($k, $d);
             $this->dropSameGroupSpells($k, $d);
             foreach (self::REPOINT as [$table, $column]) {
                 DB::table($table)->where($column, $d)->update([$column => $k]);
             }
             $this->repointMorphs($k, $d);
+            // A kept subscription that took the other one's payments: its paid total is summed again.
+            foreach (PlayerSubscription::whereKey($paidAgain)->get() as $subscription) {
+                $this->debts->forSubscription($subscription);
+            }
 
             PlayerDuplicateDecision::query()
                 ->where('status', PlayerDuplicateDecision::DISMISSED)
@@ -109,9 +114,15 @@ class PlayerMerger
         });
     }
 
-    /** Losers go; documents first (they follow registrations), then registrations, then the rest. */
-    private function settleClashes(array $clashes, int $k): void
+    /**
+     * Losers go; documents first (they follow registrations), then registrations, then the rest.
+     *
+     * @return list<int> kept player_subscriptions whose paid total must be summed again
+     */
+    private function settleClashes(array $clashes, int $k): array
     {
+        $paidAgain = [];
+
         foreach ($clashes as $clash) {
             if ($clash['kind'] !== 'document') {
                 continue;
@@ -139,7 +150,24 @@ class PlayerMerger
                     ->update(['player_academic_year_id' => $winner]);
                 DB::table('player_academic_records')->where('player_academic_year_id', $loser)->delete();
             }
+            if ($clash['kind'] === 'subscription') {
+                $this->movePayments($loser, $winner);
+                $paidAgain[] = $winner;
+            }
             DB::table(MergeClashes::TABLES[$clash['kind']])->where('id', $loser)->delete();
+        }
+
+        return $paidAgain;
+    }
+
+    /** transactions is the only table pointing at player_subscriptions: payments, and the row's last-payment link. */
+    private function movePayments(int $loser, int $winner): void
+    {
+        DB::table('transactions')->where('player_subscription_id', $loser)->update(['player_subscription_id' => $winner]);
+
+        $lastPayment = DB::table('player_subscriptions')->where('id', $loser)->value('transaction_id');
+        if ($lastPayment !== null) {
+            DB::table('player_subscriptions')->where('id', $winner)->whereNull('transaction_id')->update(['transaction_id' => $lastPayment]);
         }
     }
 

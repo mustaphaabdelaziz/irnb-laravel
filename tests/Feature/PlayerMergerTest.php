@@ -153,6 +153,44 @@ class PlayerMergerTest extends TestCase
     }
 
     #[Test]
+    public function the_same_subscription_on_both_keeps_the_paid_one_and_is_owed_once(): void
+    {
+        $keeper = $this->player();
+        $duplicate = $this->player();
+        $subscription = $this->subscription();
+        $mine = $this->playerSubscription($keeper, $subscription);
+        $theirs = $this->playerSubscription($duplicate, $subscription, ['amount_paid' => 1000]);
+        $payment = $this->payment($duplicate, $theirs, 1000);
+
+        $this->merge($keeper, $duplicate);
+
+        $this->assertSame([$theirs], DB::table('player_subscriptions')->where('player_id', $keeper->id)->pluck('id')->all());
+        $this->assertDatabaseMissing('player_subscriptions', ['id' => $mine]);
+        $this->assertSame($theirs, (int) DB::table('transactions')->where('id', $payment)->value('player_subscription_id'));
+        $this->assertEquals(1000, (float) DB::table('player_subscriptions')->where('id', $theirs)->value('amount_paid'));
+        $this->assertEquals(0, (float) $keeper->fresh()->outstanding_debt);
+    }
+
+    #[Test]
+    public function the_losing_subscriptions_payments_move_to_the_kept_one(): void
+    {
+        $keeper = $this->player();
+        $duplicate = $this->player();
+        $subscription = $this->subscription();
+        $mine = $this->playerSubscription($keeper, $subscription, ['amount_paid' => 300]);
+        $theirs = $this->playerSubscription($duplicate, $subscription, ['amount_paid' => 500]);
+        $this->payment($keeper, $mine, 300);
+        $this->payment($duplicate, $theirs, 500);
+
+        $this->merge($keeper, $duplicate);
+
+        $this->assertSame([$theirs], DB::table('player_subscriptions')->where('player_id', $keeper->id)->pluck('id')->all());
+        $this->assertSame(2, DB::table('transactions')->where('player_subscription_id', $theirs)->count());
+        $this->assertEquals(800, (float) DB::table('player_subscriptions')->where('id', $theirs)->value('amount_paid'));
+        $this->assertEquals(200, (float) $keeper->fresh()->outstanding_debt);
+    }
+
+    #[Test]
     public function the_keeper_wins_session_ties_and_shared_pivots_are_not_doubled(): void
     {
         $keeper = $this->player();

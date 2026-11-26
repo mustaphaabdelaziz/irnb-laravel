@@ -30,6 +30,7 @@ const SECTION_LABELS = {
     equipment: 'nav_equipment',
     board: 'nav.board_of_directors',
     social: 'nav.social',
+    secretariat: 'nav.secretariat',
     config: 'nav.config',
     system: 'nav.system',
 };

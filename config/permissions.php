@@ -27,6 +27,8 @@ return [
         'board-committees' => 'board_committees',
         'activities' => 'activities',
         'literary-reports' => 'literary_reports',
+        // Secretariat: the mail register (outgoing and incoming letters).
+        'mail' => 'mail',
         'users' => 'users',
         'categories' => 'categories',
         // Each App Configuration list is its own module (own row in the role editor).
@@ -173,6 +175,15 @@ return [
         'activities.files.destroy' => ['activities', 'edit'],
         // Exporting the literary report is reading it.
         'literary-reports.pdf' => ['literary_reports', 'view'],
+        // Mail entries are never deleted, so the delete right is cancelling one.
+        // Printing a letter and opening a scan only read. The print tick box
+        // (lookup + register) adds an entry; the controller also checks the
+        // view right of the printed document's own module.
+        'mail.cancel' => ['mail', 'delete'],
+        'mail.print' => ['mail', 'view'],
+        'mail.scan' => ['mail', 'view'],
+        'mail.sources.show' => ['mail', 'add'],
+        'mail.sources.store' => ['mail', 'add'],
     ],
 
     // Route names that need no permission once authenticated.

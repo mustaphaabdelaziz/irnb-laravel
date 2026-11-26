@@ -11,6 +11,7 @@ const KEYS = [
     'nav.search', 'nav.search_placeholder', 'nav.no_results',
     'nav.collapse_sidebar', 'nav.expand_sidebar', 'nav.competitions',
     'teams', 'games', 'competitions',
+    'nav.secretariat', 'mail',
 ];
 
 test('every sidebar key resolves through t() in ar, en and fr', () => {
@@ -28,4 +29,5 @@ test('owner-chosen section names', () => {
     assert.equal(messages.ar['nav.board_of_directors'], 'مجلس إدارة النادي');
     assert.equal(messages.en['nav.board_of_directors'], 'Board of Directors');
     assert.equal(messages.fr['nav.board_of_directors'], 'Bureau du club');
+    assert.equal(messages.ar['nav.secretariat'], 'الأمانة');
 });

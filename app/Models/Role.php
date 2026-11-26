@@ -26,6 +26,8 @@ class Role extends Model
         'finance' => ['transactions', 'payment_orders', 'purchase_orders', 'finance', 'reports'],
         'equipment' => ['equipment', 'inventory'],
         'board' => ['board'],
+        // The board's secretariat (الأمانة): the mail register now, mission orders in P4.
+        'secretariat' => ['mail'],
         'social' => ['activities', 'literary_reports'],
         'config' => [
             'categories', 'branches', 'positions', 'player_statuses', 'document_types', 'jobs',
@@ -42,6 +44,7 @@ class Role extends Model
         'transactions', 'payment_orders', 'purchase_orders', 'finance', 'reports',
         'equipment', 'inventory',
         'board',
+        'mail',
         'activities', 'literary_reports',
         'categories', 'branches', 'positions', 'player_statuses', 'document_types', 'jobs',
         'board_roles', 'board_committees', 'equipment_categories', 'storage_locations',

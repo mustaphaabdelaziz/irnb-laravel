@@ -41,7 +41,7 @@ class AttendanceSheetController extends Controller
     public function __construct(private readonly PdfService $pdf) {}
 
     /** One category's month in one branch (BranchChoice, as on the calendar): players × sessions, A4 landscape (right-to-left in Arabic). */
-    public function month(Request $request, MonthSheet $sheet, AttendanceStatusCatalog $catalog, Roster $roster): Response
+    public function month(Request $request, MonthSheet $sheet, AttendanceStatusCatalog $catalog): Response
     {
         $data = $request->validate([
             'category_id' => ['required', 'integer', 'exists:categories,id'],
@@ -83,15 +83,9 @@ class AttendanceSheetController extends Controller
             ];
         }
 
-        // Players from another category (a joint session's roster, a guest) carry its name.
-        // Deliberately the player's CURRENT category in this branch, not any mark's frozen one:
-        // unlike the session sheet/screen, the month grid is a forward-looking blank sheet the coach
-        // fills in on the pitch, so it lists people as they are today (see rows_follow_the_roster_rules()).
-        $categoryOf = $roster->categoryIdsIn($players, $branch?->id);
-        $otherIds = collect($categoryOf)->filter()->map(fn ($id) => (int) $id)
-            ->reject(fn (int $id) => $id === $category->id)->unique()->values()->all();
-        $others = Category::whereIn('id', $otherIds)->get()
-            ->mapWithKeys(fn (Category $c) => [$c->id => $c->localized_name]);
+        // Players from another category carry its name (their CURRENT category, see guestCategories()
+        // and rows_follow_the_roster_rules()).
+        $guests = $sheet->guestCategories($players, $category->id, $branch?->id);
 
         $html = view('pdf.attendance-month-sheet', [
             'club' => ClubHeader::data(),
@@ -105,7 +99,7 @@ class AttendanceSheetController extends Controller
             'rows' => $players->map(fn (Player $p) => [
                 'id' => $p->id,
                 'name' => self::name($p),
-                'category' => $others->get((int) ($categoryOf[$p->id] ?? 0)),
+                'category' => $guests[$p->id] ?? null,
             ])->values()->all(),
             'cells' => $cells,
             'filled' => $request->boolean('filled'),

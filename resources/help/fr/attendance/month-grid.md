@@ -2,7 +2,7 @@
 title: Comment saisir les présences d'un mois entier depuis la feuille
 summary: Recopiez les codes de la feuille de présence dans la grille du mois, un joueur par ligne et une séance par colonne, puis enregistrez.
 pages: [attendance.grid]
-keywords: [grille du mois, feuille de présence, codes, saisir les présences, mois entier, feuille de l'entraîneur, R15, AN, imprimer la feuille, groupes, groupe, grille]
+keywords: [grille du mois, feuille de présence, codes, saisir les présences, mois entier, feuille de l'entraîneur, R15, AN, imprimer la feuille, imprimer une période, groupes, groupe, grille]
 related: [attendance/take-attendance, attendance/cancel-delete-session, attendance/training-groups]
 ---
 
@@ -59,5 +59,7 @@ La case « — » signifie que le joueur n'est pas sur la liste de cette séance
 Vous ne pouvez pas écrire dans les cases ? Il vous faut le droit « Modifier » dans « Présence ». Demandez-le à l'administrateur du club.
 
 :::tip
-Imprimez la feuille vierge pour l'entraîneur avant le début du mois. En haut de la grille, cliquez sur le bouton imprimante. Son nom « Imprimer la feuille » s'affiche quand vous passez la souris dessus. Elle contient les mêmes joueurs, séances et codes. Le bouton d'à côté, « Imprimer avec les présences », l'imprime avec les codes enregistrés.
+Imprimez la feuille vierge pour l'entraîneur avant le début du mois. En haut de la grille, cliquez sur le bouton imprimante. Son nom « Imprimer la feuille » s'affiche quand vous passez la souris dessus. Elle contient les mêmes joueurs, séances et codes. Le bouton d'à côté, « Imprimer avec les présences », l'imprime avec les codes enregistrés. Chaque ligne se termine par trois colonnes : Présent, Absent et Taux.
+
+Pour imprimer plus d'un mois, cliquez sur le bouton calendrier. Son nom « Imprimer une période » s'affiche quand vous passez la souris dessus. Choisissez les deux dates, puis cliquez sur « Imprimer ». Vous obtenez une page par mois, puis une page récapitulative de la période. Le bouton « Imprimer une période » des « Statistiques de présence » imprime la période et la catégorie choisies sur cette page.
 :::

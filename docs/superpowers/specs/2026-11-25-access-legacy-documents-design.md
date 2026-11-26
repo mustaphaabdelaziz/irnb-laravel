@@ -51,8 +51,15 @@ them), copies and leftover tables.
 | Equipment ↔ expense | When the linked payment order is paid, the order's received equipment points to that expense |
 | Mail register | Outgoing **and** incoming |
 | Outgoing letter | Register entry + optional letter body printed on letterhead |
-| Auto mail reference | Mission orders, purchase orders, absence letters, match convocations |
-| Reprints | Reuse the same reference for the same document |
+| Auto mail reference | Mission orders (P4, on first print); purchase orders, absence letters, match convocations through a **tick box at print** (owner 2026-11-26) |
+| Mail tick box defaults | Ticked for convocations and sent purchase orders, unticked for absence letters, hidden for draft orders and for users without the mail add right |
+| Reprints | Reuse the same reference for the same document; once a document has one, every print shows it |
+| Incoming numbering | Own sequence per year, shown with a mark (ar `و 2026/01`, fr `A-2026/01`, en `IN-2026/01`); outgoing `2026/01` |
+| Mail removal | Cancel keeps the number; never deleted |
+| Mail letter signatures | President + Secretary General (board role `secretary`) |
+| Mail correspondent | Free text with suggestions from earlier entries |
+| Mail scan | One file per entry, replaceable |
+| Entries made from a print | Correspondent, subject, notes, scan editable; source link and number fixed; can be cancelled |
 | Mission travelers | One or more people (user / board member / player or typed), one sheet each |
 | Import | Suppliers, 141 letters, ~60 old payment orders (history), 2 missions |
 | Menu | Payment + purchase orders under Finance; Suppliers in App Configuration; new **Secretariat** (الأمانة) section: Mail register, Mission orders |
@@ -229,26 +236,72 @@ Stock-receive right in the dialog = the `equipment.stock.receive` route permissi
 
 ## P3 — Mail register
 
-- `mail_entries`: `direction` out / in, `year`, `number`, legacy fields, `entry_date`
-  (nullable for legacy), `correspondent` (recipient or sender), `address`, `subject`,
-  `body` text (outgoing letter), `sender_reference` + `received_date` (incoming),
-  attachment (private disk, pattern of transaction receipts), `notes`,
-  `source_type` / `source_id` / `source_key` (unique together when set), `created_by`.
-- Pages: Secretariat → **Mail register** with Outgoing / Incoming tabs, year filter, search;
-  create / edit; attach scan.
-- **Letter PDF** (outgoing with body): letterhead, reference, date, recipient, address,
-  subject, body (`nl2br`, no `pre-wrap` in mPDF), president signature.
-- **Auto reference** `MailRegister::referenceFor($source, $key, $correspondent, $subject)`:
-  firstOrCreate on (`source_type`, `source_id`, `source_key`); reprint returns the same
-  reference. Keys:
-  - mission order: the order (P4);
-  - purchase order: the order, when printed from status sent onward;
-  - absence letter: player + period;
-  - match convocation: the game.
-  The reference is printed on those PDFs.
-- New **Secretariat** nav section (`useNavigation.js`), module `mail`.
-- Import: 141 `Corresponds` rows, outgoing, legacy references kept, empty dates stay empty,
-  «طبعت» moved to notes.
+Design approved by the owner 2026-11-26.
+
+### Data
+
+- `mail_entries`: `direction` out / in, `year`, `number` (null for legacy), `status`
+  active / cancelled (+ `cancelled_by`, `cancelled_at`), `entry_date` (nullable for legacy),
+  `correspondent` (recipient or sender), `address`, `subject`, `body` text (outgoing letter),
+  `sender_reference` + `received_date` (incoming), one attachment (private disk, pattern of
+  transaction receipts, replaceable), `notes`, `source_type` / `source_id` / `source_key`
+  (unique together when set), `is_legacy`, `legacy_reference`, `legacy_source`, `created_by`.
+- Unique `(direction, year, number)`; numbers from `YearlySequence` scoped by direction.
+  Outgoing and incoming each count from 01 every calendar year.
+- Display: outgoing `YYYY/NN`; incoming the same with the localized mark (ar `و `, fr `A-`,
+  en `IN-`). Legacy rows show `legacy_reference`.
+
+### Behaviour
+
+- Create / edit outgoing or incoming entries. Cancel keeps the number, never delete.
+  Cancelled entries are read-only. Legacy entries: only notes and scan editable (lets the
+  secretary attach scans of old letters).
+- Entries made from a print: correspondent, address, subject, notes, scan editable;
+  `direction`, number, date and source link fixed; can be cancelled. The page links to the
+  source document (absence letter player page, game, purchase order) when the user may view it.
+- Correspondent field suggests distinct correspondents used before (same direction first).
+- `MailRegister::register(string $type, int $id, string $key, array $defaults, User $by)`
+  returns the existing active entry for (`source_type`, `source_id`, `source_key`) or creates
+  one (outgoing, today, next number) inside a transaction; `MailRegister::find(...)` only
+  looks up. A cancelled entry does not block a new one for the same source.
+- **Tick box at print**: the print button on the absence letter, game convocation and
+  purchase order opens a small dialog with «Register in the mail register». Ticking POSTs
+  to a register route (needs `mail` add right), then the PDF opens. The PDF routes only look
+  up the entry, so opening, refreshing or reprinting never creates a number. Once a source
+  has an active entry, every print shows its reference and the dialog shows it instead of
+  the box. Defaults: ticked for convocations and for purchase orders sent / received,
+  unticked for absence letters, hidden for draft or cancelled orders and for users without
+  the add right (they print straight away).
+- Source keys: absence letter `player:{id}|branch:{id or 0}|{from}|{to}`; convocation the
+  game; purchase order the order. Default correspondent / subject come from the document
+  (guardian / contact name, the team for a convocation, supplier).
+
+### Pages, rights, menu
+
+- New **Secretariat** (الأمانة) nav section in `useNavigation.js` with **Mail register**
+  (P4 adds Mission orders there).
+- Mail register: Outgoing / Incoming tabs, year filter, search (reference, correspondent,
+  subject), status badge, link to source; create / edit form; show page with scan and
+  letter print.
+- Module `mail` with view / add / edit / delete (delete = cancel); print → view, register →
+  add. New rights go to system roles only (owner rule), by migration.
+
+### Print
+
+- **Letter PDF** (outgoing entry with a body): letterhead, reference, date, recipient,
+  address, subject, body (`nl2br`, `PdfText` for Latin lines in ar), then **President +
+  Secretary General** signatures (current-term active board members with role `president` /
+  `secretary`, blank line if none). `BoardSignatories` gains the secretary.
+- Absence letter, convocation and purchase order PDFs print «Ref: …» near the date when the
+  source has an active entry.
+
+### Import
+
+- `Corresponds` (141 rows) → outgoing legacy entries: legacy reference text kept, empty dates
+  stay empty, recipient → correspondent, «طبعت» in the address column moved to notes.
+  Export script gains an optional `mail` section (format id stays `access-legacy-v1`; files
+  without it still import). Idempotent by (`legacy_source`, `legacy_reference`, date,
+  correspondent). Claude re-exports `D:\BACKUPS\irnb-access-legacy.json`.
 
 ## P4 — Mission orders
 

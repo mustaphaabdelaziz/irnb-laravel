@@ -3,11 +3,13 @@
 namespace App\Services\Attendance;
 
 use App\Enums\SessionState;
+use App\Models\Category;
 use App\Models\Player;
 use App\Models\TrainingGroup;
 use App\Models\TrainingSession;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as PlayerRows;
 use Illuminate\Support\Collection;
 
 /**
@@ -78,27 +80,33 @@ final class MonthSheet
      * $branchId null = every branch's sessions (a club without branches).
      * $groupId null = every session; NO_GROUP = only the sessions with no group;
      * a training group's id = only its sessions.
+     * $from / $to (Y-m-d, inclusive) cut the month for a period sheet; null = no bound.
+     * `statuses` holds the raw status key of each marked cell (the totals count them).
      *
-     * @return array{sessions: Collection<int, TrainingSession>, cells: array<int, array<int, string>>, players: Collection<int, Player>}
+     * @return array{sessions: Collection<int, TrainingSession>, cells: array<int, array<int, string>>, statuses: array<int, array<int, string>>, players: Collection<int, Player>}
      */
-    public function build(int $categoryId, int $year, int $month, ?int $branchId = null, ?int $groupId = null): array
+    public function build(int $categoryId, int $year, int $month, ?int $branchId = null, ?int $groupId = null, ?string $from = null, ?string $to = null): array
     {
         $this->generator->forMonth($categoryId, $year, $month);
 
         $sessions = $this->monthSessions($categoryId, $year, $month, $branchId)
             ->when($groupId === self::NO_GROUP, fn ($q) => $q->whereNull('group_id'))
             ->when($groupId !== null && $groupId !== self::NO_GROUP, fn ($q) => $q->where('group_id', $groupId))
+            ->when($from !== null, fn ($q) => $q->where('date', '>=', $from))
+            ->when($to !== null, fn ($q) => $q->where('date', '<=', $to))
             ->with(['attendances', 'categories'])
             ->orderBy('date')->orderBy('start_time')->orderBy('id')
             ->get();
 
         $codes = AttendanceCode::fromSettings();
         $cells = [];
+        $statuses = [];
         $expected = [];
         foreach ($sessions as $session) {
             if ($session->attendances->isNotEmpty()) {
                 foreach ($session->attendances as $mark) {
                     $cells[$mark->player_id][$session->id] = $codes->format($mark->status, $mark->minutes);
+                    $statuses[$mark->player_id][$session->id] = $mark->status;
                 }
 
                 continue;
@@ -116,7 +124,36 @@ final class MonthSheet
             ->orderBy('lastname')->orderBy('firstname')
             ->get(self::PLAYER_COLUMNS);
 
-        return ['sessions' => $sessions, 'cells' => $cells, 'players' => $players];
+        return ['sessions' => $sessions, 'cells' => $cells, 'statuses' => $statuses, 'players' => $players];
+    }
+
+    /**
+     * Players from another category (a joint session's roster, a guest) carry its name on the sheets.
+     * Deliberately the player's CURRENT category in this branch, not any mark's frozen one: unlike the
+     * session sheet/screen, the month sheet is a forward-looking blank sheet the coach fills in on the
+     * pitch, so it lists people as they are today.
+     *
+     * @param  Collection<int, Player>  $players
+     * @return array<int, string> player id => category name, only for players outside $categoryId
+     */
+    public function guestCategories(Collection $players, int $categoryId, ?int $branchId): array
+    {
+        // Roster::categoryIdsIn() takes an Eloquent collection (it loads the registrations).
+        $categoryOf = $this->roster->categoryIdsIn(new PlayerRows($players->all()), $branchId);
+        $otherIds = collect($categoryOf)->filter()->map(fn ($id) => (int) $id)
+            ->reject(fn (int $id) => $id === $categoryId)->unique()->values()->all();
+        $names = Category::whereIn('id', $otherIds)->get()
+            ->mapWithKeys(fn (Category $c) => [$c->id => $c->localized_name]);
+
+        $guests = [];
+        foreach ($players as $player) {
+            $name = $names->get((int) ($categoryOf[$player->id] ?? 0));
+            if ($name !== null) {
+                $guests[$player->id] = $name;
+            }
+        }
+
+        return $guests;
     }
 
     /** The category's sessions of the month that are not cancelled (of one branch, when given). */

@@ -18,7 +18,7 @@ import { useAttendanceCodes } from '@/Composables/useAttendanceCodes';
 import { useChartTheme } from '@/Composables/useChartTheme';
 import { barDataset, baseOptions } from '@/lib/chartTheme';
 import { columnTotals } from '@/lib/statTable';
-import { hasMarks, hours, monthTick, pct, periodQuery, statusBars } from '@/lib/attendanceStats';
+import { hasMarks, hours, monthTick, pct, periodQuery, periodTooLong, statusBars } from '@/lib/attendanceStats';
 import StatsPlayerTable from './Partials/StatsPlayerTable.vue';
 import StatsRanking from './Partials/StatsRanking.vue';
 
@@ -58,6 +58,9 @@ const branchQuery = computed(() => (props.branchId ? { branch_id: props.branchId
 const categoryQuery = computed(() => (props.categoryId ? { category_id: props.categoryId } : {}));
 const keep = computed(() => ({ ...categoryQuery.value, ...(props.groupId ? { group_id: props.groupId } : {}), ...branchQuery.value }));
 const exportHref = computed(() => route('attendance.stats.export', { ...periodQuery(props.period), ...keep.value }));
+// The recorded attendance of this period, branch, category and group, one page per month.
+const periodSheetTooLong = computed(() => periodTooLong(props.period.from, props.period.to));
+const periodSheetHref = computed(() => route('attendance.sheets.period', { from: props.period.from, to: props.period.to, ...keep.value }));
 // A training group belongs to one branch + category: another category or branch starts on all groups.
 function pickCategory(value) {
     router.get(route('attendance.stats'), { ...periodQuery(props.period), ...branchQuery.value, ...(value ? { category_id: Number(value) } : {}) }, { preserveScroll: true, replace: true });
@@ -142,6 +145,7 @@ const card = 'rounded-xl bg-white ring-1 ring-slate-200 dark:bg-slate-900 dark:r
                     <IconButton data-help="stats-alerts-link" :href="route('attendance.alerts')" icon="alert" :label="t('att.risk.title')" />
                     <IconButton data-help="stats-ranking-link" :href="route('attendance.ranking')" icon="flag" :label="t('att.ranking.title')" />
                     <IconButton data-help="stats-injuries-link" :href="route('attendance.injuries')" icon="drop" :label="t('att.injury.title')" />
+                    <IconButton :href="periodSheetTooLong ? null : periodSheetHref" external target="_blank" icon="print" :label="t('att.sheet.print_period')" :title="periodSheetTooLong ? t('att.sheet.period_too_long') : t('att.sheet.print_period_hint')" :disabled="periodSheetTooLong" />
                     <ExportMenu :href="exportHref" :label="t('export')" :formats="['xlsx', 'csv', 'pdf']" />
                 </div>
             </div>

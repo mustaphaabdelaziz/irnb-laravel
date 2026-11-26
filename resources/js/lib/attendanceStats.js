@@ -31,3 +31,5 @@ export const hours = (value) => Number(value ?? 0).toFixed(1);
 export const periodQuery = (period) => (period?.period === 'custom'
     ? { period: 'custom', from: period.from, to: period.to }
     : { period: period?.period ?? 'month' });
+
+export { periodTooLong } from '@/lib/periodLimit';

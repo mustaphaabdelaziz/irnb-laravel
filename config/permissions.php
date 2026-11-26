@@ -95,6 +95,7 @@ return [
         'attendance.stats' => ['attendance', 'view'],
         // "month" and "session" are not view verbs: printing a blank sheet must not need edit rights.
         'attendance.sheets.month' => ['attendance', 'view'],
+        'attendance.sheets.period' => ['attendance', 'view'],
         'attendance.sheets.session' => ['attendance', 'view'],
         // Follow-up pages and PDFs only read; none of these last segments is a view verb.
         'attendance.alerts' => ['attendance', 'view'],

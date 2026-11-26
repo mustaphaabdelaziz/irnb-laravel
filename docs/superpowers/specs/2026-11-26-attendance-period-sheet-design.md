@@ -74,7 +74,7 @@ Builds the period's sections. It reuses `MonthSheet::groupSwitch()` and `build()
     that has sessions in the period, or only the chosen `group_id`.
   - A category without groups gives one section.
 - **Months**: each calendar month that touches `[from, to]`, cut to the bounds.
-  Months after the current month are skipped: they have no marks, and skipping
+  Days after today are cut too (no empty future columns). Months after the current month are skipped: they have no marks, and skipping
   them avoids generating future sessions.
   A month with no sessions in a section prints nothing.
 - **Summary**: per section, every player who appears in any month, with the

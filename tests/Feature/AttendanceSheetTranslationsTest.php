@@ -14,6 +14,11 @@ class AttendanceSheetTranslationsTest extends TestCase
         'att.sheet.part', 'att.sheet.page', 'att.sheet.coach_name', 'att.sheet.signature',
         'att.sheet.entered_on', 'att.sheet.entered_by', 'att.sheet.filled_note',
         'att.sheet.print', 'att.sheet.print_filled', 'att.sheet.print_session', 'att.sheet.print_hint',
+        'att.sheet.total_present', 'att.sheet.total_absent', 'att.sheet.total_rate', 'att.sheet.totals_help',
+        'att.sheet.session_summary',
+        'att.sheet.period_title', 'att.sheet.period', 'att.sheet.summary_title', 'att.sheet.total_expected',
+        'att.sheet.period_too_long', 'att.sheet.no_sessions_period',
+        'att.sheet.print_period', 'att.sheet.print_period_hint', 'att.sheet.period_order',
     ];
 
     #[Test]

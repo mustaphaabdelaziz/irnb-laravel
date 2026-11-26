@@ -6,8 +6,10 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Icon from '@/Components/Icon.vue';
 import IconButton from '@/Components/IconButton.vue';
 import InputError from '@/Components/InputError.vue';
+import Modal from '@/Components/Modal.vue';
 import { useCan } from '@/Composables/useCan';
 import { useAttendanceCodes } from '@/Composables/useAttendanceCodes';
+import { periodTooLong } from '@/lib/attendanceStats';
 
 const props = defineProps({
     category: { type: Object, required: true },
@@ -50,6 +52,22 @@ const groupName = (g) => g.name ?? t('att.group_whole');
 const shownGroup = computed(() => props.groups.find((g) => g.id === props.groupId) ?? null);
 const sheetHref = computed(() => route('attendance.sheets.month', { category_id: props.category.id, month: props.month, ...branchParam.value, ...groupParam.value }));
 const filledSheetHref = computed(() => route('attendance.sheets.month', { category_id: props.category.id, month: props.month, filled: 1, ...branchParam.value, ...groupParam.value }));
+// Any period of this branch, category and group, from a small dialog (defaults to the grid's month).
+const showPeriod = ref(false);
+const period = reactive({ from: '', to: '' });
+const periodOrdered = computed(() => !!period.from && !!period.to && period.from <= period.to);
+const periodLong = computed(() => periodOrdered.value && periodTooLong(period.from, period.to));
+const periodValid = computed(() => periodOrdered.value && !periodLong.value);
+const periodSheetHref = computed(() => (periodValid.value
+    ? route('attendance.sheets.period', { from: period.from, to: period.to, category_id: props.category.id, ...branchParam.value, ...groupParam.value })
+    : null));
+function openPeriod() {
+    const [y, m] = props.month.split('-').map(Number);
+    period.from = `${props.month}-01`;
+    period.to = `${props.month}-${String(new Date(y, m, 0).getDate()).padStart(2, '0')}`;
+    showPeriod.value = true;
+}
+const dateInput = 'mt-1 block w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100';
 // A full visit: the page is rebuilt for the other group's sessions, so typed codes would be lost.
 function switchGroup(id) {
     if (id === props.groupId) return;
@@ -127,6 +145,7 @@ function save() {
                 <div class="flex flex-wrap items-center gap-2 print:hidden">
                     <IconButton data-help="grid-print" :href="sheetHref" external target="_blank" :title="t('att.sheet.print_hint')" icon="print" :label="t('att.sheet.print')" />
                     <IconButton :href="filledSheetHref" external target="_blank" icon="clipboard" :label="t('att.sheet.print_filled')" />
+                    <IconButton icon="calendar" :label="t('att.sheet.print_period')" :title="t('att.sheet.print_period_hint')" @click="openPeriod" />
                     <button v-if="editable" data-help="grid-save" :disabled="!dirty.size" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50" @click="save">{{ t('att.save') }}</button>
                 </div>
             </div>
@@ -193,5 +212,27 @@ function save() {
                 </tbody>
             </table>
         </div>
+
+        <Modal :show="showPeriod" max-width="md" @close="showPeriod = false">
+            <div class="space-y-3 p-5">
+                <h2 class="font-bold text-slate-900 dark:text-slate-100">{{ t('att.sheet.print_period') }}</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('att.sheet.print_period_hint') }}</p>
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <label class="block text-sm text-slate-700 dark:text-slate-300">{{ t('activity.from') }}<input v-model="period.from" type="date" :class="dateInput" /></label>
+                    <label class="block text-sm text-slate-700 dark:text-slate-300">{{ t('activity.to') }}<input v-model="period.to" type="date" :class="dateInput" /></label>
+                </div>
+                <InputError :message="period.from && period.to && !periodOrdered ? t('att.sheet.period_order') : (periodLong ? t('att.sheet.period_too_long') : '')" />
+                <div class="flex justify-end gap-2">
+                    <button type="button" class="rounded-lg px-3 py-2 text-sm text-slate-500 ring-1 ring-slate-200 dark:text-slate-400 dark:ring-slate-700" @click="showPeriod = false">{{ t('att.close') }}</button>
+                    <a
+                        :href="periodSheetHref ?? undefined"
+                        target="_blank"
+                        :aria-disabled="!periodValid"
+                        :class="['rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700', periodValid ? '' : 'pointer-events-none opacity-50']"
+                        @click="showPeriod = false"
+                    >{{ t('print') }}</a>
+                </div>
+            </div>
+        </Modal>
     </AuthenticatedLayout>
 </template>

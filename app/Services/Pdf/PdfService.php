@@ -13,7 +13,7 @@ use Symfony\Component\HttpFoundation\Response;
 class PdfService
 {
     /** The time limit while mPDF lays a document out. */
-    private const RENDER_SECONDS = 300;
+    public const RENDER_SECONDS = 300;
 
     /**
      * @param  ?bool  $rtl  null = follow the UI language (Arabic is right-to-left)

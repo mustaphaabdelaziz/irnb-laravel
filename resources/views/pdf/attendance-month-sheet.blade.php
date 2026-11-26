@@ -6,7 +6,7 @@
     $statuses = array_keys($labels);
     $code = fn (string $status) => AttendanceCode::normalise($codes[$status]['code']);
     $legendCode = fn (string $status) => $code($status).((AttendanceStatus::tryFrom($status)?->takesMinutes() ?? false) ? '15' : '');
-    $marks = ['preseason' => $L('att.sheet.kind_mark.preseason'), 'extra' => $L('att.sheet.kind_mark.extra')];
+    $kindMarks = ['preseason' => $L('att.sheet.kind_mark.preseason'), 'extra' => $L('att.sheet.kind_mark.extra')];
     $branch ??= null; // the sport, when the club has branches
     $trainingGroup ??= null; // the training group printed, when the category has groups ($groups = the column chunks)
     $footer = ($branch ? $branch.' · ' : '').$category['name'].($trainingGroup ? ' · '.$trainingGroup : '').' · '.$monthLabel.' — '.strtr($L('att.sheet.page'), ['{page}' => '{PAGENO}', '{pages}' => '{nbpg}']);
@@ -29,6 +29,7 @@
         .kind, .kind-legend { font-weight: bold; color: #b45309; }
         .goal { font-size: 6px; font-weight: normal; color: #64748b; }
         .guest { font-size: 7px; color: #64748b; }
+        th.total, td.total { text-align: center; font-weight: bold; background: #f8fafc; }
         .legend { margin-top: 5px; font-size: 8px; line-height: 1.5; }
         table.sign { width: 100%; margin-top: 6px; border-collapse: collapse; page-break-inside: avoid; }
         table.sign td { width: 33%; height: 13mm; border: 1px solid #94a3b8; vertical-align: top; padding: 3px; font-size: 8px; color: #64748b; }
@@ -61,50 +62,15 @@
             @endif
         </div>
 
-        <table class="sheet">
-            <thead>
-                <tr>
-                    <th style="width:6mm;">#</th>
-                    <th style="width:52mm;">{{ $L('att.player') }}</th>
-                    @foreach ($group['columns'] as $column)
-                        <th>{{ $column['day'] }}<br><bdi dir="ltr">{{ $column['date'] }}</bdi><br><bdi dir="ltr">{{ $column['time'] }}</bdi>@if (isset($marks[$column['kind']]))<br><span class="kind">{{ $marks[$column['kind']] }}</span>@endif @if ($column['title'])<br><span class="goal">{{ $column['title'] }}</span>@endif</th>
-                    @endforeach
-                    @for ($i = 0; $i < $group['blank']; $i++)
-                        <th class="blank-head">&nbsp;<br>__/__<br>&nbsp;</th>
-                    @endfor
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($rows as $row)
-                    <tr>
-                        <td class="num">{{ $loop->iteration }}</td>
-                        <td>{{ $row['name'] }}@if ($row['category']) <span class="guest">({{ $row['category'] }})</span>@endif</td>
-                        @foreach ($group['columns'] as $column)
-                            @if (array_key_exists($column['id'], $cells[$row['id']] ?? []))
-                                <td class="cell">{{ $filled ? $cells[$row['id']][$column['id']] : '' }}</td>
-                            @else
-                                <td class="off"></td>
-                            @endif
-                        @endforeach
-                        @for ($i = 0; $i < $group['blank']; $i++)
-                            <td class="blank"></td>
-                        @endfor
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
+        @include('pdf.partials.attendance-sheet-table', [
+            'part' => $group,
+            'rows' => $rows,
+            'cells' => $cells,
+            'filled' => $filled,
+            'totals' => $loop->last ? ($totals ?? null) : null,
+        ])
 
-        <div class="legend">
-            <b>{{ $L('att.sheet.legend') }}:</b>
-            @foreach ($statuses as $status)
-                <span style="color: {{ $codes[$status]['color'] }};">&#9632;</span> <b><bdi dir="ltr">{{ $legendCode($status) }}</bdi></b> {{ $labels[$status] }}@if (! $loop->last) &nbsp;&middot;&nbsp; @endif
-            @endforeach
-            <br>{{ strtr($L('att.sheet.legend_help'), ['{late}' => $code('late')]) }}
-            <br><span class="kind-legend">{{ $marks['preseason'] }}</span> = {{ $L('att.kind.preseason') }} &middot; <span class="kind-legend">{{ $marks['extra'] }}</span> = {{ $L('att.kind.extra') }} &middot; {{ $L('att.sheet.off_roster') }}
-            @if ($group['blank'])
-                &middot; {{ $L('att.sheet.blank_columns') }}
-            @endif
-        </div>
+        @include('pdf.partials.attendance-sheet-legend', ['blank' => $group['blank'], 'withTotals' => $loop->last && ($totals ?? null) !== null])
 
         <table class="sign">
             <tr>

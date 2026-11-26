@@ -11,6 +11,7 @@ use App\Http\Controllers\AttendanceCustomStatusController;
 use App\Http\Controllers\AttendanceGridController;
 use App\Http\Controllers\AttendanceGroupController;
 use App\Http\Controllers\AttendanceInjuryController;
+use App\Http\Controllers\AttendancePeriodSheetController;
 use App\Http\Controllers\AttendancePlayerController;
 use App\Http\Controllers\AttendanceRankingController;
 use App\Http\Controllers\AttendanceSettingsController;
@@ -500,6 +501,7 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
         Route::post('/attendance/grid', [AttendanceGridController::class, 'save'])->name('attendance.grid.save');
         // Paper sheets to print and fill in by hand (A4 PDFs); both only read.
         Route::get('/attendance/sheets/month', [AttendanceSheetController::class, 'month'])->name('attendance.sheets.month');
+        Route::get('/attendance/sheets/period', AttendancePeriodSheetController::class)->name('attendance.sheets.period');
         Route::get('/attendance/sheets/sessions/{session}', [AttendanceSheetController::class, 'session'])->name('attendance.sheets.session');
         Route::post('/attendance/sessions', [TrainingSessionController::class, 'store'])->name('attendance.sessions.store');
         Route::get('/attendance/sessions/{session}', [AttendanceController::class, 'show'])->name('attendance.sessions.show');

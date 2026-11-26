@@ -45,6 +45,7 @@ class AttendancePermissionTest extends TestCase
         // Paper sheets only read. "month" is not a view verb, so the route has an override.
         $this->assertSame(['attendance', 'view'], PermissionMap::resolve('attendance.sheets.month'));
         $this->assertSame(['attendance', 'view'], PermissionMap::resolve('attendance.sheets.session'));
+        $this->assertSame(['attendance', 'view'], PermissionMap::resolve('attendance.sheets.period'));
 
         // Follow-up: every page and PDF only reads. "alerts", "letter", "ranking", "certificates" and
         // "injuries" are not view verbs, so those routes have overrides; the export is a view verb.

@@ -53,9 +53,15 @@ async function askCancel() {
     await nextTick();
     cancelOpen.value = true;
 }
-const cancel = () => router.post(route('missions.cancel', props.order.id), {}, {
-    preserveScroll: true, onFinish: () => { cancelOpen.value = false; },
-});
+// The dialog neither closes nor re-posts while the cancel is being saved.
+const cancelling = ref(false);
+const cancel = () => {
+    if (cancelling.value) return;
+    cancelling.value = true;
+    router.post(route('missions.cancel', props.order.id), {}, {
+        preserveScroll: true, onFinish: () => { cancelling.value = false; cancelOpen.value = false; },
+    });
+};
 </script>
 
 <template>
@@ -116,13 +122,13 @@ const cancel = () => router.post(route('missions.cancel', props.order.id), {}, {
             </div>
         </div>
 
-        <Modal v-if="cancelMounted" :show="cancelOpen" max-width="md" @close="cancelOpen = false">
+        <Modal v-if="cancelMounted" :show="cancelOpen" :closeable="!cancelling" max-width="md" @close="cancelOpen = false">
             <div class="space-y-4 p-6">
                 <h3 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('mis.cancel_order') }}</h3>
                 <p class="text-sm text-slate-600 dark:text-slate-300">{{ t('mis.cancel_confirm') }}</p>
                 <div class="flex justify-end gap-2">
-                    <SecondaryButton type="button" @click="cancelOpen = false">{{ t('back') }}</SecondaryButton>
-                    <DangerButton type="button" @click="cancel">{{ t('mis.cancel_order') }}</DangerButton>
+                    <SecondaryButton type="button" :disabled="cancelling" @click="cancelOpen = false">{{ t('back') }}</SecondaryButton>
+                    <DangerButton type="button" :disabled="cancelling" @click="cancel">{{ t('mis.cancel_order') }}</DangerButton>
                 </div>
             </div>
         </Modal>

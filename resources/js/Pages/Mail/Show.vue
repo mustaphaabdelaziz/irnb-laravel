@@ -40,9 +40,15 @@ const HINT_CLASS = {
     amber: 'bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200',
 };
 
-const cancel = () => router.post(route('mail.cancel', props.entry.id), {}, {
-    preserveScroll: true, onFinish: () => { cancelOpen.value = false; },
-});
+// The dialog neither closes nor re-posts while the cancel is being saved.
+const cancelling = ref(false);
+const cancel = () => {
+    if (cancelling.value) return;
+    cancelling.value = true;
+    router.post(route('mail.cancel', props.entry.id), {}, {
+        preserveScroll: true, onFinish: () => { cancelling.value = false; cancelOpen.value = false; },
+    });
+};
 </script>
 
 <template>
@@ -90,13 +96,13 @@ const cancel = () => router.post(route('mail.cancel', props.entry.id), {}, {
             </div>
         </div>
 
-        <Modal :show="cancelOpen" @close="cancelOpen = false" max-width="md">
+        <Modal :show="cancelOpen" :closeable="!cancelling" @close="cancelOpen = false" max-width="md">
             <div class="space-y-4 p-6">
                 <h3 class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ t('mreg.cancel_entry') }}</h3>
                 <p class="text-sm text-slate-600 dark:text-slate-300">{{ t('mreg.cancel_confirm') }}</p>
                 <div class="flex justify-end gap-2">
-                    <SecondaryButton type="button" @click="cancelOpen = false">{{ t('back') }}</SecondaryButton>
-                    <DangerButton type="button" @click="cancel">{{ t('mreg.cancel_entry') }}</DangerButton>
+                    <SecondaryButton type="button" :disabled="cancelling" @click="cancelOpen = false">{{ t('back') }}</SecondaryButton>
+                    <DangerButton type="button" :disabled="cancelling" @click="cancel">{{ t('mreg.cancel_entry') }}</DangerButton>
                 </div>
             </div>
         </Modal>

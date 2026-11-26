@@ -1062,6 +1062,8 @@
     "legacy_import.title": "Old software import",
     "mail": "Mail register",
     "meeting.pv_number": "Minutes (PV) no.",
+    "mis.function.coach": "Coach",
+    "mis.function.player": "Player — {category}",
     "mis.title": "Mission order",
     "missing_docs.complete_players": "Complete files",
     "missing_docs.complete_rate": "Completion rate",

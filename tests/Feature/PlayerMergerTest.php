@@ -399,4 +399,29 @@ class PlayerMergerTest extends TestCase
         $this->assertSame(1, DB::table('branch_player')->where('player_id', $duplicate->id)->count());
         $this->assertDatabaseCount('player_duplicate_decisions', 0);
     }
+
+    #[Test]
+    public function mission_travelers_follow_the_kept_player_once_per_order(): void
+    {
+        $keeper = $this->player();
+        $duplicate = $this->player();
+        $orderIds = [];
+        foreach (['Testville', 'Otherville'] as $destination) {
+            $orderIds[] = DB::table('mission_orders')->insertGetId([
+                'destination' => $destination, 'status' => 'active', 'is_legacy' => false, 'created_at' => now(), 'updated_at' => now(),
+            ]);
+        }
+        $row = fn (int $order, int $player, int $sort) => [
+            'mission_order_id' => $order, 'traveler_type' => 'player', 'traveler_id' => $player, 'name' => 'Test', 'function' => null,
+            'sort_order' => $sort, 'created_at' => now(), 'updated_at' => now(),
+        ];
+        // Order 1 holds both players, order 2 only the duplicate.
+        DB::table('mission_order_travelers')->insert([$row($orderIds[0], $keeper->id, 1), $row($orderIds[0], $duplicate->id, 2), $row($orderIds[1], $duplicate->id, 1)]);
+
+        $this->merge($keeper, $duplicate);
+
+        $this->assertSame(0, DB::table('mission_order_travelers')->where('traveler_type', 'player')->where('traveler_id', $duplicate->id)->count());
+        $this->assertSame(1, DB::table('mission_order_travelers')->where('mission_order_id', $orderIds[0])->where('traveler_id', $keeper->id)->count());
+        $this->assertSame(1, DB::table('mission_order_travelers')->where('mission_order_id', $orderIds[1])->where('traveler_id', $keeper->id)->count());
+    }
 }

@@ -238,6 +238,11 @@ class PlayerMerger
         DB::table('inventory_session_participants')->where('participant_type', Player::class)->where('participant_id', $d)->whereIn('inventory_session_id', $sessions)->delete();
         DB::table('inventory_session_participants')->where('participant_type', Player::class)->where('participant_id', $d)->update(['participant_id' => $k]);
 
+        // A person is on a mission order once: the duplicate's row goes where the keeper already travels.
+        $orders = DB::table('mission_order_travelers')->where('traveler_type', 'player')->where('traveler_id', $k)->pluck('mission_order_id');
+        DB::table('mission_order_travelers')->where('traveler_type', 'player')->where('traveler_id', $d)->whereIn('mission_order_id', $orders)->delete();
+        DB::table('mission_order_travelers')->where('traveler_type', 'player')->where('traveler_id', $d)->update(['traveler_id' => $k]);
+
         DB::table('transactions')->whereIn('related_entity_type', ['Player', Player::class])->where('related_entity_id', $d)->update(['related_entity_id' => $k]);
         DB::table('activity_logs')->where('subject_type', Player::class)->where('subject_id', $d)->update(['subject_id' => $k]);
     }

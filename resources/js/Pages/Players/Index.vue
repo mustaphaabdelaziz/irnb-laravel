@@ -191,6 +191,7 @@ const documentMissingHref = computed(() => (props.documentStats?.missing && !doc
 const secondaryActions = computed(() => [
     { key: 'import', label: t('import'), icon: 'upload', onClick: () => { showImport.value = true; } },
     ...(can('players', 'edit') ? [{ key: 'join-dates', label: t('join_dates_queue'), icon: 'calendar', onClick: () => router.visit(route('players.join-dates.index')) }] : []),
+    ...(can('players', 'merge') ? [{ key: 'duplicates', label: t('dup.find'), icon: 'copy', onClick: () => router.visit(route('players.duplicates.index')) }] : []),
 ]);
 
 // Distribution panels: map each stat source to the stat cards' {key, label, count}.

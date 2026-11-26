@@ -83,6 +83,10 @@ return [
         'subscriptions.print-list' => ['subscriptions', 'view'],
         'players.board-table' => ['players', 'view'],
         'players.academic-results' => ['players', 'view'],
+        // Finding and merging duplicates is its own right (Role::EXTRA_ACTIONS): a merge deletes a player.
+        'players.duplicates.index' => ['players', 'merge'],
+        'players.duplicates.dismiss' => ['players', 'merge'],
+        'players.duplicates.restore' => ['players', 'merge'],
         // "grid" is not a view verb: opening the month grid must not need edit rights.
         'attendance.grid' => ['attendance', 'view'],
         // "stats" is not a view verb: reading the statistics must not need edit rights.

@@ -68,6 +68,7 @@ use App\Http\Controllers\PurchaseOrderPrintController;
 use App\Http\Controllers\PlayerAcademicRecordController;
 use App\Http\Controllers\PlayerAcademicYearController;
 use App\Http\Controllers\JoinDateController;
+use App\Http\Controllers\PlayerDuplicateController;
 use App\Http\Controllers\PlayerController;
 use App\Http\Controllers\PlayerDocumentController;
 use App\Http\Controllers\PlayerImportController;
@@ -220,6 +221,10 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
     Route::get('/players/join-dates', [JoinDateController::class, 'index'])->name('players.join-dates.index');
     Route::put('/players/join-dates', [JoinDateController::class, 'bulkUpdate'])->name('players.join-dates.bulk-update');
     Route::put('/players/join-dates/{registration}', [JoinDateController::class, 'update'])->name('players.join-dates.update');
+    // Possible duplicate players (before the resource so the static path wins)
+    Route::get('/players/duplicates', [PlayerDuplicateController::class, 'index'])->name('players.duplicates.index');
+    Route::post('/players/duplicates/dismiss', [PlayerDuplicateController::class, 'dismiss'])->name('players.duplicates.dismiss');
+    Route::delete('/players/duplicates/{decision}', [PlayerDuplicateController::class, 'restore'])->name('players.duplicates.restore');
 
     // Players
     Route::resource('players', PlayerController::class);

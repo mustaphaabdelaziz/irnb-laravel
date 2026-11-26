@@ -39,6 +39,9 @@ class MailEntry extends Model
 
     public const SOURCE_PURCHASE_ORDER = 'purchase_order';
 
+    /** A mission order's reference: taken at its first print (P4), not through the tick box. */
+    public const SOURCE_MISSION = 'mission_order';
+
     /** Every field the form may send; fieldsFor() and editableFields() narrow it. */
     public const FORM_FIELDS = ['entry_date', 'correspondent', 'address', 'subject', 'body', 'sender_reference', 'received_date', 'notes'];
 

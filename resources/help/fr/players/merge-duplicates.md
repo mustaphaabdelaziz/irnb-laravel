@@ -37,7 +37,7 @@ Cliquez sur « Confirmer la fusion ». Une sauvegarde est faite d'abord, puis to
 :::
 
 :::tip
-Des frères et sœurs partagent souvent le même téléphone. Marquez-les « Pas un doublon » une fois pour toutes.
+Des frères et sœurs partagent souvent le même téléphone. Marquez-les « Pas un doublon » une fois pour toutes. La liste commence au score 100 : choisissez « Tous les scores » pour voir les correspondances plus faibles.
 :::
 
 :::warning

@@ -37,7 +37,7 @@ Click “Confirm merge”. A backup is made first, then everything moves to the 
 :::
 
 :::tip
-Brothers and sisters often share a phone. Mark them “Not duplicate” once.
+Brothers and sisters often share a phone. Mark them “Not duplicate” once. The list starts at score 100: pick “All scores” to see weaker matches.
 :::
 
 :::warning

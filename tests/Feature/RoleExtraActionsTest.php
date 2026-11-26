@@ -24,7 +24,7 @@ class RoleExtraActionsTest extends TestCase
 
         $this->assertSame(['view', 'add', 'edit', 'delete', 'approve'], $all['payment_orders']);
         $this->assertSame(['view', 'add', 'edit', 'delete'], $all['suppliers']);
-        $this->assertSame(['view', 'add', 'edit', 'delete'], $all['players']);
+        $this->assertSame(['view', 'add', 'edit', 'delete', 'merge'], $all['players']);
         $this->assertContains('payment_orders', Role::MODULE_GROUPS['finance']);
         $this->assertContains('suppliers', Role::MODULE_GROUPS['config']);
     }

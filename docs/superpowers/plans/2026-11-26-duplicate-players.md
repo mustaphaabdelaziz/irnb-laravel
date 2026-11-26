@@ -230,7 +230,7 @@ git commit -m "feat(players): merge duplicates role right"
   - `PlayerDuplicateDecision::orderedPair(int $x, int $y): array{0:int,1:int}` (smaller first)
   - `PlayerDuplicateDecision::snapshot(Player $p): array` (same shape as a card)
   - `PlayerCards::for(array $ids): Collection<int, array{id:int,name:string,membership_ids:list<string>,birthdate:?string,picture_url:?string,archived:bool}>` keyed by id
-  - Trait `Tests\Support\BuildsDuplicatePlayers`: `player(array $attrs = []): Player`, `branch(string $name = 'Football'): int`, `registration(Player $p, int $branchId, array $extra = []): int`, `category(int $branchId): int`, `session(int $categoryId, string $date = '2026-10-01'): int`, `documentType(): int`
+  - Trait `Tests\Support\BuildsDuplicatePlayers`: `player(array $attrs = []): Player`, `branch(string $name = 'Football'): int`, `registration(Player $p, int $branchId, array $extra = []): int`, `category(int $branchId): int`, `trainingSession(int $categoryId, string $date = '2026-10-01'): int`, `documentType(): int`
 
 - [ ] **Step 1: Write the fixture trait**
 
@@ -286,7 +286,7 @@ trait BuildsDuplicatePlayers
         ]);
     }
 
-    protected function session(int $categoryId, string $date = '2026-10-01'): int
+    protected function trainingSession(int $categoryId, string $date = '2026-10-01'): int
     {
         return DB::table('training_sessions')->insertGetId([
             'category_id' => $categoryId, 'date' => $date, 'start_time' => '17:00', 'end_time' => '18:30',
@@ -1808,7 +1808,7 @@ class PlayerMergeRulesTest extends TestCase
     {
         $keeper = $this->player();
         $duplicate = $this->player();
-        $session = $this->session($this->category($this->branch()));
+        $session = $this->trainingSession($this->category($this->branch()));
         DB::table('attendances')->insert([
             ['training_session_id' => $session, 'player_id' => $keeper->id, 'status' => 'present'],
             ['training_session_id' => $session, 'player_id' => $duplicate->id, 'status' => 'absent_unexcused'],
@@ -1825,7 +1825,7 @@ class PlayerMergeRulesTest extends TestCase
     {
         $duplicate = $this->player();
         $this->registration($duplicate, $this->branch());
-        DB::table('player_emergency_contacts')->insert(['player_id' => $duplicate->id, 'name' => 'Parent Test', 'phone' => '0550000009', 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('player_emergency_contacts')->insert(['player_id' => $duplicate->id, 'name' => 'Parent Test', 'phones' => json_encode(['0550000009']), 'created_at' => now(), 'updated_at' => now()]);
 
         $this->assertSame(['player_emergency_contacts' => 1, 'branch_player' => 1], app(MergePreview::class)->counts($duplicate->id));
     }
@@ -2316,7 +2316,7 @@ class PlayerMergerTest extends TestCase
     {
         $keeper = $this->player(['firstname' => 'فاطمة', 'lastname' => 'بن علي', 'father' => null, 'phones' => ['0550000001']]);
         $duplicate = $this->player(['firstname' => 'فاطمه', 'lastname' => 'بن علي', 'father' => 'محمد', 'phones' => ['0550000002']]);
-        DB::table('player_emergency_contacts')->insert(['player_id' => $duplicate->id, 'name' => 'Parent Test', 'phone' => '0550000009', 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('player_emergency_contacts')->insert(['player_id' => $duplicate->id, 'name' => 'Parent Test', 'phones' => json_encode(['0550000009']), 'created_at' => now(), 'updated_at' => now()]);
         DB::table('transactions')->insert(['amount' => 1000, 'transaction_date' => '2026-10-01', 'transaction_type' => 'income', 'related_entity_type' => 'Player', 'related_entity_id' => $duplicate->id, 'created_at' => now(), 'updated_at' => now()]);
         DB::table('activity_logs')->insert(['action' => 'player_registered', 'subject_type' => Player::class, 'subject_id' => $duplicate->id, 'occurred_at' => now(), 'created_at' => now()]);
         $branch = $this->branch();
@@ -2369,8 +2369,8 @@ class PlayerMergerTest extends TestCase
         $keeper = $this->player();
         $duplicate = $this->player();
         $category = $this->category($this->branch());
-        $shared = $this->session($category, '2026-10-01');
-        $only = $this->session($category, '2026-10-08');
+        $shared = $this->trainingSession($category, '2026-10-01');
+        $only = $this->trainingSession($category, '2026-10-08');
         DB::table('attendances')->insert([
             ['training_session_id' => $shared, 'player_id' => $keeper->id, 'status' => 'present'],
             ['training_session_id' => $shared, 'player_id' => $duplicate->id, 'status' => 'absent_unexcused'],

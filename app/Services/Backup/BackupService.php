@@ -22,6 +22,8 @@ class BackupService
 
     public const SNAPSHOT_DIR = 'pre-restore';
 
+    public const PRE_MERGE_DIR = 'pre-merge';
+
     /**
      * How long to wait for another process to let go of the database's -wal/-shm.
      *
@@ -81,6 +83,31 @@ class BackupService
         }
 
         $path = $dir.DIRECTORY_SEPARATOR.'pre-restore-'.$this->timestamp().'.zip';
+
+        $this->writeArchive($path);
+
+        return $path;
+    }
+
+    /**
+     * Writes a full backup before a player merge. Like snapshot(), it lives in
+     * its own subfolder, outside list() and prune(): merges must never push the
+     * owner's own backups out of the retention window. Two merges in the same
+     * second get two files.
+     */
+    public function preMerge(): string
+    {
+        $dir = $this->requireDestination().DIRECTORY_SEPARATOR.self::PRE_MERGE_DIR;
+
+        if (! is_dir($dir) && ! @mkdir($dir, 0777, true) && ! is_dir($dir)) {
+            throw new RuntimeException("Could not create the pre-merge folder: {$dir}");
+        }
+
+        $base = $dir.DIRECTORY_SEPARATOR.'pre-merge-'.$this->timestamp();
+        $path = $base.'.zip';
+        for ($n = 2; file_exists($path) || file_exists($path.'.tmp'); $n++) {
+            $path = $base.'-'.$n.'.zip';
+        }
 
         $this->writeArchive($path);
 

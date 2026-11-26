@@ -58,10 +58,13 @@ class Role extends Model
     /**
      * Actions only some modules have, after the canonical four. Approving a
      * payment order is a separate right from editing it (owner, 2026-11-25):
-     * the accountant prepares, the president or treasurer approves.
+     * the accountant prepares, the president or treasurer approves. Merging
+     * duplicate players deletes one of them, so it is its own right too
+     * (owner, 2026-11-26).
      */
     public const EXTRA_ACTIONS = [
         'payment_orders' => ['approve'],
+        'players' => ['merge'],
     ];
 
     /** @return list<string> The actions a module can be granted. */

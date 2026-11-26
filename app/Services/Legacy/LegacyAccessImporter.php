@@ -397,7 +397,7 @@ final class LegacyAccessImporter
     private static function textDay(mixed $value): ?string
     {
         $text = trim(self::plain($value));
-        if (preg_match('/^(\d{4})-(\d{1,2})-(\d{1,2})(?!\d)/', $text, $m) === 1) {
+        if (preg_match('#^(\d{4})[/.\-](\d{1,2})[/.\-](\d{1,2})(?!\d)#', $text, $m) === 1) {
             [$year, $month, $day] = [(int) $m[1], (int) $m[2], (int) $m[3]];
         } elseif (preg_match('#^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4}|\d{2})(?!\d)#', $text, $m) === 1) {
             [$day, $month, $year] = [(int) $m[1], (int) $m[2], (int) $m[3]];

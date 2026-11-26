@@ -405,4 +405,22 @@ class LegacyAccessImportTest extends TestCase
         $this->assertSame('2018-07-06', $dotted->departure_date->toDateString());
         $this->assertSame('Test', $dotted->travelers()->sole()->name);
     }
+
+    #[Test]
+    public function year_first_text_dates_with_slashes_or_dots_are_read(): void
+    {
+        app(LegacyAccessImporter::class)->import([
+            'format' => 'access-legacy-v1',
+            'missions' => [
+                ['reference' => '71', 'date' => '2018/10/02', 'lastname' => 'Test', 'departure_date' => '2018/10/02', 'return_date' => '2018/10/07'],
+                ['reference' => '72', 'date' => '2018.5.3', 'lastname' => 'Test'],
+            ],
+        ], User::factory()->admin()->create());
+
+        $slashed = MissionOrder::where('legacy_reference', '71')->sole();
+        $this->assertSame('2018-10-02', $slashed->order_date->toDateString());
+        $this->assertSame('2018-10-02', $slashed->departure_date->toDateString());
+        $this->assertSame('2018-10-07', $slashed->return_date->toDateString());
+        $this->assertSame('2018-05-03', MissionOrder::where('legacy_reference', '72')->sole()->order_date->toDateString());
+    }
 }

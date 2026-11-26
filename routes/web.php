@@ -63,6 +63,7 @@ use App\Http\Controllers\MailEntryPrintController;
 use App\Http\Controllers\MailSourceController;
 use App\Http\Controllers\MemberJobController;
 use App\Http\Controllers\MembershipIdController;
+use App\Http\Controllers\MissionOrderController;
 use App\Http\Controllers\OpenWhatsAppController;
 use App\Http\Controllers\OpponentController;
 use App\Http\Controllers\PaymentOrderController;
@@ -326,6 +327,14 @@ Route::middleware(['auth', 'approved', 'permission'])->group(function () {
     Route::get('/mail/{mailEntry}/scan', [MailEntryController::class, 'scan'])->name('mail.scan');
     // An outgoing entry with a text, printed as a letter on the letterhead.
     Route::get('/mail/{mailEntry}/print', MailEntryPrintController::class)->name('mail.print');
+
+    // Secretariat → mission orders (أوامر المهمة): never deleted — cancelled instead, so the routes have no destroy.
+    // "Add a team": a team's coaches and players of the season, as rows for the form.
+    Route::get('/missions/team-members/{team}', [MissionOrderController::class, 'teamMembers'])->name('missions.team-members');
+    Route::resource('missions', MissionOrderController::class)->except(['destroy'])->parameters(['missions' => 'missionOrder']);
+    Route::post('/missions/{missionOrder}/cancel', [MissionOrderController::class, 'cancel'])->name('missions.cancel');
+    // The Print buttons take the order's mail-register reference here; the PDF routes only look it up.
+    Route::post('/missions/{missionOrder}/register', [MissionOrderController::class, 'register'])->name('missions.register');
 
     // Finance — year-grouped dashboard (view open to approved members)
     Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');

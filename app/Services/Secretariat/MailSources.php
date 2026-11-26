@@ -5,6 +5,7 @@ namespace App\Services\Secretariat;
 use App\Models\Category;
 use App\Models\Game;
 use App\Models\MailEntry;
+use App\Models\MissionOrder;
 use App\Models\Player;
 use App\Models\PurchaseOrder;
 use App\Models\User;
@@ -39,6 +40,7 @@ final class MailSources
         MailEntry::SOURCE_ABSENCE_LETTER => 'players',
         MailEntry::SOURCE_GAME => 'games',
         MailEntry::SOURCE_PURCHASE_ORDER => 'purchase_orders',
+        MailEntry::SOURCE_MISSION => 'missions',
     ];
 
     /** The print dialog's URL segment → stored source type. */
@@ -159,6 +161,7 @@ final class MailSources
             MailEntry::SOURCE_ABSENCE_LETTER => route('players.show', $id),
             MailEntry::SOURCE_GAME => route('games.show', $id),
             MailEntry::SOURCE_PURCHASE_ORDER => route('purchase-orders.show', $id),
+            MailEntry::SOURCE_MISSION => route('missions.show', $id),
         };
     }
 
@@ -181,6 +184,7 @@ final class MailSources
             MailEntry::SOURCE_ABSENCE_LETTER => self::letterLabel($id, (string) $entry->source_key),
             MailEntry::SOURCE_GAME => self::gameLabel($id),
             MailEntry::SOURCE_PURCHASE_ORDER => PurchaseOrder::find($id)?->reference,
+            MailEntry::SOURCE_MISSION => self::missionLabel($id),
             default => null,
         };
 
@@ -206,6 +210,17 @@ final class MailSources
         $game = Game::with('opponent:id,name')->find($gameId);
 
         return $game === null ? null : ($game->opponent?->name ?? '—').' · '.self::day((string) $game->date);
+    }
+
+    /** A mission order: its destination and order date. */
+    private static function missionLabel(int $orderId): ?string
+    {
+        $order = MissionOrder::find($orderId, ['id', 'destination', 'order_date']);
+        if ($order === null) {
+            return null;
+        }
+
+        return ($order->destination ?? '—').($order->order_date ? ' · '.$order->order_date->format('d/m/Y') : '');
     }
 
     /** 'Y-m-d' → 'dd/mm/yyyy', as the prints show dates. */
